@@ -46,7 +46,7 @@ jsSingleton_t js;
 /**** local scope stuff ****/
 
 static stat_t _json_parser_kernal(char_t *str);
-static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
+//static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
 static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
@@ -190,6 +190,8 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
  * 
  *	Quotes are accepted but not needed on names 
  *	Quotes are required for string values
+ *
+ *	See build 406.xx or earlier for strict JSON parser - deleted in 407.03
  */
 
 #define MAX_PAD_CHARS 8
@@ -324,6 +326,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
  *	"fr" is found in the name string the parser will search for "xfr" in the 
  *	cfgArray.
  */
+ /*
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 {
 	char_t *tmp;
@@ -411,6 +414,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	(*pstr)++;
 	return (STAT_OK);							// signal that parsing is complete
 }
+*/
 
 /****************************************************************************
  * json_serialize() - make a JSON object string from JSON object array
@@ -446,7 +450,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
+uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size) 
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
@@ -460,7 +464,11 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 		if (cmd->objtype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
-			str += sprintf((char *)str, "\"%s\":", cmd->token);
+			if (js.json_syntax == JSON_SYNTAX_RELAXED) {		// write name
+				str += sprintf((char *)str, "%s:", cmd->token);
+			} else {
+				str += sprintf((char *)str, "\"%s\":", cmd->token);
+			}
 
 			// check for illegal float values
 			if (cmd->objtype == TYPE_FLOAT) {
@@ -468,7 +476,7 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			}
 
 			// serialize output value
-			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "\"\"");} // Note that that "" is NOT null.
+			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
 			else if (cmd->objtype == TYPE_INTEGER)	{
 				str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);
 			}
@@ -511,6 +519,7 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
 }
+
 
 /*
  * json_print_object() - serialize and print the cmdObj array directly (w/o header & footer)
@@ -669,15 +678,18 @@ stat_t json_set_jv(cmdObj_t *cmd)
 /*
  * js_print_ej()
  * js_print_jv()
+ * js_print_j2()
  * js_print_fs()
  */
 
 static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]\n";
 static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
+static const char fmt_js[] PROGMEM = "[js]  json serialize style%9d [0=relaxed,1=strict]\n";
 static const char fmt_fs[] PROGMEM = "[fs]  footer style%17d [0=new,1=old]\n";
 
 void js_print_ej(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ej);}
 void js_print_jv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_jv);}
+void js_print_js(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_js);}
 void js_print_fs(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_fs);}
 
 #endif // __TEXT_MODE

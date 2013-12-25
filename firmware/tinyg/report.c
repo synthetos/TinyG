@@ -54,8 +54,13 @@ qrSingleton_t qr;
  */
 void rpt_exception(uint8_t status)
 {
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
-		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		printf_P(PSTR("{er:{fb:%0.2f,st:%d,msg:\"%s\"}}\n"),
+			TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	} else {
+		printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
+			TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	}
 }
 
 stat_t rpt_er(cmdObj_t *cmd)
@@ -225,6 +230,23 @@ stat_t sr_set_status_report(cmdObj_t *cmd)
  */
 stat_t sr_request_status_report(uint8_t request_type)
 {
+#ifdef __ARM
+	if (request_type == SR_IMMEDIATE_REQUEST) {
+		sr.status_report_systick = SysTickTimer.getValue();
+	}
+	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
+	}
+#endif
+#ifdef __AVR
+	if (request_type == SR_IMMEDIATE_REQUEST) {
+		sr.status_report_systick = SysTickTimer_getValue();
+	}
+	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
+	}
+#endif
+/*
 	if (request_type == SR_IMMEDIATE_REQUEST) {
 #ifdef __ARM
 		sr.status_report_systick = SysTickTimer.getValue();
@@ -241,6 +263,7 @@ stat_t sr_request_status_report(uint8_t request_type)
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 #endif
 	}
+*/
 	sr.status_report_requested = true;
 	return (STAT_OK);
 }
@@ -471,6 +494,14 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 		} else  {
 			fprintf(stderr, "qr:%d, qi:%d, qo:%d\n", qr.buffers_available,qr.buffers_added,qr.buffers_removed);
 		}
+
+	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
+			fprintf(stderr, "{qr:%d}\n", qr.buffers_available);
+		} else {
+			fprintf(stderr, "{qr:%d,qi:%d,qo:%d}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		}
+
 	} else {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
@@ -588,7 +619,9 @@ uint8_t job_report_callback()
 {
 	if (cfg.comm_mode == TEXT_MODE) {
 		// no-op, job_ids are client app state
-	} else {		
+	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		fprintf(stderr, "{job:[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
+	} else {
 		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
 		//job_clear_report();
 	}
@@ -604,21 +637,11 @@ void job_print_job(cmdObj_t *cmd) { job_populate_job_report();}
  *********************/
 #ifdef __TEXT_MODE
 
-//static const char fmt_qr_single[] PROGMEM = "qr:%d\n";
-//static const char fmt_qr_triple[] PROGMEM = "qr:%d, qi:%d, qo:%d\n";
 static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_qi[] PROGMEM = "qi:%d\n";
 static const char fmt_qo[] PROGMEM = "qo:%d\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
 
-/*
-void qr_print_qr(cmdObj_t *cmd) { 
-	if (qr.queue_report_verbosity == QR_TRIPLE) {
-		text_print_int(cmd, fmt_qr);}
-		
-	}
-}
-*/
 void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
 void qr_print_qi(cmdObj_t *cmd) { text_print_int(cmd, fmt_qi);}
 void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}

@@ -208,10 +208,6 @@ static stat_t _homing_axis_start(int8_t axis)
 			cm.homing_state = HOMING_HOMED;
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
-//			cm_set_units_mode(hm.saved_units_mode);
-//			cm_set_distance_mode(hm.saved_distance_mode);
-//			cm.cycle_state = CYCLE_OFF;
-//			cm_cycle_end();
 			return (_homing_error_exit(-2, STAT_HOMING_ERROR_BAD_OR_NO_AXIS));
 		}
 	}
@@ -221,7 +217,6 @@ static stat_t _homing_axis_start(int8_t axis)
 	// trap axis mis-configurations
 	if (fp_ZERO(cm.a[axis].search_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
 	if (fp_ZERO(cm.a[axis].latch_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
-//	if (fp_ZERO(fabs(cm.a[axis].travel_max - cm.a[axis].travel_min))) 	return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO));
 	if (cm.a[axis].latch_backoff < 0) return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
 
 	// calculate and test travel distance
