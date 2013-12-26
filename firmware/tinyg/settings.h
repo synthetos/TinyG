@@ -52,8 +52,8 @@
 #define NETWORK_MODE				NETWORK_STANDALONE
 #define TEXT_VERBOSITY				TV_VERBOSE		// one of: TV_SILENT, TV_VERBOSE
 
-//#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 //#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_RELAXED	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
@@ -67,7 +67,8 @@
 
 //#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 //#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-#define SR_DEFAULTS "mpox","_ds4","_ns4","_es4","mpoy","_ds3","_ns3","_es3","mpoz","_ds2","_ns2","_es2","stat"
+//#define SR_DEFAULTS "mpox","_ds4","_ns4","_es4","mpoy","_ds3","_ns3","_es3","mpoz","_ds2","_ns2","_es2","stat"
+#define SR_DEFAULTS "mpoy","_ds3","_ns3","_es3","mpoz","_ds2","_ns2","_es2"
 
 #define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 //#define QR_VERBOSITY				QR_TRIPLE

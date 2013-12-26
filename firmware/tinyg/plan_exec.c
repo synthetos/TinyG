@@ -159,6 +159,7 @@ void mp_reset_step_counts()
 		mr.target_steps[i] = 0;
 		mr.position_steps[i] = 0;
 		mr.delayed_steps[i] = 0;		
+		mr.step_error[i] = 0;		
 	}
 }
 
@@ -458,9 +459,17 @@ static stat_t _exec_aline_tail()
  *
  * NOTE ON STEP ERROR CORRECTION:
  * 
- *	The step_error term is positive if the calculated target steps are > the encoder reading.
- *	(Note that the target value must be delayed by 2 segments to align with the encoder reading,
- *	hence the delayed_steps term).
+ *	The step_error term is *positive* if the calculated target steps are greater 
+ *	in magnitude than the encoder reading. Examples:
+ *
+ *	 Target	  Encoder	Error
+ *		100		   90	  +10	target position is 10 steps beyond the truth
+ *		 90		  100	  -10	target position is 10 steps shy of the truth
+ *	   -100		  -90	  +10	target position is 10 steps beyond the truth
+ *		-90		 -100	  -10	target position is 10 steps shy of the truth
+ *
+ *	Note that the target value must be delayed by 2 segments to align with the 
+ *	encoder reading hence the delayed_steps term is used for the target position.
  */
 
 static stat_t _exec_aline_segment()
@@ -491,16 +500,16 @@ static stat_t _exec_aline_segment()
 		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
-//		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
 
+		mr.step_error[i] = fabs(mr.delayed_steps[i]) - fabs(mr.encoder_steps[i]);
+
+//		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
 //		mr.step_error[i] = -(mr.encoder_steps[i] - mr.delayed_steps[i]); // NB: Needed for starting the delay pipeline
 
 /* last night's style */
-		mr.step_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
-		mr.step_error[i] = mr.encoder_steps[i] - mr.delayed_steps[i];
-		if (mr.delayed_steps[i] < 0) {						
-			mr.step_error[i] = -mr.step_error[i];
-		}
+//		mr.step_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
+//		mr.step_error[i] = mr.encoder_steps[i] - mr.delayed_steps[i];
+//		if (mr.delayed_steps[i] < 0) mr.step_error[i] = -mr.step_error[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
