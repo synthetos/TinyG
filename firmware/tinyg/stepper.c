@@ -585,6 +585,7 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
+#ifdef __ERROR_CORRECTION
 		// Perform step correction
 
 //		if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD))  {
@@ -596,9 +597,11 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
 			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
 				steps[i] -= STEP_CORRECTION_AMOUNT;
+				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
 			}
 			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
 				steps[i] += STEP_CORRECTION_AMOUNT;
+				mr.step_error[i] += STEP_CORRECTION_AMOUNT;
 			}
 		}
 
@@ -608,6 +611,7 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 //			if (step_error[i] > STEP_CORRECTION_THRESHOLD) steps[i] += STEP_CORRECTION_AMOUNT;
 //			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) steps[i] -= STEP_CORRECTION_AMOUNT;
 //		}
+#endif
 		
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.

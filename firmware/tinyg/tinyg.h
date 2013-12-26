@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		407.04	// checkpoint for error correction - please note: settings are jiggered for testing
+#define TINYG_FIRMWARE_BUILD   		407.05	// testing error correction - please note: settings are jiggered for testing
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
@@ -52,6 +52,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
+#define __ERROR_CORRECTION
 #define __JERK_EXEC		// comment to use forward difference based exec vs jerk computed exec
 ///#define __SIMULATION	// shorthand to keep from having to comment and uncomment the below:
 

@@ -516,10 +516,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_ds","_ds3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_3], 0 },
 	{ "_ds","_ds4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.delayed_steps[MOTOR_4], 0 },
 
-	{ "_ns","_ns1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 eNcoder steps
-	{ "_ns","_ns2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
-	{ "_ns","_ns3",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
-	{ "_ns","_ns4",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
+	{ "_ns","_ns1",_f00, 0, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 eNcoder steps
+	{ "_ns","_ns2",_f00, 0, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
+	{ "_ns","_ns3",_f00, 0, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
+	{ "_ns","_ns4",_f00, 0, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
 
 	{ "_es","_es1",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_1], 0 }, // Motor 1 error steps
 	{ "_es","_es2",_f00, 4, tx_print_flt, get_flt, set_nul,(float *)&mr.step_error[MOTOR_2], 0 },
