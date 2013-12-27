@@ -155,27 +155,17 @@ void st_reset()
 	}
 }
 
-void st_cycle_start(void)
+void st_cycle_start(void) 
 {
-/*
-	st_pre.cycle_start = true;		// triggers stepper resets
-	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[i].cycle_start = true;
-	}
-	en_reset_encoders();
-*/
 }
 
 void st_cycle_end(void)
 {
-	mp_print_motor_positions();
 }
 
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 {
 	st_reset();
-//	en_reset_encoders();
-//	mp_init_runtime();
 	return(STAT_OK);
 }
 
@@ -587,8 +577,18 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 #ifdef __ERROR_CORRECTION
-		// Perform step correction
+		// Perform step error correction using encoder readings
 
+		if (--st_pre.mot[i].correction_samples < 0) {
+			st_pre.mot[i].correction_samples = STEP_CORRECTION_SAMPLE_RATE;
+			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
+				steps[i] += min(step_error[i], STEP_CORRECTION_AMOUNT);
+			}
+			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
+				steps[i] -= max(step_error[i], STEP_CORRECTION_AMOUNT);
+			}
+		}
+/*
 		if (--st_pre.mot[i].correction_samples < 0) {
 			if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD)) {
 				st_pre.mot[i].correction_samples = STEP_CORRECTION_SAMPLE_RATE;
@@ -597,34 +597,9 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 				} else {
 					steps[i] -= max(step_error[i], STEP_CORRECTION_AMOUNT);				
 				}
-//				steps[i] += correction_amount;
-//				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
 			}			
 		}
-
-//		if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD)) {
-//			steps[i] -= STEP_CORRECTION_AMOUNT;
-//			steps[i] += STEP_CORRECTION_AMOUNT;
-//		}
-
-//		if (--st_pre.correction_samples < 0) {
-//			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
-//			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
-//				steps[i] -= STEP_CORRECTION_AMOUNT;
-//				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
-//			}
-//			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
-//				steps[i] += STEP_CORRECTION_AMOUNT;
-//				mr.step_error[i] += STEP_CORRECTION_AMOUNT;
-//			}
-//		}
-
-/* last night's style */
-//		if (--st_pre.correction_samples < 0) {
-//			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
-//			if (step_error[i] > STEP_CORRECTION_THRESHOLD) steps[i] += STEP_CORRECTION_AMOUNT;
-//			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) steps[i] -= STEP_CORRECTION_AMOUNT;
-//		}
+*/
 #endif
 		
 		// Compute substeb increment. The accumulator must be *exactly* the incoming

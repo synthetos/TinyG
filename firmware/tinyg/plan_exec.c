@@ -459,8 +459,9 @@ static stat_t _exec_aline_tail()
  *
  * NOTE ON STEP ERROR CORRECTION:
  * 
- *	The step_error term is *positive* if the calculated target steps are greater 
- *	than the encoder reading. Examples:
+ *	The step_error term is positive if the calculated target steps are greater 
+ *	than the encoder reading and negative if the target is less than the encoder.
+ *	Examples:
  *
  *	 Target	  Encoder	Error
  *	   -100		  -90	  -10	target position is 10 steps shy of encoder truth
@@ -500,16 +501,7 @@ static stat_t _exec_aline_segment()
 		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
-
 		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
-
-//		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
-//		mr.step_error[i] = -(mr.encoder_steps[i] - mr.delayed_steps[i]); // NB: Needed for starting the delay pipeline
-
-/* last night's style */
-//		mr.step_error[i] = mr.encoder_steps[i] - (int32_t)mr.delayed_steps[i];
-//		mr.step_error[i] = mr.encoder_steps[i] - mr.delayed_steps[i];
-//		if (mr.delayed_steps[i] < 0) mr.step_error[i] = -mr.step_error[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
@@ -523,39 +515,6 @@ static stat_t _exec_aline_segment()
 															// NB: ignored if running the body
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
-}
-
-/*
- * mp_print_motor_position()
- * mp_print_motor_positions()
- */
-
-void mp_print_motor_position(const uint8_t motor)
-{
-/*
-	printf("{\"m%d\":{\"tgt\":%0.3f,\"pos\":%0.3f,\"dly\":%0.3f,\"enc\":%0.3f,\"err\":%0.3f,mm:%0.5f}}\n",
-		motor+1,
-		(double)mr.target_steps[motor],
-		(double)mr.position_steps[motor],
-		(double)mr.delayed_steps[motor],
-		(double)mr.encoder_steps[motor],
-		(double)mr.encoder_error[motor],
-		(double)(mr.encoder_error[motor] * st_cfg.mot[motor].units_per_step));
-*/
-}
-
-void mp_print_motor_positions()
-{
-	printf("\n");
-	mp_print_motor_position(MOTOR_1);
-	mp_print_motor_position(MOTOR_2);
-	mp_print_motor_position(MOTOR_3);
-//	mp_print_motor_position(MOTOR_4);
-/*
-	for (uint8_t i=0; i<MOTORS; i++) {
-		mp_print_motor_position(i);
-	}
-*/
 }
 
 #ifdef __cplusplus

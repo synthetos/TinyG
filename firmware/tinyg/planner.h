@@ -321,8 +321,6 @@ void mp_init_runtime(void);
 void mp_reset_step_counts(void);
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
-void mp_print_motor_position(const uint8_t motor);
-void mp_print_motor_positions(void);
 
 #ifdef __DEBUG
 void mp_dump_running_plan_buffer(void);
