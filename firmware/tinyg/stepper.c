@@ -556,7 +556,6 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 	// setup motor parameters
 
 	uint8_t previous_direction;
-//	float correction_amount;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
@@ -576,32 +575,18 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
-#ifdef __ERROR_CORRECTION
+#ifdef __STEP_CORRECTION
 		// Perform step error correction using encoder readings
-
 		if (--st_pre.mot[i].correction_samples < 0) {
 			st_pre.mot[i].correction_samples = STEP_CORRECTION_SAMPLE_RATE;
 			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
-				steps[i] += min(step_error[i], STEP_CORRECTION_AMOUNT);
+				steps[i] += min(step_error[i], STEP_CORRECTION_MAX);
 			}
 			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
-				steps[i] -= max(step_error[i], STEP_CORRECTION_AMOUNT);
+				steps[i] -= max(step_error[i], STEP_CORRECTION_MAX);
 			}
 		}
-/*
-		if (--st_pre.mot[i].correction_samples < 0) {
-			if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD)) {
-				st_pre.mot[i].correction_samples = STEP_CORRECTION_SAMPLE_RATE;
-				if (step_error[i] > 0) {
-					steps[i] += min(step_error[i], STEP_CORRECTION_AMOUNT);			
-				} else {
-					steps[i] -= max(step_error[i], STEP_CORRECTION_AMOUNT);				
-				}
-			}			
-		}
-*/
 #endif
-		
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
