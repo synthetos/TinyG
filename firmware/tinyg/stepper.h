@@ -297,10 +297,10 @@ enum prepBufferState {
  *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
  *	and error will grow instead of shrink
  */
-#define STEP_CORRECTION_THRESHOLD	(float)3.00		// magnitude of step error to apply correction 
-#define STEP_CORRECTION_AMOUNT		(float)0.10		// step correction to apply in a single segment
-#define STEP_CORRECTION_FACTOR		(float)0.10		// step correction to apply in a single segment
-#define STEP_CORRECTION_SAMPLE_RATE		   4		// number of segments to wait between error samples
+#define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of step error to apply correction 
+#define STEP_CORRECTION_AMOUNT		(float)0.50		// step correction to apply in a single segment
+#define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
+#define STEP_CORRECTION_SAMPLE_RATE		   3		// number of segments to wait between error samples
 
 /*
  * Stepper control structures
@@ -364,13 +364,13 @@ typedef struct stPrepMotor {
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
 	uint32_t substep_increment; 	// total steps in axis times substep factor
+	int16_t correction_samples;		// down count for sample rate
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity
 	volatile uint8_t exec_state;	// move execution state
 	uint8_t move_type;				// move type
-	uint8_t correction_samples;		// down count for sample rate
 	
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move

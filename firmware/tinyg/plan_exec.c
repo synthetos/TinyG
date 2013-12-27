@@ -460,13 +460,13 @@ static stat_t _exec_aline_tail()
  * NOTE ON STEP ERROR CORRECTION:
  * 
  *	The step_error term is *positive* if the calculated target steps are greater 
- *	in magnitude than the encoder reading. Examples:
+ *	than the encoder reading. Examples:
  *
  *	 Target	  Encoder	Error
- *		100		   90	  +10	target position is 10 steps beyond the truth
- *		 90		  100	  -10	target position is 10 steps shy of the truth
- *	   -100		  -90	  +10	target position is 10 steps beyond the truth
- *		-90		 -100	  -10	target position is 10 steps shy of the truth
+ *	   -100		  -90	  -10	target position is 10 steps shy of encoder truth
+ *	   -100		 -110	  +10	target position is 10 steps beyond encoder truth
+ *		100		   90	  +10	target position is 10 steps beyond encoder truth
+ *		100		  110	  -10	target position is 10 steps shy of encoder truth
  *
  *	Note that the target value must be delayed by 2 segments to align with the 
  *	encoder reading hence the delayed_steps term is used for the target position.
@@ -501,7 +501,7 @@ static stat_t _exec_aline_segment()
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
 
-		mr.step_error[i] = fabs(mr.delayed_steps[i]) - fabs(mr.encoder_steps[i]);
+		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
 
 //		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
 //		mr.step_error[i] = -(mr.encoder_steps[i] - mr.delayed_steps[i]); // NB: Needed for starting the delay pipeline

@@ -566,6 +566,7 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 	// setup motor parameters
 
 	uint8_t previous_direction;
+//	float correction_amount;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
@@ -588,22 +589,35 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 #ifdef __ERROR_CORRECTION
 		// Perform step correction
 
-//		if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD))  {
+		if (--st_pre.mot[i].correction_samples < 0) {
+			if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD)) {
+				st_pre.mot[i].correction_samples = STEP_CORRECTION_SAMPLE_RATE;
+				if (step_error[i] > 0) {
+					steps[i] += min(step_error[i], STEP_CORRECTION_AMOUNT);			
+				} else {
+					steps[i] -= max(step_error[i], STEP_CORRECTION_AMOUNT);				
+				}
+//				steps[i] += correction_amount;
+//				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
+			}			
+		}
+
+//		if ((step_error[i] > STEP_CORRECTION_THRESHOLD) || (step_error[i] < -STEP_CORRECTION_THRESHOLD)) {
 //			steps[i] -= STEP_CORRECTION_AMOUNT;
 //			steps[i] += STEP_CORRECTION_AMOUNT;
 //		}
 
-		if (--st_pre.correction_samples < 0) {
-			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
-			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
-				steps[i] -= STEP_CORRECTION_AMOUNT;
-				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
-			}
-			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
-				steps[i] += STEP_CORRECTION_AMOUNT;
-				mr.step_error[i] += STEP_CORRECTION_AMOUNT;
-			}
-		}
+//		if (--st_pre.correction_samples < 0) {
+//			st_pre.correction_samples = STEP_CORRECTION_SAMPLE_RATE;
+//			if (step_error[i] > STEP_CORRECTION_THRESHOLD) {
+//				steps[i] -= STEP_CORRECTION_AMOUNT;
+//				mr.step_error[i] -= STEP_CORRECTION_AMOUNT;
+//			}
+//			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
+//				steps[i] += STEP_CORRECTION_AMOUNT;
+//				mr.step_error[i] += STEP_CORRECTION_AMOUNT;
+//			}
+//		}
 
 /* last night's style */
 //		if (--st_pre.correction_samples < 0) {
@@ -712,8 +726,6 @@ static int8_t _get_motor(const index_t index)
 
 static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
-//	uint8_t m = _get_motor(cmd->index);
-//	st_cfg.mot[m].steps_per_unit = (360 / (st_cfg.mot[m].step_angle / st_cfg.mot[m].microsteps) / st_cfg.mot[m].travel_rev);
 	uint8_t m = _get_motor(cmd->index);
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
