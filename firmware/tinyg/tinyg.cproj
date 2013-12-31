@@ -56,7 +56,7 @@
       <ToolNumber>000200167455</ToolNumber>
       <Channel>
         <host>127.0.0.1</host>
-        <port>49174</port>
+        <port>49210</port>
         <ssl>False</ssl>
       </Channel>
       <ToolOptions>
