@@ -34,7 +34,6 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{

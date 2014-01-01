@@ -58,9 +58,9 @@
 #undef	COM_ENABLE_QR
 #define COM_ENABLE_QR			true
 
-#undef 	QR_VERBOSITY
-//#define QR_VERBOSITY			QR_FILTERED
-#define QR_VERBOSITY			QR_VERBOSE
+#undef 	QUEUE_REPORT_VERBOSITY
+//#define QUEUE_REPORT_VERBOSITY			QR_FILTERED
+#define QUEUE_REPORT_VERBOSITY			QR_VERBOSE
 
 // *** motor settings ***
 
