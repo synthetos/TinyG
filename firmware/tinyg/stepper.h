@@ -298,9 +298,9 @@ enum prepBufferState {
  *	and error will grow instead of shrink
  */
 #define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of step error to apply correction 
-#define STEP_CORRECTION_MAX			(float)0.90		// max step correction allowed in a single segment
 #define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
-#define STEP_CORRECTION_SAMPLE_RATE		   3		// number of segments to wait between error samples
+#define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
+#define STEP_CORRECTION_HOLDOFF		 	 	  3		// number of segments to wait between error correction
 
 /*
  * Stepper control structures
@@ -364,7 +364,7 @@ typedef struct stPrepMotor {
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
 	uint32_t substep_increment; 	// total steps in axis times substep factor
-	int16_t correction_samples;		// down count for sample rate
+	int32_t correction_holdoff;		// count down segments between corrections
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -375,6 +375,7 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
+	float correction_steps;			// temporary register for correction value (in fractional steps)
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;

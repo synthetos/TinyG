@@ -505,10 +505,12 @@ static stat_t _exec_aline_segment()
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
 		steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
+		mr.steps[i] = steps[i];		// DIAGNOSTIC
 	}														  // Verify this assumption (pretty sure it's true)
 
 	// Call the stepper prep function. Return if there's an error
-	ritorno(st_prep_line(steps, mr.microseconds, mr.step_error));
+//	ritorno(st_prep_line(steps, mr.microseconds, mr.step_error));
+	ritorno(st_prep_line(mr.steps, mr.microseconds, mr.step_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec
 															// NB: ignored if running the body
