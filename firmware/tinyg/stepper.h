@@ -288,7 +288,6 @@ enum prepBufferState {
  *	This value is set for maximum accuracy; best not to mess with this.
  */
 #define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
-//#define DDA_SUBSTEPS				(float)100000	// 100,000 accumulates substeps to 6 decimal places
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position.
@@ -298,9 +297,15 @@ enum prepBufferState {
  *	and error will grow instead of shrink
  */
 #define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of step error to apply correction 
+#define STEP_CORRECTION_FACTOR		(float)0.25		// factor to apply to step correction for a single segment
+#define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
+#define STEP_CORRECTION_HOLDOFF		 	 	  3		// number of segments to wait between error correction
+/*
+#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of step error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  3		// number of segments to wait between error correction
+*/
 
 /*
  * Stepper control structures

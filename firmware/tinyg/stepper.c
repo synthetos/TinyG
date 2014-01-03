@@ -302,7 +302,7 @@ ISR(TIMER_DDA_ISR_vect)
 		st_run.mot[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
 		INCREMENT_ENCODER(MOTOR_3);
 	}
-	if ((st_run.mot[MOTOR_4].substep_accumulator += st_run.mot[MOTOR_4].substep_increment) > 0) {
+	if ((st_run.mot[MOTOR_4].substep_accumulator +=  [MOTOR_4].substep_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
 		INCREMENT_ENCODER(MOTOR_4);
@@ -583,30 +583,53 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		// - Do not add or remove more than a maximum (fractional) step value
 		// - Do not let the fabs(step) value go negative
 
+		// Cases:
+		// - Steps are positive and error term is positive = subtract correction from steps
+		// - Steps are positive and error term is negative = add correction to steps
+		// - Steps are negative and error term is positive = subtract correction from steps
+		// - Steps are negative and error term is negative = add correction to steps
+
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(step_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
+
 			st_pre.correction_steps = min((steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
 
-			if (step_error[i] > 0) {			// target is greater than encoder reading
+			if ((steps[i] > 0) && (step_error[i] > 0)) {
 				steps[i] -= st_pre.correction_steps;
-			} else {
-				steps[i] += st_pre.correction_steps;
-			}
-		}
 
-//			steps[i] -= min(step_error[i], STEP_CORRECTION_MAX);	// decrease the step count
-//		}
-//			if (step_error[i] < -STEP_CORRECTION_THRESHOLD) {
-//				steps[i] += min(-step_error[i], STEP_CORRECTION_MAX);	// increase the step count
-//			}
-//		}
+			} else if ((steps[i] < 0) && (step_error[i] > 0)) {
+				steps[i] += st_pre.correction_steps;
+
+			} else if ((steps[i] > 0) && (step_error[i] < 0)) {
+				steps[i] += st_pre.correction_steps;
+
+			} else {
+				steps[i] -= st_pre.correction_steps;
+			}
+/*
+			if (step_error[i] > 0) {			// target is greater than encoder reading
+				if (steps[i] > 0) {
+					steps[i] -= st_pre.correction_steps;
+				} else {
+					steps[i] += st_pre.correction_steps;
+				}
+			} else { 
+				if (steps[i] > 0) {
+					steps[i] += st_pre.correction_steps;
+				} else {
+					steps[i] -= st_pre.correction_steps;
+				}
+			}
+*/
+		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
+//		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
 		st_pre.mot[i].substep_increment = round(steps[i] * DDA_SUBSTEPS);
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
