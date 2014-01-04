@@ -592,26 +592,33 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
 
-			st_pre.correction_steps = min((travel_steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
+//			st_pre.correction_steps = min((travel_steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
 
-//			if (i==0) printf("A");
-			if (i==1) printf("Z");
-			if (i==2) printf("Y");
+			st_pre.correction_steps = min3((fabs(following_error[i] * STEP_CORRECTION_FACTOR)), 
+											fabs(travel_steps[i]), STEP_CORRECTION_MAX);
+			if (following_error[i] < 0) {
+				st_pre.correction_steps = -st_pre.correction_steps;
+			}
+
+//			if (i==1) printf("Z");
+//			if (i==2) printf("Y");
+
 //			if (i==3) printf("X");
+//			if (i==0) printf("A");
 
+
+//			travel_steps[i] -= st_pre.correction_steps;
 
 			if ((travel_steps[i] > 0) && (following_error[i] > 0)) {
  				travel_steps[i] -= st_pre.correction_steps;
-
 			} else if ((travel_steps[i] < 0) && (following_error[i] > 0)) {
 				travel_steps[i] += st_pre.correction_steps;
-
 			} else if ((travel_steps[i] > 0) && (following_error[i] < 0)) {
 				travel_steps[i] += st_pre.correction_steps;
-
 			} else {
 				travel_steps[i] -= st_pre.correction_steps;
 			}
+
 		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming

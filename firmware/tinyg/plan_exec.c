@@ -456,20 +456,21 @@ static stat_t _exec_aline_tail()
 /*
  * _exec_aline_segment() - segment runner helper
  *
- * NOTE ON STEP ERROR CORRECTION:
+ * NOTES ON STEP ERROR CORRECTION:
+ *
+ *	The commanded_steps are the target_steps delayed by one more segment. 
+ *	This lines them up in time with the encoder readings.
  * 
- *	The step_error term is positive if the calculated target steps are greater 
- *	than the encoder reading and negative if the target is less than the encoder.
+ *	The forwarding_error term is positive if the commanded steps are greater 
+ *	than the encoder reading and negative if the commanded steps are less than the encoder.
+ *
  *	Examples:
  *
- *	 Target	  Encoder	Error
- *	   -100		  -90	  -10	target position is 10 steps shy of encoder truth
- *	   -100		 -110	  +10	target position is 10 steps beyond encoder truth
- *		100		   90	  +10	target position is 10 steps beyond encoder truth
- *		100		  110	  -10	target position is 10 steps shy of encoder truth
- *
- *	Note that the target value must be delayed by 2 segments to align with the 
- *	encoder reading. This is the "commanded_steps" value.
+ *	 Commanded  Encoder	  Following Error
+ *		 90		  100	  -10	commanded steps are 10 short of encoder reading
+ *	   -100		  -90	  -10	commanded steps are 10 short of encoder reading
+ *		100		   90	  +10	commanded steps are 10 beyond encoder reading
+ *	    -90		 -100	  +10	commanded steps are 10 beyond encoder reading
  */
 
 static stat_t _exec_aline_segment()

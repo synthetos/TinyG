@@ -246,30 +246,16 @@ stat_t sr_request_status_report(uint8_t request_type)
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 	}
 #endif
-/*
-	if (request_type == SR_IMMEDIATE_REQUEST) {
-#ifdef __ARM
-		sr.status_report_systick = SysTickTimer.getValue();
-#endif
-#ifdef __AVR
-		sr.status_report_systick = SysTickTimer_getValue();
-#endif
-	}
-	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
-#ifdef __ARM
-		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
-#endif
-#ifdef __AVR
-		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
-#endif
-	}
-*/
 	sr.status_report_requested = true;
 	return (STAT_OK);
 }
 
 stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
+#ifdef __SUPPRESS_STATUS_REPORTS
+	return (STAT_NOOP);
+#endif
+
 	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
 	if (sr.status_report_requested == false) return (STAT_NOOP);
 #ifdef __ARM
@@ -484,6 +470,10 @@ void qr_request_queue_report(int8_t buffers)
  */
 stat_t qr_queue_report_callback() 		// called by controller dispatcher
 {
+#ifdef __SUPPRESS_QUEUE_REPORTS
+	return (STAT_NOOP);
+#endif
+
 	if (qr.queue_report_verbosity == QR_OFF) { return (STAT_NOOP);}
 	if (qr.queue_report_requested == false) { return (STAT_NOOP);}
 	qr.queue_report_requested = false;

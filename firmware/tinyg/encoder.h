@@ -68,11 +68,11 @@
  *
  *	Positional error occurs due to floating poiunt numerical inaccuracies. TinyG uses 
  *	32 bit floating point (GCC 32 bit, which is NOT IEEE 32 bit). Errors creep in 
- *	during planning, move execution, and stepper output phases. Many measures have 
- *	been taken to minimize errors throughout the process, but they still occur. In most
- *	cases the errors are not noticable as they fall below the step resolution for most 
- *	jobs. For jobs that run > 1 hour the errors can accumulate and send results off 
- *	by as much as a couple millimeters if not corrected. 
+ *	during planning, move execution, and stepper output phases. Care has been taken 
+ *	to minimize introducing errors throughout the process, but they still occur. 
+ *	In most cases errors are not noticable as they fall below the step resolution 
+ *	for most jobs. For jobs that run > 1 hour the errors can accumulate and send 
+ *	results off by as much as a millimeter if not corrected. 
  *
  *	Note: Going to doubles (from floats) would reduce the errors but not eliminate 
  *	them altogether. But this moot on AVRGCC which only does single precision floats.
@@ -89,6 +89,9 @@
 #define ENCODER_H_ONCE
 
 /**** Configs and Constants ****/
+
+//#define ENCODER_STEP_ROUNDING	(float)0.5	// round steps for more accurate following error computation
+#define ENCODER_STEP_ROUNDING	(float)0.0	// round steps for more accurate following error computation
 
 /**** Macros ****/
 // used to abstract the encoder code out of the stepper so it can be managed in one place
@@ -121,6 +124,6 @@ void encoder_init_assertions(void);
 stat_t encoder_test_assertions(void);
 
 void en_reset_encoders(void);
-int32_t en_read_encoder(uint8_t motor);
+float en_read_encoder(uint8_t motor);
 
 #endif	// End of include guard: ENCODER_H_ONCE

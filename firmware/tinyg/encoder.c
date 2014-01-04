@@ -41,7 +41,7 @@ enEncoders_t en;
  **** CODE **************************************************************************
  ************************************************************************************/
 
-/* 
+/*
  * encoder_init() - initialize encoders 
  */
 
@@ -98,9 +98,9 @@ void en_reset_encoders(void)
  *	that segment are complete.
  */
 
-int32_t en_read_encoder(uint8_t motor)
+float en_read_encoder(uint8_t motor)
 {
-	return(en.en[motor].encoder_steps);
+	return((float)en.en[motor].encoder_steps + ENCODER_STEP_ROUNDING);
 }
 
 

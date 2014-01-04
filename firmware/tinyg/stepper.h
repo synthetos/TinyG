@@ -296,10 +296,14 @@ enum prepBufferState {
  *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
  *	and error will grow instead of shrink
  */
-#define STEP_CORRECTION_THRESHOLD	(float)1.10		// magnitude of step error to apply correction 
-#define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
-#define STEP_CORRECTION_MAX			(float)0.25		// max step correction allowed in a single segment
-#define STEP_CORRECTION_HOLDOFF		 	 	  3		// number of segments to wait between error correction
+#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
+#define STEP_CORRECTION_FACTOR		(float)1.00		// factor to apply to step correction for a single segment
+#define STEP_CORRECTION_MAX			(float)1.00		// max step correction allowed in a single segment
+#define STEP_CORRECTION_HOLDOFF		 	 	  1		// number of segments to wait between error correction
+
+//#define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
+//#define STEP_CORRECTION_MAX			(float)0.25		// max step correction allowed in a single segment
+//#define STEP_CORRECTION_HOLDOFF		 	 	  3		// number of segments to wait between error correction
 
 /*
  * Stepper control structures
