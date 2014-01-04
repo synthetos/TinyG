@@ -49,18 +49,18 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
-#define NETWORK_MODE				NETWORK_STANDALONE
 #define TEXT_VERBOSITY				TV_VERBOSE		// one of: TV_SILENT, TV_VERBOSE
+#define NETWORK_MODE				NETWORK_STANDALONE
 
 //#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-//#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
+#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+///#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_RELAXED	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
+#define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 
 //#define STATUS_REPORT_VERBOSITY		SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-//#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-#define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 
 #define STATUS_REPORT_MIN_MS		100				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
@@ -88,13 +88,13 @@
 
 // machine default profiles - choose only one:
 
-//#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-#include "settings/settings_othermill.h"				// Otherfab OtherMill
+//#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
