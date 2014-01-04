@@ -302,7 +302,7 @@ ISR(TIMER_DDA_ISR_vect)
 		st_run.mot[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
 		INCREMENT_ENCODER(MOTOR_3);
 	}
-	if ((st_run.mot[MOTOR_4].substep_accumulator +=  [MOTOR_4].substep_increment) > 0) {
+	if ((st_run.mot[MOTOR_4].substep_accumulator += st_run.mot[MOTOR_4].substep_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
 		INCREMENT_ENCODER(MOTOR_4);
@@ -537,7 +537,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float steps[], float microseconds, float step_error[])
+stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[])
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
@@ -556,18 +556,17 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 	// setup motor parameters
 
 	uint8_t previous_direction;
-//	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
-		if (fp_ZERO(steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
+		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
 		// Direction - set the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper IRQ to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
 		previous_direction = st_pre.mot[i].direction;
-		if (steps[i] >= 0) {					// positive direction
+		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
 		} else {
@@ -575,7 +574,7 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
-		steps[i] = fabs(steps[i]);
+//		steps[i] = fabs(steps[i]);
 
 #ifdef __STEP_CORRECTION
 		// Perform step error correction using encoder readings
@@ -590,38 +589,29 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		// - Steps are negative and error term is negative = add correction to steps
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
-			(fabs(step_error[i]) > STEP_CORRECTION_THRESHOLD)) {
+			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
 
-			st_pre.correction_steps = min((steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
+			st_pre.correction_steps = min((travel_steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
 
-			if ((steps[i] > 0) && (step_error[i] > 0)) {
-				steps[i] -= st_pre.correction_steps;
+//			if (i==0) printf("A");
+			if (i==1) printf("Z");
+			if (i==2) printf("Y");
+//			if (i==3) printf("X");
 
-			} else if ((steps[i] < 0) && (step_error[i] > 0)) {
-				steps[i] += st_pre.correction_steps;
 
-			} else if ((steps[i] > 0) && (step_error[i] < 0)) {
-				steps[i] += st_pre.correction_steps;
+			if ((travel_steps[i] > 0) && (following_error[i] > 0)) {
+ 				travel_steps[i] -= st_pre.correction_steps;
+
+			} else if ((travel_steps[i] < 0) && (following_error[i] > 0)) {
+				travel_steps[i] += st_pre.correction_steps;
+
+			} else if ((travel_steps[i] > 0) && (following_error[i] < 0)) {
+				travel_steps[i] += st_pre.correction_steps;
 
 			} else {
-				steps[i] -= st_pre.correction_steps;
+				travel_steps[i] -= st_pre.correction_steps;
 			}
-/*
-			if (step_error[i] > 0) {			// target is greater than encoder reading
-				if (steps[i] > 0) {
-					steps[i] -= st_pre.correction_steps;
-				} else {
-					steps[i] += st_pre.correction_steps;
-				}
-			} else { 
-				if (steps[i] > 0) {
-					steps[i] += st_pre.correction_steps;
-				} else {
-					steps[i] -= st_pre.correction_steps;
-				}
-			}
-*/
 		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
@@ -629,8 +619,8 @@ stat_t st_prep_line(float steps[], float microseconds, float step_error[])
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
-//		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
-		st_pre.mot[i].substep_increment = round(steps[i] * DDA_SUBSTEPS);
+		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
+//		st_pre.mot[i].substep_increment = round(travel_steps[i] * DDA_SUBSTEPS);
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);

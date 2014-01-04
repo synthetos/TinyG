@@ -113,6 +113,9 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
 	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
+//	xio_queue_RX_string_usb("g0 y50\n");		// medium Y line
+//	xio_queue_RX_string_usb("g0 y0\n");			// return Y to zero
+
 //	xio_queue_RX_string_usb("g28.2z0\n");
 //	xio_queue_RX_string_usb("{\"jogx\":1}\n");
 //	xio_queue_RX_string_usb("{\"uda\":{\"0\":\"0x4\"}}\n");
@@ -153,7 +156,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line
-	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
+//	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
 //	xio_queue_RX_string_usb("g0 x20\n");		// medium line

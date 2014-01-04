@@ -67,8 +67,7 @@
 
 //#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 //#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-//#define SR_DEFAULTS "mpox","_ds4","_ns4","_es4","mpoy","_ds3","_ns3","_es3","mpoz","_ds2","_ns2","_es2","stat"
-#define SR_DEFAULTS "line","mpoy","_ds3","_ns3","_es3","mpoz","_ts2","_ps2","_ds2","_ns2","_es2"
+#define SR_DEFAULTS "line","mpoy","_cs3","_es3","_fe3","mpoz","_ts2","_ps2","_cs2","_es2","_fe2"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 

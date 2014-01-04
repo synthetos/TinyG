@@ -157,8 +157,8 @@ void mp_reset_step_counts()
 	for (uint8_t i=0; i < MOTORS; i++) {
 		mr.target_steps[i] = 0;
 		mr.position_steps[i] = 0;
-		mr.delayed_steps[i] = 0;		
-		mr.step_error[i] = 0;		
+		mr.commanded_steps[i] = 0;		
+		mr.following_error[i] = 0;		
 	}
 }
 
@@ -469,13 +469,13 @@ static stat_t _exec_aline_tail()
  *		100		  110	  -10	target position is 10 steps shy of encoder truth
  *
  *	Note that the target value must be delayed by 2 segments to align with the 
- *	encoder reading hence the delayed_steps term is used for the target position.
+ *	encoder reading. This is the "commanded_steps" value.
  */
 
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
-	float steps[MOTORS];
+	float travel_steps[MOTORS];
 
 	// Either compute the new segment target or use the section endpoints
 	// Don't do the endpoint correction if you are going into a hold
@@ -497,20 +497,20 @@ static stat_t _exec_aline_segment()
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 
 	for (i=0; i<MOTORS; i++) {
-		mr.delayed_steps[i] = mr.position_steps[i];			// previous segment position becomes delayed
+		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment position, delayed
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
-		mr.step_error[i] = mr.delayed_steps[i] - mr.encoder_steps[i];
+		mr.following_error[i] = mr.commanded_steps[i] - mr.encoder_steps[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
-		steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
-		mr.steps[i] = steps[i];		// DIAGNOSTIC
+		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
+		mr.travel_steps[i] = travel_steps[i];				  // DIAGNOSTIC
 	}														  // Verify this assumption (pretty sure it's true)
 
 	// Call the stepper prep function. Return if there's an error
-//	ritorno(st_prep_line(steps, mr.microseconds, mr.step_error));
-	ritorno(st_prep_line(mr.steps, mr.microseconds, mr.step_error));
+//	ritorno(st_prep_line(travel_steps, mr.microseconds, mr.step_error));
+	ritorno(st_prep_line(mr.travel_steps, mr.microseconds, mr.following_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec
 															// NB: ignored if running the body
