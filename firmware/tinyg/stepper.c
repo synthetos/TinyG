@@ -574,60 +574,44 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
-//		steps[i] = fabs(steps[i]);
 
 #ifdef __STEP_CORRECTION
-		// Perform step error correction using encoder readings
-		// Make a minor adjustment to the step count with the following constraints:
-		// - Do not add or remove more than a maximum (fractional) step value
-		// - Do not let the fabs(step) value go negative
-
-		// Cases:
-		// - Steps are positive and error term is positive = subtract correction from steps
-		// - Steps are positive and error term is negative = add correction to steps
-		// - Steps are negative and error term is positive = subtract correction from steps
-		// - Steps are negative and error term is negative = add correction to steps
+		// Use following error for step correction
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
+			st_pre.mot[i].correction_residual += st_pre.mot[i].step_sign * following_error[i];
 
-//			st_pre.correction_steps = min((travel_steps[i] * STEP_CORRECTION_FACTOR), STEP_CORRECTION_MAX);
-
-			st_pre.correction_steps = min3((fabs(following_error[i] * STEP_CORRECTION_FACTOR)), 
-											fabs(travel_steps[i]), STEP_CORRECTION_MAX);
-			if (following_error[i] < 0) {
-				st_pre.correction_steps = -st_pre.correction_steps;
-			}
-
-//			if (i==1) printf("Z");
-//			if (i==2) printf("Y");
-
-//			if (i==3) printf("X");
+#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
+			if (i==1) printf("Z");
+			if (i==2) printf("Y");
+			if (i==3) printf("X");
 //			if (i==0) printf("A");
-
-
-//			travel_steps[i] -= st_pre.correction_steps;
-
-			if ((travel_steps[i] > 0) && (following_error[i] > 0)) {
- 				travel_steps[i] -= st_pre.correction_steps;
-			} else if ((travel_steps[i] < 0) && (following_error[i] > 0)) {
-				travel_steps[i] += st_pre.correction_steps;
-			} else if ((travel_steps[i] > 0) && (following_error[i] < 0)) {
-				travel_steps[i] += st_pre.correction_steps;
-			} else {
-				travel_steps[i] -= st_pre.correction_steps;
-			}
-
-		}
 #endif
+		}
+		st_pre.correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+
+		if (st_pre.correction_steps > 0) {
+			st_pre.correction_steps = min3(st_pre.correction_steps, 
+										   fabs(travel_steps[i]), 
+										   STEP_CORRECTION_MAX);
+		} else {
+			st_pre.correction_steps = max3(st_pre.correction_steps, 
+										   -fabs(travel_steps[i]), 
+										   -STEP_CORRECTION_MAX);
+		}
+
+		st_pre.mot[i].correction_residual -= st_pre.correction_steps;
+		travel_steps[i] -= st_pre.correction_steps;
+#endif
+
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
 		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
-//		st_pre.mot[i].substep_increment = round(travel_steps[i] * DDA_SUBSTEPS);
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);

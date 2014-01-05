@@ -1,17 +1,7 @@
 /* 
  * test_099.h - Arbitrary test file for debugging
  */
-
-// Shortened numbered moon - skip to line 65, N4 adjusted for startup
-const char test_99[] PROGMEM = "\
-N0 (G28.2 x0y0z0)\n\
-N1 G17\n\
-N2 (G61)\n\
-N3 G0Z0.0\n\
-N4 (G0X0.00Y0.00)\n\
-N4 G92 X0.00 Y21\n\
-N5 (S1600M3)\n\
-N6 (G4P3)\n\
+/*
 N65 Y21.74Z-0.50\n\
 N66 Y21.64Z-0.49\n\
 N67 Y21.54Z-0.50\n\
@@ -92,6 +82,19 @@ N141 Y14.74Z-0.35\n\
 N142 Y14.64Z-0.34\n\
 N143 Y14.54Z-0.35\n\
 N144 Y14.44Z-0.37\n\
+
+
+*/
+// Shortened numbered moon - skip to line 65, N4 adjusted for startup
+const char test_99[] PROGMEM = "\
+N0 (G28.2 x0y0z0)\n\
+N1 G17\n\
+N2 (G61)\n\
+N3 G0Z0.0\n\
+N4 (G0X0.00Y0.00)\n\
+N4 G92 X0.00 Y14\n\
+N5 (S1600M3)\n\
+N6 (G4P3)\n\
 N145 Y14.36Z-0.39\n\
 N146 Y14.26Z-0.38\n\
 N147 Y14.06Z-0.40\n\

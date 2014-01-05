@@ -52,8 +52,8 @@
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
-#undef  SR_DEFAULTS
-#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
+//#undef  SR_DEFAULTS
+//#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -61,20 +61,20 @@
 #undef	COMM_MODE
 #define COMM_MODE					JSON_MODE
 
-#undef	JSON_VERBOSITY
-#define JSON_VERBOSITY				JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#undef	JSON_VERBOSITY
+//#define JSON_VERBOSITY				JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef  JSON_FOOTER_DEPTH
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 
-#undef  JSON_SYNTAX_MODE
-#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
+//#undef  JSON_SYNTAX_MODE
+//#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
 
 #undef	QUEUE_REPORT_VERBOSITY
 #define QUEUE_REPORT_VERBOSITY		QR_SINGLE
 
-#undef	STATUS_REPORT_VERBOSITY
-#define STATUS_REPORT_VERBOSITY		SR_FILTERED
+//#undef	STATUS_REPORT_VERBOSITY
+//#define STATUS_REPORT_VERBOSITY		SR_FILTERED
 
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON

@@ -530,6 +530,10 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
  */
 void json_print_object(cmdObj_t *cmd)
 {
+#ifdef __SILENCE_JSON_RESPONSES
+	return;
+#endif
+
 	json_serialize(cmd, cs.out_buf, sizeof(cs.out_buf));
 	fprintf(stderr, "%s", (char *)cs.out_buf);
 }
@@ -569,6 +573,10 @@ void json_print_list(stat_t status, uint8_t flags)
 
 void json_print_response(uint8_t status)
 {
+#ifdef __SILENCE_JSON_RESPONSES
+	return;
+#endif
+
 	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing
