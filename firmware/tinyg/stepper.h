@@ -300,7 +300,7 @@ enum prepBufferState {
 #define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)1.00		// max step correction allowed in a single segment
-#define STEP_CORRECTION_HOLDOFF		 	 	 10		// number of segments to wait between error correction
+#define STEP_CORRECTION_HOLDOFF		 	 	  3		// minimum number of segments to wait between error correction
 
 /*
  * Stepper control structures
@@ -365,6 +365,7 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 	int32_t correction_holdoff;		// count down segments between corrections
+	float correction_steps;			// steps to correct from each segment
 	float correction_residual;		// holds and decrements correction term
 } stPrepMotor_t;
 
