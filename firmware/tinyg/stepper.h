@@ -303,13 +303,6 @@ enum prepBufferState {
 #define STEP_CORRECTION_HOLDOFF		 	 	 10		// number of segments to wait between error correction
 
 /*
-#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
-#define STEP_CORRECTION_FACTOR		(float)1.00		// factor to apply to step correction for a single segment
-#define STEP_CORRECTION_MAX			(float)1.00		// max step correction allowed in a single segment
-#define STEP_CORRECTION_HOLDOFF		 	 	  1		// number of segments to wait between error correction
-*/
-
-/*
  * Stepper control structures
  *
  *	There are 4 sets of structures involved in this operation;

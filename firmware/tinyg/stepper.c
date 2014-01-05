@@ -562,7 +562,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
 		// Direction - set the direction, compensating for polarity.
-		// Set the step_sign which is used by the stepper IRQ to accumulate step position
+		// Set the step_sign which is used by the stepper ISR to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
 		previous_direction = st_pre.mot[i].direction;
@@ -576,36 +576,33 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 #ifdef __STEP_CORRECTION
-		// Use following error for step correction
+		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
+		// See stepper.h for parameters
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-			st_pre.mot[i].correction_residual += st_pre.mot[i].step_sign * following_error[i];
+			st_pre.mot[i].correction_residual = following_error[i] * st_pre.mot[i].step_sign;
+			st_pre.correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+
+			if (st_pre.correction_steps > 0) {
+				st_pre.correction_steps = min3(st_pre.correction_steps, 
+											   fabs(travel_steps[i]), 
+											   STEP_CORRECTION_MAX); }
+			else {
+				st_pre.correction_steps = max3(st_pre.correction_steps, 
+											   -fabs(travel_steps[i]), 
+											   -STEP_CORRECTION_MAX); }
+
+			travel_steps[i] -= st_pre.correction_steps;
 
 #ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
 			if (i==1) printf("Z");
 			if (i==2) printf("Y");
 			if (i==3) printf("X");
-//			if (i==0) printf("A");
 #endif
 		}
-		st_pre.correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
-
-		if (st_pre.correction_steps > 0) {
-			st_pre.correction_steps = min3(st_pre.correction_steps, 
-										   fabs(travel_steps[i]), 
-										   STEP_CORRECTION_MAX);
-		} else {
-			st_pre.correction_steps = max3(st_pre.correction_steps, 
-										   -fabs(travel_steps[i]), 
-										   -STEP_CORRECTION_MAX);
-		}
-
-		st_pre.mot[i].correction_residual -= st_pre.correction_steps;
-		travel_steps[i] -= st_pre.correction_steps;
 #endif
-
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
