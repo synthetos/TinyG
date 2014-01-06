@@ -51,8 +51,8 @@
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
-#undef SR_DEFAULTS
-#define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
+#undef  SR_DEFAULTS
+#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -61,7 +61,7 @@
 #define COMM_MODE					JSON_MODE
 
 #undef	JSON_VERBOSITY
-#define JSON_VERBOSITY			JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef  JSON_FOOTER_DEPTH
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
