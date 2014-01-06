@@ -577,12 +577,10 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 
 #ifdef __STEP_CORRECTION
 		// 'Nudge2' correction strategy. Inject a single, scaled correction value then hold off
-		// See stepper.h for parameters
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-//			st_pre.mot[i].correction_residual = following_error[i] * st_pre.mot[i].step_sign;
 			st_pre.mot[i].correction_residual = following_error[i];
 			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
 
@@ -595,14 +593,13 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 													  -fabs(travel_steps[i]), 
 													  -STEP_CORRECTION_MAX); }
 
-//			travel_steps[i] -= st_pre.mot[i].correction_steps;
 			travel_steps[i] += st_pre.mot[i].correction_steps;
 
-#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
+//#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
 //			if (i==1) printf("Z");
 //			if (i==2) printf("Y");
 //			if (i==3) printf("X");
-#endif
+//#endif
 		}
 
 #endif
