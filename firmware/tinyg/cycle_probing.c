@@ -200,7 +200,6 @@ static stat_t _probing_finalize_exit(int8_t axis)	// third part of return to hom
 	return (STAT_OK);
 }
 
-
 /* 
  * _probing_error_exit()
  */
@@ -211,11 +210,11 @@ static stat_t _probing_error_exit(int8_t axis)
 	// - and not the main controller - it requires its own display processing 
 	cmd_reset_list();
 	if (axis == -2) {
-		cmd_conditional_message((const char_t *)"*** WARNING *** Probing error: Specified axis(es) cannot use probe");
+		cmd_add_conditional_message((const char_t *)"*** WARNING *** Probing error: Specified axis(es) cannot use probe");
 	} else {
 		char message[CMD_MESSAGE_LEN];
 		sprintf_P(message, PSTR("*** WARNING *** Probing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
-		cmd_conditional_message((const char_t *)message);
+		cmd_add_conditional_message((const char_t *)message);
 	}
 	cmd_print_list(STAT_PROBING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 

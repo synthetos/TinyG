@@ -59,7 +59,7 @@ stat_t gc_gcode_parser(char_t *block)
 	uint8_t block_delete_flag;
 
 	// don't process Gcode blocks if in alarmed state
-	if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED); 
+	if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 
 	_normalize_gcode_block(cmd, &com, &msg, &block_delete_flag);
 	
@@ -69,7 +69,7 @@ stat_t gc_gcode_parser(char_t *block)
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
-
+	
 	// queue a "(MSG" response
 	if (*msg != NUL) {
 		(void)cm_message(msg);				// queue the message

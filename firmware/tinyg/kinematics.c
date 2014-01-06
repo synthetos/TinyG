@@ -53,8 +53,8 @@ void ik_kinematics(float travel[], float steps[])
 {
 	float joint[AXES];
 
-//	_inverse_kinematics(travel, joint);			// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(float)*AXES);	//...or just do a memcopy for cartesian machines
+//	_inverse_kinematics(travel, joint);				// you can insert inverse kinematics transformations here
+	memcpy(joint, travel, sizeof(float)*AXES);		//...or just do a memcpy for Cartesian machines
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in during config in steps_per_unit()
@@ -65,8 +65,12 @@ void ik_kinematics(float travel[], float steps[])
 		if (st_cfg.mot[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;}
 		if (st_cfg.mot[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;}
 		if (st_cfg.mot[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;}
-	//	if (st_cfg.mot[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;}
-	//	if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
+#if (MOTORS >= 5)
+		if (st_cfg.mot[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;}
+#endif
+#if (MOTORS >= 6)
+		if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
+#endif
 	}	
 	// the above is a loop unrolled version of this:
 	//	for (uint8_t motor=0; motor<MOTORS; motor++) {

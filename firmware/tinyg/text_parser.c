@@ -78,7 +78,7 @@ stat_t text_parser(char_t *str)
 		return (STAT_OK);
 	}
 
-	// pre-process the command 
+	// pre-process the command
 	if ((str[0] == '$') && (str[1] == NUL)) { // treat a lone $ as a sys request
 		strcat(str,"sys");
 	}
@@ -90,7 +90,7 @@ stat_t text_parser(char_t *str)
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
 	} else { 								// process SET and RUN commands
-		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED); 
+		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 		status = cmd_set(cmd);				// set (or run) single value
 		cmd_persist(cmd);					// conditionally persist depending on flags in array
 	}
@@ -117,10 +117,10 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	// parse fields into the cmd struct
 	cmd->objtype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) { // no value part
-		strncpy(cmd->token, str, CMD_TOKEN_LEN);
+		strncpy(cmd->token, str, TOKEN_LEN);
 	} else {
 		*rd = NUL;							// terminate at end of name
-		strncpy(cmd->token, str, CMD_TOKEN_LEN);
+		strncpy(cmd->token, str, TOKEN_LEN);
 		str = ++rd;
 		cmd->value = strtof(str, &rd);		// rd used as end pointer
 		if (rd != str) {
@@ -155,7 +155,7 @@ void text_response(const stat_t status, char_t *buf)
 	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
 
 	char units[] = "inch";
-	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); } // (no need to length check the copy)
+	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
 		fprintf_P(stderr, prompt_ok, units);

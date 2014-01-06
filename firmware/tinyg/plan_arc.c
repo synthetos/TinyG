@@ -124,8 +124,8 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	ritorno(_compute_arc());
 //	ritorno(_test_arc_soft_limits());			// test if arc will trip soft limits
 	cm_cycle_start();							// if not already started
-	arc.run_state = MOVE_STATE_RUN;				// enable arc to be run from the callback
-	cm_conditional_set_model_position(STAT_OK);	// set endpoint position if the arc was successful
+	arc.run_state = MOVE_RUN;					// enable arc to be run from the callback
+	cm_set_model_position(STAT_OK);				// set endpoint position if the arc was successful
 	return (STAT_OK);
 }
 
@@ -140,7 +140,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 stat_t cm_arc_callback() 
 {
-	if (arc.run_state == MOVE_STATE_OFF) { return (STAT_NOOP);}
+	if (arc.run_state == MOVE_OFF) { return (STAT_NOOP);}
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
 
 	arc.theta += arc.segment_theta;
@@ -151,7 +151,7 @@ stat_t cm_arc_callback()
 	copy_axis_vector(arc.position, arc.gm.target);	// update arc current position	
 
 	if (--arc.segment_count > 0) return (STAT_EAGAIN);
-	arc.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_OFF;
 	return (STAT_OK);
 }
 
@@ -163,7 +163,7 @@ stat_t cm_arc_callback()
 
 void cm_abort_arc() 
 {
-	arc.run_state = MOVE_STATE_OFF;
+	arc.run_state = MOVE_OFF;
 }
 
 /*
@@ -185,8 +185,7 @@ void cm_abort_arc()
  */
 static stat_t _compute_arc()
 {
-
-	// A non-zero radius value indicated a radius arc
+	// A non-zero radius value indicates a radius arc
 	// Compute IJK offset coordinates. These override any current IJK offsets
 	if (fp_NOT_ZERO(arc.radius)) ritorno(_compute_arc_offsets_from_radius()); // returns if error
 
@@ -331,7 +330,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
 	// == -(h * 2 / d)
-	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) - square(y))) / hypot(x,y);
+	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
 
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
@@ -460,7 +459,7 @@ static float _get_theta(const float x, const float y)
  *			the distance from Cx to the positive X boundary
  *
  *	The arc plane is defined by 0 and 1 depending on G17/G18/G19 plane selected,
- *	corresponding to arc pane XY, XZ, YZ, respectively.
+ *	corresponding to arc planes XY, XZ, YZ, respectively.
  *	
  *	Must be called with all the following set in the arc struct
  *	  -	arc starting position (arc.position)
@@ -471,7 +470,7 @@ static float _get_theta(const float x, const float y)
  *	  - max and min travel in axis 0 and axis 1 (in cm struct)
  *
  */
- /*
+/*
 static stat_t _test_arc_soft_limits()
 {
 	// test is target falls outside boundaries. This is a 3 dimensional test
@@ -482,6 +481,7 @@ static stat_t _test_arc_soft_limits()
 	return(STAT_OK);
 }
 */
+
 //##########################################
 //############## UNIT TESTS ################
 //##########################################

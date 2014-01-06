@@ -37,7 +37,7 @@
  *
  * 	  - Short story: Do not call ANYTHING that can print (i.e. send chars to the TX 
  *		buffer) from a medium or hi interrupt. This obviously includes any printf() 
- *		function, but also exception reports, cm_soft_alar(), cm_hard_alarm() and a 
+ *		function, but also exception reports, cm_soft_alarm(), cm_hard_alarm() and a 
  *		few other functions that call stdio print functions.
  *
  * 	  - Longer Story: The stdio printf() functions use character drivers provided by 
@@ -52,9 +52,8 @@
  *		Means you cannot call a print function at or above the level of the TX interrupts,
  *		which are set to medium.
  */
-
-#ifndef xio_h
-#define xio_h
+#ifndef XIO_H_ONCE
+#define XIO_H_ONCE
 
 /*************************************************************************
  *	Device configurations
@@ -165,8 +164,11 @@ extern struct controllerSingleton tg;		// needed by init() for default source
 // The zero condition is the wrap that sets the index back to the top.
 #define advance_buffer(buf,len) { if ((--(buf)) == 0) buf = len-1;}
 
-// public functions (virtual class) 
+// public functions (virtual class)
 void xio_init(void);
+void xio_init_assertions(void);
+uint8_t xio_test_assertions(void);
+
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);
 int xio_ctrl(const uint8_t dev, const flags_t flags);
@@ -193,10 +195,6 @@ void xio_init_stdio(void);				// set std devs & do startup prompt
 void xio_set_stdin(const uint8_t dev);
 void xio_set_stdout(const uint8_t dev);
 void xio_set_stderr(const uint8_t dev);
-
-// assertions
-uint8_t xio_assertions(void);
-
 
 /*************************************************************************
  * SUPPORTING DEFINTIONS - SHOULD NOT NEED TO CHANGE
@@ -393,4 +391,4 @@ void xio_unit_tests(void);
 #define	XIO_UNITS
 #endif // __UNIT_TEST_XIO
 
-#endif	// xio_h
+#endif	// end of include guard: XIO_H_ONCE

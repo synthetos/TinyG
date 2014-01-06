@@ -38,11 +38,11 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
-#define JERK_MAX				500			// 500 million mm/(min^3)
-#define JERK_HOMING				1000		// 1000 million mm/(min^3)
-#define JUNCTION_DEVIATION		0.01		// default value, in mm
-#define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
-#define LATCH_VELOCITY          25			// reeeeally slow for accuracy
+#define JERK_MAX					500			// 500 million mm/(min^3)
+#define JERK_HOMING					1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
+#define JUNCTION_DEVIATION			0.01		// default value, in mm
+#define JUNCTION_ACCELERATION		100000		// centripetal acceleration around corners
+#define LATCH_VELOCITY				25			// reeeeally slow for accuracy
 
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
@@ -55,42 +55,41 @@
 #define SR_DEFAULTS 			"mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
 
 #undef	SWITCH_TYPE
-#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
 
 #undef	COMM_MODE
-#define COMM_MODE				JSON_MODE
+#define COMM_MODE					JSON_MODE
 
 #undef	JSON_VERBOSITY
 #define JSON_VERBOSITY			JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
-#undef JSON_FOOTER_DEPTH
-#define JSON_FOOTER_DEPTH		0				// 0 = new style, 1 = old style
+#undef  JSON_FOOTER_DEPTH
+#define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 
-#undef	COM_ENABLE_QR
-#define COM_ENABLE_QR			true
+#undef  JSON_SYNTAX_MODE
+#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
 
-#undef 	QR_VERBOSITY
-#define QR_VERBOSITY			QR_SINGLE
+#undef	QUEUE_REPORT_VERBOSITY
+#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
 
-#undef SR_VERBOSITY
-#define SR_VERBOSITY				SR_FILTERED
+#undef	STATUS_REPORT_VERBOSITY
+#define STATUS_REPORT_VERBOSITY		SR_FILTERED
 
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
 #undef GCODE_DEFAULT_COORD_SYSTEM
-#undef GCODE_DEFAULT_UNITS
+#undef GCODE_DEFAULT_UNITS 
 #undef GCODE_DEFAULT_PLANE
 #undef GCODE_DEFAULT_COORD_SYSTEM
 #undef GCODE_DEFAULT_PATH_CONTROL
-#undef GCODE_DEFAULT_DISTANCE_MODEs
+#undef GCODE_DEFAULT_DISTANCE_MODE
 
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY	// CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
 #define GCODE_DEFAULT_COORD_SYSTEM	G55				// G54, G55, G56, G57, G58 or G59
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
 
 // *** motor settings ***
 
@@ -113,14 +112,14 @@
 #define M2_MOTOR_MAP 			AXIS_Z
 #if HAS_CANSTACK_Z_AXIS
 #define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27
+#define M2_TRAVEL_PER_REV 		1.27254
 #else
 #define M2_STEP_ANGLE 			1.8
 #define M2_TRAVEL_PER_REV 		5.08
 #endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
-#define M2_POWER_MODE 			0
+#define M2_POWER_MODE 			0					
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP 			AXIS_A
@@ -139,14 +138,14 @@
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 			138					// xtr		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
+#define X_TRAVEL_MAX 			138					// xtr		travel between switches or crashes
 #define X_JERK_MAX 				JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 		(X_FEEDRATE_MAX/3)	// xsv
-#define X_LATCH_VELOCITY 		LATCH_VELOCITY	// xlv		mm/min
+#define X_LATCH_VELOCITY 		LATCH_VELOCITY		// xlv		mm/min
 #define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			0					// xzb		mm
 #define X_JERK_HOMING			JERK_HOMING			// xjh
@@ -154,8 +153,8 @@
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			X_VELOCITY_MAX
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX 			115
 #define Y_TRAVEL_MIN			0
+#define Y_TRAVEL_MAX 			115
 #define Y_JERK_MAX 				JERK_MAX
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
@@ -173,8 +172,8 @@
 #define Z_VELOCITY_MAX 			X_VELOCITY_MAX
 #endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
+#define Z_TRAVEL_MIN			-70
 #define Z_TRAVEL_MAX 			0
-#define Z_TRAVEL_MIN			-66
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED

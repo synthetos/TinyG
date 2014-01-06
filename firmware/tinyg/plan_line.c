@@ -30,14 +30,14 @@
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "plan_line.h"
+//#include "plan_line.h"
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"
-#include "encoder.h"
+//#include "encoder.h"
 #include "report.h"
 #include "util.h"
-//#include "xio/xio.h"			// uncomment for debugging
+//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -52,26 +52,14 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
 
-// execute routines (NB: These are all called from the LO interrupt)
-static stat_t _exec_aline(mpBuf_t *bf);
-static stat_t _exec_aline_head(void);
-static stat_t _exec_aline_body(void);
-static stat_t _exec_aline_tail(void);
-static stat_t _exec_aline_segment(void);
-//static stat_t _exec_aline_segment(uint8_t correction_flag);
-static void _init_forward_diffs(float t0, float t2);
-//static float _compute_next_segment_velocity(void);
-
-/* 
- * Runtime-specific setters and getters
+/* Runtime-specific setters and getters
  *
  * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
- * mp_get_runtime_machine_position()- returns current axis position in machine coordinates
+ * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
  * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
  *									  that were in effect at move planning time
  * mp_set_runtime_work_offset()
  * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
- * mp_get_runtime_target_steps()	- populate target steps vector with steps transformed via inverse kinematics
  */
 
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
@@ -79,7 +67,6 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
-void mp_get_runtime_target_steps(float target_steps[]) { ik_kinematics(mr.target, target_steps);} // transform to joint space
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -90,7 +77,7 @@ void mp_get_runtime_target_steps(float target_steps[]) { ik_kinematics(mr.target
 
 uint8_t mp_get_runtime_busy()
 {
-	if ((stepper_isbusy() == true) || (mr.move_state > MOVE_STATE_NEW)) return (true);
+	if ((stepper_isbusy() == true) || (mr.move_state == MOVE_RUN)) return (true);
 	return (false);
 }
 
@@ -127,7 +114,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
 
 	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
-	bf->bf_func = _exec_aline;					// register the callback to the exec function
+	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
@@ -172,7 +159,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	// finish up the current block variables
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 8675309;								// an arbitrarily large floating point number
+		exact_stop = 8675309;								// an arbitrarily large floating point number (Jenny)
 	}
 	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
@@ -321,7 +308,7 @@ static void _reset_replannable_list()
 	mpBuf_t *bp = bf;
 	do {
 		bp->replannable = true;
-	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_STATE_OFF));
+	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_OFF));
 }
 
 /*
@@ -431,7 +418,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
 				bf->body_length = bf->length;
 			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
+				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
 			return;
 		}
@@ -445,7 +432,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else if (bf->length > MIN_BODY_LENGTH) {		// run this as a 1 segment body
 				bf->body_length = bf->length;
 			} else {
-				bf->move_state = MOVE_STATE_SKIP;			// tell runtime to skip the block
+				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
 			return;
 		}
@@ -779,13 +766,12 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *		  code in this module, but the code is so complicated I just left it
  *		  organized for clarity and hoped for the best from compiler optimization. 
  */
-/*
+
 static float _compute_next_segment_velocity()
 {
-	if (mr.move_state == MOVE_STATE_BODY) { return (mr.segment_velocity);}
+	if (mr.section == SECTION_BODY) { return (mr.segment_velocity);}
 	return (mr.segment_velocity + mr.forward_diff_1);
 }
-*/
 
 stat_t mp_plan_hold_callback()
 {
@@ -811,13 +797,12 @@ stat_t mp_plan_hold_callback()
 			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
 */
 
-//	braking_velocity = _compute_next_segment_velocity();
 	// compute next_segment velocity
-	braking_velocity = mr.segment_velocity;
-	if (mr.move_state != MOVE_STATE_BODY) { braking_velocity +=	mr.forward_diff_1;}
-
+//	braking_velocity = mr.segment_velocity;
+//	if (mr.section != SECTION_BODY) { braking_velocity += mr.forward_diff_1;}
+	braking_velocity = _compute_next_segment_velocity();
 	braking_length = _get_target_length(braking_velocity, 0, bp); // bp is OK to use here
-	
+
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
 	// is the velocity of the last segment, not the one that's going to be executed next.
@@ -833,14 +818,14 @@ stat_t mp_plan_hold_callback()
 		mr.exit_velocity = 0;
 		mr.tail_length = braking_length;
 		mr.cruise_velocity = braking_velocity;
-		mr.move_state = MOVE_STATE_TAIL;
-		mr.section_state = MOVE_STATE_NEW;
+		mr.section = SECTION_TAIL;
+		mr.section_state = SECTION_NEW;
 
 		// re-use bp+0 to be the hold point and to run the remaining block length
 		bp->length = mr_available_length - braking_length;
 		bp->delta_vmax = _get_target_velocity(0, bp->length, bp);
 		bp->entry_vmax = 0;						// set bp+0 as hold point
-		bp->move_state = MOVE_STATE_NEW;		// tell _exec to re-use the bf buffer
+		bp->move_state = MOVE_NEW;				// tell _exec to re-use the bf buffer
 
 		_reset_replannable_list();				// make it replan all the blocks
 		_plan_block_list(mp_get_last_buffer(), &mr_flag);
@@ -851,15 +836,15 @@ stat_t mp_plan_hold_callback()
 	// Case 2: deceleration exceeds length remaining in mr buffer
 	// First, replan mr to minimum (but non-zero) exit velocity
 
-	mr.move_state = MOVE_STATE_TAIL;
-	mr.section_state = MOVE_STATE_NEW;
+	mr.section = SECTION_TAIL;
+	mr.section_state = SECTION_NEW;
 	mr.tail_length = mr_available_length;
 	mr.cruise_velocity = braking_velocity;
 	mr.exit_velocity = braking_velocity - _get_target_velocity(0, mr_available_length, bp);	
 
 	// Find the point where deceleration reaches zero. This could span multiple buffers.
 	braking_velocity = mr.exit_velocity;		// adjust braking velocity downward
-	bp->move_state = MOVE_STATE_NEW;			// tell _exec to re-use buffer
+	bp->move_state = MOVE_NEW;					// tell _exec to re-use buffer
 	for (uint8_t i=0; i<PLANNER_BUFFER_POOL_SIZE; i++) {// a safety to avoid wraparound
 		mp_copy_buffer(bp, bp->nx);				// copy bp+1 into bp+0 (and onward...)
 		if (bp->move_type != MOVE_TYPE_ALINE) {	// skip any non-move buffers
@@ -914,419 +899,6 @@ stat_t mp_end_hold()
 }
 
 
-/*************************************************************************/
-/**** ALINE EXECUTION ROUTINES *******************************************/
-/*************************************************************************
- * ---> Everything here fires from interrupts and must be interrupt safe
- *
- *  _exec_aline()		  - acceleration line main routine
- *	_exec_aline_head()	  - helper for acceleration section
- *	_exec_aline_body()	  - helper for cruise section
- *	_exec_aline_tail()	  - helper for deceleration section
- *	_exec_aline_segment() - helper for running a segment
- *
- *	Returns:
- *	 STAT_OK		move is done
- *	 STAT_EAGAIN	move is not finished - has more segments to run
- *	 STAT_NOOP		cause no operation from the steppers - do not load the move
- *	 STAT_xxxxx		fatal error. Ends the move and frees the bf buffer
- *	
- *	This routine is called from the (LO) interrupt level. The interrupt 
- *	sequencing relies on the behaviors of the routines being exactly correct.
- *	Each call to _exec_aline() must execute and prep *one and only one* 
- *	segment. If the segment is the not the last segment in the bf buffer the 
- *	_aline() must return STAT_EAGAIN. If it's the last segment it must return 
- *	STAT_OK. If it encounters a fatal error that would terminate the move it 
- *	should return a valid error code. Failure to obey this will introduce 
- *	subtle and very difficult to diagnose bugs (trust me on this).
- *
- *	Note 1 Returning STAT_OK ends the move and frees the bf buffer. 
- *		   Returning STAT_OK at this point does NOT advance position meaning any
- *		   position error will be compensated by the next move.
- *
- *	Note 2 Solves a potential race condition where the current move ends but the 
- * 		   new move has not started because the previous move is still being run 
- *		   by the steppers. Planning can overwrite the new move.
- */
-/* OPERATION:
- *	Aline generates jerk-controlled S-curves as per Ed Red's course notes:
- *	  http://www.et.byu.edu/~ered/ME537/Notes/Ch5.pdf
- *	  http://www.scribd.com/doc/63521608/Ed-Red-Ch5-537-Jerk-Equations
- *
- *	A full trapezoid is divided into 5 periods Periods 1 and 2 are the 
- *	first and second halves of the acceleration ramp (the concave and convex 
- *	parts of the S curve in the "head"). Periods 3 and 4 are the first 
- *	and second parts of the deceleration ramp (the tail). There is also 
- *	a period for the constant-velocity plateau of the trapezoid (the body).
- *	There are various degraded trapezoids possible, including 2 section 
- *	combinations (head and tail; head and body; body and tail), and single 
- *	sections - any one of the three.
- *
- *	The equations that govern the acceleration and deceleration ramps are:
- *
- *	  Period 1	  V = Vi + Jm*(T^2)/2
- *	  Period 2	  V = Vh + As*T - Jm*(T^2)/2
- *	  Period 3	  V = Vi - Jm*(T^2)/2
- *	  Period 4	  V = Vh + As*T + Jm*(T^2)/2
- *
- * 	These routines play some games with the acceleration and move timing 
- *	to make sure this actually all works out. move_time is the actual time of the 
- *	move, accel_time is the time valaue needed to compute the velocity - which 
- *	takes the initial velocity into account (move_time does not need to).
- */
-/* --- State transitions - hierarchical state machine ---
- *
- *	bf->move_state transitions:
- *	 from _NEW to _RUN on first call (sub_state set to _OFF)
- *	 from _RUN to _OFF on final call
- * 	 or just remains _OFF
- *
- *	mr.move_state transitions on first call from _OFF to one of _HEAD, _BODY, _TAIL
- *	Within each section state may be 
- *	 _NEW - trigger initialization
- *	 _RUN1 - run the first part
- *	 _RUN2 - run the second part 
- *
- *	Note: For a direct math implementation see build 357.xx or earlier
- *		  Builds 358 onward have only forward difference code
- */
-
-static stat_t _exec_aline(mpBuf_t *bf)
-{
-	if (bf->move_state == MOVE_STATE_OFF) { return (STAT_NOOP);} 
-
-	// start a new move by setting up local context (singleton)
-	if (mr.move_state == MOVE_STATE_OFF) {
-		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding
-
-		// initialization to process the new incoming bf buffer (Gcode block)
-		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
-		bf->replannable = false;
-														// too short lines have already been removed
-		if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here
-			mr.move_state = MOVE_STATE_OFF;				// reset mr buffer
-			mr.section_state = MOVE_STATE_OFF;
-			bf->nx->replannable = false;				// prevent overplanning (Note 2)
-			st_prep_null();								// call this to keep the loader happy
-			mp_free_run_buffer();
-			return (STAT_NOOP);
-		}
-		bf->move_state = MOVE_STATE_RUN;
-		mr.move_state = MOVE_STATE_HEAD;
-		mr.section_state = MOVE_STATE_NEW;
-		mr.jerk = bf->jerk;
-		mr.head_length = bf->head_length;
-		mr.body_length = bf->body_length;
-		mr.tail_length = bf->tail_length;
-		mr.entry_velocity = bf->entry_velocity;
-		mr.cruise_velocity = bf->cruise_velocity;
-		mr.exit_velocity = bf->exit_velocity;
-		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.target, bf->gm.target);	// save the final target of the move
-
-		// find the last segment for this move so you can error correct and tell the encoders
-		if (mr.tail_length > 0) { 
-			mr.last_segment_region = MOVE_STATE_TAIL; 
-		} else if (mr.body_length > 0) {
-			mr.last_segment_region = MOVE_STATE_BODY;
-		} else {
-			mr.last_segment_region = MOVE_STATE_HEAD;
-		}
-	}
-	// NB: from this point on the contents of the bf buffer do not affect execution
-
-	//**** main dispatcher to process segments ***
-	stat_t status = STAT_OK;
-	switch (mr.move_state) {
-		case (MOVE_STATE_HEAD): { status = _exec_aline_head(); break;}
-		case (MOVE_STATE_BODY): { status = _exec_aline_body(); break;}
-		case (MOVE_STATE_TAIL): { status = _exec_aline_tail(); break;}
-		case (MOVE_STATE_SKIP): { status = STAT_OK; break;}
-		default: 				{ return (STAT_INTERNAL_ERROR);}
-	}
-
-	// Feedhold processing. Refer to canonical_machine.h for state machine
-	// Catch the feedhold request and start the planning the hold
-	if (cm.hold_state == FEEDHOLD_SYNC) { cm.hold_state = FEEDHOLD_PLAN;}
-
-	// Look for the end of the decel to go into HOLD state
-	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
-		cm.hold_state = FEEDHOLD_HOLD;
-		cm_set_motion_state(MOTION_HOLD);
-
-//		mp_free_run_buffer();					// free bf and send a status report
-		sr_request_status_report(SR_IMMEDIATE_REQUEST);
-	}
-
-	// There are 3 things that can happen here depending on return conditions:
-	//	  status	 bf->move_state	 Description
-	//    ---------	 --------------	 ----------------------------------------
-	//	  STAT_EAGAIN	 <don't care>	 mr buffer has more segments to run
-	//	  STAT_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
-	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
-
-	if (status == STAT_EAGAIN) { 
-		sr_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
-	} else {
-		mr.move_state = MOVE_STATE_OFF;			// reset mr buffer
-		mr.section_state = MOVE_STATE_OFF;
-		bf->nx->replannable = false;			// prevent overplanning (Note 2)
-		if (bf->move_state == MOVE_STATE_RUN) {
-			mp_free_run_buffer();				// free bf if it's actually done
-		}
-	}
-	return (status);
-}
-
-/* 
- * Forward difference math explained:
- *
- * 	We're using two quadratic bezier curves end-to-end, forming the concave and convex 
- *	section of the s-curve. For each half we have three points:
- *
- *    T[0] is the start point, or the entry or middle of the "s". This will be one of:
- *			- entry_velocity (acceleration concave),
- *			- cruise_velocity (deceleration concave), or
- *			- midpoint_velocity (convex)
- *	  T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
- *	  T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
- *
- *  TODO MATH EXPLANATION
- *  
- *    A = T[0] - 2*T[1] + T[2]
- *    B = 2 * (T[1] - T[0])
- *    C = T[0]
- *    h = (1/mr.segments)
- *
- *  forward_diff_1 = Ah^2+Bh = (T[0] - 2*T[1] + T[2])h*h + (2 * (T[1] - T[0]))h
- *  forward_diff_2 = 2Ah^2 = 2*(T[0] - 2*T[1] + T[2])h*h
- */
-
-// NOTE: t1 will always be == t0, so we don't pass it
-static void _init_forward_diffs(float t0, float t2)
-{
-	float H_squared = square(1/mr.segments);
-	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-	float AH_squared = (t2 - t0) * H_squared;
-	
-	// Ah²+Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
-	mr.forward_diff_1 = AH_squared;
-	mr.forward_diff_2 = 2*AH_squared;
-	mr.segment_velocity = t0;
-}
-
-/*
- * _exec_aline_head()
- */
-static stat_t _exec_aline_head()
-{
-	if (mr.section_state == MOVE_STATE_NEW) {				// initialize the move singleton (mr)
-		if (fp_ZERO(mr.head_length)) { 
-			mr.move_state = MOVE_STATE_BODY;
-			return(_exec_aline_body());						// skip ahead to the body generator
-		}
-		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
-		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
-		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
-		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
-		mr.section_state = MOVE_STATE_RUN1;
-	}
-	if (mr.section_state == MOVE_STATE_RUN1) {				// concave part of accel curve (period 1)
-		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) { 		// set up for second half
-		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = MOVE_STATE_RUN2;
-
-			// Here's a trick: The second half of the S starts at the end of the first,
-			//  And the only thing that changes is the sign of mr.forward_diff_2
-			mr.forward_diff_2 = -mr.forward_diff_2;
-		} else {
-			mr.forward_diff_1 += mr.forward_diff_2;
-		}
-		return(STAT_EAGAIN);
-	}
-	if (mr.section_state == MOVE_STATE_RUN2) {				// convex part of accel curve (period 2)
-		mr.segment_velocity += mr.forward_diff_1;
-		mr.forward_diff_1 += mr.forward_diff_2;
-//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
-		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
-			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
-			mr.move_state = MOVE_STATE_BODY;
-			mr.section_state = MOVE_STATE_NEW;
-		}
-	}
-	return(STAT_EAGAIN);
-}
-
-/*
- * _exec_aline_body()
- *
- *	The body is broken into little segments even though it is a straight line so that 
- *	feedholds can happen in the middle of a line with a minimum of latency
- */
-static stat_t _exec_aline_body()
-{
-	if (mr.section_state == MOVE_STATE_NEW) {
-		if (fp_ZERO(mr.body_length)) {
-			mr.move_state = MOVE_STATE_TAIL;
-			return(_exec_aline_tail());						// skip ahead to tail periods
-		}
-		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
-		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
-		mr.segment_move_time = mr.gm.move_time / mr.segments;
-		mr.segment_velocity = mr.cruise_velocity;
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
-		
-		mr.section_state = MOVE_STATE_RUN2;					// uses RUN2 so last segment detection works
-	}
-	if (mr.section_state == MOVE_STATE_RUN2) {				// straight part (period 3)
-//		if (_exec_aline_segment(false) == STAT_OK) {		// OK means this section is done
-		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
-			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
-			mr.move_state = MOVE_STATE_TAIL;
-			mr.section_state = MOVE_STATE_NEW;
-		}
-	}
-	return(STAT_EAGAIN);
-}
-
-/*
- * _exec_aline_tail()
- */
-static stat_t _exec_aline_tail()
-{
-	if (mr.section_state == MOVE_STATE_NEW) {
-		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}		// end the move
-		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
-		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
-		mr.segment_move_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_move_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);					// exit without advancing position
-		}
-		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
-		mr.section_state = MOVE_STATE_RUN1;
-	}
-	if (mr.section_state == MOVE_STATE_RUN1) {				// convex part (period 4)
-		mr.segment_velocity += mr.forward_diff_1;
-//		if (_exec_aline_segment(false) == STAT_OK) {		// set up for second half
-		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = MOVE_STATE_RUN2;
-
-			// Here's a trick: The second half of the S starts at the end of the first,
-			//  And the only thing that changes is the sign of mr.forward_diff_2
-			mr.forward_diff_2 = -mr.forward_diff_2;
-		} else {
-			mr.forward_diff_1 += mr.forward_diff_2;
-		}
-		return(STAT_EAGAIN);
-	}
-	if (mr.section_state == MOVE_STATE_RUN2) {				// concave part (period 5)
-		mr.segment_velocity += mr.forward_diff_1;
-		mr.forward_diff_1 += mr.forward_diff_2;
-//		return (_exec_aline_segment(true)); 				// ends the move or continues EAGAIN
-		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
-	}
-	return(STAT_EAGAIN);									// should never get here
-}
-
-/*
- * _exec_aline_segment() - segment runner helper
- */
-//static stat_t _exec_aline_segment(uint8_t correction_flag)
-static stat_t _exec_aline_segment()
-{
-	float travel[AXES];
-	float steps[MOTORS];
-	uint8_t last_segment_flag = false;		// transient flag for last segment of the move
-
-/* The below is a re-arranged and loop unrolled version of this:
-	for (uint8_t i=0; i < AXES; i++) {	// don't do the error correction if you are going into a hold
-		if ((correction_flag == true) && (mr.segment_count == 1) && 
-			(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-			mr.gm.target[i] = mr.target_computed[i];	// rounding error correction for last segment
-		} else {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_velocity * mr.segment_move_time);
-		}
-		travel[i] = mr.gm.target[i] - mr.position[i];
-	}
-*/
-	// flag the last segment of the move for sampling the encoder
-/*
-	if ((mr.segment_count == 1) && 					// the count is the last segment...
-		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
-		(mr.move_state == mr.last_segment_region)) {//...of the last move region (head/body/tail)
-		last_segment_flag = true;					// flag this as the last segment
-	}
-*/
-	// Multiply computed length by the unit vector to get the contribution for each axis. 
-	// Set the target in absolute coords and compute relative steps.
-	// Don't do the endpoint correction if you are going into a hold
-
-//	if ((correction_flag == true) && (mr.segment_count == 1) && 
-//		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-
-//	if ((correction_flag == true) && 
-//		(mr.segment_count == 1) && 					// the count is the last segment
-//		(mr.section_state == MOVE_STATE_RUN2) && 	// ...of the second half
-//		(cm.motion_state == MOTION_RUN) && 			// ...and not going into a hold 
-//		(cm.cycle_state == CYCLE_MACHINING)) {		// ...and don't correct special cycles (homing, probing, jogging)
-
-	if ((mr.segment_count == 1) && 					// if this is the last segment...
-		(mr.move_state == mr.last_segment_region) &&//...of the last move region (head/body/tail)
-		(mr.section_state == MOVE_STATE_RUN2) && 	//...of the second half
-		(cm.motion_state == MOTION_RUN) && 			// ..and not going into a hold 
-		(cm.cycle_state == CYCLE_MACHINING)) {		// ..and isn't a special cycles (homing, probing, jogging)
-
-		last_segment_flag = true;					// flag this as the last segment
-
-		mr.gm.target[AXIS_X] = mr.target[AXIS_X];	// correct any accumulated rounding errors in last segment
-		mr.gm.target[AXIS_Y] = mr.target[AXIS_Y];
-		mr.gm.target[AXIS_Z] = mr.target[AXIS_Z];
-		mr.gm.target[AXIS_A] = mr.target[AXIS_A];
-		mr.gm.target[AXIS_B] = mr.target[AXIS_B];
-		mr.gm.target[AXIS_C] = mr.target[AXIS_C];
-	} else {
-		float intermediate = mr.segment_velocity * mr.segment_move_time;
-		mr.gm.target[AXIS_X] = mr.position[AXIS_X] + (mr.unit[AXIS_X] * intermediate);
-		mr.gm.target[AXIS_Y] = mr.position[AXIS_Y] + (mr.unit[AXIS_Y] * intermediate);
-		mr.gm.target[AXIS_Z] = mr.position[AXIS_Z] + (mr.unit[AXIS_Z] * intermediate);
-		mr.gm.target[AXIS_A] = mr.position[AXIS_A] + (mr.unit[AXIS_A] * intermediate);
-		mr.gm.target[AXIS_B] = mr.position[AXIS_B] + (mr.unit[AXIS_B] * intermediate);
-		mr.gm.target[AXIS_C] = mr.position[AXIS_C] + (mr.unit[AXIS_C] * intermediate);
-	}
-	travel[AXIS_X] = mr.gm.target[AXIS_X] - mr.position[AXIS_X];
-	travel[AXIS_Y] = mr.gm.target[AXIS_Y] - mr.position[AXIS_Y];
-	travel[AXIS_Z] = mr.gm.target[AXIS_Z] - mr.position[AXIS_Z];
-	travel[AXIS_A] = mr.gm.target[AXIS_A] - mr.position[AXIS_A];
-	travel[AXIS_B] = mr.gm.target[AXIS_B] - mr.position[AXIS_B];
-	travel[AXIS_C] = mr.gm.target[AXIS_C] - mr.position[AXIS_C];
-
-	// prep the segment for the steppers and adjust the variables for the next iteration
-	ik_kinematics(travel, steps);
-	if (st_prep_line(steps, mr.microseconds, last_segment_flag) == STAT_OK) {
-//		copy_axis_vector(mr.position, mr.gm.target); 	// <-- this, is this...
-		mr.position[AXIS_X] = mr.gm.target[AXIS_X];		// update runtime position	
-		mr.position[AXIS_Y] = mr.gm.target[AXIS_Y];
-		mr.position[AXIS_Z] = mr.gm.target[AXIS_Z];
-		mr.position[AXIS_A] = mr.gm.target[AXIS_A];
-		mr.position[AXIS_B] = mr.gm.target[AXIS_B];
-		mr.position[AXIS_C] = mr.gm.target[AXIS_C];	
-	}
-	if (--mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
-	return (STAT_EAGAIN);								// this section still has more segments to run
-}
 
 /****** UNIT TESTS ******/
 

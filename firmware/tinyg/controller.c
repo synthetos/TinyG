@@ -35,11 +35,12 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "hardware.h"
 #include "switch.h"
 #include "gpio.h"
 #include "report.h"
-//#include "help.h"
+#include "help.h"
 #include "util.h"
 #include "xio.h"
 
@@ -79,8 +80,8 @@ stat_t hardware_bootloader_handler(void);
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
+	controller_init_assertions();
+
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
@@ -100,6 +101,32 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
 	tg_set_primary_source(cs.default_src);
+}
+
+/* 
+ * controller_init_assertions()
+ * controller_test_assertions() - check memory integrity of controller
+ */
+
+void controller_init_assertions()
+{
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+
+	cfg.magic_start = MAGICNUM;		// assertions for config system are handled from the controller
+	cfg.magic_end = MAGICNUM;
+	cmdStr.magic_start = MAGICNUM;
+	cmdStr.magic_end = MAGICNUM;
+}
+
+stat_t controller_test_assertions()
+{
+	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+//	if (shared_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+
+	return (STAT_OK);
 }
 
 /* 
@@ -146,7 +173,7 @@ static void _controller_HSM()
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// 3. idle in hard alarm state (shutdown)
+	DISPATCH(_shutdown_idler());				// 3. idle in shutdown state
 //	DISPATCH( poll_switches());					// 4. run a switch polling cycle
 	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
 
@@ -162,7 +189,7 @@ static void _controller_HSM()
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
-	DISPATCH(cm_jogging_callback());			// jogging callback
+	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
 
 //----- command readers and parsers --------------------------------------------------//
@@ -233,8 +260,8 @@ static stat_t _command_dispatch()
 		}
 		default: {										// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);	// -8 is for extra JSON chars (use out_buf as temp)
-				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
+				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
 				json_parser(cs.bufp);
 			} else {									//...or run it as text
 				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
@@ -294,6 +321,7 @@ void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
+ * _sync_to_time() - return eagain if planner is not ready for a new command
  */
 static stat_t _sync_to_tx_buffer()
 {
@@ -310,7 +338,19 @@ static stat_t _sync_to_planner()
 	}
 	return (STAT_OK);
 }
-
+/*
+static stat_t _sync_to_time()
+{
+	if (cs.sync_to_time_time == 0) {		// initial pass
+		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
+		return (STAT_OK);
+	}
+	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
+		return (STAT_EAGAIN);
+	}
+	return (STAT_OK);
+}
+*/
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
@@ -321,31 +361,21 @@ static stat_t _limit_switch_handler(void)
 //	cm_alarm(gpio_get_sw_thrown); 		// unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
 //	cm_hard_alarm(sw.sw_num_thrown);	// no longer the correct behavior
 	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
-//	return (STAT_OK);
-}
-
-/* 
- * _controller_assertions() - check memory integrity of controller
- */
-stat_t _controller_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_MEMORY_FAULT);
 	return (STAT_OK);
 }
 
 /* 
  * _system_assertions() - check memory integrity and other assertions
  */
-#define alarmo(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
 
 stat_t _system_assertions()
 {
-	alarmo(_controller_assertions());
-	alarmo(cm_assertions());
-	alarmo(mp_assertions());
-	alarmo(st_assertions());
-	alarmo(xio_assertions());
+	emergency___everybody_to_get_from_street(controller_test_assertions());
+	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
+	emergency___everybody_to_get_from_street(planner_test_assertions());
+	emergency___everybody_to_get_from_street(stepper_test_assertions());
+	emergency___everybody_to_get_from_street(encoder_test_assertions());
+	emergency___everybody_to_get_from_street(xio_test_assertions());
 	return (STAT_OK);
 }
-
-

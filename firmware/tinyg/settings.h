@@ -42,36 +42,40 @@
 
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
+#define SOFT_LIMIT_ENABLE			0				// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 #define MOTOR_IDLE_TIMEOUT			2.00			// seconds to maintain motor at full power before idling
 #define MOTOR_POWER_LEVEL			25				// default motor power level (ARM only)
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
-#define NETWORK_MODE				NETWORK_STANDALONE
 #define TEXT_VERBOSITY				TV_VERBOSE		// one of: TV_SILENT, TV_VERBOSE
-//#define TEXT_VERBOSITY				TV_SILENT		// one of: TV_SILENT, TV_VERBOSE
+#define NETWORK_MODE				NETWORK_STANDALONE
 
+//#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 //#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-//#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_SYNTAX_MODE 			JSON_SYNTAX_RELAXED	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 #define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
 
-//#define SR_VERBOSITY				SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-#define SR_VERBOSITY				SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define STATUS_REPORT_VERBOSITY		SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+
 #define STATUS_REPORT_MIN_MS		100				// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat","momo"
-//#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
-#define QR_VERBOSITY				QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
-//#define QR_VERBOSITY				QR_TRIPLE
+//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","qr","qi","qo","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","mpoy","_cs3","_es3","_fe3","mpoz","_ts2","_ps2","_cs2","_es2","_fe2"
+#define SR_DEFAULTS "line","_cs4","_es4","_fe4","_cs3","_es3","_fe3","_cs2","_es2","_fe2"
+
+#define QUEUE_REPORT_VERBOSITY		QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
 // Gcode startup defaults
 #define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES
 #define GCODE_DEFAULT_PLANE			CANON_PLANE_XY	// CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
-#define GCODE_DEFAULT_COORD_SYSTEM	G54				// G54, G55, G56, G57, G58 or G59
+#define GCODE_DEFAULT_COORD_SYSTEM	G55				// G54, G55, G56, G57, G58 or G59
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 

@@ -56,12 +56,18 @@ enum jsonFormats {					// json output print modes
 	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
 };
 
+enum jsonSyntaxMode {
+	JSON_SYNTAX_RELAXED = 0,		// Does not require quotes on names
+	JSON_SYNTAX_STRICT				// requires quotes on names
+};
+
 typedef struct jsSingleton {
 
 	/*** config values (PUBLIC) ***/
 	uint8_t json_verbosity;			// see enum in this file for settings
 	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
 //	uint8_t json_footer_style;		// select footer style
+	uint8_t json_syntax;			// 0=relaxed syntax, 1=strict syntax
 
 	uint8_t echo_json_footer;		// flags for JSON responses serialization
 	uint8_t echo_json_messages;
@@ -91,19 +97,21 @@ stat_t json_set_jv(cmdObj_t *cmd);
 
 	void js_print_ej(cmdObj_t *cmd);
 	void js_print_jv(cmdObj_t *cmd);
+	void js_print_js(cmdObj_t *cmd);
 	void js_print_fs(cmdObj_t *cmd);
 
 #else
 
 	#define js_print_ej tx_print_stub
 	#define js_print_jv tx_print_stub
+	#define js_print_js tx_print_stub
 	#define js_print_fs tx_print_stub
 
 #endif // __TEXT_MODE
 
 /* unit test setup */
 
-//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
+#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
 #ifdef __UNIT_TEST_JSON
 void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();

@@ -51,7 +51,6 @@ struct hmHomingSingleton {		// persistent homing runtime variables
 	uint8_t homing_closed;		// 0=open, 1=closed
 	uint8_t limit_closed;		// 0=open, 1=closed
 	uint8_t set_coordinates;	// G28.4 flag. true = set coords to zero at the end of homing cycle
-
 	stat_t (*func)(int8_t axis);// binding for callback function state machine
 
 	// per-axis parameters
@@ -85,15 +84,15 @@ static stat_t _homing_axis_latch(int8_t axis);
 static stat_t _homing_axis_zero_backoff(int8_t axis);
 static stat_t _homing_axis_set_zero(int8_t axis);
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity);
-static stat_t _homing_error_exit(int8_t axis);
+static stat_t _homing_error_exit(int8_t axis, stat_t status);
 static stat_t _homing_finalize_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
 /*****************************************************************************
- * cm_homing_cycle_start()	- G28.1 homing cycle using limit switches
+ * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
  *
- * Homing works from a G28.1 according to the following writeup: 
+ * Homing works from a G28.2 according to the following writeup: 
  *	https://github.com/synthetos/TinyG/wiki/TinyG-Homing-(version-0.95-and-above)
  *
  *	--- How does this work? ---
@@ -209,35 +208,28 @@ static stat_t _homing_axis_start(int8_t axis)
 			cm.homing_state = HOMING_HOMED;
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
-//			cm_set_units_mode(hm.saved_units_mode);
-//			cm_set_distance_mode(hm.saved_distance_mode);
-//			cm.cycle_state = CYCLE_OFF;
-//			cm_cycle_end();
-			return (_homing_error_exit(-2));
+			return (_homing_error_exit(-2, STAT_HOMING_ERROR_BAD_OR_NO_AXIS));
 		}
 	}
-
-	// clear the homed flag for axis so we'll be able to move
+	// clear the homed flag for axis so we'll be able to move w/o triggering soft limits
 	cm.homed[axis] = false;
 
-	// trap gross mis-configurations
-	if ((fp_ZERO(cm.a[axis].search_velocity)) || (fp_ZERO(cm.a[axis].latch_velocity))) {
-		return (_homing_error_exit(axis));
-	}
+	// trap axis mis-configurations
+	if (fp_ZERO(cm.a[axis].search_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
+	if (fp_ZERO(cm.a[axis].latch_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
+	if (cm.a[axis].latch_backoff < 0) return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
 
 	// calculate and test travel distance
 	// ASH: +++++ Not sure how this is going to work with min/max disabled, or -1000000 disables
-	float travel_dist = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
-	if ((travel_dist == 0) || (cm.a[axis].latch_backoff <= 0)) {
-		return (_homing_error_exit(axis));
-	}
+	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
+	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO));
 
 	// determine the switch setup and that config is OK
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
 	hm.max_mode = get_switch_mode(MAX_SWITCH(axis));
 
-	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {// one or the other must be homing
-		return (_homing_error_exit(axis));					// axis cannot be homed
+	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {	  // one or the other must be homing
+		return (_homing_error_exit(axis, STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION)); // axis cannot be homed
 	}
 	hm.axis = axis;											// persist the axis
 	hm.search_velocity = fabs(cm.a[axis].search_velocity);	// search velocity is always positive
@@ -247,8 +239,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (hm.min_mode & SW_HOMING_BIT) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
-//		hm.search_travel = -cm.a[axis].travel_max;			// search travels in negative direction
-		hm.search_travel = -travel_dist;					// search travels in negative direction
+		hm.search_travel = -travel_distance;				// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
 
@@ -256,8 +247,7 @@ static stat_t _homing_axis_start(int8_t axis)
 	} else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
-//		hm.search_travel = cm.a[axis].travel_max;			// search travels in positive direction
-		hm.search_travel = travel_dist;						// search travels in positive direction
+		hm.search_travel = travel_distance;					// search travels in positive direction
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
 	}
@@ -268,7 +258,6 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 	// disable the limit switch parameter if there is no limit switch
 	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) { hm.limit_switch = -1;}
-
 	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
@@ -353,18 +342,18 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
  * _homing_error_exit()
  */
 
-static stat_t _homing_error_exit(int8_t axis)
+static stat_t _homing_error_exit(int8_t axis, stat_t status)
 {
 	// Generate the warning message. Since the error exit returns via the homing callback
 	// - and not the main controller - it requires its own display processing
 	cmd_reset_list();
 
 	if (axis == -2) {
-		cmd_conditional_message((const char_t *)"*** WARNING *** Homing error: Specified axis(es) cannot be homed");;
+		cmd_add_conditional_message((const char_t *)"Homing error - Bad or no axis(es) specified");;
 	} else {
 		char message[CMD_MESSAGE_LEN];
-		sprintf_P(message, PSTR("*** WARNING *** Homing error: %c axis settings misconfigured"), cm_get_axis_char(axis));
-		cmd_conditional_message((char_t *)message);
+		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
+		cmd_add_conditional_message((char_t *)message);
 	}
 	cmd_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
@@ -372,8 +361,8 @@ static stat_t _homing_error_exit(int8_t axis)
 	return (STAT_HOMING_CYCLE_FAILED);			// homing state remains HOMING_NOT_HOMED
 }
 
-/* 
- * _homing_finalize_exit()
+/*
+ * _homing_finalize_exit() - helper to finalize homing
  */
 
 static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
@@ -386,14 +375,10 @@ static stat_t _homing_finalize_exit(int8_t axis)	// third part of return to home
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-//	cm.homing_state = HOMING_HOMED;
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
-//+++++ DIAGNOSTIC +++++
-//	printf("Homed: posX: %6.3f, posY: %6.3f\n", (double)gm.position[AXIS_X], (double)gm.target[AXIS_Y]);
 	return (STAT_OK);
 }
-
 
 /*
  * _get_next_axis() - return next axis in sequence based on axis in arg
@@ -466,7 +451,6 @@ static int8_t _get_next_axis(int8_t axis)
 #endif
 }
 
-
 /*
  * _get_next_axes() - return next axis in sequence based on axis in arg
  *
@@ -485,6 +469,7 @@ static int8_t _get_next_axis(int8_t axis)
  *	following condition to occur: A single axis is specified but it is
  *	disabled or inhibited - homing will say that it was successfully homed.
  */
+
 // _run_homing_dual_axis() - kernal routine for running homing on a dual axis
 //static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 

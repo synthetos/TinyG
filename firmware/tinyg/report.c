@@ -49,13 +49,18 @@ qrSingleton_t qr;
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  *
- * WARNING: Do not call this function from MED or HI interrupts (LO is OK) or there is 
+ * WARNING: Do not call this function from MED or HI interrupts (LO is OK) or there is
  *			a potential for deadlock in the TX buffer.
  */
 void rpt_exception(uint8_t status)
 {
-	printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
-		TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		printf_P(PSTR("{er:{fb:%0.2f,st:%d,msg:\"%s\"}}\n"),
+			TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	} else {
+		printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
+			TINYG_FIRMWARE_BUILD, status, get_status_message(status));
+	}
 }
 
 stat_t rpt_er(cmdObj_t *cmd)
@@ -72,7 +77,7 @@ stat_t rpt_er(cmdObj_t *cmd)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-void _startup_helper(stat_t status, const char_t *msg )
+void _startup_helper(stat_t status, const char_t *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
@@ -143,14 +148,14 @@ void rpt_print_system_ready_message(void)
  *		report in multi-line format. Additionally, a line starting with ? will put 
  *		the system into text mode.
  *
- *	  - Automatic status reports in text mode return CSV format according to $si setting
+ *	  - Automatic status reports in text mode return CSV format according to si setting
  */
 static stat_t _populate_unfiltered_status_report(void);
 static uint8_t _populate_filtered_status_report(void);
 
 uint8_t _is_stat(cmdObj_t *cmd)
 {
-	char_t tok[CMD_TOKEN_LEN+1];
+	char_t tok[TOKEN_LEN+1];
 	
 	GET_TOKEN_STRING(cmd->value, tok);
 	if (strcmp(tok, "stat") == 0) { return (true);}
@@ -167,7 +172,7 @@ void sr_init_status_report()
 {
 	cmdObj_t *cmd = cmd_reset_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
-	char_t sr_defaults[CMD_STATUS_REPORT_LEN][CMD_TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	char_t sr_defaults[CMD_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	cmd->index = cmd_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
@@ -175,7 +180,7 @@ void sr_init_status_report()
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
 		cmd->value = cmd_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
-		if (_is_stat(cmd) == true) 
+		if (_is_stat(cmd) == true)
 			sr.stat_index = cmd->value;					// identify index for 'stat' if status is in the report
 		cmd_set(cmd);
 		cmd_persist(cmd);								// conditionally persist - automatic by cmd_persis()
@@ -225,28 +230,32 @@ stat_t sr_set_status_report(cmdObj_t *cmd)
  */
 stat_t sr_request_status_report(uint8_t request_type)
 {
-	if (request_type == SR_IMMEDIATE_REQUEST) {
 #ifdef __ARM
+	if (request_type == SR_IMMEDIATE_REQUEST) {
 		sr.status_report_systick = SysTickTimer.getValue();
-#endif
-#ifdef __AVR
-		sr.status_report_systick = SysTickTimer_getValue();
-#endif
 	}
 	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
-#ifdef __ARM
 		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
+	}
 #endif
 #ifdef __AVR
-		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
-#endif
+	if (request_type == SR_IMMEDIATE_REQUEST) {
+		sr.status_report_systick = SysTickTimer_getValue();
 	}
+	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
+	}
+#endif
 	sr.status_report_requested = true;
 	return (STAT_OK);
 }
 
 stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
+#ifdef __SUPPRESS_STATUS_REPORTS
+	return (STAT_NOOP);
+#endif
+
 	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
 	if (sr.status_report_requested == false) return (STAT_NOOP);
 #ifdef __ARM
@@ -287,7 +296,7 @@ stat_t sr_run_text_status_report()
 static stat_t _populate_unfiltered_status_report()
 {
 	const char_t sr_str[] = "sr";
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no length checking required)
@@ -326,7 +335,7 @@ static uint8_t _populate_filtered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
@@ -338,7 +347,6 @@ static uint8_t _populate_filtered_status_report()
 		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
 
 		cmd_get_cmdObj(cmd);
-
 		// do not report values that have not changed...
 		// ...except for stat=3 (STOP), which is an exception
 		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
@@ -348,8 +356,7 @@ static uint8_t _populate_filtered_status_report()
 					continue;
 //				}
 //			}
-
-		// report anything that has changed
+			// report anything that has changed
 		} else {
 			strcpy(tmp, cmd->group);		// flatten out groups - WARNING - you cannot use strncpy here...
 			strcat(tmp, cmd->token);
@@ -463,6 +470,10 @@ void qr_request_queue_report(int8_t buffers)
  */
 stat_t qr_queue_report_callback() 		// called by controller dispatcher
 {
+#ifdef __SUPPRESS_QUEUE_REPORTS
+	return (STAT_NOOP);
+#endif
+
 	if (qr.queue_report_verbosity == QR_OFF) { return (STAT_NOOP);}
 	if (qr.queue_report_requested == false) { return (STAT_NOOP);}
 	qr.queue_report_requested = false;
@@ -473,6 +484,14 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 		} else  {
 			fprintf(stderr, "qr:%d, qi:%d, qo:%d\n", qr.buffers_available,qr.buffers_added,qr.buffers_removed);
 		}
+
+	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		if (qr.queue_report_verbosity == QR_SINGLE) {
+			fprintf(stderr, "{qr:%d}\n", qr.buffers_available);
+		} else {
+			fprintf(stderr, "{qr:%d,qi:%d,qo:%d}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+		}
+
 	} else {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
@@ -531,34 +550,6 @@ stat_t qo_get(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-/*********************
- * TEXT MODE SUPPORT *
- *********************/
-#ifdef __TEXT_MODE
-
-//static const char fmt_qr_single[] PROGMEM = "qr:%d\n";
-//static const char fmt_qr_triple[] PROGMEM = "qr:%d, qi:%d, qo:%d\n";
-static const char fmt_qr[] PROGMEM = "qr:%d\n";
-static const char fmt_qi[] PROGMEM = "qi:%d\n";
-static const char fmt_qo[] PROGMEM = "qo:%d\n";
-static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
-
-/*
-void qr_print_qr(cmdObj_t *cmd) { 
-	if (qr.queue_report_verbosity == QR_TRIPLE) {
-		text_print_int(cmd, fmt_qr);}
-		
-	}
-}
-*/
-void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
-void qr_print_qi(cmdObj_t *cmd) { text_print_int(cmd, fmt_qi);}
-void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}
-void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
-
-#endif // __TEXT_MODE
-
-
 /*****************************************************************************
  * JOB ID REPORTS
  *
@@ -572,7 +563,7 @@ void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
 stat_t job_populate_job_report()
 {
 	const char_t job_str[] = "job";
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
 	cmd->objtype = TYPE_PARENT; 			// setup the parent object
@@ -618,7 +609,9 @@ uint8_t job_report_callback()
 {
 	if (cfg.comm_mode == TEXT_MODE) {
 		// no-op, job_ids are client app state
-	} else {		
+	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+		fprintf(stderr, "{job:[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
+	} else {
 		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
 		//job_clear_report();
 	}
@@ -628,6 +621,23 @@ uint8_t job_report_callback()
 stat_t job_get(cmdObj_t *cmd) { return (job_populate_job_report());}
 stat_t job_set(cmdObj_t *cmd) { return (job_set_job_report(cmd));}
 void job_print_job(cmdObj_t *cmd) { job_populate_job_report();}
+
+/*********************
+ * TEXT MODE SUPPORT *
+ *********************/
+#ifdef __TEXT_MODE
+
+static const char fmt_qr[] PROGMEM = "qr:%d\n";
+static const char fmt_qi[] PROGMEM = "qi:%d\n";
+static const char fmt_qo[] PROGMEM = "qo:%d\n";
+static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
+
+void qr_print_qr(cmdObj_t *cmd) { text_print_int(cmd, fmt_qr);}
+void qr_print_qi(cmdObj_t *cmd) { text_print_int(cmd, fmt_qi);}
+void qr_print_qo(cmdObj_t *cmd) { text_print_int(cmd, fmt_qo);}
+void qr_print_qv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
+
+#endif // __TEXT_MODE
 
 
 /****************************************************************************

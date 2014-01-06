@@ -52,9 +52,8 @@
 #define M1_STEP_ANGLE 			1.8			// 1sa
 #define M1_TRAVEL_PER_REV		5.08		// 1tr
 #define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-#define M1_POLARITY				1			// 1po		0=normal, 1=reversed
+#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
-#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
@@ -62,15 +61,13 @@
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
 #define M2_POWER_MODE			1
-#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		2.1166666
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1
+#define M3_POLARITY				0
 #define M3_POWER_MODE			1
-#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
@@ -78,8 +75,11 @@
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
 #define M4_POWER_MODE			0
-#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -133,8 +133,8 @@
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			3600
 #define A_FEEDRATE_MAX			A_VELOCITY_MAX
-#define A_TRAVEL_MAX			-1000
-#define A_TRAVEL_MIN 			-1000					// -1000 means infinite, no limit
+#define A_TRAVEL_MAX			-1
+#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
 #define A_JERK_MAX				JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS				1
@@ -149,8 +149,8 @@
 #define B_AXIS_MODE				AXIS_DISABLED
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
-#define B_TRAVEL_MAX			-1000
-#define B_TRAVEL_MIN			-1000
+#define B_TRAVEL_MAX			-1
+#define B_TRAVEL_MIN			-1
 #define B_JERK_MAX				JERK_MAX
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
@@ -158,8 +158,8 @@
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
-#define C_TRAVEL_MAX			-1000
-#define C_TRAVEL_MIN			-1000
+#define C_TRAVEL_MAX			-1
+#define C_TRAVEL_MIN			-1
 #define C_JERK_MAX				JERK_MAX
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1

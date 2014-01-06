@@ -27,6 +27,7 @@
 
 // regression test files
 #ifdef __CANNED_TESTS
+
 #include "tests/test_001_smoke.h" 			// basic functionality
 #include "tests/test_002_homing.h"			// G28.1 homing cycles
 #include "tests/test_003_squares.h"			// square moves
@@ -43,6 +44,7 @@
 #include "tests/test_014_microsteps.h"		// test all microstep settings
 #include "tests/test_050_mudflap.h"			// mudflap test - entire drawing
 #include "tests/test_051_braid.h"			// braid test - partial drawing
+
 #endif
 
 #ifdef __TEST_99
@@ -60,6 +62,7 @@ uint8_t run_test(cmdObj_t *cmd)
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
+
 		case 1: { xio_open(XIO_DEV_PGM, PGMFILE(&test_smoke),PGM_FLAGS); break;}
 		case 2: { xio_open(XIO_DEV_PGM, PGMFILE(&test_homing),PGM_FLAGS); break;}
 		case 3: { xio_open(XIO_DEV_PGM, PGMFILE(&test_squares),PGM_FLAGS); break;}
@@ -104,11 +107,18 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("M6\n");
 //	xio_queue_RX_string_usb("M6T4\n");
 //	xio_queue_RX_string_usb("$tool\n");
-//	xio_queue_RX_string_usb("$ud\n");
 
-/* Run test file - __TEST_99 must be enabled*/
-//	xio_queue_RX_string_usb("$test=99\n");		// run test file in text mode - __TEXT_MODE must be enabled
-	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file in JSON mode
+/* Run test file */
+//	xio_queue_RX_string_usb("$test=99\n");		// run test file
+//	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
+	xio_queue_RX_string_usb("{test:99}\n");		// run test file
+
+//	xio_queue_RX_string_usb("g0 y50\n");		// medium Y line
+//	xio_queue_RX_string_usb("g0 y0\n");			// return Y to zero
+
+//	xio_queue_RX_string_usb("g28.2z0\n");
+//	xio_queue_RX_string_usb("{\"jogx\":1}\n");
+//	xio_queue_RX_string_usb("{\"uda\":{\"0\":\"0x4\"}}\n");
 
 /* Other command sequences */
 //	xio_queue_RX_string_usb("H\n");				// show help file
@@ -146,17 +156,15 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line
-//	xio_queue_RX_string_usb("g0 x0.02\n");		// shortest executable line (about)
 //	xio_queue_RX_string_usb("g0 x0.04\n");		// very short line
 //	xio_queue_RX_string_usb("g0 x0.08\n");
 //	xio_queue_RX_string_usb("g0 x0.12\n");
-//	xio_queue_RX_string_usb("g0 x20\n");
-//	xio_queue_RX_string_usb("g0 x20y20\n");
-//	xio_queue_RX_string_usb("g0 x-300 y-400\n");
+//	xio_queue_RX_string_usb("g0 x20\n");		// medium line
+//	xio_queue_RX_string_usb("g0 x2000\n");		// exceed soft limits
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
-//	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x0\n");
+//	xio_queue_RX_string_usb("g0 x2\n");
 //	xio_queue_RX_string_usb("g0 x3\n");
 //	xio_queue_RX_string_usb("g0 y3\n");
 //	xio_queue_RX_string_usb("g0 x10\n");

@@ -33,23 +33,19 @@
  *
  *    - The DDA is not used as a 'ramp' for acceleration management. Accel is computed 
  *		upstream in the motion planner as 3rd order (controlled jerk) equations. These
- *		generate accel/decel segments that rae passed to the DDA for step output.
+ *		generate accel/decel segments that are passed to the DDA for step output.
  *
- *	  - The DDA accepts and processes fractional motor steps as floating point (doubles) 
+ *	  - The DDA accepts and processes fractional motor steps as floating point nuymbers 
  *		from the planner. Steps do not need to be whole numbers, and are not expected to be. 
  *		The step values are converted to integer by multiplying by a fixed-point precision 
  *		(DDA_SUBSTEPS, 100000). Rounding is performed to avoid a truncation bias.
- *
- *		If you enable the step diagnostics you will see that the planner and exec functions
- *		accurately generate the right number of fractional steps for the move during the 
- *		accel/cruise/decel phases. The theoretical value and the calculated value collected
- *		in steps_total agree to within 0.0001% or better.
  *
  *    - Constant Rate DDA clock: The DDA runs at a constant, maximum rate for every 
  *		segment regardless of actual step rate required. This means that the DDA clock 
  *		is not tuned to the step rate (or a multiple) of the major axis, as is typical
  *		for most DDAs. Running the DDA flat out might appear to be "wasteful", but it ensures 
- *		that the best aliasing results are achieved.
+ *		that the best aliasing results are achieved, and is part of maintaining step accuracy 
+ *		across motion segments.
  *
  *		The observation is that TinyG is a hard real-time system in which every clock cycle 
  *		is knowable and can be accounted for. So if the system is capable of sustaining
@@ -245,9 +241,6 @@
 #ifndef STEPPER_H_ONCE
 #define STEPPER_H_ONCE
 
-// enable debug diagnostics
-//#define __STEP_DIAGNOSTICS	// Uncomment this only for debugging. Steals valuable cycles.
-
 /*********************************
  * Stepper configs and constants *
  *********************************/
@@ -256,32 +249,32 @@
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
-enum stMotorPowerState {			// used w/start and stop flags to sequence motor power
-	MOTOR_OFF = 0,					// motor is stopped and deenergized
-	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
-	MOTOR_TIME_IDLE_TIMEOUT,		// run idle timeout
-	MOTOR_START_IDLE_TIMEOUT,		// transitional state to start idle timers
-	MOTOR_STOPPED,					// motor is stopped and fully energized
-	MOTOR_RUNNING					// motor is running (and fully energized)
+enum motorPowerState {					// used w/start and stop flags to sequence motor power
+	MOTOR_OFF = 0,						// motor is stopped and deenergized
+	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
+	MOTOR_TIME_IDLE_TIMEOUT,			// run idle timeout
+	MOTOR_START_IDLE_TIMEOUT,			// transitional state to start idle timers
+	MOTOR_STOPPED,						// motor is stopped and fully energized
+	MOTOR_RUNNING						// motor is running (and fully energized)
 };
 
-enum stStepperPowerMode {
-	MOTOR_ENERGIZED_DURING_CYCLE=0,	// motor is fully powered during cycles
-	MOTOR_IDLE_WHEN_STOPPED,		// idle motor shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (not implemented yet)
-	DYNAMIC_MOTOR_POWER				// adjust motor current with velocity (not implemented yet)
+enum motorPowerMode {
+	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
+	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
+	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
+	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
 };
 
-enum stPrepBufferState {
-	PREP_BUFFER_OWNED_BY_LOADER = 0,// staging buffer is ready for load
-	PREP_BUFFER_OWNED_BY_EXEC		// staging buffer is being loaded
+enum prepBufferState {
+	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
+	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
 };
 
 // Stepper power management settings
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define IDLE_TIMEOUT_SECONDS_MIN 	(double)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
-#define IDLE_TIMEOUT_SECONDS_MAX	(double)4294967	// (4294967295/1000) -- for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS 		(double)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define IDLE_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
+#define IDLE_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
+#define IDLE_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
@@ -294,8 +287,20 @@ enum stPrepBufferState {
  *
  *	This value is set for maximum accuracy; best not to mess with this.
  */
-#define DDA_SUBSTEPS (double)5000000	// 5,000,000 accumulates substeps to max decimal places
-//#define DDA_SUBSTEPS (double)100000	// 100,000 accumulates substeps to 6 decimal places
+#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
+
+/* Step correction settings
+ *	Step correction settings determine how the encoder error is fed back to correct position.
+ *	Since the following error is running 2 segments behind the current segment you have to be careful 
+ *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
+ *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
+ *	and error will grow instead of shrink
+ */
+
+#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
+#define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
+#define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
+#define STEP_CORRECTION_HOLDOFF		 	 	  3		// minimum number of segments to wait between error correction
 
 /*
  * Stepper control structures
@@ -318,9 +323,9 @@ enum stPrepBufferState {
 
 typedef struct stConfigMotor {		// per-motor configs
 	uint8_t	motor_map;				// map motor to axis
-  	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
+	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
- 	uint8_t power_mode;				// See stepper.h for enum
+	uint8_t power_mode;				// See stepper.h for enum
 	float power_level;				// set 0.000 to 1.000 for PMW vref setting
 	float step_angle;				// degrees per whole step (ex: 1.8)
 	float travel_rev;				// mm or deg of travel per motor revolution
@@ -344,8 +349,7 @@ typedef struct stRunMotor { 		// one per controlled motor
 } stRunMotor_t;
 
 typedef struct stRunSingleton {		// Stepper static values and axis parameters
-	uint16_t magic_start;			// magic number to test memory integrity	
-//	uint8_t last_segment_flagged;	// flag from PREP to use during STEP
+	uint16_t magic_start;			// magic number to test memory integrity
 	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];		// runtime motor structures
@@ -356,23 +360,24 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
+	uint8_t direction_change;		// set true if direction changed
 	int8_t step_sign;				// set to +1 or -1 for encoders
 	int8_t direction;				// travel direction corrected for polarity
-	uint8_t direction_change;		// set true if direction changed
 	uint32_t substep_increment; 	// total steps in axis times substep factor
+	int32_t correction_holdoff;		// count down segments between corrections
+	float correction_steps;			// steps to correct from each segment
+	float correction_residual;		// holds and decrements correction term
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
-	uint16_t magic_start;			// magic number to test memory integrity	
-	volatile uint8_t exec_state;	// move execution state 
+	uint16_t magic_start;			// magic number to test memory integrity
+	volatile uint8_t exec_state;	// move execution state
 	uint8_t move_type;				// move type
-	uint8_t cycle_start;			// new cycle: reset steppers
-	uint8_t last_segment;		// flag from EXEC signalling last segment of a move
-//	uint8_t last_segment_done;		// signals last segment has finished
-
+	
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
+	float correction_steps;			// temporary register for correction value (in fractional steps)
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
@@ -382,11 +387,15 @@ extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are p
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_init_assertions(void);
+stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
+
+void st_reset(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
-stat_t st_assertions(void);
-
+stat_t st_clc(cmdObj_t *cmd);
+	
 void st_energize_motors(void);
 void st_deenergize_motors(void);
 void st_set_motor_power(const uint8_t motor);
@@ -394,8 +403,8 @@ stat_t st_motor_power_callback(void);
 
 void st_request_exec_move(void);
 void st_prep_null(void);
-void st_prep_dwell(double microseconds);
-stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment_flagged);
+void st_prep_dwell(float microseconds);
+stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[]);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
@@ -405,7 +414,6 @@ stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
 stat_t st_set_mp(cmdObj_t *cmd);
-stat_t st_clc(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 

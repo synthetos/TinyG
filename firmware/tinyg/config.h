@@ -188,12 +188,12 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
 // Stuff you probably don't want to change 
 
-#define NO_MATCH (index_t)0xFFFF
-#define CMD_GROUP_LEN 3				// max length of group prefix
-#define CMD_TOKEN_LEN 5				// mnemonic token string: group prefix + short token
+#define GROUP_LEN 3					// max length of group prefix
+#define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
 #define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
 #define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
+#define NO_MATCH (index_t)0xFFFF
 
 #define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
 #define NVM_BASE_ADDR 0x0000		// base address of usable NVM
@@ -228,7 +228,7 @@ enum objType {						// object / value typing for config and JSON
 	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
 	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,						// value is "true" (1) or "false"(0)
-	TYPE_INTEGER,					// value is uint32_t
+	TYPE_INTEGER,					// value is a uint32_t
 	TYPE_DATA,						// value is blind cast to uint32_t
 	TYPE_FLOAT,						// value is a floating point number
 	TYPE_STRING,					// value is in string field
@@ -269,8 +269,8 @@ typedef struct cmdObject {				// depending on use, not all elements may be popul
 	int8_t objtype;						// see objType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
-	char_t token[CMD_TOKEN_LEN+1];		// full mnemonic token for lookup
-	char_t group[CMD_GROUP_LEN+1];		// group prefix or NUL if not in a group
+	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
+	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
 } cmdObj_t; 							// OK, so it's not REALLY an object
 
@@ -278,8 +278,8 @@ typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
 typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
 
 typedef struct cfgItem {
-	char_t group[CMD_GROUP_LEN+1];		// group prefix (with NUL termination)
-	char_t token[CMD_TOKEN_LEN+1];		// token - stripped of group prefix (w/NUL termination)
+	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
+	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
 //	const char_t *format;				// pointer to formatted print string in FLASH
@@ -289,6 +289,7 @@ typedef struct cfgItem {
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
+
 
 /**** static allocation and definitions ****/
 
@@ -354,7 +355,7 @@ cmdObj_t *cmd_add_object(const char_t *token);
 cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value);
 cmdObj_t *cmd_add_float(const char_t *token, const float value);
 cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
-cmdObj_t *cmd_conditional_message(const char_t *string);
+cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);

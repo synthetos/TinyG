@@ -34,7 +34,7 @@
       </OverrideVtorValue>
       <Channel>
         <host>127.0.0.1</host>
-        <port>1226</port>
+        <port>1177</port>
         <ssl>False</ssl>
       </Channel>
     </com_atmel_avrdbg_tool_simulator>
@@ -177,7 +177,7 @@
     <Compile Include="settings\settings_lumenlabMicRoV3.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_otherlab.h">
+    <Compile Include="settings\settings_othercutter.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">

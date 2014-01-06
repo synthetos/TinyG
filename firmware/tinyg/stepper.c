@@ -43,7 +43,6 @@
 stConfig_t st_cfg;
 static stRunSingleton_t st_run;
 static stPrepSingleton_t st_pre;
-//static stEncoders_t enc;
 
 /**** Setup local functions ****/
 
@@ -70,15 +69,7 @@ static void _request_load_move(void);
 void stepper_init()
 {
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
-	st_run.magic_end = MAGICNUM;
-	st_run.magic_start = MAGICNUM;
-	st_pre.magic_end = MAGICNUM;
-	st_pre.magic_start = MAGICNUM;
-
-
-#ifdef __STEP_DIAGNOSTICS
-	_clear_step_diagnostics();
-#endif
+	stepper_init_assertions();
 
 	// Configure virtual ports
 	PORTCFG.VPCTRLA = PORTCFG_VP0MAP_PORT_MOTOR_1_gc | PORTCFG_VP1MAP_PORT_MOTOR_2_gc;
@@ -100,58 +91,41 @@ void stepper_init()
 	TIMER_DWELL.INTCTRLA = TIMER_DWELL_INTLVL;	// interrupt mode
 
 	// setup software interrupt load timer
-	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
-	TIMER_LOAD.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;		// turn timer off
+	TIMER_LOAD.CTRLB = LOAD_TIMER_WGMODE;		// waveform mode
 	TIMER_LOAD.INTCTRLA = TIMER_LOAD_INTLVL;	// interrupt mode
-	TIMER_LOAD.PER = SWI_PERIOD;				// set period
+	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;			// set period
 
 	// setup software interrupt exec timer
-	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;		// turn timer off
-	TIMER_EXEC.CTRLB = STEP_TIMER_WGMODE;		// waveform mode
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;		// turn timer off
+	TIMER_EXEC.CTRLB = EXEC_TIMER_WGMODE;		// waveform mode
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
-	TIMER_EXEC.PER = SWI_PERIOD;				// set period
+	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
 
-//	st_pre.cycle_start = true;					// setup accumulator and other values
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+	st_reset();									// reset steppers to known state
 }
 
 /*
- * st_assertions() - test assertions, return error code if violation exists
+ * stepper_init_assertions() - test assertions, return error code if violation exists
+ * stepper_test_assertions() - test assertions, return error code if violation exists
  */
-stat_t st_assertions()
+
+void stepper_init_assertions()
+{
+	st_run.magic_end = MAGICNUM;
+	st_run.magic_start = MAGICNUM;
+	st_pre.magic_end = MAGICNUM;
+	st_pre.magic_start = MAGICNUM;
+}
+
+stat_t stepper_test_assertions()
 {
 	if (st_run.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	if (st_run.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	if (st_pre.magic_end	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	if (st_pre.magic_start	!= MAGICNUM) return (STAT_STEPPER_ASSERTION_FAILURE);
 	return (STAT_OK);
-}
-
-/*
- * st_cycle_start() - Initializes values for beginning a new cycle.
- * st_cycle_end()
- * st_clc()
- *
- * st_cycle_start() is called from cm_cycle_start().  
- */
-
-void st_cycle_start(void)
-{
-	st_pre.cycle_start = true;		// triggers stepper resets
-	en_reset_encoders();			// see explanation in en_reset_encoders()
-}
-
-void st_cycle_end(void)
-{
-#ifdef __STEP_DIAGNOSTICS
-	en_print_encoders();
-#endif
-}
-
-stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
-{
-	st_cycle_end();
-	return(STAT_OK);
 }
 
 /*
@@ -163,6 +137,36 @@ uint8_t stepper_isbusy()
 		return (false);
 	} 
 	return (true);
+}
+
+/*
+ * st_reset() - reset stepper internals
+ * st_cycle_start() - Initializes values for beginning a new cycle (called from cm_cycle_start())
+ * st_cycle_end()
+ */
+
+void st_reset()
+{
+	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
+	en_reset_encoders();
+	for (uint8_t i=0; i<MOTORS; i++) {
+		st_pre.mot[i].direction_change = true;
+		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
+	}
+}
+
+void st_cycle_start(void) 
+{
+}
+
+void st_cycle_end(void)
+{
+}
+
+stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
+{
+	st_reset();
+	return(STAT_OK);
 }
 
 /*
@@ -257,9 +261,9 @@ stat_t st_motor_power_callback() 	// called by controller
 				}
 			}
 
-//		} else if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// ARM ONLY
+//		} else if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
 			
-//		} else if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// ARM ONLY
+//		} else if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// future
 			
 		}
 	}
@@ -280,27 +284,28 @@ stat_t st_motor_power_callback() 	// called by controller
  *	it's faster than using indexed timer and port accesses. I checked.
  *	Even when -0s or -03 is used.
  */
+
 ISR(TIMER_DDA_ISR_vect)
 {
 	if ((st_run.mot[MOTOR_1].substep_accumulator += st_run.mot[MOTOR_1].substep_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
 		st_run.mot[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		en.en[MOTOR_1].steps_run += en.en[MOTOR_1].step_sign;	
+		INCREMENT_ENCODER(MOTOR_1);
 	}
 	if ((st_run.mot[MOTOR_2].substep_accumulator += st_run.mot[MOTOR_2].substep_increment) > 0) {
 		PORT_MOTOR_2_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_2].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		en.en[MOTOR_2].steps_run += en.en[MOTOR_2].step_sign;	
+		INCREMENT_ENCODER(MOTOR_2);
 	}
 	if ((st_run.mot[MOTOR_3].substep_accumulator += st_run.mot[MOTOR_3].substep_increment) > 0) {
 		PORT_MOTOR_3_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_3].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		en.en[MOTOR_3].steps_run += en.en[MOTOR_3].step_sign;	
+		INCREMENT_ENCODER(MOTOR_3);
 	}
 	if ((st_run.mot[MOTOR_4].substep_accumulator += st_run.mot[MOTOR_4].substep_increment) > 0) {
 		PORT_MOTOR_4_VPORT.OUT |= STEP_BIT_bm;
 		st_run.mot[MOTOR_4].substep_accumulator -= st_run.dda_ticks_X_substeps;
-		en.en[MOTOR_4].steps_run += en.en[MOTOR_4].step_sign;	
+		INCREMENT_ENCODER(MOTOR_4);
 	}
 
 	// pulse stretching for using external drivers.- turn step bits off
@@ -315,6 +320,7 @@ ISR(TIMER_DDA_ISR_vect)
 	_load_move();										// load the next move
 }
 
+
 ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
  		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
@@ -324,20 +330,20 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 }
 
 ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
 	_load_move();
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = STEP_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-   	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-	   	if (mp_exec_move() != STAT_NOOP) {
-		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-		   	_request_load_move();
-	   	}
-   	}
+	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+		if (mp_exec_move() != STAT_NOOP) {
+			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+			_request_load_move();
+		}
+	}
 }
 
 /****************************************************************************************
@@ -354,18 +360,18 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 
 void st_request_exec_move()
 {
-	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
-		TIMER_EXEC.PER = SWI_PERIOD;
-		TIMER_EXEC.CTRLA = STEP_TIMER_ENABLE;			// trigger a LO interrupt
+	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
+		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
+		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
 	}
 }
 
 static void _request_load_move()
 {
 	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
-		TIMER_LOAD.PER = SWI_PERIOD;
-		TIMER_LOAD.CTRLA = STEP_TIMER_ENABLE;			// trigger a HI interrupt
-	} 	// else don't bother to interrupt. You'll just trigger an 
+		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
+		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
+	} 	// else don't bother to interrupt. You'll just trigger an
 		// interrupt and find out the load routine is not ready for you
 }
 
@@ -376,6 +382,7 @@ static void _request_load_move()
  *	higher level as the DDA or dwell ISR. A software interrupt has been 
  *	provided to allow a non-ISR to request a load (see st_request_load_move())
  */
+
 static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
@@ -391,16 +398,6 @@ static void _load_move()
 
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
-
-		//**** initializations and state management ****
-
-		if (st_pre.cycle_start == true) {						// setup direction bits and initial accumulator value
-			st_pre.cycle_start = false;
-			for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-				st_pre.mot[motor].direction_change = true;
-				st_run.mot[motor].substep_accumulator = 0; 			// will become max negative during per-motor setup;
-			}
-		}
 
 		//**** setup the new segment ****
 
@@ -429,7 +426,7 @@ static void _load_move()
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
-			en.en[MOTOR_1].step_sign = st_pre.mot[MOTOR_1].step_sign;	// transfer in the signed step increment
+			SET_ENCODER_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
@@ -438,8 +435,7 @@ static void _load_move()
 			}
 		}
 		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
-		en.en[MOTOR_1].position_steps += en.en[MOTOR_1].steps_run;		// NB: steps_run can be + or - value
-		en.en[MOTOR_1].steps_run = 0;
+		ACCUMULATE_ENCODER(MOTOR_1);
 
 		//**** MOTOR_2 LOAD ****
 
@@ -452,15 +448,14 @@ static void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
-			en.en[MOTOR_2].step_sign = st_pre.mot[MOTOR_2].step_sign;
+			SET_ENCODER_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_2].position_steps += en.en[MOTOR_2].steps_run;
-		en.en[MOTOR_2].steps_run = 0;
+		ACCUMULATE_ENCODER(MOTOR_2);
 
 		//**** MOTOR_3 LOAD ****
 
@@ -473,15 +468,14 @@ static void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
-			en.en[MOTOR_3].step_sign = st_pre.mot[MOTOR_3].step_sign;
+			SET_ENCODER_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_3].position_steps += en.en[MOTOR_3].steps_run;
-		en.en[MOTOR_3].steps_run = 0;
+		ACCUMULATE_ENCODER(MOTOR_3);
 
 		//**** MOTOR_4 LOAD ****
 
@@ -494,15 +488,14 @@ static void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
-			en.en[MOTOR_4].step_sign = st_pre.mot[MOTOR_4].step_sign;
+			SET_ENCODER_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
 			}
 		}
-		en.en[MOTOR_4].position_steps += en.en[MOTOR_4].steps_run;
-		en.en[MOTOR_4].steps_run = 0;
+		ACCUMULATE_ENCODER(MOTOR_4);
 
 		//**** do this last ****
 
@@ -530,39 +523,27 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	  - steps[] are signed relative motion in steps for each motor. Steps are floats 
+ *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
  *		that typically have fractional values (fractional steps). The sign indicates
  *		direction. Motors that are not in the move should be 0 steps on input.
  *
- *	  - microseconds - how many microseconds the segment should run. If timing is not 
+ *	  - microseconds - how many microseconds the segment should run. If timing is not
  *		100% accurate this will affect the move velocity, but not the distance traveled.
  *
- *	  - target[] is a vector used to record the next target position for use by the encoders. 
- *		When new_target is true, target should contain the endpoint position of the current 
- *		move. 
+ *	  - step_error[] is a vector of measured errors to the step count. Used for correction.
  *
- *	  - new_target is a flag to signal that the target should be captured. It's passed 
- *		as a pointer so it can be reset from within this function.
- *
- * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
+ * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
- *
- * NOTE:  The handling of the last_segment flag is a bit squirrely. If last_segment is true 
- *		  in the input args then st_pre.last_segment is set at the END of that prep call.
- *		  On the NEXT prep call st_pre.last_segment is acted on and reset. This synchronizes
- *		  the prep with the LOAD and STEP that actually delivered the last segment. If the 
- *		  last_segment is indeed the last segment of the moves in the planner the final prep 
- *		  will never be called - but this is OK as no more correction is required or possible.
  */
 
-stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
+stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[])
 {
 	// trap conditions that would prevent queueing the line
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (STAT_INTERNAL_ERROR);
-	} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));
-	} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));
-	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
+	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
+		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
+		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
+		} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
@@ -572,83 +553,63 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
-	en_update_position_steps_advisory(steps);					 // add steps to encoder as a diagnostic
-	if (st_pre.last_segment == true) en_sample_position_error(); // take a sample for use in correction below
-
 	// setup motor parameters
 
 	uint8_t previous_direction;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
-        if (fp_ZERO(steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
+		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
-		// Direction - set the direction, compensating for polarity. 
-		// Set the step_sign which is used by the stepper IRQ to accumulate step position
+		// Direction - set the direction, compensating for polarity.
+		// Set the step_sign which is used by the stepper ISR to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
 		previous_direction = st_pre.mot[i].direction;
-		if (steps[i] >= 0) {					// positive direction
+		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
-		} else {			
+		} else {
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
-		// error term processing - try positive errors first
+#ifdef __STEP_CORRECTION
+		// 'Nudge2' correction strategy. Inject a single, scaled correction value then hold off
 
-/*
-		if (st_pre.last_segment == true) {
-			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				steps[i] -= max(0, en.en[i].position_error_steps); // try to remove some steps
-			} else if (en.en[i].position_error_steps < -ERROR_CORRECTION_THRESHOLD) {
-				steps[i] += en.en[i].position_error_steps; 		   // add some steps
-			}
-		}
-*/
+		if ((--st_pre.mot[i].correction_holdoff < 0) && 
+			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
+			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
+			st_pre.mot[i].correction_residual = following_error[i];
+			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
 
-		if (st_pre.last_segment == true) {
-			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				if (steps[i] > en.en[i].position_error_steps) {
-					steps[i] -= en.en[i].position_error_steps;		// remove some steps
-//					printf("%li",en.en[i].position_error_steps);
-				}
-			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				steps[i] -= en.en[i].position_error_steps;			// add some steps
-//				printf("%li",en.en[i].position_error_steps);
-			}
+			if (st_pre.mot[i].correction_steps > 0) {
+				st_pre.mot[i].correction_steps = min3(st_pre.mot[i].correction_steps, 
+													  fabs(travel_steps[i]), 
+													  STEP_CORRECTION_MAX); }
+			else {
+				st_pre.mot[i].correction_steps = max3(st_pre.mot[i].correction_steps, 
+													  -fabs(travel_steps[i]), 
+													  -STEP_CORRECTION_MAX); }
+
+			travel_steps[i] += st_pre.mot[i].correction_steps;
+
+//#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
+//			if (i==1) printf("Z");
+//			if (i==2) printf("Y");
+//			if (i==3) printf("X");
+//#endif
 		}
-/*
-		if (st_pre.last_segment == true) {
-			if (en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				if (steps[i] > ERROR_CORRECTION_THRESHOLD) {
-					steps[i] -= 1;									// remove a step
-					printf("-");
-				}
-			} else if (-en.en[i].position_error_steps > ERROR_CORRECTION_THRESHOLD) {
-				steps[i] += 1;
-				printf("+");
-			}
-		}
-*/
-		// Compute substeb increment. The accumulator must be *exactly* the incoming 
-		// fractional steps times the substep multipler or positional drift will occur. 
-		// Rounding is performed to eliminate a negative bias in the int32 conversion 
+
+#endif
+		// Compute substeb increment. The accumulator must be *exactly* the incoming
+		// fractional steps times the substep multiplier or positional drift will occur.
+		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
-		st_pre.mot[i].substep_increment = round(fabs(steps[i] * DDA_SUBSTEPS));
+		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
 	}
-
-	// Process last segment flag and encoder. See encoder.h for details
-	// Note: last_segment flag is grabbed AFTER all processing is done so it's actually
-	// used by the next pass through PREP. This eliminates having to send the flag down 
-	// through LOAD and STEP and picking it up again here.
-
-	if (st_pre.last_segment == true) st_pre.last_segment = false;
-	st_pre.last_segment = last_segment;			// capture flag so it's used next time
-
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
 }
@@ -658,6 +619,7 @@ stat_t st_prep_line(float steps[], float microseconds, uint8_t last_segment)
  *
  *	Used by M codes, tool and spindle changes
  */
+
 void st_prep_null()
 {
 	st_pre.move_type = MOVE_TYPE_NULL;
@@ -666,7 +628,8 @@ void st_prep_null()
 /* 
  * st_prep_dwell() 	 - Add a dwell to the move buffer
  */
-void st_prep_dwell(double microseconds)
+
+void st_prep_dwell(float microseconds)
 {
 	st_pre.move_type = MOVE_TYPE_DWELL;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
@@ -679,6 +642,7 @@ void st_prep_dwell(double microseconds)
  *	For now the microsteps is the same as the microsteps (1,2,4,8)
  *	This may change if microstep morphing is implemented.
  */
+
 static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
 {
 #ifdef __ARM
@@ -722,10 +686,9 @@ static int8_t _get_motor(const index_t index)
 {
 	char_t *ptr;
 	char_t motors[] = {"123456"};
-	char_t tmp[CMD_TOKEN_LEN+1];
-	
-//	strncpy_P(tmp, cfgArray[index].group, CMD_GROUP_LEN);
-	strcpy_P(tmp, cfgArray[index].group);	// assumes group strings in the array are well behaved
+	char_t tmp[TOKEN_LEN+1];
+
+	strcpy_P(tmp, cfgArray[index].group);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);
 	}
@@ -740,9 +703,6 @@ static int8_t _get_motor(const index_t index)
 static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
 {
 	uint8_t m = _get_motor(cmd->index);
-//	st_cfg.mot[m].steps_per_unit = (360 / (st_cfg.mot[m].step_angle / st_cfg.mot[m].microsteps) / st_cfg.mot[m].travel_rev);
-//	st_cfg.mot[m].units_per_step = st_cfg.mot[m].travel_rev / (360 / st_cfg.mot[m].step_angle) / st_cfg.mot[m].microsteps;
-//	faster and more numerically accurate formulation of the above:
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
@@ -764,7 +724,7 @@ stat_t st_set_tr(cmdObj_t *cmd)			// motor travel per revolution
 stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 {
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
+		cmd_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
 	}
 	set_ui8(cmd);							// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);

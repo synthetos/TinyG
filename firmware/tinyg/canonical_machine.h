@@ -47,7 +47,7 @@ extern "C"{
 #define _to_millimeters(a) ((cm.gm.units_mode == INCHES) ? (a * MM_PER_INCH) : a)
 
 #define JOGGING_START_VELOCITY ((float)10.0)
-//#define DISABLE_SOFT_LIMIT (-1000000)
+#define DISABLE_SOFT_LIMIT (-1000000)
 
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
@@ -214,6 +214,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	// system group settings
 	float junction_acceleration;	// centripetal acceleration max for cornering
 	float chordal_tolerance;		// arc chordal accuracy setting in mm
+	uint8_t soft_limit_enable;
 
 	// hidden system settings
 	float min_segment_len;			// line drawing resolution in mm
@@ -263,7 +264,6 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 /**** Externs - See canonical_machine.c for allocation ****/
 
 extern cmSingleton_t cm;		// canonical machine controller singleton
-
 
 /*****************************************************************************
  * 
@@ -529,16 +529,18 @@ void cm_set_move_times(GCodeState_t *gcode_state);
 
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
-void cm_conditional_set_model_position(stat_t status);
+void cm_set_model_position(stat_t status);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
 
 void canonical_machine_init(void);
+void canonical_machine_init_assertions(void);
+stat_t canonical_machine_test_assertions(void);
+
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
 stat_t cm_clear(cmdObj_t *cmd);
-stat_t cm_assertions(void);
 
 stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
@@ -688,6 +690,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 
 	void cm_print_ja(cmdObj_t *cmd);		// global CM settings
 	void cm_print_ct(cmdObj_t *cmd);
+	void cm_print_sl(cmdObj_t *cmd);
 	void cm_print_ml(cmdObj_t *cmd);
 	void cm_print_ma(cmdObj_t *cmd);
 	void cm_print_ms(cmdObj_t *cmd);
@@ -743,6 +746,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 
 	#define cm_print_ja tx_print_stub		// global CM settings
 	#define cm_print_ct tx_print_stub
+	#define cm_print_sl tx_print_stub
 	#define cm_print_ml tx_print_stub
 	#define cm_print_ma tx_print_stub
 	#define cm_print_ms tx_print_stub

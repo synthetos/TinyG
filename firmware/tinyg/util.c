@@ -169,7 +169,7 @@ float max4(float x1, float x2, float x3, float x4)
  */
 
 /*
-uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
+char_t * strcpy_U( char_t * dst, const char_t * src )
 {
 	uint16_t index = 0;
 	do {
@@ -213,14 +213,13 @@ char_t *escape_string(char_t *dst, char_t *src)
 char_t *pstr2str(const char_t *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(shared_buf, pgm_string, SHARED_BUF_LEN);
+	strncpy_P(shared_buf, pgm_string, MESSAGE_LEN);
 	return (shared_buf);
 #endif
 #ifdef __ARM
 	return (pgm_string);
 #endif
 }
-
 /* 
  * compute_checksum() - calculate the checksum for a string
  * 

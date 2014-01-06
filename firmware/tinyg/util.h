@@ -81,7 +81,7 @@ float max4(float x1, float x2, float x3, float x4);
 //*** string utilities ***
 
 //#ifdef __ARM
-//uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src );
+//char_t * strcpy_U( char_t * dst, const char_t * src );
 //#endif
 
 uint8_t isnumber(char_t c);
@@ -119,8 +119,8 @@ uint32_t SysTickTimer_getValue(void);
 #endif
 
 #ifndef EPSILON
-//#define EPSILON		((float)0.00001)		// allowable rounding error for floats
-#define EPSILON 	((float)0.000001)		// allowable rounding error for floats
+#define EPSILON		((float)0.00001)		// allowable rounding error for floats
+//#define EPSILON 	((float)0.000001)		// allowable rounding error for floats
 #endif
 
 #ifndef fp_EQ

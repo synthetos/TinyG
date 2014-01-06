@@ -64,7 +64,6 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 } cfgParameters_t;
 extern cfgParameters_t cfg;
 
-
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
  * Functions to get and set variables from the cfgArray table
@@ -102,7 +101,6 @@ uint8_t job_report_callback();
 	#define co_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
-
 
 #ifdef __cplusplus
 }

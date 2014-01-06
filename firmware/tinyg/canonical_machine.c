@@ -92,6 +92,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "spindle.h"
 #include "report.h"
 #include "gpio.h"
@@ -383,7 +384,7 @@ void cm_set_model_target(float target[], float flag[])
 }
 
 /* 
- * cm_conditional_set_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
  *
  * 	This routine sets the endpoint position in the gccode model if the move was 
  *	successfully completed (no errors). Leaving the endpoint position alone for 
@@ -394,8 +395,7 @@ void cm_set_model_target(float target[], float flag[])
  *	the planner(s) and steppers will still be processing the action and the real tool 
  *	position is still close to the starting point. 
  */
-
-void cm_conditional_set_model_position(stat_t status) 
+void cm_set_model_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, cm.gm.target);
 }
@@ -514,25 +514,21 @@ void cm_set_move_times(GCodeState_t *gcode_state)
  */
 stat_t cm_test_soft_limits(float target[])
 {
-    // don't test any soft limits while homing... we don't know where we are yet.
-    if( cm.cycle_state == CYCLE_HOMING )
-        return (STAT_OK);
-    
-    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//        if (cm.homed[axis] != true) continue;             this test fails during homing cycle, not sure why...
-        
-        // min == max; limits disabled for this axis
-        if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
+	if (cm.soft_limit_enable == true) {
+		for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+			if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
 
-        if ((target[axis] < cm.a[axis].travel_min)) {
-            return (STAT_SOFT_LIMIT_EXCEEDED);
-        }
+			if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
 
-        if ((target[axis] > cm.a[axis].travel_max)) {
-            return (STAT_SOFT_LIMIT_EXCEEDED);
-        }
-    }
-    
+			if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
+
+			if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
+		}
+	}
 	return (STAT_OK);
 }
 
@@ -556,12 +552,7 @@ void canonical_machine_init()
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));
 
-
-	// setup magic numbers
-	cm.magic_start = MAGICNUM;
-	cm.magic_end = MAGICNUM;
-	cm.gmx.magic_start = MAGICNUM;
-	cm.gmx.magic_end = MAGICNUM;
+	canonical_machine_init_assertions();
 
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
@@ -592,6 +583,28 @@ void canonical_machine_init()
 }
 
 /*
+ * canonical_machine_init_assertions()
+ * canonical_machine_test_assertions() - test assertions, return error code if violation exists
+ */
+void canonical_machine_init_assertions(void)
+{
+	cm.magic_start = MAGICNUM;
+	cm.magic_end = MAGICNUM;
+	cm.gmx.magic_start = MAGICNUM;
+	cm.gmx.magic_end = MAGICNUM;
+	arc.magic_start = MAGICNUM;
+	arc.magic_end = MAGICNUM;
+}
+
+stat_t canonical_machine_test_assertions(void)
+{
+	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	return (STAT_OK);
+}
+
+/*
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
  * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  * cm_clear() 	   - clear soft alarm
@@ -607,10 +620,10 @@ stat_t cm_soft_alarm(stat_t status)
 
 stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
 {
-	if (cm.cycle_state != CYCLE_OFF) {
-		cm.machine_state = MACHINE_CYCLE;
-	} else {
+	if (cm.cycle_state == CYCLE_OFF) {
 		cm.machine_state = MACHINE_PROGRAM_STOP;
+	} else {
+		cm.machine_state = MACHINE_CYCLE;
 	}
 	return (STAT_OK);
 }
@@ -633,18 +646,6 @@ stat_t cm_hard_alarm(stat_t status)
 	return (status);
 }
 
-/*
- * cm_assertions() - test assertions, return error code if violation exists
- */
-stat_t cm_assertions()
-{
-	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	return (STAT_OK);
-}
 
 /**************************
  * Representation (4.3.3) *
@@ -791,6 +792,8 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	cm.gmx.position[axis] = position;
 	cm.gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
+	mp_reset_step_counts();	// step counters are in motor space: resets all step counters
+	en_reset_encoders();	// encoders are in motor space: resets all encoders accordingly
 }
 
 /* 
@@ -857,13 +860,14 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target,flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+	stat_t status = cm_test_soft_limits(cm.gm.target);
+	if (status != STAT_OK) return (cm_soft_alarm(status));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&cm.gm);			// run the move
-	cm_conditional_set_model_position(status);	// update position if the move was successful
+	status = mp_aline(&cm.gm);					// run the move
+	cm_set_model_position(status);				// update position if the move was successful
 	return (status);
 }
 
@@ -978,22 +982,16 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
-
-	// Introduce a short delay if the machine is not busy to enable the planning
-	// queue to begin to fill (avoids first block having to plan down to zero)
-//	if (st_isbusy() == false) {
-//		cm_dwell(PLANNER_STARTUP_DELAY_SECONDS);
-//	}
-
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
-	ritorno(cm_test_soft_limits(cm.gm.target));
+	stat_t status = cm_test_soft_limits(cm.gm.target);
+	if (status != STAT_OK) return (cm_soft_alarm(status));
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	stat_t status = mp_aline(&cm.gm);			// run the move
-	cm_conditional_set_model_position(status);	// update position if the move was successful
+	status = mp_aline(&cm.gm);					// run the move
+	cm_set_model_position(status);				// update position if the move was successful
 	return (status);
 }
 
@@ -1177,15 +1175,15 @@ stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
 }
 
 /*
- * cm_message() 			- queue a RAM string as a message in the response (unconditionally)
+ * cm_message() - queue a RAM string as a message in the response (unconditionally)
  *
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
+
 void cm_message(char_t *message)
 {
 	cmd_add_string((const char_t *)"msg", message);	// add message to the response object
 }
-
 
 /******************************
  * Program Functions (4.3.10) *
@@ -1194,13 +1192,14 @@ void cm_message(char_t *message)
  * This group implements stop, start, end, and hold. 
  * It is extended beyond the NIST spec to handle various situations.
  *
+ *	_exec_program_finalize()
  *	cm_cycle_start()			(no Gcode)  Do a cycle start right now
  *	cm_cycle_end()				(no Gcode)	Do a cycle end right now
  *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now	
  *	cm_program_stop()			(M0, M60)	Queue a program stop
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
- *	_exec_program_finalize()
+ *	cm_machine_ready()			puts machine into a READY state
  *
  * cm_program_stop and cm_optional_program_stop are synchronous Gcode 
  * commands that are received through the interpreter. They cause all motion
@@ -1298,7 +1297,6 @@ stat_t cm_queue_flush()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1	
  * cm_program_end()				- M2, M30
- * cm_machine_ready()			puts machine into a READY state
  *
  * cm_program_end() implements M2 and M30
  * The END behaviors are defined by NIST 3.6.1 are:
@@ -1352,7 +1350,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
-	st_cycle_end();									// finalize steppers at end of cycle
+	st_cycle_end();							// finalize steppers at end of cycle
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1365,9 +1363,10 @@ void cm_cycle_start()
 		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
+
 }
 
-void cm_cycle_end()
+void cm_cycle_end() 
 {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
@@ -1539,12 +1538,12 @@ char_t cm_get_axis_char(const int8_t axis)
 static int8_t _get_axis(const index_t index)
 {
 	char_t *ptr;
-	char_t tmp[CMD_TOKEN_LEN+1];
+	char_t tmp[TOKEN_LEN+1];
 	char_t axes[] = {"xyzabc"};
 
-	strcpy_P(tmp, cfgArray[index].token);				// kind of a hack. Looks for an axis
-	if ((ptr = strchr(axes, tmp[0])) == NULL) { 		// character in the 0 and 3 positions
-		if ((ptr = strchr(axes, tmp[3])) == NULL) { 	// to accommodate 'xam' and 'g54x' styles
+	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for an axis
+	if ((ptr = strchr(axes, tmp[0])) == NULL) {			// character in the 0 and 3 positions
+		if ((ptr = strchr(axes, tmp[3])) == NULL) {		// to accommodate 'xam' and 'g54x' styles
 			return (-1);
 		}
 	}
@@ -1759,7 +1758,6 @@ stat_t cm_run_jogy(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_Y);
 	return (STAT_OK);
-
 }
 
 stat_t cm_run_jogz(cmdObj_t *cmd)
@@ -1767,7 +1765,6 @@ stat_t cm_run_jogz(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_Z);
 	return (STAT_OK);
-
 }
 
 stat_t cm_run_joga(cmdObj_t *cmd)
@@ -1775,7 +1772,6 @@ stat_t cm_run_joga(cmdObj_t *cmd)
 	set_flt(cmd);
 	cm_jogging_cycle_start(AXIS_A);
 	return (STAT_OK);
-
 }
 
 /***********************************************************************************
@@ -1844,12 +1840,14 @@ void cm_print_gdi(cmdObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
 
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
 const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%s\n";
+const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
 const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
 const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
 const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_sl(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sl);}
 void cm_print_ml(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ma(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ms(cmdObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}

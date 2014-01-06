@@ -100,6 +100,8 @@ void cmd_persist(cmdObj_t *cmd)
  *
  *	You can assume the cfg struct has been zeroed by a hard reset. 
  *	Do not clear it as the version and build numbers have already been set by tg_init()
+ *
+ * NOTE: Config assertions are handled from the controller
  */
 void config_init()
 {
@@ -122,7 +124,7 @@ void config_init()
 		rpt_print_loading_configs_message();
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-				strcpy_P(cmd->token, cfgArray[cmd->index].token);// read token from array
+				strncpy_P(cmd->token, cfgArray[cmd->index].token, TOKEN_LEN);	// read the token from the array
 				cmd_read_NVM_value(cmd);
 				cmd_set(cmd);
 			}
@@ -145,7 +147,7 @@ stat_t set_defaults(cmdObj_t *cmd)
 	for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			cmd->value = GET_TABLE_FLOAT(def_value);
-			strcpy_P(cmd->token, cfgArray[cmd->index].token);
+			strncpy_P(cmd->token, cfgArray[cmd->index].token, TOKEN_LEN);
 			cmd_set(cmd);
 			cmd_persist(cmd);				// persist must occur when no other interrupts are firing
 		}
@@ -337,11 +339,11 @@ stat_t set_flu(cmdObj_t *cmd)
 
 stat_t get_grp(cmdObj_t *cmd)
 {
-	char_t *parent_group = cmd->token;			// token in the parent cmd object is the group
-	char_t group[CMD_GROUP_LEN+1];				// group string retrieved from cfgArray child
-	cmd->objtype = TYPE_PARENT;					// make first object the parent 
+	char_t *parent_group = cmd->token;		// token in the parent cmd object is the group
+	char_t group[GROUP_LEN+1];				// group string retrieved from cfgArray child
+	cmd->objtype = TYPE_PARENT;				// make first object the parent 
 	for (index_t i=0; cmd_index_is_single(i); i++) {
-		strcpy_P(group, cfgArray[i].group);
+		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
 		(++cmd)->index = i;
 		cmd_get_cmdObj(cmd);
@@ -405,23 +407,24 @@ uint8_t cmd_group_is_prefixed(char_t *group)
 index_t cmd_get_index(const char_t *group, const char_t *token)
 {
 	char_t c;
-	char_t str[CMD_TOKEN_LEN+1];
-	strcpy(str, group);		// assume group and token obey combined length limits
-	strcat(str, token);
+	char_t str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
+	strncpy(str, group, GROUP_LEN+1);
+	strncat(str, token, TOKEN_LEN+1);
 
+	index_t i;
 	index_t index_max = cmd_index_max();
 
-	for (index_t idx=0; idx < index_max; idx++) {
-		if ((c = GET_TOKEN_BYTE(idx,token[0])) != str[0]) {	continue; }						// 1st character mismatch
-		if ((c = GET_TOKEN_BYTE(idx,token[1])) == NUL) { if (str[1] == NUL) return(idx);}	// one character match
-		if (c != str[1]) continue;															// 2nd character mismatch
-		if ((c = GET_TOKEN_BYTE(idx,token[2])) == NUL) { if (str[2] == NUL) return(idx);}	// two character match
-		if (c != str[2]) continue;															// 3rd character mismatch
-		if ((c = GET_TOKEN_BYTE(idx,token[3])) == NUL) { if (str[3] == NUL) return(idx);}	// three character match
-		if (c != str[3]) continue;															// 4th character mismatch
-		if ((c = GET_TOKEN_BYTE(idx,token[4])) == NUL) { if (str[4] == NUL) return(idx);}	// four character match
-		if (c != str[4]) continue;															// 5th character mismatch
-		return (idx);																			// five character match
+	for (i=0; i < index_max; i++) {
+		if ((c = GET_TOKEN_BYTE(token[0])) != str[0]) {	continue; }					// 1st character mismatch
+		if ((c = GET_TOKEN_BYTE(token[1])) == NUL) { if (str[1] == NUL) return(i);}	// one character match
+		if (c != str[1]) continue;													// 2nd character mismatch
+		if ((c = GET_TOKEN_BYTE(token[2])) == NUL) { if (str[2] == NUL) return(i);}	// two character match
+		if (c != str[2]) continue;													// 3rd character mismatch
+		if ((c = GET_TOKEN_BYTE(token[3])) == NUL) { if (str[3] == NUL) return(i);}	// three character match
+		if (c != str[3]) continue;													// 4th character mismatch
+		if ((c = GET_TOKEN_BYTE(token[4])) == NUL) { if (str[4] == NUL) return(i);}	// four character match
+		if (c != str[4]) continue;													// 5th character mismatch
+		return (i);																	// five character match
 	}
 	return (NO_MATCH);
 }
@@ -467,7 +470,6 @@ stat_t cmd_persist_offsets(uint8_t flag)
  * cmd_get_cmdObj()		- setup a cmd object by providing the index
  * cmd_reset_obj()		- quick clear for a new cmd object
  * cmd_reset_list()		- clear entire header, body and footer for a new use
- * cmd_cvt_string()		- converts a string from flash to ram for AVR. ARM is a pass-through
  * cmd_copy_string()	- used to write a string to shared string storage and link it
  * cmd_add_object()		- write contents of parameter to  first free object in the body
  * cmd_add_integer()	- add an integer value to end of cmd body (Note 1)
@@ -500,8 +502,8 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 	cmd_reset_obj(cmd);
 	cmd->index = tmp;
 
-	strcpy_P(cmd->token, cfgArray[cmd->index].token); // NB: token field is always terminated
-	strcpy_P(cmd->group, cfgArray[cmd->index].group); // NB: group field is always terminated
+	strcpy_P(cmd->token, cfgArray[cmd->index].token); // token field is always terminated
+	strcpy_P(cmd->group, cfgArray[cmd->index].group); // group field is always terminated
 
 	// special processing for system groups and stripping tokens for groups
 	if (cmd->group[0] != NUL) {
@@ -563,8 +565,7 @@ stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src)
 	if ((cmdStr.wp + strlen(src)) > CMD_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
 	char_t *dst = &cmdStr.string[cmdStr.wp];
 	strcpy(dst, src);						// copy string to current head position
-											// already been tested for string buffer overflow
-
+											// string has already been tested for overflow, above
 	cmdStr.wp += strlen(src)+1;				// advance head for next string
 	cmd->stringp = (char_t (*)[])dst;
 	return (STAT_OK);
@@ -603,7 +604,7 @@ cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value)// add an in
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
-		strcpy(cmd->token, token);
+		strncpy(cmd->token, token, TOKEN_LEN);
 		cmd->value = (float) value;
 		cmd->objtype = TYPE_INTEGER;
 		return (cmd);
@@ -636,7 +637,7 @@ cmdObj_t *cmd_add_float(const char_t *token, const float value)	// add a float o
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
-		strcpy(cmd->token, token);
+		strncpy(cmd->token, token, TOKEN_LEN);
 		cmd->value = value;
 		cmd->objtype = TYPE_FLOAT;
 		return (cmd);
@@ -653,7 +654,7 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
-		strcpy(cmd->token, token);							// expects string to be in RAM if on AVRs
+		strncpy(cmd->token, token, TOKEN_LEN);
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
 		cmd->objtype = TYPE_STRING;
@@ -667,7 +668,8 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
  *
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
-cmdObj_t *cmd_conditional_message(const char_t *string)	// conditionally add a message object to the body
+
+cmdObj_t *cmd_add_conditional_message(const char_t *string)	// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(cmd_add_string((const char_t *)"msg", string));

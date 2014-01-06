@@ -7,7 +7,7 @@ PROJECT = tinyg
 MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
-TINYG_FIRMWARE_BUILD = 403.10
+TINYG_FIRMWARE_BUILD = 409.04
 
 CPP = avr-g++
 
@@ -42,7 +42,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o cycle_jogging.o xio.o encoder.o 
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o xio.o cycle_jogging.o plan_exec.o encoder.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -156,10 +156,13 @@ switch.o: ../switch.c
 cycle_probing.o: ../cycle_probing.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+xio.o: ../xio.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 cycle_jogging.o: ../cycle_jogging.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-xio.o: ../xio.c
+plan_exec.o: ../plan_exec.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 encoder.o: ../encoder.c
@@ -180,6 +183,10 @@ $(TARGET): $(OBJECTS)
 
 install:
 	cp ./tinyg.hex ~/Desktop/tinyg-${TINYG_FIRMWARE_BUILD}.hex
+
+size: ${TARGET}
+	@echo
+	@avr-size -C --mcu=${MCU} ${TARGET}
 
 ## Clean target
 .PHONY: clean
