@@ -155,9 +155,9 @@ void st_reset()
 	}
 }
 
-void st_cycle_start(void) 
+void st_cycle_start(void)
 {
-}
+	}
 
 void st_cycle_end(void)
 {
@@ -330,20 +330,20 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 }
 
 ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
-	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
+ 	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
 	_load_move();
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
-	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
+ 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-		if (mp_exec_move() != STAT_NOOP) {
-			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-			_request_load_move();
-		}
-	}
+   	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+	   	if (mp_exec_move() != STAT_NOOP) {
+		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+		   	_request_load_move();
+	   	}
+   	}
 }
 
 /****************************************************************************************
@@ -371,7 +371,7 @@ static void _request_load_move()
 	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
 		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
 		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
-	} 	// else don't bother to interrupt. You'll just trigger an
+	} 	// else don't bother to interrupt. You'll just trigger an 
 		// interrupt and find out the load routine is not ready for you
 }
 
@@ -523,16 +523,16 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
+ *	  - steps[] are signed relative motion in steps for each motor. Steps are floats 
  *		that typically have fractional values (fractional steps). The sign indicates
  *		direction. Motors that are not in the move should be 0 steps on input.
  *
- *	  - microseconds - how many microseconds the segment should run. If timing is not
+ *	  - microseconds - how many microseconds the segment should run. If timing is not 
  *		100% accurate this will affect the move velocity, but not the distance traveled.
  *
  *	  - step_error[] is a vector of measured errors to the step count. Used for correction.
  *
- * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term
+ * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
@@ -543,7 +543,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
 		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
 		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
-		} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
+	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
@@ -561,7 +561,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		// Skip this motor if there are no new steps. Leave all values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
-		// Direction - set the direction, compensating for polarity.
+		// Direction - set the direction, compensating for polarity. 
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
@@ -569,7 +569,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
-		} else {
+		} else {			
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = -1;
 		}
@@ -603,9 +603,9 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		}
 
 #endif
-		// Compute substeb increment. The accumulator must be *exactly* the incoming
+		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multiplier or positional drift will occur.
-		// Rounding is performed to eliminate a negative bias in the int32 conversion
+		// Rounding is performed to eliminate a negative bias in the int32 conversion 
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
 		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
@@ -687,7 +687,7 @@ static int8_t _get_motor(const index_t index)
 	char_t *ptr;
 	char_t motors[] = {"123456"};
 	char_t tmp[TOKEN_LEN+1];
-
+	
 	strcpy_P(tmp, cfgArray[index].group);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);
