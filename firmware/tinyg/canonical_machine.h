@@ -687,6 +687,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
 	void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
 	void cm_print_mpo(cmdObj_t *cmd);		// print runtime work position always in MM uints
+	void cm_print_ofs(cmdObj_t *cmd);		// print runtime work offset always in MM uints
 
 	void cm_print_ja(cmdObj_t *cmd);		// global CM settings
 	void cm_print_ct(cmdObj_t *cmd);
@@ -743,6 +744,7 @@ stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
 	#define cm_print_lin tx_print_stub		// generic print for linear values 
 	#define cm_print_pos tx_print_stub		// print runtime work position in prevailing units
 	#define cm_print_mpo tx_print_stub		// print runtime work position always in MM uints
+	#define cm_print_ofs tx_print_stub		// print runtime work offset always in MM uints
 
 	#define cm_print_ja tx_print_stub		// global CM settings
 	#define cm_print_ct tx_print_stub

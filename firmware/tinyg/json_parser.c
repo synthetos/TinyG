@@ -201,7 +201,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 {
 	uint8_t i;
 	char_t *tmp;
-	char_t leaders[] = {"{\","};				// open curly, quote and leading comma
+	char_t leaders[] = {"{,\""};				// open curly, quote and leading comma
 	char_t separators[] = {":\""};				// colon and quote
 	char_t terminators[] = {"},\""};			// close curly, comma and quote
 	char_t value[] = {"{\".-+"};				// open curly, quote, period, minus and plus

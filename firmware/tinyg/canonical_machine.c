@@ -1957,6 +1957,7 @@ void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
 
 void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
+void cm_print_ofs(cmdObj_t *cmd) { _print_pos(cmd, fmt_ofs, MILLIMETERS);}
 
 #endif // __TEXT_MODE
 

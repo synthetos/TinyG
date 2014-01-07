@@ -143,12 +143,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "pos","posb",_f00, 3, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// B work position
 	{ "pos","posc",_f00, 3, cm_print_pos, cm_get_pos, set_nul,(float *)&cs.null, 0 },	// C work position
 
-	{ "ofs","ofsx",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
-	{ "ofs","ofsy",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
-	{ "ofs","ofsz",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
-	{ "ofs","ofsa",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset
-	{ "ofs","ofsb",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset
-	{ "ofs","ofsc",_f00, 3, cm_print_mpo, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
+	{ "ofs","ofsx",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// X work offset
+	{ "ofs","ofsy",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Y work offset
+	{ "ofs","ofsz",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// Z work offset
+	{ "ofs","ofsa",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// A work offset
+	{ "ofs","ofsb",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// B work offset
+	{ "ofs","ofsc",_f00, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },	// C work offset
 
 	{ "hom","home",_f00, 0, cm_print_home, cm_get_home, cm_run_home,(float *)&cs.null, 0 },	   // homing state, invoke homing cycle
 	{ "hom","homx",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_X], false },// X homed - Homing status group
