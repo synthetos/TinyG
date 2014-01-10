@@ -54,8 +54,8 @@
 
 #undef  SR_DEFAULTS
 //#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","_fe1"
-#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","stat","_cs1","_es1","_fe1"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","stat","_cs1","_es1","_fe0","_fe1","_fe2","_fe3"
+#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","stat","_ts2","_ps2","_cs2","_es2","_fe2"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -73,8 +73,8 @@
 #undef  JSON_SYNTAX_MODE
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
 
-#undef	QUEUE_REPORT_VERBOSITY
-#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
+//#undef	QUEUE_REPORT_VERBOSITY
+//#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
 
 #undef	STATUS_REPORT_VERBOSITY
 //#define STATUS_REPORT_VERBOSITY		SR_FILTERED
@@ -132,7 +132,7 @@
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
 #define M1_POLARITY 			1			
-#define M1_POWER_MODE 			1					
+#define M1_POWER_MODE 			0					
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
