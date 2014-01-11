@@ -296,6 +296,7 @@ static stat_t _exec_aline_head()
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
+		mr.segment_length = mr.head_length / (2 * mr.segments);
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 
 		// 4 lines needed by __JERK_EXEC
@@ -369,6 +370,7 @@ static stat_t _exec_aline_body()
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
+		mr.segment_length = mr.body_length / mr.segments;
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
@@ -399,6 +401,7 @@ static stat_t _exec_aline_tail()
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
+		mr.segment_length = mr.tail_length / (2 * mr.segments);
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 
 		// 4 lines needed by jerk-based exec
@@ -488,10 +491,15 @@ static stat_t _exec_aline_segment()
 			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
 		}
 	} else {
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_length);
+		}
+/*
 		float segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
+*/
 	}
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration.

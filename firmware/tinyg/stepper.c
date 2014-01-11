@@ -426,7 +426,7 @@ static void _load_move()
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
 					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
-//				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
+				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
@@ -449,7 +449,7 @@ static void _load_move()
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 					PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm; 
-//				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
+				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
@@ -469,7 +469,7 @@ static void _load_move()
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 					PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
-//				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
+				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
@@ -489,7 +489,7 @@ static void _load_move()
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 					PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
-//				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
+				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
