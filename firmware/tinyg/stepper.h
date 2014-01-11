@@ -297,12 +297,13 @@ enum prepBufferState {
  *	and error will grow instead of shrink
  */
 
-//#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
-#define STEP_CORRECTION_THRESHOLD	(float)40.00		// magnitude of forwarding error to apply correction 
+#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
+//#define STEP_CORRECTION_THRESHOLD	(float)40.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  3		// minimum number of segments to wait between error correction
-
+//#define STEP_INITIAL_DIRECTION				false
+#define STEP_INITIAL_DIRECTION				false
 /*
  * Stepper control structures
  *

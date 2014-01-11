@@ -150,12 +150,13 @@ void st_reset()
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
 	en_reset_encoders();
 	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[i].direction_change = true;
+//		st_pre.mot[i].direction_change = true;
+		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
 	}
 }
 
-void st_cycle_start(void) 
+void st_cycle_start(void)
 {
 }
 
@@ -391,9 +392,9 @@ static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-	if (st_run.dda_ticks_downcount != 0) return;					// exit if it's still busy
+	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
 
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {		// if there are no moves to load...
+	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 			st_run.mot[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
 		}
@@ -414,12 +415,12 @@ static void _load_move()
 		// These sections are somewhat optimized for execution speed. The whole load operation
 		// is supposed to take < 10 uSec (Xmega). Be careful if you mess with this.
 
-		// if() either sets the substep increment value or zeroes it
+		// the following if() statement sets the runtime substep increment value or zeroes it
 
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
-			// Set the direction bit in hardware
-			// Compensate for direction change in the accumulator
+			// Set the direction bit in hardware. Compensate for direction change in the accumulator
+			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
@@ -430,7 +431,7 @@ static void _load_move()
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
-			SET_ENCODER_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
@@ -452,7 +453,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -472,7 +473,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -492,7 +493,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
