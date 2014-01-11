@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		409.19	// testing various conditions - New tests in cm_straight_feed()
+#define TINYG_FIRMWARE_BUILD   		409.20	// testing various conditions - removed section target corrections in _exec_aline_segment() (plan_exec) for testing error contribution. Also code rearrangement to take advantage of fixed-time segments.
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)

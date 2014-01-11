@@ -149,10 +149,19 @@ void st_reset()
 {
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
 	en_reset_encoders();
+
+	// setup prep parameters (st_pre)
+	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
+	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
+	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
+	st_pre.dda_ticks = (int32_t)((NOM_SEGMENT_USEC / 1000000) * FREQUENCY_DDA);
+	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
+
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		st_pre.mot[i].direction_change = true;
-		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
-		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
+		st_pre.mot[i].direction_change = false;
+//		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
+//		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
+		st_run.mot[i].substep_accumulator = -(st_pre.dda_ticks_X_substeps / 2);	// set to midpoint
 	}
 }
 
@@ -420,12 +429,12 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
 			// Set the direction bit in hardware. Compensate for direction change in the accumulator
-			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
 					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
+				// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
 			// Enable the stepper and start motor power management
@@ -546,18 +555,19 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
-		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
-		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
-		} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
+	} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
+	} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
+	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
+/*
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
-
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
-	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+//	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+	st_pre.dda_ticks = (int32_t)((NOM_SEGMENT_USEC / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-
+*/
 	// setup motor parameters
 
 	uint8_t previous_direction;
@@ -599,14 +609,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 													  -STEP_CORRECTION_MAX); }
 
 			travel_steps[i] += st_pre.mot[i].correction_steps;
-
-//#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
-//			if (i==1) printf("Z");
-//			if (i==2) printf("Y");
-//			if (i==3) printf("X");
-//#endif
 		}
-
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
