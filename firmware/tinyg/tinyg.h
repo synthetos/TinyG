@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		409.21	// testing various conditions - re-applied section correction
+#define TINYG_FIRMWARE_BUILD   		409.22	// testing various conditions - mapped motor 3 (typically Y axis) to Z axis
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
