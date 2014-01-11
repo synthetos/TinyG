@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		409.16	// testing various conditions - 409.14 plus threshold = 4
+#define TINYG_FIRMWARE_BUILD   		409.18	// testing various conditions - some refactoring on 409.16 - no functional changes - threshold set back to 1
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
