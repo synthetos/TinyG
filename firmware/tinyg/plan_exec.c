@@ -473,18 +473,16 @@ static stat_t _exec_aline_segment()
 	// Don't do the endpoint correction if you are going into a hold
 
 	mr.segment_count--;		// used to look for the last segment
-/*
 	if ((mr.section_state == SECTION_2nd_HALF) && (mr.segment_count == 0) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
 		}
 	} else {
-*/
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * mr.segment_length);
 		}
-//	}
+	}
 
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
