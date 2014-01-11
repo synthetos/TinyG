@@ -297,7 +297,6 @@ static stat_t _exec_aline_head()
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec)); // # of segments in *each half*
 		mr.segment_length = mr.head_length / (2 * mr.segments);
-//		mr.segment_time = cm.estd_segment_usec / MICROSECONDS_PER_MINUTE;
 
 		// 4 lines needed by __JERK_EXEC
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
@@ -309,10 +308,6 @@ static stat_t _exec_aline_head()
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-//		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
 	}
@@ -372,14 +367,8 @@ static stat_t _exec_aline_body()
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / cm.estd_segment_usec);
 		mr.segment_length = mr.body_length / mr.segments;
-//		mr.segment_time = mr.gm.move_time / mr.segments;
-//		mr.segment_time = cm.estd_segment_usec / MICROSECONDS_PER_MINUTE;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-//		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
@@ -405,8 +394,6 @@ static stat_t _exec_aline_tail()
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * cm.estd_segment_usec));// # of segments in *each half*
 		mr.segment_length = mr.tail_length / (2 * mr.segments);
-//		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-//		mr.segment_time = cm.estd_segment_usec / MICROSECONDS_PER_MINUTE;
 
 		// 4 lines needed by jerk-based exec
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
@@ -418,10 +405,6 @@ static stat_t _exec_aline_tail()
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-//		mr.microseconds = NOM_SEGMENT_USEC;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
 	}

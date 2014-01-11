@@ -978,10 +978,13 @@ stat_t cm_straight_feed(float target[], float flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
-	// trap zero feed rate condition
+	// Trap zero feed rate condition
+	// Feed rate must be non-zero for both normal and inverse time modes. No need to test independently.
+//	if (fp_ZERO(cm.gm.feed_rate)) { return (STAT_GCODE_FEEDRATE_ERROR); }
 	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_ERROR);
+		return (STAT_GCODE_FEEDRATE_ERROR); 
 	}
+
 	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
 	stat_t status = cm_test_soft_limits(cm.gm.target);
