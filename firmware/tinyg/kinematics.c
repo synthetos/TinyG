@@ -71,11 +71,17 @@ void ik_kinematics(float travel[], float steps[])
 #if (MOTORS >= 6)
 		if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
 #endif
-	}	
-	// the above is a loop unrolled version of this:
-	//	for (uint8_t motor=0; motor<MOTORS; motor++) {
-	//		if (st_cfg.mot[motor].motor_map == axis) { steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;}
-	//	}
+	}
+
+/* The above is a loop unrolled version of this:
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		for (uint8_t motor=0; motor<MOTORS; motor++) {
+			if (st_cfg.mot[motor].motor_map == axis) { 
+				steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
+			}
+		}
+	}
+*/
 }
 
 /*

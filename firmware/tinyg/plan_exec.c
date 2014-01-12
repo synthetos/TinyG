@@ -205,6 +205,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
+		}
+		for (uint8_t i=0; i<MOTORS; i++) {
 			mr.traveled_steps[i] = 0;
 		}
 		// generate step targets for each endpoint
@@ -374,7 +376,6 @@ static stat_t _exec_aline_body()
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC);
-		mr.segment_length = mr.body_length / mr.segments;
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
@@ -484,22 +485,6 @@ static stat_t _exec_aline_segment()
 	uint8_t i;
 //	float travel_steps[MOTORS];
 
-	// Either compute the new segment target or use the section endpoints
-	// Don't do the endpoint correction if you are going into a hold
-
-	mr.segment_count--;		// used to look for the last segment
-	if ((mr.section_state == SECTION_2nd_HALF) && (mr.segment_count == 0) &&
-		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
-		}
-	} else {
-		float segment_length = mr.segment_velocity * mr.segment_time;
-		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
-		}
-	}
-
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 
@@ -509,14 +494,31 @@ static stat_t _exec_aline_segment()
 		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
 		mr.following_error[i] = mr.commanded_steps[i] - mr.encoder_steps[i];
 	}
-	ik_kinematics(mr.gm.target, mr.target_steps);
+
+	// Either compute the new segment target or use the section endpoints
+	// Don't do the endpoint correction if you are going into a hold
+
+	mr.segment_count--;		// used to look for the last segment
+	if ((mr.section_state == SECTION_2nd_HALF) && (mr.segment_count == 0) &&
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.section_target[mr.section][i]; // correct any accumulated rounding errors in last segment
+		}
+		ik_kinematics(mr.gm.target, mr.target_steps);
+	} else {
+		float segment_length = mr.segment_velocity * mr.segment_time;
+		for (i=0; i<AXES; i++) {
+			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
+		}
+		ik_kinematics(mr.gm.target, mr.target_steps);
+	}
+
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
 		mr.travel_steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
 		mr.traveled_steps[i] += mr.travel_steps[i]; 
 	}														  // Verify this assumption (pretty sure it's true)
 
 	// Call the stepper prep function. Return if there's an error
-//	ritorno(st_prep_line(travel_steps, mr.microseconds, mr.step_error));
 	ritorno(st_prep_line(mr.travel_steps, mr.microseconds, mr.following_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec
