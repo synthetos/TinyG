@@ -205,7 +205,12 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
 			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
+			mr.traveled_steps[i] = 0;
 		}
+		// generate step targets for each endpoint
+		ik_kinematics(mr.section_target[SECTION_HEAD], mr.section_steps[SECTION_HEAD]);
+		ik_kinematics(mr.section_target[SECTION_BODY], mr.section_steps[SECTION_BODY]);
+		ik_kinematics(mr.section_target[SECTION_TAIL], mr.section_steps[SECTION_TAIL]);
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -296,7 +301,6 @@ static stat_t _exec_aline_head()
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
-//		mr.segment_length = mr.head_length / (2 * mr.segments);
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 
 		// 4 lines needed by __JERK_EXEC
@@ -401,7 +405,6 @@ static stat_t _exec_aline_tail()
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC));// # of segments in *each half*
-//		mr.segment_length = mr.tail_length / (2 * mr.segments);
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 
 		// 4 lines needed by jerk-based exec
@@ -479,7 +482,7 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
-	float travel_steps[MOTORS];
+//	float travel_steps[MOTORS];
 
 	// Either compute the new segment target or use the section endpoints
 	// Don't do the endpoint correction if you are going into a hold
@@ -508,8 +511,8 @@ static stat_t _exec_aline_segment()
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);
 	for (i=0; i<MOTORS; i++) {								  // NB: This only works for Cartesian kinematics
-		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
-		mr.travel_steps[i] = travel_steps[i];				  // DIAGNOSTIC
+		mr.travel_steps[i] = mr.target_steps[i] - mr.position_steps[i]; // Otherwise must transform the travel distance
+		mr.traveled_steps[i] += mr.travel_steps[i]; 
 	}														  // Verify this assumption (pretty sure it's true)
 
 	// Call the stepper prep function. Return if there's an error
