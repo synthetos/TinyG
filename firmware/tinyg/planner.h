@@ -221,7 +221,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
 	float section_target[SECTIONS][AXES];// targets in position for each move section
-	float section_steps[SECTIONS][AXES];// targets in steps for each move section
+//	float section_steps[SECTIONS][AXES];// targets in steps for each move section
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
@@ -229,7 +229,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
 	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
 	float travel_steps[MOTORS];		// DIAGNOSTIC
-	float traveled_steps[MOTORS];	// accumulated steps for this block
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;

@@ -41,8 +41,8 @@
 /**** Allocate structures ****/
 
 stConfig_t st_cfg;
+stPrepSingleton_t st_pre;
 static stRunSingleton_t st_run;
-static stPrepSingleton_t st_pre;
 
 /**** Setup local functions ****/
 
@@ -585,6 +585,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
+
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
 			st_pre.mot[i].correction_residual = following_error[i];
 			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
@@ -592,21 +593,15 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 			if (st_pre.mot[i].correction_steps > 0) {
 				st_pre.mot[i].correction_steps = min3(st_pre.mot[i].correction_steps, 
 													  fabs(travel_steps[i]), 
-													  STEP_CORRECTION_MAX); }
-			else {
+													  STEP_CORRECTION_MAX); 
+			} else {
 				st_pre.mot[i].correction_steps = max3(st_pre.mot[i].correction_steps, 
 													  -fabs(travel_steps[i]), 
-													  -STEP_CORRECTION_MAX); }
-
+													  -STEP_CORRECTION_MAX); 
+			}
+			st_pre.corrected_steps[i] += st_pre.mot[i].correction_steps;
 			travel_steps[i] += st_pre.mot[i].correction_steps;
-
-//#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
-//			if (i==1) printf("Z");
-//			if (i==2) printf("Y");
-//			if (i==3) printf("X");
-//#endif
 		}
-
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.

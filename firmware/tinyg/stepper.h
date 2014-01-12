@@ -379,11 +379,13 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
 	float correction_steps;			// temporary register for correction value (in fractional steps)
+	float corrected_steps[MOTORS];	// accumulated correction steps for the cycle
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are private
+extern stConfig_t st_cfg;			// config struct is exposed. The rest are private
+extern stPrepSingleton_t st_pre;	// only used by config_app diagnostics
 
 /**** FUNCTION PROTOTYPES ****/
 

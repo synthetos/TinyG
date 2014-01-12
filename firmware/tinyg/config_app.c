@@ -523,6 +523,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_es","_es3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
 	{ "_es","_es4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
 
+	{ "_xs","_xs1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_1], 0 }, // Motor 1 correction steps applied
+	{ "_xs","_xs2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_2], 0 },
+	{ "_xs","_xs3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_3], 0 },
+	{ "_xs","_xs4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_4], 0 },
+
 	{ "_fe","_fe1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_1], 0 }, // Motor 1 following error in steps
 	{ "_fe","_fe2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_2], 0 },
 	{ "_fe","_fe3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
@@ -612,6 +617,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","_ps",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// position motor steps group
 	{ "","_cs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// commanded motor steps group
 	{ "","_es",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder steps group
+	{ "","_xs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// correction steps group
 	{ "","_fe",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// following error group
 
 	// Uber-group (groups of groups, for text-mode displays only)
@@ -624,7 +630,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		38		// count of simple groups
+#define CMD_COUNT_GROUPS 		39		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */

@@ -56,7 +56,7 @@
 //#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","_fe1"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","stat","_cs1","_es1","_fe0","_fe1","_fe2","_fe3"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","stat","_ts2","_ps2","_cs2","_es2","_fe2"
-#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","_cs3","_es3","_fe3","_cs2","_es2","_fe2","stat"
+#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","_cs3","_es3","_fe3","_xs3","_cs2","_es2","_fe2","_xs2","stat"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
