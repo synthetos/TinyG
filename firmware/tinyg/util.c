@@ -44,6 +44,7 @@ extern "C"{
 /**** Vector utilities ****
  * copy_vector()			- copy vector of arbitrary length
  * copy_axis_vector()		- copy an axis vector
+ * copy_motor_vector()		- copy a motor vector
  * get_axis_vector_length()	- return the length of an axis vector
  * set_vector()				- load values into vector form
  * set_vector_by_axis()		- load a single value into a zero vector
@@ -57,12 +58,17 @@ void copy_vector(float dst[], const float src[], uint8_t length)
 	for (uint8_t i=0; i<length; i++) { dst[i] = src[i]; }
 }
 */
-
+/*
 void copy_axis_vector(float dst[], const float src[])
 {
 	memcpy(dst, src, sizeof(float)*AXES);
 }
 
+void copy_motor_vector(float dst[], const float src[])
+{
+	memcpy(dst, src, sizeof(float)*MOTORS);
+}
+*/
 uint8_t vector_equal(const float a[], const float b[])
 {
 	if ((fp_EQ(a[AXIS_X], b[AXIS_X])) &&

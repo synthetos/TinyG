@@ -246,21 +246,16 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 
 	float segments;					// number of segments in arc or blend
 	uint32_t segment_count;			// count of running segments
-//	float segment_length;			// length per aline segment
 	float segment_velocity;			// computed velocity for aline segment
 	float segment_time;				// actual time increment per aline segment
+	float microseconds;				// line or segment time in microseconds
 
 	float accel_time;				// JERK BASED EXEC CODE
 	float segment_accel_time;		// JERK BASED EXEC CODE
 	float elapsed_accel_time;		// JERK BASED EXEC CODE
-	float microseconds;				// line or segment time in microseconds
+
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
-
-//	float microseconds;				// line or segment time in microseconds
-//	float segment_length;			// computed length for aline segment
-//	float forward_diff_1;			// forward difference level 1 (Acceleration)
-//	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
 	GCodeState_t gm;				// gcode model state currently executing
 
