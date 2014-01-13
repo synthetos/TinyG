@@ -420,6 +420,9 @@ static void _load_move()
 			// Set the direction bit in hardware. Compensate for direction change in the accumulator
 			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
+
+			st_run.mot[MOTOR_1].substep_accumulator *= st_pre.dda_accumulator_scale;
+
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
 					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -443,6 +446,7 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
+			st_run.mot[MOTOR_2].substep_accumulator *= st_pre.dda_accumulator_scale;
 			if (st_pre.mot[MOTOR_2].direction_change == true) {
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -463,6 +467,7 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
+			st_run.mot[MOTOR_3].substep_accumulator *= st_pre.dda_accumulator_scale;
 			if (st_pre.mot[MOTOR_3].direction_change == true) {
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -483,6 +488,7 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
+			st_run.mot[MOTOR_4].substep_accumulator *= st_pre.dda_accumulator_scale;
 			if (st_pre.mot[MOTOR_4].direction_change == true) {
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -552,9 +558,15 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
+	float dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;	// value from previous segment
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
+	if (dda_ticks_X_substeps > 0) {
+		st_pre.dda_accumulator_scale = st_pre.dda_ticks_X_substeps / dda_ticks_X_substeps;
+	} else {
+		st_pre.dda_accumulator_scale = 1;
+	}
 
 	// setup motor parameters
 
@@ -585,8 +597,6 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-//			st_pre.mot[i].correction_residual = following_error[i];
-//			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
 			st_pre.mot[i].correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
 			if (st_pre.mot[i].correction_steps > 0) {
@@ -598,7 +608,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 													  -fabs(travel_steps[i]), 
 													  -STEP_CORRECTION_MAX); 
 			}
-			st_pre.corrected_steps[i] += st_pre.mot[i].correction_steps;
+			st_pre.mot[i].corrected_steps += st_pre.mot[i].correction_steps;
 			travel_steps[i] += st_pre.mot[i].correction_steps;
 		}
 #endif

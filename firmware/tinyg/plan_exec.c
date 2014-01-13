@@ -159,7 +159,7 @@ void mp_reset_step_counts()
 		mr.position_steps[i] = 0;
 		mr.commanded_steps[i] = 0;
 		mr.following_error[i] = 0;	
-		st_pre.corrected_steps[i] = 0;
+		st_pre.mot[i].corrected_steps = 0;
 	}
 }
 
