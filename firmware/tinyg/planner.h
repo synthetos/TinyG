@@ -85,23 +85,11 @@ enum sectionState {
  */
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
-//#define MIN_SEGMENT_USEC 		((float)4500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
-
-/* MAX_CORRECTION_MM
- * MAX_CORRECTION_STEP
- *	These values set the maximum millimeters that can be corrected in a single segment and
- *	the maximum fractional steps that can be corrected in a single segment. They are used 
- *	by the feedforward and feedback error correction functions (respectively) to meter out 
- *	corrections across multiple segments.
- */
-#define MIN_CORRECTION_MM		(float)0.0001	// don't bother correcting
-#define MAX_CORRECTION_MM		(float)0.001	// max you can correct in a single step
-#define MAX_CORRECTION_STEP		(float)0.10
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.

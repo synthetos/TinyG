@@ -107,8 +107,8 @@
 #define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
-//#define M3_MOTOR_MAP 			AXIS_Y
-#define M3_MOTOR_MAP 			AXIS_Z
+#define M3_MOTOR_MAP 			AXIS_Y
+//#define M3_MOTOR_MAP 			AXIS_Z				// DIAGNOSTIC TEST ONLY!!!
 #define M3_STEP_ANGLE 			1.8
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
@@ -142,8 +142,8 @@
 
 // *** axis settings ***
 
-#define X_AXIS_MODE 			AXIS_DISABLED		// xam		see canonical_machine.h cmAxisMode for valid values
-//#define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
+//#define X_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
+#define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
@@ -158,8 +158,8 @@
 #define X_ZERO_BACKOFF 			0					// xzb		mm
 #define X_JERK_HOMING			JERK_HOMING			// xjh
 
-#define Y_AXIS_MODE 			AXIS_DISABLED
-//#define Y_AXIS_MODE 			AXIS_STANDARD
+//#define Y_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
+#define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			X_VELOCITY_MAX
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN			0

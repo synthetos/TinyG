@@ -150,7 +150,6 @@ void st_reset()
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
 	en_reset_encoders();
 	for (uint8_t i=0; i<MOTORS; i++) {
-//		st_pre.mot[i].direction_change = true;
 		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
 	}
@@ -229,7 +228,6 @@ stat_t st_motor_power_callback() 	// called by controller
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
 		if (st_cfg.mot[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
-//			_energize_motor(motor);
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
@@ -581,14 +579,15 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 #ifdef __STEP_CORRECTION
-		// 'Nudge2' correction strategy. Inject a single, scaled correction value then hold off
+		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-			st_pre.mot[i].correction_residual = following_error[i];
-			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+//			st_pre.mot[i].correction_residual = following_error[i];
+//			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+			st_pre.mot[i].correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
 			if (st_pre.mot[i].correction_steps > 0) {
 				st_pre.mot[i].correction_steps = min3(st_pre.mot[i].correction_steps, 
