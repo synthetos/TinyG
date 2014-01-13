@@ -367,7 +367,7 @@ typedef struct stPrepMotor {
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 	int32_t correction_holdoff;		// count down segments between corrections
 	float correction_steps;			// steps to correct from each segment
-//	float correction_residual;		// holds and decrements correction term
+	float corrected_steps;			// accumulated correction steps for the cycle
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -378,8 +378,7 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	float correction_steps;			// temporary register for correction value (in fractional steps)
-	float corrected_steps[MOTORS];	// accumulated correction steps for the cycle
+	float dda_accumulator_scale;	// scaling foctor for new sector in accumulator
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
