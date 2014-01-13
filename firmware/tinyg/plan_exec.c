@@ -294,6 +294,10 @@ static stat_t _exec_aline_head()
 			mr.section = SECTION_BODY;
 			return(_exec_aline_body());						// skip ahead to the body generator
 		}
+		// adjust max velocity to fit exact segment timing
+//		float segment_time = 2 * mr.head_length / (mr.entry_velocity + mr.cruise_velocity);
+//		float cruise_velocity = 2 * mr.head_length / segment_time - mr.entry_velocity;
+
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*

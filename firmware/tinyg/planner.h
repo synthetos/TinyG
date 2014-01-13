@@ -85,6 +85,7 @@ enum sectionState {
  */
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
+//#define MIN_SEGMENT_USEC 		((float)4500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
 #define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
