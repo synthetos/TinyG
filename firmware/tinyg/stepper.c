@@ -224,48 +224,52 @@ void st_deenergize_motors()
 
 stat_t st_motor_power_callback() 	// called by controller
 {
-	// manage power for each motor individually - facilitates advanced features
+	// manage power for each motor individually
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
 		if (st_cfg.mot[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
-
+//			_energize_motor(motor);
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
 					st_run.mot[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-					break;
+					continue;
 				}
-
 				case (MOTOR_TIME_IDLE_TIMEOUT): {
 					if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
 						st_run.mot[motor].power_state = MOTOR_IDLE;
 						_deenergize_motor(motor);
 					}
-					break;
+					continue;
 				}
 			}
-		} else if(st_cfg.mot[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+		}
+
+		if(st_cfg.mot[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
 					st_run.mot[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
-					break;
+					continue;
 				}
-
 				case (MOTOR_TIME_IDLE_TIMEOUT): {
 					if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
 						st_run.mot[motor].power_state = MOTOR_IDLE;
 						_deenergize_motor(motor);
 					}
-					break;
+					continue;
 				}
 			}
+		}
+/*
+		if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
 
-//		} else if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
-			
-//		} else if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {				// future
+		}
+
+		if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {			// future
 			
 		}
+*/
 	}
 	return (STAT_OK);
 }
