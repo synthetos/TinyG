@@ -86,19 +86,19 @@ static stat_t get_rx(cmdObj_t *cmd);		// get bytes in RX buffer
  *	  that if shorter tokens overlap longer ones the longer one must precede the
  *	  shorter one. E.g. "gco" needs to come before "gc"
  *
- *	- Mark group strings for entries that have no group as nul -->  "". 
+ *	- Mark group strings for entries that have no group as nul -->  "".
  *	  This is important for group expansion.
  *
  *	- Groups do not have groups. Neither do uber-groups, e.g.
- *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",  
+ *	  'x' is --> { "", "x",  	and 'm' is --> { "", "m",
  *
  *	- Be careful not to define groups longer than CMD_GROUP_LEN (3) and tokens longer
- *	  than CMD_TOKEN_LEN (5). (See config.h for lengths). The combined group + token 
- *	  cannot exceed CMD_TOKEN_LEN. String functions working on the table assume these 
+ *	  than CMD_TOKEN_LEN (5). (See config.h for lengths). The combined group + token
+ *	  cannot exceed CMD_TOKEN_LEN. String functions working on the table assume these
  *	  rules are followed and do not check lengths or perform other validation.
  *
  *	NOTE: If the count of lines in cfgArray exceeds 255 you need to change index_t
- *	uint16_t in the config.h file. 
+ *	uint16_t in the config.h file.
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -162,8 +162,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jog","jogy",_f00, 0, tx_print_nul, get_nul, cm_run_jogy, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogz",_f00, 0, tx_print_nul, get_nul, cm_run_jogz, (float *)&cm.jogging_dest, 0},
 	{ "jog","joga",_f00, 0, tx_print_nul, get_nul, cm_run_joga, (float *)&cm.jogging_dest, 0},
-//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
-//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+	//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+	//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
@@ -178,13 +178,13 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
-	{ "", "test",_f00, 0, tx_print_nul, help_test,		 run_test, 	  (float *)&cs.null,0 },	// run tests, print test help screen
-	{ "", "defa",_f00, 0, tx_print_nul, help_defa,		 set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
+	{ "", "test",_f00, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "defa",_f00, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
 	{ "", "boot",_f00, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
 
 #ifdef __HELP_SCREENS
-	{ "", "help",_f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// prints config help screen
-	{ "", "h",   _f00, 0, tx_print_nul, help_config,	 set_nul, 	  (float *)&cs.null,0 },	// alias for "help"
+	{ "", "help",_f00, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // prints config help screen
+	{ "", "h",   _f00, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // alias for "help"
 #endif
 
 	// Motor parameters
@@ -467,10 +467,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "gc",  _f00, 0, tx_print_nul, gc_get_gc, gc_run_gc,(float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
-	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,		NOM_SEGMENT_USEC },
-	{ "",   "ml",  _fip, 4, cm_print_ml,  get_flu, set_flu, (float *)&cm.min_segment_len,		MIN_LINE_LENGTH },
-	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,		ARC_SEGMENT_LENGTH },
-	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,		JSON_FOOTER_DEPTH },
+//	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,	NOM_SEGMENT_USEC },
+	{ "",   "ml",  _fip, 4, cm_print_ml,  get_flu, set_flu, (float *)&cm.min_segment_len,	MIN_LINE_LENGTH },
+	{ "",   "ma",  _fip, 4, cm_print_ma,  get_flu, set_flu, (float *)&cm.arc_segment_len,	ARC_SEGMENT_LENGTH },
+	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,	JSON_FOOTER_DEPTH },
 
 	// User defined data groups
 	{ "uda","uda0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[0], USER_DATA_A0 },
@@ -523,10 +523,17 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_es","_es3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
 	{ "_es","_es4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
 
+	{ "_xs","_xs1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_1], 0 }, // Motor 1 correction steps applied
+	{ "_xs","_xs2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_2], 0 },
+	{ "_xs","_xs3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_3], 0 },
+	{ "_xs","_xs4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.corrected_steps[MOTOR_4], 0 },
+
 	{ "_fe","_fe1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_1], 0 }, // Motor 1 following error in steps
 	{ "_fe","_fe2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_2], 0 },
 	{ "_fe","_fe3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
 	{ "_fe","_fe4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_4], 0 },
+
+//	{ "",   "_dd1",_f00, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -605,13 +612,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","udb", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udc", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udd", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
-	
+
 	{ "","_te",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis endpoint group
 	{ "","_tr",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis runtime group
 	{ "","_ts",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target motor steps group
 	{ "","_ps",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// position motor steps group
 	{ "","_cs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// commanded motor steps group
 	{ "","_es",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder steps group
+	{ "","_xs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// correction steps group
 	{ "","_fe",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// following error group
 
 	// Uber-group (groups of groups, for text-mode displays only)
@@ -624,7 +632,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		38		// count of simple groups
+#define CMD_COUNT_GROUPS 		39		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */

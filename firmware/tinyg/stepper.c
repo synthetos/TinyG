@@ -41,8 +41,8 @@
 /**** Allocate structures ****/
 
 stConfig_t st_cfg;
+stPrepSingleton_t st_pre;
 static stRunSingleton_t st_run;
-static stPrepSingleton_t st_pre;
 
 /**** Setup local functions ****/
 
@@ -150,7 +150,7 @@ void st_reset()
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
 	en_reset_encoders();
 	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[i].direction_change = true;
+		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
 	}
 }
@@ -228,7 +228,6 @@ stat_t st_motor_power_callback() 	// called by controller
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
 		if (st_cfg.mot[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
-//			_energize_motor(motor);
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_START_IDLE_TIMEOUT): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
@@ -391,9 +390,9 @@ static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-	if (st_run.dda_ticks_downcount != 0) return;					// exit if it's still busy
+	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
 
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {		// if there are no moves to load...
+	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 			st_run.mot[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
 		}
@@ -414,12 +413,12 @@ static void _load_move()
 		// These sections are somewhat optimized for execution speed. The whole load operation
 		// is supposed to take < 10 uSec (Xmega). Be careful if you mess with this.
 
-		// if() either sets the substep increment value or zeroes it
+		// the following if() statement sets the runtime substep increment value or zeroes it
 
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
-			// Set the direction bit in hardware
-			// Compensate for direction change in the accumulator
+			// Set the direction bit in hardware. Compensate for direction change in the accumulator
+			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
@@ -430,7 +429,7 @@ static void _load_move()
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
-			SET_ENCODER_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
@@ -452,7 +451,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -472,7 +471,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -492,7 +491,7 @@ static void _load_move()
 			}
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
-			SET_ENCODER_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
+			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
 		} else {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -580,32 +579,28 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 #ifdef __STEP_CORRECTION
-		// 'Nudge2' correction strategy. Inject a single, scaled correction value then hold off
+		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
+
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-			st_pre.mot[i].correction_residual = following_error[i];
-			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+//			st_pre.mot[i].correction_residual = following_error[i];
+//			st_pre.mot[i].correction_steps = st_pre.mot[i].correction_residual * STEP_CORRECTION_FACTOR;
+			st_pre.mot[i].correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
 			if (st_pre.mot[i].correction_steps > 0) {
 				st_pre.mot[i].correction_steps = min3(st_pre.mot[i].correction_steps, 
 													  fabs(travel_steps[i]), 
-													  STEP_CORRECTION_MAX); }
-			else {
+													  STEP_CORRECTION_MAX); 
+			} else {
 				st_pre.mot[i].correction_steps = max3(st_pre.mot[i].correction_steps, 
 													  -fabs(travel_steps[i]), 
-													  -STEP_CORRECTION_MAX); }
-
+													  -STEP_CORRECTION_MAX); 
+			}
+			st_pre.corrected_steps[i] += st_pre.mot[i].correction_steps;
 			travel_steps[i] += st_pre.mot[i].correction_steps;
-
-//#ifndef __SUPRESS_DIAGNOSTIC_DISPLAYS
-//			if (i==1) printf("Z");
-//			if (i==2) printf("Y");
-//			if (i==3) printf("X");
-//#endif
 		}
-
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming 
 		// fractional steps times the substep multiplier or positional drift will occur.

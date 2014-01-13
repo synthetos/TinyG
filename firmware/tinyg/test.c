@@ -103,26 +103,19 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
-//	xio_queue_RX_string_usb("T4\n");
-//	xio_queue_RX_string_usb("M6\n");
-//	xio_queue_RX_string_usb("M6T4\n");
-//	xio_queue_RX_string_usb("$tool\n");
-
-/* Run test file */
+/* Run test 99 */
 //	xio_queue_RX_string_usb("$test=99\n");		// run test file
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
 //	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
-	xio_queue_RX_string_usb("{\"g55\":{\"x\":11.389,\"y\":18.670,\"z\":-25.798,\"a\":0.000,\"b\":0.000,\"c\":-12.886}}\n");
-
-//	xio_queue_RX_string_usb("g0 y50\n");		// medium Y line
-//	xio_queue_RX_string_usb("g0 y0\n");			// return Y to zero
-
+/* Some useful sequences */
 //	xio_queue_RX_string_usb("g28.2z0\n");
 //	xio_queue_RX_string_usb("{\"jogx\":1}\n");
 //	xio_queue_RX_string_usb("{\"uda\":{\"0\":\"0x4\"}}\n");
-
-/* Other command sequences */
+//	xio_queue_RX_string_usb("T4\n");
+//	xio_queue_RX_string_usb("M6\n");
+//	xio_queue_RX_string_usb("M6T4\n");
+//	xio_queue_RX_string_usb("$tool\n");
 //	xio_queue_RX_string_usb("H\n");				// show help file
 //	xio_queue_RX_string_usb("\n\n");			// 2 null lines
 //	xio_queue_RX_string_usb("%\n");				// opening percent character
@@ -163,6 +156,10 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x0.12\n");
 //	xio_queue_RX_string_usb("g0 x20\n");		// medium line
 //	xio_queue_RX_string_usb("g0 x2000\n");		// exceed soft limits
+
+	xio_queue_RX_string_usb("g0 z2\n");			// Z short line
+	xio_queue_RX_string_usb("g0 z-2\n");		// Z short line
+//	xio_queue_RX_string_usb("g0 z20\n");		// Z medium line
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
 //	xio_queue_RX_string_usb("g0 x0\n");
@@ -319,35 +316,6 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"gc\":\"n10000000 g0 x0\"}\n");
 //	xio_queue_RX_string_usb("{\"gc\":\"n100000000 g0 x20\"}\n");
 
-/*
-	xio_queue_RX_string_usb("{\"gc\":\"N1 T1M6\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N2 G17\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N3 G21 (mm)\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N4 (S8000)\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N5 (M3)\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N6 G92X0.327Y-33.521Z-1.000\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N7 G0Z4.000\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N8 F300.0\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N9 G1X0.327Y-33.521\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N10 G1Z-1.000\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N11 X0.654Y-33.526\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N12 X0.980Y-33.534\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N13 X1.304Y-33.546\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N14 X1.626Y-33.562\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N15 X1.946Y-33.580\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N16 X2.262Y-33.602\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N17 X2.574Y-33.628\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N18 X2.882Y-33.656\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N19 X3.185Y-33.688\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N20 X3.483Y-33.724\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N21 X3.775Y-33.762\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N22 X4.060Y-33.805\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N23 X4.339Y-33.850\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N24 X4.610Y-33.898\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N25 X4.874Y-33.950\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N26 X5.130Y-34.005\"}\n");
-	xio_queue_RX_string_usb("{\"gc\":\"N27 X5.376Y-34.064\"}\n");
-*/
 #endif // __CANNED_STARTUP
 }
 

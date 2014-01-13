@@ -91,17 +91,6 @@ enum sectionState {
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
 
-/* MAX_CORRECTION_MM
- * MAX_CORRECTION_STEP
- *	These values set the maximum millimeters that can be corrected in a single segment and
- *	the maximum fractional steps that can be corrected in a single segment. They are used 
- *	by the feedforward and feedback error correction functions (respectively) to meter out 
- *	corrections across multiple segments.
- */
-#define MIN_CORRECTION_MM		(float)0.0001	// don't bother correcting
-#define MAX_CORRECTION_MM		(float)0.001	// max you can correct in a single step
-#define MAX_CORRECTION_STEP		(float)0.10
-
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
  *  If you don;t do this the first block will always plan to zero as it will
@@ -220,7 +209,8 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-	float section_target[SECTIONS][AXES];// targets for each move section
+	float section_target[SECTIONS][AXES];// targets in position for each move section
+//	float section_steps[SECTIONS][AXES];// targets in steps for each move section
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
@@ -246,18 +236,14 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint32_t segment_count;			// count of running segments
 	float segment_velocity;			// computed velocity for aline segment
 	float segment_time;				// actual time increment per aline segment
+	float microseconds;				// line or segment time in microseconds
 
 	float accel_time;				// JERK BASED EXEC CODE
 	float segment_accel_time;		// JERK BASED EXEC CODE
 	float elapsed_accel_time;		// JERK BASED EXEC CODE
-	float microseconds;				// line or segment time in microseconds
+
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
-
-//	float microseconds;				// line or segment time in microseconds
-//	float segment_length;			// computed length for aline segment
-//	float forward_diff_1;			// forward difference level 1 (Acceleration)
-//	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 
 	GCodeState_t gm;				// gcode model state currently executing
 

@@ -297,11 +297,11 @@ enum prepBufferState {
  *	and error will grow instead of shrink
  */
 
-//#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
-#define STEP_CORRECTION_THRESHOLD	(float)40.00		// magnitude of forwarding error to apply correction 
+#define STEP_CORRECTION_THRESHOLD	(float)1.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.10		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  3		// minimum number of segments to wait between error correction
+#define STEP_INITIAL_DIRECTION				false
 
 /*
  * Stepper control structures
@@ -367,7 +367,7 @@ typedef struct stPrepMotor {
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 	int32_t correction_holdoff;		// count down segments between corrections
 	float correction_steps;			// steps to correct from each segment
-	float correction_residual;		// holds and decrements correction term
+//	float correction_residual;		// holds and decrements correction term
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -379,11 +379,13 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
 	float correction_steps;			// temporary register for correction value (in fractional steps)
+	float corrected_steps[MOTORS];	// accumulated correction steps for the cycle
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st_cfg;			// only the config struct is exposed. The rest are private
+extern stConfig_t st_cfg;			// config struct is exposed. The rest are private
+extern stPrepSingleton_t st_pre;	// only used by config_app diagnostics
 
 /**** FUNCTION PROTOTYPES ****/
 

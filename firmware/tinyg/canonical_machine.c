@@ -1657,7 +1657,8 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+//	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1736,6 +1737,13 @@ stat_t cm_run_home(cmdObj_t *cmd)
 	if (fp_TRUE(cmd->value)) { cm_homing_cycle_start();}
 	return (STAT_OK);
 }
+
+stat_t cm_dd1(cmdObj_t *cmd)
+{
+//	printf();
+	return (STAT_OK);
+}
+
 
 /***********************************************************************************
  * AXIS JOGGING
