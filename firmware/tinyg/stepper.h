@@ -366,8 +366,8 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 	int32_t correction_holdoff;		// count down segments between corrections
-	float correction_steps;			// steps to correct from each segment
-	float corrected_steps;			// accumulated correction steps for the cycle
+//	float correction_steps;			// steps to correct from each segment
+	float corrected_steps;			// accumulated correction steps for the cycle (for diagnostic display only)
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {

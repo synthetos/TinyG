@@ -571,6 +571,7 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 	// setup motor parameters
 
 	uint8_t previous_direction;
+	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
 		// Skip this motor if there are no new steps. Leave all values intact.
@@ -595,21 +596,16 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 
 		if ((--st_pre.mot[i].correction_holdoff < 0) && 
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
-
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-			st_pre.mot[i].correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
-			if (st_pre.mot[i].correction_steps > 0) {
-				st_pre.mot[i].correction_steps = min3(st_pre.mot[i].correction_steps, 
-													  fabs(travel_steps[i]), 
-													  STEP_CORRECTION_MAX); 
-			} else {
-				st_pre.mot[i].correction_steps = max3(st_pre.mot[i].correction_steps, 
-													  -fabs(travel_steps[i]), 
-													  -STEP_CORRECTION_MAX); 
+			correction_steps = min3(fabs(following_error[i] * STEP_CORRECTION_FACTOR), 
+									fabs(travel_steps[i]), STEP_CORRECTION_MAX); 
+
+			if (following_error < 0) {
+				correction_steps = -correction_steps;
 			}
-			st_pre.mot[i].corrected_steps += st_pre.mot[i].correction_steps;
-			travel_steps[i] += st_pre.mot[i].correction_steps;
+			st_pre.mot[i].corrected_steps += correction_steps;
+			travel_steps[i] += correction_steps;
 		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
