@@ -187,7 +187,6 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-//	float ms_in_queue;			// UNUSED - total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -209,14 +208,13 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-	float section_target[SECTIONS][AXES];// targets in position for each move section
+	float waypoint[SECTIONS][AXES];	// target endpoints for each move section
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
 	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
 	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
-//	float travel_steps[MOTORS];		// DIAGNOSTIC
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;

@@ -152,6 +152,7 @@ void st_reset()
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
+		st_pre.mot[i].corrected_steps = 0;
 	}
 }
 
