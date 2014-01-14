@@ -483,7 +483,7 @@ static stat_t _exec_aline_segment()
 	uint8_t i;
 	float travel_steps[MOTORS];
 
-	// *** Last segment processing (special processing for last segment in a section) ***
+	// *** Last segment processing *** (special processing for last segment in a section)
 	// Either compute the new segment target or use the section endpoints.
 	// Don't do the endpoint correction if you are going into a hold.
 
@@ -501,7 +501,7 @@ static stat_t _exec_aline_segment()
 		}
 	}
 
-	// *** Step manipluation and execution ***
+	// *** Step manipulation and execution ***
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 	// Call the stepper prep function. Return if there's an error
