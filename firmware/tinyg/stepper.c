@@ -609,7 +609,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[],  float segmen
 				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX); 
 			}
 			st_pre.mot[i].corrected_steps += correction_steps;
-			travel_steps[i] += correction_steps;
+			travel_steps[i] -= correction_steps;
 		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming

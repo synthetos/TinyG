@@ -465,16 +465,16 @@ static stat_t _exec_aline_tail()
  *	The commanded_steps are the target_steps delayed by one more segment. 
  *	This lines them up in time with the encoder readings.
  * 
- *	The forwarding_error term is positive if the commanded steps are greater 
- *	than the encoder reading and negative if the commanded steps are less than the encoder.
+ *	The following_error term is positive if the encoder reading is greater than the
+ *	commanded steps, and negative if the encoder reading is less than the commanded steps.
+ *	The following error is not affected by the direction of movement - it's purely a 
+ *	statement of relative position. Examples:
  *
- *	Examples:
- *
- *	 Commanded  Encoder	  Following Error
- *		 90		  100	  -10	commanded steps are 10 short of encoder reading
- *	   -100		  -90	  -10	commanded steps are 10 short of encoder reading
- *		100		   90	  +10	commanded steps are 10 beyond encoder reading
- *	    -90		 -100	  +10	commanded steps are 10 beyond encoder reading
+ *     Encoder Commanded   Following Error
+ *	  	  100	     90	    +10		encoder is 10 steps ahead of commanded steps
+ *	      -90	   -100	    +10		encoder is 10 steps ahead of commanded steps
+ *		   90	    100	    -10		encoder is 10 steps behind commanded steps
+ *	     -100	    -90	    -10		encoder is 10 steps behind commanded steps
  */
 
 static stat_t _exec_aline_segment()
@@ -487,7 +487,6 @@ static stat_t _exec_aline_segment()
 	// Otherwise if not at a section waypoint compute target from segment time and velocity
 	// Don't do waypoint correction if you are going into a hold.
 
-//	mr.segment_count--;
 	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		copy_axis_vector(mr.gm.target, mr.waypoint[mr.section]);
@@ -508,7 +507,7 @@ static stat_t _exec_aline_segment()
 		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed by 1 segment
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get current encoder position (time aligns to commanded_steps)
-		mr.following_error[i] = mr.commanded_steps[i] - mr.encoder_steps[i];
+		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i]; 
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the target steps...
 	for (i=0; i<MOTORS; i++) {								// and compute the distances to be traveled
