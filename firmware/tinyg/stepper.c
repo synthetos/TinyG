@@ -547,13 +547,13 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[])
+stat_t st_prep_line(float travel_steps[], float following_error[],  float segment_time)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
-		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
-		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
-		} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
+		} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
+		} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
+		} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
@@ -561,9 +561,11 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 
 	float dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;	// value from previous segment
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
-	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+//	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+	st_pre.dda_ticks = (int32_t)((segment_time * 60) * FREQUENCY_DDA);
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-	if (dda_ticks_X_substeps > 0) {
+
+	if (dda_ticks_X_substeps > 0) {	// calculate phase adjustment term for dda accumulator compansation
 		st_pre.dda_accumulator_scale = st_pre.dda_ticks_X_substeps / dda_ticks_X_substeps;
 	} else {
 		st_pre.dda_accumulator_scale = 1;

@@ -233,7 +233,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint32_t segment_count;			// count of running segments
 	float segment_velocity;			// computed velocity for aline segment
 	float segment_time;				// actual time increment per aline segment
-	float microseconds;				// line or segment time in microseconds
+//	float microseconds;				// line or segment time in microseconds
 
 	float accel_time;				// JERK BASED EXEC CODE
 	float segment_accel_time;		// JERK BASED EXEC CODE

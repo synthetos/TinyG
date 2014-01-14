@@ -309,9 +309,10 @@ static stat_t _exec_aline_head()
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+//		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
 	}
@@ -373,9 +374,10 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+//		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
@@ -412,9 +414,10 @@ static stat_t _exec_aline_tail()
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
+//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
+//		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
 	}
@@ -515,7 +518,7 @@ static stat_t _exec_aline_segment()
 	// *** Call the stepper prep function *** 
 	// Return if there's an error
 
-	ritorno(st_prep_line(travel_steps, mr.microseconds, mr.following_error));
+	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments

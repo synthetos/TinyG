@@ -44,7 +44,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD   		409.37	// cleanup - interim commit - needs to be tested
+#define TINYG_FIRMWARE_BUILD   		409.38	// changed time argument in prep_line call - this might break horribly - needs to be tested
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
