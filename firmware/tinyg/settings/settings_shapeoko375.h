@@ -187,7 +187,7 @@
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			60000
 #define A_FEEDRATE_MAX			48000
-#define A_TRAVEL_MAX			400					// degrees
+#define A_TRAVEL_MIN			400					// degrees
 #define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
 #define A_JERK_MAX				24000				// yes, 24 billion
 #define A_JUNCTION_DEVIATION	0.1

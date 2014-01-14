@@ -481,9 +481,9 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
-//	float travel_steps[MOTORS];
+	float travel_steps[MOTORS];
 
-	// *** Last segment processing (special processing for last segment in a section) ***
+	// *** Last segment processing *** (special processing for last segment in a section)
 	// Either compute the new segment target or use the section endpoints.
 	// Don't do the endpoint correction if you are going into a hold.
 
@@ -501,7 +501,7 @@ static stat_t _exec_aline_segment()
 		}
 	}
 
-	// *** Step manipluation and execution ***
+	// *** Step manipulation and execution ***
 	// Prep the segment for the steppers and adjust the variables for the next iteration.
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 	// Call the stepper prep function. Return if there's an error
@@ -517,10 +517,10 @@ static stat_t _exec_aline_segment()
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the new target steps...
 	for (i=0; i<MOTORS; i++) {								// and compute the distance to be traveled
-		mr.travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
+		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	ritorno(st_prep_line(mr.travel_steps, mr.microseconds, mr.following_error));
+	ritorno(st_prep_line(travel_steps, mr.microseconds, mr.following_error));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec (NB: ignored if running the body)
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
