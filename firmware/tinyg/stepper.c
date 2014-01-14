@@ -608,24 +608,6 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 			st_pre.mot[i].corrected_steps += correction_steps;
 			travel_steps[i] += correction_steps;
 		}
-
-/*
-		if ((--st_pre.mot[i].correction_holdoff < 0) && 
-			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
-			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-
-			correction_steps = min3(fabs(following_error[i] * STEP_CORRECTION_FACTOR), 
-									fabs(travel_steps[i]), STEP_CORRECTION_MAX); 
-
-			if (following_error < 0) {
-				correction_steps = -correction_steps;
-			}
-			st_pre.mot[i].corrected_steps += correction_steps;
-			travel_steps[i] += correction_steps;
-		}
-*/
-
-
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
