@@ -201,7 +201,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
-		// generate the waypoint targets for section endpoint position correction
+		// generate the waypoints for position correction at section ends
 		for (uint8_t i=0; i<AXES; i++) {
 			mr.waypoint[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
 			mr.waypoint[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
@@ -309,9 +309,6 @@ static stat_t _exec_aline_head()
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
@@ -374,9 +371,6 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
@@ -414,9 +408,6 @@ static stat_t _exec_aline_tail()
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-//		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-//			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-//		}
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
@@ -463,18 +454,18 @@ static stat_t _exec_aline_tail()
  * NOTES ON STEP ERROR CORRECTION:
  *
  *	The commanded_steps are the target_steps delayed by one more segment. 
- *	This lines them up in time with the encoder readings.
+ *	This lines them up in time with the encoder readings so a following error can be generated
  * 
- *	The following_error term is positive if the encoder reading is greater than the
- *	commanded steps, and negative if the encoder reading is less than the commanded steps.
- *	The following error is not affected by the direction of movement - it's purely a 
- *	statement of relative position. Examples:
+ *	The following_error term is positive if the encoder reading is greater than (ahead of) 
+ *	the commanded steps, and negative (behind) if the encoder reading is less than the 
+ *	commanded steps. The following error is not affected by the direction of movement - 
+ *	it's purely a statement of relative position. Examples:
  *
- *     Encoder Commanded   Following Error
- *	  	  100	     90	    +10		encoder is 10 steps ahead of commanded steps
- *	      -90	   -100	    +10		encoder is 10 steps ahead of commanded steps
- *		   90	    100	    -10		encoder is 10 steps behind commanded steps
- *	     -100	    -90	    -10		encoder is 10 steps behind commanded steps
+ *    Encoder Commanded   Following Err
+ *	  	  100	     90	       +10		encoder is 10 steps ahead of commanded steps
+ *	      -90	   -100	       +10		encoder is 10 steps ahead of commanded steps
+ *		   90	    100	       -10		encoder is 10 steps behind commanded steps
+ *	     -100	    -90	       -10		encoder is 10 steps behind commanded steps
  */
 
 static stat_t _exec_aline_segment()
@@ -482,8 +473,8 @@ static stat_t _exec_aline_segment()
 	uint8_t i;
 	float travel_steps[MOTORS];
 
-	// *** Set target position for the segment ***
-	// If the segment ends on a section waypoint synchronize to the head, body or tail endpoint
+	// Set target position for the segment
+	// If the segment ends on a section waypoint synchronize to the head, body or tail end
 	// Otherwise if not at a section waypoint compute target from segment time and velocity
 	// Don't do waypoint correction if you are going into a hold.
 
@@ -497,11 +488,11 @@ static stat_t _exec_aline_segment()
 		}
 	}
 
-	// *** Convert target position to steps ***
+	// Convert target position to steps
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
 	//
-	// NB: The direct manipulation of steps (as below) only works for Cartesian kinematics.
-	//	   Other kinematics will require transforming the travel distance.
+	// NB: The direct manipulation of steps to compute travel_steps only works for Cartesian kinematics.
+	//	   Other kinematics may require transforming travel distance as opposed to simply subtracting steps.
 
 	for (i=0; i<MOTORS; i++) {
 		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed by 1 segment
@@ -514,7 +505,7 @@ static stat_t _exec_aline_segment()
 		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	// *** Call the stepper prep function *** 
+	// Call the stepper prep function
 	// Return if there's an error
 
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
