@@ -139,6 +139,9 @@ uint8_t get_switch_thrown(void);
 void reset_switches(void);
 void sw_show_switch(void);
 
+void set_switch_type( uint8_t switch_type );
+uint8_t get_switch_type();
+
 /*
  * Switch config accessors and text functions
  */

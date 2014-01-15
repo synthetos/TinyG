@@ -160,6 +160,11 @@ uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
 uint8_t get_limit_switch_thrown(void) { return(sw.limit_flag);}
 uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
 
+
+// global switch type
+void set_switch_type( uint8_t switch_type ) { sw.switch_type = switch_type; }
+uint8_t get_switch_type() { return sw.switch_type; }
+
 /*
  * reset_switches() - reset all switches and reset limit flag
  */
