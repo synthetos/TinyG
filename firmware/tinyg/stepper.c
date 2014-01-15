@@ -420,7 +420,6 @@ static void _load_move()
 
 			// Apply accumulator correction if the time base has changed
 
-//			st_run.mot[MOTOR_1].substep_accumulator *= st_pre.accumulator_correction;
 			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
 			}
@@ -452,7 +451,6 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
-//			st_run.mot[MOTOR_2].substep_accumulator *= st_pre.accumulator_correction;
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
@@ -476,7 +474,6 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
-//			st_run.mot[MOTOR_3].substep_accumulator *= st_pre.accumulator_correction;
 			if (st_pre.mot[MOTOR_3].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_3].substep_accumulator *= st_pre.mot[MOTOR_3].accumulator_correction;
 			}
@@ -500,7 +497,6 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
-//			st_run.mot[MOTOR_4].substep_accumulator *= st_pre.accumulator_correction;
 			if (st_pre.mot[MOTOR_4].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_4].substep_accumulator *= st_pre.mot[MOTOR_4].accumulator_correction;
 			}
@@ -561,7 +557,7 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change)
+stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
@@ -573,17 +569,10 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
-//	float prev_dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;	// value from previous segment
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
 	st_pre.dda_ticks = (int32_t)(segment_time * 60 * FREQUENCY_DDA);// NB: converts minutes to seconds
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-/*
-	if (prev_dda_ticks_X_substeps > 0) {	// calculate correction term for dda accumulator compansation
-		st_pre.accumulator_correction = st_pre.dda_ticks_X_substeps / prev_dda_ticks_X_substeps;
-	} else {
-		st_pre.accumulator_correction = 1;
-	}
-*/
+
 	// setup motor parameters
 
 	uint8_t previous_direction;
@@ -609,17 +598,18 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
-		// Setup the accumulator correction factor and flag
-		// Arranging it this way computes the correct factor even if the motor was dormant for some
-		// number of previous moves. Correction is computed based on the last ticks actually used.
+		// Detect segment time changes and setup the accumulator correction factor and flag.
+		// Putting this here computes the correct factor even if the motor was dormant for some
+		// number of previous moves. Correction is computed based on the last segment time actually used.
 
-		if (segment_time_change == true) {
-			if (st_pre.mot[i].prev_dda_ticks_X_substeps != 0) {		// special case to skip first move
+//		if (fp_NE(segment_time, st_pre.mot[i].prev_segment_time)) {
+//		if (segment_time != st_pre.mot[i].prev_segment_time) {
+		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
+			if (st_pre.mot[i].prev_segment_time != 0) {		// special case to skip first move
 				st_pre.mot[i].accumulator_correction_flag = true;
-				st_pre.mot[i].accumulator_correction = 
-					st_pre.dda_ticks_X_substeps / st_pre.mot[i].prev_dda_ticks_X_substeps;
+				st_pre.mot[i].accumulator_correction = segment_time / st_pre.mot[i].prev_segment_time;
 			}
-			st_pre.mot[i].prev_dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
+			st_pre.mot[i].prev_segment_time = segment_time;
 		}
 
 #ifdef __STEP_CORRECTION

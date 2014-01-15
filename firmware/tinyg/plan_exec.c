@@ -471,7 +471,6 @@ static stat_t _exec_aline_tail()
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
-	uint8_t segment_time_change = false;
 	float travel_steps[MOTORS];
 
 	// Set target position for the segment
@@ -508,10 +507,7 @@ static stat_t _exec_aline_segment()
 
 	// Call the stepper prep function
 
-	if (fp_NE(mr.segment_time, mr.prev_segment_time)) segment_time_change = true;
-	mr.prev_segment_time = mr.segment_time;
-
-	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time, segment_time_change));
+	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments

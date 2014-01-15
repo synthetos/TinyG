@@ -362,15 +362,19 @@ typedef struct stRunSingleton {		// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
-	uint8_t direction_change;		// set true if direction changed
-	int8_t step_sign;				// set to +1 or -1 for encoders
-	int8_t direction;				// travel direction corrected for polarity
-	uint32_t substep_increment; 	// total steps in axis times substep factor
-	int32_t correction_holdoff;		// count down segments between corrections
-	uint8_t accumulator_correction_flag;// signals accumulator needs correction
-	float accumulator_correction;		// factor for adjusting accumulator between segments
-	uint32_t prev_dda_ticks_X_substeps; // value used by latest move in which this motor moved
+	uint8_t direction_change;			// set true if direction changed
+	int8_t direction;					// travel direction corrected for polarity
+	int8_t step_sign;					// set to +1 or -1 for encoders
+
+	uint32_t substep_increment;	 		// total steps in axis times substep factor
+	int32_t correction_holdoff;			// count down segments between corrections
 	float corrected_steps;				// accumulated correction steps for the cycle (for diagnostic display only)
+
+//	uint8_t segment_time_change;		// set true if segment time changed
+	float prev_segment_time;			// segment time from previous segment run for this motor
+	float accumulator_correction;		// factor for adjusting accumulator between segments
+	uint8_t accumulator_correction_flag;// signals accumulator needs correction
+//	uint32_t prev_dda_ticks_X_substeps; // value used by latest move in which this motor moved
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -409,7 +413,8 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change);
+//stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change);
+stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);

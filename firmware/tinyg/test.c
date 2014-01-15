@@ -157,8 +157,13 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g0 x20\n");		// medium line
 //	xio_queue_RX_string_usb("g0 x2000\n");		// exceed soft limits
 
-	xio_queue_RX_string_usb("g0 z2\n");			// Z short line
-	xio_queue_RX_string_usb("g0 z-2\n");		// Z short line
+	xio_queue_RX_string_usb("g0 x0.04 y0.2\n");		// very short line
+	xio_queue_RX_string_usb("g0 x0.4 y0.12\n");		// very short line
+	xio_queue_RX_string_usb("g0 x0.1 y0.02\n");		// very short line
+	xio_queue_RX_string_usb("g0 x0.0 y-0.2\n");		// very short line
+
+//	xio_queue_RX_string_usb("g0 z2\n");			// Z short line
+//	xio_queue_RX_string_usb("g0 z-2\n");		// Z short line
 //	xio_queue_RX_string_usb("g0 z20\n");		// Z medium line
 
 //	xio_queue_RX_string_usb("g0 x0.2\n");		// shortest drawable line
