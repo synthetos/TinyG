@@ -125,6 +125,7 @@ uint8_t cm_probe_cycle_start( float target[], float flags[] )
 	pb.func = _probing_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_PROBE;
 	st_energize_motors();				// enable motors if not already enabled
+    cm_spindle_control(SPINDLE_OFF);
 	return (STAT_OK);
 }
 
@@ -147,12 +148,14 @@ void _probe_restore_settings()
     
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
     cm.cycle_state = CYCLE_OFF;
-	cm_cycle_end();
+	//cm_cycle_end();
+    
+    printf_P(PSTR("(cm.cycle_state %i)\n"), cm.cycle_state);
 }
 
 uint8_t cm_probe_callback(void)
 {
-	if (cm.cycle_state != CYCLE_PROBE) { return (STAT_NOOP);}	// exit if not in a homing cycle
+	if (cm.cycle_state != CYCLE_PROBE) { return (STAT_NOOP);}	// exit if not in a probe cycle
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
 	return (pb.func());                                         // execute the current homing move
 }
@@ -164,7 +167,7 @@ static stat_t _probing_start()
     if( probe==SW_OPEN )
     {
         //cm_request_queue_flush();
-        mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
+        //mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
         cm_request_cycle_start();
         
         ritorno(cm_straight_feed(pb.target, pb.flags));
@@ -179,12 +182,12 @@ static stat_t _probing_finish()
     cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
     
     for( int axis=0; axis<AXES; axis++ )
-    {
         cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
-        
-        // ESTEE: why do i have to update the runtime??
-        //mp_set_runtime_position(axis, cm.probe_results[axis]);
-    }
+    
+    // if we got here because of a feed hold we need to keep the model position correct
+    //cm_set_model_position(STAT_OK);
+    
+    cm_request_queue_flush();
     
     printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
              (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
