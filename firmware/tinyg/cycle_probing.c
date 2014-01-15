@@ -59,6 +59,7 @@ static struct pbProbingSingleton pb;
 
 static stat_t _probing_start();
 static stat_t _probing_finish();
+static stat_t _probing_finalize_exit();
 //static stat_t _probing_error_exit();
 
 static stat_t _set_pb_func(uint8_t (*func)());
@@ -87,6 +88,8 @@ static stat_t _set_pb_func(uint8_t (*func)());
 uint8_t cm_probe_cycle_start( float target[], float flags[] )
 {
     // so optimistic... ;)
+    // NOTE: it is *not* an error condition for the probe not to trigger.
+    // it is an error for the limit or homing switches to fire, or for some other configuration error.
     cm.probe_state = PROBE_FAILED;
     
     // axis init
@@ -118,7 +121,7 @@ uint8_t cm_probe_cycle_start( float target[], float flags[] )
     // re-init to pick up new switch settings
     switch_init();
     
-    
+    // start!
 	pb.func = _probing_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_PROBE;
 	st_energize_motors();				// enable motors if not already enabled
@@ -128,12 +131,14 @@ uint8_t cm_probe_cycle_start( float target[], float flags[] )
 // called when exiting on success or error
 void _probe_restore_settings()
 {
-    mp_flush_planner(); 						// should be stopped, but in case of switch closure
+    mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
     
     // restore switch settings
     sw.switch_type = pb.saved_switch_type;
     for( int i=0; i<NUM_SWITCHES; i++ )
         sw.mode[i] = pb.saved_switch_mode[i];
+    
+    // re-init to pick up changes
     switch_init();
     
     // restore axis jerk
@@ -152,20 +157,51 @@ uint8_t cm_probe_callback(void)
 	return (pb.func());                                         // execute the current homing move
 }
 
-static stat_t _probing_finalize_exit()	// third part of return to home
+static stat_t _probing_start()
+{
+    //cm_request_queue_flush();
+    mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
+	cm_request_cycle_start();
+    
+	ritorno(cm_straight_feed(pb.target, pb.flags));
+    
+	return (_set_pb_func(_probing_finish));				// start the clear
+}
+
+static stat_t _probing_finish()
+{
+    int8_t probe = read_switch(pb.probe_switch);
+    cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
+    
+    for( int axis=0; axis<AXES; axis++ )
+    {
+        cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
+        
+        // ESTEE: why do i have to update the runtime??
+        mp_set_runtime_position(axis, cm.probe_results[axis]);
+    }
+    
+    printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
+             (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
+    
+    return (_set_pb_func(_probing_finalize_exit));
+}
+
+static stat_t _probing_finalize_exit()
 {
 	_probe_restore_settings();
 	return (STAT_OK);
 }
 
-/* 
+
+/*
  * _probing_error_exit()
  */
 
 //static stat_t _probing_error_exit(int8_t axis)
 //{
-//	// Generate the warning message. Since the error exit returns via the homing callback 
-//	// - and not the main controller - it requires its own display processing 
+//	// Generate the warning message. Since the error exit returns via the homing callback
+//	// - and not the main controller - it requires its own display processing
 //	cmd_reset_list();
 //	if (axis == -2) {
 //		cmd_add_conditional_message((const char_t *)"*** WARNING *** Probing error: Specified axis(es) cannot use probe");
@@ -181,99 +217,6 @@ static stat_t _probing_finalize_exit()	// third part of return to home
 //	return (STAT_PROBING_CYCLE_FAILED);
 //}
 
-static stat_t _probing_start()
-{
-    cm_request_queue_flush();
-	cm_request_cycle_start();
-    
-	ritorno(cm_straight_feed(pb.target, pb.flags));
-    
-	return (_set_pb_func(_probing_finish));				// start the clear
-}
-
-static stat_t _probing_finish()
-{
-    int8_t probe = read_switch(pb.probe_switch);
-    cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
-    
-    for( int i=0; i<AXES; i++ )
-        cm.probe_results[i] = cm_get_absolute_position(ACTIVE_MODEL, i);
-    
-    printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%g,\"y\":%g,\"z\":%g}}\n"),
-             (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
-    
-    return (_set_pb_func(_probing_finalize_exit));
-}
-
-//// Handle an initial switch closure by backing off switches
-//// NOTE: Relies on independent switches per axis (not shared)
-//static stat_t _probing_axis_clear(int8_t axis)				// first clear move
-//{
-//	int8_t homing = read_switch(pb.homing_switch);
-//	int8_t limit = read_switch(pb.limit_switch);
-//
-//	if ((homing == SW_OPEN) && (limit != SW_CLOSED)) {
-// 		return (_set_pb_func(_probing_axis_search));		// OK to start the search
-//	}
-//	if (homing == SW_CLOSED) {
-//		_probing_axis_move(axis, pb.latch_backoff, pb.search_velocity);
-// 		return (_set_pb_func(_probing_axis_backoff_home));	// will backoff homing switch some more
-//	}
-//	_probing_axis_move(axis, -pb.latch_backoff, pb.search_velocity);
-// 	return (_set_pb_func(_probing_axis_backoff_limit));		// will backoff limit switch some more
-//}
-
-//static stat_t _probing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
-//{
-//	_probing_axis_move(axis, pb.latch_backoff, pb.search_velocity);
-//    return (_set_pb_func(_probing_axis_search));
-//}
-
-//static stat_t _probing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
-//{
-//	_probing_axis_move(axis, -pb.latch_backoff, pb.search_velocity);
-//    return (_set_pb_func(_probing_axis_search));
-//}
-//
-//static stat_t _probing_axis_search(int8_t axis)				// start the search
-//{
-//	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for search onward
-//	_probing_axis_move(axis, pb.search_travel, pb.search_velocity);
-//    return (_set_pb_func(_probing_axis_latch));
-//}
-//
-//static stat_t _probing_axis_latch(int8_t axis)				// latch to switch open
-//{
-//	_probing_axis_move(axis, pb.latch_backoff, pb.latch_velocity);    
-//	return (_set_pb_func(_probing_axis_zero_backoff)); 
-//}
-//
-//static stat_t _probing_axis_zero_backoff(int8_t axis)		// backoff to zero position
-//{
-//	_probing_axis_move(axis, pb.zero_backoff, pb.search_velocity);
-//	return (_set_pb_func(_probing_axis_set_zero));
-//}
-//
-//static stat_t _probing_axis_set_zero(int8_t axis)			// set zero and finish up
-//{
-//	cm.a[axis].jerk_max = pb.saved_jerk;					// restore the max jerk value
-//	//cm.homed[axis] = true;
-//	return (_set_pb_func(_probing_axis_start));
-//}
-//
-//static stat_t _probing_axis_move(int8_t axis, float target, float velocity)
-//{
-//	float flags[] = {1,1,1,1,1,1};
-//	set_vector_by_axis(target, axis);
-//	cm_set_feed_rate(velocity);
-//	cm_request_queue_flush();
-//	cm_request_cycle_start();
-//	ritorno(cm_straight_feed(vector, flags));
-//	return (STAT_EAGAIN);
-//}
-
-/* _run_homing_dual_axis() - kernal routine for running homing on a dual axis */
-//static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
 
 /**** HELPERS ****************************************************************/
 /*
@@ -285,29 +228,3 @@ uint8_t _set_pb_func(uint8_t (*func)())
 	pb.func = func;
 	return (STAT_EAGAIN);
 }
-
-///*
-// * _get_next_axis() - return next axis in sequence based on axis in arg
-// *
-// *	Accepts "axis" arg as the current axis; or -1 to retrieve the first axis
-// *	Returns next axis based on "axis" argument and if that axis is flagged for homing in the gf struct
-// *	Returns -1 when all axes have been processed
-// *	Returns -2 if no axes are specified (Gcode calling error)
-// *	Homes Z first, then the rest in sequence
-// *
-// *	Isolating this function facilitates implementing more complex and 
-// *	user-specified axis homing orders
-// */
-//
-//int8_t _get_next_axis(int8_t axis)
-//{
-//	if (axis == -1) {	// Only one axis allowed for probing.  The order below is the priority 
-//		if (cm.gf.target[AXIS_Z] == true) return (AXIS_Z);
-//		if (cm.gf.target[AXIS_X] == true) return (AXIS_X);
-//		if (cm.gf.target[AXIS_Y] == true) return (AXIS_Y);
-//		if (cm.gf.target[AXIS_A] == true) return (AXIS_A);
-//		return (-2);	// error
-//	}
-//	return (-1);	// done
-//}
-
