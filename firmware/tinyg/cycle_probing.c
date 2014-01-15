@@ -159,11 +159,16 @@ uint8_t cm_probe_callback(void)
 
 static stat_t _probing_start()
 {
-    //cm_request_queue_flush();
-    mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
-	cm_request_cycle_start();
-    
-	ritorno(cm_straight_feed(pb.target, pb.flags));
+    // initial probe state, don't probe if we're already contacted!
+    int8_t probe = read_switch(pb.probe_switch);
+    if( probe==SW_OPEN )
+    {
+        //cm_request_queue_flush();
+        mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
+        cm_request_cycle_start();
+        
+        ritorno(cm_straight_feed(pb.target, pb.flags));
+    }
     
 	return (_set_pb_func(_probing_finish));				// start the clear
 }
@@ -178,7 +183,7 @@ static stat_t _probing_finish()
         cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
         
         // ESTEE: why do i have to update the runtime??
-        mp_set_runtime_position(axis, cm.probe_results[axis]);
+        //mp_set_runtime_position(axis, cm.probe_results[axis]);
     }
     
     printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
