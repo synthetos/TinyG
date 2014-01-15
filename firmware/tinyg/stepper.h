@@ -367,7 +367,10 @@ typedef struct stPrepMotor {
 	int8_t direction;				// travel direction corrected for polarity
 	uint32_t substep_increment; 	// total steps in axis times substep factor
 	int32_t correction_holdoff;		// count down segments between corrections
-	float corrected_steps;			// accumulated correction steps for the cycle (for diagnostic display only)
+	uint8_t accumulator_correction_flag;// signals accumulator needs correction
+	float accumulator_correction;		// factor for adjusting accumulator between segments
+	uint32_t prev_dda_ticks_X_substeps; // value used by latest move in which this motor moved
+	float corrected_steps;				// accumulated correction steps for the cycle (for diagnostic display only)
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
@@ -378,8 +381,7 @@ typedef struct stPrepSingleton {
 	uint16_t dda_period;			// DDA or dwell clock period setting
 	uint32_t dda_ticks;				// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-//	uint8_t dda_accumulator_adjust;	// flag signalling accumulator adjustment is required
-	float dda_accumulator_scale;	// scaling foctor for new sector in accumulator
+//	float accumulator_correction;	// factor for adjusting accumulator between segments
 	stPrepMotor_t mot[MOTORS];		// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
@@ -407,8 +409,7 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-//stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[]);
-stat_t st_prep_line(float travel_steps[], float following_error[],  float segment_time);
+stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
