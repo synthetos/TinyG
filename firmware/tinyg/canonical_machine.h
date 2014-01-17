@@ -574,10 +574,8 @@ stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
 stat_t cm_set_g30_position(void);								// G30.1
 stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
 
-stat_t cm_probe_cycle_start(float target[], float flags[]);		// G38.2
+stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
-int8_t cm_probe_get_axis(void);
-void cm_probe_set_position(float);
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2

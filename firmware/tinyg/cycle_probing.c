@@ -40,21 +40,20 @@
 /**** Probe singleton structure ****/
 
 struct pbProbingSingleton {		// persistent homing runtime variables
-    stat_t (*func)();// binding for callback function state machine
-    
+	stat_t (*func)();			// binding for callback function state machine
+
 	// state saved from gcode model
     uint8_t saved_switch_type;  // saved switch type NC/NO
     uint8_t saved_switch_mode[NUM_SWITCHES];
     uint8_t probe_switch;       // what switch should we check?
-    
+
     // probe destination
     float target[AXES];
     float flags[AXES];
-    
+
 	float saved_jerk[AXES];		// saved and restored for each axis
 };
 static struct pbProbingSingleton pb;
-
 
 /**** NOTE: global prototypes and other .h info is located in canonical_machine.h ****/
 
@@ -91,10 +90,18 @@ static stat_t _set_pb_func(uint8_t (*func)());
  *  ESTEE: is this still true???   ASH: Yes.
  */
 
-uint8_t cm_probe_cycle_start( float target[], float flags[] )
+uint8_t cm_straight_probe(float target[], float flags[])
 {
-	copy_vector(pb.target, target);		// set endpoint
-	copy_vector(pb.flags, flags);
+	// trap zero feed rate condition
+	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
+		return (STAT_GCODE_FEEDRATE_ERROR);
+	}
+
+	// trap error conditions (1) no axis (axes) specified, (2) no feed rate specified
+
+	// set probe move endpoint
+	copy_vector(pb.target, target);		// set probe move endpoint
+	copy_vector(pb.flags, flags);		// set axes involved on the move
 	clear_vector(cm.probe_results);		// clear the old probe position. 
 										// NOTE: relying on probe_result will not detect a probe to 0,0,0.
 
@@ -149,13 +156,9 @@ static uint8_t _probing_init()
     sw.switch_type = SW_TYPE_NORMALLY_OPEN;	// contact probes are NO switches... usually.
 	switch_init();							// re-init to pick up new switch settings
 
-//	st_energize_motors();	not necessary?	// enable motors if not already enabled
     cm_spindle_control(SPINDLE_OFF);
 
 	return (_set_pb_func(_probing_start));	// start the move
-//	pb.func = _probing_start; 				// bind initial processing function
-//	return (STAT_OK);
-//	return (STAT_EAGAIN);
 }
 
 /*
@@ -166,11 +169,8 @@ static stat_t _probing_start()
 {
     // initial probe state, don't probe if we're already contacted!
     int8_t probe = read_switch(pb.probe_switch);
-    if( probe==SW_OPEN )
-    {
-        //cm_request_queue_flush();
-        //mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
-//		cm_request_cycle_start();
+
+    if( probe==SW_OPEN ) {
         ritorno(cm_straight_feed(pb.target, pb.flags));
     }
 	return (_set_pb_func(_probing_finish));
@@ -190,10 +190,20 @@ static stat_t _probing_finish()
 
     // if we got here because of a feed hold we need to keep the model position correct
 	cm_set_model_position_from_runtime(STAT_OK);
-//    cm_request_queue_flush();
 
-    printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
-             (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
+//    printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
+//             (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
+
+	// If probe was successful the 'e' word == 1, otherwise e == 0 to signal an error
+
+	printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
+	if (pb.flags[AXIS_X]) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);
+	if (pb.flags[AXIS_Y]) printf_P(PSTR(",\"y\":%0.3f"), cm.probe_results[AXIS_Y]);
+	if (pb.flags[AXIS_Z]) printf_P(PSTR(",\"z\":%0.3f"), cm.probe_results[AXIS_Z]);
+	if (pb.flags[AXIS_A]) printf_P(PSTR(",\"a\":%0.3f"), cm.probe_results[AXIS_A]);
+	if (pb.flags[AXIS_B]) printf_P(PSTR(",\"b\":%0.3f"), cm.probe_results[AXIS_B]);
+	if (pb.flags[AXIS_C]) printf_P(PSTR(",\"c\":%0.3f"), cm.probe_results[AXIS_C]);
+	printf_P(PSTR("}}\n"));
     
     return (_set_pb_func(_probing_finalize_exit));
 }

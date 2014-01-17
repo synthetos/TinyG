@@ -110,10 +110,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fns, 0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },// Model line number
-	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },// Active line number - model or runtime line number
-	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
-	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cs.null, 0 },	// feed rate
+	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },	// Model line number
+	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },	// Active line number - model or runtime line number
+	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
+	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cm.gm.feed_rate,0 },	// feed rate
 	{ "",   "stat",_f00, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
 	{ "",   "macs",_f00, 0, cm_print_macs, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
 	{ "",   "cycs",_f00, 0, cm_print_cycs, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
@@ -158,12 +158,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homb",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
 	{ "hom","homc",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
+//	{ "prb","prbe",_f00, 0, cm_print_prbe, cm_get_prbe, set_nul,(float *)&cs.null, 0 },	   // probing state
+
 	{ "jog","jogx",_f00, 0, tx_print_nul, get_nul, cm_run_jogx, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogy",_f00, 0, tx_print_nul, get_nul, cm_run_jogy, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogz",_f00, 0, tx_print_nul, get_nul, cm_run_jogz, (float *)&cm.jogging_dest, 0},
 	{ "jog","joga",_f00, 0, tx_print_nul, get_nul, cm_run_joga, (float *)&cm.jogging_dest, 0},
-	//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
-	//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
