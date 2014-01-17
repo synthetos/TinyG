@@ -1,7 +1,5 @@
 *.o
 *.d
-*.elf
-*.hex
 *.pyc
 *.map
 *.eep
