@@ -198,8 +198,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 
-		copy_axis_vector(mr.unit, bf->unit);
-		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
+		copy_vector(mr.unit, bf->unit);
+		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
 		// generate the waypoints for position correction at section ends
 		for (uint8_t i=0; i<AXES; i++) {
@@ -480,7 +480,7 @@ static stat_t _exec_aline_segment()
 
 	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		copy_axis_vector(mr.gm.target, mr.waypoint[mr.section]);
+		copy_vector(mr.gm.target, mr.waypoint[mr.section]);
 	} else {
 		float segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
@@ -508,7 +508,7 @@ static stat_t _exec_aline_segment()
 	// Call the stepper prep function
 
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
-	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
+	copy_vector(mr.position, mr.gm.target); 				// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run

@@ -398,12 +398,12 @@ void cm_set_model_target(float target[], float flag[])
  */
 void cm_set_model_position(stat_t status) 
 {
-	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, cm.gm.target);
+	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
 }
 
 void cm_set_model_position_from_runtime(stat_t status)
 {
-	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, mr.gm.target);
+	if (status == STAT_OK) copy_vector(cm.gmx.position, mr.gm.target);
 }
 
 /*
@@ -864,7 +864,7 @@ stat_t cm_resume_origin_offsets()
 stat_t cm_straight_traverse(float target[], float flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
-	cm_set_model_target(target,flags);
+	cm_set_model_target(target, flags);
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
@@ -886,7 +886,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 
 stat_t cm_set_g28_position(void)
 {
-	copy_axis_vector(cm.gmx.g28_position, cm.gmx.position);
+	copy_vector(cm.gmx.g28_position, cm.gmx.position);
 	return (STAT_OK);
 }
 
@@ -901,7 +901,7 @@ stat_t cm_goto_g28_position(float target[], float flags[])
 
 stat_t cm_set_g30_position(void)
 {
-	copy_axis_vector(cm.gmx.g30_position, cm.gmx.position);
+	copy_vector(cm.gmx.g30_position, cm.gmx.position);
 	return (STAT_OK);
 }
 

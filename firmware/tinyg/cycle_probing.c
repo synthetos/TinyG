@@ -93,8 +93,8 @@ static stat_t _set_pb_func(uint8_t (*func)());
 
 uint8_t cm_probe_cycle_start( float target[], float flags[] )
 {
-	copy_axis_vector(pb.target, target); // set endpoint
-	copy_axis_vector(pb.flags, flags);
+	copy_vector(pb.target, target);		// set endpoint
+	copy_vector(pb.flags, flags);
 	clear_vector(cm.probe_results);		// clear the old probe position. 
 										// NOTE: relying on probe_result will not detect a probe to 0,0,0.
 

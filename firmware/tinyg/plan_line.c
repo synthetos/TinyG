@@ -63,7 +63,7 @@ static void _reset_replannable_list(void);
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
-void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
+void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 /* 
@@ -168,7 +168,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 
 	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
-	copy_axis_vector(mm.position, bf->gm.target);			// update planning position
+	copy_vector(mm.position, bf->gm.target);				// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
 	return (STAT_OK);
 }
