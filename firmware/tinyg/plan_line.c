@@ -30,11 +30,9 @@
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
-//#include "plan_line.h"
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"
-//#include "encoder.h"
 #include "report.h"
 #include "util.h"
 //#include "xio.h"			// uncomment for debugging
@@ -888,7 +886,6 @@ stat_t mp_end_hold()
 		cm.hold_state = FEEDHOLD_OFF;
 		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
-//			cm.motion_state = MOTION_STOP;
 			cm_set_motion_state(MOTION_STOP);
 			return (STAT_NOOP);
 		}

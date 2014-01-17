@@ -385,19 +385,25 @@ void cm_set_model_target(float target[], float flag[])
 
 /* 
  * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
  *
- * 	This routine sets the endpoint position in the gccode model if the move was 
- *	successfully completed (no errors). Leaving the endpoint position alone for 
- *	errors allows too-short-lines to accumulate into longer lines (line interpolation).
+ * 	This routine sets the endpoint position in the gcode model if the move was successfully 
+ *	completed (no errors). Leaving the endpoint position alone for errors allows 
+ *	too-short-lines to accumulate into longer lines (line aggregation).
  *
- * 	Note: As far as the canonical machine is concerned the final position is achieved 
- *	as soon at the move is executed and the position is now the target. In reality 
- *	the planner(s) and steppers will still be processing the action and the real tool 
- *	position is still close to the starting point. 
+ * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
+ *	as the move is executed and the position is now the target. In reality the planner and 
+ *	steppers will still be processing the action and the real tool position is still close 
+ *	to the starting point. 
  */
 void cm_set_model_position(stat_t status) 
 {
 	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, cm.gm.target);
+}
+
+void cm_set_model_position_from_runtime(stat_t status)
+{
+	if (status == STAT_OK) copy_axis_vector(cm.gmx.position, mr.gm.target);
 }
 
 /*
@@ -1581,9 +1587,9 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_mline()- get model line number for status reports
  * cm_get_line() - get active (model or runtime) line number for status reports
  * cm_get_vel()  - get runtime velocity
- * cm_get_ofs()  - get runtime work offset
- * cm_get_pos()  - get runtime work position
- * cm_get_mpos() - get runtime machine position
+ * cm_get_ofs()  - get current work offset
+ * cm_get_pos()  - get current work position
+ * cm_get_mpos() - get current machine position
  * 
  * cm_print_pos()- print work position (with proper units)
  * cm_print_mpos()- print machine position (always mm units)

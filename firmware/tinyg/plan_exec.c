@@ -227,7 +227,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
 
-//		mp_free_run_buffer();				// free bf and send a status report
+//		mp_free_run_buffer();							// free bf and send a status report
 		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -239,13 +239,13 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) { 
-		sr_request_status_report(SR_TIMED_REQUEST); // continue reporting mr buffer
+		sr_request_status_report(SR_TIMED_REQUEST);		// continue reporting mr buffer
 	} else {
-		mr.move_state = MOVE_OFF;					// reset mr buffer
+		mr.move_state = MOVE_OFF;						// reset mr buffer
 		mr.section_state = SECTION_OFF;
-		bf->nx->replannable = false;				// prevent overplanning (Note 2)
+		bf->nx->replannable = false;					// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_RUN) {
-			mp_free_run_buffer();					// free bf if it's actually done
+			mp_free_run_buffer();						// free bf if it's actually done
 		}
 	}
 	return (status);

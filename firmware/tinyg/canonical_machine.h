@@ -243,6 +243,10 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 	uint8_t hold_state;				// hold: feedhold sub-state machine
 	uint8_t homing_state;			// home: homing cycle sub-state machine
 	uint8_t homed[AXES];			// individual axis homing flags
+
+    uint8_t probe_state;            // 1==success, 0==failed
+    float   probe_results[AXES];    // probing results
+
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
 	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
@@ -348,7 +352,14 @@ enum cmFeedholdState {				// feedhold_state machine
 
 enum cmHomingState {				// applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
-	HOMING_HOMED = 1				// machine is homed (1=true)
+	HOMING_HOMED = 1,				// machine is homed (1=true)
+	HOMING_WAITING					// machine waiting to be homed
+};
+
+enum cmProbeState {					// applies to cm.probe_state
+	PROBE_FAILED = 0,				// probe reached endpoint without triggering
+	PROBE_SUCCEDED = 1,				// probe was triggered, cm.probe_results has position
+	PROBE_WAITING					// probe is waiting to be started
 };
 
 /* The difference between NextAction and MotionMode is that NextAction is 
@@ -530,6 +541,7 @@ void cm_set_move_times(GCodeState_t *gcode_state);
 void cm_set_model_linenum(uint32_t linenum);
 void cm_set_model_target(float target[], float flag[]);
 void cm_set_model_position(stat_t status);
+void cm_set_model_position_from_runtime(stat_t status);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- canonical machining functions (loosely patterned after NIST) ---*/
@@ -562,7 +574,7 @@ stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
 stat_t cm_set_g30_position(void);								// G30.1
 stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
 
-stat_t cm_probe_cycle_start(void);								// G38.2
+stat_t cm_probe_cycle_start(float target[], float flags[]);		// G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
 int8_t cm_probe_get_axis(void);
 void cm_probe_set_position(float);
