@@ -129,6 +129,8 @@ void mp_flush_planner()
 {
 	cm_abort_arc();
 	mp_init_buffers();
+//	copy_vector(mm.position, mr.gm.target);
+//	copy_vector(gm.position, mm.position);
 	cm_set_motion_state(MOTION_STOP);
 }
 

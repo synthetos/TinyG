@@ -566,6 +566,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
 
+// NOTE: ALTERNATE FORMULATION OF ABOVE...
+
 /*	
  * _get_target_length2()   - derive accel/decel length from delta V and jerk
  * _get_target_velocity2() - derive velocity achievable from initial V, length and jerk

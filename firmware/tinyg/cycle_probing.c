@@ -211,7 +211,8 @@ static stat_t _probing_finish()
 // called when exiting on success or error
 static void _probe_restore_settings()
 {
-    mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
+//	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
+	cm_queue_flush();
     
     // restore switch settings
     sw.switch_type = pb.saved_switch_type;
