@@ -53,10 +53,10 @@
     <com_atmel_avrdbg_tool_ispmk2>
       <ToolType>com.atmel.avrdbg.tool.ispmk2</ToolType>
       <ToolName>AVRISP mkII</ToolName>
-      <ToolNumber>000200127887</ToolNumber>
+      <ToolNumber>000200169272</ToolNumber>
       <Channel>
         <host>127.0.0.1</host>
-        <port>49223</port>
+        <port>49453</port>
         <ssl>False</ssl>
       </Channel>
       <ToolOptions>

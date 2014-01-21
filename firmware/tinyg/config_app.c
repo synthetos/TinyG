@@ -110,10 +110,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fns, 0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },// Model line number
-	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },// Active line number - model or runtime line number
-	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },	// current velocity
-	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cs.null, 0 },	// feed rate
+	{ "",   "n",   _fin, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },	// Model line number
+	{ "",   "line",_fin, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },	// Active line number - model or runtime line number
+	{ "",   "vel", _f00, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
+	{ "",   "feed",_f00, 2, cm_print_feed, get_flu,  	set_nul,(float *)&cm.gm.feed_rate,0 },	// feed rate
 	{ "",   "stat",_f00, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },	// combined machine state
 	{ "",   "macs",_f00, 0, cm_print_macs, cm_get_macs, set_nul,(float *)&cs.null, 0 },	// raw machine state
 	{ "",   "cycs",_f00, 0, cm_print_cycs, cm_get_cycs, set_nul,(float *)&cs.null, 0 },	// cycle state
@@ -158,12 +158,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homb",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
 	{ "hom","homc",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
+//	{ "prb","prbe",_f00, 0, cm_print_prbe, cm_get_prbe, set_nul,(float *)&cs.null, 0 },	   // probing state
+
 	{ "jog","jogx",_f00, 0, tx_print_nul, get_nul, cm_run_jogx, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogy",_f00, 0, tx_print_nul, get_nul, cm_run_jogy, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogz",_f00, 0, tx_print_nul, get_nul, cm_run_jogz, (float *)&cm.jogging_dest, 0},
 	{ "jog","joga",_f00, 0, tx_print_nul, get_nul, cm_run_joga, (float *)&cm.jogging_dest, 0},
-	//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
-	//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+//	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
@@ -189,16 +191,16 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Motor parameters
 	{ "1","1ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-	{ "1","1sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
+	{ "1","1tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
 	{ "1","1mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #if (MOTORS >= 2)
 	{ "2","2ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
-	{ "2","2sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
-	{ "2","2tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
+	{ "2","2sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
+	{ "2","2tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ "2","2mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_2].polarity,	M2_POLARITY },
 	{ "2","2pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_2].power_mode,	M2_POWER_MODE },
@@ -206,8 +208,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #if (MOTORS >= 3)
 	{ "3","3ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
-	{ "3","3sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_3].step_angle,	M3_STEP_ANGLE },
-	{ "3","3tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
+	{ "3","3sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_3].step_angle,	M3_STEP_ANGLE },
+	{ "3","3tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ "3","3mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_3].polarity,	M3_POLARITY },
 	{ "3","3pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_3].power_mode,	M3_POWER_MODE },
@@ -215,8 +217,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #if (MOTORS >= 4)
 	{ "4","4ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
-	{ "4","4sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_4].step_angle,	M4_STEP_ANGLE },
-	{ "4","4tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
+	{ "4","4sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_4].step_angle,	M4_STEP_ANGLE },
+	{ "4","4tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ "4","4mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_4].power_mode,	M4_POWER_MODE },

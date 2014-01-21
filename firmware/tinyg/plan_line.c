@@ -30,11 +30,9 @@
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
-//#include "plan_line.h"
 #include "planner.h"
 #include "kinematics.h"
 #include "stepper.h"
-//#include "encoder.h"
 #include "report.h"
 #include "util.h"
 //#include "xio.h"			// uncomment for debugging
@@ -65,7 +63,7 @@ static void _reset_replannable_list(void);
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
-void mp_set_runtime_work_offset(float offset[]) { copy_axis_vector(mr.gm.work_offset, offset);}
+void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 
 /* 
@@ -170,7 +168,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 
 	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
-	copy_axis_vector(mm.position, bf->gm.target);			// update planning position
+	copy_vector(mm.position, bf->gm.target);				// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);
 	return (STAT_OK);
 }
@@ -568,6 +566,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 	return (pow(L, 0.66666666) * bf->cbrt_jerk + Vi);
 }
 
+// NOTE: ALTERNATE FORMULATION OF ABOVE...
+
 /*	
  * _get_target_length2()   - derive accel/decel length from delta V and jerk
  * _get_target_velocity2() - derive velocity achievable from initial V, length and jerk
@@ -888,7 +888,6 @@ stat_t mp_end_hold()
 		cm.hold_state = FEEDHOLD_OFF;
 		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
-//			cm.motion_state = MOTION_STOP;
 			cm_set_motion_state(MOTION_STOP);
 			return (STAT_NOOP);
 		}

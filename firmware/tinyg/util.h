@@ -54,17 +54,13 @@ extern "C"{
 extern float vector[AXES]; // vector of axes for passing to subroutines
 
 #define clear_vector(a) memset(a,0,sizeof(a))
-#define	copy_axis_vector(d,s) memcpy(d,s,sizeof(float)*AXES)
-#define	copy_motor_vector(d,s) memcpy(d,s,sizeof(float)*MOTORS)
+#define	copy_vector(d,s) memcpy(d,s,sizeof(d))
+//void copy_vector(float dst[], const float src[]);
 
 float get_axis_vector_length(const float a[], const float b[]);
 uint8_t vector_equal(const float a[], const float b[]);
 float *set_vector(float x, float y, float z, float a, float b, float c);
 float *set_vector_by_axis(float value, uint8_t axis);
-
-//void copy_vector(float dst[], const float src[], uint8_t length);
-//void copy_axis_vector(float dst[], const float src[]);
-//void copy_motor_vector(float dst[], const float src[]);
 
 //*** math utilities ***
 

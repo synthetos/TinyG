@@ -130,64 +130,64 @@ typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine exec
 
 // All the enums that equal zero must be zero. Don't change this
 
-enum mpBufferState {			// bf->buffer_state values 
-	MP_BUFFER_EMPTY = 0,		// struct is available for use (MUST BE 0)
-	MP_BUFFER_LOADING,			// being written ("checked out")
-	MP_BUFFER_QUEUED,			// in queue
-	MP_BUFFER_PENDING,			// marked as the next buffer to run
-	MP_BUFFER_RUNNING			// current running buffer
+enum mpBufferState {				// bf->buffer_state values 
+	MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
+	MP_BUFFER_LOADING,				// being written ("checked out")
+	MP_BUFFER_QUEUED,				// in queue
+	MP_BUFFER_PENDING,				// marked as the next buffer to run
+	MP_BUFFER_RUNNING				// current running buffer
 };
 
-typedef struct mpBuffer {		// See Planning Velocity Notes for variable usage
-	struct mpBuffer *pv;		// static pointer to previous buffer
-	struct mpBuffer *nx;		// static pointer to next buffer
+typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
+	struct mpBuffer *pv;			// static pointer to previous buffer
+	struct mpBuffer *nx;			// static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
-	cm_exec cm_func;			// callback to canonical machine execution function
+	cm_exec cm_func;				// callback to canonical machine execution function
 
-	uint8_t buffer_state;		// used to manage queueing/dequeueing
-	uint8_t move_type;			// used to dispatch to run routine
-	uint8_t move_code;			// byte that can be used by used exec functions
-	uint8_t move_state;			// move state machine sequence
-	uint8_t replannable;		// TRUE if move can be replanned
+	uint8_t buffer_state;			// used to manage queueing/dequeueing
+	uint8_t move_type;				// used to dispatch to run routine
+	uint8_t move_code;				// byte that can be used by used exec functions
+	uint8_t move_state;				// move state machine sequence
+	uint8_t replannable;			// TRUE if move can be replanned
 
-	float unit[AXES];			// unit vector for axis scaling & planning
+	float unit[AXES];				// unit vector for axis scaling & planning
 
-	float length;				// total length of line or helix in mm
+	float length;					// total length of line or helix in mm
 	float head_length;
 	float body_length;
 	float tail_length;
-								// *** SEE NOTES ON THESE VARIABLES, in aline() ***
-	float entry_velocity;		// entry velocity requested for the move
-	float cruise_velocity;		// cruise velocity requested & achieved
-	float exit_velocity;		// exit velocity requested for the move
+									// *** SEE NOTES ON THESE VARIABLES, in aline() ***
+	float entry_velocity;			// entry velocity requested for the move
+	float cruise_velocity;			// cruise velocity requested & achieved
+	float exit_velocity;			// exit velocity requested for the move
 
-	float entry_vmax;			// max junction velocity at entry of this move
-	float cruise_vmax;			// max cruise velocity requested for move
-	float exit_vmax;			// max exit velocity possible (redundant)
-	float delta_vmax;			// max velocity difference for this move
-	float braking_velocity;		// current value for braking velocity
+	float entry_vmax;				// max junction velocity at entry of this move
+	float cruise_vmax;				// max cruise velocity requested for move
+	float exit_vmax;				// max exit velocity possible (redundant)
+	float delta_vmax;				// max velocity difference for this move
+	float braking_velocity;			// current value for braking velocity
 
-	float jerk;					// maximum linear jerk term for this move
-	float recip_jerk;			// 1/Jm used for planning (compute-once)
-	float cbrt_jerk;			// cube root of Jm used for planning (compute-once)
+	float jerk;						// maximum linear jerk term for this move
+	float recip_jerk;				// 1/Jm used for planning (compute-once)
+	float cbrt_jerk;				// cube root of Jm used for planning (compute-once)
 
-	GCodeState_t gm;			// Gode model state - passed from model, used by planner and runtime
+	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
 
 } mpBuf_t;
 
-typedef struct mpBufferPool {	// ring buffer for sub-moves
-	magic_t magic_start;		// magic number to test memory integrity
-	uint8_t buffers_available;	// running count of available buffers
-	mpBuf_t *w;					// get_write_buffer pointer
-	mpBuf_t *q;					// queue_write_buffer pointer
-	mpBuf_t *r;					// get/end_run_buffer pointer
+typedef struct mpBufferPool {		// ring buffer for sub-moves
+	magic_t magic_start;			// magic number to test memory integrity
+	uint8_t buffers_available;		// running count of available buffers
+	mpBuf_t *w;						// get_write_buffer pointer
+	mpBuf_t *q;						// queue_write_buffer pointer
+	mpBuf_t *r;						// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
 	magic_t magic_end;
 } mpBufferPool_t;
 
-typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
-	float position[AXES];		// final move position for planning purposes
-	float prev_jerk;			// jerk values cached from previous move
+typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
+	float position[AXES];			// final move position for planning purposes
+	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
 #ifdef __UNIT_TEST_PLANNER
@@ -228,7 +228,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint32_t segment_count;			// count of running segments
 	float segment_velocity;			// computed velocity for aline segment
 	float segment_time;				// actual time increment per aline segment
-	float prev_segment_time;		// time from previous segment - used to detect changes
 
 									// values exclusively used by jerk-based acceleration
 	float jerk;						// max linear jerk
