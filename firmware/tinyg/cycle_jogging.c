@@ -155,7 +155,8 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 
 	cm_set_feed_rate(velocity);
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
+// 	cm_queue_flush();
+ 	cm_request_cycle_start();
 
 	float ramp_dist = 2.0;
 	float steps = 0.0;
@@ -184,7 +185,8 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
 	mp_flush_planner(); 							// FIXME: not sure what to do on exit
-	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
+// 	cm_queue_flush();
+ 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
 	cm_set_feed_rate(jog.saved_feed_rate);
