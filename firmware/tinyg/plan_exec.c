@@ -201,11 +201,11 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_axis_vector(mr.unit, bf->unit);
 		copy_axis_vector(mr.target, bf->gm.target);		// save the final target of the move
 
-		// generate the section targets for endpoint position correction
+		// generate the waypoints for position correction at section ends
 		for (uint8_t i=0; i<AXES; i++) {
-			mr.section_target[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
-			mr.section_target[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
-			mr.section_target[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
+			mr.waypoint[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
+			mr.waypoint[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
+			mr.waypoint[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
@@ -294,10 +294,6 @@ static stat_t _exec_aline_head()
 			mr.section = SECTION_BODY;
 			return(_exec_aline_body());						// skip ahead to the body generator
 		}
-		// adjust max velocity to fit exact segment timing
-//		float segment_time = 2 * mr.head_length / (mr.entry_velocity + mr.cruise_velocity);
-//		float cruise_velocity = 2 * mr.head_length / segment_time - mr.entry_velocity;
-
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
@@ -313,9 +309,7 @@ static stat_t _exec_aline_head()
 		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
 	}
@@ -377,9 +371,7 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
@@ -416,9 +408,7 @@ static stat_t _exec_aline_tail()
 		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
 
 		mr.segment_count = (uint32_t)mr.segments;
-		if ((mr.microseconds = uSec(mr.segment_time)) < MIN_SEGMENT_USEC) {
-			return(STAT_GCODE_BLOCK_SKIPPED);				// exit without advancing position
-		}
+		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_GCODE_BLOCK_SKIPPED);} // exit without advancing position
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
 	}
@@ -464,18 +454,18 @@ static stat_t _exec_aline_tail()
  * NOTES ON STEP ERROR CORRECTION:
  *
  *	The commanded_steps are the target_steps delayed by one more segment. 
- *	This lines them up in time with the encoder readings.
+ *	This lines them up in time with the encoder readings so a following error can be generated
  * 
- *	The forwarding_error term is positive if the commanded steps are greater 
- *	than the encoder reading and negative if the commanded steps are less than the encoder.
+ *	The following_error term is positive if the encoder reading is greater than (ahead of) 
+ *	the commanded steps, and negative (behind) if the encoder reading is less than the 
+ *	commanded steps. The following error is not affected by the direction of movement - 
+ *	it's purely a statement of relative position. Examples:
  *
- *	Examples:
- *
- *	 Commanded  Encoder	  Following Error
- *		 90		  100	  -10	commanded steps are 10 short of encoder reading
- *	   -100		  -90	  -10	commanded steps are 10 short of encoder reading
- *		100		   90	  +10	commanded steps are 10 beyond encoder reading
- *	    -90		 -100	  +10	commanded steps are 10 beyond encoder reading
+ *    Encoder Commanded   Following Err
+ *	  	  100	     90	       +10		encoder is 10 steps ahead of commanded steps
+ *	      -90	   -100	       +10		encoder is 10 steps ahead of commanded steps
+ *		   90	    100	       -10		encoder is 10 steps behind commanded steps
+ *	     -100	    -90	       -10		encoder is 10 steps behind commanded steps
  */
 
 static stat_t _exec_aline_segment()
@@ -483,17 +473,14 @@ static stat_t _exec_aline_segment()
 	uint8_t i;
 	float travel_steps[MOTORS];
 
-	// *** Last segment processing *** (special processing for last segment in a section)
-	// Either compute the new segment target or use the section endpoints.
-	// Don't do the endpoint correction if you are going into a hold.
+	// Set target position for the segment
+	// If the segment ends on a section waypoint synchronize to the head, body or tail end
+	// Otherwise if not at a section waypoint compute target from segment time and velocity
+	// Don't do waypoint correction if you are going into a hold.
 
-	mr.segment_count--;
-	if ((mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
+	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
-		copy_axis_vector(mr.gm.target, mr.section_target[mr.section]);
-
-	// *** Normal segment processing ***
-
+		copy_axis_vector(mr.gm.target, mr.waypoint[mr.section]);
 	} else {
 		float segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
@@ -501,28 +488,28 @@ static stat_t _exec_aline_segment()
 		}
 	}
 
-	// *** Step manipulation and execution ***
-	// Prep the segment for the steppers and adjust the variables for the next iteration.
+	// Convert target position to steps
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
-	// Call the stepper prep function. Return if there's an error
 	//
-	// NB: The direct manipulation of steps (as below) only works for Cartesian kinematics.
-	//	   Other kinematics will require transforming the travel distance.
+	// NB: The direct manipulation of steps to compute travel_steps only works for Cartesian kinematics.
+	//	   Other kinematics may require transforming travel distance as opposed to simply subtracting steps.
 
 	for (i=0; i<MOTORS; i++) {
-		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed
+		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed by 1 segment
 		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
-		mr.encoder_steps[i] = en_read_encoder(i);			// get the current encoder position
-		mr.following_error[i] = mr.commanded_steps[i] - mr.encoder_steps[i];
+		mr.encoder_steps[i] = en_read_encoder(i);			// get current encoder position (time aligns to commanded_steps)
+		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i]; 
 	}
-	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the new target steps...
-	for (i=0; i<MOTORS; i++) {								// and compute the distance to be traveled
+	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the target steps...
+	for (i=0; i<MOTORS; i++) {								// and compute the distances to be traveled
 		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	ritorno(st_prep_line(travel_steps, mr.microseconds, mr.following_error));
+	// Call the stepper prep function
+
+	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_axis_vector(mr.position, mr.gm.target); 			// update position from target
-	mr.elapsed_accel_time += mr.segment_accel_time;			// line needed by jerk-based exec (NB: ignored if running the body)
+	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }

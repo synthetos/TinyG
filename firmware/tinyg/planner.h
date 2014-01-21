@@ -86,7 +86,7 @@ enum sectionState {
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
 #define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
-#define NOM_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define NOM_SEGMENT_TIME 		(NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
@@ -187,7 +187,6 @@ typedef struct mpBufferPool {	// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton {	// common variables for planning (move master)
 	float position[AXES];		// final move position for planning purposes
-//	float ms_in_queue;			// UNUSED - total ms of movement & dwell in planner queue
 	float prev_jerk;			// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -209,14 +208,13 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-	float section_target[SECTIONS][AXES];// targets in position for each move section
+	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
 	float position_steps[MOTORS];	// current MR position (target from previous segment)
 	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
 	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
 	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
-//	float travel_steps[MOTORS];		// DIAGNOSTIC
 
 	float head_length;				// copies of bf variables of same name
 	float body_length;
@@ -226,21 +224,22 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float cruise_velocity;
 	float exit_velocity;
 
-	float midpoint_velocity;		// velocity at accel/decel midpoint
-	float midpoint_acceleration;	// JERK BASED EXEC CODE
-	float jerk;						// max linear jerk
-	float jerk_div2;				// JERK BASED EXEC CODE
-
-	float segments;					// number of segments in arc or blend
+	float segments;					// number of segments in line (also used by arc generation)
 	uint32_t segment_count;			// count of running segments
 	float segment_velocity;			// computed velocity for aline segment
 	float segment_time;				// actual time increment per aline segment
-	float microseconds;				// line or segment time in microseconds
+	float prev_segment_time;		// time from previous segment - used to detect changes
 
-	float accel_time;				// JERK BASED EXEC CODE
-	float segment_accel_time;		// JERK BASED EXEC CODE
-	float elapsed_accel_time;		// JERK BASED EXEC CODE
+									// values exclusively used by jerk-based acceleration
+	float jerk;						// max linear jerk
+	float jerk_div2;				// cached value for efficiency
+	float midpoint_velocity;		// velocity at accel/decel midpoint
+	float midpoint_acceleration;	// 
+	float accel_time;				// 
+	float segment_accel_time;		// 
+	float elapsed_accel_time;		// 
 
+									// values used exclusively by forward differencing acceleration
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
 	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
 

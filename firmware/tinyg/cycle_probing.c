@@ -3,6 +3,7 @@
  * Part of TinyG project
  * 
  * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
+ * G38.2 cycle by Mike Estee
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -35,6 +36,7 @@
 #include "stepper.h"
 #include "report.h"
 #include "switch.h"
+#include "spindle.h"
 
 /**** Probe singleton structure ****/
 
@@ -125,7 +127,7 @@ uint8_t cm_probe_cycle_start( float target[], float flags[] )
 	pb.func = _probing_start; 			// bind initial processing function
 	cm.cycle_state = CYCLE_PROBE;
 	st_energize_motors();				// enable motors if not already enabled
-    cm_spindle_control(SPINDLE_OFF);
+    cm_spindle_control(SPINDLE_OFF);    // important! if previous command was an M3 this would be bad...
 	return (STAT_OK);
 }
 
@@ -136,14 +138,14 @@ void _probe_restore_settings()
     
     // restore switch settings
     sw.switch_type = pb.saved_switch_type;
-    for( int i=0; i<NUM_SWITCHES; i++ )
+    for( uint8_t i=0; i<NUM_SWITCHES; i++ )
         sw.mode[i] = pb.saved_switch_mode[i];
     
     // re-init to pick up changes
     switch_init();
     
     // restore axis jerk
-    for( int axis=0; axis<AXES; axis++ )
+    for( uint8_t axis=0; axis<AXES; axis++ )
         cm.a[axis].jerk_max = pb.saved_jerk[axis];
     
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
@@ -168,7 +170,7 @@ static stat_t _probing_start()
     {
         //cm_request_queue_flush();
         //mp_flush_planner();   // do we want to flush the planner here? we could already be at velocity from a previous move?
-        cm_request_cycle_start();
+        //cm_request_cycle_start();
         
         ritorno(cm_straight_feed(pb.target, pb.flags));
     }
@@ -181,7 +183,7 @@ static stat_t _probing_finish()
     int8_t probe = read_switch(pb.probe_switch);
     cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
     
-    for( int axis=0; axis<AXES; axis++ )
+    for( uint8_t axis=0; axis<AXES; axis++ )
         cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
     
     // if we got here because of a feed hold we need to keep the model position correct

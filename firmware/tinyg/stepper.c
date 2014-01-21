@@ -152,17 +152,18 @@ void st_reset()
 	for (uint8_t i=0; i<MOTORS; i++) {
 		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
+		st_pre.mot[i].corrected_steps = 0;
 	}
 }
-
+/*
 void st_cycle_start(void)
 {
-	}
+}
 
 void st_cycle_end(void)
 {
 }
-
+*/
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 {
 	st_reset();
@@ -333,20 +334,20 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 }
 
 ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
- 	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
 	_load_move();
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
- 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-   	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
-	   	if (mp_exec_move() != STAT_NOOP) {
-		   	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-		   	_request_load_move();
-	   	}
-   	}
+	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+		if (mp_exec_move() != STAT_NOOP) {
+			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+			_request_load_move();
+		}
+	}
 }
 
 /****************************************************************************************
@@ -374,7 +375,7 @@ static void _request_load_move()
 	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
 		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
 		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
-	} 	// else don't bother to interrupt. You'll just trigger an 
+	} 	// else don't bother to interrupt. You'll just trigger an
 		// interrupt and find out the load routine is not ready for you
 }
 
@@ -417,11 +418,15 @@ static void _load_move()
 
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
+			// Apply accumulator correction if the time base has changed
+
+			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
+				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
+			}
+
 			// Set the direction bit in hardware. Compensate for direction change in the accumulator
 			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
-
-			st_run.mot[MOTOR_1].substep_accumulator *= st_pre.dda_accumulator_scale;
 
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
@@ -446,7 +451,9 @@ static void _load_move()
 		//**** MOTOR_2 LOAD ****
 
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
-			st_run.mot[MOTOR_2].substep_accumulator *= st_pre.dda_accumulator_scale;
+			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
+				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
+			}
 			if (st_pre.mot[MOTOR_2].direction_change == true) {
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -467,7 +474,9 @@ static void _load_move()
 		//**** MOTOR_3 LOAD ****
 
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
-			st_run.mot[MOTOR_3].substep_accumulator *= st_pre.dda_accumulator_scale;
+			if (st_pre.mot[MOTOR_3].accumulator_correction_flag == true) {
+				st_run.mot[MOTOR_3].substep_accumulator *= st_pre.mot[MOTOR_3].accumulator_correction;
+			}
 			if (st_pre.mot[MOTOR_3].direction_change == true) {
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
@@ -488,7 +497,9 @@ static void _load_move()
 		//**** MOTOR_4 LOAD ****
 
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
-			st_run.mot[MOTOR_4].substep_accumulator *= st_pre.dda_accumulator_scale;
+			if (st_pre.mot[MOTOR_4].accumulator_correction_flag == true) {
+				st_run.mot[MOTOR_4].substep_accumulator *= st_pre.mot[MOTOR_4].accumulator_correction;
+			}
 			if (st_pre.mot[MOTOR_4].direction_change == true) {
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
@@ -532,41 +543,35 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	  - steps[] are signed relative motion in steps for each motor. Steps are floats 
+ *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
  *		that typically have fractional values (fractional steps). The sign indicates
  *		direction. Motors that are not in the move should be 0 steps on input.
  *
- *	  - microseconds - how many microseconds the segment should run. If timing is not 
+ *	  - microseconds - how many microseconds the segment should run. If timing is not
  *		100% accurate this will affect the move velocity, but not the distance traveled.
  *
  *	  - step_error[] is a vector of measured errors to the step count. Used for correction.
  *
- * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term 
+ * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
  *		    dda_ticks_X_substeps = (uint32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
-stat_t st_prep_line(float travel_steps[], float microseconds, float following_error[])
+stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
-		} else if (isinf(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// not supposed to happen
-		} else if (isnan(microseconds)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// not supposed to happen
-	} else if (microseconds < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
+		} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
+		} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
+		} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
-	float dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;	// value from previous segment
 	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
-	st_pre.dda_ticks = (int32_t)((microseconds / 1000000) * FREQUENCY_DDA);
+	st_pre.dda_ticks = (int32_t)(segment_time * 60 * FREQUENCY_DDA);// NB: converts minutes to seconds
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
-	if (dda_ticks_X_substeps > 0) {
-		st_pre.dda_accumulator_scale = st_pre.dda_ticks_X_substeps / dda_ticks_X_substeps;
-	} else {
-		st_pre.dda_accumulator_scale = 1;
-	}
 
 	// setup motor parameters
 
@@ -574,10 +579,12 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
+		st_pre.mot[i].accumulator_correction_flag = false;	
+
 		// Skip this motor if there are no new steps. Leave all values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
-		// Direction - set the direction, compensating for polarity. 
+		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
 		// Detect direction changes. Needed for accumulator adjustment
 
@@ -585,11 +592,25 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
-		} else {			
+		} else {
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = -1;
 		}
 		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
+
+		// Detect segment time changes and setup the accumulator correction factor and flag.
+		// Putting this here computes the correct factor even if the motor was dormant for some
+		// number of previous moves. Correction is computed based on the last segment time actually used.
+
+//		if (fp_NE(segment_time, st_pre.mot[i].prev_segment_time)) {
+//		if (segment_time != st_pre.mot[i].prev_segment_time) {
+		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
+			if (st_pre.mot[i].prev_segment_time != 0) {		// special case to skip first move
+				st_pre.mot[i].accumulator_correction_flag = true;
+				st_pre.mot[i].accumulator_correction = segment_time / st_pre.mot[i].prev_segment_time;
+			}
+			st_pre.mot[i].prev_segment_time = segment_time;
+		}
 
 #ifdef __STEP_CORRECTION
 		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
@@ -606,12 +627,12 @@ stat_t st_prep_line(float travel_steps[], float microseconds, float following_er
 				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX); 
 			}
 			st_pre.mot[i].corrected_steps += correction_steps;
-			travel_steps[i] += correction_steps;
+			travel_steps[i] -= correction_steps;
 		}
 #endif
-		// Compute substeb increment. The accumulator must be *exactly* the incoming 
+		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
-		// Rounding is performed to eliminate a negative bias in the int32 conversion 
+		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
 		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
@@ -693,7 +714,7 @@ static int8_t _get_motor(const index_t index)
 	char_t *ptr;
 	char_t motors[] = {"123456"};
 	char_t tmp[TOKEN_LEN+1];
-	
+
 	strcpy_P(tmp, cfgArray[index].group);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);

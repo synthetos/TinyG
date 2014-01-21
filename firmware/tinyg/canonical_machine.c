@@ -1350,7 +1350,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
-	st_cycle_end();							// finalize steppers at end of cycle
+//	st_cycle_end();									// UNUSED
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1359,7 +1359,7 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
-		st_cycle_start();							// initialize steppers for beginning of cycle
+//		st_cycle_start();							// UNUSED
 		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
