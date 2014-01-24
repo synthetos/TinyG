@@ -56,7 +56,7 @@ void _init() {;}
 static void _application_init(void);
 static void _unit_tests(void);
 
-void init( void )
+void _system_init(void)
 {
 #ifdef __ARM
 	SystemInit();
@@ -72,16 +72,15 @@ void init( void )
 int main(void)
 {
 	// system initialization
-//	init();
-//	delay(1);
+	_system_init();
+	
 //	usb.attach();					// USB setup
 //	delay(1000);
 
 	// TinyG application setup
-#ifndef __UNIT_TESTS
 	_application_init();
-#endif
-	_unit_tests();					// run any unit tests that are enabled
+
+//	_unit_tests();					// run any unit tests that are enabled
 	run_canned_startup();			// run any pre-loaded commands
 	
 	// main loop
