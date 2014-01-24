@@ -2,7 +2,7 @@
  * json_parser.h - JSON parser and JSON support for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -111,7 +111,7 @@ stat_t json_set_jv(cmdObj_t *cmd);
 
 /* unit test setup */
 
-#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
+//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
 #ifdef __UNIT_TEST_JSON
 void js_unit_tests(void);
 #define	JSON_UNITS js_unit_tests();

@@ -2,7 +2,7 @@
  * util.h - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -78,7 +78,7 @@ float max4(float x1, float x2, float x3, float x4);
 
 uint8_t isnumber(char_t c);
 char_t *escape_string(char_t *dst, char_t *src);
-char_t *pstr2str(const char_t *pgm_string);
+char_t *pstr2str(const char *pgm_string);
 uint16_t compute_checksum(char_t const *string, const uint16_t length);
 
 //*** other utilities ***

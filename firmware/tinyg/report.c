@@ -2,7 +2,7 @@
  * report.c - TinyG status report and other reporting functions.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -77,7 +77,7 @@ stat_t rpt_er(cmdObj_t *cmd)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-void _startup_helper(stat_t status, const char_t *msg)
+void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
