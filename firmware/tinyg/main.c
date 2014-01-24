@@ -2,7 +2,7 @@
  * main.c - TinyG - An embedded rs274/ngc CNC controller
  * This file is part of the TinyG project.
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -19,14 +19,12 @@
 /* See github.com/Synthetos/tinyg for code and docs on the wiki 
  */
 
-#include <avr/interrupt.h>
-
-#include "tinyg.h"				// #1 There are some dependencies
-#include "config.h"				// #2
+#include "tinyg.h"					// #1 There are some dependencies
+#include "config.h"					// #2
 #include "hardware.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "json_parser.h"		// required for unit tests only
+#include "json_parser.h"			// required for unit tests only
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
@@ -37,9 +35,12 @@
 #include "pwm.h"
 #include "xio.h"
 
+#ifdef __AVR
+#include <avr/interrupt.h>
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_rtc.h"		// included via hardware.h
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
+#endif
 
 #ifdef __cplusplus
 extern "C"{
