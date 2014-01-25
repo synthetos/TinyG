@@ -2,7 +2,7 @@
  * controller.c - tinyg controller and top level parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -96,11 +96,13 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.job_id[2] = 0;
 	cs.job_id[3] = 0;
 
+#ifdef __AVR
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
 	tg_set_primary_source(cs.default_src);
+#endif
 }
 
 /* 
@@ -276,8 +278,8 @@ static stat_t _command_dispatch()
  * _shutdown_idler() - blink rapidly and prevent further activity from occurring
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
- *	Alarm idler flashes indicator LED rapidly to show everything is not OK. 
- *	Alarm function returns EAGAIN causing the control loop to never advance beyond 
+ *	Shutdown idler flashes indicator LED rapidly to show everything is not OK. 
+ *	Shutdown idler returns EAGAIN causing the control loop to never advance beyond 
  *	this point. It's important that the reset handler is still called so a SW reset 
  *	(ctrl-x) or bootloader request can be processed.
  */
