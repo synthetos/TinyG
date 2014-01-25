@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		411.06	// tracking g2 build 026.06
+#define TINYG_FIRMWARE_BUILD   		411.07	// tracking g2 build 026.07
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -144,8 +144,7 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TOKEN_BYTE(i,a) (char_t)cfgArray[i].a	// get token byte value from cfgArray
 
-#define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a
-//#define GET_TOKEN_STRING(i,a) (char_t)cfgArray[i].token)// populate the token string given the index
+#define GET_TOKEN_STRING(i,a) strcpy_P(a, (char_t *)&cfgArray[(index_t)i].token); // populate the token string given the index
 
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]

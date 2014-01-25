@@ -156,7 +156,7 @@ static uint8_t _populate_filtered_status_report(void);
 uint8_t _is_stat(cmdObj_t *cmd)
 {
 	char_t tok[TOKEN_LEN+1];
-	
+
 	GET_TOKEN_STRING(cmd->value, tok);
 	if (strcmp(tok, "stat") == 0) { return (true);}
 	return (false);
