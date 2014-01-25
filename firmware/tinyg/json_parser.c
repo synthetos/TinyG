@@ -2,7 +2,7 @@
  * json_parser.c - JSON parser for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -100,7 +100,7 @@ static stat_t _json_parser_kernal(char_t *str)
 	stat_t status;
 	int8_t depth;
 	cmdObj_t *cmd = cmd_reset_list();				// get a fresh cmdObj list
-	char_t group[GROUP_LEN+1] = {""};			// group identifier - starts as NUL
+	char_t group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
 	int8_t i = CMD_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
@@ -114,14 +114,14 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
 		// propagate the group from previous NV pair (if relevant)
 		if (group[0] != NUL) {
-			strncpy(cmd->group, group, GROUP_LEN);// copy the parent's group to this child
+			strncpy(cmd->group, group, GROUP_LEN);	// copy the parent's group to this child
 		}
 		// validate the token and get the index
 		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_COMMAND);
 		}
 		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
-			strncpy(group, cmd->token, GROUP_LEN);// record the group ID
+			strncpy(group, cmd->token, GROUP_LEN);	// record the group ID
 		}
 		if ((cmd = cmd->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
 	} while (status != STAT_OK);					// breaks when parsing is complete
@@ -267,7 +267,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
 		{
 			uint32_t *v = (uint32_t*)&cmd->value;
-			*v = strtoul(*pstr, 0L, 0);
+			*v = strtoul((const char *)*pstr, 0L, 0);
 			cmd->objtype = TYPE_DATA;
 		} else {
 			ritorno(cmd_copy_string(cmd, *pstr));
@@ -326,7 +326,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
  *	"fr" is found in the name string the parser will search for "xfr" in the 
  *	cfgArray.
  */
- /*
+/*
 static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 {
 	char_t *tmp;
@@ -450,7 +450,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size) 
+uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
@@ -519,7 +519,6 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
 }
-
 
 /*
  * json_print_object() - serialize and print the cmdObj array directly (w/o header & footer)
