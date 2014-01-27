@@ -2,7 +2,7 @@
  * gcode_parser.c - rs274/ngc Gcode parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -69,7 +69,7 @@ stat_t gc_gcode_parser(char_t *block)
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
-	
+
 	// queue a "(MSG" response
 	if (*msg != NUL) {
 		(void)cm_message(msg);				// queue the message
@@ -429,8 +429,8 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_select_tool, tool_select);			// tool_select is where it's written
 	EXEC_FUNC(cm_change_tool, tool_change);
 	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
-	EXEC_FUNC(cm_mist_coolant_control, mist_coolant); 
-	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF 
+	EXEC_FUNC(cm_mist_coolant_control, mist_coolant);
+	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF
 	EXEC_FUNC(cm_feed_rate_override_enable, feed_rate_override_enable);
 	EXEC_FUNC(cm_traverse_override_enable, traverse_override_enable);
 	EXEC_FUNC(cm_spindle_override_enable, spindle_override_enable);

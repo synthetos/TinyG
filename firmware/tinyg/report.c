@@ -413,11 +413,11 @@ void sr_print_sv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
  *
  *	There are 2 ways to get queue reports:
  *
- *	 1.	Enable single ortriple queue reports iusing the QV variable. This will
+ *	 1.	Enable single or triple queue reports using the QV variable. This will
  *		return a queue report every time the buffer depth changes
  *
- *	 2.	Add qr, qi qne qo (or some combination) to the status report. This will
- *		reeturn queue report data when status reports are generated.
+ *	 2.	Add qr, qi and qo (or some combination) to the status report. This will
+ *		return queue report data when status reports are generated.
  */
 /*
  * qr_init_queue_report() - initialize or clear queue report values
