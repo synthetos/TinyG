@@ -84,11 +84,6 @@ static stat_t _jogging_finalize_exit(int8_t axis);
  *	to cm_isbusy() is about.
  */
 
-static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
-static stat_t _jogging_axis_start(int8_t axis);
-static stat_t _jogging_axis_jog(int8_t axis);
-static stat_t _jogging_finalize_exit(int8_t axis);
-
 stat_t cm_jogging_cycle_start(uint8_t axis)
 {
 	// save relevant non-axis parameters from Gcode model

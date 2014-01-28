@@ -255,7 +255,7 @@ float cm_get_active_coord_offset(uint8_t axis)
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cm.offset[cm.gm.coord_system][axis];
 	if (cm.gmx.origin_offset_enable == true) 
-		offset += cm.gmx.origin_offset[axis]; 			// includes G5x and G92 compoenents
+		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
 	return (offset); 
 }
 
@@ -652,7 +652,6 @@ stat_t cm_hard_alarm(stat_t status)
 	return (status);
 }
 
-
 /**************************
  * Representation (4.3.3) *
  **************************/
@@ -798,8 +797,10 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	cm.gmx.position[axis] = position;
 	cm.gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
-	mp_reset_step_counts();	// step counters are in motor space: resets all step counters
-	en_reset_encoders();	// encoders are in motor space: resets all encoders accordingly
+
+	// reset all steps counters and encoders - these are in motor space
+	mp_reset_step_counts();
+	en_reset_encoders();
 }
 
 /* 
@@ -865,7 +866,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target, flags);
-	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
+	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
@@ -989,7 +990,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 	cm_set_model_target(target, flags);
-	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
+	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
@@ -1140,7 +1141,7 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 {
 	cm.gmx.feed_rate_override_enable = flag;
 	cm.gmx.feed_rate_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+//	mp_feed_rate_override(flag, cm.gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1158,7 +1159,7 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 {
 	cm.gmx.traverse_override_enable = flag;
 	cm.gmx.traverse_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+//	mp_feed_rate_override(flag, cm.gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1195,21 +1196,21 @@ void cm_message(char_t *message)
  * Program Functions (4.3.10) *
  ******************************/
 /*
- * This group implements stop, start, end, and hold. 
+ * This group implements stop, start, end, and hold.
  * It is extended beyond the NIST spec to handle various situations.
  *
  *	_exec_program_finalize()
  *	cm_cycle_start()			(no Gcode)  Do a cycle start right now
  *	cm_cycle_end()				(no Gcode)	Do a cycle end right now
- *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now	
+ *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now
  *	cm_program_stop()			(M0, M60)	Queue a program stop
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
  *	cm_machine_ready()			puts machine into a READY state
  *
- * cm_program_stop and cm_optional_program_stop are synchronous Gcode 
+ * cm_program_stop and cm_optional_program_stop are synchronous Gcode
  * commands that are received through the interpreter. They cause all motion
- * to stop at the end of the current command, including spindle motion. 
+ * to stop at the end of the current command, including spindle motion.
  *
  * Note that the stop occurs at the end of the immediately preceding command
  * (i.e. the stop is queued behind the last command).
@@ -1355,8 +1356,6 @@ static void _exec_program_finalize(float *value, float *flag)
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-
-//	st_cycle_end();									// UNUSED
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1365,11 +1364,9 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
-//		st_cycle_start();							// UNUSED
 		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
-
 }
 
 void cm_cycle_end() 
@@ -1587,9 +1584,9 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_mline()- get model line number for status reports
  * cm_get_line() - get active (model or runtime) line number for status reports
  * cm_get_vel()  - get runtime velocity
- * cm_get_ofs()  - get current work offset
- * cm_get_pos()  - get current work position
- * cm_get_mpos() - get current machine position
+ * cm_get_ofs()  - get current work offset (runtime)
+ * cm_get_pos()  - get current work position (runtime)
+ * cm_get_mpos() - get current machine position (runtime)
  * 
  * cm_print_pos()- print work position (with proper units)
  * cm_print_mpos()- print machine position (always mm units)
@@ -1749,7 +1746,6 @@ stat_t cm_dd1(cmdObj_t *cmd)
 //	printf();
 	return (STAT_OK);
 }
-
 
 /***********************************************************************************
  * AXIS JOGGING
