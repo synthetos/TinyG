@@ -249,6 +249,23 @@
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
+enum motorPowerState {				// used w/start and stop flags to sequence motor power
+	MOTOR_OFF = 0,					// motor is stopped and deenergized
+	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
+	MOTOR_RUNNING,					// motor is running (and fully energized)
+	MOTOR_INITIATE_TIMEOUT,			// transitional state to start idle timeout
+	MOTOR_COUNTDOWN_TIMEOUT			// run timeout to idle
+};
+
+enum cmStepperPowerMode {
+	MOTOR_DISABLED = 0,				// motor enable is deactivated
+	MOTOR_POWERED_IN_CYCLE,			// motor fully powered during cycles
+	MOTOR_POWERED_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
+	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (FUTURE)
+	MOTOR_ADAPTIVE_POWER			// adjust motor current with velocity (FUTURE)
+};
+
+/*
 enum motorPowerState {					// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,						// motor is stopped and deenergized
 	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
@@ -257,13 +274,15 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_STOPPED,						// motor is stopped and fully energized
 	MOTOR_RUNNING						// motor is running (and fully energized)
 };
-
+*/
+/*
 enum motorPowerMode {
 	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
 	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
 	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
 	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
 };
+*/
 
 enum prepBufferState {
 	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
@@ -296,7 +315,6 @@ enum prepBufferState {
  *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
  *	and error will grow instead of shrink
  */
-
 #define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.05		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
@@ -323,38 +341,38 @@ enum prepBufferState {
 
 // Motor config structure
 
-typedef struct stConfigMotor {		// per-motor configs
-	uint8_t	motor_map;				// map motor to axis
-	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
-	uint8_t power_mode;				// See stepper.h for enum
-	float power_level;				// set 0.000 to 1.000 for PMW vref setting
-	float step_angle;				// degrees per whole step (ex: 1.8)
-	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// microsteps per mm (or degree) of travel
-	float units_per_step;			// mm or degrees of travel per microstep
+typedef struct stConfigMotor {			// per-motor configs
+	uint8_t	motor_map;					// map motor to axis
+	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
+	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
+	uint8_t power_mode;					// See stepper.h for enum
+	float power_level;					// set 0.000 to 1.000 for PMW vref setting
+	float step_angle;					// degrees per whole step (ex: 1.8)
+	float travel_rev;					// mm or deg of travel per motor revolution
+	float steps_per_unit;				// microsteps per mm (or degree) of travel
+	float units_per_step;				// mm or degrees of travel per microstep
 } stConfigMotor_t;
 
-typedef struct stConfig {			// stepper configs
-	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-	stConfigMotor_t mot[MOTORS];	// settings for motors 1-4
+typedef struct stConfig {				// stepper configs
+	float motor_idle_timeout;			// seconds before setting motors to idle current (currently this is OFF)
+	stConfigMotor_t mot[MOTORS];		// settings for motors 1-4
 } stConfig_t;
 
 // Motor runtime structure. Used exclusively by step generation ISR (HI)
 
-typedef struct stRunMotor { 		// one per controlled motor
-	uint32_t substep_increment;		// total steps in axis times substeps factor
-	int32_t substep_accumulator;	// DDA phase angle accumulator
-	float power_level;				// power level for this segment (ARM only)
-	uint8_t power_state;			// state machine for managing motor power
-	uint32_t power_systick;			// sys_tick for next motor power state transition
+typedef struct stRunMotor {		 		// one per controlled motor
+	uint32_t substep_increment;			// total steps in axis times substeps factor
+	int32_t substep_accumulator;		// DDA phase angle accumulator
+	float power_level;					// power level for this segment (ARM only)
+	uint8_t power_state;				// state machine for managing motor power
+	uint32_t power_systick;				// sys_tick for next motor power state transition
 } stRunMotor_t;
 
-typedef struct stRunSingleton {		// Stepper static values and axis parameters
-	uint16_t magic_start;			// magic number to test memory integrity
-	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
-	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	stRunMotor_t mot[MOTORS];		// runtime motor structures
+typedef struct stRunSingleton {			// Stepper static values and axis parameters
+	uint16_t magic_start;				// magic number to test memory integrity
+	uint32_t dda_ticks_downcount;		// tick down-counter (unscaled)
+	uint32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
+	stRunMotor_t mot[MOTORS];			// runtime motor structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -381,19 +399,19 @@ typedef struct stPrepMotor {
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
-	uint16_t magic_start;			// magic number to test memory integrity
-	volatile uint8_t exec_state;	// move execution state
-	uint8_t move_type;				// move type
+	uint16_t magic_start;				// magic number to test memory integrity
+	volatile uint8_t exec_state;		// move execution state
+	uint8_t move_type;					// move type
 	
-	uint16_t dda_period;			// DDA or dwell clock period setting
-	uint32_t dda_ticks;				// DDA or dwell ticks for the move
-	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	stPrepMotor_t mot[MOTORS];		// prep time motor structs
+	uint16_t dda_period;				// DDA or dwell clock period setting
+	uint32_t dda_ticks;					// DDA or dwell ticks for the move
+	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
+	stPrepMotor_t mot[MOTORS];			// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st_cfg;			// config struct is exposed. The rest are private
-extern stPrepSingleton_t st_pre;	// only used by config_app diagnostics
+extern stConfig_t st_cfg;				// config struct is used widely
+extern stPrepSingleton_t st_pre;		// only used by config_app diagnostics
 
 /**** FUNCTION PROTOTYPES ****/
 
