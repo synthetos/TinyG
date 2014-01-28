@@ -36,7 +36,7 @@
 /***********************************************************************/
 
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
-#define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
+#define INIT_MESSAGE "Initializing configs to TEST settings"
 
 #define JERK_MAX					500			// 500 million mm/(min^3)
 #define JERK_HOMING					1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
@@ -51,6 +51,26 @@
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below
+
+/*
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+*/
+
+/*
+#undef  JSON_SYNTAX_MODE
+#define JSON_SYNTAX_MODE 			JSON_SYNTAX_RELAXED	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
+#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
+*/
+
+/*
+#undef STATUS_REPORT_VERBOSITY
+#define STATUS_REPORT_VERBOSITY		SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+*/
 
 #undef  SR_DEFAULTS
 #define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","feed"

@@ -136,7 +136,7 @@
 #define A_AXIS_MODE 			AXIS_STANDARD
 #define A_VELOCITY_MAX 			ROTARY_VELOCITY_MAX
 #define A_FEEDRATE_MAX 			ROTARY_VELOCITY_MAX
-#define A_TRAVEL_MAX 			-1
+#define A_TRAVEL_MIN 			-1
 #define A_TRAVEL_MAX 			-1										// -1 means infinite, no limit
 #define A_JERK_MAX 				ROTARY_JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION

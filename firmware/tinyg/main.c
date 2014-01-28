@@ -74,9 +74,6 @@ int main(void)
 	// system initialization
 	_system_init();
 	
-//	usb.attach();					// USB setup
-//	delay(1000);
-
 	// TinyG application setup
 	_application_init();
 

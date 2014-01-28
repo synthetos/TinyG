@@ -134,7 +134,7 @@
 #define A_VELOCITY_MAX			3600
 #define A_FEEDRATE_MAX			A_VELOCITY_MAX
 #define A_TRAVEL_MAX			-1
-#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
+#define A_TRAVEL_MIN 			-1					// -1 means infinite, no limit
 #define A_JERK_MAX				JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS				1
