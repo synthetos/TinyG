@@ -5,7 +5,7 @@
  * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
- * canonical machining functions as described in the NIST RS274/NGC v37
+ * canonical machining functions as described in the NIST RS274/NGC v3
  */
 /* This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
