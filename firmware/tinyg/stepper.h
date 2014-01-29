@@ -309,23 +309,23 @@ enum prepBufferState {
 /*
  * Stepper control structures
  *
- *	There are 4 sets of structures involved in this operation;
+ *	There are 5 sets of structures involved in stepper operations;
  *
- *	data structure:						static to:		runs at:
+ *	data structure:						static to:		runs primarily at:
  *	  mpBuffer planning buffers (bf)	  planner.c		  main loop
  *	  mrRuntimeSingleton (mr)			  planner.c		  MED ISR
- *	  stPrepSingleton (sp)				  stepper.c		  MED ISR
- *	  stRunSingleton (st)				  stepper.c		  HI ISR
+ *	  stConfig (st_cfg)					  stepper.c		  write=bkgd, read=ISRs
+ *	  stPrepSingleton (st_pre)			  stepper.c		  MED ISR
+ *	  stRunSingleton (st_run)			  stepper.c		  HI ISR
  *  
- *	Care has been taken to isolate actions on these structures to the 
- *	execution level in which they run and to use the minimum number of 
- *	volatiles in these structures. This allows the compiler to optimize
- *	the stepper inner-loops better.
+ *	Care has been taken to isolate actions on these structures to the execution level
+ *	in which they run and to use the minimum number of volatiles in these structures. 
+ *	This allows the compiler to optimize the stepper inner-loops better.
  */
 
 // Motor config structure
 
-typedef struct stConfigMotor {			// per-motor configs
+typedef struct cfgMotor {				// per-motor configs
 	// public
 	uint8_t	motor_map;					// map motor to axis
 	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
@@ -339,16 +339,16 @@ typedef struct stConfigMotor {			// per-motor configs
 
 	// private
 	float power_level_scaled;			// scaled to internal range - must be between 0 and 1
-} stConfigMotor_t;
+} cfgMotor_t;
 
 typedef struct stConfig {				// stepper configs
 	float motor_idle_timeout;			// seconds before setting motors to idle current (currently this is OFF)
-	stConfigMotor_t mot[MOTORS];		// settings for motors 1-4
+	cfgMotor_t mot[MOTORS];				// settings for motors 1-N
 } stConfig_t;
 
 // Motor runtime structure. Used exclusively by step generation ISR (HI)
 
-typedef struct stRunMotor {		 		// one per controlled motor
+typedef struct stRunMotor {				// one per controlled motor
 	uint32_t substep_increment;			// total steps in axis times substeps factor
 	int32_t substep_accumulator;		// DDA phase angle accumulator
 	uint8_t power_state;				// state machine for managing motor power
@@ -368,7 +368,7 @@ typedef struct stRunSingleton {			// Stepper static values and axis parameters
 // Must be careful about volatiles in this one
 
 typedef struct stPrepMotor {
-	uint32_t substep_increment;	 		// total steps in axis times substep factor
+	uint32_t substep_increment;			// total steps in axis times substep factor
 
 	// direction and direction change
 	int8_t direction;					// travel direction corrected for polarity
@@ -390,7 +390,7 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;				// magic number to test memory integrity
 	volatile uint8_t exec_state;		// move execution state
 	uint8_t move_type;					// move type
-	
+
 	uint16_t dda_period;				// DDA or dwell clock period setting
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
@@ -410,10 +410,8 @@ stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
 
 void st_reset(void);
-void st_cycle_start(void);
-void st_cycle_end(void);
 stat_t st_clc(cmdObj_t *cmd);
-	
+
 void st_energize_motors(void);
 void st_deenergize_motors(void);
 void st_set_motor_power(const uint8_t motor);
@@ -422,17 +420,17 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-//stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change);
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
+
+stat_t st_set_mt(cmdObj_t *cmd);
+stat_t st_set_md(cmdObj_t *cmd);
+stat_t st_set_me(cmdObj_t *cmd);
 
 stat_t st_set_sa(cmdObj_t *cmd);
 stat_t st_set_tr(cmdObj_t *cmd);
 stat_t st_set_mi(cmdObj_t *cmd);
 stat_t st_set_pm(cmdObj_t *cmd);
-stat_t st_set_mt(cmdObj_t *cmd);
-stat_t st_set_md(cmdObj_t *cmd);
-stat_t st_set_me(cmdObj_t *cmd);
-stat_t st_set_mp(cmdObj_t *cmd);
+stat_t st_set_pl(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
@@ -445,7 +443,7 @@ stat_t st_set_mp(cmdObj_t *cmd);
 	void st_print_mi(cmdObj_t *cmd);
 	void st_print_po(cmdObj_t *cmd);
 	void st_print_pm(cmdObj_t *cmd);
-	void st_print_mp(cmdObj_t *cmd);
+	void st_print_pl(cmdObj_t *cmd);
 
 #else
 
@@ -458,7 +456,7 @@ stat_t st_set_mp(cmdObj_t *cmd);
 	#define st_print_mi tx_print_stub
 	#define st_print_po tx_print_stub
 	#define st_print_pm tx_print_stub
-	#define st_print_mp tx_print_stub
+	#define st_print_pl tx_print_stub
 
 #endif // __TEXT_MODE
 
