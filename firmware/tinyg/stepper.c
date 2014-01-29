@@ -48,6 +48,7 @@ static stRunSingleton_t st_run;
 
 static void _load_move(void);
 static void _request_load_move(void);
+static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -141,8 +142,6 @@ uint8_t stepper_isbusy()
 
 /*
  * st_reset() - reset stepper internals
- * st_cycle_start() - Initializes values for beginning a new cycle (called from cm_cycle_start())
- * st_cycle_end()
  */
 
 void st_reset()
@@ -155,15 +154,7 @@ void st_reset()
 		st_pre.mot[i].corrected_steps = 0;
 	}
 }
-/*
-void st_cycle_start(void)
-{
-}
 
-void st_cycle_end(void)
-{
-}
-*/
 stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 {
 	st_reset();
@@ -175,7 +166,8 @@ stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
  *
  * _energize_motor()			- apply power to a motor
  * _deenergize_motor()			- remove power from a motor
- * st_set_motor_power()			- set motor a specified power level
+ * _set_motor_power_level()	 - set the actual Vref to a specified power level
+ *
  * st_energize_motors()			- apply power to all motors
  * st_deenergize_motors()		- remove power from all motors
  * st_motor_power_callback()	- callback to manage motor power sequencing
@@ -202,9 +194,24 @@ static void _deenergize_motor(const uint8_t motor)
 	st_run.mot[motor].power_state = MOTOR_OFF;
 }
 
+/*
+ * _set_motor_power_level()	- applies the power level to the requested motor.
+ *
+ *	The power_level must be a compensated PWM value - presumably one of:
+ *		st_cfg.mot[motor].power_level_scaled 
+ *		st_run.mot[motor].power_level_dynamic
+ */
 static void _set_motor_power_level(const uint8_t motor, const float power_level)
 {
-	return;	
+#ifdef __ARM
+	// power_level must be scaled properly for the driver's Vref voltage requirements 
+	if (!motor_1.enable.isNull()) if (motor == MOTOR_1) motor_1.vref = power_level;
+	if (!motor_2.enable.isNull()) if (motor == MOTOR_2) motor_2.vref = power_level;
+	if (!motor_3.enable.isNull()) if (motor == MOTOR_3) motor_3.vref = power_level;
+	if (!motor_4.enable.isNull()) if (motor == MOTOR_4) motor_4.vref = power_level;
+	if (!motor_5.enable.isNull()) if (motor == MOTOR_5) motor_5.vref = power_level;
+	if (!motor_6.enable.isNull()) if (motor == MOTOR_6) motor_6.vref = power_level;
+#endif
 }
 
 void st_energize_motors()
@@ -248,7 +255,8 @@ stat_t st_motor_power_callback() 	// called by controller
 		if(st_cfg.mot[motor].power_mode == MOTOR_POWERED_WHEN_MOVING) {	//... but idled after timeout when stopped
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_INITIATE_TIMEOUT): {
-					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
+//					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
+					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(IDLE_TIMEOUT_SECONDS * 1000);
 					st_run.mot[motor].power_state = MOTOR_COUNTDOWN_TIMEOUT;
 					continue;
 				}
@@ -261,15 +269,10 @@ stat_t st_motor_power_callback() 	// called by controller
 				}
 			}
 		}
-/*
-		if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {	// future
 
-		}
+//		if(st_run.mot[motor].power_mode == MOTOR_POWER_REDUCED_WHEN_IDLE) {}	// FUTURE
+//		if(st_run.mot[motor].power_mode == MOTOR_ADAPTIVE_POWER) {}				// FUTURE
 
-		if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {			// future
-			
-		}
-*/
 	}
 	return (STAT_OK);
 }

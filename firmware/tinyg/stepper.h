@@ -395,6 +395,7 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
 	stPrepMotor_t mot[MOTORS];			// prep time motor structs
+
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
