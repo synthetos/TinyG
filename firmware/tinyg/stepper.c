@@ -398,7 +398,7 @@ static void _load_move()
 
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-			st_run.mot[motor].power_state = MOTOR_INITIATE_TIMEOUT;	// ...start motor power timeouts
+			st_run.mot[motor].power_state = MOTOR_INITIATE_TIMEOUT;		// ...start motor power timeouts
 		}
 		return;
 	}
@@ -410,7 +410,9 @@ static void _load_move()
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
+#ifdef __AVR
 		TIMER_DDA.PER = st_pre.dda_period;
+#endif
 
 		//**** MOTOR_1 LOAD ****
 
@@ -422,7 +424,6 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
 			// Apply accumulator correction if the time base has changed
-
 			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
 			}
@@ -430,7 +431,6 @@ static void _load_move()
 			// Set the direction bit in hardware. Compensate for direction change in the accumulator
 			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
-
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
 					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
