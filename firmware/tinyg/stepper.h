@@ -249,47 +249,32 @@
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
 
-enum motorPowerState {				// used w/start and stop flags to sequence motor power
-	MOTOR_OFF = 0,					// motor is stopped and deenergized
-	MOTOR_IDLE,						// motor is stopped and may be partially energized for torque maintenance
-	MOTOR_RUNNING,					// motor is running (and fully energized)
-	MOTOR_INITIATE_TIMEOUT,			// transitional state to start idle timeout
-	MOTOR_COUNTDOWN_TIMEOUT			// run timeout to idle
-};
-
-enum cmStepperPowerMode {
-	MOTOR_DISABLED = 0,				// motor enable is deactivated
-	MOTOR_POWERED_IN_CYCLE,			// motor fully powered during cycles
-	MOTOR_POWERED_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,	// enable Vref current reduction (FUTURE)
-	MOTOR_ADAPTIVE_POWER			// adjust motor current with velocity (FUTURE)
-};
-
-/*
 enum motorPowerState {					// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,						// motor is stopped and deenergized
 	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
-	MOTOR_TIME_IDLE_TIMEOUT,			// run idle timeout
-	MOTOR_START_IDLE_TIMEOUT,			// transitional state to start idle timers
-	MOTOR_STOPPED,						// motor is stopped and fully energized
-	MOTOR_RUNNING						// motor is running (and fully energized)
+	MOTOR_RUNNING,						// motor is running (and fully energized)
+	MOTOR_INITIATE_TIMEOUT,				// transitional state to start idle timeout
+	MOTOR_COUNTDOWN_TIMEOUT				// run timeout to idle
 };
-*/
-/*
-enum motorPowerMode {
-	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
-	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
-	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
+
+enum cmStepperPowerMode {
+	MOTOR_DISABLED = 0,					// motor enable is deactivated
+	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles
+	MOTOR_POWERED_WHEN_MOVING,			// motor only powered while moving - idles shortly after it's stopped - even in cycle
+	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (FUTURE)
+	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
 };
-*/
 
 enum prepBufferState {
 	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
 	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
 };
 
-// Stepper power management settings
+// Stepper power management settings (applicable to ARM only)
+#define Vcc	3.3							// volts
+#define MaxVref	2.25					// max vref for driver circuit. Our ckt is 2.25 volts
+#define POWER_LEVEL_SCALE_FACTOR ((MaxVref/Vcc)*0.01) // scale % to value between 0 and <1
+
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
 #define IDLE_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
 #define IDLE_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
@@ -321,7 +306,6 @@ enum prepBufferState {
 #define STEP_CORRECTION_HOLDOFF		 	 	  6		// minimum number of segments to wait between error correction
 #define STEP_INITIAL_DIRECTION				false
 
-
 /*
  * Stepper control structures
  *
@@ -342,6 +326,7 @@ enum prepBufferState {
 // Motor config structure
 
 typedef struct stConfigMotor {			// per-motor configs
+	// public
 	uint8_t	motor_map;					// map motor to axis
 	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
@@ -351,6 +336,9 @@ typedef struct stConfigMotor {			// per-motor configs
 	float travel_rev;					// mm or deg of travel per motor revolution
 	float steps_per_unit;				// microsteps per mm (or degree) of travel
 	float units_per_step;				// mm or degrees of travel per microstep
+
+	// private
+	float power_level_scaled;			// scaled to internal range - must be between 0 and 1
 } stConfigMotor_t;
 
 typedef struct stConfig {				// stepper configs
@@ -363,9 +351,9 @@ typedef struct stConfig {				// stepper configs
 typedef struct stRunMotor {		 		// one per controlled motor
 	uint32_t substep_increment;			// total steps in axis times substeps factor
 	int32_t substep_accumulator;		// DDA phase angle accumulator
-	float power_level;					// power level for this segment (ARM only)
 	uint8_t power_state;				// state machine for managing motor power
 	uint32_t power_systick;				// sys_tick for next motor power state transition
+	float power_level_dynamic;			// power level for this segment of idle (ARM only)
 } stRunMotor_t;
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters

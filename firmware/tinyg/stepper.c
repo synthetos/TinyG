@@ -811,7 +811,7 @@ stat_t st_set_mp(cmdObj_t *cmd)	// motor power level
 	set_flt(cmd);				// set the value in the motor config struct (st)
 	
 	uint8_t motor = _get_motor(cmd->index);
-	st_run.mot[motor].power_level = cmd->value;
+	st_run.mot[motor].power_level_dynamic = cmd->value;
 	_set_motor_power_level(motor, cmd->value);
 	return(STAT_OK);
 }
