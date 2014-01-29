@@ -164,16 +164,18 @@ stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
 /*
  * Motor power management functions
  *
- * _energize_motor()			- apply power to a motor
- * _deenergize_motor()			- remove power from a motor
+ * _energize_motor()		 - apply power to a motor
+ * _deenergize_motor()		 - remove power from a motor
  * _set_motor_power_level()	 - set the actual Vref to a specified power level
  *
- * st_energize_motors()			- apply power to all motors
- * st_deenergize_motors()		- remove power from all motors
- * st_motor_power_callback()	- callback to manage motor power sequencing
+ * st_energize_motors()		 - apply power to all motors
+ * st_deenergize_motors()	 - remove power from all motors
+ * st_motor_power_callback() - callback to manage motor power sequencing
  */
+
 static void _energize_motor(const uint8_t motor)
 {
+#ifdef __AVR
 	switch(motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
 		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
@@ -181,10 +183,22 @@ static void _energize_motor(const uint8_t motor)
 		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
 	}
 	st_run.mot[motor].power_state = MOTOR_INITIATE_TIMEOUT;
+#endif
+#ifdef __ARM
+	// Motors that are not defined are not compiled. Saves some ugly #ifdef code
+	//	case (MOTOR_1): { motor_1.energize(MOTOR_1); break; }
+	if (!motor_1.enable.isNull()) if (motor == MOTOR_1) motor_1.energize(MOTOR_1);
+	if (!motor_2.enable.isNull()) if (motor == MOTOR_2) motor_2.energize(MOTOR_2);
+	if (!motor_3.enable.isNull()) if (motor == MOTOR_3) motor_3.energize(MOTOR_3);
+	if (!motor_4.enable.isNull()) if (motor == MOTOR_4) motor_4.energize(MOTOR_4);
+	if (!motor_5.enable.isNull()) if (motor == MOTOR_5) motor_5.energize(MOTOR_5);
+	if (!motor_6.enable.isNull()) if (motor == MOTOR_6) motor_6.energize(MOTOR_6);
+#endif
 }
 
 static void _deenergize_motor(const uint8_t motor)
 {
+#ifdef __AVR
 	switch (motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
 		case (MOTOR_2): { PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
@@ -192,6 +206,17 @@ static void _deenergize_motor(const uint8_t motor)
 		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
 	}
 	st_run.mot[motor].power_state = MOTOR_OFF;
+#endif
+#ifdef __ARM
+	// Motors that are not defined are not compiled. Saves some ugly #ifdef code
+	if (!motor_1.enable.isNull()) if (motor == MOTOR_1) motor_1.enable.set();	// set disables the motor
+	if (!motor_2.enable.isNull()) if (motor == MOTOR_2) motor_2.enable.set();
+	if (!motor_3.enable.isNull()) if (motor == MOTOR_3) motor_3.enable.set();
+	if (!motor_4.enable.isNull()) if (motor == MOTOR_4) motor_4.enable.set();
+	if (!motor_5.enable.isNull()) if (motor == MOTOR_5) motor_5.enable.set();
+	if (!motor_6.enable.isNull()) if (motor == MOTOR_6) motor_6.enable.set();
+	st_run.mot[motor].power_state = MOTOR_OFF;
+#endif
 }
 
 /*
@@ -216,26 +241,55 @@ static void _set_motor_power_level(const uint8_t motor, const float power_level)
 
 void st_energize_motors()
 {
+#ifdef __AVR
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		_energize_motor(motor);
 		st_run.mot[motor].power_state = MOTOR_INITIATE_TIMEOUT;
 	}
+#endif
+#ifdef __ARM
+	// any motor-N.energize defined as -1 will drop out of compile		// ++++ Rob: Is this true?
+	motor_1.energize(MOTOR_1);
+	motor_2.energize(MOTOR_2);
+	motor_3.energize(MOTOR_3);
+	motor_4.energize(MOTOR_4);
+	motor_5.energize(MOTOR_5);
+	motor_6.energize(MOTOR_6);
+	common_enable.clear();			// enable gShield common enable
+#endif
 }
 
 void st_deenergize_motors()
 {
+#ifdef __AVR
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		_deenergize_motor(motor);
 	}
+#endif
+#ifdef __ARM
+	// any motor-N.enable defined as -1 will drop out of compile
+	motor_1.enable.set();			// set disables the motor
+	motor_2.enable.set();
+	motor_3.enable.set();
+	motor_4.enable.set();
+	motor_5.enable.set();
+	motor_6.enable.set();
+	common_enable.set();			// disable gShield common enable
+#endif
 }
 
+/*
+ * st_motor_power_callback() - callback to manage motor power sequencing
+ *
+ *	Handles motor power-down timing, low-power idle, and adaptive motor power
+ */
 stat_t st_motor_power_callback() 	// called by controller
 {
 	// manage power for each motor individually
-	for (uint8_t motor=MOTOR_1; motor < MOTORS; motor++) {
+	for (uint8_t motor=MOTOR_1; motor<MOTORS; motor++) {
 
 		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
-			
+
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_INITIATE_TIMEOUT): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
