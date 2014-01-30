@@ -600,14 +600,14 @@ static void _load_move()
  *	floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
- *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
+ *	  - travel_steps[] are signed relative motion in steps for each motor. Steps are floats
  *		that typically have fractional values (fractional steps). The sign indicates
  *		direction. Motors that are not in the move should be 0 steps on input.
  *
- *	  - microseconds - how many microseconds the segment should run. If timing is not
- *		100% accurate this will affect the move velocity, but not the distance traveled.
+ *	  - following_error[] is a vector of measured errors to the step count. Used for correction.
  *
- *	  - step_error[] is a vector of measured errors to the step count. Used for correction.
+ *	  - segment_time - how many minutes the segment should run. If timing is not
+ *		100% accurate this will affect the move velocity, but not the distance traveled.
  *
  * NOTE:  Many of the expressions are sensitive to casting and execution order to avoid long-term
  *		  accuracy errors due to floating point round off. One earlier failed attempt was:
