@@ -283,13 +283,21 @@ enum prepBufferState {
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA. Substepping is a 
  *	fixed.point substitute allowing integer math (rather than FP) to be used in the pulse generation 
  *	(DDA) and make pulse timing interpolation more accurate. The loss of number range implies that 
- *	the overall maximum length move is shortened (which is true), but this is compensated for the fact 
- *	that long moves are broken up into a series of short moves (5 ms) by the planner so that feed holds 
- *	and overrides can interrupt a long move.
+ *	the overall maximum length move is shortened (which is true), but this is compensated for by the 
+ *	fact that long moves are broken up into a series of short moves (5 ms) by the planner so that 
+ *	feed holds and overrides can interrupt a long move.
  *
- *	This value is set for maximum accuracy; best not to mess with this.
+ *	This value is computed for maximum accuracy; best not to mess with this. The maximum range the 
+ *	substep accumulator can sustain is given by the DDA_SUBSTEPS define, below. Variables are:
+ *
+ *		MAX_LONG == 2^31, maximum signed long (depth of accumulator)
+ *		DDA_FACTOR == a safety factor used to reduce the result from theoretical maximum
+ *		FREQUENCY_DDA == DDA clock rate in Hz.
+ *		NOM_SEGMENT_TIME == upper bound of segment time in minutes
  */
-#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 preserves maximum FP precision
+#define DDA_FACTOR 0.95								// safety factor on substeps number
+#define DDA_SUBSTEPS ((MAX_LONG * DDA_FACTOR) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
+//#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 preserves maximum FP precision
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position.

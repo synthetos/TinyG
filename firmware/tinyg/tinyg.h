@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		413.31	// tracking g2 build 026.31 - test effect of st_prep_null() in _load_move() on motor power timeout
+#define TINYG_FIRMWARE_BUILD   		413.35	// tracking g2 build 026.35 - parametric setting dda substerps value
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
