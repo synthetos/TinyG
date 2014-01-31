@@ -294,10 +294,11 @@ enum prepBufferState {
  *		DDA_FACTOR == a safety factor used to reduce the result from theoretical maximum
  *		FREQUENCY_DDA == DDA clock rate in Hz.
  *		NOM_SEGMENT_TIME == upper bound of segment time in minutes
+ *
+ *	The number is about 8.5 million for the Xmega, about 1/2 that for the ARM.
  */
 #define DDA_FACTOR 0.95								// safety factor on substeps number
 #define DDA_SUBSTEPS ((MAX_LONG * DDA_FACTOR) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
-//#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 preserves maximum FP precision
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position.
@@ -378,8 +379,7 @@ typedef struct stPrepMotor {
 
 	// direction and direction change
 	uint8_t direction;					// travel direction corrected for polarity (CW==0. CCW==1)
-//++++	uint8_t prev_direction;				// travel direction from previous segment run for this motor
-	uint8_t direction_change;			// set true if direction changed
+	uint8_t prev_direction;				// travel direction from previous segment run for this motor
 	int8_t step_sign;					// set to +1 or -1 for encoders
 
 	// following error correction
