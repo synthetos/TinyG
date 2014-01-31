@@ -2,7 +2,7 @@
  * settings.h - default runtime settings
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -44,8 +44,9 @@
 #define CHORDAL_TOLERANCE 			0.001			// chord accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0				// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
-#define MOTOR_IDLE_TIMEOUT			2.00			// seconds to maintain motor at full power before idling
-#define MOTOR_POWER_LEVEL			25				// default motor power level (ARM only)
+
+#define MOTOR_POWER_TIMEOUT			2.00			// motor power timeout in seconds
+#define MOTOR_POWER_LEVEL			25				// default motor power level 0-100 (ARM only)
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
@@ -78,11 +79,20 @@
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
+/*
+#define X_TRAVEL_MIN				0
+#define Y_TRAVEL_MIN				0
+#define Z_TRAVEL_MIN				0
+#define A_TRAVEL_MIN				-1				// -1 means infinite, no limit
+#define B_TRAVEL_MIN				-1
+#define C_TRAVEL_MIN				-1
+*/
+
 /**** MACHINE PROFILES ******************************************************/
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
@@ -92,7 +102,7 @@
 //#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-//#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
+#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 

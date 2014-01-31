@@ -97,7 +97,7 @@ void stepper_init()
 	TIMER_LOAD.INTCTRLA = TIMER_LOAD_INTLVL;	// interrupt mode
 	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;			// set period
 
-	// setup software interrupt exec timer
+	// setup software interrupt exec timer & initial condition
 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;		// turn timer off
 	TIMER_EXEC.CTRLB = EXEC_TIMER_WGMODE;		// waveform mode
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
@@ -292,7 +292,7 @@ stat_t st_motor_power_callback() 	// called by controller
 
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_INITIATE_TIMEOUT): {
-					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
+					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
 					st_run.mot[motor].power_state = MOTOR_COUNTDOWN_TIMEOUT;
 					continue;
 				}
@@ -309,8 +309,8 @@ stat_t st_motor_power_callback() 	// called by controller
 		if(st_cfg.mot[motor].power_mode == MOTOR_POWERED_WHEN_MOVING) {	//... but idled after timeout when stopped
 			switch (st_run.mot[motor].power_state) {
 				case (MOTOR_INITIATE_TIMEOUT): {
-//					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
-					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(IDLE_TIMEOUT_SECONDS * 1000);
+//					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(POWER_TIMEOUT_SECONDS * 1000);
+					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
 					st_run.mot[motor].power_state = MOTOR_COUNTDOWN_TIMEOUT;
 					continue;
 				}
@@ -330,9 +330,22 @@ stat_t st_motor_power_callback() 	// called by controller
 	}
 	return (STAT_OK);
 }
+/******************************
+ * Interrupt Service Routines *
+ ******************************/
 
-/***** Interrupt Service Routines *****
- *
+/*
+ * Dwell timer interrupt
+ */
+ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
+	if (--st_run.dda_ticks_downcount == 0) {
+		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
+//		mp_end_dwell();									// free the planner buffer
+		_load_move();
+	}
+}
+
+/****************************************************************************************
  * ISR - DDA timer interrupt routine - service ticks from DDA timer
  *
  *	The step bit pulse width is ~1 uSec, which is OK for the TI DRV8811's.
@@ -377,22 +390,24 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 
-	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
-	_load_move();										// load the next move
+	// process end of segment
+	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// turn it off or it will keep stepping out the last segment
+	_load_move();										// load the next move at the current interrupt level
+
 }
 
+/****************************************************************************************
+ * Exec sequencing code		- computes and prepares next load segment
+ * st_request_exec_move()	- SW interrupt to request to execute a move
+ * exec_timer interrupt		- interrupt handler for calling exec function
+ */
 
-ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
-	if (--st_run.dda_ticks_downcount == 0) {
- 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
-//		mp_end_dwell();									// free the planner buffer
-		_load_move();
+void st_request_exec_move()
+{
+	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
+		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
+		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
 	}
-}
-
-ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
-	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
-	_load_move();
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
@@ -408,24 +423,12 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 }
 
 /****************************************************************************************
- * Exec sequencing code - computes and prepares next load segment
- * st_request_exec_move()	- SW interrupt to request to execute a move
- * exec_timer interrupt		- interrupt handler for calling exec function
- */
-
-/* Software interrupts
+ * Load sequencing code
  *
- * st_request_exec_move() - SW interrupt to request to execute a move
- * _request_load_move()   - SW interrupt to request to load a move
+ * _request_load()		- fires a software interrupt (timer) to request to load a move
+ *  load_mode interrupt	- interrupt handler for running the loader
+ * _load_move() 		- load a move into steppers, load a dwell, or process a Null move
  */
-
-void st_request_exec_move()
-{
-	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
-		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
-		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
-	}
-}
 
 static void _request_load_move()
 {
@@ -436,12 +439,22 @@ static void _request_load_move()
 		// interrupt and find out the load routine is not ready for you
 }
 
+ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
+	_load_move();
+}
+
 /*
  * _load_move() - Dequeue move and load into stepper struct
  *
  *	This routine can only be called be called from an ISR at the same or 
  *	higher level as the DDA or dwell ISR. A software interrupt has been 
  *	provided to allow a non-ISR to request a load (see st_request_load_move())
+ *
+ *	In aline() code:
+ *	 - All axes must set steps and compensate for out-of-range pulse phasing.
+ *	 - If axis has 0 steps the direction setting can be omitted
+ *	 - If axis has 0 steps the motor must not be enabled to support power mode = 1
  */
 
 static void _load_move()
@@ -585,7 +598,8 @@ static void _load_move()
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
 	}
 
-	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
+	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
+	st_prep_null();											// needed to shut off timers if no moves left
 	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();									// exec and prep next move
 }
@@ -593,11 +607,10 @@ static void _load_move()
 /***********************************************************************************
  * st_prep_line() - Prepare the next move for the loader
  *
- *	This function does the math on the next pulse segment and gets it ready for 
- *	the loader. It deals with all the DDA optimizations and timer setups so that
- *	loading can be performed as rapidly as possible. It works in joint space 
- *	(motors) and it works in steps, not length units. All args are provided as 
- *	floats and converted to their appropriate integer types for the loader. 
+ *	This function does the math on the next pulse segment and gets it ready for the loader. 
+ *	It deals with all the DDA optimizations and timer setups so that loading can be performed 
+ *	as rapidly as possible. It works in joint space (motors) and it works in steps, not length 
+ *	units. All args are provided as floats and converted to their appropriate integer types for the loader. 
  *
  * Args:
  *	  - travel_steps[] are signed relative motion in steps for each motor. Steps are floats
@@ -617,16 +630,17 @@ static void _load_move()
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
+	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to happen
 		} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
 		} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
 		} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE_ERROR);
 	}
+
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
 
-	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);
+	st_pre.dda_period = _f_to_period(FREQUENCY_DDA);				// NB: AVR only (non Motate)
 	st_pre.dda_ticks = (int32_t)(segment_time * 60 * FREQUENCY_DDA);// NB: converts minutes to seconds
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
@@ -636,9 +650,9 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-		st_pre.mot[i].accumulator_correction_flag = false;	
+		st_pre.mot[i].accumulator_correction_flag = false;
 
-		// Skip this motor if there are no new steps. Leave all values intact.
+		// Skip this motor if there are no new steps. Leave all other values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
 
 		// Setup the direction, compensating for polarity.
@@ -672,16 +686,16 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 #ifdef __STEP_CORRECTION
 		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
 
-		if ((--st_pre.mot[i].correction_holdoff < 0) && 
+		if ((--st_pre.mot[i].correction_holdoff < 0) &&
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
 			correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
 			if (correction_steps > 0) {
-				correction_steps = min3(correction_steps, fabs(travel_steps[i]), STEP_CORRECTION_MAX); 
+				correction_steps = min3(correction_steps, fabs(travel_steps[i]), STEP_CORRECTION_MAX);
 			} else {
-				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX); 
+				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX);
 			}
 			st_pre.mot[i].corrected_steps += correction_steps;
 			travel_steps[i] -= correction_steps;
@@ -716,8 +730,8 @@ void st_prep_null()
 void st_prep_dwell(float microseconds)
 {
 	st_pre.move_type = MOVE_TYPE_DWELL;
-	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
+	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);	// only needed by AVR
 }
 
 /*
@@ -731,12 +745,12 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
 {
 #ifdef __ARM
 	switch (motor) {
-		case (MOTOR_1): { motor_1.setMicrosteps(microsteps); break; }
-		case (MOTOR_2): { motor_2.setMicrosteps(microsteps); break; }
-		case (MOTOR_3): { motor_3.setMicrosteps(microsteps); break; }
-		case (MOTOR_4): { motor_4.setMicrosteps(microsteps); break; }
-		case (MOTOR_5): { motor_5.setMicrosteps(microsteps); break; }
-		case (MOTOR_6): { motor_6.setMicrosteps(microsteps); break; }
+		if (!motor_1.enable.isNull()) case (MOTOR_1): { motor_1.setMicrosteps(microsteps); break; }
+		if (!motor_2.enable.isNull()) case (MOTOR_2): { motor_2.setMicrosteps(microsteps); break; }
+		if (!motor_3.enable.isNull()) case (MOTOR_3): { motor_3.setMicrosteps(microsteps); break; }
+		if (!motor_4.enable.isNull()) case (MOTOR_4): { motor_4.setMicrosteps(microsteps); break; }
+		if (!motor_5.enable.isNull()) case (MOTOR_5): { motor_5.setMicrosteps(microsteps); break; }
+		if (!motor_6.enable.isNull()) case (MOTOR_6): { motor_6.setMicrosteps(microsteps); break; }
 	}
 #endif //__ARM
 #ifdef __AVR
@@ -829,7 +843,7 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 
 stat_t st_set_mt(cmdObj_t *cmd)
 {
-	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(cmd->value, IDLE_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_power_timeout = min(POWER_TIMEOUT_SECONDS_MAX, max(cmd->value, POWER_TIMEOUT_SECONDS_MIN));
 	return (STAT_OK);
 }
 
