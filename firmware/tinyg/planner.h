@@ -2,8 +2,8 @@
  * planner.h - cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
- * Copyright (c) 2013 Robert Giseburt
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -233,10 +233,10 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float jerk;						// max linear jerk
 	float jerk_div2;				// cached value for efficiency
 	float midpoint_velocity;		// velocity at accel/decel midpoint
-	float midpoint_acceleration;	// 
-	float accel_time;				// 
-	float segment_accel_time;		// 
-	float elapsed_accel_time;		// 
+	float midpoint_acceleration;	//
+	float accel_time;				//
+	float segment_accel_time;		//
+	float elapsed_accel_time;		//
 
 									// values used exclusively by forward differencing acceleration
 	float forward_diff_1;			// forward difference level 1 (Acceleration)
