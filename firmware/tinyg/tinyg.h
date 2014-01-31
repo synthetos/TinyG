@@ -77,7 +77,6 @@
   #define __SILENCE_JSON_RESPONSES
 #endif
 
-
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK

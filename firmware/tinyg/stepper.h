@@ -253,15 +253,15 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_OFF = 0,						// motor is stopped and deenergized
 	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
 	MOTOR_RUNNING,						// motor is running (and fully energized)
-	MOTOR_INITIATE_TIMEOUT,				// transitional state to start idle timeout
-	MOTOR_COUNTDOWN_TIMEOUT				// run timeout to idle
+	MOTOR_POWER_TIMEOUT_START,			// transitional state to start power-down timeout
+	MOTOR_POWER_TIMEOUT_COUNTDOWN		// count down the time to de-energizing motors
 };
 
 enum cmStepperPowerMode {
 	MOTOR_DISABLED = 0,					// motor enable is deactivated
 	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles
 	MOTOR_POWERED_WHEN_MOVING,			// motor only powered while moving - idles shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (FUTURE)
+	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction for idle (FUTURE)
 	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
 };
 
@@ -278,7 +278,6 @@ enum prepBufferState {
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
 #define POWER_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
 #define POWER_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
-//#define POWER_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA. Substepping is a 
@@ -296,14 +295,14 @@ enum prepBufferState {
  *	Step correction settings determine how the encoder error is fed back to correct position.
  *	Since the following error is running 2 segments behind the current segment you have to be careful 
  *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
- *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
+ *	is how much. If threshold is too small and/or amount too large you will get a runaway correction
  *	and error will grow instead of shrink
  */
 #define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.05		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  6		// minimum number of segments to wait between error correction
-#define STEP_INITIAL_DIRECTION				false
+#define STEP_INITIAL_DIRECTION		DIRECTION_CW
 
 /*
  * Stepper control structures
@@ -370,7 +369,8 @@ typedef struct stPrepMotor {
 	uint32_t substep_increment;			// total steps in axis times substep factor
 
 	// direction and direction change
-	uint8_t direction;					// travel direction corrected for polarity
+	uint8_t direction;					// travel direction corrected for polarity (CW==0. CCW==1)
+//++++	uint8_t prev_direction;				// travel direction from previous segment run for this motor
 	uint8_t direction_change;			// set true if direction changed
 	int8_t step_sign;					// set to +1 or -1 for encoders
 
