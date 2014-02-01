@@ -33,25 +33,31 @@
 #include "canonical_machine.h"
 #include "planner.h"
 #include "stepper.h"
+//#include "switch.h"
 #include "spindle.h"
 #include "report.h"
 #include "switch.h"
 
 /**** Probe singleton structure ****/
 
-struct pbProbingSingleton {		// persistent homing runtime variables
-	stat_t (*func)();			// binding for callback function state machine
+struct pbProbingSingleton {				// persistent probing runtime variables
+	stat_t (*func)();					// binding for callback function state machine
 
-	// state saved from gcode model
-    uint8_t saved_switch_type;  // saved switch type NC/NO
-    uint8_t saved_switch_mode[NUM_SWITCHES];
-    uint8_t probe_switch;       // what switch should we check?
+	// what switch should we check?
+	uint8_t probe_switch;
+//	uint8_t probe_switch_axis;			// probe switch axis
+//	uint8_t probe_switch_position;		//...and position
+
+	// save the probe switch's original settings
+	uint8_t saved_switch_mode[NUM_SWITCHES];
+//	uint8_t saved_switch_mode;
+	uint8_t saved_switch_type;			// NO/NC
 
     // probe destination
     float target[AXES];
     float flags[AXES];
 
-	float saved_jerk[AXES];		// saved and restored for each axis
+	float saved_jerk[AXES];				// saved and restored for each axis
 };
 static struct pbProbingSingleton pb;
 
@@ -136,29 +142,42 @@ static uint8_t _probing_init()
     cm.probe_state = PROBE_FAILED;
 	cm.cycle_state = CYCLE_PROBE;
 
-    // axis inits
-   for( uint8_t axis=0; axis<AXES; axis++ )
-    {
-        // save the jerk settings & switch to the jerk_homing settings
-        pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
-        cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
-    }
+	// initialize the axes
+	for( uint8_t axis=0; axis<AXES; axis++ ) {
+		// save the jerk settings & switch to the jerk_homing settings
+		pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
+		cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
+	}
+
+	// initialize the probe switch
 
     // switch the switch type mode for the probe
     // FIXME: we should be able to use the homing switch at this point too, 
 	// Can't because switch mode is global and our probe is NO, not NC.
-    pb.probe_switch = SW_MIN_Z;				// FIXME: hardcoded...
-    for( uint8_t i=0; i<NUM_SWITCHES; i++ )
-        pb.saved_switch_mode[i] = sw.mode[i];
-    
-    sw.mode[pb.probe_switch] = SW_MODE_HOMING;
-    pb.saved_switch_type = sw.switch_type;	// save the switch type for recovery later.
-    sw.switch_type = SW_TYPE_NORMALLY_OPEN;	// contact probes are NO switches... usually.
-	switch_init();							// re-init to pick up new switch settings
 
+// old style switch code:
+	pb.probe_switch = SW_MIN_Z;							// FIXME: hardcoded...
+
+	for( uint8_t i=0; i<NUM_SWITCHES; i++ ) pb.saved_switch_mode[i] = sw.mode[i];
+	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
+
+	pb.saved_switch_type = sw.switch_type;				// save the switch type for recovery later.
+	sw.switch_type = SW_TYPE_NORMALLY_OPEN;				// contact probes are NO switches... usually.
+
+// new style switch code:
+//	pb.probe_switch_axis = AXIS_Z;						// FIXME: hardcoded...
+//	pb.probe_switch_position = SW_MIN;					// FIXME: hardcoded...
+
+//	pb.saved_switch_mode = sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode;
+//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = SW_MODE_HOMING;
+
+//	pb.saved_switch_type = sw.s[pb.probe_switch_axis][pb.probe_switch_position].type;
+//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = SW_TYPE_NORMALLY_OPEN; // contact probes are NO switches... usually.
+
+
+	switch_init();										// re-init to pick up new switch settings
     cm_spindle_control(SPINDLE_OFF);
-
-	return (_set_pb_func(_probing_start));	// start the move
+	return (_set_pb_func(_probing_start));				// start the move
 }
 
 /*
@@ -168,11 +187,12 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
     // initial probe state, don't probe if we're already contacted!
-    int8_t probe = read_switch(pb.probe_switch);
+	int8_t probe = read_switch(pb.probe_switch);
+//	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
 
-    if( probe==SW_OPEN ) {
-        ritorno(cm_straight_feed(pb.target, pb.flags));
-    }
+	if( probe==SW_OPEN ) {
+		ritorno(cm_straight_feed(pb.target, pb.flags));
+	}
 	return (_set_pb_func(_probing_finish));
 }
 
@@ -182,27 +202,29 @@ static stat_t _probing_start()
 
 static stat_t _probing_finish()
 {
-    int8_t probe = read_switch(pb.probe_switch);
-    cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
-    
-    for( uint8_t axis=0; axis<AXES; axis++ )
-        cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
+	int8_t probe = read_switch(pb.probe_switch);
+//	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
 
-    // if we got here because of a feed hold we need to keep the model position correct
+	cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
+    
+	for( uint8_t axis=0; axis<AXES; axis++ )
+		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
+
+	// if we got here because of a feed hold we need to keep the model position correct
 	cm_set_model_position_from_runtime(STAT_OK);
 
-//    printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
-//             (int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
+//	printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
+//		(int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
 
 	// If probe was successful the 'e' word == 1, otherwise e == 0 to signal an error
 
 	printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
-	if (pb.flags[AXIS_X]) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);
-	if (pb.flags[AXIS_Y]) printf_P(PSTR(",\"y\":%0.3f"), cm.probe_results[AXIS_Y]);
-	if (pb.flags[AXIS_Z]) printf_P(PSTR(",\"z\":%0.3f"), cm.probe_results[AXIS_Z]);
-	if (pb.flags[AXIS_A]) printf_P(PSTR(",\"a\":%0.3f"), cm.probe_results[AXIS_A]);
-	if (pb.flags[AXIS_B]) printf_P(PSTR(",\"b\":%0.3f"), cm.probe_results[AXIS_B]);
-	if (pb.flags[AXIS_C]) printf_P(PSTR(",\"c\":%0.3f"), cm.probe_results[AXIS_C]);
+	if (fp_TRUE(pb.flags[AXIS_X])) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);
+	if (fp_TRUE(pb.flags[AXIS_Y])) printf_P(PSTR(",\"y\":%0.3f"), cm.probe_results[AXIS_Y]);
+	if (fp_TRUE(pb.flags[AXIS_Z])) printf_P(PSTR(",\"z\":%0.3f"), cm.probe_results[AXIS_Z]);
+	if (fp_TRUE(pb.flags[AXIS_A])) printf_P(PSTR(",\"a\":%0.3f"), cm.probe_results[AXIS_A]);
+	if (fp_TRUE(pb.flags[AXIS_B])) printf_P(PSTR(",\"b\":%0.3f"), cm.probe_results[AXIS_B]);
+	if (fp_TRUE(pb.flags[AXIS_C])) printf_P(PSTR(",\"c\":%0.3f"), cm.probe_results[AXIS_C]);
 	printf_P(PSTR("}}\n"));
     
     return (_set_pb_func(_probing_finalize_exit));
@@ -219,6 +241,11 @@ static void _probe_restore_settings()
     for( uint8_t i=0; i<NUM_SWITCHES; i++ )
         sw.mode[i] = pb.saved_switch_mode[i];
 	switch_init();								// re-init to pick up changes
+
+    // restore switch settings
+//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = pb.saved_switch_mode;
+//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = pb.saved_switch_type;
+//	switch_init();								// re-init to pick up changes
 
     // restore axis jerk
     for( uint8_t axis=0; axis<AXES; axis++ )
