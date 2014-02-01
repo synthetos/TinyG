@@ -280,32 +280,32 @@ enum prepBufferState {
 #define POWER_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
 
 /* DDA substepping
- * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA. Substepping is a 
- *	fixed.point substitute allowing integer math (rather than FP) to be used in the pulse generation 
- *	(DDA) and make pulse timing interpolation more accurate. The loss of number range implies that 
- *	the overall maximum length move is shortened (which is true), but this is compensated for by the 
- *	fact that long moves are broken up into a series of short moves (5 ms) by the planner so that 
- *	feed holds and overrides can interrupt a long move.
+ *	DDA Substepping is a fixed.point scheme to increase the resolution of the DDA pulse generation
+ *	while still using integer math (as opposed to floating point). Improving the accuracy of the DDA
+ *	results in more precise pulse timing and therefore less pulse jitter and smoother motor operation.
  *
- *	This value is computed for maximum accuracy; best not to mess with this. The maximum range the 
- *	substep accumulator can sustain is given by the DDA_SUBSTEPS define, below. Variables are:
+ *	The DDA accumulator is an int32_t, so the accumulator has the number range of about 2.1 billion. 
+ *	The DDA_SUBSTEPS is used to multiply the step count for a segment to maximally use this number range.
+ *	DDA_SUBSTEPS can be computed for a given DDA clock rate and segment time not to exceed the available
+ *	number range. Variables are:
  *
- *		MAX_LONG == 2^31, maximum signed long (depth of accumulator)
- *		DDA_FACTOR == a safety factor used to reduce the result from theoretical maximum
+ *		MAX_LONG == 2^31, maximum signed long (depth of accumulator. NB: accumulator values are negative)
  *		FREQUENCY_DDA == DDA clock rate in Hz.
  *		NOM_SEGMENT_TIME == upper bound of segment time in minutes
+ *		0.97 == a safety factor used to reduce the result from theoretical maximum
  *
- *	The number is about 8.5 million for the Xmega, about 1/2 that for the ARM.
+ *	The number is about 8.5 million for the Xmega running a 50 KHz DDA with 5 millisecond segments
+ *	The ARM is about 1/2 that (or less) as the DDA clock rate is higher.
  */
-#define DDA_FACTOR 0.95								// safety factor on substeps number
-#define DDA_SUBSTEPS ((MAX_LONG * DDA_FACTOR) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
+#define DDA_SUBSTEPS ((MAX_LONG * 0.97) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
 
 /* Step correction settings
- *	Step correction settings determine how the encoder error is fed back to correct position.
- *	Since the following error is running 2 segments behind the current segment you have to be careful 
+ *	Step correction settings determine how the encoder error is fed back to correct position errors.
+ *	Since the following_error is running 2 segments behind the current segment you have to be careful 
  *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
- *	is how much. If threshold is too small and/or amount too large you will get a runaway correction
- *	and error will grow instead of shrink
+ *	is how much. The holdoff is how many segments to wait before applying another correction. If threshold 
+ *	is too small and/or amount too large and/or threshold is too small you may get a runaway correction 
+ *	and error will grow instead of shrink (or oscillate).
  */
 #define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction 
 #define STEP_CORRECTION_FACTOR		(float)0.05		// factor to apply to step correction for a single segment
@@ -316,9 +316,9 @@ enum prepBufferState {
 /*
  * Stepper control structures
  *
- *	There are 5 sets of structures involved in stepper operations;
+ *	There are 5 main structures involved in stepper operations;
  *
- *	data structure:						static to:		runs primarily at:
+ *	data structure:						found in:		runs primarily at:
  *	  mpBuffer planning buffers (bf)	  planner.c		  main loop
  *	  mrRuntimeSingleton (mr)			  planner.c		  MED ISR
  *	  stConfig (st_cfg)					  stepper.c		  write=bkgd, read=ISRs

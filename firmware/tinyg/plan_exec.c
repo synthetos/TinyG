@@ -232,11 +232,11 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
-	//	  status	 bf->move_state	 Description
-	//    ---------	 --------------	 ----------------------------------------
-	//	  STAT_EAGAIN	 <don't care>	 mr buffer has more segments to run
-	//	  STAT_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
-	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
+	//	  status		bf->move_state		Description
+	//    -----------	--------------		----------------------------------------
+	//	  STAT_EAGAIN	<don't care>		mr buffer has more segments to run
+	//	  STAT_OK		MOVE_RUN			mr and bf buffers are done
+	//	  STAT_OK		MOVE_NEW			mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) { 
 		sr_request_status_report(SR_TIMED_REQUEST);		// continue reporting mr buffer
