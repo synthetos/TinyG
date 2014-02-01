@@ -165,7 +165,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jog","jogz",_f00, 0, tx_print_nul, get_nul, cm_run_jogz, (float *)&cm.jogging_dest, 0},
 	{ "jog","joga",_f00, 0, tx_print_nul, get_nul, cm_run_joga, (float *)&cm.jogging_dest, 0},
 //	{ "jog","jogb",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
-//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
+//	{ "jog","jogc",_f00, 0, tx_print_nul, get_nul, cm_run_jogc, (float *)&cm.jogging_dest, 0},
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f00, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
@@ -176,7 +176,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
-	{ "", "clc", _f00, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
+//	{ "", "clc", _f00, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
 	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
@@ -196,7 +196,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
-	{ "1","1mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
+	{ "1","1pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #if (MOTORS >= 2)
 	{ "2","2ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
@@ -204,7 +204,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "2","2mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_2].polarity,	M2_POLARITY },
 	{ "2","2pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_2].power_mode,	M2_POWER_MODE },
-	{ "2","2mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_2].power_level,M2_POWER_LEVEL},
+	{ "2","2pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_2].power_level,M2_POWER_LEVEL},
 #endif
 #if (MOTORS >= 3)
 	{ "3","3ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
@@ -213,7 +213,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "3","3mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_3].polarity,	M3_POLARITY },
 	{ "3","3pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_3].power_mode,	M3_POWER_MODE },
-	{ "3","3mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_3].power_level,M3_POWER_LEVEL },
+	{ "3","3pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_3].power_level,M3_POWER_LEVEL },
 #endif
 #if (MOTORS >= 4)
 	{ "4","4ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
@@ -222,25 +222,25 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "4","4mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_4].power_mode,	M4_POWER_MODE },
-	{ "4","4mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_4].power_level,M4_POWER_LEVEL },
+	{ "4","4pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_4].power_level,M4_POWER_LEVEL },
 #endif
 #if (MOTORS >= 5)
 	{ "5","5ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
-	{ "5","5sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
-	{ "5","5tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
+	{ "5","5sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
+	{ "5","5tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
 	{ "5","5mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
 	{ "5","5po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_5].polarity,	M5_POLARITY },
 	{ "5","5pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_5].power_mode,	M5_POWER_MODE },
-	{ "5","5mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_5].power_level,M5_POWER_LEVEL },
+	{ "5","5pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_5].power_level,M5_POWER_LEVEL },
 #endif
 #if (MOTORS >= 6)
 	{ "6","6ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
-	{ "6","6sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
-	{ "6","6tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
+	{ "6","6sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
+	{ "6","6tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
 	{ "6","6mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
 	{ "6","6po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_6].polarity,	M6_POLARITY },
 	{ "6","6pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_6].power_mode,	M6_POWER_MODE },
-	{ "6","6mp",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_6].power_level,M6_POWER_LEVEL },
+	{ "6","6pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_6].power_level,M6_POWER_LEVEL },
 #endif
 
 	// Axis parameters
@@ -313,7 +313,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","bjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
 	{ "b","bjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].radius,			B_RADIUS },
-#ifdef __ARM	// B axis extended paramters
+#ifdef __ARM	// B axis extended parameters
 	{ "b","asn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.s[AXIS_B][SW_MIN].mode,	B_SWITCH_MODE_MIN },
 	{ "b","asx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.s[AXIS_B][SW_MAX].mode,	B_SWITCH_MODE_MAX },
 	{ "b","bsv",_fip, 0, cm_print_sv, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].search_velocity,	B_SEARCH_VELOCITY },
@@ -329,7 +329,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","ctm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
-	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","cjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].radius,			C_RADIUS },
 #ifdef __ARM	// C axis extended parameters
@@ -419,7 +418,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_B], 0 },
 	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
-	// this is a 128bit UUID for identifing a previously commited job state
+	// this is a 128bit UUID for identifying a previously committed job state
 	{ "jid","jida",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[0], 0},
 	{ "jid","jidb",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[1], 0},
 	{ "jid","jidc",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[2], 0},
@@ -495,6 +494,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "udd","udd2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
 	{ "udd","udd3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
+	// Diagnostic parameters
+#ifdef __DIAGNOSTIC_PARAMETERS
 	{ "_te","_tex",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },  // X target endpoint
 	{ "_te","_tey",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
 	{ "_te","_tez",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
@@ -535,7 +536,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_fe","_fe3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
 	{ "_fe","_fe4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_4], 0 },
 
-//	{ "",   "_dd1",_f00, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },
+//	{ "",   "_dd1",_f00, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },	// diagnostic dump
+#endif
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
@@ -571,7 +573,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se29",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[29],0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
-	// *** Must agree with CMD_COUNT_GROUPS below ****
+	// *** Must agree with CMD_COUNT_GROUPS below ***
+	// *** START COUNTING FROM HERE ***
 	{ "","sys",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// system group
 	{ "","p1", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// PWM 1 group
 
@@ -579,12 +582,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","2",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","3",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","4",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-#if (MOTORS >= 5)
 //	{ "","5",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-#endif
-#if (MOTORS >= 6)
 //	{ "","6",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
-#endif
+
 	{ "","x",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
 	{ "","y",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","z",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -592,7 +592,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","b",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","c",  _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 
-//	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
+//	{ "","ss", _f00, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },	// switch states
 	{ "","g54",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
 	{ "","g55",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","g56",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -615,6 +615,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","udc", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udd", _f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 
+#ifdef __DIAGNOSTIC_PARAMETERS
 	{ "","_te",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis endpoint group
 	{ "","_tr",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis runtime group
 	{ "","_ts",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target motor steps group
@@ -623,6 +624,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","_es",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder steps group
 	{ "","_xs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// correction steps group
 	{ "","_fe",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// following error group
+#endif
 
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with CMD_COUNT_UBER_GROUPS below ****
@@ -634,8 +636,15 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		39		// count of simple groups
-#define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
+#define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups, above
+#define STANDARD_GROUPS 		31		// count of standard groups, excluding diagnostic parameter groups
+
+#ifdef __DIAGNOSTIC_PARAMETERS
+#define DIAGNOSTIC_GROUPS 		8		// count of diagnostic groups only
+#else
+#define DIAGNOSTIC_GROUPS 		0
+#endif
+#define CMD_COUNT_GROUPS 		(STANDARD_GROUPS + DIAGNOSTIC_GROUPS)
 
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define CMD_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
@@ -823,7 +832,7 @@ static stat_t set_baud(cmdObj_t *cmd)
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
-	char_t message[CMD_MESSAGE_LEN]; 
+	char_t message[CMD_MESSAGE_LEN];
 	sprintf_P(message, PSTR("*** NOTICE *** Resetting baud rate to %s"),GET_TEXT_ITEM(msg_baud, baud));
 	cmd_add_conditional_message(message);
 	return (STAT_OK);

@@ -85,8 +85,8 @@
  *		and have no buffer.
  */
 
-#include "tinyg.h"		// #1
-#include "config.h"		// #2
+#include "tinyg.h"			// #1
+#include "config.h"			// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
