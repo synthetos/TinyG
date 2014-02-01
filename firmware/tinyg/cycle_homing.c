@@ -2,7 +2,7 @@
  * cycle_homing.c - homing cycle extension to canonical_machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -41,33 +41,40 @@ extern "C"{
 
 /**** Homing singleton structure ****/
 
-struct hmHomingSingleton {		// persistent homing runtime variables
+struct hmHomingSingleton {			// persistent homing runtime variables
 	// controls for homing cycle
-	int8_t axis;				// axis currently being homed
-	uint8_t min_mode;			// mode for min switch for this axis
-	uint8_t max_mode;			// mode for max switch for this axis
-	int8_t homing_switch;		// homing switch for current axis (index into switch flag table)
-	int8_t limit_switch;		// limit switch for current axis, or -1 if none
-	uint8_t homing_closed;		// 0=open, 1=closed
-	uint8_t limit_closed;		// 0=open, 1=closed
-	uint8_t set_coordinates;	// G28.4 flag. true = set coords to zero at the end of homing cycle
-	stat_t (*func)(int8_t axis);// binding for callback function state machine
+	int8_t axis;					// axis currently being homed
+	uint8_t min_mode;				// mode for min switch for this axis
+	uint8_t max_mode;				// mode for max switch for this axis
+
+	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
+//	int8_t homing_switch_axis;		// axis of current homing switch, or -1 if none
+//	uint8_t homing_switch_position;	// min/max position of current homing switch
+
+	int8_t limit_switch;			// limit switch for current axis, or -1 if none
+//	int8_t limit_switch_axis;		// axis of current limit switch, or -1 if none
+//	uint8_t limit_switch_position;	// min/max position of current limit switch
+
+	uint8_t homing_closed;			// 0=open, 1=closed
+	uint8_t limit_closed;			// 0=open, 1=closed
+	uint8_t set_coordinates;		// G28.4 flag. true = set coords to zero at the end of homing cycle
+	stat_t (*func)(int8_t axis);	// binding for callback function state machine
 
 	// per-axis parameters
-	float direction;			// set to 1 for positive (max), -1 for negative (to min);
-	float search_travel;		// signed distance to travel in search
-	float search_velocity;		// search speed as positive number
-	float latch_velocity;		// latch speed as positive number
-	float latch_backoff;		// max distance to back off switch during latch phase 
-	float zero_backoff;			// distance to back off switch before setting zero
-	float max_clear_backoff;	// maximum distance of switch clearing backoffs before erring out
+	float direction;				// set to 1 for positive (max), -1 for negative (to min);
+	float search_travel;			// signed distance to travel in search
+	float search_velocity;			// search speed as positive number
+	float latch_velocity;			// latch speed as positive number
+	float latch_backoff;			// max distance to back off switch during latch phase 
+	float zero_backoff;				// distance to back off switch before setting zero
+	float max_clear_backoff;		// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-	float saved_feed_rate;		// F setting
-	uint8_t saved_units_mode;	// G20,G21 global setting
-	uint8_t saved_coord_system;	// G54 - G59 setting
-	uint8_t saved_distance_mode;// G90,G91 global setting
-	float saved_jerk;			// saved and restored for each axis homed
+	float saved_feed_rate;			// F setting
+	uint8_t saved_units_mode;		// G20,G21 global setting
+	uint8_t saved_coord_system;		// G54 - G59 setting
+	uint8_t saved_distance_mode;	// G90,G91 global setting
+	float saved_jerk;				// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
 
@@ -144,11 +151,6 @@ static int8_t _get_next_axis(int8_t axis);
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-//	hm.saved_units_mode = cm.gm.units_mode;
-//	hm.saved_coord_system = cm.gm.coord_system;
-//	hm.saved_distance_mode = cm.gm.distance_mode;
-//	hm.saved_feed_rate = cm.gm.feed_rate;
-
 	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
 	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
@@ -227,6 +229,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	// determine the switch setup and that config is OK
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
 	hm.max_mode = get_switch_mode(MAX_SWITCH(axis));
+//	hm.min_mode = get_switch_mode(axis, SW_MIN);
+//	hm.max_mode = get_switch_mode(axis, SW_MAX);
 
 	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {	  // one or the other must be homing
 		return (_homing_error_exit(axis, STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION)); // axis cannot be homed
@@ -238,7 +242,13 @@ static stat_t _homing_axis_start(int8_t axis)
 	// setup parameters homing to the minimum switch
 	if (hm.min_mode & SW_HOMING_BIT) {
 		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
+//		hm.homing_switch_axis = axis;
+//		hm.homing_switch_position = SW_MIN;					// the min is the homing switch
+
 		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
+//		hm.limit_switch_axis = axis;
+//		hm.limit_switch_position = SW_MAX;					// the max would be the limit switch
+
 		hm.search_travel = -travel_distance;				// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
@@ -246,7 +256,13 @@ static stat_t _homing_axis_start(int8_t axis)
 	// setup parameters for positive travel (homing to the maximum switch)
 	} else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
+//		hm.homing_switch_axis = axis;
+//		hm.homing_switch_position = SW_MAX;					// the max is the homing switch
+
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
+//		hm.limit_switch_axis = axis;
+//		hm.limit_switch_position = SW_MIN;					// the min would be the limit switch
+
 		hm.search_travel = travel_distance;					// search travels in positive direction
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
@@ -256,8 +272,12 @@ static stat_t _homing_axis_start(int8_t axis)
 	if ((sw_mode != SW_MODE_HOMING) && (sw_mode != SW_MODE_HOMING_LIMIT)) {
 		return (_set_homing_func(_homing_axis_start));
 	}
+
 	// disable the limit switch parameter if there is no limit switch
 	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) { hm.limit_switch = -1;}
+//	if (get_switch_mode(hm.limit_switch_axis, hm.limit_switch_position) == SW_MODE_DISABLED) {
+//		hm.limit_switch_axis = -1;
+//	}
 	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
