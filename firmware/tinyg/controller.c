@@ -80,28 +80,25 @@ stat_t hardware_bootloader_handler(void);
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err) 
 {
+	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
 	controller_init_assertions();
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
 
-	cs.linelen = 0;									// initialize index for read_line()
-	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
-	cs.hard_reset_requested = false;
-	cs.bootloader_requested = false;
-
-	cs.job_id[0] = 0;								// clear the job_id
-	cs.job_id[1] = 0;
-	cs.job_id[2] = 0;
-	cs.job_id[3] = 0;
-
 #ifdef __AVR
+	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
 	tg_set_primary_source(cs.default_src);
+#endif
+
+#ifdef __ARM
+	cs.state = CONTROLLER_NOT_CONNECTED;			// find USB next
+	IndicatorLed.setFrequency(100000);
 #endif
 }
 
@@ -126,7 +123,7 @@ stat_t controller_test_assertions()
 	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-//	if (shared_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if (shared_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 
 	return (STAT_OK);
 }
@@ -160,17 +157,9 @@ void controller_run()
 #define	DISPATCH(func) if (func == STAT_EAGAIN) return; 
 static void _controller_HSM()
 {
-//----- ISRs. These should be considered the highest priority scheduler functions ----//
-/*	
- *	HI	Stepper DDA pulse generation			// see stepper.h
- *	HI	Stepper load routine SW interrupt		// see stepper.h
- *	HI	Dwell timer counter 					// see stepper.h
- *	MED	GPIO1 switch port - limits / homing		// see gpio.h
- *  MED	Serial RX for USB						// see xio_usart.h
- *  LO	Segment execution SW interrupt			// see stepper.h
- *  LO	Serial TX for USB & RS-485				// see xio_usart.h
- *	LO	Real time clock interrupt				// see xmega_rtc.h
- */
+//----- Interrupt Service Routines are the highest priority controller functions ----//
+//      See hardware.h for a list of ISRs and their priorities.
+//
 //----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
@@ -250,7 +239,7 @@ static stat_t _command_dispatch()
 			}
 			break;
 		}
-		case '$': case '?': case 'H': { 				// Text mode input
+		case '$': case '?': case 'H': { 				// text mode input
 			cfg.comm_mode = TEXT_MODE;
 			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
@@ -297,12 +286,50 @@ static stat_t _shutdown_idler()
 
 static stat_t _normal_idler()
 {
+#ifdef __ARM
+	/*
+	 * S-curve heartbeat code. Uses forward-differencing math from the stepper code.
+	 * See plan_line.cpp for explanations.
+	 * Here, the "velocity" goes from 0.0 to 1.0, then back.
+	 * t0 = 0, t1 = 0, t2 = 0.5, and we'll complete the S in 100 segments.
+	 */
+
+	// These are statics, and the assignments will only evaluate once.
+	static float indicator_led_value = 0.0;
+	static float indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
+	static float indicator_led_forward_diff_2 = indicator_led_forward_diff_1 * 2.0;
+
+
+	if (SysTickTimer.getValue() > cs.led_timer) {
+		cs.led_timer = SysTickTimer.getValue() + LED_NORMAL_TIMER / 100;
+
+		indicator_led_value += indicator_led_forward_diff_1;
+		if (indicator_led_value > 100.0)
+			indicator_led_value = 100.0;
+
+		if ((indicator_led_forward_diff_2 > 0.0 && indicator_led_value >= 50.0) || (indicator_led_forward_diff_2 < 0.0 && indicator_led_value <= 50.0)) {
+			indicator_led_forward_diff_2 = -indicator_led_forward_diff_2;
+		}
+		else if (indicator_led_value <= 0.0) {
+			indicator_led_value = 0.0;
+
+			// Reset to account for rounding errors
+			indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
+		} else {
+			indicator_led_forward_diff_1 += indicator_led_forward_diff_2;
+		}
+
+		IndicatorLed = indicator_led_value/100.0;
+	}
+#endif
+#ifdef __AVR
 /*
 	if (SysTickTimer_getValue() > cs.led_timer) {
 		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
 //		IndicatorLed_toggle();
 	}
 */
+#endif
 	return (STAT_OK);
 }
 
