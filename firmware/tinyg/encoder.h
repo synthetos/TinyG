@@ -2,7 +2,7 @@
  * encoder.h - encoder interface
  * This file is part of TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -40,7 +40,7 @@
  *
  *	You only know where the machine should be at known "targets", which are at the end of 
  *	each move section (end of head, body, and tail). You need to take encoder readings at
- *	these points. This synchronication is taken care of by the Target, Position, Position_delayed 
+ *	these points. This synchronization is taken care of by the Target, Position, Position_delayed 
  *	sequence in plan_exec. Referring to ASCII art in stepper.h and reproduced here:
  *
  *  LOAD/STEP (~5000uSec)          [L1][Segment1][L2][Segment2][L3][Segment3][L4][Segment4][Lb1][Segmentb1]
@@ -88,6 +88,10 @@
 #ifndef ENCODER_H_ONCE
 #define ENCODER_H_ONCE
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /**** Configs and Constants ****/
 
 //#define ENCODER_STEP_ROUNDING	(float)0.5	// round steps for more accurate following error computation
@@ -125,5 +129,9 @@ stat_t encoder_test_assertions(void);
 
 void en_reset_encoders(void);
 float en_read_encoder(uint8_t motor);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	// End of include guard: ENCODER_H_ONCE

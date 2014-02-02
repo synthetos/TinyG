@@ -33,6 +33,10 @@
 #include "kinematics.h"
 #include "hardware.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /**** Allocate Structures ****/
 
 enEncoders_t en;
@@ -118,3 +122,6 @@ float en_read_encoder(uint8_t motor)
 
 #endif // __TEXT_MODE
 
+#ifdef __cplusplus
+}
+#endif

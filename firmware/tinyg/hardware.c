@@ -2,7 +2,7 @@
  * hardware.c - general hardware support functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -35,26 +35,23 @@
 #include "switch.h"
 #include "controller.h"
 #include "text_parser.h"
+#ifdef __AVR
 #include "xmega/xmega_init.h"
+#include "xmega/xmega_rtc.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-static void _port_bindings(float hw_version);
-
 /*
  * hardware_init() - lowest level hardware init
+ * _port_bindings  - bind XMEGA ports to hardware - these changed at board revision 7
  */
-
-void hardware_init() 
-{
-	xmega_init();		// set system clock
-	_port_bindings(TINYG_HARDWARE_VERSION);
-}
 
 static void _port_bindings(float hw_version)
 {
+#ifdef __AVR
 	hw.st_port[0] = &PORT_MOTOR_1;
 	hw.st_port[1] = &PORT_MOTOR_2;
 	hw.st_port[2] = &PORT_MOTOR_3;
@@ -70,13 +67,38 @@ static void _port_bindings(float hw_version)
 		hw.out_port[1] = &PORT_OUT_V7_Y;
 		hw.out_port[2] = &PORT_OUT_V7_Z;
 		hw.out_port[3] = &PORT_OUT_V7_A;
-	} else {
+		} else {
 		hw.out_port[0] = &PORT_OUT_V6_X;
 		hw.out_port[1] = &PORT_OUT_V6_Y;
 		hw.out_port[2] = &PORT_OUT_V6_Z;
 		hw.out_port[3] = &PORT_OUT_V6_A;
 	}
+#endif
 }
+
+void hardware_init() 
+{
+#ifdef __AVR
+	xmega_init();		// set system clock
+	_port_bindings(TINYG_HARDWARE_VERSION);
+	rtc_init();						// real time counter
+#endif
+}
+
+/*
+ * _get_id() - get a human readable signature
+ *
+ * FOR AVR:
+ *	Produce a unique deviceID based on the factory calibration data.
+ *		Format is: 123456-ABC
+ *
+ *	The number part is a direct readout of the 6 digit lot number
+ *	The alpha is the low 5 bits of wafer number and XY coords in printable ASCII
+ *	Refer to NVM_PROD_SIGNATURES_t in iox192a3.h for details.
+ *
+ * FOR ARM:
+ *	Currently not implemented
+ */
 
 /* UNUSED
 static uint8_t _read_calibration_byte(uint8_t index)
@@ -87,17 +109,6 @@ static uint8_t _read_calibration_byte(uint8_t index)
 	return(result); 
 }
 */
-
-/*
- * _get_id() - get a human readable signature
- *
- *	Produce a unique deviceID based on the factory calibration data.
- *		Format is: 123456-ABC
- *
- *	The number part is a direct readout of the 6 digit lot number
- *	The alpha is the low 5 bits of wafer number and XY coords in printable ASCII
- *	Refer to NVM_PROD_SIGNATURES_t in iox192a3.h for details.
- */
  
 enum { 
 	LOTNUM0=8,  // Lot Number Byte 0, ASCII 
@@ -115,6 +126,7 @@ enum {
 
 static void _get_id(char_t *id)
 {
+#ifdef __AVR
 	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
 	uint8_t i;
 
@@ -131,7 +143,8 @@ static void _get_id(char_t *id)
 //	id[i++] = printable[(pgm_read_byte(COORDY1) & 0x1F)];
 	id[i] = 0;
 
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
+	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register
+#endif
 }
 
 /*
@@ -145,8 +158,10 @@ void hw_request_hard_reset() { cs.hard_reset_requested = true; }
 
 void hw_hard_reset(void)			// software hard reset using the watchdog timer
 {
+#ifdef __AVR
 	wdt_enable(WDTO_15MS);
 	while (true);					// loops for about 15ms then resets
+#endif
 }
 
 stat_t hw_hard_reset_handler(void)
@@ -167,9 +182,11 @@ void hw_request_bootloader() { cs.bootloader_requested = true;}
 
 stat_t hw_bootloader_handler(void)
 {
+#ifdef __AVR
 	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
+#endif
 	return (STAT_EAGAIN);				// never gets here but keeps the compiler happy
 }
 

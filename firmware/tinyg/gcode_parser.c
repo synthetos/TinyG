@@ -50,6 +50,7 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
  *
  *	Top level of gcode parser. Normalizes block and looks for special cases
  */
+
 stat_t gc_gcode_parser(char_t *block)
 {
 	char_t *cmd = block;					// gcode command or NUL string
@@ -242,7 +243,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
 	stat_t status = STAT_OK;
 
-	// set initial state for new move 
+	// set initial state for new move
 	memset(&gp, 0, sizeof(gp));						// clear all parser values
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));		// clear all next-state flags
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));		// clear all next-state values
@@ -466,7 +467,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
 
-		case NEXT_ACTION_DEFAULT: { 
+		case NEXT_ACTION_DEFAULT: {
 			cm_set_absolute_override(MODEL, cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
 				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
@@ -475,7 +476,7 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
 					// gf.radius sets radius mode if radius was collected in gn
 					{ status = cm_arc_feed(cm.gn.target, cm.gf.target, cm.gn.arc_offset[0], cm.gn.arc_offset[1],
-								cm.gn.arc_offset[2], cm.gn.arc_radius, cm.gn.motion_mode); break;}
+										   cm.gn.arc_offset[2], cm.gn.arc_radius, cm.gn.motion_mode); break;}
 			}
 		}
 	}

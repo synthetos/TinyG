@@ -4,7 +4,7 @@
  *
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -58,6 +58,10 @@
 // uncomment once motate Xmega port is available
 //#include "motatePins.h"
 //#include "motateTimers.h"				// for Motate::timer_number
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /*************************
  * Global System Defines *
@@ -264,5 +268,9 @@ stat_t hw_get_id(cmdObj_t *cmd);
 	#define hw_print_id tx_print_stub
 
 #endif // __TEXT_MODE
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	// end of include guard: HARDWARE_H_ONCE
