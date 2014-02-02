@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
- * This file ("the software") is free software: you can redistribute it and/or modify
+	 * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
  * Free Software Foundation. You should have received a copy of the GNU General Public
  * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		413.44	// Moved EEPROM functions from config.c to persistence.c
+#define TINYG_FIRMWARE_BUILD   		413.45	// tracking g2 build 026.45
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
