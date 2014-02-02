@@ -28,7 +28,7 @@
 #ifndef PERSISTENCE_H_ONCE
 #define PERSISTENCE_H_ONCE
 
-#include "config.h"
+#include "config.h"					// needed for cmdObj_t definition
 
 #ifdef __cplusplus
 extern "C"{

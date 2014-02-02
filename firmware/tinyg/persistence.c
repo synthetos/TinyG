@@ -2,7 +2,7 @@
  * persistence.c - persistence functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 20124 Alden S. Hart Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,7 +27,6 @@
 #include "tinyg.h"
 #include "persistence.h"
 #include "canonical_machine.h"
-//#include "hardware.h"
 
 #ifdef __AVR
 #include "xmega/xmega_eeprom.h"
@@ -62,7 +61,7 @@ void persistence_init()
 }
 
 /************************************************************************************
- * read_persistent_value()	 - return value (as float) by index
+ * read_persistent_value()	- return value (as float) by index
  * write_persistent_value() - write to NVM by index, but only if the value has changed
  *
  *	It's the responsibility of the caller to make sure the index does not exceed range
@@ -77,14 +76,15 @@ stat_t read_persistent_value(cmdObj_t *cmd)
 	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
 	return (STAT_OK);
 }
-#endif
+#endif // __AVR
 
 #ifdef __ARM
 stat_t read_persistent_value(cmdObj_t *cmd)
 {
+	cmd->value = 0;
 	return (STAT_OK);
 }
-#endif
+#endif // __ARM
 
 #ifdef __AVR
 stat_t write_persistent_value(cmdObj_t *cmd)

@@ -353,9 +353,6 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
 cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
-//stat_t read_persistent_value(cmdObj_t *cmd);
-//stat_t write_persistent_value(cmdObj_t *cmd);
-
 /*********************************************************************************************
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
  *********************************************************************************************/
