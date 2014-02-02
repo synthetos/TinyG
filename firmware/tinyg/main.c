@@ -3,6 +3,7 @@
  * This file is part of the TinyG project.
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -39,7 +40,11 @@
 #include <avr/interrupt.h>
 #include "xmega/xmega_interrupts.h"
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
-#endif
+#endif // __AVR
+
+#ifdef __ARM
+#include "MotateTimers.h"
+using Motate::delay;
 
 #ifdef __cplusplus
 extern "C"{
@@ -48,11 +53,13 @@ extern "C"{
 void _init() __attribute__ ((weak));
 void _init() {;}
 
+void __libc_init_array(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+#endif // __ARM
 
-//static void _application_init(void);
 static void _unit_tests(void);
 
 /******************** Application Code ************************/
@@ -65,7 +72,7 @@ const Motate::USBSettings_t Motate::USBSettings = {
 	/*gAttributes       = */ kUSBConfigAttributeSelfPowered,
 	/*gPowerConsumption = */ 500
 };
-/*gProductVersion   = */ //0.1,
+	/*gProductVersion   = */ //0.1,
 
 Motate::USBDevice< Motate::USBCDC > usb;
 //Motate::USBDevice< Motate::USBCDC, Motate::USBCDC > usb;
@@ -94,6 +101,9 @@ void _system_init(void)
 
 	// Initialize C library
 	__libc_init_array();
+
+	usb.attach();					// USB setup
+	delay(1000);
 #endif
 }
 
@@ -110,7 +120,6 @@ static void _application_init(void)
 
 	// do these first
 	hardware_init();				// system hardware setup 			- must be first
-//	rtc_init();						// real time counter
 	xio_init();						// xtended io subsystem				- must be second
 
 	// do these next
@@ -126,7 +135,7 @@ static void _application_init(void)
 	planner_init();					// motion planning subsystem
 	canonical_machine_init();		// canonical machine				- must follow config_init()
 
-	// now bring up the interrupts and get started
+	// start the application
 	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
 	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();
@@ -143,12 +152,12 @@ int main(void)
 {
 	// system initialization
 	_system_init();
-	
+
 	// TinyG application setup
 	_application_init();
 	_unit_tests();					// run any unit tests that are enabled
 	run_canned_startup();			// run any pre-loaded commands
-	
+
 	// main loop
 	for (;;) {
 		controller_run( );			// single pass through the controller

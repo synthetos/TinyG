@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		413.41	// tracking g2 build 026.41
+#define TINYG_FIRMWARE_BUILD   		413.43	// tracking g2 build 026.43
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -151,9 +151,9 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
 
 // IO settings
-#define DEV_STDIN 0				// STDIO defaults - stdio is not yet used in the ARM version
-#define DEV_STDOUT 0
-#define DEV_STDERR 0
+#define STD_IN 0				// STDIO defaults (stdio is not yet used in the ARM version)
+#define STD_OUT 0
+#define STD_ERR 0
 
 /* String compatibility
  *
