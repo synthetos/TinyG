@@ -195,9 +195,6 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
 
-#define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
-#define NVM_BASE_ADDR 0x0000		// base address of usable NVM
-
 enum tgCommunicationsMode {
 	TEXT_MODE = 0,					// text command line mode
 	JSON_MODE,						// strict JSON construction
@@ -356,8 +353,8 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
 cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
-stat_t cmd_read_NVM_value(cmdObj_t *cmd);
-stat_t cmd_write_NVM_value(cmdObj_t *cmd);
+//stat_t read_persistent_value(cmdObj_t *cmd);
+//stat_t write_persistent_value(cmdObj_t *cmd);
 
 /*********************************************************************************************
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************

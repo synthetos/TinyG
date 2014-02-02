@@ -35,14 +35,11 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
+#include "persistence.h"
 #include "hardware.h"
 #include "help.h"
 #include "util.h"
 #include "xio.h"
-
-#ifdef __AVR
-#include "xmega/xmega_eeprom.h"
-#endif
 
 #ifdef __cplusplus
 extern "C"{
@@ -91,7 +88,7 @@ void cmd_persist(cmdObj_t *cmd)
 	return;
 #endif
 	if (cmd_index_lt_groups(cmd->index) == false) return;
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) cmd_write_NVM_value(cmd);
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) write_persistent_value(cmd);
 }
 
 /************************************************************************************
@@ -115,11 +112,9 @@ void config_init()
 	cfg.magic_end = MAGICNUM;
 
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
-	hw.nvm_base_addr = NVM_BASE_ADDR;
-	hw.nvm_profile_base = hw.nvm_base_addr;
 	cmd->index = 0;							// this will read the first record in NVM
 
-	cmd_read_NVM_value(cmd);
+	read_persistent_value(cmd);
 	if (cmd->value != cs.fw_build) {
 		cmd->value = true;					// case (1) NVM is not setup or not in revision
 		set_defaults(cmd);
@@ -128,7 +123,7 @@ void config_init()
 		for (cmd->index=0; cmd_index_is_single(cmd->index); cmd->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strncpy_P(cmd->token, cfgArray[cmd->index].token, TOKEN_LEN);	// read the token from the array
-				cmd_read_NVM_value(cmd);
+				read_persistent_value(cmd);
 				cmd_set(cmd);
 			}
 		}
@@ -702,48 +697,6 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	} else {
 		text_print_list(status, text_flags);
 	}
-}
-
-/************************************************************************************
- ***** EEPROM access functions ******************************************************
- ************************************************************************************
- * cmd_read_NVM_value()	 - return value (as float) by index
- * cmd_write_NVM_value() - write to NVM by index, but only if the value has changed
- *
- *	It's the responsibility of the caller to make sure the index does not exceed range
- */
-stat_t cmd_read_NVM_value(cmdObj_t *cmd)
-{
-#ifdef __AVR
-	int8_t nvm_byte_array[NVM_VALUE_LEN];
-	uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
-	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
-#endif // __AVR
-#ifdef __ARM
-	//+++++ No ARM persistence yet
-#endif // __ARM
-	return (STAT_OK);
-}
-
-stat_t cmd_write_NVM_value(cmdObj_t *cmd)
-{
-#ifdef __AVR
-	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
-	float tmp = cmd->value;
-	ritorno(cmd_read_NVM_value(cmd));
-	if (cmd->value != tmp) {		// catches the isnan() case as well
-		cmd->value = tmp;
-		int8_t nvm_byte_array[NVM_VALUE_LEN];
-		memcpy(&nvm_byte_array, &tmp, NVM_VALUE_LEN);
-		uint16_t nvm_address = hw.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
-		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	}
-#endif // __AVR
-#ifdef __ARM
-	//+++++ No ARM persistence yet
-#endif // __ARM
-	return (STAT_OK);
 }
 
 /****************************************************************************
