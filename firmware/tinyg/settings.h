@@ -62,7 +62,8 @@
 #define STATUS_REPORT_MIN_MS		100					// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250					// milliseconds - set $SV=0 to disable
 
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat","_cs1","_es1","_xs1","_fe1"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF				// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -98,11 +99,12 @@
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-#include "settings/settings_othermill.h"				// Otherfab OtherMill
+//#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
+#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
 /*** Handle optional modules that may not be in every machine ***/
