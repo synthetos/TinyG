@@ -52,12 +52,12 @@
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
-/*
+
 #undef JSON_VERBOSITY
-#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#define JSON_VERBOSITY				JV_MESSAGES		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_VERBOSITY				JV_VERBOSE		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-*/
+
 
 /*
 #undef  JSON_SYNTAX_MODE
@@ -65,18 +65,19 @@
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT	// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 */
 
-/*
+
 #undef STATUS_REPORT_VERBOSITY
-#define STATUS_REPORT_VERBOSITY		SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define STATUS_REPORT_VERBOSITY		SR_OFF		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+//#define STATUS_REPORT_VERBOSITY		SR_FILTERED		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-*/
+
 
 #undef  SR_DEFAULTS
-#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","feed"
+//#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","feed"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","stat","_cs1","_es1","_fe0","_fe1","_fe2","_fe3"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","stat","_ts2","_ps2","_cs2","_es2","_fe2"
-//#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","_cs3","_es3","_fe3","_xs3","_cs2","_es2","_fe2","_xs2","stat"
+#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","_cs3","_es3","_fe3","_xs3","_cs2","_es2","_fe2","_xs2","stat"
+//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat","_cs1","_es1","_xs1","_fe1"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -128,7 +129,6 @@
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
-//#define M3_MOTOR_MAP 			AXIS_Z				// DIAGNOSTIC TEST ONLY!!!
 #define M3_STEP_ANGLE 			1.8
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
