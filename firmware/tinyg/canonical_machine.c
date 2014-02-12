@@ -1029,6 +1029,7 @@ stat_t cm_select_tool(uint8_t tool_select)
 static void _exec_select_tool(float *value, float *flag)
 {
 	cm.gm.tool_select = (uint8_t)value[0];
+    //printf("{\"tool\":%i}\n", cm.gm.tool_select);
 }
 
 stat_t cm_change_tool(uint8_t tool_change)
