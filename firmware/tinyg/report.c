@@ -427,6 +427,7 @@ void qr_init_queue_report()
 	qr.queue_report_requested = false;
 	qr.buffers_added = 0;
 	qr.buffers_removed = 0;
+	qr.init_tick = SysTickTimer_getValue();
 }
 
 /*
@@ -437,26 +438,22 @@ void qr_init_queue_report()
  */
 void qr_request_queue_report(int8_t buffers)
 {
-	// skip accumulation and reporting while generating arcs
-//	uint8_t motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
-	qr.motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
-	if ((qr.motion_mode == MOTION_MODE_CW_ARC) || 
-		(qr.motion_mode == MOTION_MODE_CCW_ARC)) {
-		qr.queue_report_requested = false;
-		return;
-	}
-
-//	if ((cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CW_ARC) || 
-//		(cm_get_motion_mode(ACTIVE_MODEL) == MOTION_MODE_CCW_ARC)) {
-//		return;
-//	}
-
 	// get buffer depth and added/removed count
 	qr.buffers_available = mp_get_planner_buffers_available();
 	if (buffers > 0) {
 		qr.buffers_added += buffers;
 	} else {
 		qr.buffers_removed -= buffers;
+	}
+
+	// time-throttle requests while generatings arcs
+	qr.motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
+	if ((qr.motion_mode == MOTION_MODE_CW_ARC) || (qr.motion_mode == MOTION_MODE_CCW_ARC)) {
+		uint32_t tick = SysTickTimer_getValue();
+		if (tick - qr.init_tick < MIN_ARC_QR_INTERVAL) {
+			qr.queue_report_requested = false;
+			return;
+		}
 	}
 
 	// either return or request a report
@@ -528,8 +525,8 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
  */
 stat_t qr_get(cmdObj_t *cmd) 
 {
-//	cmd->value = (float)mp_get_planner_buffers_available();
-	cmd->value = (float)qr.buffers_available;
+	cmd->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
+//	cmd->value = (float)qr.buffers_available;
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }
