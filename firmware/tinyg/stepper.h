@@ -257,12 +257,14 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_POWER_TIMEOUT_COUNTDOWN		// count down the time to de-energizing motors
 };
 
-enum cmStepperPowerMode {
+enum cmMotorPowerMode {
 	MOTOR_DISABLED = 0,					// motor enable is deactivated
-	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles
-	MOTOR_POWERED_WHEN_MOVING,			// motor only powered while moving - idles shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction for idle (FUTURE)
-	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
+	MOTOR_ALWAYS_POWERED,				// motor is always powered while machine is ON
+	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles, de-powered out of cycle
+	MOTOR_POWERED_ONLY_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
+//	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction for idle (FUTURE)
+//	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
+	MOTOR_POWER_MODE_MAX_VALUE				// for inout range checking
 };
 
 enum prepBufferState {
@@ -337,7 +339,7 @@ typedef struct cfgMotor {				// per-motor configs
 	uint8_t	motor_map;					// map motor to axis
 	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
-	uint8_t power_mode;					// See stepper.h for enum
+	uint8_t power_mode;					// See cmMotorPowerMode for enum
 	float power_level;					// set 0.000 to 1.000 for PMW vref setting
 	float step_angle;					// degrees per whole step (ex: 1.8)
 	float travel_rev;					// mm or deg of travel per motor revolution

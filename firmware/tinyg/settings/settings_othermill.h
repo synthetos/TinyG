@@ -99,8 +99,9 @@
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
-#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+//#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+#define M4_POWER_MODE 			MOTOR_POWERED_IN_CYCLE	// 1pm		See enum cmMotorPowerMode in stepper.h
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL	// 0=off, 100=max
 
 #define M3_MOTOR_MAP 			AXIS_Y
 //#define M3_MOTOR_MAP 			AXIS_Z				// DIAGNOSTIC TEST ONLY!!!
@@ -108,7 +109,8 @@
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					
+//#define M3_POWER_MODE 			0					
+#define M3_POWER_MODE 			MOTOR_POWERED_IN_CYCLE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
@@ -121,7 +123,8 @@
 #endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					
+//#define M2_POWER_MODE 			0					
+#define M2_POWER_MODE 			MOTOR_POWERED_IN_CYCLE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP 			AXIS_A
@@ -129,7 +132,8 @@
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
 #define M1_POLARITY 			1			
-#define M1_POWER_MODE 			0					
+//#define M1_POWER_MODE 			0
+#define M1_POWER_MODE 			MOTOR_POWERED_IN_CYCLE
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -246,7 +250,7 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
+#define G55_X_OFFSET 0			// but the again, so is everything else (at least for start)
 #define G55_Y_OFFSET 0
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0

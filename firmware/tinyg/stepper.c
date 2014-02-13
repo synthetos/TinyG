@@ -242,8 +242,9 @@ static void _set_motor_power_level(const uint8_t motor, const float power_level)
 void st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		_energize_motor(motor);
-		st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;
+		if (st_cfg.mot[motor].power_mode != MOTOR_DISABLED) 
+			_energize_motor(motor);
+		st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;		
 	}
 #ifdef __ARM
 	common_enable.clear();			// enable gShield common enable
@@ -271,10 +272,13 @@ stat_t st_motor_power_callback() 	// called by controller
 	for (uint8_t motor=MOTOR_1; motor<MOTORS; motor++) {
 
 		switch (st_cfg.mot[motor].power_mode) {
-//			case (MOTOR_POWER_REDUCED_WHEN_IDLE): { break;}			// FUTURE
-//			case (MOTOR_ADAPTIVE_POWER): { break;}					// FUTURE
+//			case (MOTOR_DISABLED): {
+//				_deenergize_motor(motor);
+//				break;
+//			}
+			case (MOTOR_ALWAYS_POWERED): { break;}
 			case (MOTOR_POWERED_IN_CYCLE):
-			case (MOTOR_POWERED_WHEN_MOVING): {
+			case (MOTOR_POWERED_ONLY_WHEN_MOVING): {
 				switch (st_run.mot[motor].power_state) {
 					case (MOTOR_POWER_TIMEOUT_START): {
 						st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
@@ -287,6 +291,7 @@ stat_t st_motor_power_callback() 	// called by controller
 							_deenergize_motor(motor);
 						}
 					}
+					break;
 				}
 			}
 		}
@@ -541,7 +546,7 @@ static void _load_move()
 			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
-			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -567,7 +572,7 @@ static void _load_move()
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -592,7 +597,7 @@ static void _load_move()
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -617,7 +622,7 @@ static void _load_move()
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -806,7 +811,7 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-/*
+/* HELPERS
  * _get_motor() - helper to return motor number as an index or -1 if na
  */
 
@@ -835,6 +840,14 @@ static void _set_motor_steps_per_unit(cmdObj_t *cmd)
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
 
+/* PER-MOTOR FUNCTIONS
+ * st_set_sa() - set motor step angle
+ * st_set_tr() - set travel per motor revolution
+ * st_set_mi() - set motor microsteps
+ * st_set_pm() - set motor power mode
+ * st_set_pl() - set motor power level
+ */
+
 stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle
 { 
 	set_flt(cmd);
@@ -854,7 +867,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
 		cmd_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_ui8(cmd);							// set it anyway, even if it's unsupported
+	set_ui8(cmd);						// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(cmd);
 	_set_hw_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
 	return (STAT_OK);
@@ -862,7 +875,9 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 
 stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 { 
-	ritorno (set_01(cmd));
+	if (cmd->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
+	set_ui8(cmd);
+
 	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
 		_energize_motor(_get_motor(cmd->index));
 	} else {
@@ -871,13 +886,21 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 	return (STAT_OK);
 }
 
-stat_t st_set_mt(cmdObj_t *cmd)
+stat_t st_set_pl(cmdObj_t *cmd)			// motor power level
 {
-	st_cfg.motor_power_timeout = min(POWER_TIMEOUT_SECONDS_MAX, max(cmd->value, POWER_TIMEOUT_SECONDS_MIN));
-	return (STAT_OK);
+	if (cmd->value < (float)0) cmd->value = 0.000;
+	if (cmd->value > (float)1) cmd->value = 1.000;
+	set_flt(cmd);						// set the value in the motor config struct (st)
+
+	uint8_t motor = _get_motor(cmd->index);
+	st_run.mot[motor].power_level_dynamic = cmd->value;
+	_set_motor_power_level(motor, cmd->value);
+	return(STAT_OK);
 }
 
-/*
+/* GLOBAL FUNCTIONS (SYSTEM LEVEL)
+ *
+ * st_set_mt() - set motor timeout in seconds
  * st_set_md() - disable motor power
  * st_set_me() - enable motor power
  *
@@ -885,6 +908,12 @@ stat_t st_set_mt(cmdObj_t *cmd)
  * Setting a value of 0 will enable or disable all motors
  * Setting a value from 1 to MOTORS will enable or disable that motor only
  */ 
+stat_t st_set_mt(cmdObj_t *cmd)
+{
+	st_cfg.motor_power_timeout = min(POWER_TIMEOUT_SECONDS_MAX, max(cmd->value, POWER_TIMEOUT_SECONDS_MIN));
+	return (STAT_OK);
+}
+
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
 	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
@@ -903,22 +932,6 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 		_energize_motor((uint8_t)cmd->value-1);
 	}
 	return (STAT_OK);
-}
-
-/*
- * st_set_pl() - set motor power level
- */
-
-stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
-{
-	if (cmd->value < (float)0) cmd->value = 0;
-	if (cmd->value > (float)1) cmd->value = 1;
-	set_flt(cmd);				// set the value in the motor config struct (st)
-	
-	uint8_t motor = _get_motor(cmd->index);
-	st_run.mot[motor].power_level_dynamic = cmd->value;
-	_set_motor_power_level(motor, cmd->value);
-	return(STAT_OK);
 }
 
 /***********************************************************************************
@@ -942,7 +955,7 @@ static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%10.4f%s\n";
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
-static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
+static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=disabled,1=always on,2=in cycle,3=when moving]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
 
 void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}

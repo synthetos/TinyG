@@ -276,10 +276,7 @@
     <Compile Include="settings\settings_othermill.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_pocketcnc_linear.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings\settings_pocketcnc_rotary.h">
+    <Compile Include="settings\settings_pocketnc.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">
@@ -288,10 +285,16 @@
     <Compile Include="settings\settings_shapeoko375.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_test.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_Ultimaker.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_zen7x12.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings_hammer.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="spindle.c">
