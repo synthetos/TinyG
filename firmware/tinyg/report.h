@@ -38,6 +38,8 @@ extern "C"{
 #define CMD_STATUS_REPORT_LEN CMD_MAX_OBJECTS 	// max number of status report elements - see cfgArray
 												// **** must also line up in cfgArray, se00 - seXX ****
 
+#define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
+
 enum srVerbosity {								// status report enable and verbosity
 	SR_OFF = 0,									// no reports
 	SR_FILTERED,								// reports only values that have changed from the last report
@@ -79,9 +81,10 @@ typedef struct qrSingleton {		// data for queue reports
 	uint8_t queue_report_requested;	// set to true to request a report
 	uint8_t buffers_available;		// stored buffer depth passed to by callback
 	uint8_t prev_available;			// buffers available at last count
-	uint8_t buffers_added;			// buffers added since last count
-	uint8_t buffers_removed;		// buffers removed since last report
-	uint8_t motion_mode;			//+++++ diagnostic
+	uint16_t buffers_added;			// buffers added since last count
+	uint16_t buffers_removed;		// buffers removed since last report
+	uint8_t motion_mode;			// used to detect arc movement
+	uint32_t init_tick;				// time when values were last initialized or cleared
 
 } qrSingleton_t;
 
