@@ -70,7 +70,7 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	float max_clear_backoff;		// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-	float saved_feed_rate;			// F setting
+//	float saved_feed_rate;			// F setting
 	uint8_t saved_units_mode;		// G20,G21 global setting
 	uint8_t saved_coord_system;		// G54 - G59 setting
 	uint8_t saved_distance_mode;	// G90,G91 global setting
@@ -154,7 +154,7 @@ stat_t cm_homing_cycle_start(void)
 	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
 	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
-	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
+//	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -393,7 +393,7 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm_set_coord_system(hm.saved_coord_system);				// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
-	cm_set_feed_rate(hm.saved_feed_rate);
+//	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;								// required
 	cm_cycle_end();

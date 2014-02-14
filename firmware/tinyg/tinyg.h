@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		414.03	// added omco branch changes (410.06x) for time filtered QRs and spindle settings changes
+#define TINYG_FIRMWARE_BUILD   		414.04	// debugging direction reversal in homing cycle
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
