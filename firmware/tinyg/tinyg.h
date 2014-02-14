@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		414.04	// debugging direction reversal in homing cycle
+#define TINYG_FIRMWARE_BUILD   		414.05	// debugging direction reversal in homing cycle
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -67,7 +67,7 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __DIAGNOSTIC_PARAMETERS				// includes diagnostics in config_app table
+#define __DIAGNOSTIC_PARAMETERS				// include diagnostics in config_app table
 
 #ifdef __SIMULATION
   #define __CANNED_STARTUP					// run any canned startup moves

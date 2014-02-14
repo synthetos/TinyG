@@ -525,6 +525,8 @@ uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 
+float cm_get_feed_rate(GCodeState_t *gcode_state);
+
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
@@ -666,6 +668,9 @@ stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
 stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
+
+stat_t cm_dam(cmdObj_t *cmd);			// dump active model
+//stat_t cm_drm(cmdObj_t *cmd);			// dump runtime model
 
 /*--- text_mode support functions ---*/
 

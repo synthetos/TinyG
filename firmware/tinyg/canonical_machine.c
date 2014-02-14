@@ -194,6 +194,8 @@ uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spi
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
+float cm_get_feed_rate(GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
+
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
@@ -798,7 +800,7 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	cm.gm.target[axis] = position;
 	mp_set_planner_position(axis, position);
 
-	// reset all steps counters and encoders - these are in motor space
+	// reset all step counters and encoders - these are in motor space
 	mp_reset_step_counts();
 	en_reset_encoders();
 }
@@ -1741,9 +1743,34 @@ stat_t cm_run_home(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-stat_t cm_dd1(cmdObj_t *cmd)
+/*
+ * Debugging Commands
+ *
+ * cm_dam() - dump active model
+ * cm_drm() - dump runtime model
+ */
+
+stat_t cm_dam(cmdObj_t *cmd)
 {
-//	printf();
+	printf("Active model:\n");
+	cm_print_vel(cmd);
+	cm_print_feed(cmd);
+	cm_print_line(cmd);
+	cm_print_stat(cmd);
+	cm_print_macs(cmd);
+	cm_print_cycs(cmd);
+	cm_print_mots(cmd);
+	cm_print_hold(cmd);
+	cm_print_home(cmd);
+	cm_print_unit(cmd);
+	cm_print_coor(cmd);
+	cm_print_momo(cmd);
+	cm_print_plan(cmd);
+	cm_print_path(cmd);
+	cm_print_dist(cmd);
+	cm_print_frmo(cmd);
+	cm_print_tool(cmd);
+
 	return (STAT_OK);
 }
 

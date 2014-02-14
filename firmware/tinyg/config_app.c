@@ -536,7 +536,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_fe","_fe3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
 	{ "_fe","_fe4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_4], 0 },
 
-//	{ "",   "_dd1",_f00, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },	// diagnostic dump
+	{ "",   "_dam",_f00, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
 #endif
 
 	// Persistence for status report - must be in sequence

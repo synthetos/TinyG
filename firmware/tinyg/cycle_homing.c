@@ -55,8 +55,8 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 //	int8_t limit_switch_axis;		// axis of current limit switch, or -1 if none
 //	uint8_t limit_switch_position;	// min/max position of current limit switch
 
-	uint8_t homing_closed;			// 0=open, 1=closed
-	uint8_t limit_closed;			// 0=open, 1=closed
+//	uint8_t homing_closed;			// 0=open, 1=closed
+//	uint8_t limit_closed;			// 0=open, 1=closed
 	uint8_t set_coordinates;		// G28.4 flag. true = set coords to zero at the end of homing cycle
 	stat_t (*func)(int8_t axis);	// binding for callback function state machine
 
@@ -67,13 +67,12 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	float latch_velocity;			// latch speed as positive number
 	float latch_backoff;			// max distance to back off switch during latch phase 
 	float zero_backoff;				// distance to back off switch before setting zero
-	float max_clear_backoff;		// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
-//	float saved_feed_rate;			// F setting
 	uint8_t saved_units_mode;		// G20,G21 global setting
 	uint8_t saved_coord_system;		// G54 - G59 setting
 	uint8_t saved_distance_mode;	// G90,G91 global setting
+	float saved_feed_rate;			// F setting
 	float saved_jerk;				// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
@@ -84,8 +83,6 @@ static struct hmHomingSingleton hm;
 static stat_t _set_homing_func(stat_t (*func)(int8_t axis));
 static stat_t _homing_axis_start(int8_t axis);
 static stat_t _homing_axis_clear(int8_t axis);
-static stat_t _homing_axis_backoff_home(int8_t axis);
-static stat_t _homing_axis_backoff_limit(int8_t axis);
 static stat_t _homing_axis_search(int8_t axis);
 static stat_t _homing_axis_latch(int8_t axis);
 static stat_t _homing_axis_zero_backoff(int8_t axis);
@@ -95,6 +92,31 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status);
 static stat_t _homing_finalize_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
+
+static void _homing_debug_print(int8_t axis) 
+{
+	printf("axis:%d\n",axis);
+/*
+	printf ("homing:%d, limit:%d, distance_mode:%d latch_backoff:%f\n",
+		read_switch(hm.homing_switch), 
+		read_switch(hm.limit_switch), 
+		cm_get_distance_mode(ACTIVE_MODEL), 
+		(double)hm.latch_backoff);	
+*/
+	printf("homing switch:%d\n", read_switch(hm.homing_switch));
+	printf("limit switch:%d\n", read_switch(hm.limit_switch));
+	printf("distance_mode:%d\n", cm_get_distance_mode(ACTIVE_MODEL));
+	printf("latch_backoff:%f\n", (double)hm.latch_backoff);
+	printf("search_travel:%f\n", (double)hm.search_travel);
+
+	printf("saved_units_mode:%d\n",hm.saved_units_mode);
+	printf("saved_coord_system:%d\n",hm.saved_coord_system);
+	printf("saved_distance_mode:%d\n",hm.saved_distance_mode);
+	printf("saved_feed_rate:%f\n",(double)hm.saved_feed_rate);
+	printf("saved_jerk:%f\n",(double)hm.saved_jerk);
+
+//	printf("\n",hm.);
+}
 
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
@@ -154,7 +176,7 @@ stat_t cm_homing_cycle_start(void)
 	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
 	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
-//	hm.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
+	hm.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);			//cm.gm.feed_rate;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -282,34 +304,20 @@ static stat_t _homing_axis_start(int8_t axis)
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
 
-// Handle an initial switch closure by backing off switches
+// Handle an initial switch closure by backing off the closed switch
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-	int8_t homing = read_switch(hm.homing_switch);
-	int8_t limit = read_switch(hm.limit_switch);
+	_homing_debug_print(axis);
 
-	if ((homing == SW_OPEN) && (limit != SW_CLOSED)) {
- 		return (_set_homing_func(_homing_axis_search));		// OK to start the search
-	}
-	if (homing == SW_CLOSED) {
+	if (read_switch(hm.homing_switch) == SW_CLOSED) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
- 		return (_set_homing_func(_homing_axis_backoff_home));// will backoff homing switch some more
+
+	} else if (read_switch(hm.limit_switch) == SW_CLOSED) {
+		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
-	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
- 	return (_set_homing_func(_homing_axis_backoff_limit));	// will backoff limit switch some more
-}
 
-static stat_t _homing_axis_backoff_home(int8_t axis)		// back off cleared homing switch
-{
-	_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-    return (_set_homing_func(_homing_axis_search));
-}
-
-static stat_t _homing_axis_backoff_limit(int8_t axis)		// back off cleared limit switch
-{
-	_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
-    return (_set_homing_func(_homing_axis_search));
+	return (_set_homing_func(_homing_axis_search));
 }
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
@@ -393,7 +401,7 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm_set_coord_system(hm.saved_coord_system);				// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
-//	cm_set_feed_rate(hm.saved_feed_rate);
+	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;								// required
 	cm_cycle_end();
