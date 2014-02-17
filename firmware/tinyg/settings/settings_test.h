@@ -2,6 +2,8 @@
  * settings_test.h - settings for testing - subject to wild change
  * This file is part of the TinyG project
  *
+ * Copyright (c) 2014 Alden S. Hart Jr.
+ *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
  * Free Software Foundation. You should have received a copy of the GNU General Public

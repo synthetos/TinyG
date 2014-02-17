@@ -93,16 +93,10 @@ static stat_t _homing_finalize_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
 //static int8_t _get_next_axes(int8_t axis);
 
+/*
 static void _homing_debug_print(int8_t axis) 
 {
 	printf("axis:%d\n",axis);
-/*
-	printf ("homing:%d, limit:%d, distance_mode:%d latch_backoff:%f\n",
-		read_switch(hm.homing_switch), 
-		read_switch(hm.limit_switch), 
-		cm_get_distance_mode(ACTIVE_MODEL), 
-		(double)hm.latch_backoff);	
-*/
 	printf("homing switch:%d\n", read_switch(hm.homing_switch));
 	printf("limit switch:%d\n", read_switch(hm.limit_switch));
 	printf("distance_mode:%d\n", cm_get_distance_mode(ACTIVE_MODEL));
@@ -114,9 +108,8 @@ static void _homing_debug_print(int8_t axis)
 	printf("saved_distance_mode:%d\n",hm.saved_distance_mode);
 	printf("saved_feed_rate:%f\n",(double)hm.saved_feed_rate);
 	printf("saved_jerk:%f\n",(double)hm.saved_jerk);
-
-//	printf("\n",hm.);
 }
+*/
 
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
@@ -244,7 +237,6 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (cm.a[axis].latch_backoff < 0) return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
 
 	// calculate and test travel distance
-	// ASH: +++++ Not sure how this is going to work with min/max disabled, or -1000000 disables
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
 	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO));
 
@@ -308,15 +300,11 @@ static stat_t _homing_axis_start(int8_t axis)
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-	_homing_debug_print(axis);
-
-	if (read_switch(hm.homing_switch) == SW_CLOSED) {
+	if (read_switch(hm.homing_switch) == SW_CLOSED) { 
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-
-	} else if (read_switch(hm.limit_switch) == SW_CLOSED) {
+	} else if (read_switch(hm.limit_switch) == SW_CLOSED) { 
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
-
 	return (_set_homing_func(_homing_axis_search));
 }
 

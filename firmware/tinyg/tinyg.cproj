@@ -264,6 +264,9 @@
     <Compile Include="settings\settings_default.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_hammer.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_lumenlabMicRoV3.h">
       <SubType>compile</SubType>
     </Compile>
@@ -274,6 +277,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_othermill.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_pendulum.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_pocketnc.h">
@@ -292,9 +298,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_zen7x12.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings_hammer.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="spindle.c">

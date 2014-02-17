@@ -56,8 +56,9 @@
 
 #define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 
-#define JSON_VERBOSITY				JV_MESSAGES				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
-#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT		// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
+//#define JSON_VERBOSITY				JV_MESSAGES				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY				JV_VERBOSE				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT		// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT (starting value)
 #define JSON_FOOTER_DEPTH			0						// 0 = new style, 1 = old style
 
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
@@ -100,13 +101,12 @@
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
-#include "settings/settings_othermill.h"				// Otherfab OtherMill
+//#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
-//#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
-//#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
+#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
 /*** Handle optional modules that may not be in every machine ***/

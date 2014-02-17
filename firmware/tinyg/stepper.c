@@ -699,6 +699,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
+		
 		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
@@ -710,6 +711,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		// Detect segment time changes and setup the accumulator correction factor and flag.
 		// Putting this here computes the correct factor even if the motor was dormant for some
 		// number of previous moves. Correction is computed based on the last segment time actually used.
+		
 		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
 //			if (st_pre.mot[i].prev_segment_time != 0) {							// special case to skip first move
 			if (fp_NOT_ZERO(st_pre.mot[i].prev_segment_time)) {					// special case to skip first move
