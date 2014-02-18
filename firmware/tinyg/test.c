@@ -108,6 +108,10 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
 //	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
+	xio_queue_RX_string_usb("g20\n");
+	xio_queue_RX_string_usb("g91 g1 f30\n");
+	xio_queue_RX_string_usb("x.1 y.1\n");
+
 /* Some useful sequences */
 //	xio_queue_RX_string_usb("g28.2z0\n");
 //	xio_queue_RX_string_usb("{\"jogx\":1}\n");
