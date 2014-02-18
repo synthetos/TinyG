@@ -754,12 +754,12 @@ static void _exec_offset(float *value, float *flag)
  * cm_set_absolute_origin() - G28.3 - model, planner and queue to runtime
  * _exec_absolute_origin()  - callback from planner
  *
- *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not 
- *	necessarily) and applies them to all axes where the corresponding position 
- *	in the flag vector is true (1).
+ *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not necessarily) 
+ *	and applies them to all axes where the corresponding position in the flag vector is true (1).
  *
- *	This is a 2 step process. The model and planner contexts are set immediately,
- *	the runtime command is queued and synchronized woth the planner queue.
+ *	This is a 2 step process. The model and planner contexts are set immediately, the runtime 
+ *	command is queued and synchronized with the planner queue. At that point any axis that is set
+ *	is also marked as homed.
  */
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
@@ -779,8 +779,10 @@ static void _exec_absolute_origin(float *value, float *flag)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			mp_set_runtime_position(axis, value[axis]);
-			cm.homed[axis] = true;				// it's not considered homed until you get to the runtime
+			mp_set_runtime_position(axis, value[axis]);		// set runtime position
+//			mp_set_planner_position(axis, value[axis]);		// set planner position
+//			cm.gmx.position[axis] = value[axis];			// set model position
+			cm.homed[axis] = true;							// G28.3 is not considered homed until you get here
 		}
 	}
 }
@@ -983,12 +985,13 @@ stat_t cm_dwell(float seconds)
 stat_t cm_straight_feed(float target[], float flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
-
+	
 	// trap zero feed rate condition
 	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 	cm_set_model_target(target, flags);
+
 	if (vector_equal(cm.gm.target, cm.gmx.position)) { return (STAT_OK); }
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));

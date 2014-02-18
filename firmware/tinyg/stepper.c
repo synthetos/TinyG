@@ -150,7 +150,8 @@ void st_reset()
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
 	en_reset_encoders();
 	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
+//		st_pre.mot[i].direction_change = STEP_INITIAL_DIRECTION;
+		st_pre.mot[i].prev_direction = STEP_INITIAL_DIRECTION;		
 		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
 		st_pre.mot[i].corrected_steps = 0;
 	}
@@ -427,13 +428,24 @@ static void _load_move()
 			// Set the direction bit in hardware. Compensate for direction change in the accumulator
 			// If a direction change has occurred flip the value in the substep accumulator about its midpoint
 		 	// NB: If motor has 0 steps this is all skipped
-
+/*
 			if (st_pre.mot[MOTOR_1].direction_change == true) {
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW) 		// CW motion (bit cleared)
 					PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 					PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;			// CCW motion
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
+*/
+// Fix - requires new variable in prep structure, too.
+			if (st_pre.mot[MOTOR_1].direction != st_pre.mot[MOTOR_1].prev_direction) {
+				st_pre.mot[MOTOR_1].prev_direction = st_pre.mot[MOTOR_1].direction;
+				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
+				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW)
+				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+//...to here
+
 			// Enable the stepper and start motor power management
 			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 			st_run.mot[MOTOR_1].power_state = MOTOR_RUNNING;			// set power management state
@@ -454,12 +466,23 @@ static void _load_move()
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
+/*
 			if (st_pre.mot[MOTOR_2].direction_change == true) {
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 					PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 					PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm; 
 				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
 			}
+*/
+// Fix - requires new variable in prep structure, too.
+			if (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction) {
+				st_pre.mot[MOTOR_2].prev_direction = st_pre.mot[MOTOR_2].direction;
+				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
+				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
+				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+//...to here
 			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
@@ -477,12 +500,25 @@ static void _load_move()
 			if (st_pre.mot[MOTOR_3].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_3].substep_accumulator *= st_pre.mot[MOTOR_3].accumulator_correction;
 			}
+
+/* original direction code
 			if (st_pre.mot[MOTOR_3].direction_change == true) {
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 					PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else 
 					PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
 			}
+*/
+// Fix - requires new variable in prep structure, too.
+			if (st_pre.mot[MOTOR_3].direction != st_pre.mot[MOTOR_3].prev_direction) {
+				st_pre.mot[MOTOR_3].prev_direction = st_pre.mot[MOTOR_3].direction;
+				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
+				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
+				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+//...to here
+
 			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
@@ -500,12 +536,24 @@ static void _load_move()
 			if (st_pre.mot[MOTOR_4].accumulator_correction_flag == true) {
 				st_run.mot[MOTOR_4].substep_accumulator *= st_pre.mot[MOTOR_4].accumulator_correction;
 			}
+/*
 			if (st_pre.mot[MOTOR_4].direction_change == true) {
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 					PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 					PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
 			}
+*/
+// Fix - requires new variable in prep structure, too.
+			if (st_pre.mot[MOTOR_4].direction != st_pre.mot[MOTOR_4].prev_direction) {
+				st_pre.mot[MOTOR_4].prev_direction = st_pre.mot[MOTOR_4].direction;
+				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
+				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
+				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+//...to here
+
 			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
@@ -575,7 +623,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 	// setup motor parameters
 
-	uint8_t previous_direction;
+//	uint8_t previous_direction;
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
@@ -586,9 +634,8 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
-		// Detect direction changes. Needed for accumulator adjustment
 
-		previous_direction = st_pre.mot[i].direction;
+//		previous_direction = st_pre.mot[i].direction;
 		if (travel_steps[i] >= 0) {					// positive direction
 			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = 1;
@@ -596,16 +643,15 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
 			st_pre.mot[i].step_sign = -1;
 		}
-		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
+//		st_pre.mot[i].direction_change = st_pre.mot[i].direction ^ previous_direction;
 
 		// Detect segment time changes and setup the accumulator correction factor and flag.
 		// Putting this here computes the correct factor even if the motor was dormant for some
 		// number of previous moves. Correction is computed based on the last segment time actually used.
 
-//		if (fp_NE(segment_time, st_pre.mot[i].prev_segment_time)) {
-//		if (segment_time != st_pre.mot[i].prev_segment_time) {
 		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
-			if (st_pre.mot[i].prev_segment_time != 0) {		// special case to skip first move
+//			if (st_pre.mot[i].prev_segment_time != 0) {							// special case to skip first move
+			if (fp_NOT_ZERO(st_pre.mot[i].prev_segment_time)) {					// special case to skip first move
 				st_pre.mot[i].accumulator_correction_flag = true;
 				st_pre.mot[i].accumulator_correction = segment_time / st_pre.mot[i].prev_segment_time;
 			}

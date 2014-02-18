@@ -366,7 +366,8 @@ typedef struct stPrepMotor {
 
 	// direction and direction change
 	int8_t direction;					// travel direction corrected for polarity
-	uint8_t direction_change;			// set true if direction changed
+//	uint8_t direction_change;			// set true if direction changed
+	uint8_t prev_direction;				// used to detect direction reversals for accumulator compensation
 	int8_t step_sign;					// set to +1 or -1 for encoders
 
 	// following error correction
