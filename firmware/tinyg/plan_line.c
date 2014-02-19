@@ -97,11 +97,16 @@ uint8_t mp_get_runtime_busy()
  *	executed once the accumulated error exceeds the minimums 
  */
 
+static float _get_relative_length(const float Vi, const float Vt, const float jerk)
+{
+	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) / jerk));
+}
+
 stat_t mp_aline(const GCodeState_t *gm_line)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;
-	float junction_velocity;
+//	float junction_velocity;
 
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
@@ -115,6 +120,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
+/*
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {
@@ -153,14 +159,51 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 		mm.prev_cbrt_jerk = bf->cbrt_jerk;
 		mm.prev_recip_jerk = bf->recip_jerk;
 	}
+*/
+
+	// compute unit vector	
+	float diff;
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		if (fp_NOT_ZERO(diff = bf->gm.target[axis] - mm.position[axis])) {
+			bf->unit[axis] = diff / length;
+		}
+	}
+
+	// find the dominant jerk term
+	float axis_length = 0;
+	float longest_axis_length = 0;
+	float junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
+	bf->cruise_vmax = bf->length / bf->gm.move_time;						// target velocity (requested, if not achieved)
+
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		if (fp_NOT_ZERO(bf->unit[axis])) {
+			axis_length = _get_relative_length( junction_velocity * bf->unit[axis],
+											    bf->cruise_vmax* bf->unit[axis], 
+												cm.a[axis].jerk_max * JERK_MULTIPLIER);
+			if (longest_axis_length < axis_length) {
+				longest_axis_length = axis_length;
+				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
+			}
+		}
+	}
+	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
+		bf->cbrt_jerk = mm.prev_cbrt_jerk;
+		bf->recip_jerk = mm.prev_recip_jerk;
+	} else {
+		bf->cbrt_jerk = cbrt(bf->jerk);
+		bf->recip_jerk = 1/bf->jerk;
+		mm.prev_jerk = bf->jerk;
+		mm.prev_cbrt_jerk = bf->cbrt_jerk;
+		mm.prev_recip_jerk = bf->recip_jerk;
+	}
 
 	// finish up the current block variables
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
-		exact_stop = 8675309;								// an arbitrarily large floating point number (Jenny)
+		exact_stop = 8675309;								// an arbitrarily large floating point number
 	}
-	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
-	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
+//	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
+//	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
 	bf->entry_vmax = min3(bf->cruise_vmax, junction_velocity, exact_stop);
 	bf->delta_vmax = _get_target_velocity(0, bf->length, bf);
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
