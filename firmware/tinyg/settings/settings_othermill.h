@@ -141,7 +141,6 @@
 
 // *** axis settings ***
 
-//#define X_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
@@ -191,15 +190,15 @@
 #define Z_ZERO_BACKOFF 			0
 #define Z_JERK_HOMING			JERK_HOMING
 
-// A values are chosen to make the A motor react the same as X for testing
+// Rotary values are chosen to make the motor react the same as X for testing
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MAX 			0				// max=0 min=0 means infinite, no limit
-#define A_TRAVEL_MIN 			0
+#define A_TRAVEL_MIN			-1										// min/max the same means infinite, no limit
+#define A_TRAVEL_MAX 			-1
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600
@@ -208,23 +207,37 @@
 #define A_ZERO_BACKOFF 			2
 #define A_JERK_HOMING			A_JERK_MAX
 
-#define B_AXIS_MODE 			AXIS_DISABLED
-#define B_VELOCITY_MAX 			3600
+#define B_AXIS_MODE 			AXIS_RADIUS
+#define B_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360)
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX
-#define B_TRAVEL_MAX 			0
-#define B_TRAVEL_MIN			0
-#define B_JERK_MAX 				JERK_MAX
+#define B_TRAVEL_MIN			-1
+#define B_TRAVEL_MAX 			-1
+#define B_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define B_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define B_RADIUS 				1
+#define B_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
+#define B_SWITCH_MODE_MIN 		SW_MODE_HOMING
+#define B_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+#define B_SEARCH_VELOCITY 		600
+#define B_LATCH_VELOCITY 		100
+#define B_LATCH_BACKOFF 		5
+#define B_ZERO_BACKOFF 			2
+#define B_JERK_HOMING			B_JERK_MAX
 
-#define C_AXIS_MODE 			AXIS_DISABLED
-#define C_VELOCITY_MAX 			3600
+#define C_AXIS_MODE 			AXIS_RADIUS
+#define C_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360)
 #define C_FEEDRATE_MAX 			C_VELOCITY_MAX
-#define C_TRAVEL_MAX 			0
-#define C_TRAVEL_MIN			0
-#define C_JERK_MAX 				JERK_MAX
-#define C_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define C_RADIUS 				1
+#define C_TRAVEL_MIN			-1
+#define C_TRAVEL_MAX 			-1
+#define C_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
+#define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
+#define C_RADIUS				(M1_TRAVEL_PER_REV/(2*3.14159628))
+#define C_SWITCH_MODE_MIN 		SW_MODE_HOMING
+#define C_SWITCH_MODE_MAX 		SW_MODE_DISABLED
+#define C_SEARCH_VELOCITY 		600
+#define C_LATCH_VELOCITY 		100
+#define C_LATCH_BACKOFF 		5
+#define C_ZERO_BACKOFF 			2
+#define C_JERK_HOMING			C_JERK_MAX
 
 
 // *** PWM SPINDLE CONTROL ***
