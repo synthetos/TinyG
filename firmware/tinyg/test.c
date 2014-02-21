@@ -104,13 +104,13 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
 /* Run test 99 */
-//	xio_queue_RX_string_usb("$test=99\n");		// run test file
+//	xio_queue_RX_string_usb("$test=99\n");		// run test file (doesn't work if text mode is disabled)
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
-//	xio_queue_RX_string_usb("{test:99}\n");		// run test file
+	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
-	xio_queue_RX_string_usb("g20\n");
-	xio_queue_RX_string_usb("g91 g1 f30\n");
-	xio_queue_RX_string_usb("x.1 y.1\n");
+//	xio_queue_RX_string_usb("g20\n");
+//	xio_queue_RX_string_usb("g91 g1 f30\n");
+//	xio_queue_RX_string_usb("x.1 y.1\n");
 
 /* Some useful sequences */
 //	xio_queue_RX_string_usb("g28.2z0\n");
@@ -152,7 +152,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$aam = 3\n");		// set A to radius mode
 //	xio_queue_RX_string_usb("$aam 10\n");		// set A to SLAVE_XYZ mode
 //	xio_queue_RX_string_usb("(MSGtest message in comment)\n");
-	xio_queue_RX_string_usb("{\"1tr\":1.23456}\n");
+//	xio_queue_RX_string_usb("{\"1tr\":1.23456}\n");
 
 /* G0's */
 //	xio_queue_RX_string_usb("g0 x0.0004\n");	// too short line

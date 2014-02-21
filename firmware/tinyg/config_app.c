@@ -790,9 +790,16 @@ static stat_t set_ex(cmdObj_t *cmd)				// enable XON/XOFF or RTS/CTS flow contro
 
 static stat_t get_rx(cmdObj_t *cmd)
 {
+#ifdef __AVR
 	cmd->value = (float)xio_get_usb_rx_free();
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
+#endif
+#ifdef __ARM
+	cmd->value = (float)254;
+	cmd->objtype = TYPE_INTEGER;
+	return (STAT_OK);
+#endif
 }
 
 /* run_sx()	- send XOFF, XON --- test only 

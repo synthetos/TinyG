@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		414.09	// testing new jerk selection algorithm
+#define TINYG_FIRMWARE_BUILD   		415.01	// robot short line test
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,14 +56,14 @@
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
-//#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
   #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
 #endif
-//  #define __TEST_99 						// comment out to remove diagnostic test 99
+  #define __TEST_99 						// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 
