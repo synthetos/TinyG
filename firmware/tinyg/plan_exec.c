@@ -510,7 +510,8 @@ static stat_t _exec_aline_segment()
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
-	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
+	if (mr.segment_count == 0) 
+		return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
 

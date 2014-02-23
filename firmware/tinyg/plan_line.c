@@ -480,8 +480,14 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// Set head and tail lengths
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
-	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
-	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
+	if (bf->head_length < MIN_HEAD_LENGTH) { 
+//		bf->body_length += bf->head_length;
+		bf->head_length = 0;
+	}
+	if (bf->tail_length < MIN_TAIL_LENGTH) { 
+//		bf->body_length += bf->tail_length;
+		bf->tail_length = 0;
+	}
 
 	// Rate-limited HT and HT' cases
 	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited

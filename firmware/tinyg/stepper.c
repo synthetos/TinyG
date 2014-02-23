@@ -692,7 +692,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-		st_pre.mot[i].accumulator_correction_flag = false;
+//		st_pre.mot[i].accumulator_correction_flag = false;
 
 		// Skip this motor if there are no new steps. Leave all other values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
