@@ -468,8 +468,6 @@ void cm_set_model_position_from_runtime(stat_t status)
  *		any time required for acceleration or deceleration.
  */
 
-#define JENNIFER 8675309
-
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
 	float inv_time=0;					// inverse time if doing a feed in G93 mode
@@ -477,7 +475,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float abc_time=0;					// coordinated move rotary part at req feed rate
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
-	gcode_state->minimum_time = JENNIFER;// arbitrarily large number
+	gcode_state->minimum_time = 8675309;// arbitrarily large number
 
 	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
@@ -505,7 +503,10 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
-		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		}
 	}
 	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }

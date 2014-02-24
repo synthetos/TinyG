@@ -42,6 +42,7 @@ extern "C"{
 #endif
 
 // aline planner routines / feedhold planning
+
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _calculate_trapezoid(mpBuf_t *bf);
 static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
@@ -105,16 +106,16 @@ static float _get_relative_length(const float Vi, const float Vt, const float je
 stat_t mp_aline(const GCodeState_t *gm_line)
 {
 	mpBuf_t *bf; 						// current move pointer
-	float exact_stop = 0;
+	float exact_stop = 0;				// preset this value OFF
 //	float junction_velocity;
 
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
-//	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}	// remove this line
+	if (length < MIN_LENGTH_MOVE) return (STAT_MINIMUM_LENGTH_MOVE);
+	if (gm_line->move_time < MIN_TIME_MOVE) return (STAT_MINIMUM_TIME_MOVE);
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
+	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
 
 	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
@@ -163,7 +164,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 
 	// compute unit vector	
 	float diff;
-	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+ 	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
 		if (fp_NOT_ZERO(diff = bf->gm.target[axis] - mm.position[axis])) {
 			bf->unit[axis] = diff / length;
 		}
@@ -217,6 +218,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 }
 
 /***** ALINE HELPERS *****
+ * _validate_block()
  * _plan_block_list()
  * _calculate_trapezoid()
  * _get_target_length()
