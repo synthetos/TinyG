@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		415.08	// robot short line tests - added test 98 (simple) and test 99 (segmented)
+#define TINYG_FIRMWARE_BUILD   		415.09	// robot short line tests - cleaned up test 99 a bit
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
