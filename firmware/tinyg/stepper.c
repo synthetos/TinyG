@@ -711,9 +711,8 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		// Detect segment time changes and setup the accumulator correction factor and flag.
 		// Putting this here computes the correct factor even if the motor was dormant for some
 		// number of previous moves. Correction is computed based on the last segment time actually used.
-		
+
 		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
-//			if (st_pre.mot[i].prev_segment_time != 0) {							// special case to skip first move
 			if (fp_NOT_ZERO(st_pre.mot[i].prev_segment_time)) {					// special case to skip first move
 				st_pre.mot[i].accumulator_correction_flag = true;
 				st_pre.mot[i].accumulator_correction = segment_time / st_pre.mot[i].prev_segment_time;
