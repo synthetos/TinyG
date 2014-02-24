@@ -81,6 +81,7 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
 #ifdef __TEST_99
+		case 98: { xio_open(XIO_DEV_PGM, PGMFILE(&test_98),PGM_FLAGS); break;}
 		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
 #endif
 		default: {
