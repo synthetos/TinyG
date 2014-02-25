@@ -526,7 +526,8 @@ static void _load_move()
 			// Apply accumulator correction if the time base has changed since previous segment
 			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_1].accumulator_correction_flag = false;
-				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
+				printf("correct MOTOR_1\n");
+//				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
 			}
 
 			// Detect direction change and if so:
@@ -560,7 +561,8 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
-				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
+				printf("correct MOTOR_2\n");
+//				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
 			if (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction) {
 				st_pre.mot[MOTOR_2].prev_direction = st_pre.mot[MOTOR_2].direction;
@@ -677,7 +679,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
 	} else if (segment_time < EPSILON) { 
-		printf("Min TIME: time%f  (in st_prep())\n", segment_time);
+		printf("Min TIME: time%f  (in st_prep())\n", (double)segment_time);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
@@ -692,52 +694,53 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	// setup motor parameters
 
 	float correction_steps;
-	for (uint8_t i=0; i<MOTORS; i++) {
+	for (uint8_t motor=0; motor<MOTORS; motor++) {	// I want to remind myself that this is motors, not axes
 
-//		st_pre.mot[i].accumulator_correction_flag = false;
+//		st_pre.mot[motor].accumulator_correction_flag = false;
 
 		// Skip this motor if there are no new steps. Leave all other values intact.
-		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
+		if (fp_ZERO(travel_steps[motor])) { st_pre.mot[motor].substep_increment = 0; continue;}
 
 		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
 		
-		if (travel_steps[i] >= 0) {					// positive direction
-			st_pre.mot[i].direction = DIRECTION_CW ^ st_cfg.mot[i].polarity;
-			st_pre.mot[i].step_sign = 1;
+		if (travel_steps[motor] >= 0) {					// positive direction
+			st_pre.mot[motor].direction = DIRECTION_CW ^ st_cfg.mot[motor].polarity;
+			st_pre.mot[motor].step_sign = 1;
 		} else {
-			st_pre.mot[i].direction = DIRECTION_CCW ^ st_cfg.mot[i].polarity;
-			st_pre.mot[i].step_sign = -1;
+			st_pre.mot[motor].direction = DIRECTION_CCW ^ st_cfg.mot[motor].polarity;
+			st_pre.mot[motor].step_sign = -1;
 		}
 
 		// Detect segment time changes and setup the accumulator correction factor and flag.
 		// Putting this here computes the correct factor even if the motor was dormant for some
 		// number of previous moves. Correction is computed based on the last segment time actually used.
 
-		if (fabs(segment_time - st_pre.mot[i].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
-			if (fp_NOT_ZERO(st_pre.mot[i].prev_segment_time)) {					// special case to skip first move
-				st_pre.mot[i].accumulator_correction_flag = true;
-				st_pre.mot[i].accumulator_correction = segment_time / st_pre.mot[i].prev_segment_time;
+		if (fabs(segment_time - st_pre.mot[motor].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
+			if (fp_NOT_ZERO(st_pre.mot[motor].prev_segment_time)) {					// special case to skip first move
+				st_pre.mot[motor].accumulator_correction_flag = true;
+//				printf("set segment flag motor[%d]\n", motor);
+				st_pre.mot[motor].accumulator_correction = segment_time / st_pre.mot[motor].prev_segment_time;
 			}
-			st_pre.mot[i].prev_segment_time = segment_time;
+			st_pre.mot[motor].prev_segment_time = segment_time;
 		}
 
 #ifdef __STEP_CORRECTION
 		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
 
-		if ((--st_pre.mot[i].correction_holdoff < 0) &&
-			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
+		if ((--st_pre.mot[motor].correction_holdoff < 0) &&
+			(fabs(following_error[motor]) > STEP_CORRECTION_THRESHOLD)) {
 
-			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
-			correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
+			st_pre.mot[motor].correction_holdoff = STEP_CORRECTION_HOLDOFF;
+			correction_steps = following_error[motor] * STEP_CORRECTION_FACTOR;
 
 			if (correction_steps > 0) {
-				correction_steps = min3(correction_steps, fabs(travel_steps[i]), STEP_CORRECTION_MAX);
+				correction_steps = min3(correction_steps, fabs(travel_steps[motor]), STEP_CORRECTION_MAX);
 			} else {
-				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX);
+				correction_steps = max3(correction_steps, -fabs(travel_steps[motor]), -STEP_CORRECTION_MAX);
 			}
-			st_pre.mot[i].corrected_steps += correction_steps;
-			travel_steps[i] -= correction_steps;
+			st_pre.mot[motor].corrected_steps += correction_steps;
+			travel_steps[motor] -= correction_steps;
 		}
 #endif
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
@@ -745,7 +748,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		// Rounding is performed to eliminate a negative bias in the int32 conversion
 		// that results in long-term negative drift. (fabs/round order doesn't matter)
 
-		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
+		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
 	return (STAT_OK);
