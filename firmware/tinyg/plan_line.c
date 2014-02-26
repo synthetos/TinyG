@@ -112,11 +112,11 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) {
-		printf("Min Length: ln%lu\n", gm_line->linenum);
+//		printf("Min Length: ln%lu\n", gm_line->linenum);
 		return (STAT_MINIMUM_LENGTH_MOVE);
 	}
 	if (gm_line->move_time < MIN_TIME_MOVE) {
-		printf("Min TIME: ln%lu\n", gm_line->linenum);
+//		printf("Min TIME: ln%lu\n", gm_line->linenum);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 

@@ -526,8 +526,8 @@ static void _load_move()
 			// Apply accumulator correction if the time base has changed since previous segment
 			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_1].accumulator_correction_flag = false;
-				printf("correct MOTOR_1\n");
-//				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
+//				printf("correct MOTOR_1\n");
+				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
 			}
 
 			// Detect direction change and if so:
@@ -561,8 +561,8 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
-				printf("correct MOTOR_2\n");
-//				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
+//				printf("correct MOTOR_2\n");
+				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
 			if (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction) {
 				st_pre.mot[MOTOR_2].prev_direction = st_pre.mot[MOTOR_2].direction;
@@ -679,7 +679,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
 	} else if (segment_time < EPSILON) { 
-		printf("Min TIME: time%f  (in st_prep())\n", (double)segment_time);
+//		printf("Min TIME: time%f  (in st_prep())\n", (double)segment_time);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 

@@ -299,7 +299,8 @@ enum prepBufferState {
  *	The number is about 8.5 million for the Xmega running a 50 KHz DDA with 5 millisecond segments
  *	The ARM is about 1/2 that (or less) as the DDA clock rate is higher.
  */
-#define DDA_SUBSTEPS ((MAX_LONG * 0.97) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
+//#define DDA_SUBSTEPS ((MAX_LONG * 0.97) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
+#define DDA_SUBSTEPS ((MAX_LONG * 0.10) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position errors.
