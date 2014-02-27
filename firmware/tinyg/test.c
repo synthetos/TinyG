@@ -113,9 +113,52 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("g91 g1 f30\n");
 //	xio_queue_RX_string_usb("x.1 y.1\n");
+/*
+	xio_queue_RX_string_usb("g1 f1200\n");
+	xio_queue_RX_string_usb("y1.00\n");
+	xio_queue_RX_string_usb("y-1.00\n");
+	xio_queue_RX_string_usb("y1.00\n");
+	xio_queue_RX_string_usb("y-1.00\n");
+	xio_queue_RX_string_usb("y1.00\n");
+	xio_queue_RX_string_usb("y-1.00\n");
+	xio_queue_RX_string_usb("y1.00\n");
+	xio_queue_RX_string_usb("y-1.00\n");
+	xio_queue_RX_string_usb("y1.00\n");
+	xio_queue_RX_string_usb("y-1.00\n");
+*/
 
-	xio_queue_RX_string_usb("g1 f1200 x0.01\n");
-	xio_queue_RX_string_usb("x1\n");
+	xio_queue_RX_string_usb("g1 f1200\n");
+	xio_queue_RX_string_usb("y0.01\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.02\n");
+	xio_queue_RX_string_usb("y0.02\n");
+	xio_queue_RX_string_usb("y-0.03\n");
+	xio_queue_RX_string_usb("y0.04\n");
+	xio_queue_RX_string_usb("y0.05\n");
+	xio_queue_RX_string_usb("y1.00\n");
+
 
 /* Some useful sequences */
 //	xio_queue_RX_string_usb("g28.2z0\n");

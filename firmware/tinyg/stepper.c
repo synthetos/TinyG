@@ -272,10 +272,7 @@ stat_t st_motor_power_callback() 	// called by controller
 	for (uint8_t motor=MOTOR_1; motor<MOTORS; motor++) {
 
 		switch (st_cfg.mot[motor].power_mode) {
-//			case (MOTOR_DISABLED): {
-//				_deenergize_motor(motor);
-//				break;
-//			}
+//			case (MOTOR_DISABLED): { _deenergize_motor(motor); break;}
 			case (MOTOR_ALWAYS_POWERED): { break;}
 			case (MOTOR_POWERED_IN_CYCLE):
 			case (MOTOR_POWERED_ONLY_WHEN_MOVING): {
@@ -526,7 +523,6 @@ static void _load_move()
 			// Apply accumulator correction if the time base has changed since previous segment
 			if (st_pre.mot[MOTOR_1].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_1].accumulator_correction_flag = false;
-//				printf("correct MOTOR_1\n");
 				st_run.mot[MOTOR_1].substep_accumulator *= st_pre.mot[MOTOR_1].accumulator_correction;
 			}
 
@@ -561,7 +557,6 @@ static void _load_move()
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
-//				printf("correct MOTOR_2\n");
 				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
 			if (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction) {
@@ -678,9 +673,9 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to happen
 	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
-	} else if (segment_time < EPSILON) { 
+//	} else if (segment_time < EPSILON) { 
 //		printf("Min TIME: time%f  (in st_prep())\n", (double)segment_time);
-		return (STAT_MINIMUM_TIME_MOVE);
+//		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
 	// setup segment parameters
@@ -695,8 +690,6 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 	float correction_steps;
 	for (uint8_t motor=0; motor<MOTORS; motor++) {	// I want to remind myself that this is motors, not axes
-
-//		st_pre.mot[motor].accumulator_correction_flag = false;
 
 		// Skip this motor if there are no new steps. Leave all other values intact.
 		if (fp_ZERO(travel_steps[motor])) { st_pre.mot[motor].substep_increment = 0; continue;}
@@ -719,7 +712,6 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		if (fabs(segment_time - st_pre.mot[motor].prev_segment_time) > 0.0000001) { // highly tuned FP != compare
 			if (fp_NOT_ZERO(st_pre.mot[motor].prev_segment_time)) {					// special case to skip first move
 				st_pre.mot[motor].accumulator_correction_flag = true;
-//				printf("set segment flag motor[%d]\n", motor);
 				st_pre.mot[motor].accumulator_correction = segment_time / st_pre.mot[motor].prev_segment_time;
 			}
 			st_pre.mot[motor].prev_segment_time = segment_time;

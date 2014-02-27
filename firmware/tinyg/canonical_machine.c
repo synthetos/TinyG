@@ -400,7 +400,9 @@ void cm_set_model_target(float target[], float flag[])
  */
 void cm_set_model_position(stat_t status) 
 {
-	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
+//	if ((status == STAT_OK) || (status == STAT_MINIMUM_LENGTH_MOVE) ||  (status == STAT_MINIMUM_TIME_MOVE))
+	if (status == STAT_OK)
+		copy_vector(cm.gmx.position, cm.gm.target);
 }
 
 void cm_set_model_position_from_runtime(stat_t status)

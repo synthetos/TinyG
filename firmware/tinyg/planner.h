@@ -84,8 +84,8 @@ enum sectionState {
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
 #define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
-#define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time / minimum move time
-//#define MIN_SEGMENT_USEC 		((float)4000)		// minimum segment time / minimum move time
+//#define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time / minimum move time
+#define MIN_SEGMENT_USEC 		((float)1500)		// minimum segment time / minimum move time
 #define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
 #define NOM_SEGMENT_TIME 		(NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)

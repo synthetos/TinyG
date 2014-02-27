@@ -103,20 +103,19 @@ static float _get_relative_length(const float Vi, const float Vt, const float je
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) / jerk));
 }
 
+#define __NEW_JERK
+
 stat_t mp_aline(const GCodeState_t *gm_line)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;				// preset this value OFF
-//	float junction_velocity;
+	float junction_velocity;
 
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) {
-//		printf("Min Length: ln%lu\n", gm_line->linenum);
-		return (STAT_MINIMUM_LENGTH_MOVE);
-	}
+	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 	if (gm_line->move_time < MIN_TIME_MOVE) {
-//		printf("Min TIME: ln%lu\n", gm_line->linenum);
+		printf("######## line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
@@ -127,7 +126,8 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
-/*
+
+#ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {
@@ -156,19 +156,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	}
 	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLIER;
 
-	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
-		bf->cbrt_jerk = mm.prev_cbrt_jerk;
-		bf->recip_jerk = mm.prev_recip_jerk;
-	} else {
-		bf->cbrt_jerk = cbrt(bf->jerk);
-		bf->recip_jerk = 1/bf->jerk;
-		mm.prev_jerk = bf->jerk;
-		mm.prev_cbrt_jerk = bf->cbrt_jerk;
-		mm.prev_recip_jerk = bf->recip_jerk;
-	}
-*/
-
-	// compute unit vector	
+#else	// compute unit vector	
 	float diff;
  	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
 		if (fp_NOT_ZERO(diff = bf->gm.target[axis] - mm.position[axis])) {
@@ -179,7 +167,8 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	// find the dominant jerk term
 	float axis_length = 0;
 	float longest_axis_length = 0;
-	float junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
+//	float junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
+	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
 	bf->cruise_vmax = bf->length / bf->gm.move_time;						// target velocity (requested, if not achieved)
 
 	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
@@ -193,6 +182,9 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 			}
 		}
 	}
+#endif // __NEW_JERK
+
+	// see if you can use the previous jerk value
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
 		bf->cbrt_jerk = mm.prev_cbrt_jerk;
 		bf->recip_jerk = mm.prev_recip_jerk;
@@ -209,8 +201,8 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 		bf->replannable = true;
 		exact_stop = 8675309;								// an arbitrarily large floating point number
 	}
-//	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
-//	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
+	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
+	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
 	bf->entry_vmax = min3(bf->cruise_vmax, junction_velocity, exact_stop);
 	bf->delta_vmax = _get_target_velocity(0, bf->length, bf);
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
@@ -510,7 +502,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 
 		// Rate-limited HT' case (asymmetric) - this is relatively expensive but it's not called very often
 		float computed_velocity = bf->cruise_vmax;
-		uint8_t i=0;
+// unneeded	uint8_t i=0;
 		do {
 			bf->cruise_velocity = computed_velocity;	// initialize from previous iteration 
 			bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
@@ -522,7 +514,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 				bf->tail_length = (bf->tail_length / (bf->head_length + bf->tail_length)) * bf->length;
 				computed_velocity = _get_target_velocity(bf->exit_velocity, bf->tail_length, bf);
 			}
-			if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
+// unneeded	if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
 		} while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
 
 		// set velocity and clean up any parts that are too short 
