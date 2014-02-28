@@ -202,23 +202,20 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
 		// generate the waypoints for position correction at section ends
-/*
-		for (uint8_t i=0; i<AXES; i++) {
-			mr.waypoint[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
-			mr.waypoint[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
-			mr.waypoint[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
+		for (uint8_t axis=0; axis<AXES; axis++) {
+			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[axis] * mr.head_length;
+			mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
+			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
+		}
+/* Alternate form:
+		for (uint8_t axis=0; axis<AXES; i++) {
+			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[i] * mr.head_length;
+			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;
+			if (fp_ZERO(mr.tail_length)) { mr.waypoint[SECTION_BODY][axis] = mr.waypoint[SECTION_TAIL][axis];
+			} else { mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
+			}
 		}
 */
-		for (uint8_t i=0; i<AXES; i++) {
-			mr.waypoint[SECTION_TAIL][i] = mr.position[i] + (mr.unit[i] * bf->length);
-			if (fp_ZERO(mr.tail_length)) {
-				mr.waypoint[SECTION_BODY][i] = mr.waypoint[SECTION_TAIL][i];
-			} else {
-				mr.waypoint[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
-			}
-			mr.waypoint[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
-		}
-
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 

@@ -113,6 +113,16 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("g91 g1 f30\n");
 //	xio_queue_RX_string_usb("x.1 y.1\n");
+
+	xio_queue_RX_string_usb("N8G21\n");
+	xio_queue_RX_string_usb("N9G90\n");
+	xio_queue_RX_string_usb("N1G28.3Z0\n");
+	xio_queue_RX_string_usb("N10G28.3X0Y0\n");
+	xio_queue_RX_string_usb("N12F2500\n");
+	xio_queue_RX_string_usb("N1525G1X0Y0\n");
+//	xio_queue_RX_string_usb("N1526G1X0Y0.02\n");
+	xio_queue_RX_string_usb("N1527G1X0Y0.39\n");
+
 /*
 	xio_queue_RX_string_usb("g1 f1200\n");
 	xio_queue_RX_string_usb("y1.00\n");
@@ -126,7 +136,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("y1.00\n");
 	xio_queue_RX_string_usb("y-1.00\n");
 */
-
+/*
 	xio_queue_RX_string_usb("g1 f1200\n");
 	xio_queue_RX_string_usb("y0.01\n");
 	xio_queue_RX_string_usb("y0.02\n");
@@ -158,7 +168,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 	xio_queue_RX_string_usb("y0.04\n");
 	xio_queue_RX_string_usb("y0.05\n");
 	xio_queue_RX_string_usb("y1.00\n");
-
+*/
 
 /* Some useful sequences */
 //	xio_queue_RX_string_usb("g28.2z0\n");
