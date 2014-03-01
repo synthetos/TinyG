@@ -806,7 +806,7 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 
 	// reset all step counters and encoders - these are in motor space
 	mp_reset_step_counts();
-	en_reset_encoders();
+	en_set_encoders(cm.gmx.position);
 }
 
 /* 

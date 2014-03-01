@@ -74,22 +74,40 @@ stat_t encoder_test_assertions()
 }
 
 /* 
- * en_reset_encoders() - set encoder values to current initial position
+ * en_set_encoders() - set encoder values to a current position
  *
- *	en_reset_encoder() sets the encoder_position to match the MODEL position. 
+ *	Sets the encoder_position steps to match the axis_position. 
  *	This establishes the "step grid" relative to the current machine position. 
  *	Note that encoder_position is in integer steps, so it's not an exact 
  *	representation of machine position except if the machine is at zero. 
  */
 
-void en_reset_encoders(void)
+void en_set_encoders(float axis_position[])
 {
-	float initial_position[MOTORS];
+/*
+	float initial_steps[MOTORS];
 	ik_kinematics(cm.gmx.position, initial_position);	// as steps in floating point
-
 	for (uint8_t i=0; i<MOTORS; i++) {
 		en.en[i].encoder_steps = (int32_t)round(initial_position[i]);
 	}
+*/
+	float step_position[MOTORS];
+	ik_kinematics(axis_position, step_position);	// convert axes to steps in floating point
+	for (uint8_t motor=0; motor<MOTORS; motor++) {
+		en.en[motor].encoder_steps = (int32_t)round(step_position[motor]);
+	}
+
+	printf("###### Encoder Axis Positions [%f,%f,%f,%f]\n", 
+		(double)axis_position[0],
+		(double)axis_position[1],
+		(double)axis_position[2],
+		(double)axis_position[3]);
+		
+	printf("###### Encoder STEP Positions [%f,%f,%f,%f]\n",
+		(double)step_position[0],
+		(double)step_position[1],
+		(double)step_position[2],
+		(double)step_position[3]);
 }
 
 /* 
