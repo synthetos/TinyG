@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		416.04	// minimum time handling - testing before and after states
+#define TINYG_FIRMWARE_BUILD   		417.02	// back-ported inverse time handling changes from edge
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -69,7 +69,6 @@
 
 #define __DIAGNOSTIC_PARAMETERS				// include diagnostics in config_app table
 
-  #define __CANNED_STARTUP					// run any canned startup moves
 #ifdef __SIMULATION
   #define __CANNED_STARTUP					// run any canned startup moves
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation

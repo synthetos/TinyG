@@ -76,9 +76,10 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 				   uint8_t motion_mode)			 // defined motion mode
 {
 	// trap zero feed rate condition
-	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
+	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
+
 	// Trap conditions where no arc movement will occur, but the system is still in 
 	// arc motion mode - this is not an error. This can happen when a F word or M 
 	// word is by itself.(The tests below are organized for execution efficiency)
@@ -373,8 +374,10 @@ static float _get_arc_time (const float linear_travel,	// in mm
 	float move_time=0;	// picks through the times and retains the slowest
 	float planar_travel = fabs(angular_travel * radius);// travel in arc plane
 
-	if (cm.gm.inverse_feed_rate_mode == true) {
-		move_time = cm.gmx.inverse_feed_rate;
+	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
+		move_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
+		cm.gm.feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
+		cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
 	} else {
 		move_time = sqrt(square(planar_travel) + square(linear_travel)) / cm.gm.feed_rate;
 	}

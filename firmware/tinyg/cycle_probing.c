@@ -99,7 +99,7 @@ static stat_t _set_pb_func(uint8_t (*func)());
 uint8_t cm_straight_probe(float target[], float flags[])
 {
 	// trap zero feed rate condition
-	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
+	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 

@@ -188,7 +188,7 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
 uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
-uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->inverse_feed_rate_mode;}
+uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
@@ -318,7 +318,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 
 /***********************************************************************************
  * CRITICAL HELPERS
- * Core functions supporting the canonical machining fucntions
+ * Core functions supporting the canonical machining functions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 /* 
@@ -400,9 +400,7 @@ void cm_set_model_target(float target[], float flag[])
  */
 void cm_set_model_position(stat_t status) 
 {
-//	if ((status == STAT_OK) || (status == STAT_MINIMUM_LENGTH_MOVE) ||  (status == STAT_MINIMUM_TIME_MOVE))
-	if (status == STAT_OK)
-		copy_vector(cm.gmx.position, cm.gm.target);
+	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
 }
 
 void cm_set_model_position_from_runtime(stat_t status)
@@ -485,8 +483,10 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 
 	// compute times for feed motion
 	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-		if (cm.gm.inverse_feed_rate_mode == true) {
-			inv_time = cm.gmx.inverse_feed_rate;
+		if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
+			inv_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
+			cm.gm.feed_rate = 0;		// reset feed rate so next block requires an explicit feed rate setting
+			cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
 		} else {
 			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
 							square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
@@ -571,6 +571,7 @@ void canonical_machine_init()
 	cm_select_plane(cm.select_plane);
 	cm_set_path_control(cm.path_control);
 	cm_set_distance_mode(cm.distance_mode);
+	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// always the default
 
 	cm.gmx.block_delete_switch = true;
 
@@ -926,16 +927,13 @@ stat_t cm_goto_g30_position(float target[], float flags[])
 /*
  * cm_set_feed_rate() - F parameter (affects MODEL only)
  *
- * Sets feed rate; or sets inverse feed rate if it's active.
- * Converts all values to internal format (mm's)
- * Errs out of feed rate exceeds maximum, but doesn't compute maximum for 
- * inverse feed rate as this would require knowing the move length in advance.
+ * Normalize feed rate to mm/min or to minutes if in inverse time mode
  */
 
 stat_t cm_set_feed_rate(float feed_rate)
 {
-	if (cm.gm.inverse_feed_rate_mode == true) {
-		cm.gmx.inverse_feed_rate = feed_rate;	// minutes per motion for this block only
+	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
+		cm.gm.feed_rate = 1 / feed_rate;	// normalize to minutes (NB: active for this gcode block only)
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
 	}
@@ -943,15 +941,16 @@ stat_t cm_set_feed_rate(float feed_rate)
 }
 
 /*
- * cm_set_inverse_feed_rate() - G93, G94 (affects MODEL only)
+ * cm_set_feed_rate_mode() - G93, G94 (affects MODEL only)
  *
- *	TRUE = inverse time feed rate in effect - for this block only
- *	FALSE = units per minute feed rate in effect
+ *	INVERSE_TIME_MODE = 0,			// G93
+ *	UNITS_PER_MINUTE_MODE,			// G94
+ *	UNITS_PER_REVOLUTION_MODE		// G95 (unimplemented)
  */
 
-stat_t cm_set_inverse_feed_rate_mode(uint8_t mode)
+stat_t cm_set_feed_rate_mode(uint8_t mode)
 {
-	cm.gm.inverse_feed_rate_mode = mode;
+	cm.gm.feed_rate_mode = mode;
 	return (STAT_OK);
 }
 
@@ -991,7 +990,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
 	// trap zero feed rate condition
-	if ((cm.gm.inverse_feed_rate_mode == false) && (fp_ZERO(cm.gm.feed_rate))) {
+	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_ERROR);
 	}
 	cm_set_model_target(target, flags);
@@ -1357,7 +1356,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_units_mode(cm.units_mode);			// reset to default units mode
 		cm_spindle_control(SPINDLE_OFF);			// M5
 		cm_flood_coolant_control(false);			// M9
-		cm_set_inverse_feed_rate_mode(false);
+		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// reset
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
@@ -1505,9 +1504,9 @@ static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
 static const char *const msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
-static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
 static const char msg_g93[] PROGMEM = "G93 - inverse time mode";
-static const char *const msg_frmo[] PROGMEM = { msg_g94, msg_g93 };
+static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
+static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94 };
 
 #else
 
@@ -1619,7 +1618,7 @@ stat_t cm_get_momo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_momo, cm_get
 stat_t cm_get_plan(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
 stat_t cm_get_path(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
 stat_t cm_get_dist(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
-stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get_inverse_feed_rate_mode(ACTIVE_MODEL)));}
+stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get_feed_rate_mode(ACTIVE_MODEL)));}
 
 stat_t cm_get_toolv(cmdObj_t *cmd)
 {
