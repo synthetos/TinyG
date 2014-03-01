@@ -88,11 +88,12 @@ extern "C"{
 
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
-	float feed_rate; 					// F - normalized to millimeters/minute
+	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
+
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
@@ -117,7 +118,6 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
-	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
@@ -148,10 +148,9 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	float target[AXES]; 				// XYZABC where the move should go
 
 	float feed_rate; 					// F - normalized to millimeters/minute
-	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
@@ -459,6 +458,12 @@ enum cmDistanceMode {
 	INCREMENTAL_MODE				// G91
 };
 
+enum cmFeedRateMode {
+	INVERSE_TIME_MODE = 0,			// G93
+	UNITS_PER_MINUTE_MODE,			// G94
+	UNITS_PER_REVOLUTION_MODE		// G95 (unimplemented)
+};
+
 enum cmOriginOffset {
 	ORIGIN_OFFSET_SET=0,			// G92 - set origin offsets
 	ORIGIN_OFFSET_CANCEL,			// G92.1 - zero out origin offsets
@@ -519,7 +524,7 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
 uint8_t cm_get_path_control(GCodeState_t *gcode_state);
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
-uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
@@ -587,7 +592,7 @@ stat_t cm_resume_origin_offsets(void);				 			// G92.3
 
 stat_t cm_straight_traverse(float target[], float flags[]);
 stat_t cm_set_feed_rate(float feed_rate);						// F parameter
-stat_t cm_set_inverse_feed_rate_mode(uint8_t mode);				// True= inv mode
+stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 stat_t cm_straight_feed(float target[], float flags[]);			// G1
 stat_t cm_dwell(float seconds);									// G4, P parameter
