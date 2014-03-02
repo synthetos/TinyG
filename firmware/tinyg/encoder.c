@@ -84,19 +84,12 @@ stat_t encoder_test_assertions()
 
 void en_set_encoders(float axis_position[])
 {
-/*
-	float initial_steps[MOTORS];
-	ik_kinematics(cm.gmx.position, initial_position);	// as steps in floating point
-	for (uint8_t i=0; i<MOTORS; i++) {
-		en.en[i].encoder_steps = (int32_t)round(initial_position[i]);
-	}
-*/
 	float step_position[MOTORS];
 	ik_kinematics(axis_position, step_position);	// convert axes to steps in floating point
 	for (uint8_t motor=0; motor<MOTORS; motor++) {
 		en.en[motor].encoder_steps = (int32_t)round(step_position[motor]);
 	}
-
+/*
 	printf("###### Encoder Axis Positions [%f,%f,%f,%f]\n", 
 		(double)axis_position[0],
 		(double)axis_position[1],
@@ -108,6 +101,7 @@ void en_set_encoders(float axis_position[])
 		(double)step_position[1],
 		(double)step_position[2],
 		(double)step_position[3]);
+*/
 }
 
 /* 
