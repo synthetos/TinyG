@@ -179,7 +179,8 @@ static void _controller_HSM()
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
-	DISPATCH(cm_homing_callback());				// G28.2 continuation
+	DISPATCH(cm_set_origin_callback());			// G28.3 continuation
+	DISPATCH(cm_homing_callback());				// G28.2/.4 continuation
 	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
 

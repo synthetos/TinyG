@@ -246,9 +246,11 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
     uint8_t probe_state;            // 1==success, 0==failed
     float   probe_results[AXES];    // probing results
 
+	uint8_t set_origin_state;		// used to control set_origin cycles
+
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
-	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
+	uint8_t g10_persist_flag;		// G10 changed offsets - persist them
 	uint8_t feedhold_requested;		// feedhold character has been received
 	uint8_t queue_flush_requested;	// queue flush character has been received
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
@@ -331,7 +333,8 @@ enum cmCycleState {
 	CYCLE_MACHINING,				// in normal machining cycle
 	CYCLE_PROBE,					// in probe cycle
 	CYCLE_HOMING,					// homing is treated as a specialized cycle
-	CYCLE_JOG						// jogging is treated as a specialized cycle
+	CYCLE_JOG,						// jogging is treated as a specialized cycle
+	CYCLE_SET_ORIGIN				// set origin to new coordinates
 };
 
 enum cmMotionState {
@@ -359,6 +362,12 @@ enum cmProbeState {					// applies to cm.probe_state
 	PROBE_FAILED = 0,				// probe reached endpoint without triggering
 	PROBE_SUCCEDED = 1,				// probe was triggered, cm.probe_results has position
 	PROBE_WAITING					// probe is waiting to be started
+};
+
+enum cmSetOriginState {				// applies to cm.set_origin_state
+	SET_ORIGIN_OFF = 0,
+	SET_ORIGIN_SUCCEDED = 1,		// end state
+	SET_ORIGIN_WAITING				// waiting for planner to drain
 };
 
 /* The difference between NextAction and MotionMode is that NextAction is 
@@ -569,12 +578,13 @@ stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 
 stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
-stat_t cm_homing_callback(void);								// G28.2 main loop callback
+stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
 
-stat_t cm_set_origin_cycle_start(float origin[], float flags[]);	// G28.3  (special function)
 //stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 //void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
-void cm_set_axis_position(uint8_t axis, const float position);	// set absolute position 
+//stat_t cm_set_origin_cycle_start(float origin[], float flags[]);	// G28.3  (special function)
+stat_t cm_set_origin_cycle_start(void);							// G28.3  (special function)
+stat_t cm_set_origin_callback(void);							// G28.3 main loop callback
 
 stat_t cm_jogging_callback(void);								// jogging cycle main loop
 stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
@@ -589,6 +599,7 @@ stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
+void cm_set_axis_position(uint8_t axis, const float position);	// set absolute position
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92

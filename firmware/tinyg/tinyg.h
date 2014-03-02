@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		418.01	// changing set_absolute_origin (G28.3) to be a cycle - intermediate commit
+#define TINYG_FIRMWARE_BUILD   		418.02	// changed set_absolute_origin (G28.3) to be a cycle (now called simply set_origin)
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
