@@ -369,7 +369,8 @@ enum cmProbeState {					// applies to cm.probe_state
 enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
-	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
+//	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
+	NEXT_ACTION_SET_ORIGIN,				// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
 	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
@@ -570,8 +571,10 @@ stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2 main loop callback
 
-stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
-void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
+stat_t cm_set_origin_cycle_start(float origin[], float flags[]);	// G28.3  (special function)
+//stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
+//void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
+void cm_set_axis_position(uint8_t axis, const float position);	// set absolute position 
 
 stat_t cm_jogging_callback(void);								// jogging cycle main loop
 stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}

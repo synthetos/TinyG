@@ -111,6 +111,10 @@ static void _homing_debug_print(int8_t axis)
 }
 */
 
+/***********************************************************************************
+ **** G28.2 Functions **************************************************************
+ ***********************************************************************************/
+
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
  *
@@ -330,11 +334,13 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
-		cm_set_axis_origin(axis, 0);
+//		cm_set_axis_origin(axis, 0);					// ++++++++++++++++
+		cm_set_axis_position(axis, 0);
 		mp_set_runtime_position(axis, 0);
 		cm.homed[axis] = true;
 	} else {
-		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
+//		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
+		cm_set_axis_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	return (_set_homing_func(_homing_axis_start));
@@ -524,6 +530,62 @@ int8_t _get_next_axes(int8_t axis)
 	return (STAT_OK);
 }
 */
+
+/***********************************************************************************
+ **** G28.3 Functions **************************************************************
+ ***********************************************************************************/
+
+/*****************************************************************************
+ * cm_set_origin_cycle_start()	- G28.3 - model, planner and queue to runtime
+ * cm_set_origin_callback()		- callback from controller
+ * _exec_set_origin()			- callback from planner
+ *
+ *	cm_set_origin takes a vector of origins (presumably 0's, but not 
+ *	necessarily) and applies them to all axes where the corresponding position 
+ *	in the flag vector is true (1).
+ *
+ *	This is a 2 step process. The model and planner contexts are set immediately,
+ *	the runtime command is queued and synchronized with the planner queue.
+ *
+ *	This function is only called by the gcode interpreter
+ */
+
+static void _exec_set_origin(float *value, float *flag);
+
+stat_t cm_set_origin_cycle_start(float origin[], float flag[])
+{
+	float value[AXES];
+
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			value[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(origin[axis]);
+			cm_set_axis_position(axis, value[axis]);
+//			cm.gmx.position[axis] = value[axis];
+//			cm.gm.target[axis] = value[axis];
+		}
+	}
+	mp_queue_command(_exec_set_origin, value, flag);
+	return (STAT_OK);
+}
+/*
+stat_t cm_set_origin_callback(void)
+{
+	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
+	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
+	return (hm.func(hm.axis));									// execute the current homing move
+}
+*/
+static void _exec_set_origin(float *value, float *flag)
+{
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			mp_set_planner_position(axis, value[axis]);
+			mp_set_runtime_position(axis, value[axis]);
+			cm.homed[axis] = true;				// it's not considered homed until you get to the runtime
+		}
+	}
+}
+
 
 #ifdef __cplusplus
 }

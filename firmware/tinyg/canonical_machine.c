@@ -121,7 +121,7 @@ static void _exec_change_tool(float *value, float *flag);
 static void _exec_select_tool(float *value, float *flag);
 static void _exec_mist_coolant_control(float *value, float *flag);
 static void _exec_flood_coolant_control(float *value, float *flag);
-static void _exec_absolute_origin(float *value, float *flag);
+//static void _exec_absolute_origin(float *value, float *flag);
 static void _exec_program_finalize(float *value, float *flag);
 
 static int8_t _get_axis(const index_t index);
@@ -764,8 +764,9 @@ static void _exec_offset(float *value, float *flag)
  *	in the flag vector is true (1).
  *
  *	This is a 2 step process. The model and planner contexts are set immediately,
- *	the runtime command is queued and synchronized woth the planner queue.
+ *	the runtime command is queued and synchronized with the planner queue.
  */
+/*
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	float value[AXES];
@@ -773,7 +774,9 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			value[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(origin[axis]);
-			cm_set_axis_origin(axis, value[axis]);
+//			cm_set_axis_origin(axis, value[axis]);
+			cm.gmx.position[axis] = value[axis];
+			cm.gm.target[axis] = value[axis];
 		}
 	}
 	mp_queue_command(_exec_absolute_origin, value, flag);
@@ -784,11 +787,13 @@ static void _exec_absolute_origin(float *value, float *flag)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
+			mp_set_planner_position(axis, value[axis]);
 			mp_set_runtime_position(axis, value[axis]);
 			cm.homed[axis] = true;				// it's not considered homed until you get to the runtime
 		}
 	}
 }
+*/
 
 /*
  * cm_set_axis_origin()	- set the origin of a single axis - model and planner
@@ -798,7 +803,34 @@ static void _exec_absolute_origin(float *value, float *flag)
  *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
  *	(for example). The Y axis will now be set to 0 (or whatever value provided)
  */
+/*
 void cm_set_axis_origin(uint8_t axis, const float position)
+{
+	cm.gmx.position[axis] = position;
+	cm.gm.target[axis] = position;
+	mp_set_planner_position(axis, position);
+
+	// reset all step counters and encoders - these are in motor space
+	mp_reset_step_counts();
+	en_set_encoders(cm.gmx.position);
+}
+*/
+/*
+ * cm_set_axis_position() - set the position of a single axis in the model, planner and runtime
+ *
+ *	This command sets an axis to a position provided as an argument. This is useful for 
+ *	setting origins for homing, probing, G28.3 and other operations.
+ *
+ *	!!!!! DO NOT CALL THIS FUNCTION WHILE IN A MACHINING CYCLE !!!!!
+ *
+ *	More specifically, do not call this function if there are any moves in the planner.
+ *	The system must be quiescent or you will introduce positional errors. This is true
+ *	because the planned moves had a different reference frame than the one you are now
+ *	going to set. This should only be called during initialization sequences and during
+ *	cycles (such as homing cycles) when you know here are no more moves in the planner.
+ */
+
+void cm_set_axis_position(uint8_t axis, const float position)
 {
 	cm.gmx.position[axis] = position;
 	cm.gm.target[axis] = position;
