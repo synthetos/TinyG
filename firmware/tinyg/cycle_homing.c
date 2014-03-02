@@ -335,7 +335,6 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
 		cm_set_axis_position(axis, 0);
-		mp_set_runtime_position(axis, 0);
 		cm.homed[axis] = true;
 	} else {
 		cm_set_axis_position(axis, cm_get_work_position(RUNTIME, axis));

@@ -580,9 +580,6 @@ stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
 
-//stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
-//void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
-//stat_t cm_set_origin_cycle_start(float origin[], float flags[]);	// G28.3  (special function)
 stat_t cm_set_origin_cycle_start(void);							// G28.3  (special function)
 stat_t cm_set_origin_callback(void);							// G28.3 main loop callback
 
