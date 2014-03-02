@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		417.10	// evil45 testing - reworking en_set_encoders()
+#define TINYG_FIRMWARE_BUILD   		417.11	// moved G28.3 to be a synchronous command
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,7 +56,7 @@
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
-//#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)

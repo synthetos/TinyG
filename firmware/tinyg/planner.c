@@ -163,8 +163,8 @@ void mp_set_runtime_position(uint8_t axis, const float position)
 	mr.position[axis] = position;
 
 	// reset all step counters and encoders - these are in motor space
-	mp_reset_step_counts();
 	en_set_encoders(mr.position);
+	mp_reset_step_counts();
 }
 
 /************************************************************************************
