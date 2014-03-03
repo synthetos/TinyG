@@ -126,7 +126,6 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
-
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
@@ -165,23 +164,48 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	}
 
 	// find the dominant jerk term
-	float axis_length = 0;
+	float axis_relative_length = 0;
 	float longest_axis_length = 0;
-//	float junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
-	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);	// initial velocity
+	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);			// initial velocity
 	bf->cruise_vmax = bf->length / bf->gm.move_time;						// target velocity (requested, if not achieved)
 
+	// alternate #1 - relative length computed via subroutine
 	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
 		if (fp_NOT_ZERO(bf->unit[axis])) {
-			axis_length = _get_relative_length( junction_velocity * bf->unit[axis],
-											    bf->cruise_vmax* bf->unit[axis], 
-												cm.a[axis].jerk_max * JERK_MULTIPLIER);
-			if (longest_axis_length < axis_length) {
-				longest_axis_length = axis_length;
+			axis_relative_length = _get_relative_length( junction_velocity * bf->unit[axis],
+														 bf->cruise_vmax* bf->unit[axis], 
+														 cm.a[axis].jerk_max * JERK_MULTIPLIER);
+			if (axis_relative_length > longest_axis_length) {
+				longest_axis_length = axis_relative_length;
 				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
 			}
 		}
 	}
+/*
+	// alternate #2 - relative length computed inline
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		if (fp_NOT_ZERO(bf->unit[axis])) {
+			axis_relative_length = (fabs(junction_velocity * bf->unit[axis] - bf->cruise_vmax * bf->unit[axis]) *
+									sqrt(fabs(junction_velocity * bf->unit[axis] - bf->cruise_vmax * bf->unit[axis]) /
+									cm.a[axis].jerk_max * JERK_MULTIPLIER));
+			if (axis_relative_length > longest_axis_length) {
+				longest_axis_length = axis_relative_length;
+				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
+			}
+		}
+	}
+
+	// alternate #3 - relative length computed inline as an abbreviated expession
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		if (fp_NOT_ZERO(bf->unit[axis])) {
+			axis_relative_length = fabs(bf->unit[axis] * cm.a[axis].jerk_max);
+			if (axis_relative_length > longest_axis_length) {
+				longest_axis_length = axis_relative_length;
+				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
+			}
+		}
+	}
+*/
 #endif // __NEW_JERK
 
 	// see if you can use the previous jerk value
@@ -216,7 +240,6 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 }
 
 /***** ALINE HELPERS *****
- * _validate_block()
  * _plan_block_list()
  * _calculate_trapezoid()
  * _get_target_length()
@@ -480,14 +503,8 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// Set head and tail lengths
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
-	if (bf->head_length < MIN_HEAD_LENGTH) { 
-//		bf->body_length += bf->head_length;
-		bf->head_length = 0;
-	}
-	if (bf->tail_length < MIN_TAIL_LENGTH) { 
-//		bf->body_length += bf->tail_length;
-		bf->tail_length = 0;
-	}
+	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
+	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
 
 	// Rate-limited HT and HT' cases
 	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited

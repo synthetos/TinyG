@@ -79,7 +79,7 @@ extern "C"{
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
-typedef struct GCodeState {			// Gcode model state - used by model, planning and runtime
+typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
 	uint32_t linenum;					// Gcode block line number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89
@@ -141,7 +141,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-	// G82, G83 G84, G85, G86, G87, G88, G89
+										// G82, G83 G84, G85, G86, G87, G88, G89
 	uint8_t program_flow;				// used only by the gcode_parser
 	uint32_t linenum;					// N word or autoincrement in the model
 
@@ -378,7 +378,6 @@ enum cmSetOriginState {				// applies to cm.set_origin_state
 enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
-//	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_SET_ORIGIN,				// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
 	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
@@ -595,8 +594,8 @@ stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
 stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
 
-stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 void cm_set_axis_position(uint8_t axis, const float position);	// set absolute position
+stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92

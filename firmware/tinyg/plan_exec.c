@@ -206,16 +206,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[axis] * mr.head_length;
 			mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
 			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
+//			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;	// tail alternate form
 		}
-/* Alternate form:
-		for (uint8_t axis=0; axis<AXES; i++) {
-			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[i] * mr.head_length;
-			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;
-			if (fp_ZERO(mr.tail_length)) { mr.waypoint[SECTION_BODY][axis] = mr.waypoint[SECTION_TAIL][axis];
-			} else { mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
-			}
-		}
-*/
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -519,8 +511,7 @@ static stat_t _exec_aline_segment()
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
-	if (mr.segment_count == 0) 
-		return (STAT_OK);			// this section has run all its segments
+	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
 

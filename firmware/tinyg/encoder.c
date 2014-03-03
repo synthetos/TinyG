@@ -73,7 +73,7 @@ stat_t encoder_test_assertions()
 	return (STAT_OK);
 }
 
-/* 
+/*
  * en_set_encoders() - set encoder values to a current position
  *
  *	Sets the encoder_position steps to match the axis_position. 
@@ -89,19 +89,6 @@ void en_set_encoders(float axis_position[])
 	for (uint8_t motor=0; motor<MOTORS; motor++) {
 		en.en[motor].encoder_steps = (int32_t)round(step_position[motor]);
 	}
-/*
-	printf("###### Encoder Axis Positions [%f,%f,%f,%f]\n", 
-		(double)axis_position[0],
-		(double)axis_position[1],
-		(double)axis_position[2],
-		(double)axis_position[3]);
-		
-	printf("###### Encoder STEP Positions [%f,%f,%f,%f]\n",
-		(double)step_position[0],
-		(double)step_position[1],
-		(double)step_position[2],
-		(double)step_position[3]);
-*/
 }
 
 /* 

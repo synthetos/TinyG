@@ -264,7 +264,7 @@ enum cmMotorPowerMode {
 	MOTOR_POWERED_ONLY_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
 //	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction for idle (FUTURE)
 //	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
-	MOTOR_POWER_MODE_MAX_VALUE				// for inout range checking
+	MOTOR_POWER_MODE_MAX_VALUE			// for input range checking
 };
 
 enum prepBufferState {

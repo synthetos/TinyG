@@ -121,7 +121,6 @@ static void _exec_change_tool(float *value, float *flag);
 static void _exec_select_tool(float *value, float *flag);
 static void _exec_mist_coolant_control(float *value, float *flag);
 static void _exec_flood_coolant_control(float *value, float *flag);
-//static void _exec_absolute_origin(float *value, float *flag);
 static void _exec_program_finalize(float *value, float *flag);
 
 static int8_t _get_axis(const index_t index);
@@ -398,14 +397,20 @@ void cm_set_model_target(float target[], float flag[])
  *	steppers will still be processing the action and the real tool position is still close 
  *	to the starting point. 
  */
-void cm_set_model_position(stat_t status) 
+void cm_set_model_position(stat_t status)
 {
-	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
+	// Even if we are coalescing the move need to keep the gcode model correct
+	if (status == STAT_OK) {
+		copy_vector(cm.gmx.position, cm.gm.target);
+	}
 }
 
 void cm_set_model_position_from_runtime(stat_t status)
 {
-	if (status == STAT_OK) copy_vector(cm.gmx.position, mr.gm.target);
+	// Even if we are coalescing the move need to keep the gcode model correct
+	if (status == STAT_OK) {
+		copy_vector(cm.gmx.position, mr.gm.target);
+	}
 }
 
 /*
@@ -476,10 +481,6 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
 	gcode_state->minimum_time = 8675309;// arbitrarily large number
-
-	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
-	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
-	//		 the canonical machine will be the target, but this is not required.
 
 	// compute times for feed motion
 	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
@@ -768,7 +769,6 @@ static void _exec_offset(float *value, float *flag)
 	mp_set_runtime_work_offset(offsets);
 //	cm_set_work_offsets(RUNTIME);
 }
-
 
 /* 
  * cm_set_origin_offsets() 		- G92
@@ -1317,7 +1317,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_units_mode(cm.units_mode);			// reset to default units mode
 		cm_spindle_control(SPINDLE_OFF);			// M5
 		cm_flood_coolant_control(false);			// M9
-		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// reset
+		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// G94
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}

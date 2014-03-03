@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		418.04	// cleaned up set_origin_cycle (G28.3)
+#define TINYG_FIRMWARE_BUILD   		418.07	// cosmetic changes only; setting up for Probotix tests
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -143,7 +143,7 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define GET_TABLE_WORD(a)  cfgArray[cmd->index].a	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  cfgArray[cmd->index].a	// get byte value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[cmd->index].a	// get byte value from cfgArray
-#define GET_TOKEN_BYTE(i,a) (char_t)cfgArray[i].a	// get token byte value from cfgArray
+#define GET_TOKEN_BYTE(a)  (char_t)cfgArray[i].a	// get token byte value from cfgArray
 
 #define GET_TOKEN_STRING(i,a) strcpy_P(a, (char_t *)&cfgArray[(index_t)i].token); // populate the token string given the index
 
@@ -167,6 +167,7 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
  * On the ARM/GCC++ the _P functions are just aliases of the non-P variants.
  */
 #define strncpy(d,s,l) (char_t *)strncpy((char *)d, (char *)s, l)
+#define strncat(d,s,l) (char_t *)strncat((char *)d, (char *)s, l)
 #define strpbrk(d,s) (char_t *)strpbrk((char *)d, (char *)s)
 #define strcpy(d,s) (char_t *)strcpy((char *)d, (char *)s)
 #define strcat(d,s) (char_t *)strcat((char *)d, (char *)s)
@@ -185,6 +186,7 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define fprintf_P fprintf	// just sayin'
 #define sprintf_P sprintf
 #define strcpy_P strcpy
+#define strncpy_P strncpy
 
 #endif // __ARM
 
@@ -238,6 +240,7 @@ typedef uint16_t magic_t;		// magic number size
  * ritorno is a handy way to provide exception returns 
  * It returns only if an error occurred. (ritorno is Italian for return) 
  */
+
 typedef uint8_t stat_t;
 extern stat_t status_code;				// allocated in main.c
 

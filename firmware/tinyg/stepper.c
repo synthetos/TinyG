@@ -149,10 +149,10 @@ void st_reset()
 	float zero[] = {0,0,0,0,0,0};
 	en_set_encoders(zero);
 	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
-	for (uint8_t i=0; i<MOTORS; i++) {
-		st_pre.mot[i].prev_direction = STEP_INITIAL_DIRECTION;
-		st_run.mot[i].substep_accumulator = 0;	// will become max negative during per-motor setup;
-		st_pre.mot[i].corrected_steps = 0;
+	for (uint8_t motor=0; motor<MOTORS; motor++) {
+		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
+		st_run.mot[motor].substep_accumulator = 0;	// will become max negative during per-motor setup;
+		st_pre.mot[motor].corrected_steps = 0;
 	}
 }
 
@@ -243,9 +243,9 @@ static void _set_motor_power_level(const uint8_t motor, const float power_level)
 void st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		if (st_cfg.mot[motor].power_mode != MOTOR_DISABLED) 
+		if (st_cfg.mot[motor].power_mode != MOTOR_DISABLED)
 			_energize_motor(motor);
-		st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;		
+		st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;
 	}
 #ifdef __ARM
 	common_enable.clear();			// enable gShield common enable
@@ -507,7 +507,6 @@ static void _load_move()
 #ifdef __AVR
 		TIMER_DDA.PER = st_pre.dda_period;
 #endif
-
 		//**** MOTOR_1 LOAD ****
 
 		// These sections are somewhat optimized for execution speed. The whole load operation
@@ -553,8 +552,7 @@ static void _load_move()
 		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
 		ACCUMULATE_ENCODER(MOTOR_1);
 
-		//**** MOTOR_2 LOAD ****
-
+#if (MOTORS >= 2)
 		if ((st_run.mot[MOTOR_2].substep_increment = st_pre.mot[MOTOR_2].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_2].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
@@ -577,9 +575,8 @@ static void _load_move()
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_2);
-
-		//**** MOTOR_3 LOAD ****
-
+#endif
+#if (MOTORS >= 3)
 		if ((st_run.mot[MOTOR_3].substep_increment = st_pre.mot[MOTOR_3].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_3].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_3].accumulator_correction_flag = false;
@@ -602,9 +599,8 @@ static void _load_move()
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_3);
-
-		//**** MOTOR_4 LOAD ****
-
+#endif
+#if (MOTORS >= 4)
 		if ((st_run.mot[MOTOR_4].substep_increment = st_pre.mot[MOTOR_4].substep_increment) != 0) {
 			if (st_pre.mot[MOTOR_4].accumulator_correction_flag == true) {
 				st_pre.mot[MOTOR_4].accumulator_correction_flag = false;
@@ -627,6 +623,7 @@ static void _load_move()
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_4);
+#endif
 
 		//**** do this last ****
 
@@ -672,11 +669,8 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to happen
-	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
-	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
-//	} else if (segment_time < EPSILON) { 
-//		printf("Min TIME: time%f  (in st_prep())\n", (double)segment_time);
-//		return (STAT_MINIMUM_TIME_MOVE);
+	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// ever supposed to happen
+	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));			// ever supposed to happen
 	}
 
 	// setup segment parameters
@@ -697,7 +691,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position
-		
+
 		if (travel_steps[motor] >= 0) {					// positive direction
 			st_pre.mot[motor].direction = DIRECTION_CW ^ st_cfg.mot[motor].polarity;
 			st_pre.mot[motor].step_sign = 1;
@@ -874,7 +868,7 @@ stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
 }
 
 stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
-{ 
+{
 	if (cmd->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
 	set_ui8(cmd);
 
@@ -907,7 +901,8 @@ stat_t st_set_pl(cmdObj_t *cmd)			// motor power level
  * Calling me or md with NULL will enable or disable all motors
  * Setting a value of 0 will enable or disable all motors
  * Setting a value from 1 to MOTORS will enable or disable that motor only
- */ 
+ */
+
 stat_t st_set_mt(cmdObj_t *cmd)
 {
 	st_cfg.motor_power_timeout = min(POWER_TIMEOUT_SECONDS_MAX, max(cmd->value, POWER_TIMEOUT_SECONDS_MIN));
@@ -986,4 +981,3 @@ void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
 void st_print_pl(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0pl);}
 
 #endif // __TEXT_MODE
-

@@ -145,8 +145,8 @@ void mp_flush_planner()
  *	 - mr.target	- target position of runtime segment
  *	 - mr.endpoint	- final target position of runtime segment
  *
- *  In addition to tall that you have to make sure the encoder steps agree with the 
- *	runtime position. SO if you set position 
+ *  In addition to all that you have to make sure the encoder steps agree with the
+ *	runtime position.
  *
  *	Note that position is set immediately when called and may not be not an accurate 
  *	representation of the tool position. The motors are still processing the 
