@@ -46,6 +46,15 @@ static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
 static void _init_forward_diffs(float t0, float t2);
 
+/*************************************************************************
+ * mp_init_runtime()
+ */
+
+void mp_init_runtime()
+{
+	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
+	planner_init_assertions();
+}
 
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
@@ -145,23 +154,6 @@ stat_t mp_exec_move()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
-
-void mp_init_runtime()
-{
-	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-	planner_init_assertions();
-}
-
-void mp_reset_step_counts()
-{
-	for (uint8_t i=0; i < MOTORS; i++) {
-		mr.target_steps[i] = 0;
-		mr.position_steps[i] = 0;
-		mr.commanded_steps[i] = 0;
-		mr.following_error[i] = 0;	
-		st_pre.mot[i].corrected_steps = 0;
-	}
-}
 
 stat_t mp_exec_aline(mpBuf_t *bf)
 {

@@ -27,11 +27,7 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "planner.h"
-#include "stepper.h"
 #include "encoder.h"
-#include "kinematics.h"
-#include "hardware.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -74,21 +70,16 @@ stat_t encoder_test_assertions()
 }
 
 /*
- * en_set_encoders() - set encoder values to a current position
+ * en_set_encoder_steps() - set encoder values to a current step count
  *
- *	Sets the encoder_position steps to match the axis_position. 
- *	This establishes the "step grid" relative to the current machine position. 
- *	Note that encoder_position is in integer steps, so it's not an exact 
- *	representation of machine position except if the machine is at zero. 
+ *	Sets the encoder_position steps. Takes floating point steps as input,
+ *	writes integer steps. So it's not an exact representation of machine 
+ *	position except if the machine is at zero. 
  */
 
-void en_set_encoders(float axis_position[])
+void en_set_encoder_steps(uint8_t motor, float steps)
 {
-	float step_position[MOTORS];
-	ik_kinematics(axis_position, step_position);	// convert axes to steps in floating point
-	for (uint8_t motor=0; motor<MOTORS; motor++) {
-		en.en[motor].encoder_steps = (int32_t)round(step_position[motor]);
-	}
+	en.en[motor].encoder_steps = (int32_t)round(steps);
 }
 
 /* 

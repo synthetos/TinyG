@@ -147,12 +147,13 @@ uint8_t stepper_isbusy()
 void st_reset()
 {
 	float zero[] = {0,0,0,0,0,0};
-	en_set_encoders(zero);
-	mp_reset_step_counts();						// step counters are in motor space: resets all step counters
+	mp_set_step_counts(zero);
+
 	for (uint8_t motor=0; motor<MOTORS; motor++) {
 		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
 		st_run.mot[motor].substep_accumulator = 0;	// will become max negative during per-motor setup;
-		st_pre.mot[motor].corrected_steps = 0;
+		st_pre.mot[motor].corrected_steps = 0;		// diagnostic only - no action effect
+//		en_set_encoder_steps(motor, 0);				// ++++++ enable this and test it
 	}
 }
 
@@ -891,6 +892,28 @@ stat_t st_set_pl(cmdObj_t *cmd)			// motor power level
 	_set_motor_power_level(motor, cmd->value);
 	return(STAT_OK);
 }
+
+/*
+ * st_set_pl() - set motor power level
+ *
+ *	Input value may vary from 0 to 100. The setting is scaled to allowable PWM range.
+ *	This function sets both the scaled and dynamic power levels, and applies the 
+ *	scaled value to the vref.
+ */
+#ifdef __ARM
+stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
+{
+	if (cmd->value < (float)0) cmd->value = 0;
+	if (cmd->value > (float)100) cmd->value = 100;
+	set_flt(cmd);	// set power_setting value in the motor config struct (st)
+	
+	uint8_t motor = _get_motor(cmd->index);
+	st_cfg.mot[motor].power_level_scaled = (cmd->value * POWER_LEVEL_SCALE_FACTOR);
+	st_run.mot[motor].power_level_dynamic = (st_cfg.mot[motor].power_level_scaled);
+	_set_motor_power_level(motor, st_cfg.mot[motor].power_level_scaled);
+	return(STAT_OK);
+}
+#endif
 
 /* GLOBAL FUNCTIONS (SYSTEM LEVEL)
  *

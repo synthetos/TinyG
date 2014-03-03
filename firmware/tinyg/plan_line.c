@@ -31,11 +31,9 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
-#include "kinematics.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
-//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -86,16 +84,16 @@ uint8_t mp_get_runtime_busy()
  *	This function uses constant jerk motion equations to plan acceleration 
  *	and deceleration. The jerk is the rate of change of acceleration; it's
  *	the 1st derivative of acceleration, and the 3rd derivative of position. 
- *	Jerk is a measure of impact to the machine. Controlling jerk smoothes 
+ *	Jerk is a measure of impact to the machine. Controlling jerk smooths 
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
  *
- * 	Note: All math is done in absolute coordinates using single precision 
+ * 	Note 1: All math is done in absolute coordinates using single precision
  *	floating point (float).
  *
- *	Note: Returning a status that is not STAT_OK means the endpoint is NOT
- *	advanced. So lines that are too short to move will accumulate and get 
- *	executed once the accumulated error exceeds the minimums 
+ *	Note 2: Returning a status that is not STAT_OK means the endpoint is NOT
+ *	advanced. So lines that are too short to move will accumulate and get
+ *	executed once the accumulated error exceeds the minimums
  */
 
 static float _get_relative_length(const float Vi, const float Vt, const float jerk)
@@ -195,7 +193,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 		}
 	}
 
-	// alternate #3 - relative length computed inline as an abbreviated expession
+	// alternate #3 - relative length computed inline as an abbreviated expression
 	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
 		if (fp_NOT_ZERO(bf->unit[axis])) {
 			axis_relative_length = fabs(bf->unit[axis] * cm.a[axis].jerk_max);
@@ -339,12 +337,6 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 								 (bp->entry_velocity + bp->delta_vmax) );
 
 		_calculate_trapezoid(bp);
-
-		// test for optimally planned trapezoids - only need to check various exit conditions
-//		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) ||
-//		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
-//			bp->replannable = false;
-//		}
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||

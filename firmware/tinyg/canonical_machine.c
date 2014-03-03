@@ -3,6 +3,7 @@
  * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2014 Alden S Hart, Jr.
+ * Copyright (c) 2014 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -206,10 +207,6 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
 }
 
-/*
- * cm_set_model_linenum() 	  - set line number in the model
- */
-
 void cm_set_model_linenum(uint32_t linenum)
 {
 	cm.gm.linenum = linenum;				// you must first set the model line number,
@@ -272,6 +269,7 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 /*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
  */
+
 void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -285,6 +283,7 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
  * NOTE: Machine position is always returned in mm mode. No units conversion is performed
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
+
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
 	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
@@ -320,6 +319,73 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  * Core functions supporting the canonical machining functions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
+/*
+ * cm_set_position_by_axis()   - set the position of a single axis in the model, planner and runtime
+ * cm_set_position_by_vector() - set one or more positions in the model, planner and runtime
+ *
+ *	These commands sets an axis/axes to a position provided as an argument. 
+ *	This is useful for setting origins for homing, probing, G28.3 and other operations.
+ *
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *	!!!!! DO NOT CALL THESE FUNCTIONS WHILE IN A MACHINING CYCLE !!!!!
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *
+ *	More specifically, do not call these functions if there are any moves in the planner
+ *	or if the runtime is moving. The system must be quiescent or you will introduce positional 
+ *	errors. This is true because the planned / running moves have a different reference frame 
+ *	than the one you are now going to set. These functions should only be called during 
+ *	initialization sequences and during cycles (such as homing cycles) when you know there 
+ *	are no more moves in the planner and that all motion has stopped. Use cm_get_runtime_busy() if in doubt.
+ */
+
+void cm_set_position_by_axis(uint8_t axis, float position)
+{
+	cm.gmx.position[axis] = position;
+	cm.gm.target[axis] = position;
+	mp_set_planner_position_by_axis(axis, position);
+}
+
+void cm_set_position_by_vector(float position[], float flags[])
+{
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flags[axis])) {
+			cm.gmx.position[axis] = position[axis];
+			cm.gm.target[axis] = position[axis];
+		}
+	}
+	mp_set_planner_position_by_vector(position, flags);
+}
+
+/* 
+ * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
+ *
+ * 	This routine sets the endpoint position in the gcode model if the move was successfully 
+ *	completed (no errors). Leaving the endpoint position alone for errors allows 
+ *	too-short-lines to accumulate into longer lines (line aggregation).
+ *
+ * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
+ *	as the move is executed and the position is now the target. In reality the planner and 
+ *	steppers will still be processing the action and the real tool position is still close 
+ *	to the starting point. 
+ */
+
+void cm_set_model_position(stat_t status)
+{
+	// Even if we are coalescing the move need to keep the gcode model correct
+	if (status == STAT_OK) {
+		copy_vector(cm.gmx.position, cm.gm.target);
+	}
+}
+
+void cm_set_model_position_from_runtime(stat_t status)
+{
+	// Even if we are coalescing the move need to keep the gcode model correct
+	if (status == STAT_OK) {
+		copy_vector(cm.gmx.position, mr.gm.target);
+	}
+}
+
 /* 
  * cm_set_model_target() - set target vector in GM model
  *
@@ -384,38 +450,8 @@ void cm_set_model_target(float target[], float flag[])
 	}
 }
 
-/* 
- * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
- * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
- *
- * 	This routine sets the endpoint position in the gcode model if the move was successfully 
- *	completed (no errors). Leaving the endpoint position alone for errors allows 
- *	too-short-lines to accumulate into longer lines (line aggregation).
- *
- * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
- *	as the move is executed and the position is now the target. In reality the planner and 
- *	steppers will still be processing the action and the real tool position is still close 
- *	to the starting point. 
- */
-void cm_set_model_position(stat_t status)
-{
-	// Even if we are coalescing the move need to keep the gcode model correct
-	if (status == STAT_OK) {
-		copy_vector(cm.gmx.position, cm.gm.target);
-	}
-}
-
-void cm_set_model_position_from_runtime(stat_t status)
-{
-	// Even if we are coalescing the move need to keep the gcode model correct
-	if (status == STAT_OK) {
-		copy_vector(cm.gmx.position, mr.gm.target);
-	}
-}
-
 /*
- * cm_set_move_times() 	- capture optimal and minimum move times into the gcode_state
- * _get_move_times() 	- get minimum and optimal move times
+ * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
  *
  *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
  *	on each participating axis - regardless of the feed rate requested. The minimum time is 
@@ -548,6 +584,9 @@ stat_t cm_test_soft_limits(float target[])
  * CANONICAL MACHINING FUNCTIONS
  *	Values are passed in pre-unit_converted state (from gn structure)
  *	All operations occur on gm (current model state)
+ *
+ * These are organized by section number (x.x.x) in the order they are
+ * found in NIST RS274 NGCv3
  ************************************************************************/
 
 /****************************************** 
@@ -599,6 +638,7 @@ void canonical_machine_init()
  * canonical_machine_init_assertions()
  * canonical_machine_test_assertions() - test assertions, return error code if violation exists
  */
+
 void canonical_machine_init_assertions(void)
 {
 	cm.magic_start = MAGICNUM;
@@ -618,28 +658,12 @@ stat_t canonical_machine_test_assertions(void)
 }
 
 /*
- * cm_soft_alarm() - alarm state; send an exception report and stop processing input
  * cm_hard_alarm() - alarm state; send an exception report and shut down machine
+ * cm_soft_alarm() - alarm state; send an exception report and stop processing input
  * cm_clear() 	   - clear soft alarm
  *
  *	Fascinating: http://www.cncalarms.com/
  */
-stat_t cm_soft_alarm(stat_t status)
-{
-	rpt_exception(status);					// send alarm message
-	cm.machine_state = MACHINE_ALARM;
-	return (status);
-}
-
-stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
-{
-	if (cm.cycle_state == CYCLE_OFF) {
-		cm.machine_state = MACHINE_PROGRAM_STOP;
-	} else {
-		cm.machine_state = MACHINE_CYCLE;
-	}
-	return (STAT_OK);
-}
 
 stat_t cm_hard_alarm(stat_t status)
 {
@@ -659,39 +683,29 @@ stat_t cm_hard_alarm(stat_t status)
 	return (status);
 }
 
+stat_t cm_soft_alarm(stat_t status)
+{
+	rpt_exception(status);					// send alarm message
+	cm.machine_state = MACHINE_ALARM;
+	return (status);
+}
+
+stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
+{
+	if (cm.cycle_state == CYCLE_OFF) {
+		cm.machine_state = MACHINE_PROGRAM_STOP;
+	} else {
+		cm.machine_state = MACHINE_CYCLE;
+	}
+	return (STAT_OK);
+}
+
 /**************************
  * Representation (4.3.3) *
  **************************/
-/*
- * Helper functions 
- */
- /*
- * cm_set_axis_position() - set the position of a single axis in the model, planner and runtime
- *
- *	This command sets an axis to a position provided as an argument. 
- *	This is useful for setting origins for homing, probing, G28.3 and other operations.
- *
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *	!!!!! DO NOT CALL THIS FUNCTION WHILE IN A MACHINING CYCLE !!!!!
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *
- *	More specifically, do not call this function if there are any moves in the planner.
- *	The system must be quiescent or you will introduce positional errors. This is true
- *	because the planned moves had a different reference frame than the one you are now
- *	going to set. This should only be called during initialization sequences and during
- *	cycles (such as homing cycles) when you know there are no more moves in the planner.
- */
 
-void cm_set_axis_position(uint8_t axis, const float position)
-{
-	cm.gmx.position[axis] = position;
-	cm.gm.target[axis] = position;
-	mp_set_planner_position(axis, position);
-	mp_set_runtime_position(axis, position);
-}
-
-/*************************************************************
- * Representation functions that affect the Gcode model only
+/**************************************************************************
+ * Representation functions that affect the Gcode model only (asynchronous)
  *
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
@@ -742,9 +756,8 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	return (STAT_OK);
 }
 
-/****************************************************************************
- * Representation functions that affect gcode model and are queued to planner
- *
+/******************************************************************************************
+ * Representation functions that affect gcode model and are queued to planner (synchronous)
  */
 /*
  * cm_set_coord_system() - G54-G59 
@@ -1242,19 +1255,30 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
+	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
+
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();		// flush serial queues
 #endif
+
 	mp_flush_planner();				// flush planner queue
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
 
+//+++++++++++++++++ testing
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		cm_set_position_by_axis(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
+	}
+
+/* +++++++++++++ original code
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 		cm.gmx.position[axis] = mp_get_runtime_absolute_position(axis);
 		cm.gm.target[axis] = cm.gmx.position[axis];
 	}
+*/
+
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, value);			// finalize now, not later
 	return (STAT_OK);
@@ -1710,7 +1734,6 @@ stat_t cm_run_home(cmdObj_t *cmd)
  * Debugging Commands
  *
  * cm_dam() - dump active model
- * cm_drm() - dump runtime model
  */
 
 stat_t cm_dam(cmdObj_t *cmd)

@@ -56,11 +56,11 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
+#include "kinematics.h"
 #include "stepper.h"
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -134,39 +134,68 @@ void mp_flush_planner()
 }
 
 /*
- * mp_set_planner_position() - sets both planner position by axis (mm struct)
- * mp_set_runtime_position() - sets both runtime position by axis (mr struct)
+ * mp_set_planner_position_by_axis()   - set planner and runtime positions from a single axis
+ * mp_set_planner_position_by_vector() - set runtime and runtime positions from a position vector
  *
- * 	Keeping track of position is complicated by the fact that moves exist in 
- *	several reference frames. The scheme to keep this straight is:
+ * 	In order to set the planner and runtime positions the following all need to line up:
  *
- *	 - mm.position	- start and end position for planning
- *	 - mr.position	- current position of runtime segment
- *	 - mr.target	- target position of runtime segment
- *	 - mr.endpoint	- final target position of runtime segment
+ *	- mm.position		 - current planner position
+ *	- mr.position		 - current runtime position
+ *	- mr.target_steps	 - next runtime position as steps
+ *	- mr.position_steps  - current runtime position as steps (one segment behind the target)
+ *	- mr.commanded_steps - steps 2 segments behind target steps (aligns with encoders)
+ *  - encoder steps		 - current encoder position (should agree with commanded steps)
  *
- *  In addition to all that you have to make sure the encoder steps agree with the
- *	runtime position.
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *	!!!!! DO NOT CALL THESE FUNCTIONS WHILE IN A MACHINING CYCLE !!!!!
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  *
- *	Note that position is set immediately when called and may not be not an accurate 
- *	representation of the tool position. The motors are still processing the 
- *	action and the real tool position is still close to the starting point.
+ *	More specifically, do not call these functions if there are any moves in the planner
+ *	or if the runtime is moving. The system must be quiescent or you will introduce positional
+ *	errors. This is true because the planned / running moves have a different reference frame
+ *	than the one you are now going to set. These functions should only be called during
+ *	initialization sequences and during cycles (such as homing cycles) when you know there
+ *	are no more moves in the planner and that all motion has stopped. Use cm_get_runtime_busy() if in doubt.
+ */
+/*
+ * mp_set_step_counts_from_position() - set step counters and encoders to the given position
+ *
+ *	Sets the step counters and encoders to match the position, which is in mm length units.
+ *	This establishes the "step grid" relative to the current machine position.
  */
 
-void mp_set_planner_position(uint8_t axis, const float position)
+void mp_set_planner_position_by_axis(uint8_t axis, float position)
 {
 	mm.position[axis] = position;
+	mr.position[axis] = position;
+	mp_set_step_counts(mr.position);
 }
 
-void mp_set_runtime_position(uint8_t axis, const float position)
+void mp_set_planner_position_by_vector(float position[], float flags[])
 {
-	mr.position[axis] = position;
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flags[axis])) {
+			mm.position[axis] = position[axis];
+			mr.position[axis] = position[axis];
+		}
+	}
+	mp_set_step_counts(mr.position);
+}
 
-	// reset all step counters and encoders - these are in motor space
-	float zero[] = {0,0,0,0,0,0};
-	en_set_encoders(zero);
-//	en_set_encoders(position);
-	mp_reset_step_counts();
+void mp_set_step_counts(float position[])
+{
+	float step_position[MOTORS];
+	ik_kinematics(position, step_position);					// convert lengths to steps in floating point
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		mr.target_steps[motor] = step_position[motor];
+		mr.position_steps[motor] = step_position[motor];
+		mr.commanded_steps[motor] = step_position[motor];
+		en_set_encoder_steps(motor, step_position[motor]);
+
+        // These must be zero:
+        mr.following_error[motor] = 0;
+        st_pre.mot[motor].corrected_steps = 0;
+    }
 }
 
 /************************************************************************************
