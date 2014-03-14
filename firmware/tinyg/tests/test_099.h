@@ -2,11 +2,42 @@
  * test_099.h - Arbitrary test file for debugging
  */
 
+const char test_99[] PROGMEM = "\
+G1 F6200 x100 y1.25 z1.25 a1.25\n\
+x0 y0 z0 a0\n\
+G1 F6200 x100 y1.25 z1.25 a1.25\n\
+x0 y0 z0 a0\n\
+";
+
+const char test_98[] PROGMEM = "\
+G1 F6200 x100 y1.25 z1.25 a1.25\n\
+x0 y0 z0 a0\n\
+G1 F6200 x100 y1.25 z6.25 a1.25\n\
+x0 y0 z0 a0\n\
+";
+
+const char test_97[] PROGMEM = "\
+g0 y0.625 z0.625 a0.625\n\
+g4 P0.75\n\
+G1 F4000 y80 z80 a80\n\
+y0.625 z0.625 a0.625\n\
+g4 P0.75\n\
+y0 z0 a0\n\
+";
+
+const char test_96[] PROGMEM = "\
+G1 F3000 y20\n\
+z20 a20\n\
+y0 a0\n\
+y20 z0 a20\n\
+a0 y0\n\
+";
+
+/*
 // Ultimaker robot short line test
 //N1517 G0 X109.77 Y96.32 Z0.60
 //N1519 G1 F2520 X109.94 Y96.37 A22.20145
 //N1549 G1 X110.50 Y107.36 A22.28936
-
 
 const char test_98[] PROGMEM = "\
 N8G21\n\
@@ -50,7 +81,7 @@ N1547G1X0Y8.56\n\
 N1548G1X0Y8.66\n\
 N1549G1X0Y9.79\n\
 M30";
-
+*/
 /*
 N1557G1X-1.23Y11.13\n\
 N1558G1X-1.25Y11.13\n\
