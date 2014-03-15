@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		418.08	// back-port changes from g2 build 033.07 - position setting updates & others
+#define TINYG_FIRMWARE_BUILD   		419.01	// pendulum setup for NOVA 7mini-maker faire
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
