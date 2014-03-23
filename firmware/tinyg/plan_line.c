@@ -101,7 +101,7 @@ static float _get_relative_length(const float Vi, const float Vt, const float je
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) / jerk));
 }
 
-#define __NEW_JERK
+//#define __NEW_JERK
 
 stat_t mp_aline(const GCodeState_t *gm_line)
 {
