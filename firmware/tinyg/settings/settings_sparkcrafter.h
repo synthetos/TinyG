@@ -95,8 +95,8 @@
 
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
-#define M4_TRAVEL_PER_REV		1.25	// mm. sparkcrafter has this at 1.00
-#define M4_MICROSTEPS			1
+#define M4_TRAVEL_PER_REV		1.00	// mm. sparkcrafter has this at 1.00mm. Shapeoko requires 1.25mm
+#define M4_MICROSTEPS			4
 #define M4_POLARITY				1
 #define M4_POWER_MODE			1
 
@@ -125,8 +125,8 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			500 				// was 2000
-#define X_FEEDRATE_MAX			2000				// xfr 		G1 max feed rate in mm/min
+#define X_VELOCITY_MAX			2000 				// was 500
+#define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
 #define X_TRAVEL_MAX			450					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000				// xjm		yes, that's "5 billion" mm/(min^3)
@@ -140,8 +140,8 @@
 #define X_ZERO_BACKOFF			323					// xzb		mm
 
 #define Y_AXIS_MODE				AXIS_STANDARD
-#define Y_VELOCITY_MAX			500
-#define Y_FEEDRATE_MAX			2000
+#define Y_VELOCITY_MAX			2000
+#define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN			0
 #define Y_TRAVEL_MAX			800
 #define Y_JERK_MAX				5000
@@ -155,8 +155,8 @@
 #define Y_ZERO_BACKOFF			220.5
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			200					// was 200
-#define Z_FEEDRATE_MAX			200
+#define Z_VELOCITY_MAX			20					// was 200
+#define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			0
 #define Z_TRAVEL_MAX			75
 #define Z_JERK_MAX				10					// 50,000,000

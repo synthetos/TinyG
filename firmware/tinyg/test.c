@@ -81,9 +81,9 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
 #ifdef __TEST_99
-		case 96: { xio_open(XIO_DEV_PGM, PGMFILE(&test_96),PGM_FLAGS); break;}
-		case 97: { xio_open(XIO_DEV_PGM, PGMFILE(&test_97),PGM_FLAGS); break;}
-		case 98: { xio_open(XIO_DEV_PGM, PGMFILE(&test_98),PGM_FLAGS); break;}
+//		case 96: { xio_open(XIO_DEV_PGM, PGMFILE(&test_96),PGM_FLAGS); break;}
+//		case 97: { xio_open(XIO_DEV_PGM, PGMFILE(&test_97),PGM_FLAGS); break;}
+//		case 98: { xio_open(XIO_DEV_PGM, PGMFILE(&test_98),PGM_FLAGS); break;}
 		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
 #endif
 		default: {
@@ -110,20 +110,20 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("$test=99\n");		// run test file (doesn't work if text mode is disabled)
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
 //	xio_queue_RX_string_usb("{test:98}\n");		// run test file
-//	xio_queue_RX_string_usb("{test:99}\n");		// run test file
+	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
 //	xio_queue_RX_string_usb("g20\n");
 //	xio_queue_RX_string_usb("g91 g1 f30\n");
 //	xio_queue_RX_string_usb("x.1 y.1\n");
 
 
-	xio_queue_RX_string_usb("N1 G21\n");
-	xio_queue_RX_string_usb("N2 G90\n");
-	xio_queue_RX_string_usb("N3 G28.3 Z0\n");
-	xio_queue_RX_string_usb("N4 G0 Z2\n");
+//	xio_queue_RX_string_usb("N1 G21\n");
+//	xio_queue_RX_string_usb("N2 G90\n");
+//	xio_queue_RX_string_usb("N3 G28.3 Z0\n");
+//	xio_queue_RX_string_usb("N4 G0 Z2\n");
 //	xio_queue_RX_string_usb("N5 G28.2 X0 Y0\n");
-	xio_queue_RX_string_usb("N6 G0 Z0\n");
-	xio_queue_RX_string_usb("N7 G28.3 X-10 Y40 Z5.20\n");
+//	xio_queue_RX_string_usb("N6 G0 Z0\n");
+//	xio_queue_RX_string_usb("N7 G28.3 X-10 Y40 Z5.20\n");
 
 /*
 	xio_queue_RX_string_usb("N8G21\n");

@@ -89,8 +89,8 @@ enum sectionState {
 	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
 #endif
 #ifdef __ARM
-	#define NOM_SEGMENT_USEC 	((float)4000)		// nominal segment time
-	#define MIN_SEGMENT_USEC 	((float)1500)		// minimum segment time / minimum move time
+	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
+	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
 	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
 #endif
 

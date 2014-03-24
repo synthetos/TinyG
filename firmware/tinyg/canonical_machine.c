@@ -974,6 +974,13 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
+
+	// Gcode hinting. If Continuous mode preserve speed at the expense of path integrity
+	// If Exact Path or Exact Stop mode slow move down to be able to execute the move
+	if (cm.gm.path_control != PATH_CONTINUOUS) {
+		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
+	}
+
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
 	cm_set_model_position(status);				// update position if the move was successful

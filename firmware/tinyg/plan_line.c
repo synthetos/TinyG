@@ -113,7 +113,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	float length = get_axis_vector_length(gm_line->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 	if (gm_line->move_time < MIN_TIME_MOVE) {
-		printf("######## line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
+		printf("######## aline() line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
