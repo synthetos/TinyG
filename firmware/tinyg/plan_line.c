@@ -475,6 +475,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else {
 				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
+			printf("######## trapezoid - TAIL SKIP\n");
 			return;
 		}
 		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
@@ -489,6 +490,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			} else {
 				bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 			}
+			printf("######## trapezoid - HEAD SKIP\n");
 			return;
 		}
 	}
@@ -506,6 +508,15 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length/2;
 			bf->tail_length = bf->head_length;
 			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(bf->entry_velocity, bf->head_length, bf));
+
+			// ++++++ diagnostics
+			if (bf->head_length <= MIN_HEAD_LENGTH) {
+				printf("######## trapezoid - HT symmetric case - HEAD VIOLATION\n");
+			}
+			if (bf->tail_length <= MIN_TAIL_LENGTH) {
+				printf("######## trapezoid - HT symmetric case - TAIL VIOLATION\n");
+			}
+			// ++++++ to here
 			return;
 		}
 
@@ -538,6 +549,14 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 		}
+		// ++++++ diagnostics
+		if (bf->head_length <= MIN_HEAD_LENGTH) {
+			printf("######## trapezoid - HT' asymmetric case - HEAD VIOLATION\n");
+		}
+		if (bf->tail_length <= MIN_TAIL_LENGTH) {
+			printf("######## trapezoid - HT' asymmetric case - TAIL VIOLATION\n");
+		}
+		// ++++++ to here
 		return;
 	}
 
@@ -565,6 +584,20 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
+
+
+	// ++++++ diagnostics
+	if (fp_NOT_ZERO(bf->head_length) && (bf->head_length <= MIN_HEAD_LENGTH)) {
+		printf("######## trapezoid - Normal case - HEAD VIOLATION\n");
+	}
+	if (fp_NOT_ZERO(bf->body_length) && (bf->body_length <= MIN_BODY_LENGTH)) {
+		printf("######## trapezoid - Normal case - BODY VIOLATION\n");
+	}
+	if (fp_NOT_ZERO(bf->tail_length) && (bf->tail_length <= MIN_TAIL_LENGTH)) {
+		printf("######## trapezoid - Normal case - TAIL VIOLATION\n");
+	}
+	// ++++++ to here
+
 }
 
 /*	

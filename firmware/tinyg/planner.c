@@ -221,7 +221,11 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 	mpBuf_t *bf;
 
 	// this error is not reported as buffer availability was checked upstream in the controller
-	if ((bf = mp_get_write_buffer()) == NULL) return;
+//	if ((bf = mp_get_write_buffer()) == NULL) return;
+	if ((bf = mp_get_write_buffer()) == NULL) {
+		cm_hard_alarm(STAT_BUFFER_FULL_FATAL);
+		return;
+	}
 
 	bf->move_type = MOVE_TYPE_COMMAND;
 	bf->bf_func = _exec_command;		// callback to planner queue exec function
@@ -254,8 +258,8 @@ stat_t mp_dwell(float seconds)
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_write_buffer()) == NULL) {	// get write buffer or fail
-		return (STAT_BUFFER_FULL_FATAL);		// (not ever supposed to fail)
+	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
+		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// (not ever supposed to fail)
 	}
 	bf->bf_func = _exec_dwell;					// register callback to dwell start
 	bf->gm.move_time = seconds;					// in seconds, not minutes
@@ -357,6 +361,7 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 		mb.w = w->nx;
 		return (w);
 	}
+	printf("######## mp_get_write_buffer() failed\n");
 	return (NULL);
 }
 /* NOT USED
