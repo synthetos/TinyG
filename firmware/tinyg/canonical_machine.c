@@ -1656,8 +1656,9 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-//	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
-	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
+//++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
+	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+//	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
