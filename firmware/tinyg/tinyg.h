@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		420.03	// diagnosing sparkcrafter Z problem, Issue #76. Changed settings to March 23, 3:00 AM forum post values
+#define TINYG_FIRMWARE_BUILD   		420.04	// Issue76 branch - testing trapezoid generator
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
