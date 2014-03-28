@@ -43,6 +43,7 @@ extern "C"{
 
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _calculate_trapezoid(mpBuf_t *bf);
+static void _replan_trapezoid(mpBuf_t *bf);
 static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
 static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
@@ -112,10 +113,10 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	// trap error conditions
 	float length = get_axis_vector_length(gm_line->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
-	if (gm_line->move_time < MIN_TIME_MOVE) {
-		printf("######## aline() line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
-		return (STAT_MINIMUM_TIME_MOVE);
-	}
+//	if (gm_line->move_time < MIN_TIME_MOVE) {
+//		printf("### aline() line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
+//		return (STAT_MINIMUM_TIME_MOVE);
+//	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
@@ -336,7 +337,8 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 								  bp->nx->braking_velocity, 
 								 (bp->entry_velocity + bp->delta_vmax) );
 
-		_calculate_trapezoid(bp);
+//		_calculate_trapezoid(bp);
+		_replan_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
@@ -442,20 +444,65 @@ static void _reset_replannable_list()
  *	The order of the cases/tests in the code is pretty important
  */
 
+static uint8_t __calculate_trapezoid(mpBuf_t *bf);
+
+static const char trap_00[] PROGMEM = "NULL";
+static const char trap_01[] PROGMEM = "SKIP HEAD";
+static const char trap_02[] PROGMEM = "SKIP BODY";
+static const char trap_03[] PROGMEM = "SKIP TAIL";
+static const char trap_04[] PROGMEM = "HT SYMMETRIC HEAD VIOLATION";
+static const char trap_05[] PROGMEM = "HT SYMMETRIC TAIL VIOLATION";
+static const char trap_06[] PROGMEM = "HT ASYMMETRIC HEAD VIOLATION";
+static const char trap_07[] PROGMEM = "HT ASYMMETRIC TAIL VIOLATION";
+
+static const char trap_08[] PROGMEM = "Single segment body from head";
+static const char trap_09[] PROGMEM = "Single segment body";
+static const char trap_10[] PROGMEM = "Single segment body from tail";
+static const char trap_11[] PROGMEM = "HT asymmetric head only";
+static const char trap_12[] PROGMEM = "HT asymmetric tail only";
+
+static const char trap_13[] PROGMEM = "Multi segment head";
+static const char trap_14[] PROGMEM = "Multi segment body";
+static const char trap_15[] PROGMEM = "Multi segment tail";
+static const char trap_16[] PROGMEM = "HT symmetric ok";
+static const char trap_17[] PROGMEM = "HT asymmetric ok";
+static const char trap_18[] PROGMEM = "Requested fit";
+static const char trap_19[] PROGMEM = "Iteration threshold exceeded";
+
+static const char *const trap_msg[] PROGMEM = {
+	trap_00, trap_01, trap_02, trap_03, trap_04, trap_05, trap_06, trap_07, trap_08, trap_09,
+	trap_10, trap_11, trap_12, trap_13, trap_14, trap_15, trap_16, trap_17, trap_18, trap_19
+};
+
+static void _calculate_trapezoid(mpBuf_t *bf) 
+{
+	uint8_t status = __calculate_trapezoid(bf);
+//	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY) {
+	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION) {	
+		printf("### TRAP line: %lu ", bf->gm.linenum);
+		printf("time: %f ", (double)bf->gm.move_time);
+		printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
+	}
+}
+
+static void _replan_trapezoid(mpBuf_t *bf) 
+{
+	uint8_t status = __calculate_trapezoid(bf);
+//	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY) {
+	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION) {	
+		printf("### REPLAN line: %lu ", bf->gm.linenum);
+		printf("time: %f ", (double)bf->gm.move_time);
+		printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
+	}
+}
+
+
 // The minimum lengths are dynamic and depend on the velocity
 // These expressions evaluate to the minimum lengths for the current velocity settings
 // Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
 #define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity))
 #define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
 #define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
-
-static uint8_t __calculate_trapezoid(mpBuf_t *bf);
-
-static void _calculate_trapezoid(mpBuf_t *bf) 
-{
-	uint8_t status = __calculate_trapezoid(bf);
-	printf("###### line: %lu  trapezoid %u\n", bf->gm.linenum, status);
-}
 
 /*
  * _finish_head_only()
@@ -531,10 +578,28 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
 
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
+/*
 	if (bf->length < minimum_length) {		// way too short. Need to skip
-		return(TRAPEZOID_SKIP_BODY);		// tell runtime to skip the block
+		bf->cruise_velocity = (bf->entry_velocity, bf->exit_velocity) /2;
+		if (bf->length < MIN_BODY_LENGTH) {
+			printf(#### line: %lu, body len: %d\n", bf->gm.linenum, bf->length)
+			return(TRAPEZOID_SKIP_BODY);		// tell runtime to skip the block
+		}
 	}
-
+*/
+/*
+	if (bf->length < minimum_length) {			// way too short. Need to skip
+		bf->move_state = MOVE_SKIP;				// tell runtime to skip the block
+		bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity) / 2;
+		printf("Len: %F, Jrk:%f, Vi:%f, Vx:%f\n", 
+			(double)bf->length, 
+			(double)bf->jerk,
+			(double)bf->entry_velocity, 
+			(double)bf->exit_velocity);
+		bf->gm.move_time = bf->length / bf->cruise_velocity;
+		return(TRAPEZOID_SKIP_BODY);
+	}
+*/
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
 		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)

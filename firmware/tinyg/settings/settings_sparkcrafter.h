@@ -104,7 +104,8 @@
 #define M4_STEP_ANGLE			1.8
 //#define M4_TRAVEL_PER_REV		1.00	// sparkcrafter has this at 1.00mm. Shapeoko requires 1.25mm
 #define M4_TRAVEL_PER_REV		1.25	// 1.25 is the right value fo rthe shapeoko
-#define M4_MICROSTEPS			1		// was 4 in earlier settings
+//#define M4_MICROSTEPS			1		// was 4 in earlier settings
+#define M4_MICROSTEPS			8
 #define M4_POLARITY				1
 #define M4_POWER_MODE			1
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -133,10 +134,11 @@
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
 #define X_TRAVEL_MAX			450					// xtm		travel between switches or crashes
 #define X_JERK_MAX				5000				// xjm		yes, that's "5 billion" mm/(min^3)
+//#define X_JERK_MAX				500				// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JERK_HOMING			20000				// xjh
 #define X_JUNCTION_DEVIATION	0.01				// xjd
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT // xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-#define X_SWITCH_MODE_MAX 		SW_MODE_LIMIT		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING		 // xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
 #define X_LATCH_VELOCITY		300					// xlv		mm/min
 #define X_LATCH_BACKOFF			10					// xlb		mm
@@ -148,10 +150,11 @@
 #define Y_TRAVEL_MIN			0
 #define Y_TRAVEL_MAX			800
 #define Y_JERK_MAX				5000
+//#define Y_JERK_MAX				500
 #define Y_JERK_HOMING			20000
 #define Y_JUNCTION_DEVIATION	0.01
-#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
-#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT
+#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY		3000
 #define Y_LATCH_VELOCITY		300
 #define Y_LATCH_BACKOFF			10
@@ -163,6 +166,7 @@
 #define Z_TRAVEL_MIN			0
 #define Z_TRAVEL_MAX			75
 #define Z_JERK_MAX				10					// 50,000,000
+//#define Z_JERK_MAX				500					// 50,000,000
 #define Z_JERK_HOMING			20
 #define Z_JUNCTION_DEVIATION	0.01
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
