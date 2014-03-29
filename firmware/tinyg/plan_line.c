@@ -113,7 +113,6 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	// trap error conditions
 	float length = get_axis_vector_length(gm_in->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 //	if (gm_in->move_time < MIN_TIME_MOVE) {
 //		printf("### aline() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
 //		return (STAT_MINIMUM_TIME_MOVE);
@@ -551,7 +550,7 @@ static stat_t _replan_trapezoid(mpBuf_t *bp)
  *	 - move has been reduced to a single section (head, body or tail)
  *	 - bf->length holds complete move length
  */
-
+/*
 static uint8_t _finish_head_only(mpBuf_t *bf)
 {
 	bf->tail_length = 0;
@@ -587,7 +586,7 @@ static uint8_t _finish_tail_only(mpBuf_t *bf)
 	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 	return(TRAPEZOID_TAIL_SKIP);
 }
-
+*/
 static uint8_t __calculate_trapezoid(mpBuf_t *bf) 
 {
 	bf->head_length = 0;				// initialize the lengths
@@ -646,26 +645,8 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			return(TRAPEZOID_REQUESTED_FIT);
 		}
 	}
-/*
-	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
-	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
-		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
-				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
-			}
-			bf->cruise_velocity = bf->entry_velocity;
-			return(_finish_tail_only(bf));
-		}
-		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
-				bf->exit_velocity = _get_target_velocity(bf->entry_velocity, bf->length, bf);
-			}
-			bf->cruise_velocity = bf->exit_velocity;
-			return(_finish_head_only(bf));
-		}
-	}
-*/
-	// Set head and tail lengths
+	
+	// Set head and tail lengths for next cases
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
 	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
@@ -674,21 +655,19 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 	// Rate-limited HT and HT' cases
 	if (bf->length < (bf->head_length + bf->tail_length)) { // it's rate limited
 
-		// Rate-limited HT case (symmetric case)
+		// Symmetric HT rate-limited case 
 		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
 			bf->head_length = bf->length/2;
-			if (bf->head_length <= MIN_HEAD_LENGTH) {
-				_finish_head_only(bf);	
-				return(TRAPEZOID_HT_SYMMETRIC_HEAD_REDUCTION);
-			}
-
 			bf->tail_length = bf->head_length;
 			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(bf->entry_velocity, bf->head_length, bf));
-//			if (bf->tail_length <= MIN_TAIL_LENGTH) return(TRAPEZOID_HT_SYMMETRIC_TAIL_VIOLATION);
-			return(TRAPEZOID_HT_SYMMETRIC_OK);
+
+			if (bf->head_length < MIN_HEAD_LENGTH || bf->tail_length < MIN_TAIL_LENGTH) {
+				bf->cruise_velocity = (bf->length / (2*MIN_SEGMENT_TIME)) - bf->entry_velocity;
+			}
+			return;
 		}
 
-		// Rate-limited HT' case (asymmetric) - this is relatively expensive but it's not called very often
+		// Asymmetric HT' rate-limited case (this is relatively expensive but it's not called very often)
 		// iteration trap: uint8_t i=0;
 		// iteration trap: if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
 
@@ -716,7 +695,6 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
 			bf->head_length = 0;
 			if (bf->tail_length <= MIN_TAIL_LENGTH) {
-				bf->move_state = MOVE_SKIP;			// tell runtime to skip the block
 				return(TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP);
 			}
 			return(TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY);
@@ -726,7 +704,6 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 			if (bf->head_length <= MIN_HEAD_LENGTH) {
-				bf->move_state = MOVE_SKIP;			// tell runtime to skip the block
 				return(TRAPEZOID_HT_ASYMMETRIC_HEAD_SKIP);
 			}
 			return(TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY);
