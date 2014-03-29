@@ -72,25 +72,17 @@
 #define STATUS_REPORT_INTERVAL_MS	1000		// set lower for test
 
 #undef	SR_DEFAULTS
-//#define SR_DEFAULTS "line","posx","posy","posz","mpox","mpoy","mpoz","_cs4", "_es4", "_xs4", "feed","vel","unit","coor","dist","frmo","momo","stat"
-#define SR_DEFAULTS "line","posx","posy","posz","mpox","mpoy","mpoz","_cs1", "_es1", "_xs1", "feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","mpox","mpoy","mpoz","_cs4", "_es4", "_xs4", "feed","vel","unit","coor","dist","frmo","momo","stat"
+
 
 // *** motor settings ***
-/*
+
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			1.8		// 1sa
 #define M1_TRAVEL_PER_REV		39.85	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
 #define M1_POLARITY				1		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
-#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
-*/
-#define M1_MOTOR_MAP			AXIS_X
-#define M1_STEP_ANGLE			1.8
-#define M1_TRAVEL_PER_REV		1.25	// 1.25 is the right value for the shapeoko
-#define M1_MICROSTEPS			1		// was 4 in earlier settings
-#define M1_POLARITY				1
-#define M1_POWER_MODE			1
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP			AXIS_Y
@@ -136,7 +128,7 @@
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 // *** axis settings ***
-/*
+
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX			500 				// was 500
 #define X_FEEDRATE_MAX			2000				// xfr 		G1 max feed rate in mm/min
@@ -152,23 +144,6 @@
 #define X_LATCH_VELOCITY		300					// xlv		mm/min
 #define X_LATCH_BACKOFF			10					// xlb		mm
 #define X_ZERO_BACKOFF			323					// xzb		mm
-*/
-
-#define X_AXIS_MODE				AXIS_STANDARD
-#define X_VELOCITY_MAX			200					// was 200
-#define X_FEEDRATE_MAX			200
-#define X_TRAVEL_MIN			0
-#define X_TRAVEL_MAX			75
-#define X_JERK_MAX				10					// 50,000,000
-//#define Z_JERK_MAX				500					// 50,000,000
-#define X_JERK_HOMING			20
-#define X_JUNCTION_DEVIATION	0.01
-#define X_SWITCH_MODE_MIN		SW_MODE_DISABLED
-#define X_SWITCH_MODE_MAX		SW_MODE_HOMING
-#define X_SEARCH_VELOCITY		400
-#define X_LATCH_VELOCITY		100
-#define X_LATCH_BACKOFF			2
-#define X_ZERO_BACKOFF			1
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			500

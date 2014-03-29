@@ -487,34 +487,12 @@ static void _print_diagnostics(mpBuf_t *bp, uint8_t status)
 {
 	// print diagnostics
 	printf_P(PSTR("time:%f "), 		(double)bp->gm.move_time);
-
-//	printf_P(PSTR("X position:%f "),(double)mm.position[AXIS_X]);
-//	printf_P(PSTR("X target:%f "), 	(double)bp->gm.target[AXIS_X]);
-//	printf_P(PSTR("X skip:%f "), 	(double)mm.skips[AXIS_X]);
-
-//	printf_P(PSTR("Z position:%f "),(double)mm.position[AXIS_Z]);
-//	printf_P(PSTR("Z target:%f "), 	(double)bp->gm.target[AXIS_Z]);
-//	printf_P(PSTR("Z skip:%f "), 	(double)mm.skips[AXIS_Z]);
-
 	printf_P(PSTR("Z pos:%f "),		(double)mm.position[AXIS_Z]);
 	printf_P(PSTR("Z pos:%f "),		(double)bp->pv->gm.target[AXIS_Z]);
 	printf_P(PSTR("Z tgt:%f "), 	(double)bp->gm.target[AXIS_Z]);
 	printf_P(PSTR("Z skips:%f "), 	(double)mm.skips[AXIS_Z]);
-
 	printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
 }
-
-static void _calculate_skip(mpBuf_t *bp)
-{
-	for (uint8_t axis=0; axis<AXES; axis++) {
-		if (bp->pv->move_state == MOVE_OFF) {
-			mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
-		} else {
-			mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
-		}
-	}
-}
-
 
 static stat_t _calculate_trapezoid(mpBuf_t *bp) 
 {
@@ -522,7 +500,14 @@ static stat_t _calculate_trapezoid(mpBuf_t *bp)
 
 	// record skipped moves
 	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
-		_calculate_skip(bp);
+		for (uint8_t axis=0; axis<AXES; axis++) {
+			if (bp->pv->move_state == MOVE_OFF) {
+				mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
+			} else {
+				mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
+			}
+		}
+
 		printf_P(PSTR("### TRAP line:%lu "), bp->gm.linenum);
 		_print_diagnostics(bp, status);
 		return(STAT_MINIMUM_TIME_MOVE);
@@ -534,7 +519,6 @@ static stat_t _replan_trapezoid(mpBuf_t *bp)
 {
 	uint8_t status = __calculate_trapezoid(bp);
 	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
-//		_calculate_skip(bp);
 
 		for (uint8_t axis=0; axis<AXES; axis++) {
 			if (bp->pv->move_state == MOVE_OFF) {
@@ -543,11 +527,6 @@ static stat_t _replan_trapezoid(mpBuf_t *bp)
 				mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
 			}
 		}
-
-//		for (uint8_t axis=0; axis<AXES; axis++) {
-//				mm.position[axis] -= (bp->gm.target[axis] - bp->pv->gm.target[axis]);
-//			}
-//		}
 
 		printf_P(PSTR("### REPLAN line:%lu "), bp->gm.linenum);
 		_print_diagnostics(bp, status);
@@ -590,20 +569,6 @@ static uint8_t _finish_head_only(mpBuf_t *bf)
 	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
 	return(TRAPEZOID_HEAD_SKIP);				// tell runtime to skip the block
 }
-/*
-static uint8_t _finish_body_only(mpBuf_t *bf)
-{
-	bf->head_length = 0;						// initialize the lengths
-	bf->body_length = bf->length;
-	bf->tail_length = 0;
-
-	if (bf->length >= MIN_BODY_LENGTH) {		// run this as a single or multi segment body
-		return(TRAPEZOID_MULTI_SEGMENT_BODY);
-	}
-	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_BODY_SKIP);				// tell runtime to skip the block
-}
-*/
 
 static uint8_t _finish_tail_only(mpBuf_t *bf)
 {
@@ -625,7 +590,6 @@ static uint8_t _finish_tail_only(mpBuf_t *bf)
 
 static uint8_t __calculate_trapezoid(mpBuf_t *bf) 
 {
-//	uint8_t status = TRAPEZOID_NULL;	// return code
 	bf->head_length = 0;				// initialize the lengths
 	bf->body_length = 0;
 	bf->tail_length = 0;
@@ -638,28 +602,52 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
 
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
-/*
-	if (bf->length < minimum_length) {		// way too short. Need to skip
-		bf->cruise_velocity = (bf->entry_velocity, bf->exit_velocity) /2;
-		if (bf->length < MIN_BODY_LENGTH) {
-			printf(#### line: %lu, body len: %d\n", bf->gm.linenum, bf->length)
-			return(TRAPEZOID_SKIP_BODY);		// tell runtime to skip the block
+	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
+		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
+			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
+				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
+			}
+			bf->cruise_velocity = bf->entry_velocity;
+			if (bf->length >= MIN_TAIL_LENGTH) {			// run this as a 2+ segment tail
+				bf->tail_length = bf->length;
+			} else {                                        // run this as a 1 segment body
+				bf->body_length = bf->length;
+				if (bf->length > MIN_BODY_LENGTH) {
+					// Average the speed for this one segment:
+					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
+				} else {
+					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME;
+				}
+				bf->entry_velocity = bf->cruise_velocity;
+				bf->exit_velocity = bf->cruise_velocity;
+			}
+			return(TRAPEZOID_REQUESTED_FIT);
+		}
+		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
+			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
+				bf->exit_velocity = _get_target_velocity(bf->entry_velocity, bf->length, bf);
+			}
+			bf->cruise_velocity = bf->exit_velocity;
+			if (bf->length >= MIN_HEAD_LENGTH) {			// run this as a 2+ segment head
+				bf->head_length = bf->length;
+			} else {	                                 	// run this as a 1 segment body
+				bf->body_length = bf->length;
+				if (bf->length > MIN_BODY_LENGTH) {
+					// Average the speed for this one segment:
+					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
+				} else {
+					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME;
+				}
+				bf->entry_velocity = bf->cruise_velocity;
+				bf->exit_velocity = bf->cruise_velocity;
+			}
+			return(TRAPEZOID_REQUESTED_FIT);
 		}
 	}
-*/
 /*
-	if (bf->length < minimum_length) {			// way too short. Need to skip
-		bf->move_state = MOVE_SKIP;				// tell runtime to skip the block
-		bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity) / 2;
-		printf("Len: %F, Jrk:%f, Vi:%f, Vx:%f\n", 
-			(double)bf->length, 
-			(double)bf->jerk,
-			(double)bf->entry_velocity, 
-			(double)bf->exit_velocity);
-		bf->gm.move_time = bf->length / bf->cruise_velocity;
-		return(TRAPEZOID_SKIP_BODY);
-	}
-*/
+	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
 		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
@@ -676,6 +664,7 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			return(_finish_head_only(bf));
 		}
 	}
+*/
 	// Set head and tail lengths
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);

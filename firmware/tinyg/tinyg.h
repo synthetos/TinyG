@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		420.11	// Issue76 branch - DRO accuracy tests. Inconclusive.
+#define TINYG_FIRMWARE_BUILD   		420.13	// Issue76 branch - Folded in very short line handling from G2 Rob branch - other trapezoid changes not in yet. 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

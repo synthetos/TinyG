@@ -373,17 +373,17 @@ void cm_set_position_by_vector(float position[], float flags[])
 void cm_set_model_position(stat_t status)
 {
 	// Even if we are coalescing the move need to keep the gcode model correct
-	if (status == STAT_OK) {
+//	if (status == STAT_OK) {
 		copy_vector(cm.gmx.position, cm.gm.target);
-	}
+//	}
 }
 
 void cm_set_model_position_from_runtime(stat_t status)
 {
 	// Even if we are coalescing the move need to keep the gcode model correct
-	if (status == STAT_OK) {
+//	if (status == STAT_OK) {
 		copy_vector(cm.gmx.position, mr.gm.target);
-	}
+//	}
 }
 
 /* 
