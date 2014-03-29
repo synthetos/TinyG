@@ -42,8 +42,7 @@ extern "C"{
 // aline planner routines / feedhold planning
 
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
-static stat_t _calculate_trapezoid(mpBuf_t *bf);
-static stat_t _replan_trapezoid(mpBuf_t *bf);
+static void _calculate_trapezoid(mpBuf_t *bf);
 static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
 static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
@@ -110,14 +109,6 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
-
-	// trap error conditions
-//	float length = get_axis_vector_length(gm_in->target, mm.position);
-//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
-//	if (gm_in->move_time < MIN_TIME_MOVE) {
-//		printf("### aline() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
-//		return (STAT_MINIMUM_TIME_MOVE);
-//	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
@@ -342,8 +333,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 								  bp->nx->braking_velocity, 
 								 (bp->entry_velocity + bp->delta_vmax) );
 
-//		_calculate_trapezoid(bp);
-		_replan_trapezoid(bp);
+		_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
@@ -357,6 +347,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 	bp->entry_velocity = bp->pv->exit_velocity;
 	bp->cruise_velocity = bp->cruise_vmax;
 	bp->exit_velocity = 0;
+
 	_calculate_trapezoid(bp);
 }
 
@@ -449,147 +440,16 @@ static void _reset_replannable_list()
  *	The order of the cases/tests in the code is pretty important
  */
 
-static uint8_t __calculate_trapezoid(mpBuf_t *bf);
-
-static const char trap_00[] PROGMEM = "NULL";
-static const char trap_01[] PROGMEM = "SKIP HEAD";
-static const char trap_02[] PROGMEM = "SKIP BODY";
-static const char trap_03[] PROGMEM = "SKIP TAIL";
-static const char trap_04[] PROGMEM = "HT ASYMMETRIC HEAD SKIP";
-static const char trap_05[] PROGMEM = "HT ASYMMETRIC TAIL SKIP";
-
-static const char trap_06[] PROGMEM = "Single segment body from head";
-static const char trap_07[] PROGMEM = "Single segment body";
-static const char trap_08[] PROGMEM = "Single segment body from tail";
-
-static const char trap_09[] PROGMEM = "Multi segment head";
-static const char trap_10[] PROGMEM = "Multi segment body";
-static const char trap_11[] PROGMEM = "Multi segment tail";
-
-static const char trap_12[] PROGMEM = "HT symmetric head reduction";
-static const char trap_13[] PROGMEM = "HT symmetric tail reduction";
-static const char trap_14[] PROGMEM = "HT symmetric ok";
-
-static const char trap_15[] PROGMEM = "HT asymmetric head only";
-static const char trap_16[] PROGMEM = "HT asymmetric tail only";
-static const char trap_17[] PROGMEM = "HT asymmetric ok";
-
-static const char trap_18[] PROGMEM = "Requested fit";
-static const char trap_19[] PROGMEM = "Iteration threshold exceeded";
-
-static const char *const trap_msg[] PROGMEM = {
-	trap_00, trap_01, trap_02, trap_03, trap_04, trap_05, trap_06, trap_07, trap_08, trap_09,
-	trap_10, trap_11, trap_12, trap_13, trap_14, trap_15, trap_16, trap_17, trap_18, trap_19
-};
-
-static void _print_diagnostics(mpBuf_t *bp, uint8_t status) 
-{
-	// print diagnostics
-	printf_P(PSTR("time:%f "), 		(double)bp->gm.move_time);
-	printf_P(PSTR("Z pos:%f "),		(double)mm.position[AXIS_Z]);
-	printf_P(PSTR("Z pos:%f "),		(double)bp->pv->gm.target[AXIS_Z]);
-	printf_P(PSTR("Z tgt:%f "), 	(double)bp->gm.target[AXIS_Z]);
-	printf_P(PSTR("Z skips:%f "), 	(double)mm.skips[AXIS_Z]);
-	printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
-}
-
-static stat_t _calculate_trapezoid(mpBuf_t *bp) 
-{
-	uint8_t status = __calculate_trapezoid(bp);
-
-	// record skipped moves
-	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
-		for (uint8_t axis=0; axis<AXES; axis++) {
-			if (bp->pv->move_state == MOVE_OFF) {
-				mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
-			} else {
-				mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
-			}
-		}
-
-		printf_P(PSTR("### TRAP line:%lu "), bp->gm.linenum);
-		_print_diagnostics(bp, status);
-		return(STAT_MINIMUM_TIME_MOVE);
-	}
-	return(STAT_OK);
-}
-
-static stat_t _replan_trapezoid(mpBuf_t *bp) 
-{
-	uint8_t status = __calculate_trapezoid(bp);
-	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
-
-		for (uint8_t axis=0; axis<AXES; axis++) {
-			if (bp->pv->move_state == MOVE_OFF) {
-				mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
-			} else {
-				mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
-			}
-		}
-
-		printf_P(PSTR("### REPLAN line:%lu "), bp->gm.linenum);
-		_print_diagnostics(bp, status);
-		return(STAT_MINIMUM_TIME_MOVE);
-	}
-	return(STAT_OK);
-}
-
-
 // The minimum lengths are dynamic and depend on the velocity
 // These expressions evaluate to the minimum lengths for the current velocity settings
 // Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
-#define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity))
-#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME * (bf->cruise_velocity + bf->exit_velocity))
-#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME * bf->cruise_velocity)
+#define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME_PRIME * (bf->cruise_velocity + bf->entry_velocity))
+#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PRIME * (bf->cruise_velocity + bf->exit_velocity))
+#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PRIME * bf->cruise_velocity)
 
-/*
- * _finish_head_only()
- * _finish_tail_only()
- *
- *	assumes:
- *	 - move has been reduced to a single section (head, body or tail)
- *	 - bf->length holds complete move length
- */
-/*
-static uint8_t _finish_head_only(mpBuf_t *bf)
+static void _calculate_trapezoid(mpBuf_t *bf) 
 {
-	bf->tail_length = 0;
-
-	if (bf->length >= MIN_HEAD_LENGTH) {		// run this as a 2+ segment head
-		bf->head_length = bf->length;
-		bf->body_length = 0;
-		return(TRAPEZOID_MULTI_SEGMENT_HEAD);
-	}
-	if (bf->length > MIN_BODY_LENGTH) {			// run this as a 1 segment body
-		bf->head_length = 0;
-		bf->body_length = bf->length;
-		return(TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_HEAD);
-	}
-	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_HEAD_SKIP);				// tell runtime to skip the block
-}
-
-static uint8_t _finish_tail_only(mpBuf_t *bf)
-{
-	bf->head_length = 0;
-
-	if (bf->length >= MIN_TAIL_LENGTH) {		// run this as a 2+ segment tail
-		bf->body_length = 0;
-		bf->tail_length = bf->length;
-		return(TRAPEZOID_MULTI_SEGMENT_TAIL);
-	}
-	if (bf->length > MIN_BODY_LENGTH) {			// run this as a 1 segment body
-		bf->body_length = bf->length;
-		bf->tail_length = 0;
-		return(TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_TAIL);
-	} 
-	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_TAIL_SKIP);
-}
-*/
-static uint8_t __calculate_trapezoid(mpBuf_t *bf) 
-{
-	bf->head_length = 0;				// initialize the lengths
+	bf->head_length = 0;		// initialize the lengths
 	bf->body_length = 0;
 	bf->tail_length = 0;
 
@@ -616,12 +476,12 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
 				} else {
 					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME;
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PRIME;
 				}
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
-			return(TRAPEZOID_REQUESTED_FIT);
+			return;
 		}
 		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
 			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
@@ -637,12 +497,12 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
 				} else {
 					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME;
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PRIME;
 				}
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
-			return(TRAPEZOID_REQUESTED_FIT);
+			return;
 		}
 	}
 	
@@ -661,10 +521,18 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			bf->tail_length = bf->head_length;
 			bf->cruise_velocity = min(bf->cruise_vmax, _get_target_velocity(bf->entry_velocity, bf->head_length, bf));
 
-			if (bf->head_length < MIN_HEAD_LENGTH || bf->tail_length < MIN_TAIL_LENGTH) {
-				bf->cruise_velocity = (bf->length / (2*MIN_SEGMENT_TIME)) - bf->entry_velocity;
-			}
-			return;
+			if (bf->head_length < MIN_HEAD_LENGTH) {
+				// Convert this to a body-only move
+				bf->body_length = bf->length;
+				bf->head_length = 0;
+				bf->tail_length = 0;
+
+				// Average the entry speed and computed best cruise-speed
+				bf->cruise_velocity = (bf->entry_velocity + bf->cruise_velocity)/2;
+				bf->entry_velocity = bf->cruise_velocity;
+				bf->exit_velocity = bf->cruise_velocity;
+            }
+            return;
 		}
 
 		// Asymmetric HT' rate-limited case (this is relatively expensive but it's not called very often)
@@ -686,29 +554,19 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			// insert iteration trap here if needed
 		} while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
 
-		// set velocity and clean up any parts that are too short 
+		// set velocity and clean up any parts that are too short
 		bf->cruise_velocity = computed_velocity;
 		bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 		bf->tail_length = bf->length - bf->head_length;
-
 		if (bf->head_length < MIN_HEAD_LENGTH) {
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
 			bf->head_length = 0;
-			if (bf->tail_length <= MIN_TAIL_LENGTH) {
-				return(TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP);
-			}
-			return(TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY);
 		}
-
 		if (bf->tail_length < MIN_TAIL_LENGTH) {
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
-			if (bf->head_length <= MIN_HEAD_LENGTH) {
-				return(TRAPEZOID_HT_ASYMMETRIC_HEAD_SKIP);
-			}
-			return(TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY);
 		}
-		return(TRAPEZOID_HT_SYMMETRIC_OK);
+		return;
 	}
 
 	// Requested-fit cases: remaining of: HBT, HB, BT, BT, H, T, B, cases
@@ -735,20 +593,6 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
-	return (TRAPEZOID_REQUESTED_FIT);
-/*
-	// ++++++ diagnostics
-	if (fp_NOT_ZERO(bf->head_length) && (bf->head_length <= MIN_HEAD_LENGTH)) {
-		printf("######## trapezoid - Normal case - HEAD VIOLATION\n");
-	}
-	if (fp_NOT_ZERO(bf->body_length) && (bf->body_length <= MIN_BODY_LENGTH)) {
-		printf("######## trapezoid - Normal case - BODY VIOLATION\n");
-	}
-	if (fp_NOT_ZERO(bf->tail_length) && (bf->tail_length <= MIN_TAIL_LENGTH)) {
-		printf("######## trapezoid - Normal case - TAIL VIOLATION\n");
-	}
-	// ++++++ to here
-*/
 }
 
 /*	
