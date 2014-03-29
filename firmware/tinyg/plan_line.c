@@ -112,7 +112,8 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	float junction_velocity;
 
 	// trap error conditions
-	float length = get_axis_vector_length(gm_in->target, mm.position);
+//	float length = get_axis_vector_length(gm_in->target, mm.position);
+//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 //	if (gm_in->move_time < MIN_TIME_MOVE) {
 //		printf("### aline() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
 //		return (STAT_MINIMUM_TIME_MOVE);
@@ -120,36 +121,35 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
-
+	bf->length = get_axis_vector_length(gm_in->target, mm.position);
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));	// copy model state into planner buffer
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
-	bf->length = length;
 
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {
-		bf->unit[AXIS_X] = diff / length;
+		bf->unit[AXIS_X] = diff / bf->length;
 		bf->jerk = square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) {
-		bf->unit[AXIS_Y] = diff / length;
+		bf->unit[AXIS_Y] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) {
-		bf->unit[AXIS_Z] = diff / length;
+		bf->unit[AXIS_Z] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) {
-		bf->unit[AXIS_A] = diff / length;
+		bf->unit[AXIS_A] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) {
-		bf->unit[AXIS_B] = diff / length;
+		bf->unit[AXIS_B] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) {
-		bf->unit[AXIS_C] = diff / length;
+		bf->unit[AXIS_C] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLIER;
@@ -158,7 +158,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	float diff;
  	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
 		if (fp_NOT_ZERO(diff = bf->gm.target[axis] - mm.position[axis])) {
-			bf->unit[axis] = diff / length;
+			bf->unit[axis] = diff / bf->length;
 		}
 	}
 

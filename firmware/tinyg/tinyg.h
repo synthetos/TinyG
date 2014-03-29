@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		420.14	// Issue76 branch - Folding on more trapezoid changes from G2 Rob branch
+#define TINYG_FIRMWARE_BUILD   		420.15	// Issue76 branch - Removed some more aline traps
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
