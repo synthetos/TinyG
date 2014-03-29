@@ -103,7 +103,7 @@
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
 //#define M4_TRAVEL_PER_REV		1.00	// sparkcrafter has this at 1.00mm. Shapeoko requires 1.25mm
-#define M4_TRAVEL_PER_REV		1.25	// 1.25 is the right value fo rthe shapeoko
+#define M4_TRAVEL_PER_REV		1.25	// 1.25 is the right value for the shapeoko
 #define M4_MICROSTEPS			1		// was 4 in earlier settings
 //#define M4_MICROSTEPS			8
 #define M4_POLARITY				1

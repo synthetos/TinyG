@@ -977,9 +977,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// Gcode hinting. If Continuous mode preserve speed at the expense of path integrity
 	// If Exact Path or Exact Stop mode slow move down to be able to execute the move
-	if (cm.gm.path_control != PATH_CONTINUOUS) {
-		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
-	}
+//	if (cm.gm.path_control != PATH_CONTINUOUS) {
+//		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
+//	}
 
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move

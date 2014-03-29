@@ -128,25 +128,28 @@ enum sectionState {
 
 enum trapezoidReturnCode {
 	TRAPEZOID_NULL = 0,						// no return code. Should never occur
-	TRAPEZOID_SKIP_HEAD,					// 1
-	TRAPEZOID_SKIP_BODY,					// 2
-	TRAPEZOID_SKIP_TAIL,					// 3
-	TRAPEZOID_HT_SYMMETRIC_HEAD_VIOLATION,	// 4
-	TRAPEZOID_HT_SYMMETRIC_TAIL_VIOLATION,	// 5
-	TRAPEZOID_HT_ASYMMETRIC_HEAD_VIOLATION,	// 6
-	TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION,	// 7
+	TRAPEZOID_HEAD_SKIP,					// 1
+	TRAPEZOID_BODY_SKIP,					// 2
+	TRAPEZOID_TAIL_SKIP,					// 3
+	TRAPEZOID_HT_ASYMMETRIC_HEAD_SKIP,		// 4
+	TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP,		// 5
 
 	TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_HEAD,
 	TRAPEZOID_SINGLE_SEGMENT_BODY,
 	TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_TAIL,
-	TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY,
-	TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY,
 
 	TRAPEZOID_MULTI_SEGMENT_HEAD,
 	TRAPEZOID_MULTI_SEGMENT_BODY,
 	TRAPEZOID_MULTI_SEGMENT_TAIL,
+
+	TRAPEZOID_HT_SYMMETRIC_HEAD_REDUCTION,
+	TRAPEZOID_HT_SYMMETRIC_TAIL_REDUCTION,
 	TRAPEZOID_HT_SYMMETRIC_OK,
+
+	TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY,
+	TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY,
 	TRAPEZOID_HT_ASYMMETRIC_OK,
+
 	TRAPEZOID_REQUESTED_FIT,
 	TRAPEZOID_ITERATION_LIMIT_EXCEEDED
 };
@@ -220,6 +223,7 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
 	float position[AXES];			// final move position for planning purposes
+	float skips[AXES];				// record skipped moves for position compensation
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;

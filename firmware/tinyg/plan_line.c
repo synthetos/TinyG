@@ -42,8 +42,8 @@ extern "C"{
 // aline planner routines / feedhold planning
 
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
-static void _calculate_trapezoid(mpBuf_t *bf);
-static void _replan_trapezoid(mpBuf_t *bf);
+static stat_t _calculate_trapezoid(mpBuf_t *bf);
+static stat_t _replan_trapezoid(mpBuf_t *bf);
 static float _get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
 static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
@@ -97,31 +97,32 @@ uint8_t mp_get_runtime_busy()
  *	executed once the accumulated error exceeds the minimums
  */
 
+/*
+#define __NEW_JERK
 static float _get_relative_length(const float Vi, const float Vt, const float jerk)
 {
 	return (fabs(Vi-Vt) * sqrt(fabs(Vi-Vt) / jerk));
 }
+*/
 
-//#define __NEW_JERK
-
-stat_t mp_aline(const GCodeState_t *gm_line)
+stat_t mp_aline(const GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
 
 	// trap error conditions
-	float length = get_axis_vector_length(gm_line->target, mm.position);
+	float length = get_axis_vector_length(gm_in->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
-//	if (gm_line->move_time < MIN_TIME_MOVE) {
-//		printf("### aline() line%lu %f\n", gm_line->linenum, (double)gm_line->move_time);
+//	if (gm_in->move_time < MIN_TIME_MOVE) {
+//		printf("### aline() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
 //		return (STAT_MINIMUM_TIME_MOVE);
 //	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
 
-	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));	// copy model state into planner buffer
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
@@ -232,9 +233,11 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->braking_velocity = bf->delta_vmax;
 
 	uint8_t mr_flag = false;
-	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
-	copy_vector(mm.position, bf->gm.target);				// update planning position
-	mp_queue_write_buffer(MOVE_TYPE_ALINE);
+
+	copy_vector(mm.position, bf->gm.target);	// set the position. May be adjusted for skips during block planning 
+	_plan_block_list(bf, &mr_flag);				// replan block list
+	mp_queue_write_buffer(MOVE_TYPE_ALINE); 	// commit current block
+
 	return (STAT_OK);
 }
 
@@ -311,6 +314,9 @@ stat_t mp_aline(const GCodeState_t *gm_line)
  *		These routines also set all blocks in the list to be replannable so the 
  *		list can be recomputed regardless of exact stops and previous replanning 
  *		optimizations.
+ *
+ *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
+ *		Mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
@@ -450,22 +456,25 @@ static const char trap_00[] PROGMEM = "NULL";
 static const char trap_01[] PROGMEM = "SKIP HEAD";
 static const char trap_02[] PROGMEM = "SKIP BODY";
 static const char trap_03[] PROGMEM = "SKIP TAIL";
-static const char trap_04[] PROGMEM = "HT SYMMETRIC HEAD VIOLATION";
-static const char trap_05[] PROGMEM = "HT SYMMETRIC TAIL VIOLATION";
-static const char trap_06[] PROGMEM = "HT ASYMMETRIC HEAD VIOLATION";
-static const char trap_07[] PROGMEM = "HT ASYMMETRIC TAIL VIOLATION";
+static const char trap_04[] PROGMEM = "HT ASYMMETRIC HEAD SKIP";
+static const char trap_05[] PROGMEM = "HT ASYMMETRIC TAIL SKIP";
 
-static const char trap_08[] PROGMEM = "Single segment body from head";
-static const char trap_09[] PROGMEM = "Single segment body";
-static const char trap_10[] PROGMEM = "Single segment body from tail";
-static const char trap_11[] PROGMEM = "HT asymmetric head only";
-static const char trap_12[] PROGMEM = "HT asymmetric tail only";
+static const char trap_06[] PROGMEM = "Single segment body from head";
+static const char trap_07[] PROGMEM = "Single segment body";
+static const char trap_08[] PROGMEM = "Single segment body from tail";
 
-static const char trap_13[] PROGMEM = "Multi segment head";
-static const char trap_14[] PROGMEM = "Multi segment body";
-static const char trap_15[] PROGMEM = "Multi segment tail";
-static const char trap_16[] PROGMEM = "HT symmetric ok";
+static const char trap_09[] PROGMEM = "Multi segment head";
+static const char trap_10[] PROGMEM = "Multi segment body";
+static const char trap_11[] PROGMEM = "Multi segment tail";
+
+static const char trap_12[] PROGMEM = "HT symmetric head reduction";
+static const char trap_13[] PROGMEM = "HT symmetric tail reduction";
+static const char trap_14[] PROGMEM = "HT symmetric ok";
+
+static const char trap_15[] PROGMEM = "HT asymmetric head only";
+static const char trap_16[] PROGMEM = "HT asymmetric tail only";
 static const char trap_17[] PROGMEM = "HT asymmetric ok";
+
 static const char trap_18[] PROGMEM = "Requested fit";
 static const char trap_19[] PROGMEM = "Iteration threshold exceeded";
 
@@ -474,26 +483,77 @@ static const char *const trap_msg[] PROGMEM = {
 	trap_10, trap_11, trap_12, trap_13, trap_14, trap_15, trap_16, trap_17, trap_18, trap_19
 };
 
-static void _calculate_trapezoid(mpBuf_t *bf) 
+static void _print_diagnostics(mpBuf_t *bp, uint8_t status) 
 {
-	uint8_t status = __calculate_trapezoid(bf);
-//	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY) {
-	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION) {	
-		printf("### TRAP line: %lu ", bf->gm.linenum);
-		printf("time: %f ", (double)bf->gm.move_time);
-		printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
+	// print diagnostics
+	printf_P(PSTR("time:%f "), 		(double)bp->gm.move_time);
+
+//	printf_P(PSTR("X position:%f "),(double)mm.position[AXIS_X]);
+//	printf_P(PSTR("X target:%f "), 	(double)bp->gm.target[AXIS_X]);
+//	printf_P(PSTR("X skip:%f "), 	(double)mm.skips[AXIS_X]);
+
+//	printf_P(PSTR("Z position:%f "),(double)mm.position[AXIS_Z]);
+//	printf_P(PSTR("Z target:%f "), 	(double)bp->gm.target[AXIS_Z]);
+//	printf_P(PSTR("Z skip:%f "), 	(double)mm.skips[AXIS_Z]);
+
+	printf_P(PSTR("Z pos:%f "),		(double)mm.position[AXIS_Z]);
+	printf_P(PSTR("Z pos:%f "),		(double)bp->pv->gm.target[AXIS_Z]);
+	printf_P(PSTR("Z tgt:%f "), 	(double)bp->gm.target[AXIS_Z]);
+	printf_P(PSTR("Z skips:%f "), 	(double)mm.skips[AXIS_Z]);
+
+	printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
+}
+
+static void _calculate_skip(mpBuf_t *bp)
+{
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		if (bp->pv->move_state == MOVE_OFF) {
+			mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
+		} else {
+			mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
+		}
 	}
 }
 
-static void _replan_trapezoid(mpBuf_t *bf) 
+
+static stat_t _calculate_trapezoid(mpBuf_t *bp) 
 {
-	uint8_t status = __calculate_trapezoid(bf);
-//	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY) {
-	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION) {	
-		printf("### REPLAN line: %lu ", bf->gm.linenum);
-		printf("time: %f ", (double)bf->gm.move_time);
-		printf_P(PSTR("%s\n"),GET_TEXT_ITEM(trap_msg, status));
+	uint8_t status = __calculate_trapezoid(bp);
+
+	// record skipped moves
+	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
+		_calculate_skip(bp);
+		printf_P(PSTR("### TRAP line:%lu "), bp->gm.linenum);
+		_print_diagnostics(bp, status);
+		return(STAT_MINIMUM_TIME_MOVE);
 	}
+	return(STAT_OK);
+}
+
+static stat_t _replan_trapezoid(mpBuf_t *bp) 
+{
+	uint8_t status = __calculate_trapezoid(bp);
+	if (status <= TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP) {	
+//		_calculate_skip(bp);
+
+		for (uint8_t axis=0; axis<AXES; axis++) {
+			if (bp->pv->move_state == MOVE_OFF) {
+				mm.skips[axis] += (bp->gm.target[axis] - mm.position[axis]);
+			} else {
+				mm.skips[axis] += (bp->gm.target[axis] - bp->pv->gm.target[axis]);
+			}
+		}
+
+//		for (uint8_t axis=0; axis<AXES; axis++) {
+//				mm.position[axis] -= (bp->gm.target[axis] - bp->pv->gm.target[axis]);
+//			}
+//		}
+
+		printf_P(PSTR("### REPLAN line:%lu "), bp->gm.linenum);
+		_print_diagnostics(bp, status);
+		return(STAT_MINIMUM_TIME_MOVE);
+	}
+	return(STAT_OK);
 }
 
 
@@ -528,7 +588,7 @@ static uint8_t _finish_head_only(mpBuf_t *bf)
 		return(TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_HEAD);
 	}
 	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_SKIP_HEAD);				// tell runtime to skip the block
+	return(TRAPEZOID_HEAD_SKIP);				// tell runtime to skip the block
 }
 /*
 static uint8_t _finish_body_only(mpBuf_t *bf)
@@ -541,7 +601,7 @@ static uint8_t _finish_body_only(mpBuf_t *bf)
 		return(TRAPEZOID_MULTI_SEGMENT_BODY);
 	}
 	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_SKIP_BODY);				// tell runtime to skip the block
+	return(TRAPEZOID_BODY_SKIP);				// tell runtime to skip the block
 }
 */
 
@@ -560,7 +620,7 @@ static uint8_t _finish_tail_only(mpBuf_t *bf)
 		return(TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_TAIL);
 	} 
 	bf->move_state = MOVE_SKIP;					// tell runtime to skip the block
-	return(TRAPEZOID_SKIP_TAIL);
+	return(TRAPEZOID_TAIL_SKIP);
 }
 
 static uint8_t __calculate_trapezoid(mpBuf_t *bf) 
@@ -630,7 +690,7 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length/2;
 			if (bf->head_length <= MIN_HEAD_LENGTH) {
 				_finish_head_only(bf);	
-				return(TRAPEZOID_HT_SYMMETRIC_HEAD_VIOLATION);
+				return(TRAPEZOID_HT_SYMMETRIC_HEAD_REDUCTION);
 			}
 
 			bf->tail_length = bf->head_length;
@@ -666,14 +726,20 @@ static uint8_t __calculate_trapezoid(mpBuf_t *bf)
 		if (bf->head_length < MIN_HEAD_LENGTH) {
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
 			bf->head_length = 0;
-			if (bf->tail_length <= MIN_TAIL_LENGTH) return(TRAPEZOID_HT_ASYMMETRIC_TAIL_VIOLATION);
+			if (bf->tail_length <= MIN_TAIL_LENGTH) {
+				bf->move_state = MOVE_SKIP;			// tell runtime to skip the block
+				return(TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP);
+			}
 			return(TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY);
 		}
 
 		if (bf->tail_length < MIN_TAIL_LENGTH) {
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
-			if (bf->head_length <= MIN_HEAD_LENGTH) return(TRAPEZOID_HT_SYMMETRIC_HEAD_VIOLATION);
+			if (bf->head_length <= MIN_HEAD_LENGTH) {
+				bf->move_state = MOVE_SKIP;			// tell runtime to skip the block
+				return(TRAPEZOID_HT_ASYMMETRIC_HEAD_SKIP);
+			}
 			return(TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY);
 		}
 		return(TRAPEZOID_HT_SYMMETRIC_OK);
