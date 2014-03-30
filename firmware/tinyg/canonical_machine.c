@@ -373,17 +373,16 @@ void cm_set_position_by_vector(float position[], float flags[])
 void cm_set_model_position(stat_t status)
 {
 	// Even if we are coalescing the move need to keep the gcode model correct
-//	if (status == STAT_OK) {
-		copy_vector(cm.gmx.position, cm.gm.target);
+	copy_vector(cm.gmx.position, cm.gm.target); 
+
+//	if (status == STAT_OK) {	//+++++++++++++++ previous code
+//		copy_vector(cm.gmx.position, cm.gm.target);
 //	}
 }
 
-void cm_set_model_position_from_runtime(stat_t status)
+void cm_set_model_position_from_runtime()
 {
-	// Even if we are coalescing the move need to keep the gcode model correct
-//	if (status == STAT_OK) {
-		copy_vector(cm.gmx.position, mr.gm.target);
-//	}
+	copy_vector(cm.gmx.position, mr.gm.target);
 }
 
 /* 
@@ -1656,9 +1655,10 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-//++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
-	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
-//	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
+//+++++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
+//	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
+
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);

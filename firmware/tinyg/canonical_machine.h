@@ -562,7 +562,8 @@ void cm_set_position_by_axis(uint8_t axis, float position);		// set absolute pos
 void cm_set_position_by_vector(float position[], float flags[]);// set absolute position - multiple axes
 void cm_set_model_target(float target[], float flag[]);
 void cm_set_model_position(stat_t status);
-void cm_set_model_position_from_runtime(stat_t status);
+//void cm_set_model_position(void);
+void cm_set_model_position_from_runtime(void);
 void cm_set_move_times(GCodeState_t *gcode_state);
 stat_t cm_test_soft_limits(float target[]);
 

@@ -94,7 +94,7 @@ static void _dump_plan_buffer(mpBuf_t *bf);
  */
 void planner_init()
 {
-// If you can can assume all memory has been zeroed by a hard reset you don;t need these next 2 lines
+// If you know all memory has been zeroed by a hard reset you don't need these next 2 lines
 	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
 	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
 	planner_init_assertions();
@@ -220,9 +220,8 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 {
 	mpBuf_t *bf;
 
-	// this error is not reported as buffer availability was checked upstream in the controller
-//	if ((bf = mp_get_write_buffer()) == NULL) return;
-	if ((bf = mp_get_write_buffer()) == NULL) {
+	// Never supposed to fail as buffer availability was checked upstream in the controller
+	if ((bf = mp_get_write_buffer()) == NULL) { 
 		cm_hard_alarm(STAT_BUFFER_FULL_FATAL);
 		return;
 	}

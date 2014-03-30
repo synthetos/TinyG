@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		420.16	// Issue76 branch - Code cleanup; incorporated Rob's trapezoid changes
+#define TINYG_FIRMWARE_BUILD   		420.17	// Issue76 branch - Interim checking - Code review and cleanup before merge with dev branch
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

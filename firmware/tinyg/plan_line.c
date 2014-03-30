@@ -112,9 +112,10 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
-	bf->length = get_axis_vector_length(gm_in->target, mm.position);
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));	// copy model state into planner buffer
-	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
+	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
+	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+
 
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
@@ -224,9 +225,9 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	uint8_t mr_flag = false;
 
-	copy_vector(mm.position, bf->gm.target);	// set the position. May be adjusted for skips during block planning 
 	_plan_block_list(bf, &mr_flag);				// replan block list
 	mp_queue_write_buffer(MOVE_TYPE_ALINE); 	// commit current block
+	copy_vector(mm.position, bf->gm.target);	// set the planner position 
 
 	return (STAT_OK);
 }
@@ -242,25 +243,25 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 /* _plan_block_list() - plans the entire block list
  *
- *	The block list is the circular buffer of planner buffers (bf's). The block 
- *	currently being planned is the "bf" block. The "first block" is the next block 
- *	to execute; queued immediately behind the currently executing block, aka the 
- *	"running" block. In some cases there is no first block because the list is empty 
- *	or there is only one block and it is already running. 
+ *	The block list is the circular buffer of planner buffers (bf's). The block currently 
+ *	being planned is the "bf" block. The "first block" is the next block to execute; 
+ *	queued immediately behind the currently executing block, aka the "running" block. 
+ *	In some cases there is no first block because the list is empty or there is only 
+ *	one block and it is already running. 
  *
  *	If blocks following the first block are already optimally planned (non replannable)
  *	the first block that is not optimally planned becomes the effective first block.
  *
  *	_plan_block_list() plans all blocks between and including the (effective) first block 
- *	and the bf. It sets entry, exit and cruise v's from vmax's then calls trapezoid generation. 
+ *	and the bf. It sets entry, exit and cruise V's from Vmax's then calls trapezoid generation. 
  *
  *	Variables that must be provided in the mpBuffers that will be processed:
  *
  *	  bf (function arg)		- end of block list (last block in time)
  *	  bf->replannable		- start of block list set by last FALSE value [Note 1]
- *	  bf->move_type			- typically ALINE. Other move_types should be set to 
+ *	  bf->move_type			- typically MOVE_TYPE_ALINE. Other move_types should be set to 
  *							  length=0, entry_vmax=0 and exit_vmax=0 and are treated
- *							  as a momentary hold (plan to zero and from zero).
+ *							  as a momentary stop (plan to zero and from zero).
  *
  *	  bf->length			- provides block length
  *	  bf->entry_vmax		- used during forward planning to set entry velocity
@@ -306,7 +307,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		optimizations.
  *
  *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
- *		Mr's Vx is always found in the provided bf buffer. Used to replan feedholds
+ *		mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
@@ -367,13 +368,14 @@ static void _reset_replannable_list()
 /*
  * _calculate_trapezoid() - calculate trapezoid parameters
  *
- *	This rather brute-force function sets section lengths and velocities based 
- *	on the line length and velocities requested. It modifies the bf buffer passed 
- *	in and returns accurate head_length, body_length and tail_length, and accurate 
- *	or reasonably approximate velocities. We care about accuracy on lengths, less 
- *	so for velocity (as long as velocity err's on the side of too slow). We need 
- *	the velocities to be set even for zero-length sections so we can compute 
- *	entry and exits for adjacent sections.
+ *	This rather longish and brute-force function sets section lengths and velocities 
+ *	based on the line length and velocities requested. It modifies the incoming 
+ *	bf buffer and returns accurate head, body and tail lengths, and accurate or 
+ *	reasonably approximate velocities. We care about accuracy on lengths, less 
+ *	so for velocity (as long as velocity err's on the side of too slow). 
+ *
+ *	Note: We need the velocities to be set even for zero-length sections so we 
+ *	can compute entry and exits for adjacent sections.
  *
  *	Inputs used are:
  *	  bf->length			- actual block length (must remain accurate)
@@ -382,34 +384,34 @@ static void _reset_replannable_list()
  *	  bf->exit_velocity		- requested Vx
  *	  bf->cruise_vmax		- used in some comparisons
  *
- *	Variables set may include the velocities above (not the vmax), and:
+ *	Variables that may be set/updated are:
+ *	  bf->entry_velocity	- requested Ve
+ *	  bf->cruise_velocity	- requested Vt
+ *	  bf->exit_velocity		- requested Vx
  *	  bf->head_length		- bf->length allocated to head
  *	  bf->body_length		- bf->length allocated to body
  *	  bf->tail_length		- bf->length allocated to tail
  *
  *	Note: The following condition must be met on entry: Ve <= Vt >= Vx 
+ */
+/*	Classes of moves:
  *
- *	Classes of moves:
- *
- *	  Maximum-Fit - The trapezoid can accommodate its maximum velocity values for
- *		the given length (entry_vmax, cruise_vmax, exit_vmax). But the trapezoid 
- *		generator actally doesn't know about the max's and only processes requested 
- *		values.
- *
- *	  Requested-Fit - The move has sufficient length to achieve the target cruising 
+ *	  Requested-Fit - The move has sufficient length to achieve the target cruise
  *		velocity. It will accommodate the acceleration / deceleration profile and 
  *		in the distance given (length)
  *
  *	  Rate-Limited-Fit - The move does not have sufficient length to achieve target 
- *		cruising velocity - the target velocity will be lower than the requested 
+ *		cruise velocity - the target velocity will be lower than the requested 
  *		velocity. The entry and exit velocities are satisfied. 
  *
  *	  Degraded-Fit - The move does not have sufficient length to transition from
  *		the entry velocity to the exit velocity in the available length. These 
  *		velocities are not negotiable, so a degraded solution is found.
  *
- *	  No-Fit - The move cannot be executed as the planned execution time is less
+ *	  Force-Fit - The move cannot be executed as the planned execution time is less
  *		than the minimum segment interpolation time of the runtime execution module.
+ *		A worst case compromise is provided so the move can be executed - usually 
+ *		resulting in reducing the velocity in that region of the planner buffer 
  *
  *	Various cases handled (H=head, B=body, T=tail)
  *
@@ -433,19 +435,20 @@ static void _reset_replannable_list()
  *	    H"	Ve<Vx		Ve is degraded (velocity step). Vx is met
  *	  	T"	Ve>Vx		Ve is degraded (velocity step). Vx is met
  *	  	B	<short>		line is very short but drawable; is treated as a body only
+ *		FF				Force Fit: This block is slowed down until it can be executed
  *
- *	  No-Fit cases - the line is too short to plan
- *		No fit			this block will be skipped as it can't be drawn
- *
- *	The order of the cases/tests in the code is pretty important
+ *	NOTE: The order of the cases/tests in the code is pretty important. Start with the 
+ *	  shortest cases first and work out. Not only does this simplfy the order of the tests,
+ *	  but it reduces exceution time when you need it most - when tons of pathologically
+ *	  short Gcode blocks are being executed.
  */
 
 // The minimum lengths are dynamic and depend on the velocity
 // These expressions evaluate to the minimum lengths for the current velocity settings
 // Note: The head and tail lengths are 2 minimum segments, the body is 1 min segment
-#define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME_PRIME * (bf->cruise_velocity + bf->entry_velocity))
-#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PRIME * (bf->cruise_velocity + bf->exit_velocity))
-#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PRIME * bf->cruise_velocity)
+#define MIN_HEAD_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->entry_velocity))
+#define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->exit_velocity))
+#define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * bf->cruise_velocity)
 
 static void _calculate_trapezoid(mpBuf_t *bf) 
 {
@@ -453,51 +456,74 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	bf->body_length = 0;
 	bf->tail_length = 0;
 
+	// FF and B cases
+
+	float naiive_velocity = (bf->entry_velocity + bf->exit_velocity) / 2;
+	float naiive_time = bf->length / naiive_velocity;
+
+	if (naiive_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {	// FF case
+		bf->entry_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
+		bf->cruise_velocity = bf->entry_velocity;
+		bf->exit_velocity = bf->entry_velocity;
+		bf->body_length = bf->length;
+		return;
+	}
+
+	if (naiive_time < NOM_SEGMENT_TIME) {				// B case
+		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
+		bf->cruise_velocity = bf->entry_velocity;
+		bf->exit_velocity = bf->entry_velocity;
+		return;
+		bf->body_length = bf->length;
+	}
+
 	// Combined short-line cases. Do these first to get them out of the way.
 	//	- H and T requested-fit cases (exact fit cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
 	//	- H" and T" degraded-fit cases
 	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
-	//	- no-fit case
+	//	- FF force-fit cases
 	// Also converts 2 segment heads and tails that would be too short to a body-only move (1 segment)
 
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head & tail cases
-		if (bf->entry_velocity > bf->exit_velocity)	{		// tail cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
+		if (bf->entry_velocity > bf->exit_velocity)	{		// tail-only cases (short decelerations)
+//			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
+			if (bf->length < minimum_length) { 				// T" (degraded case)
 				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
 			}
 			bf->cruise_velocity = bf->entry_velocity;
 			if (bf->length >= MIN_TAIL_LENGTH) {			// run this as a 2+ segment tail
 				bf->tail_length = bf->length;
-			} else {                                        // run this as a 1 segment body
+			} else {                                        // B case: run this as a 1 segment body
 				bf->body_length = bf->length;
 				if (bf->length > MIN_BODY_LENGTH) {
-					// Average the speed for this one segment:
+					// Average the velocity for this one segment:
 					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
-				} else {
-					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PRIME;
+				} else {									// FF case
+					// Lower the velocity to take at least MIN_SEGMENT_TIME as a body move
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 				}
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
 			return;
 		}
-		if (bf->entry_velocity < bf->exit_velocity)	{		// head cases
-			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
+		if (bf->entry_velocity < bf->exit_velocity)	{		// head-only cases (short accelerations)
+//			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
+			if (bf->length < minimum_length) { 				// H" (degraded case)
 				bf->exit_velocity = _get_target_velocity(bf->entry_velocity, bf->length, bf);
 			}
 			bf->cruise_velocity = bf->exit_velocity;
 			if (bf->length >= MIN_HEAD_LENGTH) {			// run this as a 2+ segment head
 				bf->head_length = bf->length;
-			} else {	                                 	// run this as a 1 segment body
+			} else {	                                 	// B case: run this as a 1 segment body
 				bf->body_length = bf->length;
 				if (bf->length > MIN_BODY_LENGTH) {
-					// Average the speed for this one segment:
+					// Average the velocity for this one segment:
 					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
-				} else {
-					// we need to lower the speed to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PRIME;
+				} else {									// FF case
+					// Lower the velocity to take at least MIN_SEGMENT_TIME as a body move
+					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 				}
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;

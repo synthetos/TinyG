@@ -50,7 +50,7 @@ enum moveState {
 	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
 	MOVE_NEW,				// general value if you need an initialization
 	MOVE_RUN,				// general run state (for non-acceleration moves)
-	MOVE_SKIP				// mark a skipped block
+	MOVE_SKIP_BLOCK				// mark a skipped block
 };
 
 enum moveSection {
@@ -96,9 +96,10 @@ enum sectionState {
 
 #define NOM_SEGMENT_TIME 		(NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_SEGMENT_TIME_PRIME ((MIN_SEGMENT_USEC+10) / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+
+#define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
@@ -126,7 +127,7 @@ enum sectionState {
 #define TRAPEZOID_ITERATION_ERROR_PERCENT	((float)0.10)
 #define TRAPEZOID_LENGTH_FIT_TOLERANCE		((float)0.0001)	// allowable mm of error in planning phase
 #define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
-
+/*
 enum trapezoidReturnCode {
 	TRAPEZOID_NULL = 0,						// no return code. Should never occur
 	TRAPEZOID_HEAD_SKIP,					// 1
@@ -154,6 +155,7 @@ enum trapezoidReturnCode {
 	TRAPEZOID_REQUESTED_FIT,
 	TRAPEZOID_ITERATION_LIMIT_EXCEEDED
 };
+*/
 
 /*
  *	Macros and typedefs

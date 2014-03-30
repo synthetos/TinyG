@@ -211,10 +211,7 @@ static stat_t _probing_finish()
 		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 
 	// if we got here because of a feed hold we need to keep the model position correct
-	cm_set_model_position_from_runtime(STAT_OK);
-
-//	printf_P(PSTR("{\"prb\":{\"e\":%i,\"x\":%.3g,\"y\":%.3g,\"z\":%.3g}}\n"),
-//		(int)cm.probe_state, cm.probe_results[AXIS_X], cm.probe_results[AXIS_Y], cm.probe_results[AXIS_Z]);
+	cm_set_model_position_from_runtime();
 
 	// If probe was successful the 'e' word == 1, otherwise e == 0 to signal an error
 
