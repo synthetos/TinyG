@@ -294,7 +294,7 @@ static stat_t _exec_aline_head()
 
 		// +++++ DIAGNOSTIC
 		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("######## exec_head() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+			printf("### EXEC_HEAD() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 		}
 
 		// 4 lines needed by __JERK_EXEC
@@ -370,7 +370,7 @@ static stat_t _exec_aline_body()
 
 		// +++++ DIAGNOSTIC
 		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("######## exec_body() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+			printf("### EXEC_BODY() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 		}
 
 		mr.segment_velocity = mr.cruise_velocity;
@@ -404,7 +404,7 @@ static stat_t _exec_aline_tail()
 
 		// +++++ DIAGNOSTIC
 		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("######## exec_tail() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+			printf("### EXEC_TAIL() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 		}
 
 		// 4 lines needed by jerk-based exec
