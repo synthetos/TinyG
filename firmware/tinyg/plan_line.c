@@ -462,33 +462,41 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// Force block into a single segment body with limited velocities
 
 	// if length < segment time * average velocity
-	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->entry_velocity + bf->entry_velocity) / 2)) {
+	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
 		bf->body_length = bf->length;
-		return;		
+		return;
 	}
 
 	// B case (body only): See if the block fits into a single segment
 
-	if (bf->length < (NOM_SEGMENT_TIME * (bf->cruise_velocity + bf->entry_velocity) / 2)) {
+	if (bf->length < (NOM_SEGMENT_TIME * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
 		bf->body_length = bf->length;
-		return;		
+		return;
 	}
 
-	// Combined head-only and tail-only cases. 
-	//	- H and T requested-fit cases (exact fit cases, to within TRAPEZOID_LENGTH_FIT_TOLERANCE)
+	// Head-only and tail-only short-line cases
 	//	- H" and T" degraded-fit cases
 	//	- H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
-
+	
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
+
+		// QUESTION: The inequality cases do not trap entry_velocity == exit velocity.
+		//			 What is the correct handling of the equality case?
+/*
+		if (fp_EQ(bf->entry_velocity, bf->exit_velocity)) {	// short body case (aka "Marty Feldman")
+			bf->cruise_velocity = bf->entry_velocity;
+			bf->body_length = bf->length;
+			return;
+		}
+*/
 		if (bf->entry_velocity > bf->exit_velocity)	{		// tail-only cases (short decelerations)
-//			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// T" (degraded case)
 			if (bf->length < minimum_length) { 				// T" (degraded case)
 				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
 			}
@@ -496,27 +504,8 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			bf->tail_length = bf->length;
 			return;
 		}
-/*
-			if (bf->length >= MIN_TAIL_LENGTH) {			// run this as a 2+ segment tail
-				bf->tail_length = bf->length;
 
-			} else {                                        // B case: run this as a 1 segment body
-				bf->body_length = bf->length;
-				if (bf->length > MIN_BODY_LENGTH) {
-					// Average the velocity for this one segment:
-					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
-				} else {									// FF case
-					// Lower the velocity to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
-				}
-				bf->entry_velocity = bf->cruise_velocity;
-				bf->exit_velocity = bf->cruise_velocity;
-			}
-			return;
-		}
-*/
 		if (bf->entry_velocity < bf->exit_velocity)	{		// head-only cases (short accelerations)
-//			if (bf->length < (minimum_length - TRAPEZOID_LENGTH_FIT_TOLERANCE)) { 	// H" (degraded case)
 			if (bf->length < minimum_length) { 				// H" (degraded case)
 				bf->exit_velocity = _get_target_velocity(bf->entry_velocity, bf->length, bf);
 			}
@@ -524,26 +513,8 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;
 			return;
 		}
-/*			if (bf->length >= MIN_HEAD_LENGTH) {			// run this as a 2+ segment head
-				bf->head_length = bf->length;
-
-			} else {	                                 	// B case: run this as a 1 segment body
-				bf->body_length = bf->length;
-				if (bf->length > MIN_BODY_LENGTH) {
-					// Average the velocity for this one segment:
-					bf->cruise_velocity = (bf->entry_velocity + bf->exit_velocity)/2;
-				} else {									// FF case
-					// Lower the velocity to take at least MIN_SEGMENT_TIME as a body move
-					bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
-				}
-				bf->entry_velocity = bf->cruise_velocity;
-				bf->exit_velocity = bf->cruise_velocity;
-			}
-			return;
-		}
-*/
 	}
-	
+
 	// Set head and tail lengths for next cases
 	bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
 	bf->tail_length = _get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
