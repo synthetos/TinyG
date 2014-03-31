@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		421.01	// Sync planner changes with G2 
+#define TINYG_FIRMWARE_BUILD   		421.02	// C axis JSON double tn: misreporting bug appears to be working correctly in simulation
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,7 +56,7 @@
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
-//#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
+#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
@@ -76,7 +76,7 @@
   #define __SUPPRESS_STATUS_REPORTS 		// what it says
   #define __SUPPRESS_QUEUE_REPORTS 			// what it says
   #define __SUPPRESS_DIAGNOSTIC_DISPLAYS
-  #define __SILENCE_JSON_RESPONSES
+//  #define __SILENCE_JSON_RESPONSES
 #endif
 
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
