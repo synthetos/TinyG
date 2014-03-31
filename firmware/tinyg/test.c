@@ -117,7 +117,8 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 
 /* Configs and controls */
 //	xio_queue_RX_string_usb("$\n");				// print general group
-//	xio_queue_RX_string_usb("$x\n");			// print x axis
+	xio_queue_RX_string_usb("$zam\n");			// print axis mode
+//	xio_queue_RX_string_usb("$z\n");			// print an axis
 //	xio_queue_RX_string_usb("$xfr=1000\n");
 //	xio_queue_RX_string_usb("{\"jogx\":1}\n");
 //	xio_queue_RX_string_usb("{\"uda\":{\"0\":\"0x4\"}}\n");
@@ -193,7 +194,7 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 //	xio_queue_RX_string_usb("{\"x\":null}\n");	// X axis group display, strict
 //	xio_queue_RX_string_usb("{x:null}\n");		// X axis group display, relaxed
 //	xio_queue_RX_string_usb("{x:n}\n");			// X axis group display, relaxed, short
-	xio_queue_RX_string_usb("{c:n}\n");			// C axis group display, relaxed, short
+//	xio_queue_RX_string_usb("{c:n}\n");			// C axis group display, relaxed, short
 
 							  // set a group
 //	xio_queue_RX_string_usb("{x:{am:2,vm:601.000,fr:1201.000,tn:476.000,tm:476.000,jm:20000001.000,jd:0.051,sn:2,sv:-502.000,lv:101.000,lb:2.001,zb:1.001}}\n");
