@@ -104,7 +104,9 @@ static void _inverse_kinematics(float travel[], float joint[])
 }
 */
 
-//############## UNIT TESTS ################
+// *************************************************
+// ***** UNIT TESTS ********************************
+// *************************************************
 
 //#define __UNIT_TEST_KINEMATICS
 #ifdef __UNIT_TESTS

@@ -55,7 +55,7 @@ Have fun\n"));
  */
 uint8_t help_general(cmdObj_t *cmd)
 {
-fprintf_P(stderr, PSTR("\n\n\n#### TinyG Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n### TinyG Help ###\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active from the command line:\n\
  ^x             Reset (control x) - software reset\n\
@@ -81,7 +81,7 @@ return(STAT_OK);
  */
 stat_t help_config(cmdObj_t *cmd)
 {
-fprintf_P(stderr, PSTR("\n\n\n#### TinyG CONFIGURATION Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n### TinyG CONFIGURATION Help ###\n"));
 fprintf_P(stderr, PSTR("\
 These commands are active for configuration:\n\
   $sys Show system (general) settings\n\
@@ -114,7 +114,7 @@ return(STAT_OK);
  */
 stat_t help_test(cmdObj_t *cmd)
 {
-fprintf_P(stderr, PSTR("\n\n\n#### TinyG SELF TEST Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n### TinyG SELF TEST Help ###\n"));
 fprintf_P(stderr, PSTR("\
 Invoke self test by entering $test=N where N is one of:\n\
   $test=1  smoke test\n\
@@ -145,7 +145,7 @@ return(STAT_OK);
  */
 stat_t help_defa(cmdObj_t *cmd)
 {
-fprintf_P(stderr, PSTR("\n\n\n#### TinyG RESTORE DEFAULTS Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n### TinyG RESTORE DEFAULTS Help ###\n"));
 fprintf_P(stderr, PSTR("\
 Enter $defa=1 to reset the system to the factory default values.\n\
 This will overwrite any changes you have made.\n"));
@@ -158,7 +158,7 @@ return(STAT_OK);
  */
 stat_t help_boot_loader(cmdObj_t *cmd)
 {
-fprintf_P(stderr, PSTR("\n\n\n#### TinyG BOOT LOADER Help ####\n"));
+fprintf_P(stderr, PSTR("\n\n\n### TinyG BOOT LOADER Help ###\n"));
 fprintf_P(stderr, PSTR("\
 Enter $boot=1 to enter the boot loader.\n"));
 _postscript();

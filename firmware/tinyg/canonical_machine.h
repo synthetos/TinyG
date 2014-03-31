@@ -300,8 +300,8 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
  */
 // *** Note: check config printout strings align with all the state variables
 
-// #### LAYER 8 CRITICAL REGION ###
-// #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
+// ### LAYER 8 CRITICAL REGION ###
+// ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ### 
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
@@ -316,7 +316,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_JOG,					// [10] jogging is treated as a cycle
 	COMBINED_SHUTDOWN,				// [11] machine in hard alarm state (shutdown)
 };
-//#### END CRITICAL REGION ####
+//### END CRITICAL REGION ###
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing

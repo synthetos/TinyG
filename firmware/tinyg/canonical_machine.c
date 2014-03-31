@@ -671,11 +671,11 @@ stat_t cm_hard_alarm(stat_t status)
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions
-//	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
+//	gpio_set_bit_off(SPINDLE_BIT);			//++++ this current stuff is temporary
 //	gpio_set_bit_off(SPINDLE_DIR);
 //	gpio_set_bit_off(SPINDLE_PWM);
-//	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
-//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
+//	gpio_set_bit_off(MIST_COOLANT_BIT);		//++++ replace with exec function
+//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//++++ replace with exec function
 
 	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;

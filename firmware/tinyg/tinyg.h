@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		421.04	// Added Othermachine arc corrections - Thanks Forrest!
+#define TINYG_FIRMWARE_BUILD   		421.05	// Some work on exception reporting
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -253,6 +253,7 @@ char *get_status_message(stat_t status);
 #define ritorno(a) if((status_code=a) != STAT_OK) { return(status_code); }
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
+// See main.c for associated message strings
 #define	STAT_OK 0						// function completed OK
 #define	STAT_ERROR 1					// generic error return (EPERM)
 #define	STAT_EAGAIN 2					// function would block here (call again)
@@ -270,7 +271,7 @@ char *get_status_message(stat_t status);
 #define	STAT_BUFFER_FULL_FATAL 14
 #define	STAT_INITIALIZING 15			// initializing - not ready for use
 #define	STAT_ENTERING_BOOT_LOADER 16	// this code actually emitted from boot loader, not TinyG
-#define	STAT_ERROR_17 17
+#define	STAT_FUNCTION_IS_STUBBED 17
 #define	STAT_ERROR_18 18
 #define	STAT_ERROR_19 19				// NOTE: XIO codes align to here
 
@@ -283,7 +284,7 @@ char *get_status_message(stat_t status);
 #define	STAT_READ_ONLY_ADDRESS 25
 #define	STAT_INIT_FAIL 26
 #define	STAT_ALARMED 27
-#define	STAT_ERROR_28 28
+#define	STAT_FAILED_TO_GET_PLANNER_BUFFER 28
 #define	STAT_ERROR_29 29
 #define	STAT_ERROR_30 30
 #define	STAT_ERROR_31 31
