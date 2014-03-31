@@ -45,7 +45,7 @@ extern "C"{
 srSingleton_t sr;
 qrSingleton_t qr;
 
-/**** Exception Messages ************************************************************
+/**** Exception Reports ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  *
@@ -65,7 +65,7 @@ void rpt_exception(uint8_t status)
 
 stat_t rpt_er(cmdObj_t *cmd)
 {
-	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
+	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report for testing
 	return (STAT_OK);
 }
 

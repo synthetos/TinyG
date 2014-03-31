@@ -322,14 +322,36 @@ static stat_t _compute_arc()
  *	Assumes arc singleton has been pre-loaded with target and position.
  *	Parts of this routine were originally sourced from the grbl project.
  */
+/*
+ * From Forrest Green - Other Machine Co, 3/27/14:
+ *
+ * In compute_arc_offsets_from_radius() there is a check to detect arcs where diameter 
+ *	is less than the distance between endpoints. Unfortunately, small floating point 
+ *	rounding errors can cause arcs close to 180 degrees to fail this check and the 
+ *	function will return an error. Currently this error gets ignored (at least by 
+ *	Otherplan) usually causing a straight feed from the start of the arc to the end 
+ *	of the next move. Even though Otherplan doesn't generate radius format arcs over 
+ *	120 degrees, this has been causing problems for a lot of users with gcode from other sources.
+ *
+ * If we replace:
+ *   float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
+ * With:
+ *   float disc = 4 * square(arc.radius) - (square(x) + square(y));
+ *   float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 1;
+ *
+ * Then TinyG would ignore rounding errors and cut a semicircle (which is usually the 
+ *	desired behavior), but would no longer generate an error if radius is too small. 
+ */
 static stat_t _compute_arc_offsets_from_radius()
 {
 	// Calculate the change in position along each selected axis
 	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
-	// == -(h * 2 / d)
-	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
+	// == -(h * 2 / d) (see header note for replacement code)
+//	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
+    float disc = 4 * square(arc.radius) - (square(x) + square(y));
+    float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 1;
 
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
