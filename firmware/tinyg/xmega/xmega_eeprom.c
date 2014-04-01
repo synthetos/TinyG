@@ -665,9 +665,9 @@ inline void EEPROM_EraseAll( void )
 	NVM_EXEC_WRAPPER();
 }
 
-/*************************
- *	EEPROM Unit tests    *
- *************************/
+// *****************************
+// ***** EEPROM Unit tests *****
+// *****************************
 
 //#define __UNIT_TEST_EEPROM
 #ifdef __UNIT_TESTS
