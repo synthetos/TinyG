@@ -158,7 +158,13 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "hom","homb",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_B], false },// B homed
 	{ "hom","homc",_f00, 0, cm_print_pos, get_ui8, set_nul,(float *)&cm.homed[AXIS_C], false },// C homed
 
-//	{ "prb","prbe",_f00, 0, cm_print_prbe, cm_get_prbe, set_nul,(float *)&cs.null, 0 },	   // probing state
+	{ "prb","prbe",_f00, 0, tx_print_nul, get_ui8, set_nul,(float *)&cm.probe_state, 0 },	   // probing state
+	{ "prb","prbx",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_X], 0 },
+	{ "prb","prby",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_Y], 0 },
+	{ "prb","prbz",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_Z], 0 },
+	{ "prb","prba",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_A], 0 },
+	{ "prb","prbb",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_B], 0 },
+	{ "prb","prbc",_f00, 3, tx_print_nul, get_flt, set_nul,(float *)&cm.probe_results[AXIS_C], 0 },
 
 	{ "jog","jogx",_f00, 0, tx_print_nul, get_nul, cm_run_jogx, (float *)&cm.jogging_dest, 0},
 	{ "jog","jogy",_f00, 0, tx_print_nul, get_nul, cm_run_jogy, (float *)&cm.jogging_dest, 0},
@@ -607,6 +613,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","pos",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work position group
 	{ "","ofs",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
 	{ "","hom",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
+	{ "","prb",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// probing state group
 	{ "","jog",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_f00, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
 
@@ -634,7 +641,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define CMD_COUNT_GROUPS 		39		// count of simple groups
+#define CMD_COUNT_GROUPS 		40		// count of simple groups
 #define CMD_COUNT_UBER_GROUPS 	4 		// count of uber-groups
 
 /* <DO NOT MESS WITH THESE DEFINES> */
