@@ -174,7 +174,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	if (**pstr == NUL) { return (STAT_COMPLETE); }	// no more words
 
 	// get letter part
-	if(isupper(**pstr) == false) { return (STAT_EXPECTED_COMMAND_LETTER); }
+	if(isupper(**pstr) == false) { return (STAT_MALFORMED_COMMAND_INPUT); }
 	*letter = **pstr;
 	(*pstr)++;
 	

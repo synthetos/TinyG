@@ -77,7 +77,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_ERROR);
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
 	// Trap conditions where no arc movement will occur, but the system is still in 
@@ -354,9 +354,9 @@ static stat_t _compute_arc_offsets_from_radius()
 //    float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 0;
     float h_x2_div_d = 0;
 	if (disc >= 0) {
-		h_x2_div_d  = -sqrt(disc) / hypot(x,y)		
+		h_x2_div_d  = -sqrt(disc) / hypot(x,y);
 	} else {
-		rpt_exception(STAT_RADIUS_ARC_OUT_OF_TOLERANCE);
+		rpt_exception(STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
 	}
 
 	// If r is smaller than d the arc is now traversing the complex plane beyond
