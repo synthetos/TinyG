@@ -222,6 +222,16 @@ static const char stat_36[] PROGMEM = "36";
 static const char stat_37[] PROGMEM = "37";
 static const char stat_38[] PROGMEM = "38";
 static const char stat_39[] PROGMEM = "39";
+static const char stat_40[] PROGMEM = "40";
+static const char stat_41[] PROGMEM = "41";
+static const char stat_42[] PROGMEM = "42";
+static const char stat_43[] PROGMEM = "43";
+static const char stat_44[] PROGMEM = "44";
+static const char stat_45[] PROGMEM = "45";
+static const char stat_46[] PROGMEM = "46";
+static const char stat_47[] PROGMEM = "47";
+static const char stat_48[] PROGMEM = "48";
+static const char stat_49[] PROGMEM = "49";
 
 static const char stat_40[] PROGMEM = "Unrecognized command";
 static const char stat_41[] PROGMEM = "Expected command letter";
@@ -307,7 +317,9 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_70, stat_71, stat_72, stat_73, stat_74, stat_75, stat_76, stat_77, stat_78, stat_79,
 	stat_80, stat_81, stat_82, stat_83, stat_84, stat_85, stat_86, stat_87, stat_88, stat_89,
 	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
-	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109
+	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109,
+	stat_110, stat_111, stat_112, stat_113, stat_114, stat_115, stat_116, stat_117, stat_118, stat_119,
+	stat_120, stat_121, stat_122, stat_123, stat_124, stat_125
 };
 
 char *get_status_message(stat_t status)
