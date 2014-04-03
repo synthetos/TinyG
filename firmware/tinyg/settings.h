@@ -43,7 +43,8 @@
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.01					// chord accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
-#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+//#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 #define MOTOR_POWER_TIMEOUT			2.00					// motor power timeout in seconds
 #define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// default motor power mode (see cmMotorPowerMode in stepper.h)
