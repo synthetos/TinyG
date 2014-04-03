@@ -66,9 +66,9 @@
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 
-#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","vel","_cs2","_es2","_fe2","_xs2","stat"
-//#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","stat"
+#define SR_DEFAULTS  "line","posx","posy","posz","mpox","mpoy","mpoz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","stat"
 //#define SR_DEFAULTS  "line","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","mpox","mpoy","mpoz","vel","stat"
 //#define SR_DEFAULTS  "line","_ts1","_ps1","_cs1","_es1","_fe1","_xs1","mpox","mpoy","mpoz","vel","stat"
 
@@ -100,8 +100,8 @@
 //#include "settings/settings_othercutter.h"			// Otherfab OtherCutter
 //#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
-//#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
+#include "settings/settings_probotixV90.h"			// Probotix FireballV90
+//#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_sparkcrafter.h"				// special settings for Issue 76 tests
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
