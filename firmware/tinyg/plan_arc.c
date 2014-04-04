@@ -351,14 +351,15 @@ static stat_t _compute_arc_offsets_from_radius()
 	// == -(h * 2 / d) (see header note for replacement code)
 //	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
     float disc = 4 * square(arc.radius) - (square(x) + square(y));
-//    float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 0;
+    float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 0;
+/*
     float h_x2_div_d = 0;
 	if (disc >= 0) {
 		h_x2_div_d  = -sqrt(disc) / hypot(x,y);
 	} else {
 		rpt_exception(STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
 	}
-
+*/
 	// If r is smaller than d the arc is now traversing the complex plane beyond
 	// the reach of any real CNC, and thus - for practical reasons - we will 
 	// terminate promptly

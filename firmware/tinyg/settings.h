@@ -43,8 +43,7 @@
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.01					// chord accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
-//#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
-#define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 #define MOTOR_POWER_TIMEOUT			2.00					// motor power timeout in seconds
 #define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// default motor power mode (see cmMotorPowerMode in stepper.h)
@@ -67,9 +66,9 @@
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 
-//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 //#define SR_DEFAULTS  "line","mpox","mpoy","mpoz","vel","_cs2","_es2","_fe2","_xs2","stat"
-#define SR_DEFAULTS  "line","posx","posy","posz","mpox","mpoy","mpoz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","stat"
+//#define SR_DEFAULTS  "line","posx","posy","posz","mpox","mpoy","mpoz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","stat"
 //#define SR_DEFAULTS  "line","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2","mpox","mpoy","mpoz","vel","stat"
 //#define SR_DEFAULTS  "line","_ts1","_ps1","_cs1","_es1","_fe1","_xs1","mpox","mpoy","mpoz","vel","stat"
 

@@ -373,11 +373,11 @@ void cm_set_position_by_vector(float position[], float flags[])
 void cm_set_model_position(stat_t status)
 {
 	// Even if we are coalescing the move need to keep the gcode model correct
-	copy_vector(cm.gmx.position, cm.gm.target); 
+//	copy_vector(cm.gmx.position, cm.gm.target); 
 
-//	if (status == STAT_OK) {	//+++++++++++++++ previous code
-//		copy_vector(cm.gmx.position, cm.gm.target);
-//	}
+	if (status == STAT_OK) {
+		copy_vector(cm.gmx.position, cm.gm.target);
+	}
 }
 
 void cm_set_model_position_from_runtime()
@@ -967,7 +967,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm_set_model_target(target, flags);
-	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
+//	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);	//++++++++++++++++++ test
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
@@ -976,9 +976,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// Gcode hinting. If Continuous mode preserve speed at the expense of path integrity
 	// If Exact Path or Exact Stop mode slow move down to be able to execute the move
-//	if (cm.gm.path_control != PATH_CONTINUOUS) {
-//		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
-//	}
+	if (cm.gm.path_control != PATH_CONTINUOUS) {
+		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
+	}
 
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
