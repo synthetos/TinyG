@@ -116,10 +116,10 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
 
-	if (bf->gm.move_time < MIN_TIME_MOVE) {
-		printf("#### ALINE() - MIN SEGMENT line%lu %f\n", bf->gm.linenum, (double)bf->gm.move_time);
-		return(STAT_MINIMUM_TIME_MOVE);
-	}
+//	if (bf->gm.move_time < MIN_TIME_MOVE) {
+//		printf("#### ALINE() - MIN SEGMENT line%lu %f\n", bf->gm.linenum, (double)bf->gm.move_time);
+//		return(STAT_MINIMUM_TIME_MOVE);
+//	}
 
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency

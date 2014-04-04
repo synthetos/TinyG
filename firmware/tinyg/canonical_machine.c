@@ -365,9 +365,9 @@ void cm_set_position_by_vector(float position[], float flags[])
  *	too-short-lines to accumulate into longer lines (line aggregation).
  *
  * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
- *	as the move is executed and the position is now the target. In reality the planner and 
- *	steppers will still be processing the action and the real tool position is still close 
- *	to the starting point. 
+ *	as the move is planned and the move target becomes the new model position. In reality the 
+ *	planner will (in all likelyhood) have only just queuee the move for later execution, and 
+ *	the real tool position is still close to the starting point. 
  */
 
 void cm_set_model_position(stat_t status)
@@ -375,9 +375,9 @@ void cm_set_model_position(stat_t status)
 	// Even if we are coalescing the move need to keep the gcode model correct
 //	copy_vector(cm.gmx.position, cm.gm.target); 
 
-	if (status == STAT_OK) {
+//	if (status == STAT_OK) {
 		copy_vector(cm.gmx.position, cm.gm.target);
-	}
+//	}
 }
 
 void cm_set_model_position_from_runtime()
@@ -967,7 +967,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm_set_model_target(target, flags);
-//	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);	//++++++++++++++++++ test
+	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);	//++++++++++++++++++ test
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
@@ -976,13 +976,20 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// Gcode hinting. If Continuous mode preserve speed at the expense of path integrity
 	// If Exact Path or Exact Stop mode slow move down to be able to execute the move
-	if (cm.gm.path_control != PATH_CONTINUOUS) {
-		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
-	}
+//	if (cm.gm.path_control != PATH_CONTINUOUS) {
+//		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
+//	}
 
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
-	cm_set_model_position(status);				// update position if the move was successful
+
+	if (status != STAT_OK) {
+		printf("#### STRAIGHT_FEED() - Aline returned exception %d on line %lu\n", status, cm.gm.linenum);
+	}
+
+	cm_set_model_position(status); 				// update model position (unconditionally)
+//	if (status == STAT_OK) cm_set_model_position(status); // update position if the move was successful
+
 	return (status);
 }
 
@@ -1655,9 +1662,9 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-//+++++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
-//	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
-	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
+//++++++++++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
+	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
+//	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
