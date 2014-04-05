@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		421.18	// Testing us-seal.gcode - made some changes in planner queue empty comditions
+#define TINYG_FIRMWARE_BUILD   		421.19	// changing planner queue empty syntax; checkpoint commit
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

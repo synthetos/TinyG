@@ -241,8 +241,7 @@ static stat_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->value_vector, bf->flag_vector);	// 2 vectors used by callbacks
 	st_prep_null();									// Must call a null prep to keep the loader happy. 
-//	mp_free_run_buffer();
-	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & process STOP if empty							// end the cycle if the queue empties
+	cm_cycle_end(mp_free_run_buffer());				// free buffer & perform cycle_end if empty
 	return (STAT_OK);
 }
 
@@ -272,7 +271,8 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
 //	mp_free_run_buffer();
-	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & process STOP if empty							// end the cycle if the queue empties
+//	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & process STOP if empty							// end the cycle if the queue empties
+	cm_cycle_end(mp_free_run_buffer());				// free buffer & perform cycle_end if empty
 	return (STAT_OK);
 }
 
@@ -406,13 +406,10 @@ uint8_t mp_free_run_buffer()						// EMPTY current run buf & adv to next
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;	// pend next buffer
 	}
-//	if (mb.w == mb.r) {		//++++++++++++++++++++ REMOVE AFTER TEST
-//		cm_cycle_end();							// end the cycle if the queue empties
-//	}
 	mb.buffers_available++;
 	qr_request_queue_report(-1);				// add to the "removed buffers" count
 
-	if (mb.w == mb.r) return (true);			// return true to trigger cycle stop processing
+	if (mb.w == mb.r) return (true);			// return true to trigger cycle end processing
 	return (false);
 }
 

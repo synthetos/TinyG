@@ -173,7 +173,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			bf->nx->replannable = false;				// prevent overplanning (Note 2)
 			st_prep_null();								// call this to keep the loader happy
 //			mp_free_run_buffer();
-			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
+//			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
+			cm_cycle_end(mp_free_run_buffer());			// free buffer & perform cycle_end if empty
 			return (STAT_NOOP);
 		}
 		bf->move_state = MOVE_RUN;
@@ -239,7 +240,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.section_state = SECTION_OFF;
 		bf->nx->replannable = false;					// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_RUN) {
-			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
+//			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
+			cm_cycle_end(mp_free_run_buffer());			// free buffer & perform cycle_end if empty
 		}
 	}
 	return (status);

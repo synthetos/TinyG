@@ -1344,7 +1344,7 @@ static void _exec_program_finalize(float *value, float *flag)
 	cm.cycle_start_requested = false;				// cancel any pending cycle start request
 	mp_zero_segment_velocity();						// for reporting purposes
 
-	// execute program END resets
+	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
@@ -1371,11 +1371,13 @@ void cm_cycle_start()
 	}
 }
 
-void cm_cycle_end() 
+void cm_cycle_end(uint8_t flag) 					// flag must be true to trigger cycle end
 {
-	if (cm.cycle_state != CYCLE_OFF) {
-		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-		_exec_program_finalize(value,value);
+	if (flag == true) {
+		if (cm.cycle_state != CYCLE_OFF) {
+			float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+			_exec_program_finalize(value,value);
+		}
 	}
 }
 

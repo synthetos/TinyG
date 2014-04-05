@@ -256,7 +256,7 @@ static void _probe_restore_settings()
 	cm.cycle_state = CYCLE_OFF;
 	cm.hold_state = FEEDHOLD_OFF;
 //	cm_request_cycle_start();					// clear feedhold state
-//	cm_cycle_end();
+//	cm_cycle_end(true);
 //	cm_program_stop();
 
     printf_P(PSTR("(cm.cycle_state %i)\n"), cm.cycle_state);

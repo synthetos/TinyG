@@ -396,7 +396,7 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm_set_feed_rate(hm.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;								// required
-	cm_cycle_end();
+	cm_cycle_end(true);
 	return (STAT_OK);
 }
 
@@ -564,7 +564,7 @@ stat_t cm_set_origin_callback(void)
 	cm.set_origin_state = SET_ORIGIN_SUCCEDED;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;										// required
-	cm_cycle_end();
+	cm_cycle_end(true);
 	return (STAT_OK);
 }
 
