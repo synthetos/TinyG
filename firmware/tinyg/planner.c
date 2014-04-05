@@ -241,7 +241,8 @@ static stat_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->value_vector, bf->flag_vector);	// 2 vectors used by callbacks
 	st_prep_null();									// Must call a null prep to keep the loader happy. 
-	mp_free_run_buffer();
+//	mp_free_run_buffer();
+	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & process STOP if empty							// end the cycle if the queue empties
 	return (STAT_OK);
 }
 
@@ -270,7 +271,8 @@ stat_t mp_dwell(float seconds)
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
-	mp_free_run_buffer();
+//	mp_free_run_buffer();
+	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & process STOP if empty							// end the cycle if the queue empties
 	return (STAT_OK);
 }
 
@@ -313,7 +315,7 @@ static stat_t _exec_dwell(mpBuf_t *bf)
  *							Returns NULL if no buffer available
  *							The behavior supports continuations (iteration)
  *
- * mp_free_run_buffer()		Release the run buffer & return to buffer pool.
+ * mp_free_run_buffer()		Release the run buffer & return to buffer pool. Return true if queue is empty
  *
  * mp_get_prev_buffer(bf)	Returns pointer to prev buffer in linked list
  * mp_get_next_buffer(bf)	Returns pointer to next buffer in linked list 
@@ -396,7 +398,7 @@ mpBuf_t * mp_get_run_buffer()
 	return (NULL);								// CASE: no queued buffers. fail it.
 }
 
-void mp_free_run_buffer()						// EMPTY current run buf & adv to next
+uint8_t mp_free_run_buffer()						// EMPTY current run buf & adv to next
 {
 	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
 //	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
@@ -404,9 +406,14 @@ void mp_free_run_buffer()						// EMPTY current run buf & adv to next
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;	// pend next buffer
 	}
-	if (mb.w == mb.r) cm_cycle_end();			// end the cycle if the queue empties
+//	if (mb.w == mb.r) {		//++++++++++++++++++++ REMOVE AFTER TEST
+//		cm_cycle_end();							// end the cycle if the queue empties
+//	}
 	mb.buffers_available++;
 	qr_request_queue_report(-1);				// add to the "removed buffers" count
+
+	if (mb.w == mb.r) return (true);			// return true to trigger cycle stop processing
+	return (false);
 }
 
 mpBuf_t * mp_get_first_buffer(void)
