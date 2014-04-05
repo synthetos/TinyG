@@ -941,9 +941,8 @@ stat_t cm_set_path_control(uint8_t mode)
  * Machining Functions (4.3.6) *
  *******************************/
 /* 
- * cm_arc_feed()
+ * cm_arc_feed() - SEE plan_arc.c(pp)
  */
-// see plan_arc.cpp
  
 /*
  * cm_dwell() - G4, P parameter (seconds)
@@ -967,7 +966,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm_set_model_target(target, flags);
-	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);	//++++++++++++++++++ test
+//	printf("#### %f, %f, %f\n", (double)cm.gm.target[0], (double)cm.gm.target[1], (double)cm.gm.target[2]);
+
+	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
@@ -983,13 +984,11 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// run the move
 
-	if (status != STAT_OK) {
-		printf("#### STRAIGHT_FEED() - Aline returned exception %d on line %lu\n", status, cm.gm.linenum);
-	}
+//	if (status != STAT_OK) {
+//		printf("#### STRAIGHT_FEED() - Aline returned exception %d on line %lu\n", status, cm.gm.linenum);
+//	}
 
 	cm_set_model_position(status); 				// update model position (unconditionally)
-//	if (status == STAT_OK) cm_set_model_position(status); // update position if the move was successful
-
 	return (status);
 }
 

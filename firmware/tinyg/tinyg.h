@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		421.19	// changing planner queue empty syntax; checkpoint commit
+#define TINYG_FIRMWARE_BUILD   		421.20	// 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -64,7 +64,6 @@
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
 #endif
   #define __TEST_99 						// comment out to remove diagnostic test 99
-
 
 /****** DEVELOPMENT SETTINGS ******/
 

@@ -2,8 +2,46 @@
  * test_099.h - Arbitrary test file for debugging
  */
 
-/****** Extract from Evil45 F3000, NoA ***/
+/****** Extract from us-seal ***/
 
+const char test_99[] PROGMEM = "\
+G21 G92\n\
+N9 G1 Z0.30 F1000\n\
+N1738 G1 X6.57 Y19.94\n\
+N1739 G1 X6.57 Y19.87\n\
+N1740 G1 X6.57 Y19.86\n\
+N1741 G1 X6.57 Y19.79\n\
+N1742 G1 X6.57 Y19.77\n\
+N1743 G1 X6.57 Y19.71\n\
+N1744 G1 X6.57 Y19.69\n\
+N1745 G1 X6.57 Y19.63\n\
+N1746 G1 X6.57 Y19.61\n\
+N1747 G1 X6.57 Y19.55\n\
+N1748 G1 X6.57 Y19.53\n\
+N1749 G1 X6.57 Y19.47\n\
+N1750 G1 X6.64 Y19.47\n\
+N1751 G1 X6.68 Y19.47\n\
+N1752 G1 X6.76 Y19.54\n\
+N1753 G1 X6.86 Y19.52\n\
+N1754 G1 X6.86 Y19.68\n\
+N1755 G1 X6.86 Y19.75\n\
+N1756 G1 X6.86 Y19.76\n\
+N1757 G1 X6.78 Y19.77\n\
+N1758 G1 X6.78 Y19.93\n\
+N1759 G1 X6.77 Y19.99\n\
+N1760 G1 X6.78 Y20.01\n\
+N1761 G1 X6.69 Y20.01\n\
+N1762 G1 X6.69 Y20.18\n\
+N1763 G1 X6.69 Y20.24\n\
+N1764 G1 X6.69 Y20.26\n\
+N1765 G1 X6.69 Y20.32\n\
+N1766 G1 X6.69 Y20.34\n\
+N1767 G1 X6.61 Y20.34\n\
+N1768 G1 X6.61 Y20.50\n\
+";
+
+/****** Extract from Evil45 F3000, NoA ***/
+/*
 const char test_99[] PROGMEM = "\
 N1 G21\n\
 N2 G90\n\
@@ -34,7 +72,7 @@ N33 G1 X102.57 Y97.97\n\
 N34 G1 X102.98 Y97.77\n\
 N35 G1 X103.09 Y97.68\n\
 ";
-
+*/
 /****** Programs for running the pendulum with spinning heads ***
 
 const char test_99[] PROGMEM = "\

@@ -172,8 +172,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.section_state = SECTION_OFF;
 			bf->nx->replannable = false;				// prevent overplanning (Note 2)
 			st_prep_null();								// call this to keep the loader happy
-//			mp_free_run_buffer();
-//			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
 			cm_cycle_end(mp_free_run_buffer());			// free buffer & perform cycle_end if empty
 			return (STAT_NOOP);
 		}
@@ -195,6 +193,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
+		printf("MR.INIT %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
+
 		// generate the waypoints for position correction at section ends
 		for (uint8_t axis=0; axis<AXES; axis++) {
 			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[axis] * mr.head_length;
@@ -202,8 +202,17 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
 //			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;	// tail alternate form
 		}
+//		printf("MR.POS  %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.position[0],(double)mr.position[1],(double)mr.position[2]);
+		printf("MR.HBTe %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.head_length,(double)mr.body_length,(double)mr.tail_length);  
+//		printf("MR.HEAD %lu: %f, %f, %f\n", mr.gm.linenum, 
+//		printf("MR.BODY %lu: %f, %f, %f\n", mr.gm.linenum, 
+//		printf("MR.TAIL %lu: %f, %f, %f\n", mr.gm.linenum, 
+//			(double)mr.waypoint[SECTION_TAIL][0], (double)mr.waypoint[SECTION_TAIL][1], (double)mr.waypoint[SECTION_TAIL][2]);
+
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
+
+//	printf("MR.MOVE %lu: %f, %f, %f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
 
 	//**** main dispatcher to process segments ***
 	stat_t status = STAT_OK;
@@ -221,8 +230,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
-
-//		mp_free_run_buffer();							// free bf and send a status report
 		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -240,7 +247,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.section_state = SECTION_OFF;
 		bf->nx->replannable = false;					// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_RUN) {
-//			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & process STOP if empty							// end the cycle if the queue empties
 			cm_cycle_end(mp_free_run_buffer());			// free buffer & perform cycle_end if empty
 		}
 	}
@@ -499,6 +505,7 @@ static stat_t _exec_aline_segment()
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
 	}
+//	printf("MR.EXEC %lu: %f, %f, %f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
 
 	// Convert target position to steps
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics
@@ -507,23 +514,23 @@ static stat_t _exec_aline_segment()
 	//	   Other kinematics may require transforming travel distance as opposed to simply subtracting steps.
 
 	for (i=0; i<MOTORS; i++) {
-		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed by 1 segment
-		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
-		mr.encoder_steps[i] = en_read_encoder(i);			// get current encoder position (time aligns to commanded_steps)
+		mr.commanded_steps[i] = mr.position_steps[i];	// previous segment's position, delayed by 1 segment
+		mr.position_steps[i] = mr.target_steps[i];	 	// previous segment's target becomes position
+		mr.encoder_steps[i] = en_read_encoder(i);		// get current encoder position (time aligns to commanded_steps)
 		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i]; 
 	}
-	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the target steps...
-	for (i=0; i<MOTORS; i++) {								// and compute the distances to be traveled
+	ik_kinematics(mr.gm.target, mr.target_steps);		// now determine the target steps...
+	for (i=0; i<MOTORS; i++) {							// and compute the distances to be traveled
 		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
 	// Call the stepper prep function
 
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
-	copy_vector(mr.position, mr.gm.target); 				// update position from target
-	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
-	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
-	return (STAT_EAGAIN);									// this section still has more segments to run
+	copy_vector(mr.position, mr.gm.target); 			// update position from target
+	mr.elapsed_accel_time += mr.segment_accel_time;		// this is needed by jerk-based exec (NB: ignored if running the body)
+	if (mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
+	return (STAT_EAGAIN);								// this section still has more segments to run
 }
 
 #ifdef __cplusplus

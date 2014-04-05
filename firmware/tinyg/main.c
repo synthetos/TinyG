@@ -178,8 +178,12 @@ int main(void)
  * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
  */
 
-stat_t status_code;						// allocate a variable for this macro
-char shared_buf[MESSAGE_LEN];			// allocate string for global use
+stat_t status_code;						// allocate a variable for the ritorno macro
+char shared_buf[MESSAGE_LEN];			// allocate a string for global message use
+
+//#ifdef __TEXT_MODE
+
+/*** Status message strings ***/
 
 static const char stat_00[] PROGMEM = "OK";
 static const char stat_01[] PROGMEM = "Error";
@@ -463,6 +467,14 @@ char *get_status_message(stat_t status)
 {
 	return ((char *)GET_TEXT_ITEM(stat_msg, status));
 }
+/*
+#else 
+char *get_status_message(stat_t status)
+{
+	return ((char *)NULL);
+}
+#endif // __TEXT_MODE
+*/
 
 /*******************************************************************************
  * _unit_tests() - uncomment __UNITS... line in .h files to enable unit tests
