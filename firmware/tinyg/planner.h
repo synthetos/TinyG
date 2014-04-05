@@ -226,8 +226,8 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
+	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
-	float skips[AXES];				// record skipped moves for position compensation
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
@@ -237,6 +237,7 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	float a_unit[AXES];
 	float b_unit[AXES];
 #endif
+	magic_t magic_end;			// magic number to test memory integrity
 } mpMoveMasterSingleton_t;
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables

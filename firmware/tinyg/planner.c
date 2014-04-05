@@ -107,12 +107,15 @@ void planner_init()
  */
 void planner_init_assertions()
 {
+	mm.magic_start = MAGICNUM;
+	mm.magic_end = MAGICNUM;
 	mr.magic_start = MAGICNUM;
 	mr.magic_end = MAGICNUM;
 }
 
 stat_t planner_test_assertions()
 {
+	if ((mm.magic_start  != MAGICNUM) || (mm.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	return (STAT_OK);
@@ -398,7 +401,7 @@ mpBuf_t * mp_get_run_buffer()
 	return (NULL);								// CASE: no queued buffers. fail it.
 }
 
-uint8_t mp_free_run_buffer()						// EMPTY current run buf & adv to next
+uint8_t mp_free_run_buffer()					// EMPTY current run buf & adv to next
 {
 	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
 //	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
@@ -408,9 +411,7 @@ uint8_t mp_free_run_buffer()						// EMPTY current run buf & adv to next
 	}
 	mb.buffers_available++;
 	qr_request_queue_report(-1);				// add to the "removed buffers" count
-
-	if (mb.w == mb.r) return (true);			// return true to trigger cycle end processing
-	return (false);
+	if (mb.w == mb.r) return (true); return (false); // return true if the queue emptied
 }
 
 mpBuf_t * mp_get_first_buffer(void)

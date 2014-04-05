@@ -193,7 +193,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
-		printf("MR.INIT %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
+//		printf("MR.INIT %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
 
 		// generate the waypoints for position correction at section ends
 		for (uint8_t axis=0; axis<AXES; axis++) {
@@ -203,7 +203,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 //			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;	// tail alternate form
 		}
 //		printf("MR.POS  %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.position[0],(double)mr.position[1],(double)mr.position[2]);
-		printf("MR.HBTe %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.head_length,(double)mr.body_length,(double)mr.tail_length);  
+//		printf("MR.HBTe %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.head_length,(double)mr.body_length,(double)mr.tail_length);  
 //		printf("MR.HEAD %lu: %f, %f, %f\n", mr.gm.linenum, 
 //		printf("MR.BODY %lu: %f, %f, %f\n", mr.gm.linenum, 
 //		printf("MR.TAIL %lu: %f, %f, %f\n", mr.gm.linenum, 

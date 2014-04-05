@@ -1334,7 +1334,7 @@ stat_t cm_queue_flush()
 
 static void _exec_program_finalize(float *value, float *flag)
 {
-	cm.machine_state = (uint8_t)value[0];;
+	cm.machine_state = (uint8_t)value[0];
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
 		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
@@ -1375,7 +1375,7 @@ void cm_cycle_end(uint8_t flag) 					// flag must be true to trigger cycle end
 	if (flag == true) {
 		if (cm.cycle_state != CYCLE_OFF) {
 			float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-			_exec_program_finalize(value,value);
+			_exec_program_finalize(value, value);
 		}
 	}
 }
