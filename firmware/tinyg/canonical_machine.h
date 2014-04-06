@@ -561,8 +561,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_set_position_by_axis(uint8_t axis, float position);		// set absolute position - single axis
 void cm_set_position_by_vector(float position[], float flags[]);// set absolute position - multiple axes
 void cm_set_model_target(float target[], float flag[]);
-void cm_set_model_position(stat_t status);
-//void cm_set_model_position(void);
+void cm_set_model_position(void);
 void cm_set_model_position_from_runtime(void);
 void cm_set_move_times(GCodeState_t *gcode_state);
 stat_t cm_test_soft_limits(float target[]);
@@ -645,8 +644,6 @@ void cm_feedhold(void);											// (no Gcode)
 void cm_program_stop(void);										// M0
 void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
-//void cm_exec_program_stop(void);
-//void cm_exec_program_end(void);
 
 /*--- Cycles ---*/
 

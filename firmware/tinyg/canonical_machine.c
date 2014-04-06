@@ -335,7 +335,8 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  *	errors. This is true because the planned / running moves have a different reference frame 
  *	than the one you are now going to set. These functions should only be called during 
  *	initialization sequences and during cycles (such as homing cycles) when you know there 
- *	are no more moves in the planner and that all motion has stopped. Use cm_get_runtime_busy() if in doubt.
+ *	are no more moves in the planner and that all motion has stopped. 
+ *	Use cm_get_runtime_busy() to be sure the system is quiescent. 
  */
 
 void cm_set_position_by_axis(uint8_t axis, float position)
@@ -360,24 +361,17 @@ void cm_set_position_by_vector(float position[], float flags[])
  * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
  * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
  *
- * 	This routine sets the endpoint position in the gcode model if the move was successfully 
- *	completed (no errors). Leaving the endpoint position alone for errors allows 
- *	too-short-lines to accumulate into longer lines (line aggregation).
+ * 	These routines set the point position in the gcode model.
  *
- * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
- *	as the move is planned and the move target becomes the new model position. In reality the 
- *	planner will (in all likelyhood) have only just queuee the move for later execution, and 
- *	the real tool position is still close to the starting point. 
+ * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move) 
+ *	is achieved as soon as the move is planned and the move target becomes the new model position.
+ *	In reality the planner will (in all likelyhood) have only just queuee the move for later 
+ *	execution, and the real tool position is still close to the starting point. 
  */
 
-void cm_set_model_position(stat_t status)
+void cm_set_model_position()
 {
-	// Even if we are coalescing the move need to keep the gcode model correct
-//	copy_vector(cm.gmx.position, cm.gm.target); 
-
-//	if (status == STAT_OK) {
-		copy_vector(cm.gmx.position, cm.gm.target);
-//	}
+	copy_vector(cm.gmx.position, cm.gm.target); 
 }
 
 void cm_set_model_position_from_runtime()
@@ -710,6 +704,8 @@ stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
+ *
+ *	These functions assume input validation occurred upstream.
  */
 
 stat_t cm_select_plane(uint8_t plane) 
@@ -845,16 +841,19 @@ stat_t cm_straight_traverse(float target[], float flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 	cm_set_model_target(target, flags);
-	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
+//	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
+
+	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
+	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
-	status = mp_aline(&cm.gm);					// run the move
-	cm_set_model_position(status);				// update position if the move was successful
-	return (status);
+	mp_aline(&cm.gm);							// send the move to the planner
+	cm_set_model_position();					// update gcode model position
+	return (STAT_OK);
 }
 
 /*
@@ -966,29 +965,18 @@ stat_t cm_straight_feed(float target[], float flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm_set_model_target(target, flags);
-//	printf("#### %f, %f, %f\n", (double)cm.gm.target[0], (double)cm.gm.target[1], (double)cm.gm.target[2]);
+//	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
 
-	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
+	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
+	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
-
-	// Gcode hinting. If Continuous mode preserve speed at the expense of path integrity
-	// If Exact Path or Exact Stop mode slow move down to be able to execute the move
-//	if (cm.gm.path_control != PATH_CONTINUOUS) {
-//		cm.gm.move_time = max(cm.gm.move_time, MIN_SEGMENT_TIME);
-//	}
-
 	cm_cycle_start();							// required for homing & other cycles
-	status = mp_aline(&cm.gm);					// run the move
-
-//	if (status != STAT_OK) {
-//		printf("#### STRAIGHT_FEED() - Aline returned exception %d on line %lu\n", status, cm.gm.linenum);
-//	}
-
-	cm_set_model_position(status); 				// update model position (unconditionally)
+	status = mp_aline(&cm.gm);					// send the move to the planner
+	cm_set_model_position(); 					// update model position
 	return (status);
 }
 
@@ -1053,7 +1041,7 @@ static void _exec_mist_coolant_control(float *value, float *flag)
 	cm.gm.mist_coolant = (uint8_t)value[0];
 
 #ifdef __AVR
-	if (cm.gm.mist_coolant == true)
+	if (cm.gm.mist_coolant == true) 
 		gpio_set_bit_on(MIST_COOLANT_BIT);	// if
 	gpio_set_bit_off(MIST_COOLANT_BIT);		// else
 #endif // __AVR

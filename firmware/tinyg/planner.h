@@ -322,7 +322,7 @@ void mp_init_buffers(void);
 uint8_t mp_get_planner_buffers_available(void);
 void mp_clear_buffer(mpBuf_t *bf); 
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
-void mp_queue_write_buffer(const uint8_t move_type);
+void mp_commit_write_buffer(const uint8_t move_type);
 uint8_t mp_free_run_buffer(void);
 mpBuf_t * mp_get_write_buffer(void); 
 mpBuf_t * mp_get_run_buffer(void);

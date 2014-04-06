@@ -110,6 +110,9 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
 
+	// exit out if the move has zero movement. At all.
+	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
+
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
@@ -232,7 +235,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	// Note: these next lines must remain in exact order. Position must update before queueing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
 	copy_vector(mm.position, bf->gm.target);	// set the planner position 
-	mp_queue_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
+	mp_commit_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }
 

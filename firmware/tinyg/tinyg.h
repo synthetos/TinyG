@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		421.22	// Cleaned up after all the diagnostics in previous commits
+#define TINYG_FIRMWARE_BUILD   		422.01	// Release candidate for edge push - interim commit
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -63,7 +63,7 @@
   #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
   #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
 #endif
-  #define __TEST_99 						// comment out to remove diagnostic test 99
+//  #define __TEST_99 						// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 
