@@ -352,7 +352,7 @@ void mp_dump_runtime_state(void);
 
 /*** Unit tests ***/
 
-//#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
+#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
 #ifdef __UNIT_TEST_PLANNER
 void mp_unit_tests(void);
 void mp_plan_arc_unit_tests(void);

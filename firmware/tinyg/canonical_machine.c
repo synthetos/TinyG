@@ -958,14 +958,13 @@ stat_t cm_dwell(float seconds)
  */
 stat_t cm_straight_feed(float target[], float flags[])
 {
-	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
-
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
+
+	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 	cm_set_model_target(target, flags);
-//	if (vector_equal(cm.gm.target, cm.gmx.position)) return (STAT_OK);
 
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
