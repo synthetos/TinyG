@@ -153,7 +153,7 @@ void st_reset()
 		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
 		st_run.mot[motor].substep_accumulator = 0;	// will become max negative during per-motor setup;
 		st_pre.mot[motor].corrected_steps = 0;		// diagnostic only - no action effect
-//		en_set_encoder_steps(motor, 0);				// ++++++ enable this and test it
+//		en_set_encoder_steps(motor, 0);				// ++++ enable this and test it
 	}
 }
 
@@ -282,7 +282,7 @@ stat_t st_motor_power_callback() 	// called by controller
 					case (MOTOR_POWER_TIMEOUT_START): {
 						st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
 						st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-//						printf ("%lu ",st_run.mot[motor].power_systick);		//+++++ DIAGNOSTIC
+//						printf ("%lu ",st_run.mot[motor].power_systick);		//++++ DIAGNOSTIC
 						break;
 					}
 					case (MOTOR_POWER_TIMEOUT_COUNTDOWN): {

@@ -598,7 +598,7 @@ void json_print_response(uint8_t status)
 					cmd->objtype = TYPE_EMPTY;
 				}
 
-//+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
+//++++		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
 //fix me		if (js.echo_json_configs == false) {
 //					cmd->objtype = TYPE_EMPTY;
 //				}
@@ -624,8 +624,8 @@ void json_print_response(uint8_t status)
 		}
 	}
 	char_t footer_string[CMD_FOOTER_LEN];
-//	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);	//+++++++++++++++++++++++
-	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, xio_get_usb_rx_free());
+	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
+//	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, xio_get_usb_rx_free());	// ++++ diagnostic
 	cs.linelen = 0;										// reset linelen so it's only reported once
 
 	cmd_copy_string(cmd, footer_string);				// link string to cmd object

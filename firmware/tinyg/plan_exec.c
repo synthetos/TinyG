@@ -193,8 +193,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
-//		printf("MR.INIT %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
-
 		// generate the waypoints for position correction at section ends
 		for (uint8_t axis=0; axis<AXES; axis++) {
 			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[axis] * mr.head_length;
@@ -202,17 +200,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
 //			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * bf->length;	// tail alternate form
 		}
-//		printf("MR.POS  %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.position[0],(double)mr.position[1],(double)mr.position[2]);
-//		printf("MR.HBTe %lu: %2.4f, %2.4f, %2.4f\n", mr.gm.linenum,(double)mr.head_length,(double)mr.body_length,(double)mr.tail_length);  
-//		printf("MR.HEAD %lu: %f, %f, %f\n", mr.gm.linenum, 
-//		printf("MR.BODY %lu: %f, %f, %f\n", mr.gm.linenum, 
-//		printf("MR.TAIL %lu: %f, %f, %f\n", mr.gm.linenum, 
-//			(double)mr.waypoint[SECTION_TAIL][0], (double)mr.waypoint[SECTION_TAIL][1], (double)mr.waypoint[SECTION_TAIL][2]);
-
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
-
-//	printf("MR.MOVE %lu: %f, %f, %f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
 
 	//**** main dispatcher to process segments ***
 	stat_t status = STAT_OK;
@@ -302,9 +291,9 @@ static stat_t _exec_aline_head()
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 
 		// +++++ DIAGNOSTIC
-		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("#### EXEC_HEAD() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-		}
+//		if (mr.segment_time < MIN_SEGMENT_TIME) {
+//			printf("#### EXEC_HEAD() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+//		}
 
 		// 4 lines needed by __JERK_EXEC
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
@@ -378,9 +367,9 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 
 		// +++++ DIAGNOSTIC
-		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("#### EXEC_BODY() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-		}
+//		if (mr.segment_time < MIN_SEGMENT_TIME) {
+//			printf("#### EXEC_BODY() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+//		}
 
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
@@ -412,9 +401,9 @@ static stat_t _exec_aline_tail()
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 
 		// +++++ DIAGNOSTIC
-		if (mr.segment_time < MIN_SEGMENT_TIME) {
-			printf("#### EXEC_TAIL() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-		}
+//		if (mr.segment_time < MIN_SEGMENT_TIME) {
+//			printf("#### EXEC_TAIL() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
+//		}
 
 		// 4 lines needed by jerk-based exec
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
@@ -505,7 +494,6 @@ static stat_t _exec_aline_segment()
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
 	}
-//	printf("MR.EXEC %lu: %f, %f, %f\n", mr.gm.linenum, (double)mr.gm.target[0], (double)mr.gm.target[1], (double)mr.gm.target[2]);
 
 	// Convert target position to steps
 	// Bucket-brigade the old target down the chain before getting the new target from kinematics

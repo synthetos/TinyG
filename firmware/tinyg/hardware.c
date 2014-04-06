@@ -229,7 +229,7 @@ stat_t hw_set_hv(cmdObj_t *cmd)
 	set_flt(cmd);					// record the hardware version
 	_port_bindings(cmd->value);		// reset port bindings
 	switch_init();					// re-initialize the GPIO ports
-//+++++	gpio_init();				// re-initialize the GPIO ports
+//++++	gpio_init();				// re-initialize the GPIO ports
 	return (STAT_OK);
 }
 

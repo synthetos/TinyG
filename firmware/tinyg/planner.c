@@ -377,14 +377,17 @@ void mp_unget_write_buffer()
 	mb.buffers_available++;
 }
 */
+
+/*** WARNING: The caller cannot user the write buffer once it has been queued. It may be stale ***/
+
 void mp_queue_write_buffer(const uint8_t move_type)
 {
 	mb.q->move_type = move_type;
 	mb.q->move_state = MOVE_NEW;
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
+	qr_request_queue_report(+1);				// request a QR and add to the "added buffers" count
 	st_request_exec_move();						// request a move exec if not busy
-	qr_request_queue_report(+1);				// add to the "added buffers" count
 }
 
 mpBuf_t * mp_get_run_buffer() 
@@ -410,8 +413,9 @@ uint8_t mp_free_run_buffer()					// EMPTY current run buf & adv to next
 		mb.r->buffer_state = MP_BUFFER_PENDING;	// pend next buffer
 	}
 	mb.buffers_available++;
-	qr_request_queue_report(-1);				// add to the "removed buffers" count
-	if (mb.w == mb.r) return (true); return (false); // return true if the queue emptied
+	qr_request_queue_report(-1);				// request a QR and add to the "removed buffers" count
+//	if (mb.w == mb.r) return (true); return (false); // return true if the queue emptied
+	return ((mb.w == mb.r) ? true : false); 	// return true if the queue emptied
 }
 
 mpBuf_t * mp_get_first_buffer(void)

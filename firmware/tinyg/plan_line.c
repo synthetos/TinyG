@@ -113,15 +113,8 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
-
-//	printf("MR.LEN  %lu: %2.4f\n", bf->gm.linenum,(double)bf->length);  
-//	printf("MR.TGT  %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum,(double)gm_in->target[0],(double)gm_in->target[1],(double)gm_in->target[2]);  
-//	printf("MR.POS  %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum,(double)mm.position[0],(double)mm.position[1],(double)mm.position[2]);  
-
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
-
-//	printf("#### %lu: %f, %f, %f\n", bf->gm.linenum, (double)bf->gm.target[0], (double)bf->gm.target[1], (double)bf->gm.target[2]);
 
 //	if (bf->gm.move_time < MIN_TIME_MOVE) {
 //		printf("#### ALINE() - MIN SEGMENT line%lu %f\n", bf->gm.linenum, (double)bf->gm.move_time);
@@ -236,14 +229,8 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	uint8_t mr_flag = false;
 
-//	printf("MR.HBT1 %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum,(double)bf->head_length,(double)bf->body_length,(double)bf->tail_length);  
-
-//	printf("PRE  %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum, (double)bf->gm.target[0], (double)bf->gm.target[1], (double)bf->gm.target[2]);
+	// Note: these next lines must remain in exact order. Position must update before queueing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
-//	printf("POST %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum, (double)bf->gm.target[0], (double)bf->gm.target[1], (double)bf->gm.target[2]);
-
-//	printf("MR.HBT2 %lu: %2.4f, %2.4f, %2.4f\n", bf->gm.linenum,(double)bf->head_length,(double)bf->body_length,(double)bf->tail_length);  
-
 	copy_vector(mm.position, bf->gm.target);	// set the planner position 
 	mp_queue_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);

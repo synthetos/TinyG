@@ -1278,12 +1278,11 @@ stat_t cm_queue_flush()
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
 
-//+++++++++++++++++ testing
+//++++ testing
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm_set_position_by_axis(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 	}
-
-/* +++++++++++++ original code
+/* ++++ original code
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 		cm.gmx.position[axis] = mp_get_runtime_absolute_position(axis);
@@ -1663,10 +1662,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-//++++++++++++ REMEMBER TO SWITCH THIS BACK TO ACTIVE MODEL!!!!
-	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
-//	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
-
+	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return (STAT_OK);
