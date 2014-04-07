@@ -7,7 +7,7 @@ PROJECT = tinyg
 MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
-TINYG_FIRMWARE_BUILD = 410.09
+TINYG_FIRMWARE_BUILD = 410.10
 
 CPP = avr-g++
 

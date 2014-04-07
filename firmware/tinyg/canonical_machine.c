@@ -1269,7 +1269,12 @@ stat_t cm_feedhold_sequencing_callback()
 			cm_queue_flush();
 		}
 	}
-	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
+    bool feedhold_processing =
+        cm.hold_state == FEEDHOLD_SYNC ||
+        cm.hold_state == FEEDHOLD_PLAN ||
+        cm.hold_state == FEEDHOLD_DECEL;
+	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) &&
+        !feedhold_processing) {
 		cm.cycle_start_requested = false;
 		cm.hold_state = FEEDHOLD_END_HOLD;
 		cm_cycle_start();
