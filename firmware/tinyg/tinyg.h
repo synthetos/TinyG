@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		422.03	// Release candidate for edge push - testing with TGFX
+#define TINYG_FIRMWARE_BUILD   		423.01	// Release candidate for edge push - merging OMC changes
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,7 +56,7 @@
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
-#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
+//#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
 
 #ifndef __SIMULATION
   #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
@@ -79,7 +79,7 @@
   #define __SILENCE_JSON_RESPONSES
 #endif
 
-#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
@@ -255,7 +255,7 @@ typedef uint16_t magic_t;		// magic number size
  * Most of the status codes (except STAT_OK) below are errors which would fail the command,
  * and are returned by the failed command and reported back via JSON or text. 
  * Some status codes are warnings do not fail the command. These can be used to generate
- * an exception report. These are labeled as WARNING: 
+ * an exception report. These are labeled as WARNING
  */
 
 typedef uint8_t stat_t;
@@ -418,6 +418,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_129 129
 
 // Gcode errors and warnings (Most originate from NIST - by concept, not number)
+// Fascinating: http://www.cncalarms.com/
 
 #define	STAT_GCODE_GENERIC_INPUT_ERROR 130				// generic error for gcode input
 #define	STAT_GCODE_COMMAND_UNSUPPORTED 131				// G command is not supported

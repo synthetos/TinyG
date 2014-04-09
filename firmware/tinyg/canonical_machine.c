@@ -651,12 +651,27 @@ stat_t canonical_machine_test_assertions(void)
 }
 
 /*
- * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
  * cm_clear() 	   - clear soft alarm
- *
- *	Fascinating: http://www.cncalarms.com/
+ * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  */
+
+stat_t cm_soft_alarm(stat_t status)
+{
+	rpt_exception(status);					// send alarm message
+	cm.machine_state = MACHINE_ALARM;
+	return (status);
+}
+
+stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
+{
+	if (cm.cycle_state == CYCLE_OFF) {
+		cm.machine_state = MACHINE_PROGRAM_STOP;
+	} else {
+		cm.machine_state = MACHINE_CYCLE;
+	}
+	return (STAT_OK);
+}
 
 stat_t cm_hard_alarm(stat_t status)
 {
@@ -674,23 +689,6 @@ stat_t cm_hard_alarm(stat_t status)
 	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
-}
-
-stat_t cm_soft_alarm(stat_t status)
-{
-	rpt_exception(status);					// send alarm message
-	cm.machine_state = MACHINE_ALARM;
-	return (status);
-}
-
-stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
-{
-	if (cm.cycle_state == CYCLE_OFF) {
-		cm.machine_state = MACHINE_PROGRAM_STOP;
-	} else {
-		cm.machine_state = MACHINE_CYCLE;
-	}
-	return (STAT_OK);
 }
 
 /**************************
@@ -1007,6 +1005,7 @@ stat_t cm_select_tool(uint8_t tool_select)
 static void _exec_select_tool(float *value, float *flag)
 {
 	cm.gm.tool_select = (uint8_t)value[0];
+  //printf("{\"tool\":%i}\n", cm.gm.tool_select);
 }
 
 stat_t cm_change_tool(uint8_t tool_change)
@@ -1243,7 +1242,11 @@ stat_t cm_feedhold_sequencing_callback()
 			cm_queue_flush();
 		}
 	}
-	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
+	bool feedhold_processing =				// added feedhold processing lockout from omco fork
+		cm.hold_state == FEEDHOLD_SYNC ||
+		cm.hold_state == FEEDHOLD_PLAN ||
+		cm.hold_state == FEEDHOLD_DECEL;
+	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
 		cm.cycle_start_requested = false;
 		cm.hold_state = FEEDHOLD_END_HOLD;
 		cm_cycle_start();

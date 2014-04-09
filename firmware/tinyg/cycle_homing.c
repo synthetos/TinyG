@@ -561,7 +561,7 @@ stat_t cm_set_origin_callback(void)
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}		// wait until planner empties
 
 	cm_set_position_by_vector(cm.gm.target, cm.gf.target);
-	cm.set_origin_state = SET_ORIGIN_SUCCEDED;
+	cm.set_origin_state = SET_ORIGIN_SUCCEEDED;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;										// required
 	cm_cycle_end(true);
