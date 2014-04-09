@@ -127,35 +127,6 @@ enum sectionState {
 #define TRAPEZOID_ITERATION_ERROR_PERCENT	((float)0.10)
 #define TRAPEZOID_LENGTH_FIT_TOLERANCE		((float)0.0001)	// allowable mm of error in planning phase
 #define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
-/*
-enum trapezoidReturnCode {
-	TRAPEZOID_NULL = 0,						// no return code. Should never occur
-	TRAPEZOID_HEAD_SKIP,					// 1
-	TRAPEZOID_BODY_SKIP,					// 2
-	TRAPEZOID_TAIL_SKIP,					// 3
-	TRAPEZOID_HT_ASYMMETRIC_HEAD_SKIP,		// 4
-	TRAPEZOID_HT_ASYMMETRIC_TAIL_SKIP,		// 5
-
-	TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_HEAD,
-	TRAPEZOID_SINGLE_SEGMENT_BODY,
-	TRAPEZOID_SINGLE_SEGMENT_BODY_FROM_TAIL,
-
-	TRAPEZOID_MULTI_SEGMENT_HEAD,
-	TRAPEZOID_MULTI_SEGMENT_BODY,
-	TRAPEZOID_MULTI_SEGMENT_TAIL,
-
-	TRAPEZOID_HT_SYMMETRIC_HEAD_REDUCTION,
-	TRAPEZOID_HT_SYMMETRIC_TAIL_REDUCTION,
-	TRAPEZOID_HT_SYMMETRIC_OK,
-
-	TRAPEZOID_HT_ASYMMETRIC_HEAD_ONLY,
-	TRAPEZOID_HT_ASYMMETRIC_TAIL_ONLY,
-	TRAPEZOID_HT_ASYMMETRIC_OK,
-
-	TRAPEZOID_REQUESTED_FIT,
-	TRAPEZOID_ITERATION_LIMIT_EXCEEDED
-};
-*/
 
 /*
  *	Macros and typedefs
@@ -302,9 +273,12 @@ void planner_init_assertions(void);
 stat_t planner_test_assertions(void);
 
 void mp_flush_planner(void);
-void mp_set_planner_position_by_axis(uint8_t axis, float position);
-void mp_set_planner_position_by_vector(float position[], float flags[]);
-void mp_set_step_counts(float position[]);
+void mp_set_planner_position(uint8_t axis, float position);
+void mp_set_runtime_position(uint8_t axis, float position);
+void mp_set_steps_to_runtime_position(void);
+//void mp_set_planner_position_by_vector(float position[], float flags[]);
+//void mp_set_runtime_position_by_vector(float position[], float flags[]);
+//void mp_set_step_counts(float position[]);
 
 void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 

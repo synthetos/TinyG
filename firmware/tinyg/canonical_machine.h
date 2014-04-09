@@ -378,7 +378,7 @@ enum cmSetOriginState {				// applies to cm.set_origin_state
 enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
-	NEXT_ACTION_SET_ORIGIN,				// G28.3 origin set
+	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
 	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
@@ -558,7 +558,7 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
-void cm_set_position_by_axis(uint8_t axis, float position);		// set absolute position - single axis
+void cm_set_position(uint8_t axis, float position);		// set absolute position - single axis
 void cm_set_position_by_vector(float position[], float flags[]);// set absolute position - multiple axes
 void cm_set_model_target(float target[], float flag[]);
 void cm_set_model_position(void);
@@ -582,6 +582,9 @@ stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+
+stat_t cm_set_absolute_origin(float origin[], float flag[]);
+void cm_set_axis_origin(uint8_t axis, const float position);
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92

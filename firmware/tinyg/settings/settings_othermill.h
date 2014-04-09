@@ -53,7 +53,7 @@
 // Note: there are some commented test values below
 
 #undef  SR_DEFAULTS
-#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan"
+#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -168,7 +168,7 @@
 #define Y_SEARCH_VELOCITY 		(Y_FEEDRATE_MAX/3)
 #define Y_LATCH_VELOCITY 		LATCH_VELOCITY
 #define Y_LATCH_BACKOFF 		5
-#define Y_ZERO_BACKOFF 			0
+#define Y_ZERO_BACKOFF 			3
 #define Y_JERK_HOMING			JERK_HOMING
 
 #define Z_AXIS_MODE 			AXIS_STANDARD

@@ -137,7 +137,43 @@ void mp_flush_planner()
 }
 
 /*
- * mp_set_planner_position_by_axis()   - set planner and runtime positions from a single axis
+ * mp_set_planner_position() - set planner position for a single axis
+ * mp_set_runtime_position() - set runtime position for a single axis
+ * mp_set_steps_to_runtime_position() - set encoder counts to the runtime position
+ * 
+ * Since steps are in motor space you have to run the position vector through inverse 
+ * kinematics to get the right numbers. This means that in a non-cartesian robot changing 
+ * any position can result in changes to multiple step values. So this operation is provided 
+ * as a single function and always uses the new position vector as an input.
+ */
+void mp_set_planner_position(uint8_t axis, float position)
+{
+	mm.position[axis] = position;
+}
+
+void mp_set_runtime_position(uint8_t axis, float position)
+{
+	mr.position[axis] = position;
+}
+
+void mp_set_steps_to_runtime_position()
+{
+	float step_position[MOTORS];
+	ik_kinematics(mr.position, step_position);				// convert lengths to steps in floating point
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		mr.target_steps[motor] = step_position[motor];
+		mr.position_steps[motor] = step_position[motor];
+		mr.commanded_steps[motor] = step_position[motor];
+		en_set_encoder_steps(motor, step_position[motor]);	// write steps to encoder register
+
+		// These must be zero:
+		mr.following_error[motor] = 0;
+		st_pre.mot[motor].corrected_steps = 0;
+	}
+}
+
+/*
+ * mp_set_planner_position()   - set planner and runtime positions from a single axis
  * mp_set_planner_position_by_vector() - set runtime and runtime positions from a position vector
  *
  * 	In order to set the planner and runtime positions the following all need to line up:
@@ -166,8 +202,8 @@ void mp_flush_planner()
  *	Sets the step counters and encoders to match the position, which is in mm length units.
  *	This establishes the "step grid" relative to the current machine position.
  */
-
-void mp_set_planner_position_by_axis(uint8_t axis, float position)
+/*
+void mp_set_planner_position(uint8_t axis, float position)
 {
 	mm.position[axis] = position;
 	mr.position[axis] = position;
@@ -185,6 +221,22 @@ void mp_set_planner_position_by_vector(float position[], float flags[])
 	mp_set_step_counts(mr.position);
 }
 
+void mp_set_runtime_position(uint8_t axis, float position)
+{
+	mr.position[axis] = position;
+	mp_set_step_counts(mr.position);
+}
+
+void mp_set_runtime_position_by_vector(float position[], float flags[])
+{
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flags[axis])) {
+			mr.position[axis] = position[axis];
+		}
+	}
+	mp_set_step_counts(mr.position);
+}
+
 void mp_set_step_counts(float position[])
 {
 	float step_position[MOTORS];
@@ -193,13 +245,15 @@ void mp_set_step_counts(float position[])
 		mr.target_steps[motor] = step_position[motor];
 		mr.position_steps[motor] = step_position[motor];
 		mr.commanded_steps[motor] = step_position[motor];
-		en_set_encoder_steps(motor, step_position[motor]);
+		en_set_encoder_steps(motor, step_position[motor]);	// write steps to encoder
 
-        // These must be zero:
-        mr.following_error[motor] = 0;
-        st_pre.mot[motor].corrected_steps = 0;
-    }
+		// These must be zero:
+		mr.following_error[motor] = 0;
+		st_pre.mot[motor].corrected_steps = 0;
+	}
 }
+
+*/
 
 /************************************************************************************
  * mp_queue_command() - queue a synchronous Mcode, program control, or other command

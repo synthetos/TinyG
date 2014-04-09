@@ -335,10 +335,10 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
-		cm_set_position_by_axis(axis, 0);
+		cm_set_position(axis, 0);
 		cm.homed[axis] = true;
 		} else {
-		cm_set_position_by_axis(axis, cm_get_work_position(RUNTIME, axis));
+		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	return (_set_homing_func(_homing_axis_start));
@@ -541,8 +541,16 @@ int8_t _get_next_axes(int8_t axis)
  *
  *	It enters a cycle to allow the planner queue to empty, then once that's happened
  *	it sets the axis or axes to the values in the G28.3 command.
- */
 
+ *	cm_set_origin_cycle_start() takes a vector of origins (presumably 0's, but not necessarily)
+ *	and applies them to all axes where the corresponding position in the flag vector is true (1).
+ *
+ *	This is a 2 step process. The model and planner contexts are set immediately, the runtime
+ *	command is queued and synchronized with the planner queue. At that point any axis that is set
+ *	is also marked as homed.
+
+ */
+/*
 stat_t cm_set_origin_cycle_start()
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -567,7 +575,7 @@ stat_t cm_set_origin_callback(void)
 	cm_cycle_end(true);
 	return (STAT_OK);
 }
-
+*/
 #ifdef __cplusplus
 }
 #endif

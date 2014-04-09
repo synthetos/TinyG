@@ -322,48 +322,26 @@ static stat_t _compute_arc()
  *	Assumes arc singleton has been pre-loaded with target and position.
  *	Parts of this routine were originally sourced from the grbl project.
  */
-/*
- * From Forrest Green - Other Machine Co, 3/27/14:
- *
- * In compute_arc_offsets_from_radius() there is a check to detect arcs where diameter 
- *	is less than the distance between endpoints. Unfortunately, small floating point 
- *	rounding errors can cause arcs close to 180 degrees to fail this check and the 
- *	function will return an error. Currently this error gets ignored (at least by 
- *	Otherplan) usually causing a straight feed from the start of the arc to the end 
- *	of the next move. Even though Otherplan doesn't generate radius format arcs over 
- *	120 degrees, this has been causing problems for a lot of users with gcode from other sources.
- *
- * If we replace:
- *   float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
- * With:
- *   float disc = 4 * square(arc.radius) - (square(x) + square(y));
- *   float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 0;
- *
- * Then TinyG would ignore rounding errors and cut a semicircle (which is usually the 
- *	desired behavior), but would no longer generate an error if radius is too small. 
- */
 static stat_t _compute_arc_offsets_from_radius()
 {
 	// Calculate the change in position along each selected axis
 	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
-	// == -(h * 2 / d) (see header note for replacement code)
-//	float h_x2_div_d = -sqrt(4 * square(arc.radius) - (square(x) + square(y))) / hypot(x,y);
-    float disc = 4 * square(arc.radius) - (square(x) + square(y));
-    float h_x2_div_d = (disc >= 0) ? -sqrt(disc) / hypot(x,y) : 0;
-/*
-    float h_x2_div_d = 0;
-	if (disc >= 0) {
-		h_x2_div_d  = -sqrt(disc) / hypot(x,y);
-	} else {
-		rpt_exception(STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
-	}
-*/
-	// If r is smaller than d the arc is now traversing the complex plane beyond
-	// the reach of any real CNC, and thus - for practical reasons - we will 
-	// terminate promptly
-	if(isnan(h_x2_div_d) == true) { return (STAT_FLOATING_POINT_ERROR);}
+	// *** From Forrest Green - Other Machine Co, 3/27/14:
+	// If the distance between endpoints is greater than the arc diameter, disc
+	// will be negative indicating that the arc is offset into the complex plane
+	// beyond the reach of any real CNC. However, numerical errors can flip the
+	// sign of disc as it approaches zero (which happens as the arc angle approaches
+	// 180 degrees). To avoid mishandling these arcs we use the closest real
+	// solution (which will be 0 when disc <= 0). This risks obscuring g-code errors
+	// where the radius is actually too small (they will be treated as half circles),
+	// but ensures that all valid arcs end up reasonably close to their intended
+	// paths regardless of any numerical issues.
+	float disc = 4 * square(arc.radius) - (square(x) + square(y));
+
+	// h_x2_div_d == -(h * 2 / d)
+	float h_x2_div_d = (disc > 0) ? -sqrt(disc) / hypot(x,y) : 0;
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
 	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d;}
