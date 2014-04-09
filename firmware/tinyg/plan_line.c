@@ -458,46 +458,51 @@ static void _reset_replannable_list()
 
 static void _calculate_trapezoid(mpBuf_t *bf) 
 {
-	bf->head_length = 0;		// initialize the lengths
-	bf->body_length = 0;
-	bf->tail_length = 0;
-
 	// F case: Block is too short to execute. 
 	// Force block into a single segment body with limited velocities
 
 	// if length < segment time * average velocity
-	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
+	float average_velocity = (bf->entry_velocity + bf->cruise_velocity) / 2;
+	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * average_velocity)) {
+//	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
 		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
 		return;
 	}
 
 	// B" case: Short line, body only. See if the block fits into a single segment
 
-	if (bf->length <= (NOM_SEGMENT_TIME * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
+	if (bf->length <= (NOM_SEGMENT_TIME * average_velocity)) {
+//	if (bf->length <= (NOM_SEGMENT_TIME * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
 		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
 		return;
 	}
 
-/* EXPERIMENTAL
 	// B case:  Velocities all match (or close enough)
 	//			This occurs frequently in normal gcode files with lots of short lines
 
 	if (((bf->cruise_velocity - bf->entry_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) && 
 		((bf->cruise_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE)) { 
 		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
 		return;
 	}
-*/
+
 	// Head-only and tail-only short-line cases
 	//	 H" and T" degraded-fit cases
 	//	 H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
 	
+	bf->body_length = 0;
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
 
@@ -516,6 +521,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			}
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->tail_length = bf->length;
+			bf->head_length = 0;
 			return;
 		}
 
@@ -525,6 +531,7 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 			}
 			bf->cruise_velocity = bf->exit_velocity;
 			bf->head_length = bf->length;
+			bf->tail_length = 0;
 			return;
 		}
 	}
@@ -1041,7 +1048,7 @@ static void _test_get_junction_vmax(void);
 #endif
 
 //#define JERK_TEST_VALUE (float)20000000	// set this to the value in the profile you are running
-#define JERK_TEST_VALUE (float)50000000	// set this to the value in the profile you are running
+//#define JERK_TEST_VALUE (float)50000000	// set this to the value in the profile you are running
 //#define JERK_TEST_VALUE (float)100000000	// set this to the value in the profile you are running
 //static void _set_jerk(const float jerk, mpBuf_t *bf);
 
@@ -1163,9 +1170,10 @@ static void _test_calculate_trapezoid()
 {
 	mpBuf_t *bf = mp_get_write_buffer();
 
-	_test_trapezoid(0.0001,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(0.001,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(0.01,	800,	800, 	800,bf);	// B case
+//	_test_trapezoid(0.0001,	800,	800, 	800,bf);	// B case
+//	_test_trapezoid(0.001,	800,	800, 	800,bf);	// B case
+//	_test_trapezoid(0.01,	800,	800, 	800,bf);	// B case
+	_test_trapezoid(0.05,	800,	800, 	800,bf);	// B case
 	_test_trapezoid(0.1,	800,	800, 	800,bf);	// B case
 	_test_trapezoid(1.0,	800,	800, 	800,bf);	// B case
 	_test_trapezoid(10.0,	800,	800, 	800,bf);	// B case
