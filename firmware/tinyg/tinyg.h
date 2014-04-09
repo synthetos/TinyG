@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		423.04	// merging OMC changes - refactored 28.3; some other changes, too
+#define TINYG_FIRMWARE_BUILD   		423.05	// merging OMC changes - updated settings,
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
