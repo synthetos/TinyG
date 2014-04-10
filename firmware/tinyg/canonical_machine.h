@@ -558,11 +558,10 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
-void cm_set_position(uint8_t axis, float position);		// set absolute position - single axis
-void cm_set_position_by_vector(float position[], float flags[]);// set absolute position - multiple axes
+
+void cm_update_model_position(void);
+void cm_update_model_position_from_runtime(void);
 void cm_set_model_target(float target[], float flag[]);
-void cm_set_model_position(void);
-void cm_set_model_position_from_runtime(void);
 void cm_set_move_times(GCodeState_t *gcode_state);
 stat_t cm_test_soft_limits(float target[]);
 
@@ -583,8 +582,9 @@ stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 
-stat_t cm_set_absolute_origin(float origin[], float flag[]);
-void cm_set_axis_origin(uint8_t axis, const float position);
+void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
+stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
+void cm_set_axis_origin(uint8_t axis, const float position);	// G28.3 planner callback
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
 stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
@@ -654,10 +654,6 @@ void cm_program_end(void);										// M2
 stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
-
-// Set origin cycle
-stat_t cm_set_origin_cycle_start(void);							// G28.3  (special function)
-stat_t cm_set_origin_callback(void);							// G28.3 main loop callback
 
 // Probe cycles
 stat_t cm_straight_probe(float target[], float flags[]);		// G38.2

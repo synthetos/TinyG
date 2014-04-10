@@ -247,7 +247,7 @@ static stat_t _probing_finish()
 		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 
 	// if we got here because of a feed hold we need to keep the model position correct
-	cm_set_model_position_from_runtime();
+	cm_update_model_position_from_runtime();
 
 	// If probe was successful the 'e' word == 1, otherwise e == 0 to signal an error
 
@@ -298,8 +298,6 @@ static void _probe_restore_settings()
 //	cm_request_cycle_start();					// clear feedhold state
 //	cm_cycle_end(true);
 //	cm_program_stop();
-
-//	printf_P(PSTR("(cm.cycle_state %i)\n"), cm.cycle_state);
 }
 
 static stat_t _probing_finalize_exit()
@@ -307,7 +305,6 @@ static stat_t _probing_finalize_exit()
 	_probe_restore_settings();
 	return (STAT_OK);
 }
-
 
 /*
  * _probing_error_exit()
@@ -325,7 +322,6 @@ static stat_t _probing_error_exit(int8_t axis)
 		sprintf_P(message, PSTR("Probing error - %c axis cannot move during probing"), cm_get_axis_char(axis));
 		cmd_add_conditional_message((char_t *)message);
 	}
-
 	cmd_print_list(STAT_PROBE_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
 	// clean up and exit

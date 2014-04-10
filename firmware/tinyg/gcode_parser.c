@@ -457,7 +457,6 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(cm.gn.target, cm.gf.target); break;}	// G30
 
 		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}									// G28.2
-//		case NEXT_ACTION_SET_ORIGIN: { status = cm_set_origin_cycle_start(); break;}								// G28.3
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(cm.gn.target, cm.gf.target); break;}// G28.3
 		case NEXT_ACTION_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}							// G28.4
 

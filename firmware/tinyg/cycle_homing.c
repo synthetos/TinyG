@@ -337,7 +337,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
 		cm_set_position(axis, 0);
 		cm.homed[axis] = true;
-		} else {
+	} else {
 		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
@@ -529,53 +529,6 @@ int8_t _get_next_axes(int8_t axis)
 }
 */
 
-/***********************************************************************************
- **** G28.3 Set Origin Cycle *******************************************************
- ***********************************************************************************/
-
-/*****************************************************************************
- * cm_set_origin_cycle_start()	- G28.3 - model, planner and queue to runtime
- * cm_set_origin_callback()		- callback from controller
- *
- *	This function is called by the gcode interpreter to execute a G28.3 command.
- *
- *	It enters a cycle to allow the planner queue to empty, then once that's happened
- *	it sets the axis or axes to the values in the G28.3 command.
-
- *	cm_set_origin_cycle_start() takes a vector of origins (presumably 0's, but not necessarily)
- *	and applies them to all axes where the corresponding position in the flag vector is true (1).
- *
- *	This is a 2 step process. The model and planner contexts are set immediately, the runtime
- *	command is queued and synchronized with the planner queue. At that point any axis that is set
- *	is also marked as homed.
-
- */
-/*
-stat_t cm_set_origin_cycle_start()
-{
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(cm.gf.target[axis])) {
-			cm.gm.target[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(cm.gn.target[axis]);
-		}
-	}
-	cm.cycle_state = CYCLE_SET_ORIGIN;
-	cm.set_origin_state = SET_ORIGIN_WAITING;
-	return (STAT_OK);
-}
-
-stat_t cm_set_origin_callback(void)
-{
-	if (cm.cycle_state != CYCLE_SET_ORIGIN) { return (STAT_NOOP);} 	// exit if not in an origin cycle
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}		// wait until planner empties
-
-	cm_set_position_by_vector(cm.gm.target, cm.gf.target);
-	cm.set_origin_state = SET_ORIGIN_SUCCEEDED;
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;										// required
-	cm_cycle_end(true);
-	return (STAT_OK);
-}
-*/
 #ifdef __cplusplus
 }
 #endif

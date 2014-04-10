@@ -320,65 +320,20 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  * Core functions supporting the canonical machining functions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
-/*
- * cm_set_position()   - set the position of a single axis in the model, planner and runtime
- * cm_set_position_by_vector() - set one or more positions in the model, planner and runtime
- *
- *	These commands sets an axis/axes to a position provided as an argument. 
- *	This is useful for setting origins for homing, probing, G28.3 and other operations.
- *
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *	!!!!! DO NOT CALL THESE FUNCTIONS WHILE IN A MACHINING CYCLE !!!!!
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *
- *	More specifically, do not call these functions if there are any moves in the planner
- *	or if the runtime is moving. The system must be quiescent or you will introduce positional 
- *	errors. This is true because the planned / running moves have a different reference frame 
- *	than the one you are now going to set. These functions should only be called during 
- *	initialization sequences and during cycles (such as homing cycles) when you know there 
- *	are no more moves in the planner and that all motion has stopped. 
- *	Use cm_get_runtime_busy() to be sure the system is quiescent. 
- */
-
-void cm_set_position(uint8_t axis, float position)
-{
-	cm.gmx.position[axis] = position;
-	cm.gm.target[axis] = position;
-	mp_set_planner_position(axis, position);
-}
-/*
-void cm_set_position_by_vector(float position[], float flags[])
-{
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(flags[axis])) {
-			cm.gmx.position[axis] = position[axis];
-			cm.gm.target[axis] = position[axis];
-		}
-	}
-	mp_set_planner_position_by_vector(position, flags);
-}
-*/
 /* 
- * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
- * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
+ * cm_update_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_update_model_position_from_runtime() - set endpoint position from final runtime position
  *
  * 	These routines set the point position in the gcode model.
  *
  * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move) 
  *	is achieved as soon as the move is planned and the move target becomes the new model position.
- *	In reality the planner will (in all likelyhood) have only just queuee the move for later 
+ *	In reality the planner will (in all likelihood) have only just queued the move for later 
  *	execution, and the real tool position is still close to the starting point. 
  */
 
-void cm_set_model_position()
-{
-	copy_vector(cm.gmx.position, cm.gm.target); 
-}
-
-void cm_set_model_position_from_runtime()
-{
-	copy_vector(cm.gmx.position, mr.gm.target);
-}
+void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
+void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
 /* 
  * cm_set_model_target() - set target vector in GM model
@@ -776,6 +731,35 @@ static void _exec_offset(float *value, float *flag)
 	mp_set_runtime_work_offset(offsets);
 }
 
+/*
+ * cm_set_position() - set the position of a single axis in the model, planner and runtime
+ *
+ *	This command sets an axis/axes to a position provided as an argument. 
+ *	This is useful for setting origins for homing, probing, and other operations.
+ *
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *	!!!!! DO NOT CALL THIS FUNCTION WHILE IN A MACHINING CYCLE !!!!!
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *
+ *	More specifically, do not call this function if there are any moves in the planner or 
+ *	if the runtime is moving. The system must be quiescent or you will introduce positional 
+ *	errors. This is true because the planned / running moves have a different reference frame 
+ *	than the one you are now going to set. These functions should only be called during 
+ *	initialization sequences and during cycles (such as homing cycles) when you know there 
+ *	are no more moves in the planner and that all motion has stopped. 
+ *	Use cm_get_runtime_busy() to be sure the system is quiescent. 
+ */
+
+void cm_set_position(uint8_t axis, float position)
+{
+	// TODO: Interlock involving runtime_busy test
+	cm.gmx.position[axis] = position;
+	cm.gm.target[axis] = position;
+	mp_set_planner_position(axis, position);
+	mp_set_runtime_position(axis, position);
+	mp_set_steps_to_runtime_position();
+}
+
 /*** G28.3 functions and support ***
  *
  * cm_set_absolute_origin() - G28.3 - model, planner and queue to runtime
@@ -789,6 +773,7 @@ static void _exec_offset(float *value, float *flag)
  *	and the step recording done by the encoders. At that point any axis that is set is also marked 
  *	as homed.
  */
+
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	float value[AXES];
@@ -797,7 +782,7 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 		if (fp_TRUE(flag[axis])) {
 			value[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(origin[axis]);
 			cm.gmx.position[axis] = value[axis];		// set model position
-//			cm.gm.target[axis] = value[axis];			// reset model target
+			cm.gm.target[axis] = value[axis];			// reset model target
 			mp_set_planner_position(axis, value[axis]);	// set mm position
 		}
 	}
@@ -815,25 +800,6 @@ static void _exec_absolute_origin(float *value, float *flag)
 	}
 	mp_set_steps_to_runtime_position();
 }
-
-/*
- * cm_set_axis_origin()	- set the origin of a single axis - model and planner
- *
- *	This is an "unofficial gcode" command to allow arbitrarily setting an axis 
- *	to an absolute position. This is needed to support the Otherlab infinite 
- *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
- *	(for example). The Y axis will now be set to 0 (or whatever value provided)
- */
-/*
-void cm_set_axis_origin(uint8_t axis, const float position)
-{
-	cm.gmx.position[axis] = position;
-	cm.gm.target[axis] = position;
-	mp_set_planner_position(axis, position);
-//	mp_reset_step_counts();	// step counters are in motor space: resets all step counters
-//	en_reset_encoders();	// encoders are in motor space: resets all encoders accordingly
-}
-*/
 
 /* 
  * cm_set_origin_offsets() 		- G92
@@ -909,7 +875,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
-	cm_set_model_position();					// update gcode model position
+	cm_update_model_position();
 	return (STAT_OK);
 }
 
@@ -1032,7 +998,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
-	cm_set_model_position(); 					// update model position
+	cm_update_model_position();
 	return (status);
 }
 
@@ -1326,18 +1292,17 @@ stat_t cm_queue_flush()
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
-
 //++++ testing
-//	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
-//	}
-// ++++ original code
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
+	}
+/* ++++ original code
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 		cm.gmx.position[axis] = mp_get_runtime_absolute_position(axis);
 		cm.gm.target[axis] = cm.gmx.position[axis];
 	}
-
+*/
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, value);			// finalize now, not later
 	return (STAT_OK);

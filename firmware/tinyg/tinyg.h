@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		423.05	// merging OMC changes - updated settings,
+#define TINYG_FIRMWARE_BUILD   		423.06	// merging OMC changes - test homing, G28.3, jogging, probing, queue flush
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
