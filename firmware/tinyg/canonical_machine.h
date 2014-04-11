@@ -301,7 +301,7 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
 // *** Note: check config printout strings align with all the state variables
 
 // ### LAYER 8 CRITICAL REGION ###
-// ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ### 
+// ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ###
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
@@ -363,13 +363,13 @@ enum cmProbeState {					// applies to cm.probe_state
 	PROBE_SUCCEEDED = 1,			// probe was triggered, cm.probe_results has position
 	PROBE_WAITING					// probe is waiting to be started
 };
-
+/*
 enum cmSetOriginState {				// applies to cm.set_origin_state
 	SET_ORIGIN_OFF = 0,
 	SET_ORIGIN_SUCCEEDED = 1,		// end state
 	SET_ORIGIN_WAITING				// waiting for planner to drain
 };
-
+*/
 /* The difference between NextAction and MotionMode is that NextAction is 
  * used by the current block, and may carry non-modal commands, whereas 
  * MotionMode persists across blocks (as G modal group 1)
@@ -380,7 +380,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
-	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates 
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
@@ -558,7 +558,6 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
-
 void cm_update_model_position(void);
 void cm_update_model_position_from_runtime(void);
 void cm_set_model_target(float target[], float flag[]);

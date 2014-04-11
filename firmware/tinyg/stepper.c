@@ -497,7 +497,12 @@ static void _load_move()
 		}
 		return;
 	}
-
+/*
+	if (st_pre.segment_ready != true) {									// trap if prep is not complete
+		printf("######## LOADER - SEGMENT NOT READY\n");
+	}
+	st_pre.segment_ready = false;
+*/
 	// handle aline() loads first (most common case)  NB: there are no more lines, only alines()
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
@@ -625,7 +630,42 @@ static void _load_move()
 		}
 		ACCUMULATE_ENCODER(MOTOR_4);
 #endif
-
+#if (MOTORS >= 5)
+		if ((st_run.mot[MOTOR_5].substep_increment = st_pre.mot[MOTOR_5].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_5].accumulator_correction_flag == true) {
+				st_pre.mot[MOTOR_5].accumulator_correction_flag = false;
+				st_run.mot[MOTOR_5].substep_accumulator *= st_pre.mot[MOTOR_5].accumulator_correction;
+			}
+			if (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction) {
+				st_pre.mot[MOTOR_5].prev_direction = st_pre.mot[MOTOR_5].direction;
+				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
+				st_pre.mot[MOTOR_5].direction == DIRECTION_CW ? motor_5.dir.clear() : motor_5.dir.set(); // set the bit for CCW motion
+			}
+			motor_5.enable.clear(); st_run.mot[MOTOR_5].power_state = MOTOR_RUNNING;
+			SET_ENCODER_STEP_SIGN(MOTOR_5, st_pre.mot[MOTOR_5].step_sign);
+		} else if (st_cfg.mot[MOTOR_5].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			motor_5.enable.clear(); st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
+		}
+		ACCUMULATE_ENCODER(MOTOR_5);
+#endif
+#if (MOTORS >= 6)
+		if ((st_run.mot[MOTOR_6].substep_increment = st_pre.mot[MOTOR_6].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_6].accumulator_correction_flag == true) {
+				st_pre.mot[MOTOR_6].accumulator_correction_flag = false;
+				st_run.mot[MOTOR_6].substep_accumulator *= st_pre.mot[MOTOR_6].accumulator_correction;
+			}
+			if (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction) {
+				st_pre.mot[MOTOR_6].prev_direction = st_pre.mot[MOTOR_6].direction;
+				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
+				st_pre.mot[MOTOR_6].direction == DIRECTION_CW ? motor_6.dir.clear() : motor_6.dir.set(); // set the bit for CCW motion
+			}
+			motor_6.enable.clear(); st_run.mot[MOTOR_6].power_state = MOTOR_RUNNING;
+			SET_ENCODER_STEP_SIGN(MOTOR_6, st_pre.mot[MOTOR_6].step_sign);
+		} else if (st_cfg.mot[MOTOR_6].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			motor_6.enable.clear(); st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
+		}
+		ACCUMULATE_ENCODER(MOTOR_6);
+#endif
 		//**** do this last ****
 
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
@@ -739,6 +779,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
+//	st_pre.segment_ready = true;
 	return (STAT_OK);
 }
 
@@ -881,39 +922,30 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 	return (STAT_OK);
 }
 
-stat_t st_set_pl(cmdObj_t *cmd)			// motor power level
-{
-	if (cmd->value < (float)0) cmd->value = 0.000;
-	if (cmd->value > (float)1) cmd->value = 1.000;
-	set_flt(cmd);						// set the value in the motor config struct (st)
-
-	uint8_t motor = _get_motor(cmd->index);
-	st_run.mot[motor].power_level_dynamic = cmd->value;
-	_set_motor_power_level(motor, cmd->value);
-	return(STAT_OK);
-}
-
 /*
  * st_set_pl() - set motor power level
  *
- *	Input value may vary from 0 to 100. The setting is scaled to allowable PWM range.
+ *	Input value may vary from 0.000 to 1.000 The setting is scaled to allowable PWM range.
  *	This function sets both the scaled and dynamic power levels, and applies the 
  *	scaled value to the vref.
- */
-#ifdef __ARM
+ */ 
 stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
 {
-	if (cmd->value < (float)0) cmd->value = 0;
-	if (cmd->value > (float)100) cmd->value = 100;
+#ifdef __ARM
+	if (cmd->value < (float)0.0) cmd->value = 0.0;
+	if (cmd->value > (float)1.0) {
+		if (cmd->value > (float)100) cmd->value = 1;
+ 		cmd->value /= 100;		// accommodate old 0-100 inputs
+	}
 	set_flt(cmd);	// set power_setting value in the motor config struct (st)
 	
 	uint8_t motor = _get_motor(cmd->index);
 	st_cfg.mot[motor].power_level_scaled = (cmd->value * POWER_LEVEL_SCALE_FACTOR);
 	st_run.mot[motor].power_level_dynamic = (st_cfg.mot[motor].power_level_scaled);
 	_set_motor_power_level(motor, st_cfg.mot[motor].power_level_scaled);
+#endif
 	return(STAT_OK);
 }
-#endif
 
 /* GLOBAL FUNCTIONS (SYSTEM LEVEL)
  *

@@ -169,10 +169,10 @@ static void _homing_debug_print(int8_t axis)
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
-	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
-	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
-	hm.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);			//cm.gm.feed_rate;
+	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);
+	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
+	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
+	hm.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -195,8 +195,9 @@ stat_t cm_homing_cycle_start_no_set(void)
 }
 
 /* Homing axis moves - these execute in sequence for each axis
- * cm_homing_callback() 		- main loop callback for running the homing cycle
  *	_set_homing_func()			- a convenience for setting the next dispatch vector and exiting
+ * cm_homing_callback() 		- main loop callback for running the homing cycle
+ *	_homing_trigger_feedhold()	- callback from switch closure to trigger a feedhold
  *	_homing_axis_start()		- get next axis, initialize variables, call the clear
  *	_homing_axis_clear()		- initiate a clear to move off a switch that is thrown at the start
  *	_homing_axis_backoff_home()	- back off the cleared home switch
@@ -207,6 +208,12 @@ stat_t cm_homing_cycle_start_no_set(void)
  *	_homing_axis_move()			- helper that actually executes the above moves
  */
 
+static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
+{
+	hm.func = func;
+	return (STAT_EAGAIN);
+}
+
 stat_t cm_homing_callback(void)
 {
 	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
@@ -214,11 +221,12 @@ stat_t cm_homing_callback(void)
 	return (hm.func(hm.axis));									// execute the current homing move
 }
 
-static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
+/*
+static void _homing_trigger_feedhold(switch_t *s)
 {
-	hm.func = func;
-	return (STAT_EAGAIN);
+	cm_request_feedhold();
 }
+*/
 
 static stat_t _homing_axis_start(int8_t axis)
 {
@@ -284,6 +292,11 @@ static stat_t _homing_axis_start(int8_t axis)
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
 	}
+
+//	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
+//	hm.switch_saved_on_trailing = s->on_trailing;
+//	s->on_trailing = _homing_trigger_feedhold;
+	
     // if homing is disabled for the axis then skip to the next axis
 	uint8_t sw_mode = get_switch_mode(hm.homing_switch);
 //	uint8_t sw_mode = get_switch_mode(hm.homing_switch_axis, hm.homing_switch_position);
@@ -341,6 +354,10 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+
+    // restore the proper handling of the limit switch
+//	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
+//	s->on_trailing = hm.switch_saved_on_trailing;
 	return (_set_homing_func(_homing_axis_start));
 }
 
