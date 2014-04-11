@@ -1,7 +1,7 @@
 /*
  * cycle_jogging.c - jogging cycle extension to canonical_machine.c
  *
- * by Mike Estee - Other Machine Company
+ * by Mike Estee, Tom Cauchois - Other Machine Company
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,14 +25,12 @@
  */
 
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
-#include "switch.h"
+#include "util.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -41,12 +39,13 @@ extern "C"{
 /**** Jogging singleton structure ****/
 
 struct jmJoggingSingleton {			// persistent jogging runtime variables
-	// controls for homing cycle
+	// controls for jogging cycle
 	int8_t axis;					// axis currently being jogged
 	float dest_pos;					// distance relative to start position to travel
 	float start_pos;
 	float velocity_start;			// current jog feed
 	float velocity_max;
+	uint8_t step;					// what step of the ramp the jogging cycle is currently on
 
 	uint8_t (*func)(int8_t axis);	// binding for callback function state machine
 
@@ -64,7 +63,8 @@ static struct jmJoggingSingleton jog;
 
 static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
 static stat_t _jogging_axis_start(int8_t axis);
-static stat_t _jogging_axis_jog(int8_t axis);
+static stat_t _jogging_axis_ramp_jog(int8_t axis);
+static stat_t _jogging_axis_move(int8_t axis, float target, float velocity);
 static stat_t _jogging_finalize_exit(int8_t axis);
 
 /*****************************************************************************
@@ -84,10 +84,10 @@ static stat_t _jogging_finalize_exit(int8_t axis);
  *	to cm_isbusy() is about.
  */
 
-static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
-static stat_t _jogging_axis_start(int8_t axis);
-static stat_t _jogging_axis_jog(int8_t axis);
-static stat_t _jogging_finalize_exit(int8_t axis);
+//static stat_t _set_jogging_func(uint8_t (*func)(int8_t axis));
+//static stat_t _jogging_axis_start(int8_t axis);
+//static stat_t _jogging_axis_jog(int8_t axis);
+//static stat_t _jogging_finalize_exit(int8_t axis);
 
 stat_t cm_jogging_cycle_start(uint8_t axis)
 {
@@ -96,7 +96,7 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
 	jog.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
-    jog.saved_jerk = cm.a[axis].jerk_max;
+	jog.saved_jerk = cm.a[axis].jerk_max;
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -108,6 +108,7 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 
 	jog.start_pos = cm_get_absolute_position(RUNTIME, axis);
 	jog.dest_pos = cm_get_jogging_dest();
+	jog.step = 0;
 
 	jog.axis = axis;
 	jog.func = _jogging_axis_start; 				// bind initial processing function
@@ -120,17 +121,20 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 /* Jogging axis moves - these execute in sequence for each axis
  * cm_jogging_callback() 		- main loop callback for running the jogging cycle
  *	_set_jogging_func()			- a convenience for setting the next dispatch vector and exiting
- *	_jogging_axis_start()		- setup and start
- *	_jogging_axis_jog()			- ramp the jog
- *	_jogging_axis_move()		- move
- *	_jogging_finalize_exit()	- back off the cleared limit switch
+ *  _jogging_axis_start()       - setup the jog
+ *	_jogging_axis_ramp_jog()	- ramp the jog
+ *	_jogging_axis_move()		- move the axis
+ *	_jogging_finalize_exit()	- clean up
  */
 
 stat_t cm_jogging_callback(void)
 {
 	if (cm.cycle_state != CYCLE_JOG) { return (STAT_NOOP); } 		// exit if not in a jogging cycle
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN); }	// sync to planner move ends
-	return (jog.func(jog.axis));									// execute the current homing move
+	if(jog.func == _jogging_finalize_exit && cm_get_runtime_busy() == true)
+	{ return (STAT_EAGAIN); }	// sync to planner move ends
+	if(jog.func == _jogging_axis_ramp_jog && mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM)
+	{ return (STAT_EAGAIN); }   // prevent flooding the queue with jog moves
+	return (jog.func(jog.axis));									// execute the current jogging move
 }
 
 static stat_t _set_jogging_func(stat_t (*func)(int8_t axis))
@@ -141,69 +145,60 @@ static stat_t _set_jogging_func(stat_t (*func)(int8_t axis))
 
 static stat_t _jogging_axis_start(int8_t axis)
 {
-	return (_set_jogging_func(_jogging_axis_jog));		// register the callback for the jog move
+	mp_flush_planner();
+	cm_request_cycle_start();
+	return (_set_jogging_func(_jogging_axis_ramp_jog));
 }
 
-static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
+#define INITIAL_RAMP 0.01
+#define RAMP_DIST 2.0
+#define MAX_STEPS 25
+
+static stat_t _jogging_axis_ramp_jog(int8_t axis)           // run the jog ramp
+{
+	float direction = jog.start_pos <= jog.dest_pos ? 1. : -1.;
+	float delta = fabs(jog.dest_pos - jog.start_pos);
+	uint8_t last = 0;
+	
+	float velocity = jog.velocity_start + (jog.velocity_max - jog.velocity_start) *
+	pow(10.0, (jog.step/((float)MAX_STEPS)) - 1.0);
+	float offset = INITIAL_RAMP + RAMP_DIST * ((jog.step * (jog.step+1.0))/(2.0 * MAX_STEPS));
+	if(offset >= delta || jog.step >= MAX_STEPS) {
+		offset = delta;
+		last = 1;
+	}
+	float target = jog.start_pos + offset * direction;
+	
+	_jogging_axis_move(axis, target, velocity);
+	jog.step++;
+	
+	if(last)
+	return (_set_jogging_func(_jogging_finalize_exit));
+	else
+	return (_set_jogging_func(_jogging_axis_ramp_jog));
+}
+
+static stat_t _jogging_axis_move(int8_t axis, float target, float velocity)
 {
 	float vect[] = {0,0,0,0,0,0};
 	float flags[] = {false, false, false, false, false, false};
+	vect[axis] = target;
 	flags[axis] = true;
-
-	float velocity = jog.velocity_start;
-	float direction = jog.start_pos <= jog.dest_pos ? 1. : -1.;
-	float delta = abs(jog.dest_pos - jog.start_pos);
-
 	cm_set_feed_rate(velocity);
-	mp_flush_planner();									// don't use cm_request_queue_flush() here
- 	cm_request_cycle_start();
-
-#if 1
-	float ramp_dist = 2.0;
-	float steps = 0.0;
-	float max_steps = 25;
-	float offset = 0.01;
-	while( delta>ramp_dist && offset < delta && steps < max_steps )
-	{
-		vect[axis] = jog.start_pos + offset * direction;
-		cm_set_feed_rate(velocity);
-		ritorno(cm_straight_feed(vect, flags));
-
-		steps++;
-		float scale = pow(10.0, steps/max_steps) / 10.0;
-		velocity = jog.velocity_start + (jog.velocity_max - jog.velocity_start) * scale;
-		offset += ramp_dist * steps/max_steps;
-	}
-#else
-	// use a really slow jerk so we ramp up speed
-	// FIXME: need asymmetric accel/deaccel jerk for this to work...
-	cm.a[axis].jerk_max = 25;
-	//cm.a[axis].jerk_accel = 10;
-	//cm.a[axis].jerk_deaccel = 900;
-#endif
-
-	// final move
-	cm_set_feed_rate(jog.velocity_max);
-	vect[axis] = jog.dest_pos;
 	ritorno(cm_straight_feed(vect, flags));
-    return (_set_jogging_func(_jogging_finalize_exit));
+	return (STAT_EAGAIN);
 }
-
 
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
-	mp_flush_planner(); 							// FIXME: not sure what to do on exit
-	cm.a[axis].jerk_max = jog.saved_jerk;
- 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
+	mp_flush_planner();
+	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
 	cm_set_feed_rate(jog.saved_feed_rate);
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end(true);
-
-	printf("{\"jog\":0}\n");
-
 	return (STAT_OK);
 }
 

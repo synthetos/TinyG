@@ -25,7 +25,6 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
 #include "json_parser.h"
 #include "text_parser.h"
@@ -33,6 +32,7 @@
 #include "spindle.h"
 #include "report.h"
 #include "switch.h"
+#include "util.h"
 
 /**** Probe singleton structure ****/
 
@@ -52,13 +52,13 @@ struct pbProbingSingleton {				// persistent probing runtime variables
 	uint8_t saved_switch_type;			// NO/NC
 
 	// state saved from gcode model
-    uint8_t saved_distance_mode;		// G90,G91 global setting
-    uint8_t saved_coord_system;			// G54 - G59 setting
+	uint8_t saved_distance_mode;		// G90,G91 global setting
+	uint8_t saved_coord_system;			// G54 - G59 setting
 
     // probe destination
-    float start_position[AXES];
-    float target[AXES];
-    float flags[AXES];
+	float start_position[AXES];
+	float target[AXES];
+	float flags[AXES];
 
 	float saved_jerk[AXES];				// saved and restored for each axis
 };
@@ -107,7 +107,8 @@ uint8_t cm_straight_probe(float target[], float flags[])
 	}
 
 	// trap no axes specified
-	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
+//	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
+	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
 		return (STAT_GCODE_AXIS_IS_MISSING);
 
 	// set probe move endpoint
@@ -153,19 +154,19 @@ static uint8_t _probing_init()
 		// save the jerk settings & switch to the jerk_homing settings
 		pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
 		cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
-	
 		pb.start_position[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 	}
 
     // error if the probe target is too close to the current position
     if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL)
-	    _probing_error_exit(-2);
+		_probing_error_exit(-2);
 
     // error if the probe target requires a move along the A/B/C axes
     for ( uint8_t axis=AXIS_A; axis<AXES; axis++ )
     {
-	    if (pb.start_position[axis] != pb.target[axis])
-	    _probing_error_exit(axis);
+//	    if (pb.start_position[axis] != pb.target[axis])
+	    if (fp_NE(pb.start_position[axis], pb.target[axis]))
+		   _probing_error_exit(axis);
     }
 
 	// initialize the probe switch
@@ -264,19 +265,19 @@ static void _probe_restore_settings()
 {
 //	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
 	cm_queue_flush();
-   	qr_request_queue_report(0);
+	qr_request_queue_report(0);
  
-    // restore switch settings
-    sw.switch_type = pb.saved_switch_type;
-    for( uint8_t i=0; i<NUM_SWITCHES; i++ )
-        sw.mode[i] = pb.saved_switch_mode[i];
+    // restore switch settings (old style)
+	sw.switch_type = pb.saved_switch_type;
+	for( uint8_t i=0; i<NUM_SWITCHES; i++ )
+		sw.mode[i] = pb.saved_switch_mode[i];
 	switch_init();								// re-init to pick up changes
 
-    // restore switch settings
-//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = pb.saved_switch_mode;
-//	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = pb.saved_switch_type;
-//	switch_init();								// re-init to pick up changes
-
+    // restore switch settings (new style)
+/*	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = pb.saved_switch_mode;
+	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = pb.saved_switch_type;
+	switch_init();								// re-init to pick up changes
+*/
     // restore axis jerk
     for( uint8_t axis=0; axis<AXES; axis++ )
         cm.a[axis].jerk_max = pb.saved_jerk[axis];
@@ -290,10 +291,7 @@ static void _probe_restore_settings()
 	cm_set_motion_state(MOTION_STOP);			// also sets ACTIVE_MODEL
 	cm.machine_state = MACHINE_PROGRAM_STOP;
 	cm.cycle_state = CYCLE_OFF;
-	cm.hold_state = FEEDHOLD_OFF;
-//	cm_request_cycle_start();					// clear feedhold state
-//	cm_cycle_end(true);
-//	cm_program_stop();
+	cm.hold_state = FEEDHOLD_OFF;				// clear any residual feedhold state
 }
 
 static stat_t _probing_finalize_exit()
