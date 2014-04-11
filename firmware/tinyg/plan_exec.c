@@ -505,7 +505,7 @@ static stat_t _exec_aline_segment()
 		mr.commanded_steps[i] = mr.position_steps[i];	// previous segment's position, delayed by 1 segment
 		mr.position_steps[i] = mr.target_steps[i];	 	// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);		// get current encoder position (time aligns to commanded_steps)
-		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i]; 
+		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);		// now determine the target steps...
 	for (i=0; i<MOTORS; i++) {							// and compute the distances to be traveled

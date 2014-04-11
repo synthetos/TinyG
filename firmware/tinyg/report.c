@@ -526,7 +526,6 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 stat_t qr_get(cmdObj_t *cmd) 
 {
 	cmd->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
-//	cmd->value = (float)qr.buffers_available;
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 }

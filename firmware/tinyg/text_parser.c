@@ -27,7 +27,6 @@
 
 #include "tinyg.h"
 #include "config.h"
-#include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
 #include "json_parser.h"

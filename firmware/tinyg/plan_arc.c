@@ -328,7 +328,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
-	// *** From Forrest Green - Other Machine Co, 3/27/14:
+	// *** From Forrest Green - Other Machine Co, 3/27/14
 	// If the distance between endpoints is greater than the arc diameter, disc
 	// will be negative indicating that the arc is offset into the complex plane
 	// beyond the reach of any real CNC. However, numerical errors can flip the

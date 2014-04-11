@@ -94,9 +94,6 @@ extern "C"{
 
 /**** Configs and Constants ****/
 
-//#define ENCODER_STEP_ROUNDING	(float)0.5	// round steps for more accurate following error computation
-#define ENCODER_STEP_ROUNDING	(float)0.0	// round steps for more accurate following error computation
-
 /**** Macros ****/
 // used to abstract the encoder code out of the stepper so it can be managed in one place
 

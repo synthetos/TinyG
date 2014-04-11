@@ -118,7 +118,7 @@ ISR(PWM2_ISR_vect)
 	return;
 }
 #endif // __AVR
-
+/*
 #ifdef __ARM
 MOTATE_TIMER_INTERRUPT
 ISR(PWM1_ISR_vect)
@@ -131,7 +131,7 @@ ISR(PWM2_ISR_vect)
 	return;
 }
 #endif // __ARM
-
+*/
 /* 
  * pwm_set_freq() - set PWM channel frequency
  *
@@ -168,6 +168,15 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
 #endif // __AVR
+
+#ifdef __ARM
+	if (chan == PWM_1) {
+		spindle_pwm_pin.setFrequency(freq);
+	} else if (chan == PWM_2) {
+		secondary_pwm_pin.setFrequency(freq);
+	}
+#endif // __ARM
+
 	return (STAT_OK);
 }
 
@@ -195,6 +204,15 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 	float period_scalar = pwm.p[chan].timer->PER;
 	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
 #endif // __AVR
+
+#ifdef __ARM
+	if (chan == PWM_1) {
+		spindle_pwm_pin = duty;
+	} else if (chan == PWM_2) {
+		secondary_pwm_pin = duty;
+	}
+#endif // __ARM
+
 	return (STAT_OK);
 }
 

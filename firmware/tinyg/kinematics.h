@@ -36,7 +36,7 @@ extern "C"{
  * Global Scope Functions
  */
 
-void ik_kinematics(float travel[], float steps[]);
+void ik_kinematics(const float travel[], float steps[]);
 
 //#ifdef __UNIT_TESTS
 //void ik_unit_tests(void);

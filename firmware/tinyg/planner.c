@@ -278,7 +278,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 	mpBuf_t *bf;
 
 	// Never supposed to fail as buffer availability was checked upstream in the controller
-	if ((bf = mp_get_write_buffer()) == NULL) { 
+	if ((bf = mp_get_write_buffer()) == NULL) {
 		cm_hard_alarm(STAT_BUFFER_FULL_FATAL);
 		return;
 	}
@@ -519,7 +519,7 @@ void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp)
 }
 
 #ifdef __DEBUG	// currently this routine is only used by debug routines
-uint8_t mp_get_buffer_index(mpBuf_t *bf) 
+uint8_t mp_get_buffer_index(mpBuf_t *bf)
 {
 	mpBuf_t *b = bf;				// temp buffer pointer
 

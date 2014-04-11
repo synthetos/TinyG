@@ -227,9 +227,9 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 
 	uint8_t mr_flag = false;
 
-	// Note: these next lines must remain in exact order. Position must update before queueing the buffer.
+	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
-	copy_vector(mm.position, bf->gm.target);	// set the planner position 
+	copy_vector(mm.position, bf->gm.target);	// set the planner position
 	mp_commit_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }
@@ -335,7 +335,6 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 								  bp->nx->entry_vmax,
 								  bp->nx->braking_velocity, 
 								 (bp->entry_velocity + bp->delta_vmax) );
-
 		_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
@@ -350,7 +349,6 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 	bp->entry_velocity = bp->pv->exit_velocity;
 	bp->cruise_velocity = bp->cruise_vmax;
 	bp->exit_velocity = 0;
-
 	_calculate_trapezoid(bp);
 }
 
@@ -464,7 +462,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// if length < segment time * average velocity
 	float average_velocity = (bf->entry_velocity + bf->cruise_velocity) / 2;
 	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * average_velocity)) {
-//	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
@@ -477,7 +474,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	// B" case: Short line, body only. See if the block fits into a single segment
 
 	if (bf->length <= (NOM_SEGMENT_TIME * average_velocity)) {
-//	if (bf->length <= (NOM_SEGMENT_TIME * (bf->entry_velocity + bf->cruise_velocity) / 2)) {
 		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
@@ -506,15 +502,6 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
 
-		// QUESTION: The inequality cases do not trap entry_velocity == exit velocity.
-		//			 What is the correct handling of the equality case?
-/*
-		if (fp_EQ(bf->entry_velocity, bf->exit_velocity)) {	// short body case (aka "Marty Feldman")
-			bf->cruise_velocity = bf->entry_velocity;
-			bf->body_length = bf->length;
-			return;
-		}
-*/
 		if (bf->entry_velocity > bf->exit_velocity)	{		// tail-only cases (short decelerations)
 			if (bf->length < minimum_length) { 				// T" (degraded case)
 				bf->entry_velocity = _get_target_velocity(bf->exit_velocity, bf->length, bf);
@@ -1022,7 +1009,7 @@ stat_t mp_end_hold()
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PLANNER
 
-// Comment in and out to endbale/diable parts of the unit tests
+// Comment in and out to enable/disable parts of the unit tests
 //#define __TEST_GET_TARGET_LENGTH
 //#define __TEST_GET_TARGET_VELOCITY
 #define __TEST_CALCULATE_TRAPEZOID
