@@ -275,7 +275,7 @@ enum prepBufferState {
 // Stepper power management settings (applicable to ARM only)
 #define Vcc	3.3							// volts
 #define MaxVref	2.25					// max vref for driver circuit. Our ckt is 2.25 volts
-#define POWER_LEVEL_SCALE_FACTOR ((MaxVref/Vcc)*0.01) // scale % to value between 0 and <1
+#define POWER_LEVEL_SCALE_FACTOR ((MaxVref/Vcc)) // scale power level setting for voltage range
 
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
 #define POWER_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
@@ -294,24 +294,23 @@ enum prepBufferState {
  *		MAX_LONG == 2^31, maximum signed long (depth of accumulator. NB: accumulator values are negative)
  *		FREQUENCY_DDA == DDA clock rate in Hz.
  *		NOM_SEGMENT_TIME == upper bound of segment time in minutes
- *		0.97 == a safety factor used to reduce the result from theoretical maximum
+ *		0.90 == a safety factor used to reduce the result from theoretical maximum
  *
  *	The number is about 8.5 million for the Xmega running a 50 KHz DDA with 5 millisecond segments
  *	The ARM is about 1/2 that (or less) as the DDA clock rate is higher. Decreasing the nominal
  *	segment time increases the number precision.
  */
-//#define DDA_SUBSTEPS ((MAX_LONG * 0.5) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
-#define DDA_SUBSTEPS ((MAX_LONG * 0.1) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
+#define DDA_SUBSTEPS ((MAX_LONG * 0.90) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position errors.
  *	Since the following_error is running 2 segments behind the current segment you have to be careful 
  *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
  *	is how much. The holdoff is how many segments to wait before applying another correction. If threshold 
- *	is too small and/or amount too large and/or threshold is too small you may get a runaway correction 
+ *	is too small and/or amount too large and/or holdoff is too small you may get a runaway correction 
  *	and error will grow instead of shrink (or oscillate).
  */
-#define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction 
+#define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction (in steps)
 #define STEP_CORRECTION_FACTOR		(float)0.05		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.50		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  6		// minimum number of segments to wait between error correction
