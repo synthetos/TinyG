@@ -332,11 +332,11 @@ static uint8_t _test_anneal_block(mpBuf_t *bf)
 {
 	if (bf->replannable == false) return (false);
 	if (bf->length >= ANNEAL_LENGTH_THRESHOLD) return (false);
-	
+/*
 	if 
 	delta_t = bf->gm.move_time
 	if (bf->gm.move_time >= 1/ANNEAL_VELOCITY_THRESHOLD) return (false);
-	
+*/
 	return (true);
 }
 

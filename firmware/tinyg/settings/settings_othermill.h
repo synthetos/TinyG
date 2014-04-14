@@ -46,8 +46,13 @@
 
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
-#define HAS_CANSTACK_Z_AXIS			0
+//#define HAS_CANSTACK_Z_AXIS			0
 //#define HAS_CANSTACK_Z_AXIS			1			// Earlier machines
+//#if HAS_CANSTACK_Z_AXIS
+//#define M2_STEP_ANGLE 			15
+//#define M2_TRAVEL_PER_REV 		1.27254
+//#define Z_VELOCITY_MAX 			1000
+//#else
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below
@@ -103,7 +108,6 @@
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL	// 0=off, 100=max
 
 #define M3_MOTOR_MAP 			AXIS_Y
-//#define M3_MOTOR_MAP 			AXIS_Z				// DIAGNOSTIC TEST ONLY!!!
 #define M3_STEP_ANGLE 			1.8
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
@@ -112,13 +116,8 @@
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
-#if HAS_CANSTACK_Z_AXIS
-#define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27254
-#else
 #define M2_STEP_ANGLE 			1.8
 #define M2_TRAVEL_PER_REV 		5.08
-#endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
 #define M2_POWER_MODE 			MOTOR_ALWAYS_POWERED
@@ -143,6 +142,7 @@
 #define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
 #define X_TRAVEL_MAX 			138					// xtr		travel between switches or crashes
 #define X_JERK_MAX 				JERK_MAX			// xjm
+#define X_JERK_HOMING			JERK_HOMING			// xjh
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -150,7 +150,6 @@
 #define X_LATCH_VELOCITY 		LATCH_VELOCITY		// xlv		mm/min
 #define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			0					// xzb		mm
-#define X_JERK_HOMING			JERK_HOMING			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			X_VELOCITY_MAX
@@ -158,6 +157,7 @@
 #define Y_TRAVEL_MIN			0
 #define Y_TRAVEL_MAX 			115
 #define Y_JERK_MAX 				JERK_MAX
+#define Y_JERK_HOMING			JERK_HOMING
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
@@ -165,18 +165,14 @@
 #define Y_LATCH_VELOCITY 		LATCH_VELOCITY
 #define Y_LATCH_BACKOFF 		5
 #define Y_ZERO_BACKOFF 			3
-#define Y_JERK_HOMING			JERK_HOMING
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#if HAS_CANSTACK_Z_AXIS
-#define Z_VELOCITY_MAX 			1000
-#else
 #define Z_VELOCITY_MAX 			X_VELOCITY_MAX
-#endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			-70
 #define Z_TRAVEL_MAX 			0
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
+#define Z_JERK_HOMING			JERK_HOMING
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
@@ -184,14 +180,13 @@
 #define Z_LATCH_VELOCITY 		LATCH_VELOCITY
 #define Z_LATCH_BACKOFF 		5
 #define Z_ZERO_BACKOFF 			0
-#define Z_JERK_HOMING			JERK_HOMING
 
 // Rotary values are chosen to make the motor react the same as X for testing
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MIN			-1										// min/max the same means infinite, no limit
-#define A_TRAVEL_MAX 			-1
+#define A_TRAVEL_MIN			0										// min/max the same means infinite, no limit
+#define A_TRAVEL_MAX 			0
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
