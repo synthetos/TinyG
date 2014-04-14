@@ -48,6 +48,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
+static uint8_t _test_anneal_block(mpBuf_t *bf);
+static stat_t _anneal_block(mpBuf_t *bf);
 
 /* Runtime-specific setters and getters
  *
@@ -241,7 +243,107 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  * _get_target_velocity()
  * _get_junction_vmax()
  * _reset_replannable_list()
+ * _anneal_block()
  */
+
+/*
+ * _test_anneal_block() - perform tests for block anealing
+ * _anneal_block() - combine new block with last block in the planner quue
+ *
+ *	Anneal_block tests if a new block should be combined with the last block in the planner
+ *	queue and combines them if need be. This function is useful for reducing the number of 
+ *	blocks in the planner if the Gcode file has many, many short lines that are essentially 
+ *	just extensions of the same near co-linear line.  This happens a lot with Gcode generated
+ *	from some 3DP slicers and other naiive CAM packages. Annealing blocks makes for smoother
+ *	block transitions and helps prevent buffer starvation in some extreme cases.
+ *
+ *	Algorithm Summary: 
+ *		Extend an imaginary line from the queued block, draw an imaginary cylinder around
+ *		it of radius c', where c' is the allowable path tolerance for the endpoint of the new 
+ *		block. If the new block is within tolerance it can be combined with the current block.
+ */
+/*	Definitions:
+ *		Bq		Queued block. The last block in the planner queue. Must be replannable. 
+ *				May already have blocks annealed into it
+ *		Bqt		Target coordinates of Bq. Changes with each new annealed block.
+ *		Bqti	Target of initial Bq. Does not change as blocks are added.
+ *		Bqtx	The projected target derived by extending the initial Bq vector. 
+ *				Extended for each new block.
+ *		Bn		New block - just received and not yet planned
+ *		Bnt		Target position of the new block
+ *		BLT		Block linear tolerance. Allowable deviation from path. The radius of the cylinder
+ *		BRT		Block rotary tolerance. Allowable deviation from the rotational path
+ *		L		The length of the new block
+ *		L'		The cumulative length of new blocks annealed. Length measurement starts at Bqti
+ *		a		The side of the triangle formed by the new block. Length is L.
+ *		b		The side of the triangle (base) formed by the extension of Bqti to Bqtx. 
+ *				Length is the sum of annealed L's + L
+ *		c		The side of the triangle formed by connecting Bnt and Bqtx (presumably the short side)
+ *		cdiv2	c divided by 2
+ *		c'		The altitude from the vertex Bnt and the base Bqtx 
+ *				(i.e. the line from Bnt that forms a right angle with the Bi extension line)
+ *				c' can be calculated as 2A/b
+ *		S		The semicircumference of the triangle, given by (a+b+c)/2
+ *		A		The area of the triangle from Heron's formula: A = sqrt(S*(S-a)*(S-b)*(S-c))
+ */
+/*	Algorithm Details:
+ *		- Initialize Bqti to the value of Bqt. Set L' to zero. Do this only once for each Bq block chain.
+ *		- Perform these tests. If any fail exit, queue the new block and start a new Bq block chain
+ *			(a) Exit if the queued block is not replannable (also takes care of first block case)
+ *			(b) Exit if the new block exceeds a length threshold
+ *			(c) Exit if the new block target velocity is out of tolerance for annealing
+ *			(d) Exit if the new block is a direction reversal
+ *			(e) Perform similar tests for rotary axes if any of ABC are in the move
+ *
+ *		- Accumulate L to L'
+ *
+ *		- Calculate Bqtx by extending Bqti by L' along the Bq unit vector 
+ *			(Multiply the Bq unit vector by L' and add to Bqti)
+ *
+ *		- Calculate the distance c between Bnt and Bqtx (the two target points)
+ *
+ *		- If c =< BLT then Bn lies inside the cylinder. Combine Bn into Bq (see below). 
+ *			This is the "cheap" test that catches most points.
+ *
+ *		- If c > BLT then calculate the altitude of the triangle (c'), which will be a more 
+ *			accurate measure of tolerance
+ *
+ *		- If c' =< BLT then combine Bn into Bq. This is the more expensive test that catches the rest
+ *
+ *		- Perform the above steps again for rotary axes if ABC are present in the move.
+ */
+/*	Combining blocks. This part is easy. Just do:
+ *		- Set Bqt to Bnt
+ *		- Add L to L'
+ *		- Replan the queue
+ *
+ *	Math for calculating c is a simple cartesian distance
+ *		c = sqrt((Bnt[x]-Bqtx[x])^2 + (Bnt[y]-Bqtx[y])^2 + (Bnt[z]-Bqtx[z])^2)
+ *
+ *	Math for calculating c':
+ *		c' = 2A/b								A = area, b = side of the triangle
+ *		A = sqrt(S * (S-a) * (S-b) * (S-c))		Heron's formula
+ *		S = (a+b+c)/2							Semiperimeter
+ *		S = L + c/2								Identity given that L = a = b
+ *		A = sqrt((cdiv2^2)*(L+cdiv2)*(L-cdiv2))	Reduction of A
+ */
+
+static uint8_t _test_anneal_block(mpBuf_t *bf)
+{
+	if (bf->replannable == false) return (false);
+	if (bf->length >= ANNEAL_LENGTH_THRESHOLD) return (false);
+	
+	if 
+	delta_t = bf->gm.move_time
+	if (bf->gm.move_time >= 1/ANNEAL_VELOCITY_THRESHOLD) return (false);
+	
+	return (true);
+}
+
+static stat_t _anneal_block(mpBuf_t *bf)
+{
+	return (STAT_OK);
+}
 
 /* _plan_block_list() - plans the entire block list
  *

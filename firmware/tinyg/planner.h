@@ -128,6 +128,11 @@ enum sectionState {
 #define TRAPEZOID_LENGTH_FIT_TOLERANCE		((float)0.0001)	// allowable mm of error in planning phase
 #define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
 
+/* Some parameters for block annealing
+ */
+#define ANNEAL_LENGTH_THRESHOLD				2	// millimeters. If greater, do not attempt to anneal
+#define ANNEAL_VELOCITY_THRESHOLD			20	// mm/min. If greater, do not attempt to anneal
+
 /*
  *	Macros and typedefs
  */
