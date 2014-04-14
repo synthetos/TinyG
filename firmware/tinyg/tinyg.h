@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		424.02	// set up Othermill profile
+#define TINYG_FIRMWARE_BUILD   		424.03	// changed cm_queue_flush() to agree with OMC-style jogging
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
