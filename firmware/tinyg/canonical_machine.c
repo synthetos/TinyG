@@ -182,6 +182,12 @@ void cm_set_motion_state(uint8_t motion_state)
  * Model State Getters and Setters *
  ***********************************/
 
+/*	These getters and setters will work on any gm model with inputs:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
+ */
 uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
 uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
@@ -205,7 +211,7 @@ void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
+	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
 }
 
 void cm_set_model_linenum(uint32_t linenum)
@@ -260,6 +266,12 @@ float cm_get_active_coord_offset(uint8_t axis)
 
 /*
  * cm_get_work_offset() - return a coord offset from the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis) 
@@ -269,6 +281,12 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 
 /*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
 void cm_set_work_offsets(GCodeState_t *gcode_state)
@@ -281,8 +299,12 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
 /*
  * cm_get_absolute_position() - get position of axis in absolute coordinates
  *
- * NOTE: Machine position is always returned in mm mode. No units conversion is performed
- * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *
+ *	NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
 
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
@@ -298,6 +320,10 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  *
  * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by 
  *		 calling cm_get_model_coord_offset_vector() first.
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
@@ -729,7 +755,7 @@ static void _exec_offset(float *value, float *flag)
 		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
-	cm_set_work_offsets(&cm.gm);
+	cm_set_work_offsets(MODEL);								// set work offsets in the Gcode model
 }
 
 /*

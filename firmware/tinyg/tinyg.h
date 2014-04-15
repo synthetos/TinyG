@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		424.03	// changed cm_queue_flush() to agree with OMC-style jogging
+#define TINYG_FIRMWARE_BUILD   		425.01	// accepted Ivan Krasin's pull request to fix reported work offsets after M2. Added some header documentation that would have made his job easier.
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
