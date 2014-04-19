@@ -16,5 +16,5 @@ install:
 
 script: "cd firmware/tinyg/default && make"
 
-after_success:
-  - cd ../../.. && ./support/travis-push.py
+#after_success:
+#  - cd ../../.. && ./support/travis-push.py
