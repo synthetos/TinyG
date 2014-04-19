@@ -1,10 +1,20 @@
 ---
 language: c
 
+env:
+  global:
+    - secure: "Mzjl6hrF+tCaUH3rIrqkGEf8o/Id/4NwvkOk4Gee/l1CQt5pab+DYB1dUBePD4m7Po1xL/m1OYfA0g3nTi3z/7okTWkAUQsfAIDp8GHI5NwE1PLy8SHxOEwt2vzv3YBOhyX+3Q3CyPoATSRzxOZ5fcCqwV90axN5dvDAnUTxId4="
+    - DESTINATION_REPO_SUBPATH="synthetos/synthetos.github.io"
+    - SOURCE_HEX="firmware/tinyg/default/tinyg.hex"
+    - DEST_FILE_TEMPLATE="binaries/tinyg-{BRANCH}-{VERSION}.{EXT}"
+
 before_install:
   - sudo apt-get update -qq
 
 install:
   - sudo apt-get install -qq gcc-avr binutils-avr avr-libc
 
-script: "cd firmware/tinyg/default/ && make"
+script: "cd firmware/tinyg/default && make"
+
+after_success:
+  - cd ../../.. && ./support/travis-push.py
