@@ -359,7 +359,7 @@ static stat_t _exec_dwell(mpBuf_t *bf)
  * mp_get_write_buffer()	Get pointer to next available write buffer
  *							Returns pointer or NULL if no buffer available.
  *
- * mp_unget_write_buffer()	Free write buffer if you decide not to queue it.
+ * mp_unget_write_buffer()	Free write buffer if you decide not to commit it.
  *
  * mp_commit_write_buffer()	Commit the next write buffer to the queue
  *							Advances write pointer & changes buffer state
@@ -412,9 +412,9 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 {
 	if (mb.w->buffer_state == MP_BUFFER_EMPTY) {
 		mpBuf_t *w = mb.w;
-		mpBuf_t *nx = mb.w->nx;					// save pointers
+		mpBuf_t *nx = mb.w->nx;					// save linked list pointers
 		mpBuf_t *pv = mb.w->pv;
-		memset(mb.w, 0, sizeof(mpBuf_t));
+		memset(mb.w, 0, sizeof(mpBuf_t));		// clear all values
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
@@ -425,14 +425,13 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 	rpt_exception(STAT_FAILED_TO_GET_PLANNER_BUFFER);
 	return (NULL);
 }
-/* NOT USED
+
 void mp_unget_write_buffer()
 {
 	mb.w = mb.w->pv;							// queued --> write
 	mb.w->buffer_state = MP_BUFFER_EMPTY; 		// not loading anymore
 	mb.buffers_available++;
 }
-*/
 
 /*** WARNING: The calling routine must not use the write buffer once it has been queued. 
 			  Action may start on the buffer immediately, invalidating its contents ***/

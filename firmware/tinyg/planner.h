@@ -130,8 +130,12 @@ enum sectionState {
 
 /* Some parameters for block annealing
  */
-#define ANNEAL_LENGTH_THRESHOLD				2	// millimeters. If greater, do not attempt to anneal
-#define ANNEAL_VELOCITY_THRESHOLD			20	// mm/min. If greater, do not attempt to anneal
+#define ANNEAL_BLOCK_LINEAR_TOLERANCE		0.01	// mm
+#define ANNEAL_BLOCK_ROTARY_TOLERANCE		0.01	// degrees
+#define ANNEAL_LENGTH_THRESHOLD				2		// millimeters. If greater, do not attempt to anneal
+#define ANNEAL_VELOCITY_THRESHOLD			20		// mm/min. If greater, do not attempt to anneal
+#define ANNEAL_ANGULAR_THRESHOLD			45		// max allowable degrees of direction change
+#define ANNEAL_ANGULAR_COSINE (cos(ANNEAL_ANGULAR_THRESHOLD/RADIAN))
 
 /*
  *	Macros and typedefs
@@ -203,9 +207,14 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
 	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
+
+	float anneal_bqti[AXES];		// initial target of first block in an annealed block chain
+	float anneal_length;			// total length of blocks in an annealed block chain
+
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
+
 #ifdef __UNIT_TEST_PLANNER
 	float test_case;
 	float test_velocity;

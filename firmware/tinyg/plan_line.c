@@ -48,8 +48,8 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
-static uint8_t _test_anneal_block(mpBuf_t *bf);
-static stat_t _anneal_block(mpBuf_t *bf);
+static uint8_t _test_anneal_block(mpBuf_t *bn);
+static void _anneal_block(mpBuf_t *bn);
 
 /* Runtime-specific setters and getters
  *
@@ -120,6 +120,13 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+
+	// run block annealing code
+	if (_test_anneal_block(bf)) {
+		_anneal_block(bf);
+		mp_unget_write_buffer(bf);
+		return (STAT_OK);
+	}
 
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
@@ -257,6 +264,9 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *	from some 3DP slicers and other naiive CAM packages. Annealing blocks makes for smoother
  *	block transitions and helps prevent buffer starvation in some extreme cases.
  *
+ *	Input:
+ *		bn		mpBuf_t * to new buffer. Will be discarded if annealing occurs.	
+ *
  *	Algorithm Summary: 
  *		Extend an imaginary line from the queued block, draw an imaginary cylinder around
  *		it of radius c', where c' is the allowable path tolerance for the endpoint of the new 
@@ -292,7 +302,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *			(a) Exit if the queued block is not replannable (also takes care of first block case)
  *			(b) Exit if the new block exceeds a length threshold
  *			(c) Exit if the new block target velocity is out of tolerance for annealing
- *			(d) Exit if the new block is a direction reversal
+ *			(d) Exit if the new block exceeds a maximum direction change
  *			(e) Perform similar tests for rotary axes if any of ABC are in the move
  *
  *		- Accumulate L to L'
@@ -328,21 +338,70 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		A = sqrt((cdiv2^2)*(L+cdiv2)*(L-cdiv2))	Reduction of A
  */
 
-static uint8_t _test_anneal_block(mpBuf_t *bf)
+static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
 {
-	if (bf->replannable == false) return (false);
-	if (bf->length >= ANNEAL_LENGTH_THRESHOLD) return (false);
-/*
-	if 
-	delta_t = bf->gm.move_time
-	if (bf->gm.move_time >= 1/ANNEAL_VELOCITY_THRESHOLD) return (false);
-*/
+	copy_vector (mm.anneal_bqti, bn->gm.target); // set the annealing starting point
+	mm.anneal_length = 0;
+	return (false);
+}
+
+static uint8_t _test_anneal_block(mpBuf_t *bn)	// bn points to the new block
+{
+	mpBuf_t *bq	= bn->pv;						// bq points to the queued block
+
+	// generate the unit vector for the new block. You'll need it.
+	float diff;
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		if (fp_NOT_ZERO(diff = bn->gm.target[axis] - mm.position[axis])) {
+			bn->unit[axis] = diff / bn->length;
+		}
+	}
+
+	// Can previous block can be extended? ***
+	if (bn->replannable == false)				// exit if previous block not replannable
+		return(_test_anneal_block_exit(bn));
+
+	// Is new block is too long to anneal? ***
+	if (bn->length >= ANNEAL_LENGTH_THRESHOLD)	// exit of new block is too long
+		return(_test_anneal_block_exit(bn));
+
+	// Are velocities too different to anneal? ***
+	bn->cruise_vmax = bn->length / bn->gm.move_time;	// target velocity requested
+	if ((fabs(bn->cruise_vmax - bn->pv->cruise_vmax)) > ANNEAL_VELOCITY_THRESHOLD)
+		return(_test_anneal_block_exit(bn));
+
+	// Are block directions too great to anneal? ***
+	float costheta = - (bn->unit[AXIS_X] * bq->unit[AXIS_X])
+					 - (bn->unit[AXIS_Y] * bq->unit[AXIS_Y])
+					 - (bn->unit[AXIS_Z] * bq->unit[AXIS_Z])
+					 - (bn->unit[AXIS_A] * bq->unit[AXIS_A])
+					 - (bn->unit[AXIS_B] * bq->unit[AXIS_B])
+					 - (bn->unit[AXIS_C] * bq->unit[AXIS_C]);
+	if (costheta > ANNEAL_ANGULAR_COSINE) 
+		return(_test_anneal_block_exit(bn));
+
+	// Is the c side of triangle inside the annealing tolerance?
+	mm.anneal_length += bn->length;
+
+	float bqtx[AXES];	// endpoint target of extended line
+	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
+		bqtx[axis] = mm.anneal_bqti[axis] + bn->gm.units_mode[axis] * bn->length;
+	}
+	float c = get_axis_vector_length(bqtx, mm.bqti)
+
+	if (c < ANNEAL_BLOCK_LINEAR_TOLERANCE) 
+		return(true);
+
+	// Is the c side of triangle inside the annealing tolerance?
+
+
+
 	return (true);
 }
 
-static stat_t _anneal_block(mpBuf_t *bf)
+static void _anneal_block(mpBuf_t *bn)
 {
-	return (STAT_OK);
+	
 }
 
 /* _plan_block_list() - plans the entire block list
@@ -832,11 +891,11 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 }
 */
 /*
- * _get_junction_vmax() - Chamnit's algorithm - simple
+ * _get_junction_vmax() - Sonny's algorithm - simple
  *
  *  Computes the maximum allowable junction speed by finding the velocity that will yield 
  *	the centripetal acceleration in the corner_acceleration value. The value of delta sets 
- *	the effective radius of curvature. Here's Chamnit's (Sungeun K. Jeon's) explanation 
+ *	the effective radius of curvature. Here's Sonny's (Sungeun K. Jeon's) explanation 
  *	of what's going on:
  *
  *	"First let's assume that at a junction we only look a centripetal acceleration to simply 
@@ -844,13 +903,16 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
  *	to the circle. The circular segment joining the lines represents the path for constant 
  *	centripetal acceleration. This creates a deviation from the path (let's call this delta), 
  *	which is the distance from the junction to the edge of the circular segment. Delta needs 
- *	to be defined, so let's replace the term max_jerk with max_junction_deviation( or delta). 
- *	This indirectly sets the radius of the circle, and hence limits the velocity by the 
- *	centripetal acceleration. Think of the this as widening the race track. If a race car is 
- *	driving on a track only as wide as a car, it'll have to slow down a lot to turn corners. 
- *	If we widen the track a bit, the car can start to use the track to go into the turn. 
- *	The wider it is, the faster through the corner it can go.
+ *	to be defined, so let's replace the term max_jerk (see note 1) with max_junction_deviation, 
+ *	or "delta". This indirectly sets the radius of the circle, and hence limits the velocity 
+ *	by the centripetal acceleration. Think of the this as widening the race track. If a race 
+ *	car is driving on a track only as wide as a car, it'll have to slow down a lot to turn 
+ *	corners. If we widen the track a bit, the car can start to use the track to go into the 
+ *	turn. The wider it is, the faster through the corner it can go.
  *
+ * (Note 1: "max_jerk" refers to the old grbl/marlin max_jerk" approximation term, not the 
+ *	tinyG jerk terms)
+ * 
  *	If you do the geometry in terms of the known variables, you get:
  *		sin(theta/2) = R/(R+delta)  Re-arranging in terms of circle radius (R)
  *		R = delta*sin(theta/2)/(1-sin(theta/2). 
@@ -870,9 +932,9 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
  *		float theta = acos(costheta);
  *		float radius = delta * sin(theta/2)/(1-sin(theta/2));
  */
-/*  This version function extends Chamnit's algorithm by computing a value for delta that 
- *	takes the contributions of the individual axes in the move into account. This allows 
- *	the control radius to vary by axis. This is necessary to support axes that have 
+/*  This version extends Chamnit's algorithm by computing a value for delta that takes
+ *	the contributions of the individual axes in the move into account. This allows the
+ *	control radius to vary by axis. This is necessary to support axes that have 
  *	different dynamics; such as a Z axis that doesn't move as fast as X and Y (such as a 
  *	screw driven Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
  *	axes ABC that have completely different dynamics than their linear counterparts.
@@ -887,9 +949,12 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
  */
 static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 {
-	float costheta = - (a_unit[AXIS_X] * b_unit[AXIS_X]) - (a_unit[AXIS_Y] * b_unit[AXIS_Y]) 
-					 - (a_unit[AXIS_Z] * b_unit[AXIS_Z]) - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
-					 - (a_unit[AXIS_B] * b_unit[AXIS_B]) - (a_unit[AXIS_C] * b_unit[AXIS_C]);
+	float costheta = - (a_unit[AXIS_X] * b_unit[AXIS_X])
+					 - (a_unit[AXIS_Y] * b_unit[AXIS_Y]) 
+					 - (a_unit[AXIS_Z] * b_unit[AXIS_Z])
+					 - (a_unit[AXIS_A] * b_unit[AXIS_A]) 
+					 - (a_unit[AXIS_B] * b_unit[AXIS_B])
+					 - (a_unit[AXIS_C] * b_unit[AXIS_C]);
 
 	if (costheta < -0.99) { return (10000000); } 		// straight line cases
 	if (costheta > 0.99)  { return (0); } 				// reversal cases
