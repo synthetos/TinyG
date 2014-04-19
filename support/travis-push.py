@@ -148,7 +148,7 @@ def push_to_destination():
 def main():
     """Prepare git and push the created binaries to the destination repo."""
 
-    if "TRAVIS_PULL_REQUEST" in environ:
+    if "TRAVIS_PULL_REQUEST" in environ and environ['TRAVIS_PULL_REQUEST'] != "false":
         print "NOTICE: Pull request detected, unable to push built binary."
         exit(0)
 
