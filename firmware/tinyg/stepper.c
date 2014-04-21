@@ -734,6 +734,14 @@ static void _set_motor_steps_per_unit(cmdObj_t *cmd)
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
 
+/* PER-MOTOR FUNCTIONS
+ * st_set_sa() - set motor step angle
+ * st_set_tr() - set travel per motor revolution
+ * st_set_mi() - set motor microsteps
+ * st_set_pm() - set motor power mode
+ * st_set_pl() - set motor power level
+ */
+
 stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle
 { 
 	set_flt(cmd);
@@ -770,20 +778,49 @@ stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
 	return (STAT_OK);
 }
 
-stat_t st_set_mt(cmdObj_t *cmd)
+/*
+ * st_set_pl() - set motor power level
+ *
+ *	Input value may vary from 0.000 to 1.000 The setting is scaled to allowable PWM range.
+ *	This function sets both the scaled and dynamic power levels, and applies the 
+ *	scaled value to the vref.
+ */ 
+stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
 {
-	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(cmd->value, IDLE_TIMEOUT_SECONDS_MIN));
-	return (STAT_OK);
+#ifdef __ARM
+	if (cmd->value < (float)0.0) cmd->value = 0.0;
+	if (cmd->value > (float)1.0) {
+		if (cmd->value > (float)100) cmd->value = 1;
+ 		cmd->value /= 100;		// accommodate old 0-100 inputs
+	}
+	set_flt(cmd);	// set power_setting value in the motor config struct (st)
+	
+	uint8_t motor = _get_motor(cmd->index);
+	st_cfg.mot[motor].power_level_scaled = (cmd->value * POWER_LEVEL_SCALE_FACTOR);
+	st_run.mot[motor].power_level_dynamic = (st_cfg.mot[motor].power_level_scaled);
+	_set_motor_power_level(motor, st_cfg.mot[motor].power_level_scaled);
+#endif
+	return(STAT_OK);
 }
 
-/*
+
+/* GLOBAL FUNCTIONS (SYSTEM LEVEL)
+ *
+ * st_set_mt() - set motor timeout in seconds
  * st_set_md() - disable motor power
  * st_set_me() - enable motor power
  *
  * Calling me or md with NULL will enable or disable all motors
  * Setting a value of 0 will enable or disable all motors
  * Setting a value from 1 to MOTORS will enable or disable that motor only
- */ 
+ */
+
+stat_t st_set_mt(cmdObj_t *cmd)
+{
+	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(cmd->value, IDLE_TIMEOUT_SECONDS_MIN));
+	return (STAT_OK);
+}
+
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
 	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
@@ -802,18 +839,6 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 		_energize_motor((uint8_t)cmd->value-1);
 	}
 	return (STAT_OK);
-}
-
-stat_t st_set_mp(cmdObj_t *cmd)	// motor power level
-{
-	if (cmd->value < (float)0) cmd->value = 0;
-	if (cmd->value > (float)1) cmd->value = 1;
-	set_flt(cmd);				// set the value in the motor config struct (st)
-	
-	uint8_t motor = _get_motor(cmd->index);
-	st_run.mot[motor].power_level = cmd->value;
-	_set_motor_power_level(motor, cmd->value);
-	return(STAT_OK);
 }
 
 /***********************************************************************************
@@ -838,7 +863,7 @@ static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%10.4f%s\
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
-static const char fmt_0mp[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
+static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
 
 void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
 void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
@@ -865,7 +890,7 @@ void st_print_tr(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0tr, cm_get_un
 void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
 void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
 void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
-void st_print_mp(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0mp);}
+void st_print_pl(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0pl);}
 
 #endif // __TEXT_MODE
 

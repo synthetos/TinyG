@@ -176,7 +176,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f00, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f00, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f00, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
-	{ "", "clc", _f00, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
+//	{ "", "clc", _f00, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
 	{ "", "clear",_f00,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f00, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
@@ -196,7 +196,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
-	{ "1","1mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
+	{ "1","1pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #if (MOTORS >= 2)
 	{ "2","2ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
@@ -204,7 +204,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "2","2mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_2].polarity,	M2_POLARITY },
 	{ "2","2pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_2].power_mode,	M2_POWER_MODE },
-	{ "2","2mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_2].power_level,M2_POWER_LEVEL},
+	{ "2","2pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_2].power_level,M2_POWER_LEVEL},
 #endif
 #if (MOTORS >= 3)
 	{ "3","3ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
@@ -213,7 +213,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "3","3mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_3].polarity,	M3_POLARITY },
 	{ "3","3pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_3].power_mode,	M3_POWER_MODE },
-	{ "3","3mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_3].power_level,M3_POWER_LEVEL },
+	{ "3","3pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_3].power_level,M3_POWER_LEVEL },
 #endif
 #if (MOTORS >= 4)
 	{ "4","4ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
@@ -222,26 +222,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "4","4mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_4].power_mode,	M4_POWER_MODE },
-	{ "4","4mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_4].power_level,M4_POWER_LEVEL },
+	{ "4","4pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_4].power_level,M4_POWER_LEVEL },
 #endif
 #if (MOTORS >= 5)
 	{ "5","5ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
-	{ "5","5sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
-	{ "5","5tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
+	{ "5","5sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
+	{ "5","5tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
 	{ "5","5mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
 	{ "5","5po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_5].polarity,	M5_POLARITY },
 	{ "5","5pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_5].power_mode,	M5_POWER_MODE },
-	{ "5","5mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_5].power_level,M5_POWER_LEVEL },
+	{ "5","5pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_5].power_level,M5_POWER_LEVEL },
 #endif
 #if (MOTORS >= 6)
 	{ "6","6ma",_fip, 0, st_print_ma, get_ui8, set_ui8,   (float *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
-	{ "6","6sa",_fip, 2, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
-	{ "6","6tr",_fip, 3, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
+	{ "6","6sa",_fip, 3, st_print_sa, get_flt, st_set_sa, (float *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
+	{ "6","6tr",_fip, 4, st_print_tr, get_flu, st_set_tr, (float *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
 	{ "6","6mi",_fip, 0, st_print_mi, get_ui8, st_set_mi, (float *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
 	{ "6","6po",_fip, 0, st_print_po, get_ui8, set_01,    (float *)&st_cfg.mot[MOTOR_6].polarity,	M6_POLARITY },
 	{ "6","6pm",_fip, 0, st_print_pm, get_ui8, st_set_pm, (float *)&st_cfg.mot[MOTOR_6].power_mode,	M6_POWER_MODE },
-	{ "6","6mp",_fip, 3, st_print_mp, get_flt, st_set_mp, (float *)&st_cfg.mot[MOTOR_6].power_level,M6_POWER_LEVEL },
+	{ "6","6pl",_fip, 3, st_print_pl, get_flt, st_set_pl, (float *)&st_cfg.mot[MOTOR_6].power_level,M6_POWER_LEVEL },
 #endif
+
 
 	// Axis parameters
 	{ "x","xam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_X].axis_mode,		X_AXIS_MODE },

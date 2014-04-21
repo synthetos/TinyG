@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		412.03	// merge dev branch (425.01) - changes to config.c/.h; no functional changes
+#define TINYG_FIRMWARE_BUILD   		412.04	// merge dev branch (425.01) - changed stepper power level 'mp' settings to 'pl'
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
