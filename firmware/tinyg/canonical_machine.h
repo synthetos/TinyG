@@ -360,7 +360,7 @@ enum cmHomingState {				// applies to cm.homing_state
 
 enum cmProbeState {					// applies to cm.probe_state
 	PROBE_FAILED = 0,				// probe reached endpoint without triggering
-	PROBE_SUCCEEDED = 1,				// probe was triggered, cm.probe_results has position
+	PROBE_SUCCEEDED = 1,			// probe was triggered, cm.probe_results has position
 	PROBE_WAITING					// probe is waiting to be started
 };
 
@@ -576,6 +576,7 @@ stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 
+//void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
 
@@ -584,7 +585,6 @@ stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
 stat_t cm_reset_origin_offsets(void); 							// G92.1
 stat_t cm_suspend_origin_offsets(void); 						// G92.2
 stat_t cm_resume_origin_offsets(void);				 			// G92.3
-
 
 // Free Space Motion (4.3.4)
 stat_t cm_straight_traverse(float target[], float flags[]);		// G0

@@ -1301,9 +1301,9 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
-// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which 
+// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which
 //		 issues !%~ in rapid succession. So it's commented out for now. THe correct way to handle this
-//		 is to queue the % queue flush until after the feedhold stops, and queue the ~ cycle start 
+//		 is to queue the % queue flush until after the feedhold stops, and queue the ~ cycle start
 //		 until after that.
 //	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
 
@@ -1388,7 +1388,6 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 
-//	st_cycle_end();									// UNUSED
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	cmd_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }
@@ -1397,7 +1396,6 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
-//		st_cycle_start();							// UNUSED
 		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();						// clear queue reporting buffer counts
 	}
@@ -1463,7 +1461,7 @@ static const char *const msg_unit[] PROGMEM = { msg_g20, msg_g21 };
 
 static const char msg_stat0[] PROGMEM = "Initializing";	// combined state (stat) uses this array
 static const char msg_stat1[] PROGMEM = "Ready";
-static const char msg_stat2[] PROGMEM = "Shutdown";
+static const char msg_stat2[] PROGMEM = "Alarm";
 static const char msg_stat3[] PROGMEM = "Stop";
 static const char msg_stat4[] PROGMEM = "End";
 static const char msg_stat5[] PROGMEM = "Run";
@@ -1472,22 +1470,27 @@ static const char msg_stat7[] PROGMEM = "Probe";
 static const char msg_stat8[] PROGMEM = "Cycle";
 static const char msg_stat9[] PROGMEM = "Homing";
 static const char msg_stat10[] PROGMEM = "Jog";
+static const char msg_stat11[] PROGMEM = "Shutdown";
 static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3,
 												msg_stat4, msg_stat5, msg_stat6, msg_stat7,
-												msg_stat8, msg_stat9, msg_stat10};
+												msg_stat8, msg_stat9, msg_stat10, msg_stat11 };
 
 static const char msg_macs0[] PROGMEM = "Initializing";
-static const char msg_macs1[] PROGMEM = "Reset";
-static const char msg_macs2[] PROGMEM = "Cycle";
+static const char msg_macs1[] PROGMEM = "Ready";
+static const char msg_macs2[] PROGMEM = "Alarm";
 static const char msg_macs3[] PROGMEM = "Stop";
 static const char msg_macs4[] PROGMEM = "End";
-static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3 , msg_macs4};
+static const char msg_macs5[] PROGMEM = "Cycle";
+static const char msg_macs6[] PROGMEM = "Shutdown";
+static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3,
+												msg_macs4, msg_macs5, msg_macs6 };
 
 static const char msg_cycs0[] PROGMEM = "Off";
-static const char msg_cycs1[] PROGMEM = "Started";
-static const char msg_cycs2[] PROGMEM = "Homing";
-static const char msg_cycs3[] PROGMEM = "Probe";
-static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3 };
+static const char msg_cycs1[] PROGMEM = "Machining";
+static const char msg_cycs2[] PROGMEM = "Probe";
+static const char msg_cycs3[] PROGMEM = "Homing";
+static const char msg_cycs4[] PROGMEM = "Jog";
+static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3,  msg_cycs4 };
 
 static const char msg_mots0[] PROGMEM = "Stop";
 static const char msg_mots1[] PROGMEM = "Run";
@@ -1499,11 +1502,14 @@ static const char msg_hold1[] PROGMEM = "Sync";
 static const char msg_hold2[] PROGMEM = "Plan";
 static const char msg_hold3[] PROGMEM = "Decel";
 static const char msg_hold4[] PROGMEM = "Hold";
-static const char *const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3, msg_hold4 };
+static const char msg_hold5[] PROGMEM = "End Hold";
+static const char *const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3,
+												msg_hold4,  msg_hold5 };
 
 static const char msg_home0[] PROGMEM = "Not Homed";
 static const char msg_home1[] PROGMEM = "Homed";
-static const char *const msg_home[] PROGMEM = { msg_home0, msg_home1 };
+static const char msg_home2[] PROGMEM = "Homing";
+static const char *const msg_home[] PROGMEM = { msg_home0, msg_home1, msg_home2 };
 
 static const char msg_g53[] PROGMEM = "G53 - machine coordinate system";
 static const char msg_g54[] PROGMEM = "G54 - coordinate system 1";
@@ -1537,7 +1543,8 @@ static const char *const msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
 static const char msg_g93[] PROGMEM = "G93 - inverse time mode";
 static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
-static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94 };
+static const char msg_g95[] PROGMEM = "G95 - units-per-revolution mode";
+static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 
 #else
 

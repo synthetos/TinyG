@@ -47,7 +47,11 @@
 // WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
 // new machines use a stepper which has the same config as the other axis.
 //#define HAS_CANSTACK_Z_AXIS		0
-#define HAS_CANSTACK_Z_AXIS			1			// Earlier machines
+
+//#define HAS_CANSTACK_Z_AXIS		1			// Earlier machines
+//#define M2_STEP_ANGLE 			15			// canstack value
+//#define M2_TRAVEL_PER_REV 		1.27254		// canstack value
+//#define Z_VELOCITY_MAX 			1000		// canstack value
 
 // *** settings.h overrides ***
 // Note: there are some commented test values below
@@ -103,7 +107,6 @@
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
-//#define M3_MOTOR_MAP 			AXIS_Z				// DIAGNOSTIC TEST ONLY!!!
 #define M3_STEP_ANGLE 			1.8
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
@@ -112,13 +115,8 @@
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
-#if HAS_CANSTACK_Z_AXIS
-#define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27254
-#else
 #define M2_STEP_ANGLE 			1.8
 #define M2_TRAVEL_PER_REV 		5.08
-#endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
 #define M2_POWER_MODE 			0					
@@ -137,7 +135,6 @@
 
 // *** axis settings ***
 
-//#define X_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
@@ -153,7 +150,6 @@
 #define X_ZERO_BACKOFF 			0					// xzb		mm
 #define X_JERK_HOMING			JERK_HOMING			// xjh
 
-//#define Y_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			X_VELOCITY_MAX
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
@@ -170,11 +166,7 @@
 #define Y_JERK_HOMING			JERK_HOMING
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#if HAS_CANSTACK_Z_AXIS
-#define Z_VELOCITY_MAX 			1000
-#else
 #define Z_VELOCITY_MAX 			X_VELOCITY_MAX
-#endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			-75
 #define Z_TRAVEL_MAX 			0
