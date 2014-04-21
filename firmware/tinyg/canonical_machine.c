@@ -3,6 +3,7 @@
  * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2014 Alden S Hart, Jr.
+ * Copyright (c) 2014 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -85,8 +86,8 @@
  *		and have no buffer.
  */
 
-#include "tinyg.h"		// #1
-#include "config.h"		// #2
+#include "tinyg.h"			// #1
+#include "config.h"			// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
@@ -181,6 +182,12 @@ void cm_set_motion_state(uint8_t motion_state)
  * Model State Getters and Setters *
  ***********************************/
 
+/*	These getters and setters will work on any gm model with inputs:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
+ */
 uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
 uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
@@ -194,6 +201,8 @@ uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spi
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
+float cm_get_feed_rate(GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
+
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
@@ -202,12 +211,8 @@ void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
+	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
 }
-
-/*
- * cm_set_model_linenum() 	  - set line number in the model
- */
 
 void cm_set_model_linenum(uint32_t linenum)
 {
@@ -255,12 +260,18 @@ float cm_get_active_coord_offset(uint8_t axis)
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cm.offset[cm.gm.coord_system][axis];
 	if (cm.gmx.origin_offset_enable == true) 
-		offset += cm.gmx.origin_offset[axis]; 			// includes G5x and G92 compoenents
+		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
 	return (offset); 
 }
 
 /*
  * cm_get_work_offset() - return a coord offset from the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis) 
@@ -270,7 +281,14 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 
 /*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
+
 void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -281,9 +299,14 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
 /*
  * cm_get_absolute_position() - get position of axis in absolute coordinates
  *
- * NOTE: Machine position is always returned in mm mode. No units conversion is performed
- * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *
+ *	NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
+
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
 	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
@@ -297,6 +320,10 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  *
  * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by 
  *		 calling cm_get_model_coord_offset_vector() first.
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
@@ -475,10 +502,6 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float tmp_time=0;					// used in computation
 	gcode_state->minimum_time = 8675309;// arbitrarily large number
 
-	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
-	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
-	//		 the canonical machine will be the target, but this is not required.
-
 	// compute times for feed motion
 	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 		if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
@@ -542,6 +565,9 @@ stat_t cm_test_soft_limits(float target[])
  * CANONICAL MACHINING FUNCTIONS
  *	Values are passed in pre-unit_converted state (from gn structure)
  *	All operations occur on gm (current model state)
+ *
+ * These are organized by section number (x.x.x) in the order they are
+ * found in NIST RS274 NGCv3
  ************************************************************************/
 
 /****************************************** 
@@ -593,6 +619,7 @@ void canonical_machine_init()
  * canonical_machine_init_assertions()
  * canonical_machine_test_assertions() - test assertions, return error code if violation exists
  */
+
 void canonical_machine_init_assertions(void)
 {
 	cm.magic_start = MAGICNUM;
@@ -613,11 +640,10 @@ stat_t canonical_machine_test_assertions(void)
 
 /*
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
- * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  * cm_clear() 	   - clear soft alarm
- *
- *	Fascinating: http://www.cncalarms.com/
+ * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  */
+
 stat_t cm_soft_alarm(stat_t status)
 {
 	rpt_exception(status);					// send alarm message
@@ -642,61 +668,44 @@ stat_t cm_hard_alarm(stat_t status)
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions
-//	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
+//	gpio_set_bit_off(SPINDLE_BIT);			//++++ this current stuff is temporary
 //	gpio_set_bit_off(SPINDLE_DIR);
 //	gpio_set_bit_off(SPINDLE_PWM);
-//	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
-//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
+//	gpio_set_bit_off(MIST_COOLANT_BIT);		//++++ replace with exec function
+//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//++++ replace with exec function
 
 	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
 
-
 /**************************
  * Representation (4.3.3) *
  **************************/
-/*
- * Functions that affect the Gcode model only:
+
+/**************************************************************************
+ * Representation functions that affect the Gcode model only (asynchronous)
  *
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
  *
- * Functions that affect gcode model and are queued to planner
- *
- *	cm_set_coord_system()		- G54-G59
- *	cm_set_absolute_origin()	- G28.3 - model, planner and queue to runtime
- *	cm_set_axis_origin()		- set the origin of a single axis - model and planner
- *	cm_set_origin_offsets()		- G92
- *	cm_reset_origin_offsets()	- G92.1
- *	cm_suspend_origin_offsets()	- G92.2
- *	cm_resume_origin_offsets()	- G92.3
+ *	These functions assume input validation occurred upstream.
  */
 
-/*
- * cm_select_plane() - G17,G18,G19 select axis plane (AFFECTS MODEL ONLY)
- */
 stat_t cm_select_plane(uint8_t plane) 
 {
 	cm.gm.select_plane = plane;
 	return (STAT_OK);
 }
 
-/*
- * cm_set_units_mode() - G20, G21 (affects MODEL only)
- */
 stat_t cm_set_units_mode(uint8_t mode)
 {
 	cm.gm.units_mode = mode;		// 0 = inches, 1 = mm.
 	return(STAT_OK);
 }
 
-/*
- * cm_set_distance_mode() - G90, G91 (affects MODEL only)
- */
 stat_t cm_set_distance_mode(uint8_t mode)
 {
 	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
@@ -727,6 +736,9 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	return (STAT_OK);
 }
 
+/******************************************************************************************
+ * Representation functions that affect gcode model and are queued to planner (synchronous)
+ */
 /*
  * cm_set_coord_system() - G54-G59 
  * _exec_offset() - callback from planner
@@ -748,7 +760,7 @@ static void _exec_offset(float *value, float *flag)
 		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
-//	cm_set_work_offsets(RUNTIME);
+	cm_set_work_offsets(MODEL);								// set work offsets in the Gcode model
 }
 
 /*
@@ -962,9 +974,8 @@ stat_t cm_set_path_control(uint8_t mode)
  * Machining Functions (4.3.6) *
  *******************************/
 /* 
- * cm_arc_feed()
+ * cm_arc_feed() - SEE plan_arc.c(pp)
  */
-// see plan_arc.cpp
  
 /*
  * cm_dwell() - G4, P parameter (seconds)
@@ -1028,6 +1039,7 @@ stat_t cm_select_tool(uint8_t tool_select)
 static void _exec_select_tool(float *value, float *flag)
 {
 	cm.gm.tool_select = (uint8_t)value[0];
+  //printf("{\"tool\":%i}\n", cm.gm.tool_select);
 }
 
 stat_t cm_change_tool(uint8_t tool_change)
@@ -1139,7 +1151,7 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 {
 	cm.gmx.feed_rate_override_enable = flag;
 	cm.gmx.feed_rate_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+//	mp_feed_rate_override(flag, cm.gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1157,7 +1169,7 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 {
 	cm.gmx.traverse_override_enable = flag;
 	cm.gmx.traverse_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, gn.parameter);		// replan the queue for new feed rate
+//	mp_feed_rate_override(flag, cm.gn.parameter);		// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1194,21 +1206,21 @@ void cm_message(char_t *message)
  * Program Functions (4.3.10) *
  ******************************/
 /*
- * This group implements stop, start, end, and hold. 
+ * This group implements stop, start, end, and hold.
  * It is extended beyond the NIST spec to handle various situations.
  *
  *	_exec_program_finalize()
  *	cm_cycle_start()			(no Gcode)  Do a cycle start right now
  *	cm_cycle_end()				(no Gcode)	Do a cycle end right now
- *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now	
+ *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now
  *	cm_program_stop()			(M0, M60)	Queue a program stop
  *	cm_optional_program_stop()	(M1)
  *	cm_program_end()			(M2, M30)
  *	cm_machine_ready()			puts machine into a READY state
  *
- * cm_program_stop and cm_optional_program_stop are synchronous Gcode 
+ * cm_program_stop and cm_optional_program_stop are synchronous Gcode
  * commands that are received through the interpreter. They cause all motion
- * to stop at the end of the current command, including spindle motion. 
+ * to stop at the end of the current command, including spindle motion.
  *
  * Note that the stop occurs at the end of the immediately preceding command
  * (i.e. the stop is queued behind the last command).
@@ -1264,7 +1276,11 @@ stat_t cm_feedhold_sequencing_callback()
 			cm_queue_flush();
 		}
 	}
-	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false)) {
+	bool feedhold_processing =				// added feedhold processing lockout from omco fork
+		cm.hold_state == FEEDHOLD_SYNC ||
+		cm.hold_state == FEEDHOLD_PLAN ||
+		cm.hold_state == FEEDHOLD_DECEL;
+	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
 		cm.cycle_start_requested = false;
 		cm.hold_state = FEEDHOLD_END_HOLD;
 		cm_cycle_start();
@@ -1275,9 +1291,16 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
+// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which 
+//		 issues !%~ in rapid succession. So it's commented out for now. THe correct way to handle this
+//		 is to queue the % queue flush until after the feedhold stops, and queue the ~ cycle start 
+//		 until after that.
+//	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
+
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();		// flush serial queues
 #endif
+
 	mp_flush_planner();				// flush planner queue
 
 	// Note: The following uses low-level mp calls for absolute position.
@@ -1340,7 +1363,7 @@ static void _exec_program_finalize(float *value, float *flag)
 	cm.cycle_start_requested = false;				// cancel any pending cycle start request
 	mp_zero_segment_velocity();						// for reporting purposes
 
-	// execute program END resets
+	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
@@ -1586,9 +1609,9 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_mline()- get model line number for status reports
  * cm_get_line() - get active (model or runtime) line number for status reports
  * cm_get_vel()  - get runtime velocity
- * cm_get_ofs()  - get current work offset
- * cm_get_pos()  - get current work position
- * cm_get_mpos() - get current machine position
+ * cm_get_ofs()  - get current work offset (runtime)
+ * cm_get_pos()  - get current work position (runtime)
+ * cm_get_mpos() - get current machine position (runtime)
  * 
  * cm_print_pos()- print work position (with proper units)
  * cm_print_mpos()- print machine position (always mm units)
@@ -1662,7 +1685,6 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 
 stat_t cm_get_mpo(cmdObj_t *cmd) 
 {
-//	cmd->value = cm_get_absolute_position(RUNTIME, _get_axis(cmd->index));
 	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
