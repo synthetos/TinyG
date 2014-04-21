@@ -135,7 +135,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	strcpy_P(cmd->group, cfgArray[cmd->index].group);// capture the group string if there is one
 
 	// see if you need to strip the token
-	if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
+	if (cmd->group[0] != NUL) {
 		wr = cmd->token;
 		rd = cmd->token + strlen(cmd->group);
 		while (*rd != NUL) { *(wr)++ = *(rd)++;}
