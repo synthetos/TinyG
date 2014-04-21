@@ -419,11 +419,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30b",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_B], 0 },
 	{ "g30","g30c",_fin, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
-	// this is a 128bit UUID for identifing a previously commited job state
-	{ "jid","jida",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[0], 0},
-	{ "jid","jidb",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[1], 0},
-	{ "jid","jidc",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[2], 0},
-	{ "jid","jidd",_f00,  0, tx_print_nul, get_int, set_int, (float *)&cs.job_id[3], 0},
+	// this is a 128bit UUID for identifying a previously committed job state
+	{ "jid","jida",_f00,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[0], 0},
+	{ "jid","jidb",_f00,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[1], 0},
+	{ "jid","jidc",_f00,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[2], 0},
+	{ "jid","jidd",_f00,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
 
 	// System parameters
 	{ "sys","ja",  _f07, 0, cm_print_ja,  get_flu,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
@@ -441,13 +441,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","qv",  _f07, 0, qr_print_qv,  get_ui8,   set_0123,   (float *)&qr.queue_report_verbosity,QUEUE_REPORT_VERBOSITY },
 	{ "sys","sv",  _f07, 0, sr_print_sv,  get_ui8,   set_012,    (float *)&sr.status_report_verbosity,STATUS_REPORT_VERBOSITY },
 	{ "sys","si",  _f07, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+//	{ "sys","spi", _f07, 0, xio_print_spi,get_ui8,   xio_set_spi,(float *)&xio.spi_state,			0 },
 
 //	{ "sys","ic",  _f07, 0, print_ui8,    get_ui8,   set_ic,     (float *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, co_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
 	{ "sys","baud",_fns, 0, co_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
-	{ "sys","net", _fip, 0, co_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,			NETWORK_MODE },
+	{ "sys","net", _f07, 0, co_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,			NETWORK_MODE },
 
 	// switch state readers
 /*
@@ -495,48 +496,67 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "udd","udd2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
 	{ "udd","udd3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
+	// Diagnostic parameters
+#ifdef __DIAGNOSTIC_PARAMETERS
 	{ "_te","_tex",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },  // X target endpoint
 	{ "_te","_tey",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
 	{ "_te","_tez",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
 	{ "_te","_tea",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_A], 0 },
+//	{ "_te","_teb",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_B], 0 },
+//	{ "_te","_tec",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_C], 0 },
 
 	{ "_tr","_trx",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },  // X target runtime
 	{ "_tr","_try",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Y], 0 },
 	{ "_tr","_trz",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Z], 0 },
 	{ "_tr","_tra",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_A], 0 },
+//	{ "_tr","_trb",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_B], 0 },
+//	{ "_tr","_trc",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_C], 0 },
 
 	{ "_ts","_ts1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_1], 0 },  // Motor 1 target steps
 	{ "_ts","_ts2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },
 	{ "_ts","_ts3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },
 	{ "_ts","_ts4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },
+//	{ "_ts","_ts5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_5], 0 },
+//	{ "_ts","_ts6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_6], 0 },
 
 	{ "_ps","_ps1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_1], 0 },// Motor 1 position steps
 	{ "_ps","_ps2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },
 	{ "_ps","_ps3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },
 	{ "_ps","_ps4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },
+//	{ "_ps","_ps5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_5], 0 },
+//	{ "_ps","_ps6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_6], 0 },
 
 	{ "_cs","_cs1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_1], 0 },// Motor 1 commanded steps (delayed steps)
 	{ "_cs","_cs2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_2], 0 },
 	{ "_cs","_cs3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_3], 0 },
 	{ "_cs","_cs4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_4], 0 },
+//	{ "_cs","_cs5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_5], 0 },
+//	{ "_cs","_cs6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_6], 0 },
 
 	{ "_es","_es1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 encoder steps
 	{ "_es","_es2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
 	{ "_es","_es3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
 	{ "_es","_es4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
+//	{ "_es","_es5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_5], 0 },
+//	{ "_es","_es6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_6], 0 },
 
 	{ "_xs","_xs1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_1].corrected_steps, 0 }, // Motor 1 correction steps applied
 	{ "_xs","_xs2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_2].corrected_steps, 0 },
 	{ "_xs","_xs3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_3].corrected_steps, 0 },
 	{ "_xs","_xs4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_4].corrected_steps, 0 },
+//	{ "_xs","_xs5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_5].corrected_steps, 0 },
+//	{ "_xs","_xs6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_6].corrected_steps, 0 },
 
 	{ "_fe","_fe1",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_1], 0 }, // Motor 1 following error in steps
 	{ "_fe","_fe2",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_2], 0 },
 	{ "_fe","_fe3",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
 	{ "_fe","_fe4",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_4], 0 },
+//	{ "_fe","_fe5",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_5], 0 },
+//	{ "_fe","_fe6",_f00, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_6], 0 },
 
-//	{ "",   "_dd1",_f00, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },
-
+	{ "",   "_dam",_f00, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
+#endif
+	
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with CMD_STATUS_REPORT_LEN in config.h ***
 	{ "","se00",_fpe, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },

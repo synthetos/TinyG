@@ -690,6 +690,8 @@ stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
 stat_t cm_run_qf(cmdObj_t *cmd);		// run queue flush
 stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
 
+stat_t cm_dam(cmdObj_t *cmd);			// dump active model (debugging command)
+
 stat_t cm_run_jogx(cmdObj_t *cmd);		// start jogging cycle for x
 stat_t cm_run_jogy(cmdObj_t *cmd);		// start jogging cycle for y
 stat_t cm_run_jogz(cmdObj_t *cmd);		// start jogging cycle for z

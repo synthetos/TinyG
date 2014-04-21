@@ -1765,12 +1765,35 @@ stat_t cm_run_home(cmdObj_t *cmd)
 	return (STAT_OK);
 }
 
-stat_t cm_dd1(cmdObj_t *cmd)
+/*
+ * Debugging Commands
+ *
+ * cm_dam() - dump active model
+ */
+
+stat_t cm_dam(cmdObj_t *cmd)
 {
-//	printf();
+	printf("Active model:\n");
+	cm_print_vel(cmd);
+	cm_print_feed(cmd);
+	cm_print_line(cmd);
+	cm_print_stat(cmd);
+	cm_print_macs(cmd);
+	cm_print_cycs(cmd);
+	cm_print_mots(cmd);
+	cm_print_hold(cmd);
+	cm_print_home(cmd);
+	cm_print_unit(cmd);
+	cm_print_coor(cmd);
+	cm_print_momo(cmd);
+	cm_print_plan(cmd);
+	cm_print_path(cmd);
+	cm_print_dist(cmd);
+	cm_print_frmo(cmd);
+	cm_print_tool(cmd);
+
 	return (STAT_OK);
 }
-
 
 /***********************************************************************************
  * AXIS JOGGING

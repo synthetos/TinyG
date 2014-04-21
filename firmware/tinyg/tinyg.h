@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		412.05	// merge dev branch (425.01) - removed duplicate 'ctn' display
+#define TINYG_FIRMWARE_BUILD   		412.06	// merge dev branch (425.01) - See changelog in github
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -66,6 +66,8 @@
 //  #define __TEST_99 						// comment out to remove diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
+
+#define __DIAGNOSTIC_PARAMETERS				// include diagnostics in config_app table
 
 #ifdef __SIMULATION
   #define __CANNED_STARTUP					// run any canned startup moves
