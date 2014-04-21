@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		412.06	// merge dev branch (425.01) - See changelog in github
+#define TINYG_FIRMWARE_BUILD   		412.07	// merge dev branch (425.01) - Changes to config_app table and defines
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
