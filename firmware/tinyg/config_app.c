@@ -314,7 +314,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","bjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
 	{ "b","bjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].radius,			B_RADIUS },
-#ifdef __ARM	// B axis extended paramters
+#ifdef __ARM	// B axis extended parameters
 	{ "b","asn",_fip, 0, cm_print_sn, get_ui8,   sw_set_sw, (float *)&sw.s[AXIS_B][SW_MIN].mode,	B_SWITCH_MODE_MIN },
 	{ "b","asx",_fip, 0, cm_print_sx, get_ui8,   sw_set_sw, (float *)&sw.s[AXIS_B][SW_MAX].mode,	B_SWITCH_MODE_MAX },
 	{ "b","bsv",_fip, 0, cm_print_sv, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].search_velocity,	B_SEARCH_VELOCITY },
@@ -330,7 +330,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","ctm",_fip, 0, cm_print_tm, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip, 0, cm_print_jm, cm_get_jrk,cm_set_jrk,(float *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
-	{ "c","ctn",_fip, 0, cm_print_tn, get_flu,   set_flu,   (float *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","cjd",_fip, 0, cm_print_jd, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
 	{ "c","cra",_fip, 3, cm_print_ra, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].radius,			C_RADIUS },
 #ifdef __ARM	// C axis extended parameters
