@@ -347,6 +347,36 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 /* 
+ * cm_update_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_update_model_position_from_runtime() - set endpoint position from final runtime position
+ *
+ * 	These routines set the point position in the gcode model.
+ *
+ * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move) 
+ *	is achieved as soon as the move is planned and the move target becomes the new model position.
+ *	In reality the planner will (in all likelihood) have only just queued the move for later 
+ *	execution, and the real tool position is still close to the starting point. 
+ */
+
+void cm_update_model_position() 
+{ 
+	copy_vector(cm.gmx.position, cm.gm.target);
+}
+
+void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
+
+void cm_set_model_position(stat_t status) 
+{
+	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
+}
+
+/*
+void cm_set_model_position_from_runtime(stat_t status)
+{
+	if (status == STAT_OK) copy_vector(cm.gmx.position, mr.gm.target);
+}
+*/
+/* 
  * cm_set_model_target() - set target vector in GM model
  *
  * This is a core routine. It handles:
@@ -410,32 +440,8 @@ void cm_set_model_target(float target[], float flag[])
 	}
 }
 
-/* 
- * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
- * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
- *
- * 	This routine sets the endpoint position in the gcode model if the move was successfully 
- *	completed (no errors). Leaving the endpoint position alone for errors allows 
- *	too-short-lines to accumulate into longer lines (line aggregation).
- *
- * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
- *	as the move is executed and the position is now the target. In reality the planner and 
- *	steppers will still be processing the action and the real tool position is still close 
- *	to the starting point. 
- */
-void cm_set_model_position(stat_t status) 
-{
-	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
-}
-
-void cm_set_model_position_from_runtime(stat_t status)
-{
-	if (status == STAT_OK) copy_vector(cm.gmx.position, mr.gm.target);
-}
-
 /*
- * cm_set_move_times() 	- capture optimal and minimum move times into the gcode_state
- * _get_move_times() 	- get minimum and optimal move times
+ * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
  *
  *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
  *	on each participating axis - regardless of the feed rate requested. The minimum time is 
@@ -526,7 +532,10 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
-		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		}
 	}
 	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
@@ -722,6 +731,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
  *	It also does not reset the work_offsets which may be accomplished by calling 
  *	cm_set_work_offsets() immediately afterwards.
  */
+
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
