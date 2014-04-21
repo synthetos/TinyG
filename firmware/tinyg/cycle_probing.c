@@ -183,7 +183,7 @@ static stat_t _probing_start()
 static stat_t _probing_finish()
 {
     int8_t probe = read_switch(pb.probe_switch);
-    cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
+    cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEEDED : PROBE_FAILED;
     
     for( uint8_t axis=0; axis<AXES; axis++ )
         cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);

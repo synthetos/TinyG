@@ -5,7 +5,7 @@
  * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
- * canonical machining functions as described in the NIST RS274/NGC v37
+ * canonical machining functions as described in the NIST RS274/NGC v3
  */
 /* This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -79,21 +79,21 @@ extern "C"{
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
- typedef struct GCodeState {			// Gcode model state - used by model, planning and runtime
- 	uint32_t linenum;					// Gcode block line number
+typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
+	uint32_t linenum;					// Gcode block line number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-										// G82, G83 G84, G85, G86, G87, G88, G89 
+										// G82, G83 G84, G85, G86, G87, G88, G89
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
-	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
@@ -141,7 +141,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-										// G82, G83 G84, G85, G86, G87, G88, G89 
+										// G82, G83 G84, G85, G86, G87, G88, G89
 	uint8_t program_flow;				// used only by the gcode_parser
 	uint32_t linenum;					// N word or autoincrement in the model
 
@@ -246,9 +246,11 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
     uint8_t probe_state;            // 1==success, 0==failed
     float   probe_results[AXES];    // probing results
 
+//	uint8_t set_origin_state;		// used to control set_origin cycles
+
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
-	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
+	uint8_t g10_persist_flag;		// G10 changed offsets - persist them
 	uint8_t feedhold_requested;		// feedhold character has been received
 	uint8_t queue_flush_requested;	// queue flush character has been received
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
@@ -298,8 +300,8 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
  */
 // *** Note: check config printout strings align with all the state variables
 
-// #### LAYER 8 CRITICAL REGION ###
-// #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
+// ### LAYER 8 CRITICAL REGION ###
+// ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ###
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
@@ -314,7 +316,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_JOG,					// [10] jogging is treated as a cycle
 	COMBINED_SHUTDOWN,				// [11] machine in hard alarm state (shutdown)
 };
-//#### END CRITICAL REGION ####
+//### END CRITICAL REGION ###
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
@@ -331,7 +333,8 @@ enum cmCycleState {
 	CYCLE_MACHINING,				// in normal machining cycle
 	CYCLE_PROBE,					// in probe cycle
 	CYCLE_HOMING,					// homing is treated as a specialized cycle
-	CYCLE_JOG						// jogging is treated as a specialized cycle
+	CYCLE_JOG,						// jogging is treated as a specialized cycle
+	CYCLE_SET_ORIGIN				// set origin to new coordinates
 };
 
 enum cmMotionState {
@@ -357,7 +360,7 @@ enum cmHomingState {				// applies to cm.homing_state
 
 enum cmProbeState {					// applies to cm.probe_state
 	PROBE_FAILED = 0,				// probe reached endpoint without triggering
-	PROBE_SUCCEDED = 1,				// probe was triggered, cm.probe_results has position
+	PROBE_SUCCEEDED = 1,				// probe was triggered, cm.probe_results has position
 	PROBE_WAITING					// probe is waiting to be started
 };
 
@@ -371,7 +374,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
-	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordingates 
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates 
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
@@ -505,9 +508,12 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES
+ * Serves as a table of contents for the rather large canonical machine source file.
  */
-/*--- getters, setters and helper functions for canonical machining functions ---*/
 
+/*--- Internal functions and helpers ---*/
+
+// Model state getters and setters
 uint8_t cm_get_combined_state(void); 
 uint8_t cm_get_machine_state(void);
 uint8_t cm_get_cycle_state(void);
@@ -529,79 +535,85 @@ uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
+float cm_get_feed_rate(GCodeState_t *gcode_state);
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
+void cm_set_model_linenum(uint32_t linenum);
 
+// Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gcode_state);
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
-void cm_set_move_times(GCodeState_t *gcode_state);
 
-void cm_set_model_linenum(uint32_t linenum);
-void cm_set_model_target(float target[], float flag[]);
+// Critical helpers
+//void cm_update_model_position(void);
+//void cm_update_model_position_from_runtime(void);
 void cm_set_model_position(stat_t status);
 void cm_set_model_position_from_runtime(stat_t status);
+void cm_set_model_target(float target[], float flag[]);
+void cm_set_move_times(GCodeState_t *gcode_state);
 stat_t cm_test_soft_limits(float target[]);
 
-/*--- canonical machining functions (loosely patterned after NIST) ---*/
+/*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
 
+// Initialization and termination (4.3.2)
 void canonical_machine_init(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
+stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_clear(cmdObj_t *cmd);
 
-stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
-
+// Representation (4.3.3)
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
+stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
+stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 
-stat_t cm_homing_cycle_start(void);								// G28.2
-stat_t cm_homing_cycle_start_no_set(void);						// G28.4
-stat_t cm_homing_callback(void);								// G28.2 main loop callback
 stat_t cm_set_absolute_origin(float origin[], float flags[]);	// G28.3  (special function)
 void cm_set_axis_origin(uint8_t axis, const float position);	// set absolute position (used by G28's)
 
-stat_t cm_jogging_callback(void);								// jogging cycle main loop
-stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
-float cm_get_jogging_dest(void);
-
-stat_t cm_set_g28_position(void);								// G28.1
-stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
-stat_t cm_set_g30_position(void);								// G30.1
-stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
-
-stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
-stat_t cm_probe_callback(void);									// G38.2 main loop callback
-
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
-stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
 stat_t cm_reset_origin_offsets(void); 							// G92.1
 stat_t cm_suspend_origin_offsets(void); 						// G92.2
 stat_t cm_resume_origin_offsets(void);				 			// G92.3
 
-stat_t cm_straight_traverse(float target[], float flags[]);
+
+// Free Space Motion (4.3.4)
+stat_t cm_straight_traverse(float target[], float flags[]);		// G0
+stat_t cm_set_g28_position(void);								// G28.1
+stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
+stat_t cm_set_g30_position(void);								// G30.1
+stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
+
+// Machining Attributes (4.3.5)
 stat_t cm_set_feed_rate(float feed_rate);						// F parameter
 stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
-stat_t cm_straight_feed(float target[], float flags[]);			// G1
-stat_t cm_dwell(float seconds);									// G4, P parameter
-stat_t cm_arc_feed(float target[], float flags[], 				// G2, G3
-				   float i, float j, float k, 
-				   float radius, uint8_t motion_mode);
 
+// Machining Functions (4.3.6)
+stat_t cm_straight_feed(float target[], float flags[]);			// G1
+stat_t cm_arc_feed(float target[], float flags[], 				// G2, G3
+					float i, float j, float k,
+					float radius, uint8_t motion_mode);
+stat_t cm_dwell(float seconds);									// G4, P parameter
+
+// Spindle Functions (4.3.7)
 // see spindle.h for spindle definitions - which would go right here
 
+// Tool Functions (4.3.8)
+stat_t cm_select_tool(uint8_t tool);							// T parameter
+stat_t cm_change_tool(uint8_t tool);							// M6
+
+// Miscellaneous Functions (4.3.9)
 stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
 stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
 
@@ -613,16 +625,15 @@ stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
 stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
 stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
 
-stat_t cm_select_tool(uint8_t tool);							// T parameter
-stat_t cm_change_tool(uint8_t tool);							// M6
-
-// canonical machine commands not called from gcode dispatcher
 void cm_message(char_t *message);								// msg to console (e.g. Gcode comments)
 
-stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
+// Program Functions (4.3.10)
 void cm_request_feedhold(void);
 void cm_request_queue_flush(void);
 void cm_request_cycle_start(void);
+
+stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
+stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
@@ -630,8 +641,26 @@ void cm_feedhold(void);											// (no Gcode)
 void cm_program_stop(void);										// M0
 void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
-void cm_exec_program_stop(void);
-void cm_exec_program_end(void);
+
+//void cm_exec_program_stop(void);
+//void cm_exec_program_end(void);
+
+/*--- Cycles ---*/
+
+// Homing cycles
+stat_t cm_homing_cycle_start(void);								// G28.2
+stat_t cm_homing_cycle_start_no_set(void);						// G28.4
+stat_t cm_homing_callback(void);								// G28.2 main loop callback
+
+// Probe cycles
+stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
+stat_t cm_probe_callback(void);									// G38.2 main loop callback
+
+// Jogging cycle
+stat_t cm_jogging_callback(void);								// jogging cycle main loop
+stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
+float cm_get_jogging_dest(void);
+
 
 /*--- cmdArray interface functions ---*/
 
