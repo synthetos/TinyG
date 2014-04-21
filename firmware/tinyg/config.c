@@ -2,7 +2,7 @@
  * config.c - application independent configuration handling 
  * This file is part of the TinyG2 project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -35,6 +35,7 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
+//#include "persistence.h"
 #include "hardware.h"
 #include "help.h"
 #include "util.h"
@@ -160,10 +161,11 @@ stat_t set_defaults(cmdObj_t *cmd)
 /***** Generic Internal Functions *********************************************/
 
 /* Generic gets()
- *  get_nul() - get nothing (returns STAT_NOOP)
- *  get_ui8() - get value as 8 bit uint8_t
- *  get_int() - get value as 32 bit integer
- *  get_flt() - get value as float
+ *	get_nul()  - get nothing (returns STAT_NOOP)
+ *	get_ui8()  - get value as 8 bit uint8_t
+ *	get_int()  - get value as 32 bit integer
+ *	get_data() - get value as 32 bit integer blind cast
+ *	get_flt()  - get value as float
  *	get_format() - internal accessor for printf() format string
  */
 stat_t get_nul(cmdObj_t *cmd) 
@@ -204,13 +206,14 @@ stat_t get_flt(cmdObj_t *cmd)
 }
 
 /* Generic sets()
- *  set_nul() - set nothing (returns STAT_NOOP)
- *  set_ui8() - set value as 8 bit uint8_t value
- *  set_01()  - set a 0 or 1 uint8_t value with validation
- *  set_012() - set a 0, 1 or 2 uint8_t value with validation
- *	set_0123()- set a 0, 1, 2 or 3 uint8_t value with validation
- *  set_int() - set value as 32 bit integer
- *  set_flt() - set value as float
+ *	set_nul()  - set nothing (returns STAT_NOOP)
+ *	set_ui8()  - set value as 8 bit uint8_t value
+ *	set_01()   - set a 0 or 1 uint8_t value with validation
+ *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
+ *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
+ *	set_int()  - set value as 32 bit integer
+ *	set_data() - set value as 32 bit integer blind cast 
+ *	set_flt()  - set value as float
  */
 stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 

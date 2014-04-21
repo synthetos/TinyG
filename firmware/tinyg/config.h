@@ -2,7 +2,7 @@
  * config.h - configuration sub-system generic part (see config_app for application part)
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -195,9 +195,6 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
 
-#define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
-#define NVM_BASE_ADDR 0x0000		// base address of usable NVM
-
 enum tgCommunicationsMode {
 	TEXT_MODE = 0,					// text command line mode
 	JSON_MODE,						// strict JSON construction
@@ -282,14 +279,12 @@ typedef struct cfgItem {
 	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
-//	const char_t *format;				// pointer to formatted print string in FLASH
 	fptrPrint print;					// print binding: aka void (*print)(cmdObj_t *cmd);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj_t *cmd)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(cmdObj_t *cmd)
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
-
 
 /**** static allocation and definitions ****/
 
@@ -358,6 +353,9 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
 cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
+// **** Move all this to persistence files ****
+#define NVM_VALUE_LEN 4				// NVM value length (float, fixed length)
+#define NVM_BASE_ADDR 0x0000		// base address of usable NVM
 stat_t cmd_read_NVM_value(cmdObj_t *cmd);
 stat_t cmd_write_NVM_value(cmdObj_t *cmd);
 

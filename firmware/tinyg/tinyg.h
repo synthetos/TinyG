@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		412.03	// changes from dev branch (425.01) - comments, typos and organization
+#define TINYG_FIRMWARE_BUILD   		412.03	// merge dev branch (425.01) - changes to config.c/.h; no functional changes
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
