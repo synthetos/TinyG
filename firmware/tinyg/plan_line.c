@@ -124,7 +124,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	// run block annealing code
 	if (_test_anneal_block(bf)) {
 		_anneal_block(bf);
-		mp_unget_write_buffer(bf);
+		mp_unget_write_buffer();
 		return (STAT_OK);
 	}
 
@@ -337,16 +337,18 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		S = L + c/2								Identity given that L = a = b
  *		A = sqrt((cdiv2^2)*(L+cdiv2)*(L-cdiv2))	Reduction of A
  */
-
+/*
 static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
 {
 	copy_vector (mm.anneal_bqti, bn->gm.target); // set the annealing starting point
 	mm.anneal_length = 0;
 	return (false);
 }
-
+*/
 static uint8_t _test_anneal_block(mpBuf_t *bn)	// bn points to the new block
 {
+	return (false);
+/*
 	mpBuf_t *bq	= bn->pv;						// bq points to the queued block
 
 	// generate the unit vector for the new block. You'll need it.
@@ -397,6 +399,7 @@ static uint8_t _test_anneal_block(mpBuf_t *bn)	// bn points to the new block
 
 
 	return (true);
+*/
 }
 
 static void _anneal_block(mpBuf_t *bn)

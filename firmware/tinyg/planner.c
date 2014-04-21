@@ -298,7 +298,7 @@ static stat_t _exec_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->value_vector, bf->flag_vector);		// 2 vectors used by callbacks
 	st_prep_null();										// Must call a null prep to keep the loader happy. 
-	cm_cycle_end(mp_free_run_buffer());					// free buffer & perform cycle_end if empty
+	if (mp_free_run_buffer()) cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
 	return (STAT_OK);
 }
 
@@ -327,7 +327,7 @@ stat_t mp_dwell(float seconds)
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
 	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
-	cm_cycle_end(mp_free_run_buffer());					// free buffer & perform cycle_end if empty
+	if (mp_free_run_buffer()) cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
 	return (STAT_OK);
 }
 

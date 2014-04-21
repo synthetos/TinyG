@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		425.01	// accepted Ivan Krasin's pull request to fix reported work offsets after M2. Added some header documentation that would have made his job easier.
+#define TINYG_FIRMWARE_BUILD   		425.02	// backed out cycle_end conditional; stubbed out block annealing code
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

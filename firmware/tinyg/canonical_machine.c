@@ -1413,14 +1413,15 @@ void cm_cycle_start()
 	}
 }
 
-void cm_cycle_end(uint8_t flag) 					// flag must be true to trigger cycle end
+//void cm_cycle_end(uint8_t flag) 					// flag must be true to trigger cycle end
+void cm_cycle_end()
 {
-	if (flag == true) {
-		if (cm.cycle_state != CYCLE_OFF) {
-			float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-			_exec_program_finalize(value, value);
-		}
+//	if (flag == true) {
+	if (cm.cycle_state != CYCLE_OFF) {
+		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+		_exec_program_finalize(value, value);
 	}
+//	}
 }
 
 void cm_program_stop() 
