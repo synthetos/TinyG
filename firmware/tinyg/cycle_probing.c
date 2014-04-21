@@ -94,7 +94,7 @@ uint8_t cm_straight_probe(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_ERROR);
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
 	// trap error conditions (1) no axis (axes) specified, (2) no feed rate specified
