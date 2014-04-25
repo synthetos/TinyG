@@ -11,7 +11,7 @@ CC = avr-gcc
 CPP = avr-g++
 
 ## Options common to compile, link and assembly rules
-COMMON = -mmcu=$(MCU)
+COMMON = -mmcu=$(MCU) -Wall -Werror
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
