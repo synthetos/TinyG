@@ -580,6 +580,8 @@ void canonical_machine_init()
 
 	canonical_machine_init_assertions();
 
+	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
+
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
 	cm_set_coord_system(cm.coord_system);
@@ -597,8 +599,6 @@ void canonical_machine_init()
 	cm.feedhold_requested = false;
 	cm.queue_flush_requested = false;
 	cm.cycle_start_requested = false;
-
-	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;
