@@ -581,6 +581,8 @@ void canonical_machine_init()
 	canonical_machine_init_assertions();	// establish assertions
 	ACTIVE_MODEL = MODEL;					// setup initial Gcode model pointer
 
+	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
+
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
 	cm_set_coord_system(cm.coord_system);
