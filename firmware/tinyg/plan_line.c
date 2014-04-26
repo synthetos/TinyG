@@ -269,58 +269,47 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *
  *	Algorithm Summary: 
  *		Extend an imaginary line from the queued block, draw an imaginary cylinder around
- *		it of radius c', where c' is the allowable path tolerance for the endpoint of the new 
+ *		it of radius c, where c is the allowable path tolerance for the endpoint of the new 
  *		block. If the new block is within tolerance it can be combined with the current block.
  */
 /*	Definitions:
- *		Bq		Queued block. The last block in the planner queue. Must be replannable. 
- *				May already have blocks annealed into it
- *		Bqt		Target coordinates of Bq. Changes with each new annealed block.
- *		Bqti	Target of initial Bq. Does not change as blocks are added.
- *		Bqtx	The projected target derived by extending the initial Bq vector. 
- *				Extended for each new block.
+ *		Bq		Queued block. The last block in the planner queue. May already have blocks annealed into it
+ *		Bqt		Target coordinates of Bq. Changes with each new annealed block
+ *		BqU		Unit vector of Bq. May change with each new annealed block
+ *		BqU'	Initial unit vector of Bq. Does not change as blocks are annealed
  *		Bn		New block - just received and not yet planned
  *		Bnt		Target position of the new block
+ *		BnU		Unit vector of Bn
  *		BLT		Block linear tolerance. Allowable deviation from path. The radius of the cylinder
  *		BRT		Block rotary tolerance. Allowable deviation from the rotational path
  *		L		The length of the new block
- *		L'		The cumulative length of new blocks annealed. Length measurement starts at Bqti
- *		a		The side of the triangle formed by the new block. Length is L.
- *		b		The side of the triangle (base) formed by the extension of Bqti to Bqtx. 
- *				Length is the sum of annealed L's + L
- *		c		The side of the triangle formed by connecting Bnt and Bqtx (presumably the short side)
- *		cdiv2	c divided by 2
- *		c'		The altitude from the vertex Bnt and the base Bqtx 
- *				(i.e. the line from Bnt that forms a right angle with the Bi extension line)
- *				c' can be calculated as 2A/b
- *		S		The semicircumference of the triangle, given by (a+b+c)/2
- *		A		The area of the triangle from Heron's formula: A = sqrt(S*(S-a)*(S-b)*(S-c))
+ *		c		The side of the triangle formed by connecting Bnt and the extension of Bq
  */
 /*	Algorithm Details:
- *		- Initialize Bqti to the value of Bqt. Set L' to zero. Do this only once for each Bq block chain.
- *		- Perform these tests. If any fail exit, queue the new block and start a new Bq block chain
- *			(a) Exit if the queued block is not replannable (also takes care of first block case)
- *			(b) Exit if the new block exceeds a length threshold
- *			(c) Exit if the new block target velocity is out of tolerance for annealing
- *			(d) Exit if the new block exceeds a maximum direction change
- *			(e) Perform similar tests for rotary axes if any of ABC are in the move
+ *	- Perform the following tests on the new block. If any fail, exit and queue Bn as a new block (do not anneal to Bq)
+ *		(a) Exit if Bq is not replannable (also takes care of first block case)
+ *		(b) Exit if Bn exceeds a length threshold
+ *		(c) Exit if the difference in Bq and Bn target velocities is too great
+ *		(d) Exit if Bn exceeds a maximum direction change
+ *			Generate the BnU unit vector
+ *			Find the cosine of Bq and Bn by taking the dot product of BnU and BqU'
+ *			Exit if the cosine is below threshold (too much direction change)
+ *		(e) Exit if Bn endpoint (Bnt) lies outside the tolerance cylinder
+ *			Find the length of the altitude (c side) of the triangle formed by the extension 
+ *				of Bq (a side) and the hypotenuse formed by Bn (b side)
+ *			c = Length of Bn * sin(Bn, Bq)	which can be expressed as…
+ *			c = L * sqrt(1 - cos^2)			where cos was determined from the dot product in test (d)
  *
- *		- Accumulate L to L'
+ *	- Perform similar tests for rotary axes if any of ABC are in the move
+ *	- If all tests pass, then anneal Bn into Bq:
+ *		Change the Bq target to the Bn endpoint
+ *		Recalculate the Bq unit vector
+ *		Replan the block chain
  *
- *		- Calculate Bqtx by extending Bqti by L' along the Bq unit vector 
- *			(Multiply the Bq unit vector by L' and add to Bqti)
- *
- *		- Calculate the distance c between Bnt and Bqtx (the two target points)
- *
- *		- If c =< BLT then Bn lies inside the cylinder. Combine Bn into Bq (see below). 
- *			This is the "cheap" test that catches most points.
- *
- *		- If c > BLT then calculate the altitude of the triangle (c'), which will be a more 
- *			accurate measure of tolerance
- *
- *		- If c' =< BLT then combine Bn into Bq. This is the more expensive test that catches the rest
- *
- *		- Perform the above steps again for rotary axes if ABC are present in the move.
+ *	Notes and Discussion
+ *		Annealing the block resets the endpoint of the annealed line - i.e. washes out the previous endpoint
+ *		This will change the unit vector of the Bq block.
+ *		In order to keep the "error cylinder" from drifting the initial unit vector is preserved and used to set the mid-line of subsquent new blocks
  */
 /*	Combining blocks. This part is easy. Just do:
  *		- Set Bqt to Bnt
