@@ -48,8 +48,7 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
-static uint8_t _test_anneal_block(mpBuf_t *bn);
-static void _anneal_block(mpBuf_t *bn);
+static uint8_t _anneal_block(mpBuf_t *bn);
 
 /* Runtime-specific setters and getters
  *
@@ -111,6 +110,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
+	uint8_t mr_flag = false;
 
 	// exit out if the move has zero movement. At all.
 	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
@@ -120,11 +120,13 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+	mpBuf_t *bp = bf->pv; 							// previous block pointer
 
 	// run block annealing code
-	if (_test_anneal_block(bf)) {
-		_anneal_block(bf);
+	if (_anneal_block(bf) == true) {
 		mp_unget_write_buffer();
+		_plan_block_list(bp, &mr_flag);				// replan block list
+		copy_vector(mm.position, bp->gm.target);	// set the planner position
 		return (STAT_OK);
 	}
 
@@ -234,8 +236,6 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
 
-	uint8_t mr_flag = false;
-
 	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
 	copy_vector(mm.position, bf->gm.target);	// set the planner position
@@ -254,8 +254,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  */
 
 /*
- * _test_anneal_block() - perform tests for block anealing
- * _anneal_block() - combine new block with last block in the planner quue
+ * _anneal_block() - perform tests for block anealing
  *
  *	Anneal_block tests if a new block should be combined with the last block in the planner
  *	queue and combines them if need be. This function is useful for reducing the number of 
@@ -273,10 +272,10 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		block. If the new block is within tolerance it can be combined with the current block.
  */
 /*	Definitions:
- *		Bq		Queued block. The last block in the planner queue. May already have blocks annealed into it
- *		Bqt		Target coordinates of Bq. Changes with each new annealed block
- *		BqU		Unit vector of Bq. May change with each new annealed block
- *		BqU'	Initial unit vector of Bq. Does not change as blocks are annealed
+ *		Bp		Planned block. The last block in the planner queue. May already have blocks annealed into it
+ *		Bpt		Target coordinates of Bp. Changes with each new annealed block
+ *		BpU		Unit vector of Bp. May change with each new annealed block
+ *		BpU'	Initial unit vector of Bp. Does not change as blocks are annealed
  *		Bn		New block - just received and not yet planned
  *		Bnt		Target position of the new block
  *		BnU		Unit vector of Bn
@@ -286,45 +285,30 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		c		The side of the triangle formed by connecting Bnt and the extension of Bq
  */
 /*	Algorithm Details:
- *	- Perform the following tests on the new block. If any fail, exit and queue Bn as a new block (do not anneal to Bq)
- *		(a) Exit if Bq is not replannable (also takes care of first block case)
+ *	- Perform the following tests on the new block. If any fail, exit and queue Bn as a new block (do not anneal to Bp)
+ *		(a) Exit if Bp is not replannable (also takes care of first block case)
  *		(b) Exit if Bn exceeds a length threshold
- *		(c) Exit if the difference in Bq and Bn target velocities is too great
+ *		(c) Exit if the difference in Bp and Bn target velocities is too great
  *		(d) Exit if Bn exceeds a maximum direction change
  *			Generate the BnU unit vector
- *			Find the cosine of Bq and Bn by taking the dot product of BnU and BqU'
+ *			Find the cosine of Bp and Bn by taking the dot product of BnU and BpU'
  *			Exit if the cosine is below threshold (too much direction change)
  *		(e) Exit if Bn endpoint (Bnt) lies outside the tolerance cylinder
  *			Find the length of the altitude (c side) of the triangle formed by the extension 
- *				of Bq (a side) and the hypotenuse formed by Bn (b side)
- *			c = Length of Bn * sin(Bn, Bq)	which can be expressed as…
+ *				of Bp (a side) and the hypotenuse formed by Bn (b side)
+ *			c = Length of Bn * sin(Bn, Bp)	which can be expressed as…
  *			c = L * sqrt(1 - cos^2)			where cos was determined from the dot product in test (d)
  *
  *	- Perform similar tests for rotary axes if any of ABC are in the move
- *	- If all tests pass, then anneal Bn into Bq:
- *		Change the Bq target to the Bn endpoint
- *		Recalculate the Bq unit vector
+ *	- If all tests pass, then anneal Bn into Bp:
+ *		Change the Bp target to the Bn endpoint
+ *		Recalculate the Bp unit vector
  *		Replan the block chain
  *
  *	Notes and Discussion
  *		Annealing the block resets the endpoint of the annealed line - i.e. washes out the previous endpoint
  *		This will change the unit vector of the Bq block.
  *		In order to keep the "error cylinder" from drifting the initial unit vector is preserved and used to set the mid-line of subsquent new blocks
- */
-/*	Combining blocks. This part is easy. Just do:
- *		- Set Bqt to Bnt
- *		- Add L to L'
- *		- Replan the queue
- *
- *	Math for calculating c is a simple cartesian distance
- *		c = sqrt((Bnt[x]-Bqtx[x])^2 + (Bnt[y]-Bqtx[y])^2 + (Bnt[z]-Bqtx[z])^2)
- *
- *	Math for calculating c':
- *		c' = 2A/b								A = area, b = side of the triangle
- *		A = sqrt(S * (S-a) * (S-b) * (S-c))		Heron's formula
- *		S = (a+b+c)/2							Semiperimeter
- *		S = L + c/2								Identity given that L = a = b
- *		A = sqrt((cdiv2^2)*(L+cdiv2)*(L-cdiv2))	Reduction of A
  */
 /*
 static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
@@ -334,66 +318,78 @@ static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
 	return (false);
 }
 */
-static uint8_t _test_anneal_block(mpBuf_t *bn)	// bn points to the new block
-{
-	return (false);
-/*
-	mpBuf_t *bq	= bn->pv;						// bq points to the queued block
 
-	// generate the unit vector for the new block. You'll need it.
+/*
+ * _set_unit_vector_with_length() - compute unit vector knowing the length of the origin vector
+ * _set_unit_vector_()			  - compute unit vector without knowing the length of the origin vector
+ *
+ *	both return the length of the original vector
+ */
+static float _set_unit_vector_with_length(float position[], float target[], float unit[], float length)
+{
 	float diff;
-	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
-		if (fp_NOT_ZERO(diff = bn->gm.target[axis] - mm.position[axis])) {
-			bn->unit[axis] = diff / bn->length;
+	
+	for (uint8_t i=0; i<3; i++) {
+		if (fp_NOT_ZERO(diff = target[i] - position[i])) {
+			unit[i] = diff / length;
+		} else {
+			unit[i] = 0;
 		}
 	}
-
-	// Can previous block can be extended? ***
-	if (bn->replannable == false)				// exit if previous block not replannable
-		return(_test_anneal_block_exit(bn));
-
-	// Is new block is too long to anneal? ***
-	if (bn->length >= ANNEAL_LENGTH_THRESHOLD)	// exit of new block is too long
-		return(_test_anneal_block_exit(bn));
-
-	// Are velocities too different to anneal? ***
-	bn->cruise_vmax = bn->length / bn->gm.move_time;	// target velocity requested
-	if ((fabs(bn->cruise_vmax - bn->pv->cruise_vmax)) > ANNEAL_VELOCITY_THRESHOLD)
-		return(_test_anneal_block_exit(bn));
-
-	// Are block directions too great to anneal? ***
-	float costheta = - (bn->unit[AXIS_X] * bq->unit[AXIS_X])
-					 - (bn->unit[AXIS_Y] * bq->unit[AXIS_Y])
-					 - (bn->unit[AXIS_Z] * bq->unit[AXIS_Z])
-					 - (bn->unit[AXIS_A] * bq->unit[AXIS_A])
-					 - (bn->unit[AXIS_B] * bq->unit[AXIS_B])
-					 - (bn->unit[AXIS_C] * bq->unit[AXIS_C]);
-	if (costheta > ANNEAL_ANGULAR_COSINE) 
-		return(_test_anneal_block_exit(bn));
-
-	// Is the c side of triangle inside the annealing tolerance?
-	mm.anneal_length += bn->length;
-
-	float bqtx[AXES];	// endpoint target of extended line
-	for (uint8_t axis=AXIS_X; axis<AXIS_C; axis++) {
-		bqtx[axis] = mm.anneal_bqti[axis] + bn->gm.units_mode[axis] * bn->length;
-	}
-	float c = get_axis_vector_length(bqtx, mm.bqti)
-
-	if (c < ANNEAL_BLOCK_LINEAR_TOLERANCE) 
-		return(true);
-
-	// Is the c side of triangle inside the annealing tolerance?
-
-
-
-	return (true);
-*/
+	return (length); 
 }
 
-static void _anneal_block(mpBuf_t *bn)
+static float _set_unit_vector(float position[], float target[], float unit[])
 {
+	float length = sqrt(square(target[0] - position[0]) +
+						square(target[1] - position[1]) +
+						square(target[2] - position[2]));
+	return (_set_unit_vector_with_length(position, target, unit, length));
+}
+
+static uint8_t _anneal_block(mpBuf_t *bn)		// bn points to the new block
+{
+	return (false);
+
+	mpBuf_t *bp	= bn->pv;						// bq points to the queued block
+
+	// generate the unit vectors for the new block. You'll need them regardless
+	float linear_length = _set_unit_vector(&mm.position[AXIS_X], &bn->gm.target[AXIS_X], &bn->unit[AXIS_X]);
+	float rotary_length = _set_unit_vector(&mm.position[AXIS_A], &bn->gm.target[AXIS_A], &bn->unit[AXIS_A]);
+
+	// (a) Can previous block can be extended?
+	if (bn->replannable == false)				// exit if previous block not replannable
+		return(false);
+
+	// (b) Is new block is too long to anneal?
+	if (bn->length >= ANNEAL_LENGTH_THRESHOLD)	// exit of new block is too long
+		return(false);
+
+	// (c) Are velocities too different to anneal?
+	bn->cruise_vmax = bn->length / bn->gm.move_time;	// target velocity requested
+	if ((fabs(bn->cruise_vmax - bn->pv->cruise_vmax)) > ANNEAL_VELOCITY_THRESHOLD)
+		return(false);
+
+	// (d) Is a direction change too great to anneal?
+	float costheta = - (bn->unit[AXIS_X] * bp->unit[AXIS_X])
+					 - (bn->unit[AXIS_Y] * bp->unit[AXIS_Y])
+					 - (bn->unit[AXIS_Z] * bp->unit[AXIS_Z]);
+//					 - (bn->unit[AXIS_A] * bq->unit[AXIS_A])
+//					 - (bn->unit[AXIS_B] * bq->unit[AXIS_B])
+//					 - (bn->unit[AXIS_C] * bq->unit[AXIS_C]);
+	if (costheta > ANNEAL_ANGULAR_COSINE) 
+		return(false);
+
+	// (e) Is the c side of triangle inside the annealing tolerance?
+	float c = linear_length * sqrt(1-square(costheta));
+	if (c > ANNEAL_BLOCK_LINEAR_TOLERANCE)
+		return(false);
 	
+	// combine the new block into the old block
+	copy_vector(bp->gm.target, bn->gm.target);
+	_set_unit_vector(&mm.position[AXIS_X], &bp->gm.target[AXIS_X], &bn->unit[AXIS_X]);
+	_set_unit_vector(&mm.position[AXIS_A], &bp->gm.target[AXIS_A], &bn->unit[AXIS_A]);
+	return (true);
 }
 
 /* _plan_block_list() - plans the entire block list

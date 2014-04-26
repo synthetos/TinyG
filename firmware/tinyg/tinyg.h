@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		425.02	// backed out cycle_end conditional; stubbed out block annealing code
+#define TINYG_FIRMWARE_BUILD   		425.04	// Some work on block annealing. Don't expect this build to function
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

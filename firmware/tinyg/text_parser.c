@@ -91,7 +91,9 @@ stat_t text_parser(char_t *str)
 	} else { 								// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 		status = cmd_set(cmd);				// set (or run) single value
-		cmd_persist(cmd);					// conditionally persist depending on flags in array
+		if (status == STAT_OK) {
+			cmd_persist(cmd);					// conditionally persist depending on flags in array
+		}
 	}
 	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
 	return (status);
