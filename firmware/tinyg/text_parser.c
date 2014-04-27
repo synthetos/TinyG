@@ -166,7 +166,7 @@ void text_response(const stat_t status, char_t *buf)
 	cmdObj_t *cmd = cmd_body+1;
 
 	if (cmd_get_type(cmd) == CMD_TYPE_MESSAGE) {
-		fprintf(stderr, (char *)*cmd->stringp);
+		fprintf(stderr, "%s", (char *)*cmd->stringp);
 	}
 	fprintf(stderr, "\n");
 }
@@ -251,7 +251,7 @@ void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format);}	// just print the format string
+void text_print_nul(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, "%s", format);}	// just print the format string
 void text_print_str(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, *cmd->stringp);}
 void text_print_ui8(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint8_t)cmd->value);}
 void text_print_int(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}
