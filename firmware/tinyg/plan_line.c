@@ -79,6 +79,34 @@ uint8_t mp_get_runtime_busy()
 	return (false);
 }
 
+/*
+ * _set_unit_vector_with_length() - compute unit vector knowing the length of the origin vector
+ * _set_unit_vector_()			  - compute unit vector without knowing the length of the origin vector
+ *
+ *	both return the length of the original vector
+ */
+static float _set_unit_vector_with_length(float position[], float target[], float unit[], float length)
+{
+	float diff;
+	
+	for (uint8_t i=0; i<3; i++) {
+		if (fp_NOT_ZERO(diff = target[i] - position[i])) {
+			unit[i] = diff / length;
+		} else {
+			unit[i] = 0;
+		}
+	}
+	return (length); 
+}
+
+static float _set_unit_vector(float position[], float target[], float unit[])
+{
+	float length = sqrt(square(target[0] - position[0]) +
+						square(target[1] - position[1]) +
+						square(target[2] - position[2]));
+	return (_set_unit_vector_with_length(position, target, unit, length));
+}
+
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
  *
@@ -318,34 +346,6 @@ static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
 	return (false);
 }
 */
-
-/*
- * _set_unit_vector_with_length() - compute unit vector knowing the length of the origin vector
- * _set_unit_vector_()			  - compute unit vector without knowing the length of the origin vector
- *
- *	both return the length of the original vector
- */
-static float _set_unit_vector_with_length(float position[], float target[], float unit[], float length)
-{
-	float diff;
-	
-	for (uint8_t i=0; i<3; i++) {
-		if (fp_NOT_ZERO(diff = target[i] - position[i])) {
-			unit[i] = diff / length;
-		} else {
-			unit[i] = 0;
-		}
-	}
-	return (length); 
-}
-
-static float _set_unit_vector(float position[], float target[], float unit[])
-{
-	float length = sqrt(square(target[0] - position[0]) +
-						square(target[1] - position[1]) +
-						square(target[2] - position[2]));
-	return (_set_unit_vector_with_length(position, target, unit, length));
-}
 
 static uint8_t _anneal_block(mpBuf_t *bn)		// bn points to the new block
 {
