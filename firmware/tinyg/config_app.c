@@ -843,7 +843,7 @@ static stat_t get_rx(cmdObj_t *cmd)
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
-#ifdef __ARM
+#if defined(__ARM) || defined(TINYG_SIMULATOR)
 	cmd->value = (float)254;
 	cmd->objtype = TYPE_INTEGER;
 	return (STAT_OK);

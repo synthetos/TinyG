@@ -485,7 +485,7 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 			}
 			else if (cmd->objtype == TYPE_DATA)	{
 				uint32_t *v = (uint32_t*)&cmd->value;
-				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
+				str += (char_t)sprintf((char *)str, "\"0x%lx\"", (unsigned long)*v);
 			}
 			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
 			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}

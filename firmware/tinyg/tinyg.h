@@ -88,8 +88,12 @@
 /************************************************************************************
  ***** PLATFORM COMPATIBILITY *******************************************************
  ************************************************************************************/
+
+#if !defined(TINYG_SIMULATOR)
 #undef __AVR
 #define __AVR
+#endif
+
 //#undef __ARM
 //#define __ARM
 
@@ -130,12 +134,17 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 /*********************
  * ARM Compatibility *
  *********************/
-#ifdef __ARM
+#if defined(__ARM) || defined(TINYG_SIMULATOR)
 								// Use macros to fake out AVR's PROGMEM and other AVRisms.
 #define PROGMEM					// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
+#ifdef __ARM
 typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t 
+#endif
+#ifdef TINYG_SIMULATOR
+typedef char char_t;
+#endif
 								// because in C++ uint8_t and char are distinct types and 
 								// we want chars to behave as uint8's
 
@@ -177,10 +186,12 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define strtod(d,p) strtod((char *)d, (char **)p)
 #define strtof(d,p) strtof((char *)d, (char **)p)
 #define strlen(s) strlen((char *)s)
+#if !defined(TINYG_SIMULATOR)
 #define isdigit(c) isdigit((char)c)
 #define isalnum(c) isalnum((char)c)
 #define tolower(c) (char_t)tolower((char)c)
 #define toupper(c) (char_t)toupper((char)c)
+#endif
 
 #define printf_P printf		// these functions want char * as inputs, not char_t *
 #define fprintf_P fprintf	// just sayin'
@@ -188,7 +199,7 @@ typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uin
 #define strcpy_P strcpy
 #define strncpy_P strncpy
 
-#endif // __ARM
+#endif // __ARM || TINYG_SIMULATOR
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************

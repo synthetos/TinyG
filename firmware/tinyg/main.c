@@ -138,11 +138,13 @@ static void _application_init(void)
 	canonical_machine_init();		// canonical machine				- must follow config_init()
 
 	// start the application
+#if !defined(TINYG_SIMULATOR)
 	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
 	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
+#endif
 	rpt_print_system_ready_message();// (LAST) announce system is ready	
 }
 

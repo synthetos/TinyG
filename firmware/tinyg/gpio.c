@@ -46,7 +46,9 @@
  *					**** These bits CANNOT be used as 5v inputs ****
  */
 
+#if !defined(TINYG_SIMULATOR)
 #include <avr/interrupt.h>
+#endif
 
 #include "tinyg.h"
 #include "util.h"
