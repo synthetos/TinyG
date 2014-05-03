@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -11,6 +12,24 @@
 #include "../xio.h"
 
 #include "sim.h"
+
+static FILE* in;
+
+void sim_init(int argc, char** argv) {
+  if (argc == 1) {
+    in = stdin;
+    return;
+  }
+  if (argc > 2) {
+    fprintf(stderr, "Too many arguments. Usage: ./tinyg.elf [in_file]\n");
+    _exit(1);
+  }
+  in = fopen(argv[1], "r");
+  if (in == NULL) {
+    fprintf(stderr, "Failed to open input file %s: %s\n", argv[1], strerror(errno));
+    _exit(1);
+  }
+}
 
 #define XIO_OK 0
 #define XIO_ERR 1
@@ -37,7 +56,7 @@ int xio_gets(const uint8_t dev, char *buf, const int size) {
   if (i % 10 != 0) {
       return XIO_EAGAIN;
   }
-  if (NULL == fgets(buf, size, stdin)) {
+  if (NULL == fgets(buf, size, in)) {
     if (errno == 0) {
       // EOF on stdin. The test is done, quit successfully.
       _exit(0);

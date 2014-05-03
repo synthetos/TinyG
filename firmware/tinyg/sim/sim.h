@@ -1,6 +1,8 @@
 #ifndef SIM_SIM_H_ONCE
 #define SIM_SIM_H_ONCE
 
+void sim_init(int argc, char** argv);
+
 #define NUL (char)0x00  //  ASCII NUL char (0) (not "NULL" which is a pointer)
 
 typedef uint16_t flags_t;

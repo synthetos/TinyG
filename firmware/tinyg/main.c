@@ -152,8 +152,11 @@ static void _application_init(void)
  * main()
  */
 
-int main(void)
+int main(int argc, char** argv)
 {
+#ifdef TINYG_SIMULATOR
+	sim_init(argc, argv);
+#endif
 	// system initialization
 	_system_init();
 
