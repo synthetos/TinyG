@@ -48,7 +48,10 @@ static float _get_target_velocity(const float Vi, const float L, const mpBuf_t *
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
+
+#ifdef __BLOCK_ANNEALING
 static uint8_t _anneal_block(mpBuf_t *bn);
+#endif
 
 /* Runtime-specific setters and getters
  *
@@ -85,6 +88,7 @@ uint8_t mp_get_runtime_busy()
  *
  *	both return the length of the original vector
  */
+#ifdef __BLOCK_ANNEALING
 static float _set_unit_vector_with_length(float position[], float target[], float unit[], float length)
 {
 	float diff;
@@ -106,6 +110,7 @@ static float _set_unit_vector(float position[], float target[], float unit[])
 						square(target[2] - position[2]));
 	return (_set_unit_vector_with_length(position, target, unit, length));
 }
+#endif // __BLOCK_ANNEALING
 
 /**************************************************************************
  * mp_aline() - plan a line with acceleration / deceleration
@@ -148,6 +153,8 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+
+#ifdef __BLOCK_ANNEALING
 	mpBuf_t *bp = bf->pv; 							// previous block pointer
 
 	// run block annealing code
@@ -157,6 +164,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 		copy_vector(mm.position, bp->gm.target);	// set the planner position
 		return (STAT_OK);
 	}
+#endif
 
 #ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
@@ -338,6 +346,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  *		This will change the unit vector of the Bq block.
  *		In order to keep the "error cylinder" from drifting the initial unit vector is preserved and used to set the mid-line of subsquent new blocks
  */
+#ifdef __ANNEAL_BLOCK
 /*
 static uint8_t _test_anneal_block_exit(mpBuf_t *bn)
 {
@@ -391,6 +400,7 @@ static uint8_t _anneal_block(mpBuf_t *bn)		// bn points to the new block
 	_set_unit_vector(&mm.position[AXIS_A], &bp->gm.target[AXIS_A], &bn->unit[AXIS_A]);
 	return (true);
 }
+#endif // __ANNEAL_BLOCK
 
 /* _plan_block_list() - plans the entire block list
  *
