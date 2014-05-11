@@ -282,6 +282,9 @@
     <Compile Include="settings\settings_shapeoko375.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_shapeoko_flux.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_Ultimaker.h">
       <SubType>compile</SubType>
     </Compile>

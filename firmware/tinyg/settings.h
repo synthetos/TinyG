@@ -45,7 +45,7 @@
 #define SOFT_LIMIT_ENABLE			0				// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 #define MOTOR_IDLE_TIMEOUT			2.00			// seconds to maintain motor at full power before idling
-#define MOTOR_POWER_LEVEL			25				// default motor power level (ARM only)
+#define MOTOR_POWER_LEVEL			0.25			// default motor power level (ARM only)
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE		// one of: TEXT_MODE, JSON_MODE
@@ -82,7 +82,7 @@
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
@@ -93,6 +93,7 @@
 //#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
+#include "settings/settings_shapeoko_flux.h"			// Shapeoko - flux issue
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12

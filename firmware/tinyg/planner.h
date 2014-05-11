@@ -93,7 +93,7 @@ enum sectionState {
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
- *  If you don;t do this the first block will always plan to zero as it will
+ *  If you don't do this the first block will always plan to zero as it will
  *	start executing before the next block arrives from the serial port.
  *	This causes the machine to stutter once on startup.
  */
