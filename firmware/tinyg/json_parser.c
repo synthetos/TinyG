@@ -735,7 +735,6 @@ void js_unit_tests()
 static void _test_serialize()
 {
 	cmdObj_t *cmd = cmd_array;
-//	printf("\n\nJSON serialization tests\n");
 
 	// null list
 	_reset_array();

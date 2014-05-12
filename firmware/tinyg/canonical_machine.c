@@ -656,8 +656,9 @@ stat_t cm_clear(cmdObj_t *cmd)				// clear soft alarm
 
 stat_t cm_hard_alarm(stat_t status)
 {
-	// stop the steppers and the spindle
-	st_deenergize_motors();
+	// stop the motors and the spindle
+//	st_deenergize_motors();
+	stepper_init();							// hard stop
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions

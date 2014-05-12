@@ -126,7 +126,7 @@ static void _switch_isr_helper(uint8_t sw_num)
 	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
 	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
 	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-	read_switch(sw_num);							// sets the state value in the struct
+	read_switch(sw_num);								// sets the state value in the struct
 }
 
 void switch_rtc_callback(void)
@@ -152,7 +152,7 @@ void switch_rtc_callback(void)
 
 /*
  * get_switch_mode()  - return switch mode setting
- * get_limit_thrown() - return true if a limit was tripped
+ * get_limit_switch_thrown() - return true if a limit was tripped
  * get_switch_num()   - return switch number most recently thrown
  */
 

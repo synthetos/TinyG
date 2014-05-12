@@ -390,8 +390,6 @@ static stat_t _limit_switch_handler(void)
 {
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-//	cm_alarm(gpio_get_sw_thrown); 		// unexplained complier warning: passing argument 1 of 'cm_shutdown' makes integer from pointer without a cast
-//	cm_hard_alarm(sw.sw_num_thrown);	// no longer the correct behavior
 	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
 	return (STAT_OK);
 }

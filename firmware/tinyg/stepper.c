@@ -518,8 +518,7 @@ static void _load_move()
 		// These sections are somewhat optimized for execution speed. The whole load operation
 		// is supposed to take < 10 uSec (Xmega). Be careful if you mess with this.
 
-		// the following if() statement sets the runtime substep increment value or zeroes it
-
+		// this if() statement sets the runtime substep increment value or zeroes it
 		if ((st_run.mot[MOTOR_1].substep_increment = st_pre.mot[MOTOR_1].substep_increment) != 0) {
 
 			// NB: If motor has 0 steps the following is all skipped. This ensures that state comparisons
