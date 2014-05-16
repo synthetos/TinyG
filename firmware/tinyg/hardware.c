@@ -187,6 +187,9 @@ stat_t hw_bootloader_handler(void)
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 #endif
+#ifdef TINYG_SIMULATOR
+	return (STAT_NOOP);
+#endif
 	return (STAT_EAGAIN);				// never gets here but keeps the compiler happy
 }
 

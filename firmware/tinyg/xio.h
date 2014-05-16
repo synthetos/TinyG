@@ -63,6 +63,10 @@
 #ifndef XIO_H_ONCE
 #define XIO_H_ONCE
 
+#ifdef TINYG_SIMULATOR
+#include "sim/sim_types.h"
+#endif
+
 /*************************************************************************
  *	Device configurations
  *************************************************************************/
@@ -398,5 +402,9 @@ void xio_unit_tests(void);
 #else
 #define	XIO_UNITS
 #endif // __UNIT_TEST_XIO
+
+#ifdef TINYG_SIMULATOR
+#include "sim/sim.h"
+#endif
 
 #endif	// end of include guard: XIO_H_ONCE

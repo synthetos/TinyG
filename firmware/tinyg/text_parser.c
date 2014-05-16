@@ -166,7 +166,7 @@ void text_response(const stat_t status, char_t *buf)
 	cmdObj_t *cmd = cmd_body+1;
 
 	if (cmd_get_type(cmd) == CMD_TYPE_MESSAGE) {
-		fprintf(stderr, (char *)*cmd->stringp);
+		fprintf(stderr, "%s", (char *)*cmd->stringp);
 	}
 	fprintf(stderr, "\n");
 }
@@ -196,7 +196,7 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), cmd->token, *v); break;}
+			case TYPE_DATA:		{ fprintf_P(stderr,PSTR("%s:%lu"), cmd->token, (unsigned long)*v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
@@ -213,7 +213,7 @@ void text_print_inline_values(cmdObj_t *cmd)
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
+			case TYPE_DATA:		{ fprintf_P(stderr,PSTR("%lu"), (unsigned long)*v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
@@ -251,7 +251,7 @@ void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format);}	// just print the format string
+void text_print_nul(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, "%s", format);}	// just print the format string
 void text_print_str(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, *cmd->stringp);}
 void text_print_ui8(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint8_t)cmd->value);}
 void text_print_int(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}

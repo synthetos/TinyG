@@ -48,7 +48,11 @@ static stRunSingleton_t st_run;
 
 static void _load_move(void);
 static void _request_load_move(void);
+
+#ifdef __ARM
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
+#endif
+
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -228,9 +232,9 @@ static void _deenergize_motor(const uint8_t motor)
  *		st_cfg.mot[motor].power_level_scaled 
  *		st_run.mot[motor].power_level_dynamic
  */
+#ifdef __ARM
 static void _set_motor_power_level(const uint8_t motor, const float power_level)
 {
-#ifdef __ARM
 	// power_level must be scaled properly for the driver's Vref voltage requirements 
 	if (!motor_1.enable.isNull()) if (motor == MOTOR_1) motor_1.vref = power_level;
 	if (!motor_2.enable.isNull()) if (motor == MOTOR_2) motor_2.vref = power_level;
@@ -238,8 +242,8 @@ static void _set_motor_power_level(const uint8_t motor, const float power_level)
 	if (!motor_4.enable.isNull()) if (motor == MOTOR_4) motor_4.vref = power_level;
 	if (!motor_5.enable.isNull()) if (motor == MOTOR_5) motor_5.vref = power_level;
 	if (!motor_6.enable.isNull()) if (motor == MOTOR_6) motor_6.vref = power_level;
-#endif
 }
+#endif
 
 void st_energize_motors()
 {
