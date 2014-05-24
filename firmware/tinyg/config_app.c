@@ -61,20 +61,20 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
-static stat_t _do_motors(nvObj_t *cmd);	// print parameters for all motor groups
-static stat_t _do_axes(nvObj_t *cmd);		// print parameters for all axis groups
-static stat_t _do_offsets(nvObj_t *cmd);	// print offset parameters for G54-G59,G92, G28, G30
-static stat_t _do_all(nvObj_t *cmd);		// print all parameters
+static stat_t _do_motors(nvObj_t *nv);	// print parameters for all motor groups
+static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
+static stat_t _do_offsets(nvObj_t *nv);	// print offset parameters for G54-G59,G92, G28, G30
+static stat_t _do_all(nvObj_t *nv);		// print all parameters
 
 // communications settings and functions
 
-//static stat_t set_ic(nvObj_t *cmd);		// ignore CR or LF on RX input
-static stat_t set_ec(nvObj_t *cmd);		// expand CRLF on TX output
-static stat_t set_ee(nvObj_t *cmd);		// enable character echo
-static stat_t set_ex(nvObj_t *cmd);		// enable XON/XOFF and RTS/CTS flow control
-static stat_t set_baud(nvObj_t *cmd);		// set USB baud rate
-static stat_t get_rx(nvObj_t *cmd);		// get bytes in RX buffer
-//static stat_t run_sx(nvObj_t *cmd);		// send XOFF, XON
+//static stat_t set_ic(nvObj_t *nv);		// ignore CR or LF on RX input
+static stat_t set_ec(nvObj_t *nv);		// expand CRLF on TX output
+static stat_t set_ee(nvObj_t *nv);		// enable character echo
+static stat_t set_ex(nvObj_t *nv);		// enable XON/XOFF and RTS/CTS flow control
+static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
+static stat_t get_rx(nvObj_t *nv);		// get bytes in RX buffer
+//static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
@@ -721,54 +721,54 @@ uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GRO
  * _do_all()		- get and print all groups uber group
  */
 
-static stat_t _do_group_list(nvObj_t *cmd, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
+static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < NV_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
-		nv_reset_list();
-		cmd = nv_body;
-		strncpy(cmd->token, list[i], TOKEN_LEN);
-		cmd->index = nv_get_index((const char_t *)"", cmd->token);
-//		cmd->valuetype = TYPE_PARENT;
-		nv_get_cmdObj(cmd);
+		nv_reset_nvObj_list();
+		nv = nv_body;
+		strncpy(nv->token, list[i], TOKEN_LEN);
+		nv->index = nv_get_index((const char_t *)"", nv->token);
+//		nv->valuetype = TYPE_PARENT;
+		nv_get_nvObj(nv);
 		nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
 	return (STAT_COMPLETE);
 }
 
-static stat_t _do_motors(nvObj_t *cmd)	// print parameters for all motor groups
+static stat_t _do_motors(nvObj_t *nv)	// print parameters for all motor groups
 {
 //	char list[][TOKEN_LEN+1] = {"1","2","3","4","5","6",""}; // must have a terminating element
 	char list[][TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-	return (_do_group_list(cmd, list));
+	return (_do_group_list(nv, list));
 }
 
-static stat_t _do_axes(nvObj_t *cmd)	// print parameters for all axis groups
+static stat_t _do_axes(nvObj_t *nv)	// print parameters for all axis groups
 {
 	char list[][TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	return (_do_group_list(cmd, list));
+	return (_do_group_list(nv, list));
 }
 
-static stat_t _do_offsets(nvObj_t *cmd)	// print offset parameters for G54-G59,G92, G28, G30
+static stat_t _do_offsets(nvObj_t *nv)	// print offset parameters for G54-G59,G92, G28, G30
 {
 	char list[][TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
-	return (_do_group_list(cmd, list));
+	return (_do_group_list(nv, list));
 }
 
-static stat_t _do_all(nvObj_t *cmd)	// print all parameters
+static stat_t _do_all(nvObj_t *nv)	// print all parameters
 {
-	strcpy(cmd->token,"sys");			// print system group
-	get_grp(cmd);
+	strcpy(nv->token,"sys");			// print system group
+	get_grp(nv);
 	nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
-	_do_motors(cmd);					// print all motor groups
-	_do_axes(cmd);						// print all axis groups
+	_do_motors(nv);					// print all motor groups
+	_do_axes(nv);						// print all axis groups
 
-	strcpy(cmd->token,"p1");			// print PWM group		
-	get_grp(cmd);
+	strcpy(nv->token,"p1");			// print PWM group		
+	get_grp(nv);
 	nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 
-	return (_do_offsets(cmd));			// print all offsets
+	return (_do_offsets(nv));			// print all offsets
 }
 
 /***********************************************************************************
@@ -788,9 +788,9 @@ static stat_t _do_all(nvObj_t *cmd)	// print all parameters
  *	The above assume USB is the std device
  */
 
-static stat_t _set_comm_helper(nvObj_t *cmd, uint32_t yes, uint32_t no)
+static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 {
-	if (fp_NOT_ZERO(cmd->value)) { 
+	if (fp_NOT_ZERO(nv->value)) { 
 		(void)xio_ctrl(XIO_DEV_USB, yes);
 	} else { 
 		(void)xio_ctrl(XIO_DEV_USB, no);
@@ -799,10 +799,10 @@ static stat_t _set_comm_helper(nvObj_t *cmd, uint32_t yes, uint32_t no)
 }
 
 /* REMOVED - too easy to make the board appear to be bricked
-static stat_t set_ic(nvObj_t *cmd) 				// ignore CR or LF on RX
+static stat_t set_ic(nvObj_t *nv) 				// ignore CR or LF on RX
 {
-	if (cmd->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.ignore_crlf = (uint8_t)cmd->value;
+	if (nv->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.ignore_crlf = (uint8_t)nv->value;
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
 	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
 
@@ -815,43 +815,43 @@ static stat_t set_ic(nvObj_t *cmd) 				// ignore CR or LF on RX
 }
 */
 
-static stat_t set_ec(nvObj_t *cmd) 				// expand CR to CRLF on TX
+static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
 {
-	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_cr = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_CRLF, XIO_NOCRLF));
+	if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_cr = (uint8_t)nv->value;
+	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
-static stat_t set_ee(nvObj_t *cmd) 				// enable character echo
+static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 {
-	if (cmd->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_echo = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_ECHO, XIO_NOECHO));
+	if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_echo = (uint8_t)nv->value;
+	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
-static stat_t set_ex(nvObj_t *cmd)				// enable XON/XOFF or RTS/CTS flow control
+static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 {
-	if (cmd->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.enable_flow_control = (uint8_t)cmd->value;
-	return(_set_comm_helper(cmd, XIO_XOFF, XIO_NOXOFF));
+	if (nv->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	cfg.enable_flow_control = (uint8_t)nv->value;
+	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
 
-static stat_t get_rx(nvObj_t *cmd)
+static stat_t get_rx(nvObj_t *nv)
 {
 #ifdef __AVR
-	cmd->value = (float)xio_get_usb_rx_free();
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)xio_get_usb_rx_free();
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 #ifdef __ARM
-	cmd->value = (float)254;
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)254;
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 }
 
 /* run_sx()	- send XOFF, XON --- test only 
-static stat_t run_sx(nvObj_t *cmd)
+static stat_t run_sx(nvObj_t *nv)
 {
 	xio_putc(XIO_DEV_USB, XOFF);
 	xio_putc(XIO_DEV_USB, XON);
@@ -877,9 +877,9 @@ static const char msg_baud5[] PROGMEM = "115200";
 static const char msg_baud6[] PROGMEM = "230400";
 static const char *const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2, msg_baud3, msg_baud4, msg_baud5, msg_baud6 };
 
-static stat_t set_baud(nvObj_t *cmd)
+static stat_t set_baud(nvObj_t *nv)
 {
-	uint8_t baud = (uint8_t)cmd->value;
+	uint8_t baud = (uint8_t)nv->value;
 	if ((baud < 1) || (baud > 6)) {
 		nv_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
 //		nv_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
@@ -916,12 +916,12 @@ static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200
 static const char fmt_net[] PROGMEM = "[net]  network mode%16d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
-void co_print_ec(nvObj_t *cmd) { text_print_ui8(cmd, fmt_ec);}
-void co_print_ee(nvObj_t *cmd) { text_print_ui8(cmd, fmt_ee);}
-void co_print_ex(nvObj_t *cmd) { text_print_ui8(cmd, fmt_ex);}
-void co_print_baud(nvObj_t *cmd) { text_print_ui8(cmd, fmt_baud);}
-void co_print_net(nvObj_t *cmd) { text_print_ui8(cmd, fmt_net);}
-void co_print_rx(nvObj_t *cmd) { text_print_ui8(cmd, fmt_rx);}
+void co_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
+void co_print_ee(nvObj_t *nv) { text_print_ui8(nv, fmt_ee);}
+void co_print_ex(nvObj_t *nv) { text_print_ui8(nv, fmt_ex);}
+void co_print_baud(nvObj_t *nv) { text_print_ui8(nv, fmt_baud);}
+void co_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
+void co_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
 
 #endif // __TEXT_MODE
 

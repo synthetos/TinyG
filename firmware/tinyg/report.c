@@ -63,7 +63,7 @@ void rpt_exception(uint8_t status)
 	}
 }
 
-stat_t rpt_er(nvObj_t *cmd)
+stat_t rpt_er(nvObj_t *nv)
 {
 	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report for testing
 	return (STAT_OK);
@@ -81,7 +81,7 @@ void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
-	nv_reset_list();
+	nv_reset_nvObj_list();
 	nv_add_object((const char_t *)"fv");		// firmware version
 	nv_add_object((const char_t *)"fb");		// firmware build
 	nv_add_object((const char_t *)"hp");		// hardware platform
@@ -153,11 +153,11 @@ void rpt_print_system_ready_message(void)
 static stat_t _populate_unfiltered_status_report(void);
 static uint8_t _populate_filtered_status_report(void);
 
-uint8_t _is_stat(nvObj_t *cmd)
+uint8_t _is_stat(nvObj_t *nv)
 {
 	char_t tok[TOKEN_LEN+1];
 
-	GET_TOKEN_STRING(cmd->value, tok);
+	GET_TOKEN_STRING(nv->value, tok);
 	if (strcmp(tok, "stat") == 0) { return (true);}
 	return (false);
 }
@@ -170,28 +170,28 @@ uint8_t _is_stat(nvObj_t *cmd)
  */
 void sr_init_status_report()
 {
-	nvObj_t *cmd = nv_reset_list();	// used for status report persistence locations
+	nvObj_t *nv = nv_reset_nvObj_list();				// used for status report persistence locations
 	sr.status_report_requested = false;
 	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
-	cmd->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
+	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
 	for (uint8_t i=0; i < NV_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;			// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;			// pre-load values with an unlikely number
-		cmd->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
-		if (_is_stat(cmd) == true)
-			sr.stat_index = cmd->value;					// identify index for 'stat' if status is in the report
-		nv_set(cmd);
-		nv_persist(cmd);								// conditionally persist - automatic by nv_persis()
-		cmd->index++;									// increment SR NVM index
+		nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
+		if (_is_stat(nv) == true)
+			sr.stat_index = nv->value;					// identify index for 'stat' if status is in the report
+		nv_set(nv);
+		nv_persist(nv);									// conditionally persist - automatic by nv_persis()
+		nv->index++;									// increment SR NVM index
 	}
 }
 
 /* 
  * sr_set_status_report() - interpret an SR setup string and return current report
  */
-stat_t sr_set_status_report(nvObj_t *cmd)
+stat_t sr_set_status_report(nvObj_t *nv)
 {
 	uint8_t elements = 0;
 	index_t status_report_list[NV_STATUS_REPORT_LEN];
@@ -199,12 +199,12 @@ stat_t sr_set_status_report(nvObj_t *cmd)
 	index_t sr_start = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->valuetype == TYPE_EMPTY)) { break;}
-		if ((cmd->valuetype == TYPE_BOOL) && (fp_TRUE(cmd->value))) {
-			status_report_list[i] = cmd->index;
-			cmd->value = cmd->index;					// persist the index as the value
-			cmd->index = sr_start + i;					// index of the SR persistence location
-			nv_persist(cmd);
+		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
+		if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
+			status_report_list[i] = nv->index;
+			nv->value = nv->index;					// persist the index as the value
+			nv->index = sr_start + i;					// index of the SR persistence location
+			nv_persist(nv);
 			elements++;
 		} else {
 			return (STAT_INPUT_VALUE_UNSUPPORTED);
@@ -297,22 +297,22 @@ static stat_t _populate_unfiltered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *cmd = nv_reset_list();		// sets *cmd to the start of the body
+	nvObj_t *nv = nv_reset_nvObj_list();	// sets *nv to the start of the body
 
-	cmd->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
-	strcpy(cmd->token, sr_str);
-	cmd->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
-	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
+	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
+	strcpy(nv->token, sr_str);
+	nv->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
+	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
-		nv_get_cmdObj(cmd);
+		if ((nv->index = sr.status_report_list[i]) == 0) { break;}
+		nv_get_nvObj(nv);
 
-		strcpy(tmp, cmd->group);			// flatten out groups - WARNING - you cannot use strncpy here...
-		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);			//...or here.
+		strcpy(tmp, nv->group);				// flatten out groups - WARNING - you cannot use strncpy here...
+		strcat(tmp, nv->token);
+		strcpy(nv->token, tmp);				//...or here.
 
-		if ((cmd = cmd->nx) == NULL) 
+		if ((nv = nv->nx) == NULL) 
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
 	}
 	return (STAT_OK);
@@ -336,33 +336,33 @@ static uint8_t _populate_filtered_status_report()
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *cmd = nv_reset_list();		// sets cmd to the start of the body
+	nvObj_t *nv = nv_reset_nvObj_list();	// sets nv to the start of the body
 
-	cmd->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
-	strcpy(cmd->token, sr_str);
-//	cmd->index = nv_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
-	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
+	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
+	strcpy(nv->token, sr_str);
+//	nv->index = nv_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
+	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if ((cmd->index = sr.status_report_list[i]) == 0) { break;}
+		if ((nv->index = sr.status_report_list[i]) == 0) { break;}
 
-		nv_get_cmdObj(cmd);
+		nv_get_nvObj(nv);
 		// do not report values that have not changed...
 		// ...except for stat=3 (STOP), which is an exception
-		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
-//			if (cmd->index != sr.stat_index) {
-//				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
-					cmd->valuetype = TYPE_EMPTY;
+		if (fp_EQ(nv->value, sr.status_report_value[i])) {
+//			if (nv->index != sr.stat_index) {
+//				if (fp_EQ(nv->value, COMBINED_PROGRAM_STOP)) {
+					nv->valuetype = TYPE_EMPTY;
 					continue;
 //				}
 //			}
 			// report anything that has changed
 		} else {
-			strcpy(tmp, cmd->group);		// flatten out groups - WARNING - you cannot use strncpy here...
-			strcat(tmp, cmd->token);
-			strcpy(cmd->token, tmp);		//...or here.
-			sr.status_report_value[i] = cmd->value;
-			if ((cmd = cmd->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
+			strcpy(tmp, nv->group);		// flatten out groups - WARNING - you cannot use strncpy here...
+			strcat(tmp, nv->token);
+			strcpy(nv->token, tmp);		//...or here.
+			sr.status_report_value[i] = nv->value;
+			if ((nv = nv->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}
 	}
@@ -376,13 +376,13 @@ static uint8_t _populate_filtered_status_report()
  * sr_set()		- set status report elements
  * sr_set_si()	- set status report interval
  */
-stat_t sr_get(nvObj_t *cmd) { return (_populate_unfiltered_status_report());}
-stat_t sr_set(nvObj_t *cmd) { return (sr_set_status_report(cmd));}
+stat_t sr_get(nvObj_t *nv) { return (_populate_unfiltered_status_report());}
+stat_t sr_set(nvObj_t *nv) { return (sr_set_status_report(nv));}
 
-stat_t sr_set_si(nvObj_t *cmd)
+stat_t sr_set_si(nvObj_t *nv)
 {
-	if (cmd->value < STATUS_REPORT_MIN_MS) { cmd->value = STATUS_REPORT_MIN_MS;}
-	sr.status_report_interval = (uint32_t)cmd->value;
+	if (nv->value < STATUS_REPORT_MIN_MS) { nv->value = STATUS_REPORT_MIN_MS;}
+	sr.status_report_interval = (uint32_t)nv->value;
 	return(STAT_OK);
 }
 
@@ -394,9 +394,9 @@ stat_t sr_set_si(nvObj_t *cmd)
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
-void sr_print_sr(nvObj_t *cmd) { _populate_unfiltered_status_report();}
-void sr_print_si(nvObj_t *cmd) { text_print_flt(cmd, fmt_si);}
-void sr_print_sv(nvObj_t *cmd) { text_print_ui8(cmd, fmt_sv);}
+void sr_print_sr(nvObj_t *nv) { _populate_unfiltered_status_report();}
+void sr_print_si(nvObj_t *nv) { text_print_flt(nv, fmt_si);}
+void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
 
 #endif // __TEXT_MODE
 
@@ -503,15 +503,15 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 /* Alternate Formulation for a Single report - using cmdObj list
 
 	// get a clean cmd object
-//	nvObj_t *cmd = nv_reset_list();		// normally you do a list reset but the following is more time efficient
-	nvObj_t *cmd = nv_body;
-	nv_reset_obj(cmd);
-	cmd->nx = NULL;							// terminate the list
+//	nvObj_t *nv = nv_reset_list();		// normally you do a list reset but the following is more time efficient
+	nvObj_t *nv = nv_body;
+	nv_reset_obj(nv);
+	nv->nx = NULL;							// terminate the list
 
 	// make a qr object and print it
-	sprintf_P(cmd->token, PSTR("qr"));
-	cmd->value = qr.buffers_available;
-	cmd->valuetype = TYPE_INTEGER;
+	sprintf_P(nv->token, PSTR("qr"));
+	nv->value = qr.buffers_available;
+	nv->valuetype = TYPE_INTEGER;
 	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
@@ -523,25 +523,25 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
  * qi_get() - run a queue report - buffers in
  * qo_get() - run a queue report - buffers out
  */
-stat_t qr_get(nvObj_t *cmd) 
+stat_t qr_get(nvObj_t *nv) 
 {
-	cmd->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t qi_get(nvObj_t *cmd) 
+stat_t qi_get(nvObj_t *nv) 
 {
-	cmd->value = (float)qr.buffers_added;
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)qr.buffers_added;
+	nv->valuetype = TYPE_INTEGER;
 	qr.buffers_added = 0;				// reset it
 	return (STAT_OK);
 }
 
-stat_t qo_get(nvObj_t *cmd) 
+stat_t qo_get(nvObj_t *nv) 
 {
-	cmd->value = (float)qr.buffers_removed;
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)qr.buffers_removed;
+	nv->valuetype = TYPE_INTEGER;
 	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
 }
@@ -560,39 +560,39 @@ stat_t job_populate_job_report()
 {
 	const char_t job_str[] = "job";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *cmd = nv_reset_list();		// sets *cmd to the start of the body
+	nvObj_t *nv = nv_reset_nvObj_list();	// sets *nv to the start of the body
 
-	cmd->valuetype = TYPE_PARENT; 			// setup the parent object
-	strcpy(cmd->token, job_str);
+	nv->valuetype = TYPE_PARENT; 			// setup the parent object
+	strcpy(nv->token, job_str);
 
-	//cmd->index = nv_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
-	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
+	//nv->index = nv_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
+	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
 	for (uint8_t i=0; i<4; i++) {
 		
-		cmd->index = job_start + i;
-		nv_get_cmdObj(cmd);
+		nv->index = job_start + i;
+		nv_get_nvObj(nv);
 
-		strcpy(tmp, cmd->group);			// concatenate groups and tokens - do NOT use strncpy()
-		strcat(tmp, cmd->token);
-		strcpy(cmd->token, tmp);
+		strcpy(tmp, nv->group);				// concatenate groups and tokens - do NOT use strncpy()
+		strcat(tmp, nv->token);
+		strcpy(nv->token, tmp);
 
-		if ((cmd = cmd->nx) == NULL) return (STAT_OK); // should never be NULL unless SR length exceeds available buffer array 
+		if ((nv = nv->nx) == NULL) return (STAT_OK); // should never be NULL unless SR length exceeds available buffer array 
 	}
 	return (STAT_OK);
 }
 
-stat_t job_set_job_report(nvObj_t *cmd)
+stat_t job_set_job_report(nvObj_t *nv)
 {
 	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
 
 	for (uint8_t i=0; i<4; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->valuetype == TYPE_EMPTY)) { break;}
-		if (cmd->valuetype == TYPE_INTEGER) {
-			cs.job_id[i] = cmd->value;
-			cmd->index = job_start + i;					// index of the SR persistence location
-			nv_persist(cmd);
+		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
+		if (nv->valuetype == TYPE_INTEGER) {
+			cs.job_id[i] = nv->value;
+			nv->index = job_start + i;					// index of the SR persistence location
+			nv_persist(nv);
 		} else {
 			return (STAT_INPUT_VALUE_UNSUPPORTED);
 		}
@@ -614,9 +614,9 @@ uint8_t job_report_callback()
 	return (STAT_OK);
 }
 
-stat_t job_get(nvObj_t *cmd) { return (job_populate_job_report());}
-stat_t job_set(nvObj_t *cmd) { return (job_set_job_report(cmd));}
-void job_print_job(nvObj_t *cmd) { job_populate_job_report();}
+stat_t job_get(nvObj_t *nv) { return (job_populate_job_report());}
+stat_t job_set(nvObj_t *nv) { return (job_set_job_report(nv));}
+void job_print_job(nvObj_t *nv) { job_populate_job_report();}
 
 /*********************
  * TEXT MODE SUPPORT *
@@ -628,10 +628,10 @@ static const char fmt_qi[] PROGMEM = "qi:%d\n";
 static const char fmt_qo[] PROGMEM = "qo:%d\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
 
-void qr_print_qr(nvObj_t *cmd) { text_print_int(cmd, fmt_qr);}
-void qr_print_qi(nvObj_t *cmd) { text_print_int(cmd, fmt_qi);}
-void qr_print_qo(nvObj_t *cmd) { text_print_int(cmd, fmt_qo);}
-void qr_print_qv(nvObj_t *cmd) { text_print_ui8(cmd, fmt_qv);}
+void qr_print_qr(nvObj_t *nv) { text_print_int(nv, fmt_qr);}
+void qr_print_qi(nvObj_t *nv) { text_print_int(nv, fmt_qi);}
+void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
+void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
 
 #endif // __TEXT_MODE
 

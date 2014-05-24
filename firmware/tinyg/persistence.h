@@ -47,8 +47,8 @@ typedef struct nvmSingleton {
 //**** persistence function prototypes ****
 
 void persistence_init(void);
-stat_t read_persistent_value(nvObj_t *cmd);
-stat_t write_persistent_value(nvObj_t *cmd);
+stat_t read_persistent_value(nvObj_t *nv);
+stat_t write_persistent_value(nvObj_t *nv);
 
 #ifdef __DEBUG
 void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, uint8_t *label);

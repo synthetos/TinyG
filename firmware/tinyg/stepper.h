@@ -421,7 +421,7 @@ stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
 
 void st_reset(void);
-stat_t st_clc(nvObj_t *cmd);
+stat_t st_clc(nvObj_t *nv);
 
 void st_energize_motors(void);
 void st_deenergize_motors(void);
@@ -433,28 +433,28 @@ void st_prep_null(void);
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
 
-stat_t st_set_mt(nvObj_t *cmd);
-stat_t st_set_md(nvObj_t *cmd);
-stat_t st_set_me(nvObj_t *cmd);
+stat_t st_set_mt(nvObj_t *nv);
+stat_t st_set_md(nvObj_t *nv);
+stat_t st_set_me(nvObj_t *nv);
 
-stat_t st_set_sa(nvObj_t *cmd);
-stat_t st_set_tr(nvObj_t *cmd);
-stat_t st_set_mi(nvObj_t *cmd);
-stat_t st_set_pm(nvObj_t *cmd);
-stat_t st_set_pl(nvObj_t *cmd);
+stat_t st_set_sa(nvObj_t *nv);
+stat_t st_set_tr(nvObj_t *nv);
+stat_t st_set_mi(nvObj_t *nv);
+stat_t st_set_pm(nvObj_t *nv);
+stat_t st_set_pl(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void st_print_mt(nvObj_t *cmd);
-	void st_print_me(nvObj_t *cmd);
-	void st_print_md(nvObj_t *cmd);
-	void st_print_ma(nvObj_t *cmd);
-	void st_print_sa(nvObj_t *cmd);
-	void st_print_tr(nvObj_t *cmd);
-	void st_print_mi(nvObj_t *cmd);
-	void st_print_po(nvObj_t *cmd);
-	void st_print_pm(nvObj_t *cmd);
-	void st_print_pl(nvObj_t *cmd);
+	void st_print_mt(nvObj_t *nv);
+	void st_print_me(nvObj_t *nv);
+	void st_print_md(nvObj_t *nv);
+	void st_print_ma(nvObj_t *nv);
+	void st_print_sa(nvObj_t *nv);
+	void st_print_tr(nvObj_t *nv);
+	void st_print_mi(nvObj_t *nv);
+	void st_print_po(nvObj_t *nv);
+	void st_print_pm(nvObj_t *nv);
+	void st_print_pl(nvObj_t *nv);
 
 #else
 

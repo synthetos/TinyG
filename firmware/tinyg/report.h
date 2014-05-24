@@ -98,39 +98,39 @@ extern qrSingleton_t qr;
 void rpt_print_message(char *msg);
 void rpt_exception(uint8_t status);
 
-stat_t rpt_er(nvObj_t *cmd);
+stat_t rpt_er(nvObj_t *nv);
 void rpt_print_loading_configs_message(void);
 void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report(void);
-stat_t sr_set_status_report(nvObj_t *cmd);
+stat_t sr_set_status_report(nvObj_t *nv);
 stat_t sr_request_status_report(uint8_t request_type);
 stat_t sr_status_report_callback(void);
 stat_t sr_run_text_status_report(void);
 
-stat_t sr_get(nvObj_t *cmd);
-stat_t sr_set(nvObj_t *cmd);
-stat_t sr_set_si(nvObj_t *cmd);
-//void sr_print_sr(nvObj_t *cmd);
+stat_t sr_get(nvObj_t *nv);
+stat_t sr_set(nvObj_t *nv);
+stat_t sr_set_si(nvObj_t *nv);
+//void sr_print_sr(nvObj_t *nv);
 
 void qr_init_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
 
-stat_t qr_get(nvObj_t *cmd);
-stat_t qi_get(nvObj_t *cmd);
-stat_t qo_get(nvObj_t *cmd);
+stat_t qr_get(nvObj_t *nv);
+stat_t qi_get(nvObj_t *nv);
+stat_t qo_get(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void sr_print_sr(nvObj_t *cmd);
-	void sr_print_si(nvObj_t *cmd);
-	void sr_print_sv(nvObj_t *cmd);
-	void qr_print_qv(nvObj_t *cmd);
-	void qr_print_qr(nvObj_t *cmd);
-	void qr_print_qi(nvObj_t *cmd);
-	void qr_print_qo(nvObj_t *cmd);
+	void sr_print_sr(nvObj_t *nv);
+	void sr_print_si(nvObj_t *nv);
+	void sr_print_sv(nvObj_t *nv);
+	void qr_print_qv(nvObj_t *nv);
+	void qr_print_qr(nvObj_t *nv);
+	void qr_print_qi(nvObj_t *nv);
+	void qr_print_qo(nvObj_t *nv);
 
 #else
 

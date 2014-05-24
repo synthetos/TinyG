@@ -69,37 +69,37 @@ void persistence_init()
  */
 
 #ifdef __AVR
-stat_t read_persistent_value(nvObj_t *cmd)
+stat_t read_persistent_value(nvObj_t *nv)
 {
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
-	uint16_t nvm_address = nvm.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
+	uint16_t nvm_address = nvm.nvm_profile_base + (nv->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	memcpy(&cmd->value, &nvm_byte_array, NVM_VALUE_LEN);
+	memcpy(&nv->value, &nvm_byte_array, NVM_VALUE_LEN);
 	return (STAT_OK);
 }
 #endif // __AVR
 
 #ifdef __ARM
-stat_t read_persistent_value(nvObj_t *cmd)
+stat_t read_persistent_value(nvObj_t *nv)
 {
-	cmd->value = 0;
+	nv->value = 0;
 	return (STAT_OK);
 }
 #endif // __ARM
 
 #ifdef __AVR
-stat_t write_persistent_value(nvObj_t *cmd)
+stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF)	// can't write when machine is moving 
 		return (STAT_FILE_NOT_OPEN);
 
-	float tmp_value = cmd->value;
-	ritorno(read_persistent_value(cmd));
-	if (cmd->value != tmp_value) {		// catches the isnan() case as well
-		cmd->value = tmp_value;
+	float tmp_value = nv->value;
+	ritorno(read_persistent_value(nv));
+	if (nv->value != tmp_value) {		// catches the isnan() case as well
+		nv->value = tmp_value;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
 		memcpy(&nvm_byte_array, &tmp_value, NVM_VALUE_LEN);
-		uint16_t nvm_address = nvm.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
+		uint16_t nvm_address = nvm.nvm_profile_base + (nv->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}
 	return (STAT_OK);
@@ -107,7 +107,7 @@ stat_t write_persistent_value(nvObj_t *cmd)
 #endif // __AVR
 
 #ifdef __ARM
-stat_t write_persistent_value(nvObj_t *cmd)
+stat_t write_persistent_value(nvObj_t *nv)
 {
 	return (STAT_OK);
 }

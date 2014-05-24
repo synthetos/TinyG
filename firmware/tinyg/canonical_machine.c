@@ -644,7 +644,7 @@ stat_t cm_soft_alarm(stat_t status)
 	return (status);
 }
 
-stat_t cm_clear(nvObj_t *cmd)				// clear soft alarm
+stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 {
 	if (cm.cycle_state == CYCLE_OFF) {
 		cm.machine_state = MACHINE_PROGRAM_STOP;
@@ -1650,83 +1650,83 @@ static int8_t _get_axis_type(const index_t index)
  * cm_print_corr()- print coordinate offsets with rotary units
  */
 
-stat_t _get_msg_helper(nvObj_t *cmd, const char *const msg_array[], uint8_t value)
+stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value)
 {
-	cmd->value = (float)value;
-	cmd->valuetype = TYPE_INTEGER;
-	return(nv_copy_string(cmd, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
+	nv->value = (float)value;
+	nv->valuetype = TYPE_INTEGER;
+	return(nv_copy_string(nv, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
 }
 
-stat_t cm_get_stat(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_stat, cm_get_combined_state()));}
-stat_t cm_get_macs(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_macs, cm_get_machine_state()));}
-stat_t cm_get_cycs(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_cycs, cm_get_cycle_state()));}
-stat_t cm_get_mots(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_mots, cm_get_motion_state()));}
-stat_t cm_get_hold(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_hold, cm_get_hold_state()));}
-stat_t cm_get_home(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_home, cm_get_homing_state()));}
+stat_t cm_get_stat(nvObj_t *nv) { return(_get_msg_helper(nv, msg_stat, cm_get_combined_state()));}
+stat_t cm_get_macs(nvObj_t *nv) { return(_get_msg_helper(nv, msg_macs, cm_get_machine_state()));}
+stat_t cm_get_cycs(nvObj_t *nv) { return(_get_msg_helper(nv, msg_cycs, cm_get_cycle_state()));}
+stat_t cm_get_mots(nvObj_t *nv) { return(_get_msg_helper(nv, msg_mots, cm_get_motion_state()));}
+stat_t cm_get_hold(nvObj_t *nv) { return(_get_msg_helper(nv, msg_hold, cm_get_hold_state()));}
+stat_t cm_get_home(nvObj_t *nv) { return(_get_msg_helper(nv, msg_home, cm_get_homing_state()));}
 
-stat_t cm_get_unit(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
-stat_t cm_get_coor(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
-stat_t cm_get_momo(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
-stat_t cm_get_plan(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
-stat_t cm_get_path(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
-stat_t cm_get_dist(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
-stat_t cm_get_frmo(nvObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get_feed_rate_mode(ACTIVE_MODEL)));}
+stat_t cm_get_unit(nvObj_t *nv) { return(_get_msg_helper(nv, msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
+stat_t cm_get_coor(nvObj_t *nv) { return(_get_msg_helper(nv, msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
+stat_t cm_get_momo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
+stat_t cm_get_plan(nvObj_t *nv) { return(_get_msg_helper(nv, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
+stat_t cm_get_path(nvObj_t *nv) { return(_get_msg_helper(nv, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
+stat_t cm_get_dist(nvObj_t *nv) { return(_get_msg_helper(nv, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_feed_rate_mode(ACTIVE_MODEL)));}
 
-stat_t cm_get_toolv(nvObj_t *cmd)
+stat_t cm_get_toolv(nvObj_t *nv)
 {
-	cmd->value = (float)cm_get_tool(ACTIVE_MODEL);
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t cm_get_mline(nvObj_t *cmd)
+stat_t cm_get_mline(nvObj_t *nv)
 {
-	cmd->value = (float)cm_get_linenum(MODEL);
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)cm_get_linenum(MODEL);
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t cm_get_line(nvObj_t *cmd)
+stat_t cm_get_line(nvObj_t *nv)
 {
-	cmd->value = (float)cm_get_linenum(ACTIVE_MODEL);
-	cmd->valuetype = TYPE_INTEGER;
+	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t cm_get_vel(nvObj_t *cmd) 
+stat_t cm_get_vel(nvObj_t *nv) 
 {
 	if (cm_get_motion_state() == MOTION_STOP) {
-		cmd->value = 0;
+		nv->value = 0;
 	} else {
-		cmd->value = mp_get_runtime_velocity();
-		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCHES_PER_MM;
+		nv->value = mp_get_runtime_velocity();
+		if (cm_get_units_mode(RUNTIME) == INCHES) nv->value *= INCHES_PER_MM;
 	}
-	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->valuetype = TYPE_FLOAT;
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
-stat_t cm_get_pos(nvObj_t *cmd) 
+stat_t cm_get_pos(nvObj_t *nv) 
 {
-	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(cmd->index));
-	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->valuetype = TYPE_FLOAT;
+	nv->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
-stat_t cm_get_mpo(nvObj_t *cmd) 
+stat_t cm_get_mpo(nvObj_t *nv) 
 {
-	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
-	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->valuetype = TYPE_FLOAT;
+	nv->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
-stat_t cm_get_ofs(nvObj_t *cmd) 
+stat_t cm_get_ofs(nvObj_t *nv) 
 {
-	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(cmd->index));
-	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->valuetype = TYPE_FLOAT;
+	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1738,20 +1738,20 @@ stat_t cm_get_ofs(nvObj_t *cmd)
  * cm_set_sw()	- run this any time you change a switch setting
  */
 
-stat_t cm_get_am(nvObj_t *cmd)
+stat_t cm_get_am(nvObj_t *nv)
 {
-	get_ui8(cmd);
-	return(_get_msg_helper(cmd, msg_am, cmd->value));
+	get_ui8(nv);
+	return(_get_msg_helper(nv, msg_am, nv->value));
 }
 
-stat_t cm_set_am(nvObj_t *cmd)		// axis mode
+stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
-	if (_get_axis_type(cmd->index) == 0) {	// linear
-		if (cmd->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (_get_axis_type(nv->index) == 0) {	// linear
+		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	} else {
-		if (cmd->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	}
-	set_ui8(cmd);
+	set_ui8(nv);
 	return(STAT_OK);
 }
 
@@ -1764,16 +1764,16 @@ stat_t cm_set_am(nvObj_t *cmd)		// axis mode
  *	Are less than 1,000,000 they are bumped in and out of raw form. JSON mode always
  *	reports full raw jerk values, but will accept either form.
  */
-stat_t cm_get_jrk(nvObj_t *cmd)
+stat_t cm_get_jrk(nvObj_t *nv)
 {
-	get_flu(cmd);
+	get_flu(nv);
 	return (STAT_OK);
 }
 
-stat_t cm_set_jrk(nvObj_t *cmd)
+stat_t cm_set_jrk(nvObj_t *nv)
 {
-	if (cmd->value > 1000000) cmd->value /= 1000000;
-	set_flu(cmd);
+	if (nv->value > 1000000) nv->value /= 1000000;
+	set_flu(nv);
 	return(STAT_OK);
 }
 
@@ -1784,15 +1784,15 @@ stat_t cm_set_jrk(nvObj_t *cmd)
  * cm_run_home() - run homing sequence
  */
 
-stat_t cm_run_qf(nvObj_t *cmd) 
+stat_t cm_run_qf(nvObj_t *nv) 
 {
 	cm_request_queue_flush();
 	return (STAT_OK);
 }
 
-stat_t cm_run_home(nvObj_t *cmd)
+stat_t cm_run_home(nvObj_t *nv)
 {
-	if (fp_TRUE(cmd->value)) { cm_homing_cycle_start();}
+	if (fp_TRUE(nv->value)) { cm_homing_cycle_start();}
 	return (STAT_OK);
 }
 
@@ -1802,26 +1802,26 @@ stat_t cm_run_home(nvObj_t *cmd)
  * cm_dam() - dump active model
  */
 
-stat_t cm_dam(nvObj_t *cmd)
+stat_t cm_dam(nvObj_t *nv)
 {
 	printf("Active model:\n");
-	cm_print_vel(cmd);
-	cm_print_feed(cmd);
-	cm_print_line(cmd);
-	cm_print_stat(cmd);
-	cm_print_macs(cmd);
-	cm_print_cycs(cmd);
-	cm_print_mots(cmd);
-	cm_print_hold(cmd);
-	cm_print_home(cmd);
-	cm_print_unit(cmd);
-	cm_print_coor(cmd);
-	cm_print_momo(cmd);
-	cm_print_plan(cmd);
-	cm_print_path(cmd);
-	cm_print_dist(cmd);
-	cm_print_frmo(cmd);
-	cm_print_tool(cmd);
+	cm_print_vel(nv);
+	cm_print_feed(nv);
+	cm_print_line(nv);
+	cm_print_stat(nv);
+	cm_print_macs(nv);
+	cm_print_cycs(nv);
+	cm_print_mots(nv);
+	cm_print_hold(nv);
+	cm_print_home(nv);
+	cm_print_unit(nv);
+	cm_print_coor(nv);
+	cm_print_momo(nv);
+	cm_print_plan(nv);
+	cm_print_path(nv);
+	cm_print_dist(nv);
+	cm_print_frmo(nv);
+	cm_print_tool(nv);
 
 	return (STAT_OK);
 }
@@ -1835,30 +1835,30 @@ float cm_get_jogging_dest(void)
 	return cm.jogging_dest;
 }
 
-stat_t cm_run_jogx(nvObj_t *cmd)
+stat_t cm_run_jogx(nvObj_t *nv)
 {
-	set_flt(cmd);
+	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_X);
 	return (STAT_OK);
 }
 
-stat_t cm_run_jogy(nvObj_t *cmd)
+stat_t cm_run_jogy(nvObj_t *nv)
 {
-	set_flt(cmd);
+	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_Y);
 	return (STAT_OK);
 }
 
-stat_t cm_run_jogz(nvObj_t *cmd)
+stat_t cm_run_jogz(nvObj_t *nv)
 {
-	set_flt(cmd);
+	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_Z);
 	return (STAT_OK);
 }
 
-stat_t cm_run_joga(nvObj_t *cmd)
+stat_t cm_run_joga(nvObj_t *nv)
 {
-	set_flt(cmd);
+	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_A);
 	return (STAT_OK);
 }
@@ -1901,29 +1901,29 @@ const char fmt_gco[] PROGMEM = "[gco] default gcode coord system%3d [1-6 (G54-G5
 const char fmt_gpa[] PROGMEM = "[gpa] default gcode path control%3d [0=G61,1=G61.1,2=G64]\n";
 const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G90,1=G91]\n";
 
-void cm_print_vel(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_feed(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_line(nvObj_t *cmd) { text_print_int(cmd, fmt_line);}
-void cm_print_stat(nvObj_t *cmd) { text_print_str(cmd, fmt_stat);}
-void cm_print_macs(nvObj_t *cmd) { text_print_str(cmd, fmt_macs);}
-void cm_print_cycs(nvObj_t *cmd) { text_print_str(cmd, fmt_cycs);}
-void cm_print_mots(nvObj_t *cmd) { text_print_str(cmd, fmt_mots);}
-void cm_print_hold(nvObj_t *cmd) { text_print_str(cmd, fmt_hold);}
-void cm_print_home(nvObj_t *cmd) { text_print_str(cmd, fmt_home);}
-void cm_print_unit(nvObj_t *cmd) { text_print_str(cmd, fmt_unit);}
-void cm_print_coor(nvObj_t *cmd) { text_print_str(cmd, fmt_coor);}
-void cm_print_momo(nvObj_t *cmd) { text_print_str(cmd, fmt_momo);}
-void cm_print_plan(nvObj_t *cmd) { text_print_str(cmd, fmt_plan);}
-void cm_print_path(nvObj_t *cmd) { text_print_str(cmd, fmt_path);}
-void cm_print_dist(nvObj_t *cmd) { text_print_str(cmd, fmt_dist);}
-void cm_print_frmo(nvObj_t *cmd) { text_print_str(cmd, fmt_frmo);}
-void cm_print_tool(nvObj_t *cmd) { text_print_int(cmd, fmt_tool);}
+void cm_print_vel(nvObj_t *nv) { text_print_flt_units(nv, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_feed(nvObj_t *nv) { text_print_flt_units(nv, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_line(nvObj_t *nv) { text_print_int(nv, fmt_line);}
+void cm_print_stat(nvObj_t *nv) { text_print_str(nv, fmt_stat);}
+void cm_print_macs(nvObj_t *nv) { text_print_str(nv, fmt_macs);}
+void cm_print_cycs(nvObj_t *nv) { text_print_str(nv, fmt_cycs);}
+void cm_print_mots(nvObj_t *nv) { text_print_str(nv, fmt_mots);}
+void cm_print_hold(nvObj_t *nv) { text_print_str(nv, fmt_hold);}
+void cm_print_home(nvObj_t *nv) { text_print_str(nv, fmt_home);}
+void cm_print_unit(nvObj_t *nv) { text_print_str(nv, fmt_unit);}
+void cm_print_coor(nvObj_t *nv) { text_print_str(nv, fmt_coor);}
+void cm_print_momo(nvObj_t *nv) { text_print_str(nv, fmt_momo);}
+void cm_print_plan(nvObj_t *nv) { text_print_str(nv, fmt_plan);}
+void cm_print_path(nvObj_t *nv) { text_print_str(nv, fmt_path);}
+void cm_print_dist(nvObj_t *nv) { text_print_str(nv, fmt_dist);}
+void cm_print_frmo(nvObj_t *nv) { text_print_str(nv, fmt_frmo);}
+void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
 
-void cm_print_gpl(nvObj_t *cmd) { text_print_int(cmd, fmt_gpl);}
-void cm_print_gun(nvObj_t *cmd) { text_print_int(cmd, fmt_gun);}
-void cm_print_gco(nvObj_t *cmd) { text_print_int(cmd, fmt_gco);}
-void cm_print_gpa(nvObj_t *cmd) { text_print_int(cmd, fmt_gpa);}
-void cm_print_gdi(nvObj_t *cmd) { text_print_int(cmd, fmt_gdi);}
+void cm_print_gpl(nvObj_t *nv) { text_print_int(nv, fmt_gpl);}
+void cm_print_gun(nvObj_t *nv) { text_print_int(nv, fmt_gun);}
+void cm_print_gco(nvObj_t *nv) { text_print_int(nv, fmt_gco);}
+void cm_print_gpa(nvObj_t *nv) { text_print_int(nv, fmt_gpa);}
+void cm_print_gdi(nvObj_t *nv) { text_print_int(nv, fmt_gdi);}
 
 /* system state print functions */
 
@@ -1934,12 +1934,12 @@ const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
 const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
 const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
-void cm_print_ja(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ct(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_sl(nvObj_t *cmd) { text_print_ui8(cmd, fmt_sl);}
-void cm_print_ml(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ma(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ms(nvObj_t *cmd) { text_print_flt_units(cmd, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
+void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
 
 /*
  * axis print functions
@@ -1985,71 +1985,71 @@ const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%s\n";
 const char fmt_cofs[] PROGMEM = "[%s%s] %s %s offset%20.3f%s\n";
 const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 
-static void _print_axis_ui8(nvObj_t *cmd, const char *format)
+static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
 }
 
-static void _print_axis_flu(nvObj_t *cmd, const char *format)
+static void _print_axis_flu(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(cmd->index) == 0) {	// linear
+	if (_get_axis_type(nv->index) == 0) {	// linear
 		if (cm_get_units_mode(MODEL) == INCHES) {
-			cmd->value *= INCHES_PER_MM;	// convert value to inches for display
+			nv->value *= INCHES_PER_MM;	// convert value to inches for display
 		}
 		units = (char *)GET_UNITS(MODEL);	//ASCII display for units
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, units);
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, units);
 }
 
-static void _print_axis_coord_flu(nvObj_t *cmd, const char *format)
+static void _print_axis_coord_flu(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(cmd->index) == 0) {	// linear
+	if (_get_axis_type(nv->index) == 0) {	// linear
 		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->token, cmd->value, units);
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->token, nv->value, units);
 }
 
-static void _print_pos(nvObj_t *cmd, const char *format, uint8_t units)
+static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 {
 	char axes[] = {"XYZABC"};
-	uint8_t axis = _get_axis(cmd->index);
+	uint8_t axis = _get_axis(nv->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
-	fprintf_P(stderr, format, axes[axis], cmd->value, GET_TEXT_ITEM(msg_units, units));
+	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
-void cm_print_am(nvObj_t *cmd)	// print axis mode with enumeration string
+void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
-	fprintf_P(stderr, fmt_Xam, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value,
-	GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
+	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
+	GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
 }
 
-void cm_print_fr(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xfr);}
-void cm_print_vm(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xvm);}
-void cm_print_tm(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xtm);}
-void cm_print_tn(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xtn);}
-void cm_print_jm(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjm);}
-void cm_print_jh(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjh);}
-void cm_print_jd(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjd);}
-void cm_print_ra(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xra);}
-void cm_print_sn(nvObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
-void cm_print_sx(nvObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
-void cm_print_sv(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xsv);}
-void cm_print_lv(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xlv);}
-void cm_print_lb(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xlb);}
-void cm_print_zb(nvObj_t *cmd) { _print_axis_flu(cmd, fmt_Xzb);}
+void cm_print_fr(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xfr);}
+void cm_print_vm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xvm);}
+void cm_print_tm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xtm);}
+void cm_print_tn(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xtn);}
+void cm_print_jm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjm);}
+void cm_print_jh(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjh);}
+void cm_print_jd(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjd);}
+void cm_print_ra(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xra);}
+void cm_print_sn(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsn);}
+void cm_print_sx(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsx);}
+void cm_print_sv(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xsv);}
+void cm_print_lv(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xlv);}
+void cm_print_lb(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xlb);}
+void cm_print_zb(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xzb);}
 
-void cm_print_cofs(nvObj_t *cmd) { _print_axis_coord_flu(cmd, fmt_cofs);}
-void cm_print_cpos(nvObj_t *cmd) { _print_axis_coord_flu(cmd, fmt_cpos);}
+void cm_print_cofs(nvObj_t *nv) { _print_axis_coord_flu(nv, fmt_cofs);}
+void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flu(nv, fmt_cpos);}
 
-void cm_print_pos(nvObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
-void cm_print_mpo(nvObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}
-void cm_print_ofs(nvObj_t *cmd) { _print_pos(cmd, fmt_ofs, MILLIMETERS);}
+void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
+void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
+void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
 
 #endif // __TEXT_MODE
 

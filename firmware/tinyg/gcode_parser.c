@@ -34,7 +34,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 }; struct gcodeParserSingleton gp;
 
 // local helper functions and macros
-static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint8_t *block_delete_flag);
+static void _normalize_gcode_block(char_t *nv, char_t **com, char_t **msg, uint8_t *block_delete_flag);
 static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value);
 static stat_t _point(float value);
 static stat_t _validate_gcode_block(void);
@@ -53,7 +53,7 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
 stat_t gc_gcode_parser(char_t *block)
 {
-	char_t *cmd = block;					// gcode command or NUL string
+	char_t *nv = block;					// gcode command or NUL string
 	char_t none = NUL;
 	char_t *com = &none;					// gcode comment or NUL string
 	char_t *msg = &none;					// gcode message or NUL string
@@ -62,7 +62,7 @@ stat_t gc_gcode_parser(char_t *block)
 	// don't process Gcode blocks if in alarmed state
 	if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 
-	_normalize_gcode_block(cmd, &com, &msg, &block_delete_flag);
+	_normalize_gcode_block(nv, &com, &msg, &block_delete_flag);
 	
 	// Block delete omits the line if a / char is present in the first space
 	// For now this is unconditional and will always delete
@@ -115,10 +115,10 @@ stat_t gc_gcode_parser(char_t *block)
  *	 - msg points to message string or to NUL if no comment
  *	 - block_delete_flag is set true if block delete encountered, false otherwise
  */
-static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint8_t *block_delete_flag)
+static void _normalize_gcode_block(char_t *nv, char_t **com, char_t **msg, uint8_t *block_delete_flag)
 {
-	char_t *rd = cmd;				// read pointer
-	char_t *wr = cmd;				// write pointer
+	char_t *rd = nv;				// read pointer
+	char_t *wr = nv;				// write pointer
 
 	// Preset comments and messages to NUL string
 	// Not required if com and msg already point to NUL on entry
@@ -138,7 +138,7 @@ static void _normalize_gcode_block(char_t *cmd, char_t **com, char_t **msg, uint
 	}
 	
 	// Perform Octal stripping - remove invalid leading zeros in number strings
-	rd = cmd;
+	rd = nv;
 	while (*rd != NUL) {
 		if (*rd == '.') break;							// don't strip past a decimal point
 		if ((!isdigit(*rd)) && (*(rd+1) == '0') && (isdigit(*(rd+2)))) {
@@ -497,16 +497,16 @@ static stat_t _execute_gcode_block()
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-stat_t gc_get_gc(nvObj_t *cmd)
+stat_t gc_get_gc(nvObj_t *nv)
 {
-	ritorno(nv_copy_string(cmd, cs.in_buf));
-	cmd->valuetype = TYPE_STRING;
+	ritorno(nv_copy_string(nv, cs.in_buf));
+	nv->valuetype = TYPE_STRING;
 	return (STAT_OK);
 }
 
-stat_t gc_run_gc(nvObj_t *cmd)
+stat_t gc_run_gc(nvObj_t *nv)
 {
-	return(gc_gcode_parser(*cmd->stringp));
+	return(gc_gcode_parser(*nv->stringp));
 }
 
 /***********************************************************************************

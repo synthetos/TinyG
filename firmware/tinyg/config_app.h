@@ -72,9 +72,9 @@ extern cfgParameters_t cfg;
 stat_t set_baud_callback(void);
 
 // job config
-void job_print_job(nvObj_t *cmd);
-stat_t job_get(nvObj_t *cmd);
-stat_t job_set(nvObj_t *cmd);
+void job_print_job(nvObj_t *nv);
+stat_t job_get(nvObj_t *nv);
+stat_t job_set(nvObj_t *nv);
 uint8_t job_report_callback();
 
 /***********************************************************************************
@@ -84,12 +84,12 @@ uint8_t job_report_callback();
 
 #ifdef __TEXT_MODE
 
-	void co_print_ec(nvObj_t *cmd);
-	void co_print_ee(nvObj_t *cmd);
-	void co_print_ex(nvObj_t *cmd);
-	void co_print_baud(nvObj_t *cmd);
-	void co_print_net(nvObj_t *cmd);
-	void co_print_rx(nvObj_t *cmd);
+	void co_print_ec(nvObj_t *nv);
+	void co_print_ee(nvObj_t *nv);
+	void co_print_ex(nvObj_t *nv);
+	void co_print_baud(nvObj_t *nv);
+	void co_print_net(nvObj_t *nv);
+	void co_print_rx(nvObj_t *nv);
 
 #else 
 

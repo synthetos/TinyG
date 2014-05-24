@@ -277,17 +277,17 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
 } nvObj_t; 								// OK, so it's not REALLY an object
 
-typedef uint8_t (*fptrCmd)(nvObj_t *cmd);// required for cmd table access
-typedef void (*fptrPrint)(nvObj_t *cmd);// required for PROGMEM access
+typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cmd table access
+typedef void (*fptrPrint)(nvObj_t *nv);// required for PROGMEM access
 
 typedef struct cfgItem {
 	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
 	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
-	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *cmd);
-	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *cmd)
-	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *cmd)
+	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
+	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
+	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
@@ -304,16 +304,16 @@ extern const cfgItem_t cfgArray[];
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
-stat_t set_defaults(nvObj_t *cmd);		// reset config to default values
+stat_t set_defaults(nvObj_t *nv);		// reset config to default values
 
 // main entry points for core access functions
-stat_t nv_get(nvObj_t *cmd);			// main entry point for get value
-stat_t nv_set(nvObj_t *cmd);			// main entry point for set value
-void nv_print(nvObj_t *cmd);			// main entry point for print value
-void nv_persist(nvObj_t *cmd);		// main entry point for persistence
+stat_t nv_get(nvObj_t *nv);			// main entry point for get value
+stat_t nv_set(nvObj_t *nv);			// main entry point for set value
+void nv_print(nvObj_t *nv);			// main entry point for print value
+void nv_persist(nvObj_t *nv);		// main entry point for persistence
 
 // helpers
-uint8_t nv_get_type(nvObj_t *cmd);
+uint8_t nv_get_type(nvObj_t *nv);
 stat_t nv_persist_offsets(uint8_t flag);
 
 index_t nv_get_index(const char_t *group, const char_t *token);
@@ -326,32 +326,32 @@ uint8_t nv_index_lt_groups(index_t index);
 uint8_t nv_group_is_prefixed(char_t *group);
 
 // generic internal functions and accessors
-stat_t set_nul(nvObj_t *cmd);		// set nothing (no operation)
-stat_t set_ui8(nvObj_t *cmd);		// set uint8_t value
-stat_t set_01(nvObj_t *cmd);		// set a 0 or 1 value with validation
-stat_t set_012(nvObj_t *cmd);		// set a 0, 1 or 2 value with validation
-stat_t set_0123(nvObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
-stat_t set_int(nvObj_t *cmd);		// set uint32_t integer value
-stat_t set_data(nvObj_t *cmd);		// set uint32_t integer value blind cast
-stat_t set_flt(nvObj_t *cmd);		// set floating point value
-stat_t set_flu(nvObj_t *cmd);		// set floating point number with G20/G21 units conversion
-stat_t get_flu(nvObj_t *cmd);		// get floating point number with G20/G21 units conversion
+stat_t set_nul(nvObj_t *nv);		// set nothing (no operation)
+stat_t set_ui8(nvObj_t *nv);		// set uint8_t value
+stat_t set_01(nvObj_t *nv);		// set a 0 or 1 value with validation
+stat_t set_012(nvObj_t *nv);		// set a 0, 1 or 2 value with validation
+stat_t set_0123(nvObj_t *nv);		// set a 0, 1, 2 or 3 value with validation
+stat_t set_int(nvObj_t *nv);		// set uint32_t integer value
+stat_t set_data(nvObj_t *nv);		// set uint32_t integer value blind cast
+stat_t set_flt(nvObj_t *nv);		// set floating point value
+stat_t set_flu(nvObj_t *nv);		// set floating point number with G20/G21 units conversion
+stat_t get_flu(nvObj_t *nv);		// get floating point number with G20/G21 units conversion
 
-stat_t get_nul(nvObj_t *cmd);		// get null value type
-stat_t get_ui8(nvObj_t *cmd);		// get uint8_t value
-stat_t get_int(nvObj_t *cmd);		// get uint32_t integer value
-stat_t get_data(nvObj_t *cmd);		// get uint32_t integer value blind cast
-stat_t get_flt(nvObj_t *cmd);		// get floating point value
+stat_t get_nul(nvObj_t *nv);		// get null value type
+stat_t get_ui8(nvObj_t *nv);		// get uint8_t value
+stat_t get_int(nvObj_t *nv);		// get uint32_t integer value
+stat_t get_data(nvObj_t *nv);		// get uint32_t integer value blind cast
+stat_t get_flt(nvObj_t *nv);		// get floating point value
 
-stat_t set_grp(nvObj_t *cmd);		// set data for a group
-stat_t get_grp(nvObj_t *cmd);		// get data for a group
+stat_t set_grp(nvObj_t *nv);		// set data for a group
+stat_t get_grp(nvObj_t *nv);		// get data for a group
 
 // object and list functions
-void nv_get_cmdObj(nvObj_t *cmd);
-nvObj_t *nv_reset_obj(nvObj_t *cmd);
-nvObj_t *nv_reset_list(void);
+void nv_get_nvObj(nvObj_t *nv);
+nvObj_t *nv_reset_nvObj(nvObj_t *nv);
+nvObj_t *nv_reset_nvObj_list(void);
 
-stat_t nv_copy_string(nvObj_t *cmd, const char_t *src);
+stat_t nv_copy_string(nvObj_t *nv, const char_t *src);
 nvObj_t *nv_add_object(const char_t *token);
 nvObj_t *nv_add_integer(const char_t *token, const uint32_t value);
 nvObj_t *nv_add_float(const char_t *token, const float value);
