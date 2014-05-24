@@ -108,14 +108,14 @@ extern "C"{
 
 /**** cmdObj lists ****
  *
- * 	Commands and groups of commands are processed internally a doubly linked list of cmdObj_t 
+ * 	Commands and groups of commands are processed internally a doubly linked list of nvObj_t 
  *	structures. This isolates the command and config internals from the details of communications,
  *	parsing and display in text mode and JSON mode.
  *
  *	The first element of the list is designated the response header element ("r") but the list 
  *	can also be serialized as a simple object by skipping over the header
  *
- *	To use the cmd list first reset it by calling cmd_reset_list(). This initializes the header, 
+ *	To use the cmd list first reset it by calling nv_reset_list(). This initializes the header, 
  *	marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects with 
  *	NX and PV pointers, and makes the last element the terminating element by setting its NX 
  *	pointer to NULL. The terminating element may carry data, and will be processed.
@@ -125,15 +125,15 @@ extern "C"{
  * 
  * 	We don't use recursion so parent/child nesting relationships are captured in a 'depth' variable, 
  *	This must remain consistent if the curlies are to work out. In general you should not have to 
- *	track depth explicitly if you use cmd_reset_list() or the accessor functions like 
- *	cmd_add_integer() or cmd_add_message(). If you see problems with curlies check the depth values
+ *	track depth explicitly if you use nv_reset_list() or the accessor functions like 
+ *	nv_add_integer() or nv_add_message(). If you see problems with curlies check the depth values
  *	in the lists.
  *
- *	Use the cmd_print_list() dispatcher for all JSON and text output. Do not simply run through printf.
+ *	Use the nv_print_list() dispatcher for all JSON and text output. Do not simply run through printf.
  */
 /*	Token and Group Fields
  * 
- *	The cmdObject struct (cmdObj_t) has strict rules on the use of the token and group fields.
+ *	The cmdObject struct (nvObj_t) has strict rules on the use of the token and group fields.
  *	The following forms are legal which support the use cases listed:
  *
  *	Forms
@@ -150,22 +150,22 @@ extern "C"{
 /*	--- Cmd object string handling ---
  *
  *	It's very expensive to allocate sufficient string space to each cmdObj, so cmds use a cheater's 
- *	malloc. A single string of length CMD_SHARED_STRING_LEN is shared by all cmdObjs for all strings. 
+ *	malloc. A single string of length NV_SHARED_STRING_LEN is shared by all cmdObjs for all strings. 
  *	The observation is that the total rendered output in JSON or text mode cannot exceed the size of 
  *	the output buffer (typ 256 bytes), So some number less than that is sufficient for shared strings. 
- *	This is all mediated through cmd_copy_string(), cmd_copy_string_P(), and cmd_reset_list().
+ *	This is all mediated through nv_copy_string(), nv_copy_string_P(), and nv_reset_list().
  */
 /*  --- Setting cmdObj indexes ---
  *
  *	It's the responsibility of the object creator to set the index. Downstream functions
- *	all expect a valid index. Set the index by calling cmd_get_index(). This also validates
+ *	all expect a valid index. Set the index by calling nv_get_index(). This also validates
  *	the token and group if no lookup exists. Setting the index is an expensive operation 
  *	(linear table scan), so there are some exceptions where the index does not need to be set. 
  *	These cases are put in the code, commented out, and explained.
  */
 /*	--- Other Notes:---
  *
- *	CMD_BODY_LEN needs to allow for one parent JSON object and enough children to complete the 
+ *	NV_BODY_LEN needs to allow for one parent JSON object and enough children to complete the 
  *	largest possible operation - usually the status report.
  */
 
@@ -178,21 +178,21 @@ extern "C"{
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
 									// defines allocated from stack (not-pre-allocated)
-#define CMD_FORMAT_LEN 128			// print formatting string max length
-#define CMD_MESSAGE_LEN 128			// sufficient space to contain end-user messages
+#define NV_FORMAT_LEN 128			// print formatting string max length
+#define NV_MESSAGE_LEN 128			// sufficient space to contain end-user messages
 
 									// pre-allocated defines (take RAM permanently)
-#define CMD_SHARED_STRING_LEN 512	// shared string for string values
-#define CMD_BODY_LEN 30				// body elements - allow for 1 parent + N children
+#define NV_SHARED_STRING_LEN 512	// shared string for string values
+#define NV_BODY_LEN 30				// body elements - allow for 1 parent + N children
 									// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change 
 
 #define GROUP_LEN 3					// max length of group prefix
 #define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
-#define CMD_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
-#define CMD_LIST_LEN (CMD_BODY_LEN+2)// +2 allows for a header and a footer
-#define CMD_MAX_OBJECTS (CMD_BODY_LEN-1)// maximum number of objects in a body string
+#define NV_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
+#define NV_LIST_LEN (NV_BODY_LEN+2)	// +2 allows for a header and a footer
+#define NV_MAX_OBJECTS (NV_BODY_LEN-1)// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
 
 enum tgCommunicationsMode {
@@ -253,20 +253,20 @@ enum valueUnits {
 
 /**** Structures ****/
 
-typedef struct cmdString {				// shared string object
+typedef struct nvString {				// shared string object
 	uint16_t magic_start;
-  #if (CMD_SHARED_STRING_LEN < 256)
+  #if (NV_SHARED_STRING_LEN < 256)
 	uint8_t wp;							// use this string array index value if string len < 256 bytes
   #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
   #endif
-	char_t string[CMD_SHARED_STRING_LEN];
+	char_t string[NV_SHARED_STRING_LEN];
 	uint16_t magic_end;					// guard to detect string buffer underruns
-} cmdStr_t;
+} nvStr_t;
 
-typedef struct cmdObject {				// depending on use, not all elements may be populated
-	struct cmdObject *pv;				// pointer to previous object or NULL if first object
-	struct cmdObject *nx;				// pointer to next object or NULL if last object
+typedef struct nvObject {				// depending on use, not all elements may be populated
+	struct nvObject *pv;				// pointer to previous object or NULL if first object
+	struct nvObject *nx;				// pointer to next object or NULL if last object
 	index_t index;						// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t valuetype;					// see valueType enum
@@ -275,91 +275,91 @@ typedef struct cmdObject {				// depending on use, not all elements may be popul
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
-} cmdObj_t; 							// OK, so it's not REALLY an object
+} nvObj_t; 								// OK, so it's not REALLY an object
 
-typedef uint8_t (*fptrCmd)(cmdObj_t *cmd);// required for cmd table access
-typedef void (*fptrPrint)(cmdObj_t *cmd);// required for PROGMEM access
+typedef uint8_t (*fptrCmd)(nvObj_t *cmd);// required for cmd table access
+typedef void (*fptrPrint)(nvObj_t *cmd);// required for PROGMEM access
 
 typedef struct cfgItem {
 	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
 	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
-	fptrPrint print;					// print binding: aka void (*print)(cmdObj_t *cmd);
-	fptrCmd get;						// GET binding aka uint8_t (*get)(cmdObj_t *cmd)
-	fptrCmd set;						// SET binding aka uint8_t (*set)(cmdObj_t *cmd)
+	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *cmd);
+	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *cmd)
+	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *cmd)
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
 
 /**** static allocation and definitions ****/
 
-extern cmdStr_t cmdStr;
-extern cmdObj_t cmd_list[];
+extern nvStr_t nvStr;
+extern nvObj_t nv_list[];
 extern const cfgItem_t cfgArray[];
 
-#define cmd_header cmd_list
-#define cmd_body  (cmd_list+1)
+#define nv_header nv_list
+#define nv_body  (nv_list+1)
 
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
-stat_t set_defaults(cmdObj_t *cmd);		// reset config to default values
+stat_t set_defaults(nvObj_t *cmd);		// reset config to default values
 
 // main entry points for core access functions
-stat_t cmd_get(cmdObj_t *cmd);			// main entry point for get value
-stat_t cmd_set(cmdObj_t *cmd);			// main entry point for set value
-void cmd_print(cmdObj_t *cmd);			// main entry point for print value
-void cmd_persist(cmdObj_t *cmd);		// main entry point for persistence
+stat_t nv_get(nvObj_t *cmd);			// main entry point for get value
+stat_t nv_set(nvObj_t *cmd);			// main entry point for set value
+void nv_print(nvObj_t *cmd);			// main entry point for print value
+void nv_persist(nvObj_t *cmd);		// main entry point for persistence
 
 // helpers
-uint8_t cmd_get_type(cmdObj_t *cmd);
-stat_t cmd_persist_offsets(uint8_t flag);
+uint8_t nv_get_type(nvObj_t *cmd);
+stat_t nv_persist_offsets(uint8_t flag);
 
-index_t cmd_get_index(const char_t *group, const char_t *token);
-index_t	cmd_index_max(void);
-uint8_t cmd_index_lt_max(index_t index);
-uint8_t cmd_index_ge_max(index_t index);
-uint8_t cmd_index_is_single(index_t index);
-uint8_t cmd_index_is_group(index_t index);
-uint8_t cmd_index_lt_groups(index_t index);
-uint8_t cmd_group_is_prefixed(char_t *group);
+index_t nv_get_index(const char_t *group, const char_t *token);
+index_t	nv_index_max(void);
+uint8_t nv_index_lt_max(index_t index);
+uint8_t nv_index_ge_max(index_t index);
+uint8_t nv_index_is_single(index_t index);
+uint8_t nv_index_is_group(index_t index);
+uint8_t nv_index_lt_groups(index_t index);
+uint8_t nv_group_is_prefixed(char_t *group);
 
 // generic internal functions and accessors
-stat_t set_nul(cmdObj_t *cmd);		// set nothing (no operation)
-stat_t set_ui8(cmdObj_t *cmd);		// set uint8_t value
-stat_t set_01(cmdObj_t *cmd);		// set a 0 or 1 value with validation
-stat_t set_012(cmdObj_t *cmd);		// set a 0, 1 or 2 value with validation
-stat_t set_0123(cmdObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
-stat_t set_int(cmdObj_t *cmd);		// set uint32_t integer value
-stat_t set_data(cmdObj_t *cmd);		// set uint32_t integer value blind cast
-stat_t set_flt(cmdObj_t *cmd);		// set floating point value
-stat_t set_flu(cmdObj_t *cmd);		// set floating point number with G20/G21 units conversion
-stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units conversion
+stat_t set_nul(nvObj_t *cmd);		// set nothing (no operation)
+stat_t set_ui8(nvObj_t *cmd);		// set uint8_t value
+stat_t set_01(nvObj_t *cmd);		// set a 0 or 1 value with validation
+stat_t set_012(nvObj_t *cmd);		// set a 0, 1 or 2 value with validation
+stat_t set_0123(nvObj_t *cmd);		// set a 0, 1, 2 or 3 value with validation
+stat_t set_int(nvObj_t *cmd);		// set uint32_t integer value
+stat_t set_data(nvObj_t *cmd);		// set uint32_t integer value blind cast
+stat_t set_flt(nvObj_t *cmd);		// set floating point value
+stat_t set_flu(nvObj_t *cmd);		// set floating point number with G20/G21 units conversion
+stat_t get_flu(nvObj_t *cmd);		// get floating point number with G20/G21 units conversion
 
-stat_t get_nul(cmdObj_t *cmd);		// get null value type
-stat_t get_ui8(cmdObj_t *cmd);		// get uint8_t value
-stat_t get_int(cmdObj_t *cmd);		// get uint32_t integer value
-stat_t get_data(cmdObj_t *cmd);		// get uint32_t integer value blind cast
-stat_t get_flt(cmdObj_t *cmd);		// get floating point value
+stat_t get_nul(nvObj_t *cmd);		// get null value type
+stat_t get_ui8(nvObj_t *cmd);		// get uint8_t value
+stat_t get_int(nvObj_t *cmd);		// get uint32_t integer value
+stat_t get_data(nvObj_t *cmd);		// get uint32_t integer value blind cast
+stat_t get_flt(nvObj_t *cmd);		// get floating point value
 
-stat_t set_grp(cmdObj_t *cmd);		// set data for a group
-stat_t get_grp(cmdObj_t *cmd);		// get data for a group
+stat_t set_grp(nvObj_t *cmd);		// set data for a group
+stat_t get_grp(nvObj_t *cmd);		// get data for a group
 
 // object and list functions
-void cmd_get_cmdObj(cmdObj_t *cmd);
-cmdObj_t *cmd_reset_obj(cmdObj_t *cmd);
-cmdObj_t *cmd_reset_list(void);
+void nv_get_cmdObj(nvObj_t *cmd);
+nvObj_t *nv_reset_obj(nvObj_t *cmd);
+nvObj_t *nv_reset_list(void);
 
-stat_t cmd_copy_string(cmdObj_t *cmd, const char_t *src);
-cmdObj_t *cmd_add_object(const char_t *token);
-cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value);
-cmdObj_t *cmd_add_float(const char_t *token, const float value);
-cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
-cmdObj_t *cmd_add_conditional_message(const char_t *string);
-void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
+stat_t nv_copy_string(nvObj_t *cmd, const char_t *src);
+nvObj_t *nv_add_object(const char_t *token);
+nvObj_t *nv_add_integer(const char_t *token, const uint32_t value);
+nvObj_t *nv_add_float(const char_t *token, const float value);
+nvObj_t *nv_add_string(const char_t *token, const char_t *string);
+nvObj_t *nv_add_conditional_message(const char_t *string);
+void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
-void nv_dump_nv(cmdObj_t *nv);
+void nv_dump_nv(nvObj_t *nv);
 
 /*********************************************************************************************
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************

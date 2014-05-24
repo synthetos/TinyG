@@ -21,7 +21,7 @@
 
 //#include <stdio.h>					// needed for FILE def'n
 
-uint8_t run_test(cmdObj_t *cmd);
+uint8_t run_test(nvObj_t *cmd);
 void run_canned_startup(void);
 
 

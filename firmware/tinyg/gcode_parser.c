@@ -497,14 +497,14 @@ static stat_t _execute_gcode_block()
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-stat_t gc_get_gc(cmdObj_t *cmd)
+stat_t gc_get_gc(nvObj_t *cmd)
 {
-	ritorno(cmd_copy_string(cmd, cs.in_buf));
+	ritorno(nv_copy_string(cmd, cs.in_buf));
 	cmd->valuetype = TYPE_STRING;
 	return (STAT_OK);
 }
 
-stat_t gc_run_gc(cmdObj_t *cmd)
+stat_t gc_run_gc(nvObj_t *cmd)
 {
 	return(gc_gcode_parser(*cmd->stringp));
 }

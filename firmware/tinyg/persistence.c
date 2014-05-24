@@ -69,7 +69,7 @@ void persistence_init()
  */
 
 #ifdef __AVR
-stat_t read_persistent_value(cmdObj_t *cmd)
+stat_t read_persistent_value(nvObj_t *cmd)
 {
 	int8_t nvm_byte_array[NVM_VALUE_LEN];
 	uint16_t nvm_address = nvm.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
@@ -80,7 +80,7 @@ stat_t read_persistent_value(cmdObj_t *cmd)
 #endif // __AVR
 
 #ifdef __ARM
-stat_t read_persistent_value(cmdObj_t *cmd)
+stat_t read_persistent_value(nvObj_t *cmd)
 {
 	cmd->value = 0;
 	return (STAT_OK);
@@ -88,7 +88,7 @@ stat_t read_persistent_value(cmdObj_t *cmd)
 #endif // __ARM
 
 #ifdef __AVR
-stat_t write_persistent_value(cmdObj_t *cmd)
+stat_t write_persistent_value(nvObj_t *cmd)
 {
 	if (cm.cycle_state != CYCLE_OFF)	// can't write when machine is moving 
 		return (STAT_FILE_NOT_OPEN);
@@ -107,7 +107,7 @@ stat_t write_persistent_value(cmdObj_t *cmd)
 #endif // __AVR
 
 #ifdef __ARM
-stat_t write_persistent_value(cmdObj_t *cmd)
+stat_t write_persistent_value(nvObj_t *cmd)
 {
 	return (STAT_OK);
 }

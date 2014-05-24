@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		428.04	// Testing inches mode display fixes; adding precision display to text mode; fixing precision values
+#define TINYG_FIRMWARE_BUILD   		428.05	// Changing nomenclature - cmd to name/value to better align with JSON naming. Step 1
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

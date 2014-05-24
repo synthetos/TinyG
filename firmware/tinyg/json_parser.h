@@ -86,19 +86,19 @@ extern jsSingleton_t js;
 /**** Function Prototypes ****/
 
 void json_parser(char_t *str);
-uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size);
-void json_print_object(cmdObj_t *cmd);
+uint16_t json_serialize(nvObj_t *cmd, char_t *out_buf, uint16_t size);
+void json_print_object(nvObj_t *cmd);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
 
-stat_t json_set_jv(cmdObj_t *cmd);
+stat_t json_set_jv(nvObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
-	void js_print_ej(cmdObj_t *cmd);
-	void js_print_jv(cmdObj_t *cmd);
-	void js_print_js(cmdObj_t *cmd);
-	void js_print_fs(cmdObj_t *cmd);
+	void js_print_ej(nvObj_t *cmd);
+	void js_print_jv(nvObj_t *cmd);
+	void js_print_js(nvObj_t *cmd);
+	void js_print_fs(nvObj_t *cmd);
 
 #else
 

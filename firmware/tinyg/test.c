@@ -57,7 +57,7 @@
  * 	By convention the character array containing the test must have the same 
  *	name as the file name.
  */
-uint8_t run_test(cmdObj_t *cmd)
+uint8_t run_test(nvObj_t *cmd)
 {
 	switch ((uint8_t)cmd->value) {
 		case 0: { return (STAT_OK);}

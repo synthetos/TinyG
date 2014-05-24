@@ -28,7 +28,7 @@
 #ifndef PERSISTENCE_H_ONCE
 #define PERSISTENCE_H_ONCE
 
-#include "config.h"					// needed for cmdObj_t definition
+#include "config.h"					// needed for nvObj_t definition
 
 #ifdef __cplusplus
 extern "C"{
@@ -47,8 +47,8 @@ typedef struct nvmSingleton {
 //**** persistence function prototypes ****
 
 void persistence_init(void);
-stat_t read_persistent_value(cmdObj_t *cmd);
-stat_t write_persistent_value(cmdObj_t *cmd);
+stat_t read_persistent_value(nvObj_t *cmd);
+stat_t write_persistent_value(nvObj_t *cmd);
 
 #ifdef __DEBUG
 void cfg_dump_NVM(const uint16_t start_record, const uint16_t end_record, uint8_t *label);

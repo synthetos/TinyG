@@ -103,9 +103,9 @@ void hardware_init()
 /* UNUSED
 static uint8_t _read_calibration_byte(uint8_t index)
 { 
-	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
+	NVM_CMD = NVM_NV_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
 	uint8_t result = pgm_read_byte(index); 
-	NVM_CMD = NVM_CMD_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
+	NVM_CMD = NVM_NV_NO_OPERATION_gc; 	 	// Clean up NVM Command register 
 	return(result); 
 }
 */
@@ -202,19 +202,19 @@ stat_t hw_bootloader_handler(void)
  * hw_get_id() - get device ID (signature)
  */
 
-stat_t hw_get_id(cmdObj_t *cmd) 
+stat_t hw_get_id(nvObj_t *cmd) 
 {
 	char_t tmp[SYS_ID_LEN];
 	_get_id(tmp);
 	cmd->valuetype = TYPE_STRING;
-	ritorno(cmd_copy_string(cmd, tmp));
+	ritorno(nv_copy_string(cmd, tmp));
 	return (STAT_OK);
 }
 
 /*
  * hw_run_boot() - invoke boot form the cfgArray
  */
-stat_t hw_run_boot(cmdObj_t *cmd)
+stat_t hw_run_boot(nvObj_t *cmd)
 {
 	hw_request_bootloader();
 	return(STAT_OK);
@@ -223,7 +223,7 @@ stat_t hw_run_boot(cmdObj_t *cmd)
 /*
  * hw_set_hv() - set hardware version number
  */
-stat_t hw_set_hv(cmdObj_t *cmd) 
+stat_t hw_set_hv(nvObj_t *cmd) 
 {
 	if (cmd->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	set_flt(cmd);					// record the hardware version
@@ -246,11 +246,11 @@ static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 
-void hw_print_fb(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fb);}
-void hw_print_fv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_fv);}
-void hw_print_hp(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hp);}
-void hw_print_hv(cmdObj_t *cmd) { text_print_flt(cmd, fmt_hv);}
-void hw_print_id(cmdObj_t *cmd) { text_print_str(cmd, fmt_id);}
+void hw_print_fb(nvObj_t *cmd) { text_print_flt(cmd, fmt_fb);}
+void hw_print_fv(nvObj_t *cmd) { text_print_flt(cmd, fmt_fv);}
+void hw_print_hp(nvObj_t *cmd) { text_print_flt(cmd, fmt_hp);}
+void hw_print_hv(nvObj_t *cmd) { text_print_flt(cmd, fmt_hv);}
+void hw_print_id(nvObj_t *cmd) { text_print_str(cmd, fmt_id);}
 
 #endif //__TEXT_MODE 
 

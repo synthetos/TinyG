@@ -28,7 +28,7 @@ extern "C"{
 
 // help helper functions (snicker)
 
-stat_t help_stub(cmdObj_t *cmd) {return (STAT_OK);}
+stat_t help_stub(nvObj_t *cmd) {return (STAT_OK);}
 
 #ifdef __HELP_SCREENS
 
@@ -53,7 +53,7 @@ Have fun\n"));
 /*
  * help_general() - help invoked as h from the command line
  */
-uint8_t help_general(cmdObj_t *cmd)
+uint8_t help_general(nvObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n### TinyG Help ###\n"));
 fprintf_P(stderr, PSTR("\
@@ -79,7 +79,7 @@ return(STAT_OK);
 /*
  * help_config() - help invoked as $h
  */
-stat_t help_config(cmdObj_t *cmd)
+stat_t help_config(nvObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n### TinyG CONFIGURATION Help ###\n"));
 fprintf_P(stderr, PSTR("\
@@ -112,7 +112,7 @@ return(STAT_OK);
 /*
  * help_test() - help invoked for tests
  */
-stat_t help_test(cmdObj_t *cmd)
+stat_t help_test(nvObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n### TinyG SELF TEST Help ###\n"));
 fprintf_P(stderr, PSTR("\
@@ -143,7 +143,7 @@ return(STAT_OK);
 /*
  * help_defa() - help invoked for defaults
  */
-stat_t help_defa(cmdObj_t *cmd)
+stat_t help_defa(nvObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n### TinyG RESTORE DEFAULTS Help ###\n"));
 fprintf_P(stderr, PSTR("\
@@ -156,7 +156,7 @@ return(STAT_OK);
 /*
  * help_boot_loader()
  */
-stat_t help_boot_loader(cmdObj_t *cmd)
+stat_t help_boot_loader(nvObj_t *cmd)
 {
 fprintf_P(stderr, PSTR("\n\n\n### TinyG BOOT LOADER Help ###\n"));
 fprintf_P(stderr, PSTR("\

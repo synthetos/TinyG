@@ -575,7 +575,7 @@ stat_t canonical_machine_test_assertions(void);
 
 stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
-stat_t cm_clear(cmdObj_t *cmd);
+stat_t cm_clear(nvObj_t *cmd);
 
 // Representation (4.3.3)
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
@@ -670,100 +670,100 @@ float cm_get_jogging_dest(void);
 
 char_t cm_get_axis_char(const int8_t axis);
 
-stat_t cm_get_mline(cmdObj_t *cmd);		// get model line number
-stat_t cm_get_line(cmdObj_t *cmd);		// get active (model or runtime) line number
-stat_t cm_get_stat(cmdObj_t *cmd);		// get combined machine state as value and string
-stat_t cm_get_macs(cmdObj_t *cmd);		// get raw machine state as value and string
-stat_t cm_get_cycs(cmdObj_t *cmd);		// get raw cycle state (etc etc)...
-stat_t cm_get_mots(cmdObj_t *cmd);		// get raw motion state...
-stat_t cm_get_hold(cmdObj_t *cmd);		// get raw hold state...
-stat_t cm_get_home(cmdObj_t *cmd);		// get raw homing state...
-stat_t cm_get_unit(cmdObj_t *cmd);		// get unit mode...
-stat_t cm_get_coor(cmdObj_t *cmd);		// get coordinate system in effect...
-stat_t cm_get_momo(cmdObj_t *cmd);		// get motion mode...
-stat_t cm_get_plan(cmdObj_t *cmd);		// get active plane...
-stat_t cm_get_path(cmdObj_t *cmd);		// get patch control mode...
-stat_t cm_get_dist(cmdObj_t *cmd);		// get distance mode...
-stat_t cm_get_frmo(cmdObj_t *cmd);		// get feedrate mode...
-stat_t cm_get_toolv(cmdObj_t *cmd);		// get tool (value)
-stat_t cm_get_vel(cmdObj_t *cmd);		// get runtime velocity...
-stat_t cm_get_pos(cmdObj_t *cmd);		// get runtime work position...
-stat_t cm_get_mpo(cmdObj_t *cmd);		// get runtime machine position...
-stat_t cm_get_ofs(cmdObj_t *cmd);		// get runtime work offset...
+stat_t cm_get_mline(nvObj_t *cmd);		// get model line number
+stat_t cm_get_line(nvObj_t *cmd);		// get active (model or runtime) line number
+stat_t cm_get_stat(nvObj_t *cmd);		// get combined machine state as value and string
+stat_t cm_get_macs(nvObj_t *cmd);		// get raw machine state as value and string
+stat_t cm_get_cycs(nvObj_t *cmd);		// get raw cycle state (etc etc)...
+stat_t cm_get_mots(nvObj_t *cmd);		// get raw motion state...
+stat_t cm_get_hold(nvObj_t *cmd);		// get raw hold state...
+stat_t cm_get_home(nvObj_t *cmd);		// get raw homing state...
+stat_t cm_get_unit(nvObj_t *cmd);		// get unit mode...
+stat_t cm_get_coor(nvObj_t *cmd);		// get coordinate system in effect...
+stat_t cm_get_momo(nvObj_t *cmd);		// get motion mode...
+stat_t cm_get_plan(nvObj_t *cmd);		// get active plane...
+stat_t cm_get_path(nvObj_t *cmd);		// get patch control mode...
+stat_t cm_get_dist(nvObj_t *cmd);		// get distance mode...
+stat_t cm_get_frmo(nvObj_t *cmd);		// get feedrate mode...
+stat_t cm_get_toolv(nvObj_t *cmd);		// get tool (value)
+stat_t cm_get_vel(nvObj_t *cmd);		// get runtime velocity...
+stat_t cm_get_pos(nvObj_t *cmd);		// get runtime work position...
+stat_t cm_get_mpo(nvObj_t *cmd);		// get runtime machine position...
+stat_t cm_get_ofs(nvObj_t *cmd);		// get runtime work offset...
 
-stat_t cm_run_qf(cmdObj_t *cmd);		// run queue flush
-stat_t cm_run_home(cmdObj_t *cmd);		// start homing cycle
+stat_t cm_run_qf(nvObj_t *cmd);		// run queue flush
+stat_t cm_run_home(nvObj_t *cmd);		// start homing cycle
 
-stat_t cm_dam(cmdObj_t *cmd);			// dump active model (debugging command)
+stat_t cm_dam(nvObj_t *cmd);			// dump active model (debugging command)
 
-stat_t cm_run_jogx(cmdObj_t *cmd);		// start jogging cycle for x
-stat_t cm_run_jogy(cmdObj_t *cmd);		// start jogging cycle for y
-stat_t cm_run_jogz(cmdObj_t *cmd);		// start jogging cycle for z
-stat_t cm_run_joga(cmdObj_t *cmd);		// start jogging cycle for a
+stat_t cm_run_jogx(nvObj_t *cmd);		// start jogging cycle for x
+stat_t cm_run_jogy(nvObj_t *cmd);		// start jogging cycle for y
+stat_t cm_run_jogz(nvObj_t *cmd);		// start jogging cycle for z
+stat_t cm_run_joga(nvObj_t *cmd);		// start jogging cycle for a
 
-stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
-stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
-stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
-stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
+stat_t cm_get_am(nvObj_t *cmd);		// get axis mode
+stat_t cm_set_am(nvObj_t *cmd);		// set axis mode
+stat_t cm_get_jrk(nvObj_t *cmd);		// get jerk with 1,000,000 correction
+stat_t cm_set_jrk(nvObj_t *cmd);		// set jerk with 1,000,000 correction
 
 /*--- text_mode support functions ---*/
 
 #ifdef __TEXT_MODE
 
-	void cm_print_vel(cmdObj_t *cmd);		// model state reporting
-	void cm_print_feed(cmdObj_t *cmd);
-	void cm_print_line(cmdObj_t *cmd);
-	void cm_print_stat(cmdObj_t *cmd);
-	void cm_print_macs(cmdObj_t *cmd);
-	void cm_print_cycs(cmdObj_t *cmd);
-	void cm_print_mots(cmdObj_t *cmd);
-	void cm_print_hold(cmdObj_t *cmd);
-	void cm_print_home(cmdObj_t *cmd);
-	void cm_print_unit(cmdObj_t *cmd);
-	void cm_print_coor(cmdObj_t *cmd);
-	void cm_print_momo(cmdObj_t *cmd);
-	void cm_print_plan(cmdObj_t *cmd);
-	void cm_print_path(cmdObj_t *cmd);
-	void cm_print_dist(cmdObj_t *cmd);
-	void cm_print_frmo(cmdObj_t *cmd);
-	void cm_print_tool(cmdObj_t *cmd);
+	void cm_print_vel(nvObj_t *cmd);		// model state reporting
+	void cm_print_feed(nvObj_t *cmd);
+	void cm_print_line(nvObj_t *cmd);
+	void cm_print_stat(nvObj_t *cmd);
+	void cm_print_macs(nvObj_t *cmd);
+	void cm_print_cycs(nvObj_t *cmd);
+	void cm_print_mots(nvObj_t *cmd);
+	void cm_print_hold(nvObj_t *cmd);
+	void cm_print_home(nvObj_t *cmd);
+	void cm_print_unit(nvObj_t *cmd);
+	void cm_print_coor(nvObj_t *cmd);
+	void cm_print_momo(nvObj_t *cmd);
+	void cm_print_plan(nvObj_t *cmd);
+	void cm_print_path(nvObj_t *cmd);
+	void cm_print_dist(nvObj_t *cmd);
+	void cm_print_frmo(nvObj_t *cmd);
+	void cm_print_tool(nvObj_t *cmd);
 
-	void cm_print_gpl(cmdObj_t *cmd);		// Gcode defaults
-	void cm_print_gun(cmdObj_t *cmd);
-	void cm_print_gco(cmdObj_t *cmd);
-	void cm_print_gpa(cmdObj_t *cmd);
-	void cm_print_gdi(cmdObj_t *cmd);
+	void cm_print_gpl(nvObj_t *cmd);		// Gcode defaults
+	void cm_print_gun(nvObj_t *cmd);
+	void cm_print_gco(nvObj_t *cmd);
+	void cm_print_gpa(nvObj_t *cmd);
+	void cm_print_gdi(nvObj_t *cmd);
 
-	void cm_print_lin(cmdObj_t *cmd);		// generic print for linear values 
-	void cm_print_pos(cmdObj_t *cmd);		// print runtime work position in prevailing units
-	void cm_print_mpo(cmdObj_t *cmd);		// print runtime work position always in MM uints
-	void cm_print_ofs(cmdObj_t *cmd);		// print runtime work offset always in MM uints
+	void cm_print_lin(nvObj_t *cmd);		// generic print for linear values 
+	void cm_print_pos(nvObj_t *cmd);		// print runtime work position in prevailing units
+	void cm_print_mpo(nvObj_t *cmd);		// print runtime work position always in MM uints
+	void cm_print_ofs(nvObj_t *cmd);		// print runtime work offset always in MM uints
 
-	void cm_print_ja(cmdObj_t *cmd);		// global CM settings
-	void cm_print_ct(cmdObj_t *cmd);
-	void cm_print_sl(cmdObj_t *cmd);
-	void cm_print_ml(cmdObj_t *cmd);
-	void cm_print_ma(cmdObj_t *cmd);
-	void cm_print_ms(cmdObj_t *cmd);
-	void cm_print_st(cmdObj_t *cmd);
+	void cm_print_ja(nvObj_t *cmd);		// global CM settings
+	void cm_print_ct(nvObj_t *cmd);
+	void cm_print_sl(nvObj_t *cmd);
+	void cm_print_ml(nvObj_t *cmd);
+	void cm_print_ma(nvObj_t *cmd);
+	void cm_print_ms(nvObj_t *cmd);
+	void cm_print_st(nvObj_t *cmd);
 
-	void cm_print_am(cmdObj_t *cmd);		// axis print functions
-	void cm_print_fr(cmdObj_t *cmd);
-	void cm_print_vm(cmdObj_t *cmd);
-	void cm_print_tm(cmdObj_t *cmd);
-	void cm_print_tn(cmdObj_t *cmd);
-	void cm_print_jm(cmdObj_t *cmd);
-	void cm_print_jh(cmdObj_t *cmd);
-	void cm_print_jd(cmdObj_t *cmd);
-	void cm_print_ra(cmdObj_t *cmd);
-	void cm_print_sn(cmdObj_t *cmd);
-	void cm_print_sx(cmdObj_t *cmd);
-	void cm_print_sv(cmdObj_t *cmd);
-	void cm_print_lv(cmdObj_t *cmd);
-	void cm_print_lb(cmdObj_t *cmd);
-	void cm_print_zb(cmdObj_t *cmd);
-	void cm_print_cofs(cmdObj_t *cmd);
-	void cm_print_cpos(cmdObj_t *cmd);
+	void cm_print_am(nvObj_t *cmd);		// axis print functions
+	void cm_print_fr(nvObj_t *cmd);
+	void cm_print_vm(nvObj_t *cmd);
+	void cm_print_tm(nvObj_t *cmd);
+	void cm_print_tn(nvObj_t *cmd);
+	void cm_print_jm(nvObj_t *cmd);
+	void cm_print_jh(nvObj_t *cmd);
+	void cm_print_jd(nvObj_t *cmd);
+	void cm_print_ra(nvObj_t *cmd);
+	void cm_print_sn(nvObj_t *cmd);
+	void cm_print_sx(nvObj_t *cmd);
+	void cm_print_sv(nvObj_t *cmd);
+	void cm_print_lv(nvObj_t *cmd);
+	void cm_print_lb(nvObj_t *cmd);
+	void cm_print_zb(nvObj_t *cmd);
+	void cm_print_cofs(nvObj_t *cmd);
+	void cm_print_cpos(nvObj_t *cmd);
 
 #else // __TEXT_MODE
 

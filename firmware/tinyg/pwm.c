@@ -243,16 +243,16 @@ static const char fmt_p1wpl[] PROGMEM = "[p1wpl] pwm ccw phase lo%15.3f [0..1]\n
 static const char fmt_p1wph[] PROGMEM = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n";
 static const char fmt_p1pof[] PROGMEM = "[p1pof] pwm phase off   %15.3f [0..1]\n";
 
-void pwm_print_p1frq(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1frq);}
-void pwm_print_p1csl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csl);}
-void pwm_print_p1csh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csh);}
-void pwm_print_p1cpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cpl);}
-void pwm_print_p1cph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cph);}
-void pwm_print_p1wsl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsl);}
-void pwm_print_p1wsh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsh);}
-void pwm_print_p1wpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wpl);}
-void pwm_print_p1wph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wph);}
-void pwm_print_p1pof(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1pof);}
+void pwm_print_p1frq(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1frq);}
+void pwm_print_p1csl(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1csl);}
+void pwm_print_p1csh(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1csh);}
+void pwm_print_p1cpl(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1cpl);}
+void pwm_print_p1cph(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1cph);}
+void pwm_print_p1wsl(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1wsl);}
+void pwm_print_p1wsh(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1wsh);}
+void pwm_print_p1wpl(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1wpl);}
+void pwm_print_p1wph(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1wph);}
+void pwm_print_p1pof(nvObj_t *cmd) { text_print_flt(cmd, fmt_p1pof);}
 
 #endif //__TEXT_MODE 
 

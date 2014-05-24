@@ -35,7 +35,7 @@ extern "C"{
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
-// see also: tinyg.h MESSAGE_LEN and config.c CMD_ lengths.
+// see also: tinyg.h MESSAGE_LEN and config.c NV_ lengths.
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)

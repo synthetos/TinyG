@@ -45,11 +45,11 @@ txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 stat_t text_parser_stub(char_t *str) {return (STAT_OK);}
 void text_response_stub(const stat_t status, char_t *buf) {}
 void text_print_list_stub (stat_t status, uint8_t flags) {}
-void tx_print_stub(cmdObj_t *cmd) {}
+void tx_print_stub(nvObj_t *cmd) {}
 
 #else // __TEXT_MODE
 
-static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
+static stat_t _text_parser_kernal(char_t *str, nvObj_t *cmd);
 
 /******************************************************************************
  * text_parser() 		 - update a config setting from a text block (text mode)
@@ -64,7 +64,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd);
  */
 stat_t text_parser(char_t *str)
 {
-	cmdObj_t *cmd = cmd_reset_list();		// returns first object in the body
+	nvObj_t *cmd = nv_reset_list();		// returns first object in the body
 	stat_t status = STAT_OK;
 
 	// trap special displays
@@ -73,7 +73,7 @@ stat_t text_parser(char_t *str)
 		return (STAT_OK);
 	}
 	if (str[0] == 'H') {					// print help screens
-		help_general((cmdObj_t *)NULL);
+		help_general((nvObj_t *)NULL);
 		return (STAT_OK);
 	}
 
@@ -85,29 +85,29 @@ stat_t text_parser(char_t *str)
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser_kernal(str, cmd));	// run the parser to decode the command
 	if ((cmd->valuetype == TYPE_NULL) || (cmd->valuetype == TYPE_PARENT)) {
-		if (cmd_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
+		if (nv_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
 	} else { 								// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
-		status = cmd_set(cmd);				// set (or run) single value
+		status = nv_set(cmd);				// set (or run) single value
 		if (status == STAT_OK) {
-			cmd_persist(cmd);				// conditionally persist depending on flags in array
+			nv_persist(cmd);				// conditionally persist depending on flags in array
 		}
 	}
-	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
+	nv_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
 	return (status);
 }
 
-static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
+static stat_t _text_parser_kernal(char_t *str, nvObj_t *cmd)
 {
 	char_t *rd, *wr;						// read and write pointers
 //	char_t separators[] = {"="};			// STRICT: only separator allowed is = sign
 	char_t separators[] = {" =:|\t"};		// RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
-//	cmd_reset_obj(cmd);						// initialize config object
-	cmd_copy_string(cmd, str);				// make a copy for eventual reporting
+//	nv_reset_obj(cmd);						// initialize config object
+	nv_copy_string(cmd, str);				// make a copy for eventual reporting
 	if (*str == '$') str++;					// ignore leading $
 	for (rd = wr = str; *rd != NUL; rd++, wr++) {
 		*wr = tolower(*rd);					// convert string to lower case
@@ -130,7 +130,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	}
 
 	// validate and post-process the token
-	if ((cmd->index = cmd_get_index((const char_t *)"", cmd->token)) == NO_MATCH) { // get index or fail it
+	if ((cmd->index = nv_get_index((const char_t *)"", cmd->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_COMMAND);
 	}
 	strcpy_P(cmd->group, cfgArray[cmd->index].group);// capture the group string if there is one
@@ -163,9 +163,9 @@ void text_response(const stat_t status, char_t *buf)
 	} else {
 		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
 	}
-	cmdObj_t *cmd = cmd_body+1;
+	nvObj_t *cmd = nv_body+1;
 
-	if (cmd_get_type(cmd) == CMD_TYPE_MESSAGE) {
+	if (nv_get_type(cmd) == NV_TYPE_MESSAGE) {
 		fprintf(stderr, (char *)*cmd->stringp);
 	}
 	fprintf(stderr, "\n");
@@ -182,16 +182,16 @@ void text_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case TEXT_NO_PRINT: { break; } 
-		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(cmd_body); break; }
-		case TEXT_INLINE_VALUES: { text_print_inline_values(cmd_body); break; }
-		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(cmd_body);}
+		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
+		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
+		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(nv_body);}
 	}
 }
 
-void text_print_inline_pairs(cmdObj_t *cmd)
+void text_print_inline_pairs(nvObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
+	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ if 	  (cmd->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
@@ -211,10 +211,10 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 	}
 }
 
-void text_print_inline_values(cmdObj_t *cmd)
+void text_print_inline_values(nvObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
+	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ if 	  (cmd->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->value); break;}
@@ -234,10 +234,10 @@ void text_print_inline_values(cmdObj_t *cmd)
 	}
 }
 
-void text_print_multiline_formatted(cmdObj_t *cmd)
+void text_print_multiline_formatted(nvObj_t *cmd)
 {
-	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		if (cmd->valuetype != TYPE_PARENT) { cmd_print(cmd);}
+	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
+		if (cmd->valuetype != TYPE_PARENT) { nv_print(cmd);}
 		if ((cmd = cmd->nx) == NULL) return;
 		if (cmd->valuetype == TYPE_EMPTY) break;
 	}
@@ -251,11 +251,11 @@ static const char fmt_ui8[] PROGMEM = "%d\n";	// generic format for ui8s
 static const char fmt_int[] PROGMEM = "%lu\n";	// generic format for ui16's and ui32s
 static const char fmt_flt[] PROGMEM = "%f\n";	// generic format for floats
 
-void tx_print_nul(cmdObj_t *cmd) {}
-void tx_print_str(cmdObj_t *cmd) { text_print_str(cmd, fmt_str);}
-void tx_print_ui8(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ui8);}
-void tx_print_int(cmdObj_t *cmd) { text_print_int(cmd, fmt_int);}
-void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
+void tx_print_nul(nvObj_t *cmd) {}
+void tx_print_str(nvObj_t *cmd) { text_print_str(cmd, fmt_str);}
+void tx_print_ui8(nvObj_t *cmd) { text_print_ui8(cmd, fmt_ui8);}
+void tx_print_int(nvObj_t *cmd) { text_print_int(cmd, fmt_int);}
+void tx_print_flt(nvObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
 
 /*
  * Text print primitives using external formats
@@ -263,13 +263,13 @@ void tx_print_flt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format);}	// just print the format string
-void text_print_str(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, *cmd->stringp);}
-void text_print_ui8(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint8_t)cmd->value);}
-void text_print_int(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}
-void text_print_flt(cmdObj_t *cmd, const char *format) { fprintf_P(stderr, format, cmd->value);}
+void text_print_nul(nvObj_t *cmd, const char *format) { fprintf_P(stderr, format);}	// just print the format string
+void text_print_str(nvObj_t *cmd, const char *format) { fprintf_P(stderr, format, *cmd->stringp);}
+void text_print_ui8(nvObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint8_t)cmd->value);}
+void text_print_int(nvObj_t *cmd, const char *format) { fprintf_P(stderr, format, (uint32_t)cmd->value);}
+void text_print_flt(nvObj_t *cmd, const char *format) { fprintf_P(stderr, format, cmd->value);}
 
-void text_print_flt_units(cmdObj_t *cmd, const char *format, const char *units) 
+void text_print_flt_units(nvObj_t *cmd, const char *format, const char *units) 
 {
 	fprintf_P(stderr, format, cmd->value, units);
 }
@@ -279,7 +279,7 @@ void text_print_flt_units(cmdObj_t *cmd, const char *format, const char *units)
  */
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 
-void tx_print_tv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
+void tx_print_tv(nvObj_t *cmd) { text_print_ui8(cmd, fmt_tv);}
 
 
 #endif // __TEXT_MODE
