@@ -66,7 +66,7 @@ cmdObj_t cmd_list[CMD_LIST_LEN];	// JSON header element
  */
 stat_t cmd_set(cmdObj_t *cmd)
 {
-	if (cmd->index >= cmd_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
+	if (cmd->index >= cmd_index_max()) { return(STAT_INTERNAL_RANGE_ERROR);}
 	return (((fptrCmd)GET_TABLE_WORD(set))(cmd));
 }
 
@@ -167,14 +167,14 @@ stat_t set_defaults(cmdObj_t *cmd)
  */
 stat_t get_nul(cmdObj_t *cmd) 
 { 
-	cmd->objtype = TYPE_NULL;
+	cmd->valuetype = TYPE_NULL;
 	return (STAT_NOOP);
 }
 
 stat_t get_ui8(cmdObj_t *cmd)
 {
 	cmd->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -182,7 +182,7 @@ stat_t get_int(cmdObj_t *cmd)
 {
 //	cmd->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
 	cmd->value = *((uint32_t *)GET_TABLE_WORD(target));
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -190,7 +190,7 @@ stat_t get_data(cmdObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
 	*v = *((uint32_t *)GET_TABLE_WORD(target));
-	cmd->objtype = TYPE_DATA;
+	cmd->valuetype = TYPE_DATA;
 	return (STAT_OK);
 }
 
@@ -198,7 +198,7 @@ stat_t get_flt(cmdObj_t *cmd)
 {
 	cmd->value = *((float *)GET_TABLE_WORD(target));
 	cmd->precision = (int8_t)GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -217,7 +217,7 @@ stat_t set_nul(cmdObj_t *cmd) { return (STAT_NOOP);}
 stat_t set_ui8(cmdObj_t *cmd)
 {
 	*((uint8_t *)GET_TABLE_WORD(target)) = cmd->value;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
@@ -243,7 +243,7 @@ stat_t set_int(cmdObj_t *cmd)
 {
 //	*((uint32_t *)GET_TABLE_WORD(target)) = cmd->value;
 	*((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)cmd->value;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
@@ -251,7 +251,7 @@ stat_t set_data(cmdObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
 	*((uint32_t *)GET_TABLE_WORD(target)) = *v;
-	cmd->objtype = TYPE_DATA;
+	cmd->valuetype = TYPE_DATA;
 	return(STAT_OK);
 }
 
@@ -259,7 +259,7 @@ stat_t set_flt(cmdObj_t *cmd)
 {
 	*((float *)GET_TABLE_WORD(target)) = cmd->value;
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
 }
 
@@ -289,12 +289,21 @@ stat_t get_flu(cmdObj_t *cmd)
 
 stat_t set_flu(cmdObj_t *cmd)
 {
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH; // convert to canonical units
+	*((float *)GET_TABLE_WORD(target)) = cmd->value;
+	cmd->precision = GET_TABLE_WORD(precision);
+	cmd->valuetype = TYPE_FLOAT;
+	return(STAT_OK);
+
+/*
 	float tmp_value = cmd->value;
 	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
 	*((float *)GET_TABLE_WORD(target)) = tmp_value;
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
+
+*/
 }
 
 /************************************************************************************
@@ -341,7 +350,7 @@ stat_t get_grp(cmdObj_t *cmd)
 {
 	char_t *parent_group = cmd->token;		// token in the parent cmd object is the group
 	char_t group[GROUP_LEN+1];				// group string retrieved from cfgArray child
-	cmd->objtype = TYPE_PARENT;				// make first object the parent 
+	cmd->valuetype = TYPE_PARENT;				// make first object the parent 
 	for (index_t i=0; cmd_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
@@ -356,7 +365,7 @@ stat_t get_grp(cmdObj_t *cmd)
  *
  *	This functions is called "_set_group()" but technically it's a getter and 
  *	a setter. It iterates the group children and either gets the value or sets
- *	the value for each depending on the cmd->objtype.
+ *	the value for each depending on the cmd->valuetype.
  *
  *	This function serves JSON mode only as text mode shouldn't call it.
  */
@@ -366,8 +375,8 @@ stat_t set_grp(cmdObj_t *cmd)
 	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
 	for (uint8_t i=0; i<CMD_MAX_OBJECTS; i++) {
 		if ((cmd = cmd->nx) == NULL) break;
-		if (cmd->objtype == TYPE_EMPTY) break;
-		else if (cmd->objtype == TYPE_NULL)	// NULL means GET the value
+		if (cmd->valuetype == TYPE_EMPTY) break;
+		else if (cmd->valuetype == TYPE_NULL)	// NULL means GET the value
 			cmd_get(cmd);
 		else {
 			cmd_set(cmd);
@@ -518,7 +527,7 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
  
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 {
-	cmd->objtype = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	cmd->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	cmd->index = 0;
 	cmd->value = 0;
 	cmd->precision = 0;
@@ -529,7 +538,7 @@ cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 	if (cmd->pv == NULL) { 					// set depth correctly
 		cmd->depth = 0;
 	} else {
-		if (cmd->pv->objtype == TYPE_PARENT) { 
+		if (cmd->pv->valuetype == TYPE_PARENT) { 
 			cmd->depth = cmd->pv->depth + 1;
 		} else {
 			cmd->depth = cmd->pv->depth;
@@ -548,14 +557,14 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 		cmd->index = 0;
 		cmd->depth = 1;						// header and footer are corrected later
 		cmd->precision = 0;
-		cmd->objtype = TYPE_EMPTY;
+		cmd->valuetype = TYPE_EMPTY;
 		cmd->token[0] = NUL;
 	}
 	(--cmd)->nx = NULL;
 	cmd = cmd_list;							// setup response header element ('r')
 	cmd->pv = NULL;
 	cmd->depth = 0;
-	cmd->objtype = TYPE_PARENT;
+	cmd->valuetype = TYPE_PARENT;
 	strcpy(cmd->token, "r");
 	return (cmd_body);						// this is a convenience for calling routines
 }
@@ -584,7 +593,7 @@ cmdObj_t *cmd_add_object(const char_t *token)  // add an object to the body usin
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (cmd->valuetype != TYPE_EMPTY) {
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
@@ -600,13 +609,13 @@ cmdObj_t *cmd_add_integer(const char_t *token, const uint32_t value)// add an in
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (cmd->valuetype != TYPE_EMPTY) {
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, TOKEN_LEN);
 		cmd->value = (float) value;
-		cmd->objtype = TYPE_INTEGER;
+		cmd->valuetype = TYPE_INTEGER;
 		return (cmd);
 	}
 	return (NULL);
@@ -616,14 +625,14 @@ cmdObj_t *cmd_add_data(const char_t *token, const uint32_t value)// add an integ
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (cmd->valuetype != TYPE_EMPTY) {
 			if ((cmd = cmd->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
 			continue;
 		}
 		strcpy(cmd->token, token);
 		float *v = (float*)&value;
 		cmd->value = *v;
-		cmd->objtype = TYPE_DATA;
+		cmd->valuetype = TYPE_DATA;
 		return (cmd);
 	}
 	return (NULL);
@@ -633,13 +642,13 @@ cmdObj_t *cmd_add_float(const char_t *token, const float value)	// add a float o
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (cmd->valuetype != TYPE_EMPTY) {
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, TOKEN_LEN);
 		cmd->value = value;
-		cmd->objtype = TYPE_FLOAT;
+		cmd->valuetype = TYPE_FLOAT;
 		return (cmd);
 	}
 	return (NULL);
@@ -650,14 +659,14 @@ cmdObj_t *cmd_add_string(const char_t *token, const char_t *string) // add a str
 {
 	cmdObj_t *cmd = cmd_body;
 	for (uint8_t i=0; i<CMD_BODY_LEN; i++) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (cmd->valuetype != TYPE_EMPTY) {
 			if ((cmd = cmd->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
 			continue;
 		}
 		strncpy(cmd->token, token, TOKEN_LEN);
 		if (cmd_copy_string(cmd, string) != STAT_OK) { return (NULL);}
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
-		cmd->objtype = TYPE_STRING;
+		cmd->valuetype = TYPE_STRING;
 		return (cmd);
 	}
 	return (NULL);

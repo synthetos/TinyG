@@ -500,7 +500,7 @@ static stat_t _execute_gcode_block()
 stat_t gc_get_gc(cmdObj_t *cmd)
 {
 	ritorno(cmd_copy_string(cmd, cs.in_buf));
-	cmd->objtype = TYPE_STRING;
+	cmd->valuetype = TYPE_STRING;
 	return (STAT_OK);
 }
 

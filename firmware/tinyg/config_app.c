@@ -729,7 +729,7 @@ static stat_t _do_group_list(cmdObj_t *cmd, char list[][TOKEN_LEN+1]) // helper 
 		cmd = cmd_body;
 		strncpy(cmd->token, list[i], TOKEN_LEN);
 		cmd->index = cmd_get_index((const char_t *)"", cmd->token);
-//		cmd->objtype = TYPE_PARENT;
+//		cmd->valuetype = TYPE_PARENT;
 		cmd_get_cmdObj(cmd);
 		cmd_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
@@ -840,12 +840,12 @@ static stat_t get_rx(cmdObj_t *cmd)
 {
 #ifdef __AVR
 	cmd->value = (float)xio_get_usb_rx_free();
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 #ifdef __ARM
 	cmd->value = (float)254;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 }

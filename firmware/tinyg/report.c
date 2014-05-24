@@ -199,8 +199,8 @@ stat_t sr_set_status_report(cmdObj_t *cmd)
 	index_t sr_start = cmd_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
 
 	for (uint8_t i=0; i<CMD_STATUS_REPORT_LEN; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
-		if ((cmd->objtype == TYPE_BOOL) && (fp_TRUE(cmd->value))) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->valuetype == TYPE_EMPTY)) { break;}
+		if ((cmd->valuetype == TYPE_BOOL) && (fp_TRUE(cmd->value))) {
 			status_report_list[i] = cmd->index;
 			cmd->value = cmd->index;					// persist the index as the value
 			cmd->index = sr_start + i;					// index of the SR persistence location
@@ -299,7 +299,7 @@ static stat_t _populate_unfiltered_status_report()
 	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no length checking required)
+	cmd->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 	strcpy(cmd->token, sr_str);
 	cmd->index = cmd_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
@@ -338,7 +338,7 @@ static uint8_t _populate_filtered_status_report()
 	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets cmd to the start of the body
 
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
+	cmd->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
 	strcpy(cmd->token, sr_str);
 //	cmd->index = cmd_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
 	cmd = cmd->nx;							// no need to check for NULL as list has just been reset
@@ -352,7 +352,7 @@ static uint8_t _populate_filtered_status_report()
 		if (fp_EQ(cmd->value, sr.status_report_value[i])) {
 //			if (cmd->index != sr.stat_index) {
 //				if (fp_EQ(cmd->value, COMBINED_PROGRAM_STOP)) {
-					cmd->objtype = TYPE_EMPTY;
+					cmd->valuetype = TYPE_EMPTY;
 					continue;
 //				}
 //			}
@@ -511,7 +511,7 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 	// make a qr object and print it
 	sprintf_P(cmd->token, PSTR("qr"));
 	cmd->value = qr.buffers_available;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	cmd_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
@@ -526,14 +526,14 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 stat_t qr_get(cmdObj_t *cmd) 
 {
 	cmd->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t qi_get(cmdObj_t *cmd) 
 {
 	cmd->value = (float)qr.buffers_added;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	qr.buffers_added = 0;				// reset it
 	return (STAT_OK);
 }
@@ -541,7 +541,7 @@ stat_t qi_get(cmdObj_t *cmd)
 stat_t qo_get(cmdObj_t *cmd) 
 {
 	cmd->value = (float)qr.buffers_removed;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
 }
@@ -562,7 +562,7 @@ stat_t job_populate_job_report()
 	char_t tmp[TOKEN_LEN+1];
 	cmdObj_t *cmd = cmd_reset_list();		// sets *cmd to the start of the body
 
-	cmd->objtype = TYPE_PARENT; 			// setup the parent object
+	cmd->valuetype = TYPE_PARENT; 			// setup the parent object
 	strcpy(cmd->token, job_str);
 
 	//cmd->index = cmd_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
@@ -588,8 +588,8 @@ stat_t job_set_job_report(cmdObj_t *cmd)
 	index_t job_start = cmd_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
 
 	for (uint8_t i=0; i<4; i++) {
-		if (((cmd = cmd->nx) == NULL) || (cmd->objtype == TYPE_EMPTY)) { break;}
-		if (cmd->objtype == TYPE_INTEGER) {
+		if (((cmd = cmd->nx) == NULL) || (cmd->valuetype == TYPE_EMPTY)) { break;}
+		if (cmd->valuetype == TYPE_INTEGER) {
 			cs.job_id[i] = cmd->value;
 			cmd->index = job_start + i;					// index of the SR persistence location
 			cmd_persist(cmd);

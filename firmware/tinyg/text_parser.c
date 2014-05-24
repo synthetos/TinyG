@@ -84,7 +84,7 @@ stat_t text_parser(char_t *str)
 
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser_kernal(str, cmd));	// run the parser to decode the command
-	if ((cmd->objtype == TYPE_NULL) || (cmd->objtype == TYPE_PARENT)) {
+	if ((cmd->valuetype == TYPE_NULL) || (cmd->valuetype == TYPE_PARENT)) {
 		if (cmd_get(cmd) == STAT_COMPLETE) {// populate value, group values, or run uber-group displays
 			return (STAT_OK);				// return for uber-group displays so they don't print twice
 		}
@@ -92,7 +92,7 @@ stat_t text_parser(char_t *str)
 		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
 		status = cmd_set(cmd);				// set (or run) single value
 		if (status == STAT_OK) {
-			cmd_persist(cmd);					// conditionally persist depending on flags in array
+			cmd_persist(cmd);				// conditionally persist depending on flags in array
 		}
 	}
 	cmd_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
@@ -116,7 +116,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 	*wr = NUL;								// terminate the string
 
 	// parse fields into the cmd struct
-	cmd->objtype = TYPE_NULL;
+	cmd->valuetype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(cmd->token, str, TOKEN_LEN);
 	} else {
@@ -125,7 +125,7 @@ static stat_t _text_parser_kernal(char_t *str, cmdObj_t *cmd)
 		str = ++rd;
 		cmd->value = strtof(str, &rd);		// rd used as end pointer
 		if (rd != str) {
-			cmd->objtype = TYPE_FLOAT;
+			cmd->valuetype = TYPE_FLOAT;
 		}
 	}
 
@@ -192,7 +192,7 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->objtype) {
+		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
@@ -201,7 +201,7 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
+		if (cmd->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 
@@ -209,7 +209,7 @@ void text_print_inline_values(cmdObj_t *cmd)
 {
 	uint32_t *v = (uint32_t*)&cmd->value;
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		switch (cmd->objtype) {
+		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
@@ -218,16 +218,16 @@ void text_print_inline_values(cmdObj_t *cmd)
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
 		}
 		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
+		if (cmd->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
 
 void text_print_multiline_formatted(cmdObj_t *cmd)
 {
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
-		if (cmd->objtype != TYPE_PARENT) { cmd_print(cmd);}
+		if (cmd->valuetype != TYPE_PARENT) { cmd_print(cmd);}
 		if ((cmd = cmd->nx) == NULL) return;
-		if (cmd->objtype == TYPE_EMPTY) break;
+		if (cmd->valuetype == TYPE_EMPTY) break;
 	}
 }
 

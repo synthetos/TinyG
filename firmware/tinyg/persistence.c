@@ -91,6 +91,7 @@ stat_t write_persistent_value(cmdObj_t *cmd)
 {
 	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
 	float tmp = cmd->value;
+	printf("value: %f",tmp);		//+++++
 	ritorno(read_persistent_value(cmd));
 	if (cmd->value != tmp) {		// catches the isnan() case as well
 		cmd->value = tmp;

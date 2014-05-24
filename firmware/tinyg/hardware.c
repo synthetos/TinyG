@@ -206,7 +206,7 @@ stat_t hw_get_id(cmdObj_t *cmd)
 {
 	char_t tmp[SYS_ID_LEN];
 	_get_id(tmp);
-	cmd->objtype = TYPE_STRING;
+	cmd->valuetype = TYPE_STRING;
 	ritorno(cmd_copy_string(cmd, tmp));
 	return (STAT_OK);
 }

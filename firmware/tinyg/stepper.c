@@ -965,7 +965,7 @@ stat_t st_set_mt(cmdObj_t *cmd)
 
 stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+	if (((uint8_t)cmd->value == 0) || (cmd->valuetype == TYPE_NULL)) {
 		st_deenergize_motors();
 	} else {
 		_deenergize_motor((uint8_t)cmd->value-1);
@@ -975,7 +975,7 @@ stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initia
 
 stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+	if (((uint8_t)cmd->value == 0) || (cmd->valuetype == TYPE_NULL)) {
 		st_energize_motors();
 	} else {
 		_energize_motor((uint8_t)cmd->value-1);

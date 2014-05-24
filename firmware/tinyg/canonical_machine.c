@@ -1653,7 +1653,7 @@ static int8_t _get_axis_type(const index_t index)
 stat_t _get_msg_helper(cmdObj_t *cmd, const char *const msg_array[], uint8_t value)
 {
 	cmd->value = (float)value;
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return(cmd_copy_string(cmd, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
 }
 
@@ -1675,21 +1675,21 @@ stat_t cm_get_frmo(cmdObj_t *cmd) { return(_get_msg_helper(cmd, msg_frmo, cm_get
 stat_t cm_get_toolv(cmdObj_t *cmd)
 {
 	cmd->value = (float)cm_get_tool(ACTIVE_MODEL);
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t cm_get_mline(cmdObj_t *cmd)
 {
 	cmd->value = (float)cm_get_linenum(MODEL);
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t cm_get_line(cmdObj_t *cmd)
 {
 	cmd->value = (float)cm_get_linenum(ACTIVE_MODEL);
-	cmd->objtype = TYPE_INTEGER;
+	cmd->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1702,7 +1702,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
 	}
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1710,7 +1710,7 @@ stat_t cm_get_pos(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1718,7 +1718,7 @@ stat_t cm_get_mpo(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
@@ -1726,7 +1726,7 @@ stat_t cm_get_ofs(cmdObj_t *cmd)
 {
 	cmd->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(cmd->index));
 	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->objtype = TYPE_FLOAT;
+	cmd->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
 
