@@ -110,7 +110,7 @@
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 		500					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		100					// xlv		mm/min
-#define X_LATCH_BACKOFF 		2					// xlb		mm
+#define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			1					// xzb		mm
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
@@ -125,7 +125,7 @@
 #define Y_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY 		500
 #define Y_LATCH_VELOCITY 		100
-#define Y_LATCH_BACKOFF 		2
+#define Y_LATCH_BACKOFF 		5
 #define Y_ZERO_BACKOFF 			1
 #define Y_JERK_HOMING			Y_JERK_MAX
 
@@ -140,7 +140,7 @@
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100
-#define Z_LATCH_BACKOFF 		2
+#define Z_LATCH_BACKOFF 		5
 #define Z_ZERO_BACKOFF 			1
 #define Z_JERK_HOMING			Z_JERK_MAX
 

@@ -194,7 +194,13 @@ void text_print_inline_pairs(cmdObj_t *cmd)
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
+			case TYPE_FLOAT:	{ if 	  (cmd->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
+								  else if (cmd->precision == 1) { fprintf_P(stderr,PSTR("%s:%1.1f"), cmd->token, cmd->value); break;}
+								  else if (cmd->precision == 2) { fprintf_P(stderr,PSTR("%s:%1.2f"), cmd->token, cmd->value); break;}
+								  else if (cmd->precision == 3) { fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->token, cmd->value); break;}
+								  else if (cmd->precision == 4) { fprintf_P(stderr,PSTR("%s:%1.4f"), cmd->token, cmd->value); break;}
+								  else                          { fprintf_P(stderr,PSTR("%s:%f"), cmd->token, cmd->value); break;}
+								}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->token, cmd->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), cmd->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), cmd->token, *cmd->stringp); break;}
@@ -211,7 +217,13 @@ void text_print_inline_values(cmdObj_t *cmd)
 	for (uint8_t i=0; i<CMD_BODY_LEN-1; i++) {
 		switch (cmd->valuetype) {
 			case TYPE_PARENT: 	{ if ((cmd = cmd->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ fprintf_P(stderr,PSTR("%1.3f"), cmd->value); break;}
+			case TYPE_FLOAT:	{ if 	  (cmd->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), cmd->value); break;}
+								  else if (cmd->precision == 1) { fprintf_P(stderr,PSTR("%s:%1.1f"), cmd->value); break;}
+								  else if (cmd->precision == 2) { fprintf_P(stderr,PSTR("%s:%1.2f"), cmd->value); break;}
+								  else if (cmd->precision == 3) { fprintf_P(stderr,PSTR("%s:%1.3f"), cmd->value); break;}
+								  else if (cmd->precision == 4) { fprintf_P(stderr,PSTR("%s:%1.4f"), cmd->value); break;}
+								  else                          { fprintf_P(stderr,PSTR("%s:%f"), cmd->value); break;}
+								}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), cmd->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *cmd->stringp); break;}
