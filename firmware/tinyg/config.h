@@ -271,7 +271,6 @@ typedef struct cmdObject {				// depending on use, not all elements may be popul
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
-	uint8_t units;						// follows Gcode convention - 0=inches, 1=mm, 2=degrees
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
@@ -359,6 +358,8 @@ cmdObj_t *cmd_add_float(const char_t *token, const float value);
 cmdObj_t *cmd_add_string(const char_t *token, const char_t *string);
 cmdObj_t *cmd_add_conditional_message(const char_t *string);
 void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
+
+void nv_dump_nv(cmdObj_t *nv);
 
 /*********************************************************************************************
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************

@@ -294,25 +294,11 @@ stat_t set_flu(cmdObj_t *cmd)
 {
 	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
 		cmd->value *= MM_PER_INCH;					// convert to canonical millimeter units
-		cmd->units = MILLIMETERS;
 	}
 	*((float *)GET_TABLE_WORD(target)) = cmd->value;// write value as millimeters or degrees
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
-/*
-	float tmp_value = cmd->value;
-	if (cm_get_units_mode(MODEL) == INCHES) {	// if in inches...
-		tmp_value *= MM_PER_INCH;				// convert to canonical millimeter units
-		cmd->units = INCHES;
-	}
-	*((float *)GET_TABLE_WORD(target)) = tmp_value;	// write value as millimeters or degrees
-	cmd->precision = GET_TABLE_WORD(precision);
-	cmd->valuetype = TYPE_FLOAT;
-	return(STAT_OK);
-
-*/
-
 }
 
 /************************************************************************************
@@ -537,7 +523,6 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 {
 	cmd->valuetype = TYPE_EMPTY;			// selective clear is much faster than calling memset
-	cmd->units = MILLIMETERS;				// default units
 	cmd->index = 0;
 	cmd->value = 0;
 	cmd->precision = 0;
@@ -568,7 +553,6 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 		cmd->depth = 1;						// header and footer are corrected later
 		cmd->precision = 0;
 		cmd->valuetype = TYPE_EMPTY;
-		cmd->units = MILLIMETERS;			// default units
 		cmd->token[0] = NUL;
 	}
 	(--cmd)->nx = NULL;
@@ -717,6 +701,23 @@ void cmd_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	} else {
 		text_print_list(status, text_flags);
 	}
+}
+
+/****************************************************************************
+ ***** Diagnostics **********************************************************
+ ****************************************************************************/
+
+void nv_dump_nv(cmdObj_t *nv)
+{
+	printf ("i:%d, d:%d, t:%d, p:%d, v:%f, g:%s, t:%s, s:%s\n",
+			 nv->index,
+			 nv->depth,
+			 nv->valuetype,
+			 nv->precision,
+			 (double)nv->value,
+			 nv->group,
+			 nv->token,
+			 (char *)nv->stringp);
 }
 
 /****************************************************************************

@@ -1994,8 +1994,6 @@ static void _print_axis_flu(cmdObj_t *cmd, const char *format)
 {
 	char *units;
 	if (_get_axis_type(cmd->index) == 0) {	// linear
-//		printf("%d,%d", cm_get_units_mode(MODEL), cmd->units);	//++++
-//		if ((cm_get_units_mode(MODEL) == INCHES) && (cmd->units == INCHES)) {
 		if (cm_get_units_mode(MODEL) == INCHES) {
 			cmd->value *= INCHES_PER_MM;	// convert value to inches for display
 		}

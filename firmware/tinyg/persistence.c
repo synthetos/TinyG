@@ -94,8 +94,6 @@ stat_t write_persistent_value(cmdObj_t *cmd)
 		return (STAT_FILE_NOT_OPEN);
 
 	float tmp_value = cmd->value;
-	if (cmd->units == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical millimeter units
-
 	ritorno(read_persistent_value(cmd));
 	if (cmd->value != tmp_value) {		// catches the isnan() case as well
 		cmd->value = tmp_value;

@@ -290,7 +290,7 @@ static stat_t _exec_aline_head()
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 
-		// +++++ DIAGNOSTIC
+		// ++++ DIAGNOSTIC
 //		if (mr.segment_time < MIN_SEGMENT_TIME) {
 //			printf("#### EXEC_HEAD() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 //		}
@@ -366,7 +366,7 @@ static stat_t _exec_aline_body()
 		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC);
 		mr.segment_time = mr.gm.move_time / mr.segments;
 
-		// +++++ DIAGNOSTIC
+		// ++++ DIAGNOSTIC
 //		if (mr.segment_time < MIN_SEGMENT_TIME) {
 //			printf("#### EXEC_BODY() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 //		}
@@ -400,7 +400,7 @@ static stat_t _exec_aline_tail()
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC));// # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
 
-		// +++++ DIAGNOSTIC
+		// ++++ DIAGNOSTIC
 //		if (mr.segment_time < MIN_SEGMENT_TIME) {
 //			printf("#### EXEC_TAIL() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
 //		}
