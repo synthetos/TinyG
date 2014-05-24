@@ -27,6 +27,7 @@
 #include "tinyg.h"
 #include "persistence.h"
 #include "canonical_machine.h"
+#include "util.h"
 
 #ifdef __AVR
 #include "xmega/xmega_eeprom.h"
@@ -89,14 +90,17 @@ stat_t read_persistent_value(cmdObj_t *cmd)
 #ifdef __AVR
 stat_t write_persistent_value(cmdObj_t *cmd)
 {
-	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
-	float tmp = cmd->value;
-	printf("value: %f",tmp);		//+++++
+	if (cm.cycle_state != CYCLE_OFF)	// can't write when machine is moving 
+		return (STAT_FILE_NOT_OPEN);
+
+	float tmp_value = cmd->value;
+	if (cmd->units == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical millimeter units
+
 	ritorno(read_persistent_value(cmd));
-	if (cmd->value != tmp) {		// catches the isnan() case as well
-		cmd->value = tmp;
+	if (cmd->value != tmp_value) {		// catches the isnan() case as well
+		cmd->value = tmp_value;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
-		memcpy(&nvm_byte_array, &tmp, NVM_VALUE_LEN);
+		memcpy(&nvm_byte_array, &tmp_value, NVM_VALUE_LEN);
 		uint16_t nvm_address = nvm.nvm_profile_base + (cmd->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
 	}

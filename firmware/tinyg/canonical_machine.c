@@ -1699,7 +1699,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		cmd->value = 0;
 	} else {
 		cmd->value = mp_get_runtime_velocity();
-		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
+		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCHES_PER_MM;
 	}
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->valuetype = TYPE_FLOAT;
@@ -1990,18 +1990,23 @@ static void _print_axis_ui8(cmdObj_t *cmd, const char *format)
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
 }
 
-static void _print_axis_flt(cmdObj_t *cmd, const char *format)
+static void _print_axis_flu(cmdObj_t *cmd, const char *format)
 {
 	char *units;
 	if (_get_axis_type(cmd->index) == 0) {	// linear
-		units = (char *)GET_UNITS(MODEL);
+//		printf("%d,%d", cm_get_units_mode(MODEL), cmd->units);	//++++
+//		if ((cm_get_units_mode(MODEL) == INCHES) && (cmd->units == INCHES)) {
+		if (cm_get_units_mode(MODEL) == INCHES) {
+			cmd->value *= INCHES_PER_MM;	// convert value to inches for display
+		}
+		units = (char *)GET_UNITS(MODEL);	//ASCII display for units
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
 	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, units);
 }
 
-static void _print_axis_coord_flt(cmdObj_t *cmd, const char *format)
+static void _print_axis_coord_flu(cmdObj_t *cmd, const char *format)
 {
 	char *units;
 	if (_get_axis_type(cmd->index) == 0) {	// linear
@@ -2026,23 +2031,23 @@ void cm_print_am(cmdObj_t *cmd)	// print axis mode with enumeration string
 	GET_TEXT_ITEM(msg_am, (uint8_t)cmd->value));
 }
 
-void cm_print_fr(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xfr);}
-void cm_print_vm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xvm);}
-void cm_print_tm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtm);}
-void cm_print_tn(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xtn);}
-void cm_print_jm(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjm);}
-void cm_print_jh(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjh);}
-void cm_print_jd(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xjd);}
-void cm_print_ra(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xra);}
+void cm_print_fr(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xfr);}
+void cm_print_vm(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xvm);}
+void cm_print_tm(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xtm);}
+void cm_print_tn(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xtn);}
+void cm_print_jm(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjm);}
+void cm_print_jh(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjh);}
+void cm_print_jd(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xjd);}
+void cm_print_ra(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xra);}
 void cm_print_sn(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsn);}
 void cm_print_sx(cmdObj_t *cmd) { _print_axis_ui8(cmd, fmt_Xsx);}
-void cm_print_sv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xsv);}
-void cm_print_lv(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlv);}
-void cm_print_lb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xlb);}
-void cm_print_zb(cmdObj_t *cmd) { _print_axis_flt(cmd, fmt_Xzb);}
+void cm_print_sv(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xsv);}
+void cm_print_lv(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xlv);}
+void cm_print_lb(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xlb);}
+void cm_print_zb(cmdObj_t *cmd) { _print_axis_flu(cmd, fmt_Xzb);}
 
-void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cofs);}
-void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flt(cmd, fmt_cpos);}
+void cm_print_cofs(cmdObj_t *cmd) { _print_axis_coord_flu(cmd, fmt_cofs);}
+void cm_print_cpos(cmdObj_t *cmd) { _print_axis_coord_flu(cmd, fmt_cpos);}
 
 void cm_print_pos(cmdObj_t *cmd) { _print_pos(cmd, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(cmdObj_t *cmd) { _print_pos(cmd, fmt_mpo, MILLIMETERS);}

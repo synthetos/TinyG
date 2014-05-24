@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		428.01	// Testing inches mode settings
+#define TINYG_FIRMWARE_BUILD   		428.02	// Added units to cmd object; test units during persistence; checkpoint for testing units conversion
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

@@ -233,6 +233,12 @@ enum valueType {					// value typing for config and JSON
 	TYPE_PARENT						// object is a parent to a sub-object
 };
 
+enum valueUnits {
+	INCHES = 0,						// corresponds to Gcode G20
+	MILLIMETERS,					// corresponds to Gcode G21
+	DEGREES							// corresponds to Gcode rotary axes
+};
+
 /**** operations flags and shorthand ****/
 
 #define F_INITIALIZE	0x01			// initialize this item (run set during initialization)
@@ -265,7 +271,7 @@ typedef struct cmdObject {				// depending on use, not all elements may be popul
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
-	uint8_t units;						// follows Gcode convention - 0=inches, 1=mm
+	uint8_t units;						// follows Gcode convention - 0=inches, 1=mm, 2=degrees
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup

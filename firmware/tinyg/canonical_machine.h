@@ -439,11 +439,13 @@ enum cmCanonicalPlane {				// canonical plane - translates to:
 	CANON_PLANE_YZ					// G19	  Y		  Z		  X							
 };
 
+/* Moved to config.h as valueUnits
 enum cmUnitsMode {
 	INCHES = 0,						// G20
 	MILLIMETERS,					// G21
 	DEGREES							// ABC axes (this value used for displays only)
 };
+*/
 
 enum cmCoordSystem {
 	ABSOLUTE_COORDS = 0,			// machine coordinate system

@@ -268,42 +268,51 @@ stat_t set_flt(cmdObj_t *cmd)
 /*
  * get_flu() - get floating point number with G20/G21 units conversion
  *
- * The number "getted" will be in internal canonical units (mm), which is  
+ * The number 'getted' will be in internal canonical units (mm), which is  
  * returned in external units (inches or mm) 
  */
 
 stat_t get_flu(cmdObj_t *cmd)
 {
-	get_flt(cmd);
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
-	return (STAT_OK);
+	return(get_flt(cmd));
+//	if (cm_get_units_mode(MODEL) == INCHES) {
+//		cmd->value *= INCHES_PER_MM;
+//		cmd->units = INCHES;
+//	}
+//	return (STAT_OK);
 }
 
 /*
  * set_flu() - set floating point number with G20/G21 units conversion
  *
- * The number "setted" will have been delivered in external units (inches or mm).
+ * The number 'setted' will have been delivered in external units (inches or mm).
  * It is written to the target memory location in internal canonical units (mm),
  * but the original cmd->value is not changed so display works correctly.
  */
 
 stat_t set_flu(cmdObj_t *cmd)
 {
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= MM_PER_INCH; // convert to canonical units
-	*((float *)GET_TABLE_WORD(target)) = cmd->value;
+	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
+		cmd->value *= MM_PER_INCH;					// convert to canonical millimeter units
+		cmd->units = MILLIMETERS;
+	}
+	*((float *)GET_TABLE_WORD(target)) = cmd->value;// write value as millimeters or degrees
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
-
 /*
 	float tmp_value = cmd->value;
-	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
-	*((float *)GET_TABLE_WORD(target)) = tmp_value;
+	if (cm_get_units_mode(MODEL) == INCHES) {	// if in inches...
+		tmp_value *= MM_PER_INCH;				// convert to canonical millimeter units
+		cmd->units = INCHES;
+	}
+	*((float *)GET_TABLE_WORD(target)) = tmp_value;	// write value as millimeters or degrees
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
 
 */
+
 }
 
 /************************************************************************************
@@ -527,7 +536,8 @@ void cmd_get_cmdObj(cmdObj_t *cmd)
  
 cmdObj_t *cmd_reset_obj(cmdObj_t *cmd)		// clear a single cmdObj structure
 {
-	cmd->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	cmd->valuetype = TYPE_EMPTY;			// selective clear is much faster than calling memset
+	cmd->units = MILLIMETERS;				// default units
 	cmd->index = 0;
 	cmd->value = 0;
 	cmd->precision = 0;
@@ -558,6 +568,7 @@ cmdObj_t *cmd_reset_list()					// clear the header and response body
 		cmd->depth = 1;						// header and footer are corrected later
 		cmd->precision = 0;
 		cmd->valuetype = TYPE_EMPTY;
+		cmd->units = MILLIMETERS;			// default units
 		cmd->token[0] = NUL;
 	}
 	(--cmd)->nx = NULL;
