@@ -106,7 +106,7 @@ extern "C"{
  *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
  */
 
-/**** cmdObj lists ****
+/**** nvObj lists ****
  *
  * 	Commands and groups of commands are processed internally a doubly linked list of nvObj_t 
  *	structures. This isolates the command and config internals from the details of communications,
@@ -115,25 +115,24 @@ extern "C"{
  *	The first element of the list is designated the response header element ("r") but the list 
  *	can also be serialized as a simple object by skipping over the header
  *
- *	To use the cmd list first reset it by calling nv_reset_list(). This initializes the header, 
- *	marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects with 
- *	NX and PV pointers, and makes the last element the terminating element by setting its NX 
+ *	To use the nvObj list first reset it by calling nv_reset_nvObj_list(). This initializes the 
+ *	header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects 
+ *	with NX and PV pointers, and makes the last element the terminating element by setting its NX 
  *	pointer to NULL. The terminating element may carry data, and will be processed.
  *
  *	When you use the list you can terminate your own last element, or just leave the EMPTY elements 
  *	to be skipped over during output serialization.
  * 
  * 	We don't use recursion so parent/child nesting relationships are captured in a 'depth' variable, 
- *	This must remain consistent if the curlies are to work out. In general you should not have to 
- *	track depth explicitly if you use nv_reset_list() or the accessor functions like 
- *	nv_add_integer() or nv_add_message(). If you see problems with curlies check the depth values
- *	in the lists.
+ *	This must remain consistent if the curlies are to work out. You should not have to track depth 
+ *	explicitly if you use nv_reset_nvObj_list() or the accessor functions like nv_add_integer() or 
+ *	nv_add_message(). If you see problems with curlies check the depth values in the lists.
  *
  *	Use the nv_print_list() dispatcher for all JSON and text output. Do not simply run through printf.
  */
 /*	Token and Group Fields
  * 
- *	The cmdObject struct (nvObj_t) has strict rules on the use of the token and group fields.
+ *	The nvObject struct (nvObj_t) has strict rules on the use of the token and group fields.
  *	The following forms are legal which support the use cases listed:
  *
  *	Forms
@@ -147,15 +146,15 @@ extern "C"{
  *	  - JSON-mode display for single - element value e.g. xvm. Concatenate as above
  *	  - JSON-mode display of a parent/child group. Parent is named grp, children nems are tokens
  */
-/*	--- Cmd object string handling ---
+/*	--- nv object string handling ---
  *
- *	It's very expensive to allocate sufficient string space to each cmdObj, so cmds use a cheater's 
- *	malloc. A single string of length NV_SHARED_STRING_LEN is shared by all cmdObjs for all strings. 
+ *	It's very expensive to allocate sufficient string space to each nvObj, so nv uses a cheater's 
+ *	malloc. A single string of length NV_SHARED_STRING_LEN is shared by all nvObjs for all strings. 
  *	The observation is that the total rendered output in JSON or text mode cannot exceed the size of 
  *	the output buffer (typ 256 bytes), So some number less than that is sufficient for shared strings. 
- *	This is all mediated through nv_copy_string(), nv_copy_string_P(), and nv_reset_list().
+ *	This is all mediated through nv_copy_string(), nv_copy_string_P(), and nv_reset_nvObj_list().
  */
-/*  --- Setting cmdObj indexes ---
+/*  --- Setting nvObj indexes ---
  *
  *	It's the responsibility of the object creator to set the index. Downstream functions
  *	all expect a valid index. Set the index by calling nv_get_index(). This also validates
@@ -231,12 +230,6 @@ enum valueType {					// value typing for config and JSON
 	TYPE_STRING,					// value is in string field
 	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT						// object is a parent to a sub-object
-};
-
-enum valueUnits {
-	INCHES = 0,						// corresponds to Gcode G20
-	MILLIMETERS,					// corresponds to Gcode G21
-	DEGREES							// corresponds to Gcode rotary axes
 };
 
 /**** operations flags and shorthand ****/
@@ -328,14 +321,14 @@ uint8_t nv_group_is_prefixed(char_t *group);
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);		// set nothing (no operation)
 stat_t set_ui8(nvObj_t *nv);		// set uint8_t value
-stat_t set_01(nvObj_t *nv);		// set a 0 or 1 value with validation
+stat_t set_01(nvObj_t *nv);			// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);		// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);		// set a 0, 1, 2 or 3 value with validation
 stat_t set_int(nvObj_t *nv);		// set uint32_t integer value
 stat_t set_data(nvObj_t *nv);		// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);		// set floating point value
 stat_t set_flu(nvObj_t *nv);		// set floating point number with G20/G21 units conversion
-stat_t get_flu(nvObj_t *nv);		// get floating point number with G20/G21 units conversion
+//stat_t get_flt(nvObj_t *nv);		// get floating point number with G20/G21 units conversion
 
 stat_t get_nul(nvObj_t *nv);		// get null value type
 stat_t get_ui8(nvObj_t *nv);		// get uint8_t value

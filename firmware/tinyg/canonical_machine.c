@@ -1756,19 +1756,16 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 }
 
 /*
- * cm_get_jrk()	- get jerk value 
  * cm_set_jrk()	- set jerk value 
  *
- *	Jerk values are stored in the system in "raw" format. This makes for some pretty big 
- *	numbers for people to deal with. These functions will accept raw jerk numbers or if they 
- *	Are less than 1,000,000 they are bumped in and out of raw form. JSON mode always
- *	reports full raw jerk values, but will accept either form.
+ *	Jerk values can be rather large, often in the billions. This makes for some pretty big 
+ *	numbers for people to deal with. Jerk values are stored in the system in truncated format;
+ *	values are divided by 1,000,000 then reconstituted before use. 
+ *
+ *	cm_set_jrk() will accept either truncated or untrunctated jerk numbers as input. If the 
+ *	number is > 1,000,000 it is divided by 1,000,000 before storing. Numbers are accepted in
+ *	either millimeter or inch mode and converted to millimeter mode.
  */
-stat_t cm_get_jrk(nvObj_t *nv)
-{
-	get_flu(nv);
-	return (STAT_OK);
-}
 
 stat_t cm_set_jrk(nvObj_t *nv)
 {
@@ -1995,7 +1992,7 @@ static void _print_axis_flu(nvObj_t *nv, const char *format)
 	char *units;
 	if (_get_axis_type(nv->index) == 0) {	// linear
 		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;	// convert value to inches for display
+			nv->value *= INCHES_PER_MM;		// convert value to inches for display
 		}
 		units = (char *)GET_UNITS(MODEL);	//ASCII display for units
 	} else {

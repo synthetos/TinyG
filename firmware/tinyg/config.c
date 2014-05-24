@@ -55,14 +55,14 @@ nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
 /***********************************************************************************
  **** CODE *************************************************************************
  ***********************************************************************************/
-/* Primary access points to cmd functions
+/* Primary access points to command string / JSON functions
  * These gatekeeper functions check index ranges so others don't have to
  *
  * nv_set() 	- Write a value or invoke a function - operates on single valued elements or groups
- * nv_get() 	- Build a cmdObj with the values from the target & return the value
- *			   	  Populate cmd body with single valued elements or groups (iterates)
+ * nv_get() 	- Build a nvObj with the values from the target & return the value
+ *			   	  Populate nv body with single valued elements or groups (iterates)
  * nv_print()	- Output a formatted string for the value.
- * nv_persist()- persist value to NVM. Takes special cases into account
+ * nv_persist() - persist value to NVM. Takes special cases into account
  */
 stat_t nv_set(nvObj_t *nv)
 {
@@ -92,7 +92,7 @@ void nv_persist(nvObj_t *nv)
 }
 
 /************************************************************************************
- * config_init()  - called once on hard reset
+ * config_init() - called once on hard reset
  *
  * Performs one of 2 actions:
  *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
@@ -111,7 +111,7 @@ void config_init()
 	cfg.magic_start = MAGICNUM;
 	cfg.magic_end = MAGICNUM;
 
-	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
+	cm_set_units_mode(MILLIMETERS);			// must do inits in millimeter mode
 	nv->index = 0;							// this will read the first record in NVM
 
 	read_persistent_value(nv);
@@ -241,7 +241,6 @@ stat_t set_0123(nvObj_t *nv)
 
 stat_t set_int(nvObj_t *nv)
 {
-//	*((uint32_t *)GET_TABLE_WORD(target)) = nv->value;
 	*((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
@@ -271,16 +270,12 @@ stat_t set_flt(nvObj_t *nv)
  * The number 'getted' will be in internal canonical units (mm), which is  
  * returned in external units (inches or mm) 
  */
-
+/*
 stat_t get_flu(nvObj_t *nv)
 {
 	return(get_flt(nv));
-//	if (cm_get_units_mode(MODEL) == INCHES) {
-//		nv->value *= INCHES_PER_MM;
-//		nv->units = INCHES;
-//	}
-//	return (STAT_OK);
 }
+*/
 
 /*
  * set_flu() - set floating point number with G20/G21 units conversion

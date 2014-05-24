@@ -439,13 +439,11 @@ enum cmCanonicalPlane {				// canonical plane - translates to:
 	CANON_PLANE_YZ					// G19	  Y		  Z		  X							
 };
 
-/* Moved to config.h as valueUnits
 enum cmUnitsMode {
 	INCHES = 0,						// G20
 	MILLIMETERS,					// G21
 	DEGREES							// ABC axes (this value used for displays only)
 };
-*/
 
 enum cmCoordSystem {
 	ABSOLUTE_COORDS = 0,			// machine coordinate system
@@ -686,25 +684,24 @@ stat_t cm_get_path(nvObj_t *nv);		// get patch control mode...
 stat_t cm_get_dist(nvObj_t *nv);		// get distance mode...
 stat_t cm_get_frmo(nvObj_t *nv);		// get feedrate mode...
 stat_t cm_get_toolv(nvObj_t *nv);		// get tool (value)
-stat_t cm_get_vel(nvObj_t *nv);		// get runtime velocity...
-stat_t cm_get_pos(nvObj_t *nv);		// get runtime work position...
-stat_t cm_get_mpo(nvObj_t *nv);		// get runtime machine position...
-stat_t cm_get_ofs(nvObj_t *nv);		// get runtime work offset...
+stat_t cm_get_vel(nvObj_t *nv);			// get runtime velocity...
+stat_t cm_get_pos(nvObj_t *nv);			// get runtime work position...
+stat_t cm_get_mpo(nvObj_t *nv);			// get runtime machine position...
+stat_t cm_get_ofs(nvObj_t *nv);			// get runtime work offset...
 
-stat_t cm_run_qf(nvObj_t *nv);		// run queue flush
+stat_t cm_run_qf(nvObj_t *nv);			// run queue flush
 stat_t cm_run_home(nvObj_t *nv);		// start homing cycle
 
-stat_t cm_dam(nvObj_t *nv);			// dump active model (debugging command)
+stat_t cm_dam(nvObj_t *nv);				// dump active model (debugging command)
 
 stat_t cm_run_jogx(nvObj_t *nv);		// start jogging cycle for x
 stat_t cm_run_jogy(nvObj_t *nv);		// start jogging cycle for y
 stat_t cm_run_jogz(nvObj_t *nv);		// start jogging cycle for z
 stat_t cm_run_joga(nvObj_t *nv);		// start jogging cycle for a
 
-stat_t cm_get_am(nvObj_t *nv);		// get axis mode
-stat_t cm_set_am(nvObj_t *nv);		// set axis mode
-stat_t cm_get_jrk(nvObj_t *nv);		// get jerk with 1,000,000 correction
-stat_t cm_set_jrk(nvObj_t *nv);		// set jerk with 1,000,000 correction
+stat_t cm_get_am(nvObj_t *nv);			// get axis mode
+stat_t cm_set_am(nvObj_t *nv);			// set axis mode
+stat_t cm_set_jrk(nvObj_t *nv);			// set jerk with 1,000,000 correction
 
 /*--- text_mode support functions ---*/
 
