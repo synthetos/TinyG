@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		428.07	// Changing nomenclature - cmd to name/value to better align with JSON naming. Step 3
+#define TINYG_FIRMWARE_BUILD   		429.01	// Candidate for edge push
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

@@ -122,7 +122,7 @@ static void _normalize_gcode_block(char_t *nv, char_t **com, char_t **msg, uint8
 
 	// Preset comments and messages to NUL string
 	// Not required if com and msg already point to NUL on entry
-//	for (rd = cmd; *rd != NUL; rd++) { if (*rd == NUL) { *com = rd; *msg = rd; rd = cmd;} }
+//	for (rd = nv; *rd != NUL; rd++) { if (*rd == NUL) { *com = rd; *msg = rd; rd = nv;} }
 
 	// mark block deletes
 	if (*rd == '/') { *block_delete_flag = true; } 

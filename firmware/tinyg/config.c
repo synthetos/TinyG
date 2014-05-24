@@ -324,12 +324,12 @@ stat_t set_flu(nvObj_t *nv)
  * get_grp() - read data from axis, motor, system or other group
  *
  *	get_grp() is a group expansion function that expands the parent group and returns 
- *	the values of all the children in that group. It expects the first cmdObj in the 
- *	cmdBody to have a valid group name in the token field. This first object will be set 
+ *	the values of all the children in that group. It expects the first nvObj in the 
+ *	nvBody to have a valid group name in the token field. This first object will be set 
  *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent 
  *	group, which this group has none.
  *
- *	All subsequent cmdObjs in the body will be populated with their values.
+ *	All subsequent nvObjs in the body will be populated with their values.
  *	The token field will be populated as will the parent name in the group field. 
  *
  *	The sys group is an exception where the children carry a blank group field, even though 
@@ -338,7 +338,7 @@ stat_t set_flu(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
-	char_t *parent_group = nv->token;		// token in the parent cmd object is the group
+	char_t *parent_group = nv->token;		// token in the parent nv object is the group
 	char_t group[GROUP_LEN+1];				// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;				// make first object the parent 
 	for (index_t i=0; nv_index_is_single(i); i++) {
@@ -390,11 +390,11 @@ uint8_t nv_group_is_prefixed(char_t *group)
 }
 
 /***********************************************************************************
- ***** cmdObj functions ************************************************************
+ ***** nvObj functions ************************************************************
  ***********************************************************************************/
 
 /***********************************************************************************
- * cmdObj helper functions and other low-level cmd helpers
+ * nvObj helper functions and other low-level nv helpers
  */
 
 /* nv_get_index() - get index from mnenonic token + group
@@ -451,13 +451,13 @@ uint8_t nv_get_type(nvObj_t *nv)
 stat_t nv_persist_offsets(uint8_t flag)
 {
 	if (flag == true) {
-		nvObj_t cmd;
+		nvObj_t nv;
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(cmd.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				cmd.index = nv_get_index((const char_t *)"", cmd.token);
-				cmd.value = cm.offset[i][j];
-				nv_persist(&cmd);				// only writes changed values
+				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				nv.index = nv_get_index((const char_t *)"", nv.token);
+				nv.value = cm.offset[i][j];
+				nv_persist(&nv);				// only writes changed values
 			}
 		}
 	}
@@ -465,18 +465,18 @@ stat_t nv_persist_offsets(uint8_t flag)
 }
 
 /******************************************************************************
- * cmdObj low-level object and list operations
- * nv_get_cmdObj()		- setup a cmd object by providing the index
- * nv_reset_obj()		- quick clear for a new cmd object
- * nv_reset_list()		- clear entire header, body and footer for a new use
+ * nvObj low-level object and list operations
+ * nv_get_nvObj()	- setup a nv object by providing the index
+ * nv_reset_obj()	- quick clear for a new nv object
+ * nv_reset_list()	- clear entire header, body and footer for a new use
  * nv_copy_string()	- used to write a string to shared string storage and link it
- * nv_add_object()		- write contents of parameter to  first free object in the body
- * nv_add_integer()	- add an integer value to end of cmd body (Note 1)
- * nv_add_float()		- add a floating point value to end of cmd body
- * nv_add_string()		- add a string object to end of cmd body
- * nv_add_conditional_message() - add a message to cmd body if messages are enabled
+ * nv_add_object()	- write contents of parameter to  first free object in the body
+ * nv_add_integer()	- add an integer value to end of nv body (Note 1)
+ * nv_add_float()	- add a floating point value to end of nv body
+ * nv_add_string()	- add a string object to end of nv body
+ * nv_add_conditional_message() - add a message to nv body if messages are enabled
  *
- *	Note: Functions that return a cmd pointer point to the object that was modified or
+ *	Note: Functions that return a nv pointer point to the object that was modified or
  *	a NULL pointer if there was an error.
  *
  *	Note: Adding a really large integer (like a checksum value) may lose precision due
@@ -515,7 +515,7 @@ void nv_get_nvObj(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(get))(nv);	// populate the value
 }
  
-nvObj_t *nv_reset_nvObj(nvObj_t *nv)		// clear a single cmdObj structure
+nvObj_t *nv_reset_nvObj(nvObj_t *nv)		// clear a single nvObj structure
 {
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
@@ -534,7 +534,7 @@ nvObj_t *nv_reset_nvObj(nvObj_t *nv)		// clear a single cmdObj structure
 			nv->depth = nv->pv->depth;
 		}
 	}
-	return (nv);							// return pointer to cmd as a convenience to callers
+	return (nv);							// return pointer to nv as a convenience to callers
 }
 
 nvObj_t *nv_reset_nvObj_list()				// clear the header and response body
@@ -722,14 +722,14 @@ void nv_dump_nv(nvObj_t *nv)
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_CONFIG
 
-#define NVMwr(i,v) { cmd.index=i; cmd.value=v; nv_write_NVM_value(&cmd);}
-#define NVMrd(i)   { cmd.index=i; nv_read_NVM_value(&cmd); printf("%f\n", (char *)cmd.value);}
+#define NVMwr(i,v) { nv.index=i; nv.value=v; nv_write_NVM_value(&nv);}
+#define NVMrd(i)   { nv.index=i; nv_read_NVM_value(&nv); printf("%f\n", (char *)nv.value);}
 
 void cfg_unit_tests()
 {
 
 // NVM tests
-/*	nvObj_t cmd;
+/*	nvObj_t nv;
 	NVMwr(0, 329.01)
 	NVMwr(1, 111.01)
 	NVMwr(2, 222.02)
@@ -771,19 +771,19 @@ void cfg_unit_tests()
 /*
 	for (i=0; i<NV_MAX_INDEX; i++) {
 
-		nv_get(&cmd);
+		nv_get(&nv);
 
-		cmd.value = 42;
-		nv_set(&cmd);
+		nv.value = 42;
+		nv_set(&nv);
 
 		val = get_flt_value(i);
-		nv_get_token(i, cmd.token);
+		nv_get_token(i, nv.token);
 
 //		get_friendly(i, string);
-		get_format(i, cmd.vstring);
+		get_format(i, nv.vstring);
 		get_axis(i);							// uncomment main function to test
 		get_motor(i);
-		nv_set(i, &cmd);
+		nv_set(i, &nv);
 		nv_print(i);
 	}
 

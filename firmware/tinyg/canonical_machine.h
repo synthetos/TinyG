@@ -664,7 +664,7 @@ stat_t cm_jogging_callback(void);								// jogging cycle main loop
 stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
 float cm_get_jogging_dest(void);
 
-/*--- cmdArray interface functions ---*/
+/*--- cfgArray interface functions ---*/
 
 char_t cm_get_axis_char(const int8_t axis);
 

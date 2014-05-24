@@ -115,7 +115,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 	}
 	*wr = NUL;								// terminate the string
 
-	// parse fields into the cmd struct
+	// parse fields into the nv struct
 	nv->valuetype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) { // no value part
 		strncpy(nv->token, str, TOKEN_LEN);

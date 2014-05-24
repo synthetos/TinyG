@@ -172,7 +172,7 @@ void sr_init_status_report()
 {
 	nvObj_t *nv = nv_reset_nvObj_list();				// used for status report persistence locations
 	sr.status_report_requested = false;
-	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
 	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
@@ -289,7 +289,7 @@ stat_t sr_run_text_status_report()
 }
 
 /*
- * _populate_unfiltered_status_report() - populate cmdObj body with status values
+ * _populate_unfiltered_status_report() - populate nvObj body with status values
  *
  *	Designed to be run as a response; i.e. have a "r" header and a footer.
  */
@@ -319,7 +319,7 @@ static stat_t _populate_unfiltered_status_report()
 }
 
 /*
- * _populate_filtered_status_report() - populate cmdObj body with status values
+ * _populate_filtered_status_report() - populate nvObj body with status values
  *
  *	Designed to be displayed as a JSON object; i;e; no footer or header
  *	Returns 'true' if the report has new data, 'false' if there is nothing to report.
@@ -370,7 +370,7 @@ static uint8_t _populate_filtered_status_report()
 }
 
 /* 
- * Wrappers and Setters - for calling from cmdArray table
+ * Wrappers and Setters - for calling from cfgArray table
  *
  * sr_get()		- run status report
  * sr_set()		- set status report elements
@@ -500,9 +500,9 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 	return (STAT_OK);
 }
 
-/* Alternate Formulation for a Single report - using cmdObj list
+/* Alternate Formulation for a Single report - using nvObj list
 
-	// get a clean cmd object
+	// get a clean nv object
 //	nvObj_t *nv = nv_reset_list();		// normally you do a list reset but the following is more time efficient
 	nvObj_t *nv = nv_body;
 	nv_reset_obj(nv);
@@ -517,7 +517,7 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 */
 
 /* 
- * Wrappers and Setters - for calling from cmdArray table
+ * Wrappers and Setters - for calling from cfgArray table
  *
  * qr_get() - run a queue report (as data)
  * qi_get() - run a queue report - buffers in

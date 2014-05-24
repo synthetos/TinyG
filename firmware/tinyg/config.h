@@ -46,7 +46,7 @@ extern "C"{
  * 
  *	The list is populated by the text_parser or the JSON_parser depending on the mode.
  *	This way the internals don't care about how the variable is represented or communicated 
- *	externally as all internal operations occur on the cmdObjs, not the wire form (text or JSON).
+ *	externally as all internal operations occur on the nvObjs, not the wire form (text or JSON).
  */
 /*	--- Config variables, tables and strings ---
  *
@@ -172,7 +172,7 @@ extern "C"{
  **** DEFINITIONS AND SETTINGS *****************************************************
  ***********************************************************************************/
 
-// Sizing and footprints			// chose one based on # of elements in cmdArray
+// Sizing and footprints			// chose one based on # of elements in cfgArray
 //typedef uint8_t index_t;			// use this if there are < 256 indexed objects
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
@@ -270,8 +270,8 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
 } nvObj_t; 								// OK, so it's not REALLY an object
 
-typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cmd table access
-typedef void (*fptrPrint)(nvObj_t *nv);// required for PROGMEM access
+typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cfg table access
+typedef void (*fptrPrint)(nvObj_t *nv);	// required for PROGMEM access
 
 typedef struct cfgItem {
 	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)

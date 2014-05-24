@@ -217,7 +217,7 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 void cm_set_model_linenum(uint32_t linenum)
 {
 	cm.gm.linenum = linenum;				// you must first set the model line number,
-	nv_add_object((const char_t *)"n");	// then add the line number to the cmd list
+	nv_add_object((const char_t *)"n");	// then add the line number to the nv list
 }
 
 /***********************************************************************************
@@ -1452,7 +1452,7 @@ void cm_program_end()
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
-// Strings for writing settings as cmdObj string values
+// Strings for writing settings as nvObj string values
 // Ref: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=printview&t=120881&start=0
 
 #ifdef __TEXT_MODE
@@ -1618,7 +1618,7 @@ static int8_t _get_axis_type(const index_t index)
 }
 
 
-/**** Functions called directly from cmdArray table - mostly wrappers ****
+/**** Functions called directly from cfgArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values
  *
  * cm_get_stat() - get combined machine state as value and string

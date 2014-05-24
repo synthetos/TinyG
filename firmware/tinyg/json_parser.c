@@ -99,13 +99,13 @@ static stat_t _json_parser_kernal(char_t *str)
 {
 	stat_t status;
 	int8_t depth;
-	nvObj_t *nv = nv_reset_nvObj_list();			// get a fresh cmdObj list
+	nvObj_t *nv = nv_reset_nvObj_list();			// get a fresh nvObj list
 	char_t group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
-	// parse the JSON command into the cmd body
+	// parse the JSON command into the nv body
 	do {
 		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); } // length error
 //		if ((status = _get_nv_pair_strict(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
@@ -169,7 +169,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 /*
  * _get_nv_pair_relaxed() - get the next name-value pair w/relaxed JSON rules
  *
- *	Parse the next statement and populate the command object (cmdObj).
+ *	Parse the next statement and populate the command object (nvObj).
  *
  *	Leaves string pointer (str) on the first character following the object.
  *	Which is the character just past the ',' separator if it's a multi-valued 
@@ -309,7 +309,7 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 /*
  * _get_nv_pair_strict() - get the next name-value pair w/strict JSON rules
  *
- *	Parse the next statement and populate the command object (cmdObj).
+ *	Parse the next statement and populate the command object (nvObj).
  *
  *	Leaves string pointer (str) on the first character following the object.
  *	Which is the character just past the ',' separator if it's a multi-valued 
@@ -419,12 +419,12 @@ static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth)
 /****************************************************************************
  * json_serialize() - make a JSON object string from JSON object array
  *
- *	*nv is a pointer to the first element in the cmd list to serialize
+ *	*nv is a pointer to the first element in the nv list to serialize
  *	*out_buf is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  *
  * 	Operation:
- *	  - The cmdObj list is processed start to finish with no recursion
+ *	  - The nvObj list is processed start to finish with no recursion
  *
  *	  - Assume the first object is depth 0 or greater (the opening curly)
  *
@@ -434,7 +434,7 @@ static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth)
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
  *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
  *
- *	  - The list must have a terminating cmdObj where nv->nx == NULL. 
+ *	  - The list must have a terminating nvObj where nv->nx == NULL. 
  *		The terminating object may or may not have data (empty or not empty).
  *
  *	Returns:
@@ -525,7 +525,7 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 }
 
 /*
- * json_print_object() - serialize and print the cmdObj array directly (w/o header & footer)
+ * json_print_object() - serialize and print the nvObj array directly (w/o header & footer)
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
  *	Useful for reports and other simple output.
@@ -566,7 +566,7 @@ void json_print_list(stat_t status, uint8_t flags)
  *	JV_LINENUM,		// echo configs; gcode blocks return messages and line numbers as present
  *	JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
  *
- *	This gets a bit complicated. The first cmdObj is the header, which must be set by reset_list().
+ *	This gets a bit complicated. The first nvObj is the header, which must be set by reset_list().
  *	The first object in the body will always have the gcode block or config command in it, 
  *	which you may or may not want to display. This is followed by zero or more displayable objects. 
  *	Then if you want a gcode line number you add that here to the end. Finally, a footer goes 
@@ -617,7 +617,7 @@ void json_print_response(uint8_t status)
 	}
 
 	// Footer processing
-	while(nv->valuetype != TYPE_EMPTY) {					// find a free cmdObj at end of the list...
+	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
 			json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
 			return;
@@ -627,7 +627,7 @@ void json_print_response(uint8_t status)
 	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
 	cs.linelen = 0;										// reset linelen so it's only reported once
 
-	nv_copy_string(nv, footer_string);				// link string to cmd object
+	nv_copy_string(nv, footer_string);				// link string to nv object
 //	nv->depth = 0;										// footer 'f' is a peer to response 'r' (hard wired to 0)
 	nv->depth = js.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
 	nv->valuetype = TYPE_ARRAY;
@@ -742,48 +742,48 @@ static void _test_serialize()
 	_printit();
 
 	// parent with a null child
-	cmd = _reset_array();
-	cmd = _add_parent(nv, (char_t *)"r");
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// single string element (message)
-	cmd = _reset_array();
-	cmd = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	nv = _reset_array();
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// string element and an integer element
-	cmd = _reset_array();
-	cmd = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
-	cmd = _add_integer(nv, (char_t *)"answer", 42);
+	nv = _reset_array();
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a string and an integer element
-	cmd = _reset_array();
-	cmd = _add_parent(nv, (char_t *)"r");
-	cmd = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
-	cmd = _add_integer(nv, (char_t *)"answer", 42);
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child followed by a final level 0 element (footer)
-	cmd = _reset_array();
-	cmd = _add_parent(nv, (char_t *)"r");
-	cmd = _add_empty(nv);
-	cmd = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_empty(nv);
+	nv = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
 	nv->pv->depth = 0;
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
-	cmd = _reset_array();
-	cmd = _add_parent(nv, (char_t *)"r");
-	cmd = _add_integer(nv, (char_t *)"answer", 42);
-	cmd = _add_empty(nv);
-	cmd = _add_empty(nv);
-	cmd = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
+	nv = _add_empty(nv);
+	nv = _add_empty(nv);
+	nv = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
 	nv->pv->depth = 0;
 	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
@@ -820,15 +820,15 @@ static nvObj_t * _reset_array()
 	nvObj_t *nv = nv_array;
 	for (uint8_t i=0; i<ARRAY_LEN; i++) {
 		if (i == 0) { nv->pv = NULL; } 
-		else { nv->pv = (cmd-1);}
-		nv->nx = (cmd+1);
+		else { nv->pv = (nv-1);}
+		nv->nx = (nv+1);
 		nv->index = 0;
 		nv->token[0] = NUL;
 		nv->depth = 0;
 		nv->valuetype = TYPE_EMPTY;
-		cmd++;
+		nv++;
 	}
-	(--cmd)->nx = NULL;				// correct last element
+	(--nv)->nx = NULL;				// correct last element
 	return (nv_array);
 }
 

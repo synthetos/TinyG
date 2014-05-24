@@ -49,8 +49,8 @@
 #undef	JSON_VERBOSITY
 #define JSON_VERBOSITY			JV_CONFIGS
 
-#undef  SR_DEFAULTS
-#define SR_DEFAULTS "line","vel","mpox","mpoy","mpoc","mpob","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
+#undef  STATUS_REPORT_DEFAULTS
+#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoc","mpob","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 //+{"sr":{"line":t,"vel":t,"mpox":t,"mpoy":t, "mpoc":t,"mpob":t,"mpoz":t,"mpoa":t,"coor":t, "ofsa":t,"ofsx":t,"ofsy":t,"ofsz":t,"dist":t,"unit":t,"stat":t,"homz":t,"homy":t,"homx":t,"momo":t}}
 
 #undef	STATUS_REPORT_INTERVAL_MS
