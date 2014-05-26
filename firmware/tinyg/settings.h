@@ -63,7 +63,7 @@
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
-#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","path","frmo","momo","stat"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 

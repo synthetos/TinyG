@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		430.05	// Broke out trapezoid generator to a separate file - plan_zoid.c (removed code)
+#define TINYG_FIRMWARE_BUILD   		430.06	// Reverted trapezoid generator to the version in edge (429.01)
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

@@ -162,15 +162,18 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
 	uint8_t mr_flag = false;
+	uint8_t path_control_mode = cm_get_path_control(MODEL);
 
 	// exit out if the move has zero movement. At all.
 	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
 
 	// trap short lines
 	//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
-	if (gm_in->move_time < MIN_BLOCK_TIME) {
-		printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
-		return (STAT_MINIMUM_TIME_MOVE);
+	if (path_control_mode == PATH_CONTINUOUS) {
+		if (gm_in->move_time < MIN_BLOCK_TIME) {
+			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+			return (STAT_MINIMUM_TIME_MOVE);
+		}
 	}
 
 	// get a cleared buffer and setup move variables

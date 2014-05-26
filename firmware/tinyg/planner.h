@@ -98,7 +98,8 @@ enum sectionState {
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
-#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME*3	// factor for minimum size Gcode block to process
+//#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME*3	// factor for minimum size Gcode block to process
+#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME	// factor for minimum size Gcode block to process
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
