@@ -335,6 +335,7 @@ void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
 float* mp_get_planner_position_vector();
+void mp_calculate_trapezoid(mpBuf_t *bf);
 
 // plan_exec.c functions
 void mp_init_runtime(void);

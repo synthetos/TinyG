@@ -516,7 +516,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		(bp->entry_velocity + bp->delta_vmax) );
 
 //		float old_entry_velocity = bp->entry_velocity;
-		_calculate_trapezoid(bp);
+		mp_calculate_trapezoid(bp);
 //		_calc_jerk_values(bp);
 
 		// If we changed the entry velocity, we need to account for it...
@@ -540,7 +540,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 	bp->entry_velocity = bp->pv->exit_velocity;
 	bp->cruise_velocity = bp->cruise_vmax;
 	bp->exit_velocity = 0;
-	_calculate_trapezoid(bp);
+	mp_calculate_trapezoid(bp);
 //	_calc_jerk_values(bp);
 }
 
@@ -705,15 +705,16 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 	
 	bf->body_length = 0;
 
-    // if bf->entry_velocity == bf->exit_velocity, we'll get a zero minimum_length
-    if (fp_EQ(bf->entry_velocity, bf->exit_velocity)) {
-        // head_length == tail_length, only calculate once
-        bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
-        // If the speed change is too little, the head and tail will be too short
-        if (bf->head_length < MIN_HEAD_LENGTH) {
-            bf->head_length = 0;
-        }
-        bf->tail_length = bf->head_length;
+	// if bf->entry_velocity == bf->exit_velocity, we'll get a zero minimum_length
+	if (fp_EQ(bf->entry_velocity, bf->exit_velocity)) {
+		// head_length == tail_length, only calculate once
+		bf->head_length = _get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
+		// If the speed change is too little, the head and tail will be too short
+		if (bf->head_length < MIN_HEAD_LENGTH) {
+			bf->head_length = 0;
+		}
+		bf->tail_length = bf->head_length;
+		
     } else {
         float minimum_length = _get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
         if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
@@ -742,13 +743,13 @@ static void _calculate_trapezoid(mpBuf_t *bf)
 
 //                    bf->entry_velocity = min(bf->exit_velocity + (bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN),
 //                                             _get_target_velocity(bf->exit_velocity, bf->length, bf));
-                    bf->exit_velocity = max(0.0, bf->entry_velocity - (bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN));
+					bf->exit_velocity = max(0.0, bf->entry_velocity - (bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN));
                 }
-                bf->cruise_velocity = bf->entry_velocity;
-                bf->tail_length = bf->length;
-                bf->head_length = 0;
-                return;
-            }
+				bf->cruise_velocity = bf->entry_velocity;
+				bf->tail_length = bf->length;
+				bf->head_length = 0;
+				return;
+			}
 
             if (bf->entry_velocity < bf->exit_velocity)	{		// head-only cases (short accelerations)
                 if (bf->length < minimum_length) { 				// H" (degraded case)

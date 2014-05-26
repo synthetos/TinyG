@@ -246,6 +246,9 @@
     <Compile Include="plan_line.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="plan_zoid.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="pwm.c">
       <SubType>compile</SubType>
     </Compile>

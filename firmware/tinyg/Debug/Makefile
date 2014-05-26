@@ -61,6 +61,7 @@ C_SRCS +=  \
 ../plan_arc.c \
 ../plan_exec.c \
 ../plan_line.c \
+../plan_zoid.c \
 ../pwm.c \
 ../report.c \
 ../spindle.c \
@@ -110,6 +111,7 @@ planner.o \
 plan_arc.o \
 plan_exec.o \
 plan_line.o \
+plan_zoid.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -152,6 +154,7 @@ planner.o \
 plan_arc.o \
 plan_exec.o \
 plan_line.o \
+plan_zoid.o \
 pwm.o \
 report.o \
 spindle.o \
@@ -194,6 +197,7 @@ planner.d \
 plan_arc.d \
 plan_exec.d \
 plan_line.d \
+plan_zoid.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -236,6 +240,7 @@ planner.d \
 plan_arc.d \
 plan_exec.d \
 plan_line.d \
+plan_zoid.d \
 pwm.d \
 report.d \
 spindle.d \
@@ -267,6 +272,8 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
 
 
 
