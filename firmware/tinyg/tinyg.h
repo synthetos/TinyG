@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		430.06	// Reverted trapezoid generator to the version in edge (429.01)
+#define TINYG_FIRMWARE_BUILD   		430.07	// Fixed path control mode settings reporting incorrectly
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

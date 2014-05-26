@@ -457,8 +457,8 @@ enum cmCoordSystem {
 #define COORD_SYSTEM_MAX G59		// set this manually to the last one
 
 enum cmPathControlMode {			// G Modal Group 13
-	PATH_EXACT_PATH = 0,			// G61
-	PATH_EXACT_STOP,				// G61.1
+	PATH_EXACT_PATH = 0,			// G61 - hits corners but does not stop if it does not need to.
+	PATH_EXACT_STOP,				// G61.1 - stops at all corners
 	PATH_CONTINUOUS					// G64 and typically the default mode
 };
 
