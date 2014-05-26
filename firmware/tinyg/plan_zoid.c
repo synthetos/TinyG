@@ -53,6 +53,7 @@ extern "C"{
  *	  bf->cruise_velocity	- requested Vt
  *	  bf->exit_velocity		- requested Vx
  *	  bf->cruise_vmax		- used in some comparisons
+ *	  bf->delta_vmax		- used to degrade velocity of pathologically short blocks
  *
  *	Variables that may be set/updated are:
  *    bf->entry_velocity	- requested Ve
@@ -126,6 +127,7 @@ extern "C"{
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
+/*
 	// F case: Block is too short to execute.
 	// Force block into a single segment body with limited velocities
 
@@ -140,16 +142,31 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->tail_length = 0;
 		return;
 	}
+*/
+	// F case: Block is too short to execute.
+	// Force block into a single segment body with limited velocities
+	
+	float naiive_move_time = bf->length / bf->cruise_velocity;
+	if (naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
+		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
+		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
+		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
+		// We are violating the jerk value but since it's a single segment move we don't use it.
+		return;		
+	}
 
 	// B" case: Short line, body only. See if the block fits into a single segment
 
-	if (bf->length <= (NOM_SEGMENT_TIME * average_velocity)) {
+	if (naiive_move_time <= NOM_SEGMENT_TIME) {
 		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
 		bf->cruise_velocity = bf->entry_velocity;
 		bf->exit_velocity = bf->entry_velocity;
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
+		// We are violating the jerk value but since it's a single segment move we don't use it.
 		return;
 	}
 
