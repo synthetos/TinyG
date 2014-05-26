@@ -657,7 +657,6 @@ stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 stat_t cm_hard_alarm(stat_t status)
 {
 	// stop the motors and the spindle
-//	st_deenergize_motors();
 	stepper_init();							// hard stop
 	cm_spindle_control(SPINDLE_OFF);
 
@@ -1309,9 +1308,9 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
-// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which 
+// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which
 //		 issues !%~ in rapid succession. So it's commented out for now. THe correct way to handle this
-//		 is to queue the % queue flush until after the feedhold stops, and queue the ~ cycle start 
+//		 is to queue the % queue flush until after the feedhold stops, and queue the ~ cycle start
 //		 until after that.
 //	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
 
@@ -1413,15 +1412,12 @@ void cm_cycle_start()
 	}
 }
 
-//void cm_cycle_end(uint8_t flag) 					// flag must be true to trigger cycle end
 void cm_cycle_end()
 {
-//	if (flag == true) {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 		_exec_program_finalize(value, value);
 	}
-//	}
 }
 
 void cm_program_stop() 
@@ -1990,11 +1986,11 @@ static void _print_axis_ui8(nvObj_t *nv, const char *format)
 static void _print_axis_flu(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {	// linear
+	if (_get_axis_type(nv->index) == 0) {				// linear axis
 		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;		// convert value to inches for display
+			nv->value *= INCHES_PER_MM;					// convert value to inches for display
 		}
-		units = (char *)GET_UNITS(MODEL);	//ASCII display for units
+		units = (char *)GET_UNITS(MODEL);				// ASCII display for units
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
@@ -2004,7 +2000,7 @@ static void _print_axis_flu(nvObj_t *nv, const char *format)
 static void _print_axis_coord_flu(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {	// linear
+	if (_get_axis_type(nv->index) == 0) {				// linear axis
 		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);

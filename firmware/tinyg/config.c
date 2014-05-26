@@ -55,7 +55,7 @@ nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
 /***********************************************************************************
  **** CODE *************************************************************************
  ***********************************************************************************/
-/* Primary access points to command string / JSON functions
+/* Primary access points to functions bound to text mode / JSON functions
  * These gatekeeper functions check index ranges so others don't have to
  *
  * nv_set() 	- Write a value or invoke a function - operates on single valued elements or groups
@@ -111,6 +111,14 @@ void config_init()
 	cfg.magic_start = MAGICNUM;
 	cfg.magic_end = MAGICNUM;
 
+#ifdef __ARM
+// ++++ The following code is offered until persistence is implemented.
+// ++++ Then you can use the AVR code (or something like it)
+	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
+	nv->value = true;
+	set_defaults(nv);
+#endif
+#ifdef __AVR
 	cm_set_units_mode(MILLIMETERS);			// must do inits in millimeter mode
 	nv->index = 0;							// this will read the first record in NVM
 
@@ -129,6 +137,7 @@ void config_init()
 		}
 		sr_init_status_report();
 	}
+#endif
 }
 
 /*
@@ -265,24 +274,12 @@ stat_t set_flt(nvObj_t *nv)
 /***** GCODE SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS *****/
 
 /*
- * get_flu() - get floating point number with G20/G21 units conversion
- *
- * The number 'getted' will be in internal canonical units (mm), which is  
- * returned in external units (inches or mm) 
- */
-/*
-stat_t get_flu(nvObj_t *nv)
-{
-	return(get_flt(nv));
-}
-*/
-
-/*
  * set_flu() - set floating point number with G20/G21 units conversion
  *
  * The number 'setted' will have been delivered in external units (inches or mm).
- * It is written to the target memory location in internal canonical units (mm),
- * but the original nv->value is not changed so display works correctly.
+ * It is written to the target memory location in internal canonical units (mm).
+ * The original nv->value is also changed so persistence works correctly.
+ * Displays should convert back from internal canonical form to external form.
  */
 
 stat_t set_flu(nvObj_t *nv)
@@ -466,14 +463,14 @@ stat_t nv_persist_offsets(uint8_t flag)
 
 /******************************************************************************
  * nvObj low-level object and list operations
- * nv_get_nvObj()	- setup a nv object by providing the index
- * nv_reset_obj()	- quick clear for a new nv object
- * nv_reset_list()	- clear entire header, body and footer for a new use
- * nv_copy_string()	- used to write a string to shared string storage and link it
- * nv_add_object()	- write contents of parameter to  first free object in the body
- * nv_add_integer()	- add an integer value to end of nv body (Note 1)
- * nv_add_float()	- add a floating point value to end of nv body
- * nv_add_string()	- add a string object to end of nv body
+ * nv_get_nvObj()		 - setup a nv object by providing the index
+ * nv_reset_nvObj()		 - quick clear for a new nv object
+ * nv_reset_nvObj_list() - clear entire header, body and footer for a new use
+ * nv_copy_string()		 - used to write a string to shared string storage and link it
+ * nv_add_object()		 - write contents of parameter to  first free object in the body
+ * nv_add_integer()		 - add an integer value to end of nv body (Note 1)
+ * nv_add_float()		 - add a floating point value to end of nv body
+ * nv_add_string()		 - add a string object to end of nv body
  * nv_add_conditional_message() - add a message to nv body if messages are enabled
  *
  *	Note: Functions that return a nv pointer point to the object that was modified or

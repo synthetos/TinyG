@@ -290,11 +290,6 @@ static stat_t _exec_aline_head()
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
 
-		// ++++ DIAGNOSTIC
-//		if (mr.segment_time < MIN_SEGMENT_TIME) {
-//			printf("#### EXEC_HEAD() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-//		}
-
 		// 4 lines needed by __JERK_EXEC
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
 		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
@@ -365,12 +360,6 @@ static stat_t _exec_aline_body()
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC);
 		mr.segment_time = mr.gm.move_time / mr.segments;
-
-		// ++++ DIAGNOSTIC
-//		if (mr.segment_time < MIN_SEGMENT_TIME) {
-//			printf("#### EXEC_BODY() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-//		}
-
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_MINIMUM_TIME_MOVE);} // exit without advancing position
@@ -399,11 +388,6 @@ static stat_t _exec_aline_tail()
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC));// # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-
-		// ++++ DIAGNOSTIC
-//		if (mr.segment_time < MIN_SEGMENT_TIME) {
-//			printf("#### EXEC_TAIL() - MIN SEGMENT line%lu %f\n", mr.gm.linenum, (double)mr.segment_time);
-//		}
 
 		// 4 lines needed by jerk-based exec
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);

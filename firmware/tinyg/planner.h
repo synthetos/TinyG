@@ -50,7 +50,7 @@ enum moveState {
 	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
 	MOVE_NEW,				// general value if you need an initialization
 	MOVE_RUN,				// general run state (for non-acceleration moves)
-	MOVE_SKIP_BLOCK				// mark a skipped block
+	MOVE_SKIP_BLOCK			// mark a skipped block
 };
 
 enum moveSection {
@@ -98,6 +98,7 @@ enum sectionState {
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME*3	// factor for minimum size Gcode block to process
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
@@ -259,14 +260,23 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float jerk;						// max linear jerk
 	float jerk_div2;				// cached value for efficiency
 	float midpoint_velocity;		// velocity at accel/decel midpoint
+#ifdef __JERK_EXEC
 	float midpoint_acceleration;	//
 	float accel_time;				//
 	float segment_accel_time;		//
 	float elapsed_accel_time;		//
-
+#endif
 									// values used exclusively by forward differencing acceleration
-	float forward_diff_1;			// forward difference level 1 (Acceleration)
-	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
+	float forward_diff_1;			// forward difference level 1
+	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
+	float forward_diff_2;			// forward difference level 2
+	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
+	float forward_diff_3;			// forward difference level 3
+	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
+	float forward_diff_4;			// forward difference level 4
+	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
+	float forward_diff_5;			// forward difference level 5
+	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
 
 	GCodeState_t gm;				// gcode model state currently executing
 
@@ -290,9 +300,6 @@ void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, float position);
 void mp_set_runtime_position(uint8_t axis, float position);
 void mp_set_steps_to_runtime_position(void);
-//void mp_set_planner_position_by_vector(float position[], float flags[]);
-//void mp_set_runtime_position_by_vector(float position[], float flags[]);
-//void mp_set_step_counts(float position[]);
 
 void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 
@@ -313,7 +320,7 @@ void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 void mp_commit_write_buffer(const uint8_t move_type);
 uint8_t mp_free_run_buffer(void);
 mpBuf_t * mp_get_write_buffer(void);
-void mp_unget_write_buffer(void); 
+void mp_unget_write_buffer(void);
 mpBuf_t * mp_get_run_buffer(void);
 mpBuf_t * mp_get_first_buffer(void);
 mpBuf_t * mp_get_last_buffer(void);
@@ -327,6 +334,7 @@ float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
+float* mp_get_planner_position_vector();
 
 // plan_exec.c functions
 void mp_init_runtime(void);
@@ -341,7 +349,7 @@ void mp_dump_runtime_state(void);
 
 /*** Unit tests ***/
 
-#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
+//#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
 #ifdef __UNIT_TEST_PLANNER
 void mp_unit_tests(void);
 void mp_plan_arc_unit_tests(void);

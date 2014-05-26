@@ -61,19 +61,18 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
-static stat_t _do_motors(nvObj_t *nv);	// print parameters for all motor groups
+static stat_t _do_motors(nvObj_t *nv);		// print parameters for all motor groups
 static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
-static stat_t _do_offsets(nvObj_t *nv);	// print offset parameters for G54-G59,G92, G28, G30
-static stat_t _do_all(nvObj_t *nv);		// print all parameters
+static stat_t _do_offsets(nvObj_t *nv);		// print offset parameters for G54-G59,G92, G28, G30
+static stat_t _do_all(nvObj_t *nv);			// print all parameters
 
 // communications settings and functions
 
-//static stat_t set_ic(nvObj_t *nv);		// ignore CR or LF on RX input
-static stat_t set_ec(nvObj_t *nv);		// expand CRLF on TX output
-static stat_t set_ee(nvObj_t *nv);		// enable character echo
-static stat_t set_ex(nvObj_t *nv);		// enable XON/XOFF and RTS/CTS flow control
+static stat_t set_ec(nvObj_t *nv);			// expand CRLF on TX output
+static stat_t set_ee(nvObj_t *nv);			// enable character echo
+static stat_t set_ex(nvObj_t *nv);			// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
-static stat_t get_rx(nvObj_t *nv);		// get bytes in RX buffer
+static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 
 /***********************************************************************************
@@ -334,7 +333,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","blv",_fip, 0, cm_print_lv, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].latch_velocity,	B_LATCH_VELOCITY },
 	{ "b","blb",_fip, 3, cm_print_lb, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].latch_backoff,	B_LATCH_BACKOFF },
 	{ "b","bzb",_fip, 3, cm_print_zb, get_flt,   set_flt,   (float *)&cm.a[AXIS_B].zero_backoff,	B_ZERO_BACKOFF },
-	{ "b","bjh",_fip, 0, cm_print_jh, get_flt, 	 cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_homing,		B_JERK_HOMING },
+	{ "b","bjh",_fip, 0, cm_print_jh, get_flt,	 cm_set_jrk,(float *)&cm.a[AXIS_B].jerk_homing,		B_JERK_HOMING },
 #endif
 
 	{ "c","cam",_fip, 0, cm_print_am, cm_get_am, cm_set_am, (float *)&cm.a[AXIS_C].axis_mode,		C_AXIS_MODE },
@@ -456,7 +455,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","si",  _f07, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 //	{ "sys","spi", _f07, 0, xio_print_spi,get_ui8,   xio_set_spi,(float *)&xio.spi_state,			0 },
 
-//	{ "sys","ic",  _f07, 0, print_ui8,    get_ui8,   set_ic,     (float *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ "sys","ec",  _f07, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _f07, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ "sys","ex",  _f07, 0, co_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
