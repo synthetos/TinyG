@@ -127,25 +127,11 @@ extern "C"{
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
-/*
-	// F case: Block is too short to execute.
+	// F case: Block is too short (in time) to execute; T < minimum segment
 	// Force block into a single segment body with limited velocities
+	// Accept the entry velocity, limit the cruise, and go for the best exit velocity 
+	// you can get given the delta_vmax (maximum velocity slew) supportable.
 
-	// if length < segment time * average velocity
-	float average_velocity = (bf->entry_velocity + bf->cruise_velocity) / 2;
-	if (bf->length < (MIN_SEGMENT_TIME_PLUS_MARGIN * average_velocity)) {
-		bf->entry_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
-		bf->cruise_velocity = bf->entry_velocity;
-		bf->exit_velocity = bf->entry_velocity;
-		bf->body_length = bf->length;
-		bf->head_length = 0;
-		bf->tail_length = 0;
-		return;
-	}
-*/
-	// F case: Block is too short to execute.
-	// Force block into a single segment body with limited velocities
-	
 	float naiive_move_time = bf->length / bf->cruise_velocity;
 	if (naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
 		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
@@ -154,21 +140,52 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-		return;		
+		return;
 	}
 
 	// B" case: Short line, body only. See if the block fits into a single segment
 
 	if (naiive_move_time <= NOM_SEGMENT_TIME) {
-		bf->entry_velocity = bf->length / NOM_SEGMENT_TIME;
-		bf->cruise_velocity = bf->entry_velocity;
-		bf->exit_velocity = bf->entry_velocity;
+		bf->cruise_velocity = bf->length / naiive_move_time;
+		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
 		return;
 	}
+
+	// F case: Block is too short (in time) to execute; T < minimum segment
+	// B" case: Short line, body only. See if the block fits into a single segment
+	
+	// Force block into a single segment body with limited velocities
+	// Accept the entry velocity, limit the cruise, and go for the best exit velocity
+	// you can get given the delta_vmax (maximum velocity slew) supportable.
+/*
+	float naiive_move_time = bf->length / bf->cruise_velocity;
+	if (naiive_move_time <= NOM_SEGMENT_TIME) {
+
+		if (naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
+
+		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
+		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
+		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
+		// We are violating the jerk value but since it's a single segment move we don't use it.
+		return;
+	}
+
+
+		bf->cruise_velocity = bf->length / naiive_move_time;
+		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
+		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
+		// We are violating the jerk value but since it's a single segment move we don't use it.
+		return;
+	}
+*/
 
 	// B case:  Velocities all match (or close enough)
 	//			This occurs frequently in normal gcode files with lots of short lines
