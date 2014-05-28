@@ -194,7 +194,7 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
     // initial probe state, don't probe if we're already contacted!
-    int8_t probe = read_switch(pb.probe_switch);
+    int8_t probe = sw.state[pb.probe_switch];
 
     if( probe==SW_OPEN ) {
         ritorno(cm_straight_feed(pb.target, pb.flags));
@@ -208,7 +208,7 @@ static stat_t _probing_start()
 
 static stat_t _probing_finish()
 {
-    int8_t probe = read_switch(pb.probe_switch);
+    int8_t probe = sw.state[pb.probe_switch];
     cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
 
     for( uint8_t axis=0; axis<AXES; axis++ )

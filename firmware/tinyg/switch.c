@@ -131,10 +131,19 @@ static void _switch_isr_helper(uint8_t sw_num)
 
 void switch_rtc_callback(void)
 {
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) { 
-		if (sw.debounce[i] == SW_IDLE) continue;
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
+            continue;
+        
 		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
-			sw.debounce[i] = SW_IDLE; continue;
+			sw.debounce[i] = SW_IDLE;
+            // check if the state has changed while we were in lockout...
+            uint8_t old_state = sw.state[i];
+            if(old_state != read_switch(i)) {
+                sw.debounce[i] = SW_DEGLITCHING;
+                sw.count[i] = -SW_DEGLITCH_TICKS;
+            }
+            continue;
 		}
 		if (sw.count[i] == 0) {							// trigger point
 			sw.sw_num_thrown = i;						// record number of thrown switch
@@ -173,7 +182,7 @@ void reset_switches()
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		sw.debounce[i] = SW_IDLE;
-//		sw.count[i] = -SW_DEGLITCH_TICKS;
+        read_switch(i);
 	}
 	sw.limit_flag = false;
 }
