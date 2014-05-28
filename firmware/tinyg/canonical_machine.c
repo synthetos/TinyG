@@ -1546,10 +1546,10 @@ static const char msg_g18[] PROGMEM = "G18 - XZ plane";
 static const char msg_g19[] PROGMEM = "G19 - YZ plane";
 static const char *const msg_plan[] PROGMEM = { msg_g17, msg_g18, msg_g19 };
 
-static const char msg_g61[] PROGMEM = "G61 - exact stop mode";
-static const char msg_g6a[] PROGMEM = "G61.1 - exact path mode";
+static const char msg_g61[] PROGMEM = "G61 - exact path mode";
+static const char msg_g6a[] PROGMEM = "G61.1 - exact stop mode";
 static const char msg_g64[] PROGMEM = "G64 - continuous mode";
-static const char *const msg_path[] PROGMEM = { msg_g61, msg_g61, msg_g64 };
+static const char *const msg_path[] PROGMEM = { msg_g61, msg_g6a, msg_g64 };
 
 static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
