@@ -47,6 +47,7 @@ static stRunSingleton_t st_run;
 /**** Setup local functions ****/
 
 static void _load_move(void);
+static uint8_t _runtime_isbusy(void); 
 //static void _request_load_move(void);
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
@@ -474,6 +475,17 @@ namespace Motate {	// Define timer inside Motate namespace
 #endif // __ARM
 
 /****************************************************************************************
+ * _runtime_isbusy() - Return state of runtime
+ */
+
+static uint8_t _runtime_isbusy()
+{
+	if (st_run.dda_ticks_downcount != 0) return(true);
+	return(false);
+}
+
+
+/****************************************************************************************
  * _load_move() - Dequeue move and load into stepper struct
  *
  *	This routine can only be called be called from an ISR at the same or 
@@ -490,22 +502,21 @@ static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
+//	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
+	if (_runtime_isbusy()) return;
 
 //	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
-		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
-		}
+//		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+//			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
+//		}
 //		return;
 //	}
-/*
-	if (st_pre.segment_ready != true) {									// trap if prep is not complete
-		printf("######## LOADER - SEGMENT NOT READY\n");
-	}
-	st_pre.segment_ready = false;
-*/
+
 	// handle aline() loads first (most common case)  NB: there are no more lines, only alines()
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
+
+		// trap if segment prep is not complete
+		if (st_pre.segment_ready != true) printf("#### LOADER - SEGMENT NOT READY\n");
 
 		//**** setup the new segment ****
 
@@ -680,6 +691,7 @@ static void _load_move()
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
 	st_prep_null();											// needed to shut off timers if no moves left
 //	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
+	st_pre.segment_ready = false;
 	st_request_exec_move();									// exec and prep next move
 }
 
@@ -714,7 +726,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 //	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));			// ever supposed to happen
 //	}
 
-	if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// ever supposed to happen
+	if		  (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// never supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));			// ever supposed to happen
 	}
 
@@ -783,7 +795,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
-//	st_pre.segment_ready = true;
+	st_pre.segment_ready = true;
 	return (STAT_OK);
 }
 

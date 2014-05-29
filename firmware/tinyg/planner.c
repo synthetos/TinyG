@@ -445,7 +445,7 @@ void mp_commit_write_buffer(const uint8_t move_type)
 	qr_request_queue_report(+1);				// request a QR and add to the "added buffers" count
 //	st_request_exec_move();						// request a move exec if not busy
 //	st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER;
-	st_request_load_move();						// request a move exec if not busy
+	st_request_load_move();						// start queue processing if not already running
 												// the exec may result in the buffer being processed
 												// immediately and then freed  - invalidating the contents
 }

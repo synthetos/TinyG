@@ -45,41 +45,40 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		431.01	// Working on M8 G4 M9 issue; checkpoint commit
+#define TINYG_FIRMWARE_BUILD   		431.02	// Working on M8 G4 M9 issue; checkpoint commit
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
 #define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
 #define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
 
-/****** COMPILE-TIME SETTINGS ******/
+/****** RUNTIME SETTINGS ******/
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
 //#define __BLOCK_ANNEALING
+
+/****** DEBUG SETTINGS ******/
+
 //#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
 
-#ifndef __SIMULATION
-  #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
-  #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
-  #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
-#endif
-//  #define __TEST_99 						// comment out to remove diagnostic test 99
+#ifndef __SIMULATION						// enable the following if not simulation mode
+	#define __TEXT_MODE						// comment out to disable text mode support (saves ~10Kb)
+	#define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
+	#define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
+//	#define __TEST_99 						// comment out to remove diagnostic test 99
 
-/****** DEVELOPMENT SETTINGS ******/
+#else										// enable the following if in simulation mode
+	#define __CANNED_STARTUP				// run any canned startup moves
+	#define __DISABLE_PERSISTENCE			// disable EEPROM writes for faster simulation
+	#define __SUPPRESS_STARTUP_MESSAGES 	// what it says
+	#define __SUPPRESS_STATUS_REPORTS 		// what it says
+	#define __SUPPRESS_QUEUE_REPORTS 		// what it says
+	#define __SUPPRESS_DIAGNOSTIC_DISPLAYS
+	#define __SILENCE_JSON_RESPONSES
+#endif
 
 #define __DIAGNOSTIC_PARAMETERS				// include diagnostics in config_app table
-
-#ifdef __SIMULATION
-  #define __CANNED_STARTUP					// run any canned startup moves
-  #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-  #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
-  #define __SUPPRESS_STATUS_REPORTS 		// what it says
-  #define __SUPPRESS_QUEUE_REPORTS 			// what it says
-  #define __SUPPRESS_DIAGNOSTIC_DISPLAYS
-  #define __SILENCE_JSON_RESPONSES
-#endif
-
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK
