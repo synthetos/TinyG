@@ -47,7 +47,7 @@ static stRunSingleton_t st_run;
 /**** Setup local functions ****/
 
 static void _load_move(void);
-static void _request_load_move(void);
+//static void _request_load_move(void);
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
 // handy macro
@@ -103,7 +103,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
 
-	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
 	st_reset();									// reset steppers to known state
 }
 
@@ -389,21 +389,21 @@ ISR(TIMER_DDA_ISR_vect)
 #ifdef __AVR
 void st_request_exec_move()
 {
-	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
+//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
 		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
 		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;				// trigger a LO interrupt
-	}
+//	}
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
 		if (mp_exec_move() != STAT_NOOP) {
-			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
-			_request_load_move();
-		}
+//			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+			st_request_load_move();
+//		}
 	}
 }
 #endif // __AVR
@@ -434,12 +434,13 @@ namespace Motate {	// Define timer inside Motate namespace
 /****************************************************************************************
  * Loader sequencing code
  *
- * _request_load()		- fires a software interrupt (timer) to request to load a move
- *  load_mode interrupt	- interrupt handler for running the loader
+ * _request_load_move()	- fires a software interrupt (timer) to request to load a move
+ *  load_move interrupt	- interrupt handler for running the loader
  */
 
 #ifdef __AVR
-static void _request_load_move()
+//static void _request_load_move()
+void st_request_load_move()
 {
 	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
 		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
@@ -491,12 +492,12 @@ static void _load_move()
 	// So the initial load must also have this set to zero as part of initialization
 	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
 
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
+//	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 		}
-		return;
-	}
+//		return;
+//	}
 /*
 	if (st_pre.segment_ready != true) {									// trap if prep is not complete
 		printf("######## LOADER - SEGMENT NOT READY\n");
@@ -678,7 +679,7 @@ static void _load_move()
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
 	st_prep_null();											// needed to shut off timers if no moves left
-	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
+//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
 	st_request_exec_move();									// exec and prep next move
 }
 
@@ -708,8 +709,12 @@ static void _load_move()
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
-	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to happen
-	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// ever supposed to happen
+//	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));	// never supposed to happen
+//	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// ever supposed to happen
+//	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));			// ever supposed to happen
+//	}
+
+	if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));		// ever supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));			// ever supposed to happen
 	}
 

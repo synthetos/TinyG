@@ -398,7 +398,7 @@ typedef struct stPrepMotor {
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;				// magic number to test memory integrity
-	volatile uint8_t exec_state;		// move execution state
+//	volatile uint8_t exec_state;		// move execution state
 	uint8_t move_type;					// move type
 	uint8_t segment_ready;				// flag indicating the next segment is ready for loading
 
@@ -429,6 +429,8 @@ void st_set_motor_power(const uint8_t motor);
 stat_t st_motor_power_callback(void);
 
 void st_request_exec_move(void);
+void st_request_load_move(void);
+
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);

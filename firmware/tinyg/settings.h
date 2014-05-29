@@ -84,7 +84,7 @@
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
@@ -94,7 +94,7 @@
 //#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-//#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
+#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_tgfx_2404.h"				// Settings for testing with tgfx - not for release
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
