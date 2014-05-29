@@ -91,8 +91,6 @@ static stat_t _set_pb_func(uint8_t (*func)());
  *	tg_controller() that will accept the next command before the position of 
  *	the final move has been recorded in the Gcode model. That's what the call
  *	to cm_get_runtime_busy() is about.
- *
- *  ESTEE: is this still true???   ASH: Yes.
  */
 
 uint8_t cm_straight_probe(float target[], float flags[])
@@ -211,11 +209,11 @@ static stat_t _probing_finish()
     int8_t probe = sw.state[pb.probe_switch];
     cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEDED : PROBE_FAILED;
 
-    for( uint8_t axis=0; axis<AXES; axis++ )
-        cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
-
     // if we got here because of a feed hold we need to keep the model position correct
 	cm_set_model_position_from_runtime(STAT_OK);
+    
+    for( uint8_t axis=0; axis<AXES; axis++ )
+        cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 
     json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
     // printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
@@ -233,10 +231,8 @@ static stat_t _probing_finish()
 // called when exiting on success or error
 static void _probe_restore_settings()
 {
-	// mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
-	cm_queue_flush();	
-	qr_request_queue_report(0);	
-    
+	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
+	
     // restore switch settings
     sw.switch_type = pb.saved_switch_type;
     for( uint8_t i=0; i<NUM_SWITCHES; i++ )
@@ -254,13 +250,8 @@ static void _probe_restore_settings()
 	// update the model with actual position
 
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-	cm_set_motion_state(MOTION_STOP);			// also sets ACTIVE_MODEL
-	cm.machine_state = MACHINE_PROGRAM_STOP;
+    cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
-	cm.hold_state = FEEDHOLD_OFF;
-//	cm_request_cycle_start();					// clear feedhold state
-//	cm_cycle_end();
-//	cm_program_stop();
 
     printf_P(PSTR("(cm.cycle_state %i)\n"), cm.cycle_state);
 }

@@ -67,6 +67,7 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	uint8_t saved_units_mode;		// G20,G21 global setting
 	uint8_t saved_coord_system;		// G54 - G59 setting
 	uint8_t saved_distance_mode;	// G90,G91 global setting
+    uint8_t saved_feed_rate_mode;   // G93,G94 global setting
 	float saved_feed_rate;			// F setting
 	float saved_jerk;				// saved and restored for each axis homed
     float target_position;          // saved prior to initiating moves, for verifying post-move position
@@ -166,6 +167,7 @@ stat_t cm_homing_cycle_start(void)
 	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
 	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
+    hm.saved_feed_rate_mode = cm_get_inverse_feed_rate_mode(ACTIVE_MODEL);
 	hm.saved_feed_rate = cm.gm.feed_rate;							//cm_get_feed_rate(ACTIVE_MODEL);
     hm.target_position = 0;
 
@@ -173,6 +175,7 @@ stat_t cm_homing_cycle_start(void)
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(INCREMENTAL_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);	// homing is done in machine coordinates
+    cm_set_inverse_feed_rate_mode(false);
 	hm.set_coordinates = true;
 
 	hm.axis = -1;							// set to retrieve initial axis
@@ -331,13 +334,13 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
     ritorno(_verify_position(axis));
-	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
+	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle, but sync it to runtime
 		cm_set_axis_origin(axis, 0);
 		mp_set_runtime_position(axis, 0);
 		cm.homed[axis] = true;
 	} else {
-		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
-	}
+        cm_set_model_position_from_runtime(STAT_OK);
+    }
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 	return (_set_homing_func(_homing_axis_start));
 }
@@ -403,10 +406,11 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm_set_coord_system(hm.saved_coord_system);				// restore to work coordinate system
 	cm_set_units_mode(hm.saved_units_mode);
 	cm_set_distance_mode(hm.saved_distance_mode);
-	cm_set_feed_rate(hm.saved_feed_rate);
+    cm_set_inverse_feed_rate_mode(hm.saved_feed_rate_mode);
+	cm.gm.feed_rate = hm.saved_feed_rate;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;								// required
 	cm_cycle_end();
+    cm.cycle_state = CYCLE_OFF;
 	return (STAT_OK);
 }
 
