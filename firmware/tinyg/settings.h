@@ -59,13 +59,10 @@
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT		// one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT (starting value)
 #define JSON_FOOTER_DEPTH			0						// 0 = new style, 1 = old style
 
-#define STATUS_REPORT_VERBOSITY		SR_VERBOSE				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
-//#define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
-//#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","_cs3","_es3","_xs3","_fe3","feed","vel","stat","gc"
-//#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","_cs3","_es3","_xs3","_fe3","feed","vel","stat"
+#define STATUS_REPORT_DEFAULTS		"line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -86,7 +83,7 @@
 
 // machine default profiles - choose only one:
 
-//#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
@@ -96,7 +93,7 @@
 //#include "settings/settings_othermill.h"				// Otherfab OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
+//#include "settings/settings_shapeoko375.h"			// Shapeoko (1) - 375mm rails
 //#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_tgfx_2404.h"				// Settings for testing with tgfx - not for release
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer

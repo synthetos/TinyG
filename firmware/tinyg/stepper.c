@@ -395,8 +395,8 @@ void st_request_exec_move()
 	}
 }
 
-ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
-	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {									// exec move SW interrupt
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;					// disable SW interrupt timer
 
 	// exec_move
 	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
@@ -417,9 +417,9 @@ void st_request_exec_move()
 }
 
 namespace Motate {	// Define timer inside Motate namespace
-	MOTATE_TIMER_INTERRUPT(exec_timer_num)			// exec move SW interrupt
+	MOTATE_TIMER_INTERRUPT(exec_timer_num)					// exec move SW interrupt
 	{
-		exec_timer.getInterruptCause();				// clears the interrupt condition
+		exec_timer.getInterruptCause();						// clears the interrupt condition
 		if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
 			if (mp_exec_move() != STAT_NOOP) {
 				st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
