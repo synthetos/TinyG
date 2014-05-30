@@ -493,6 +493,8 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float tmp_time=0;					// used in computation
 	gcode_state->minimum_time = 8675309;// arbitrarily large number
 
+    float *planner_position = mp_get_planner_position_vector();
+
 	// compute times for feed motion
 	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 		if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
@@ -500,21 +502,21 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 			cm.gm.feed_rate = 0;		// reset feed rate so next block requires an explicit feed rate setting
 			cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
 		} else {
-			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
-							square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
-							square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
+			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - planner_position[AXIS_X]) + // in mm
+							square(cm.gm.target[AXIS_Y] - planner_position[AXIS_Y]) +
+							square(cm.gm.target[AXIS_Z] - planner_position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
 			if (fp_ZERO(xyz_time)) {
-				abc_time = sqrt(square(cm.gm.target[AXIS_A] - cm.gmx.position[AXIS_A]) + // in deg
-								square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
-								square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
+				abc_time = sqrt(square(cm.gm.target[AXIS_A] - planner_position[AXIS_A]) + // in deg
+								square(cm.gm.target[AXIS_B] - planner_position[AXIS_B]) +
+								square(cm.gm.target[AXIS_C] - planner_position[AXIS_C])) / cm.gm.feed_rate; // in degree units
 			}
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].feedrate_max;
+			tmp_time = fabs(cm.gm.target[axis] - planner_position[axis]) / cm.a[axis].feedrate_max;
 		} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
+			tmp_time = fabs(cm.gm.target[axis] - planner_position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
 		// collect minimum time if not zero

@@ -104,7 +104,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
 
-//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;
+//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;	//++++
 	st_reset();									// reset steppers to known state
 }
 
@@ -390,7 +390,7 @@ ISR(TIMER_DDA_ISR_vect)
 #ifdef __AVR
 void st_request_exec_move()
 {
-//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting
+//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting ++++
 		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
 		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;				// trigger a LO interrupt
 //	}
@@ -400,12 +400,12 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {
+//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// ++++
 		if (mp_exec_move() != STAT_NOOP) {
-//			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+//			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back ++++
 			st_request_load_move();
-//		}
-	}
+		}
+//	}
 }
 #endif // __AVR
 
@@ -505,6 +505,7 @@ static void _load_move()
 //	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
 	if (_runtime_isbusy()) return;
 
+//++++
 //	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
@@ -696,7 +697,7 @@ static void _load_move()
 
 	// all non-move, non-dwell cases drop to here (e.g. Null moves after Mcodes skip to here)
 	st_prep_null();											// needed to shut off timers if no moves left
-//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
+//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back ++++
 //	st_pre.segment_ready = false;
 	st_request_exec_move();									// exec and prep next move
 }
