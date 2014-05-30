@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		431.02	// Working on M8 G4 M9 issue; checkpoint commit
+#define TINYG_FIRMWARE_BUILD   		431.04	// Working on M8 G4 M9 issue; Testing proper dwell queueing
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -55,7 +55,7 @@
 /****** RUNTIME SETTINGS ******/
 
 #define __STEP_CORRECTION
-#define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
+//#define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
 //#define __BLOCK_ANNEALING
 
 /****** DEBUG SETTINGS ******/

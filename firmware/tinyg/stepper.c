@@ -680,18 +680,24 @@ static void _load_move()
 		//**** do this last ****
 
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
+		st_pre.segment_ready = false;						// flag prep buffer as stale
+		st_prep_null();										// needed to shut off timers if no moves left
+		st_request_exec_move();								// exec and prep next move
+		return;
 
 	// handle dwells
 	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		st_prep_null();										// needed to shut off timers if no moves left
+		return;	
 	}
 
-	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
+	// all non-move, non-dwell cases drop to here (e.g. Null moves after Mcodes skip to here)
 	st_prep_null();											// needed to shut off timers if no moves left
 //	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
-	st_pre.segment_ready = false;
+//	st_pre.segment_ready = false;
 	st_request_exec_move();									// exec and prep next move
 }
 
