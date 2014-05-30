@@ -48,12 +48,22 @@
 #undef COMM_MODE
 #define COMM_MODE				JSON_MODE
 
-#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY 			JV_CONFIGS
-#define JSON_VERBOSITY 			JV_VERBOSE
-
 #undef SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+
+// *** settings for testing ***
+
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY 			JV_SILENT
+//#define JSON_VERBOSITY 			JV_CONFIGS
+//#define JSON_VERBOSITY 			JV_VERBOSE
+
+#undef  STATUS_REPORT_VERBOSITY
+#define STATUS_REPORT_VERBOSITY		SR_VERBOSE			// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+
+#undef STATUS_REPORT_DEFAULTS
+//#define STATUS_REPORT_DEFAULTS	"line","posx","posy","posz","vel","_cs1","_es1","_xs1","_fe1","_cs2","_es2","_xs2","_fe2","unit","path","stat"
+#define STATUS_REPORT_DEFAULTS	"line","posx","posy","posz","vel","_cs1","_es1","_xs1","_fe1","_cs2","_es2","_xs2","_fe2"
 
 // *** motor settings ***
 

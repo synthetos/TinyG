@@ -787,8 +787,10 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 			if (correction_steps > 0) {
 				correction_steps = min3(correction_steps, fabs(travel_steps[motor]), STEP_CORRECTION_MAX);
+				printf("+");	//+++
 			} else {
 				correction_steps = max3(correction_steps, -fabs(travel_steps[motor]), -STEP_CORRECTION_MAX);
+				printf("-");	//+++
 			}
 			st_pre.mot[motor].corrected_steps += correction_steps;
 			travel_steps[motor] -= correction_steps;

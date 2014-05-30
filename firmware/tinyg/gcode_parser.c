@@ -499,7 +499,8 @@ static stat_t _execute_gcode_block()
 
 stat_t gc_get_gc(nvObj_t *nv)
 {
-	ritorno(nv_copy_string(nv, cs.in_buf));
+//	ritorno(nv_copy_string(nv, cs.in_buf));
+	ritorno(nv_copy_string(nv, cs.saved_buf));
 	nv->valuetype = TYPE_STRING;
 	return (STAT_OK);
 }
