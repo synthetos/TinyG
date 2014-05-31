@@ -198,13 +198,6 @@ void text_print_inline_pairs(nvObj_t *nv)
 			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
-
-//								  if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
-//								  else if (nv->precision == 1) { fprintf_P(stderr,PSTR("%s:%1.1f"), nv->token, nv->value); break;}
-//								  else if (nv->precision == 2) { fprintf_P(stderr,PSTR("%s:%1.2f"), nv->token, nv->value); break;}
-//								  else if (nv->precision == 3) { fprintf_P(stderr,PSTR("%s:%1.3f"), nv->token, nv->value); break;}
-//								  else if (nv->precision == 4) { fprintf_P(stderr,PSTR("%s:%1.4f"), nv->token, nv->value); break;}
-//								  else                         { fprintf_P(stderr,PSTR("%s:%f"), nv->token, nv->value); break;}
 								}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
@@ -225,13 +218,6 @@ void text_print_inline_values(nvObj_t *nv)
 			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
-
-//								  if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
-//								  else if (nv->precision == 1) { fprintf_P(stderr,PSTR("%1.1f"), nv->value); break;}
-//								  else if (nv->precision == 2) { fprintf_P(stderr,PSTR("%1.2f"), nv->value); break;}
-//								  else if (nv->precision == 3) { fprintf_P(stderr,PSTR("%1.3f"), nv->value); break;}
-//								  else if (nv->precision == 4) { fprintf_P(stderr,PSTR("%1.4f"), nv->value); break;}
-//								  else                         { fprintf_P(stderr,PSTR("%f"), nv->value); break;}
 								}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}

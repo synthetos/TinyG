@@ -502,14 +502,14 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		if ((bp->pv == bf) || (*mr_flag == true))  {
 			bp->entry_velocity = bp->entry_vmax;		// first block in the list
 			*mr_flag = false;
-			} else {
+		} else {
 			bp->entry_velocity = bp->pv->exit_velocity;	// other blocks in the list
 		}
 		bp->cruise_velocity = bp->cruise_vmax;
 		bp->exit_velocity = min4( bp->exit_vmax,
-		bp->nx->entry_vmax,
-		bp->nx->braking_velocity,
-		(bp->entry_velocity + bp->delta_vmax) );
+								  bp->nx->entry_vmax,
+								  bp->nx->braking_velocity,
+								 (bp->entry_velocity + bp->delta_vmax) );
 
 //		float old_entry_velocity = bp->entry_velocity;
 		mp_calculate_trapezoid(bp);
@@ -981,7 +981,7 @@ static void _test_trapezoid(float length, float Ve, float Vt, float Vx, mpBuf_t 
 	bf->jerk = JERK_TEST_VALUE;
 	bf->recip_jerk = 1/bf->jerk;
 	bf->cbrt_jerk = cbrt(bf->jerk);
-	_calculate_trapezoid(bf);
+	mp_calculate_trapezoid(bf);
 }
 
 static void _test_calculate_trapezoid()

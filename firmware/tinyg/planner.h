@@ -238,7 +238,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
-	float position_c[AXES];			// for Kahan summation function (_exec_aline_segment() )
+	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
 	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
@@ -342,7 +342,7 @@ float* mp_get_planner_position_vector();
 
 // plan_zoid.c functions
 void mp_calculate_trapezoid(mpBuf_t *bf);
-float mp_get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
+float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf);
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 
 // plan_exec.c functions

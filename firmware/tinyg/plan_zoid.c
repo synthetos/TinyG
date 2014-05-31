@@ -127,6 +127,13 @@ extern "C"{
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
+	//********************************************************
+	//********************************************************
+	//**      THE FIRST RULE OF _calculate_trapezoid():     **
+	//**             DON'T CHANGE bf->length                **
+	//********************************************************
+	//********************************************************
+
 	// B" case: Block is short - fits into a single body segment
 	// F case: Block is too short - run time < minimum segment time
 	
@@ -433,8 +440,7 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 // NOTE: ALTERNATE FORMULATION OF ABOVE...
 
 /*	
- * mp_get_target_length2()   - derive accel/decel length from delta V and jerk
- * mp_get_target_velocity2() - derive velocity achievable from initial V, length and jerk
+ * mp_get_target_velocity() - derive velocity achievable from initial V, length and jerk
  *
  *	This set of functions returns the fourth thing knowing the other three.
  *	
@@ -446,26 +452,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
  *    Ar = ramp acceleration
  *	  Ar = As/2 = (Jm*T)/4
  *	
- *	Assumes Vf, Vi and L are positive or zero
- *	Cannot assume Vf>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
- *	necessitating the introduction of fabs()
- *
- *	mp_get_target_length() is a convenient function for determining the optimal_length (L) 
- *	of a line given the inital velocity (Vi), target velocity (Vf) and maximum jerk (Jm).
- *
- *	The length (distance) equation is derived from: 
- *
- *	 a) L = Vi * Td + (Ar*Td^2)/2		... which becomes b) with substitutions for Ar and T
- *	 b) L = 2 * (Vi*sqrt((Vf-Vi)/Jm) + sqrt((Vf-Vi)/Jm)/2 * (Vf-Vi))
- *	 c) L = (Vf+Vi) * sqrt(abs(Vf-Vi)/Jm) 	... a short alternate form of b) assuming only positive values
- *
- *	 Notes: Ar = (Jm*T)/4					Ar is ramp acceleration
- *			T  = 2*sqrt((Vf-Vi)/Jm)			T is time
- *
- *			Assumes Vf, Vi and L are positive or zero
- *			Cannot assume Vf>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
- *			necessitating the introduction of fabs()
- *
  * 	mp_get_target_velocity() is a convenient function for determining Vf target 
  *	velocity for a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
  *	Solving equation c) for Vf gives d)
@@ -477,11 +463,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
  /*
-float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
-{
-	return ((Vf+Vi) * sqrt(fabs(Vf-Vi) * bf->recip_jerk));
-}
-
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {
 	float JmL2 = bf->jerk*square(L);
