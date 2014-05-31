@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		431.06	// Working on M8 G4 M9 issue; Testing
+#define TINYG_FIRMWARE_BUILD   		431.07	// Working on M8 G4 M9 issue; Testing
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -54,7 +54,7 @@
 
 /****** RUNTIME SETTINGS ******/
 
-#define __STEP_CORRECTION
+//#define __STEP_CORRECTION
 //#define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
 //#define __BLOCK_ANNEALING
 
@@ -66,7 +66,6 @@
 	#define __TEXT_MODE						// comment out to disable text mode support (saves ~10Kb)
 	#define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
 	#define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
-//	#define __TEST_99 						// comment out to remove diagnostic test 99
 
 #else										// enable the following if in simulation mode
 	#define __CANNED_STARTUP				// run any canned startup moves
@@ -78,6 +77,7 @@
 	#define __SILENCE_JSON_RESPONSES
 #endif
 
+#define __TEST_99 							// comment out to remove diagnostic test 99
 #define __DIAGNOSTIC_PARAMETERS				// include diagnostics in config_app table
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 

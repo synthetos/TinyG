@@ -171,7 +171,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 	if (path_control_mode == PATH_CONTINUOUS) {
 		if (gm_in->move_time < MIN_BLOCK_TIME) {
-			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+//			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
 			return (STAT_MINIMUM_TIME_MOVE);
 		}
 	}
