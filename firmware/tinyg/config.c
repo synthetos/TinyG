@@ -292,7 +292,7 @@ stat_t set_flu(nvObj_t *nv)
 	nv->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
 }
-
+	
 /************************************************************************************
  * Group operations
  *
@@ -459,6 +459,22 @@ stat_t nv_persist_offsets(uint8_t flag)
 		}
 	}
 	return (STAT_OK);
+}
+
+/*
+ * nv_preprocess_float() - pre-promcess flaoting point number for units display and illegal valaues
+ */
+
+void nv_preprocess_float(nvObj_t *nv)
+{
+	if (isnan((double)nv->value) || isinf((double)nv->value)) {	// illegal float values
+		nv->value = 0;
+
+	} else if (GET_TABLE_BYTE(flags) & F_CONVERT) {	// unit conversion required?
+		if (cm_get_units_mode(MODEL) == INCHES) {
+			nv->value *= INCHES_PER_MM;
+		}
+	}
 }
 
 /******************************************************************************

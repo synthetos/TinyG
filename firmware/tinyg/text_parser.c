@@ -194,7 +194,8 @@ void text_print_inline_pairs(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
+			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+								  if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
 								  else if (nv->precision == 1) { fprintf_P(stderr,PSTR("%s:%1.1f"), nv->token, nv->value); break;}
 								  else if (nv->precision == 2) { fprintf_P(stderr,PSTR("%s:%1.2f"), nv->token, nv->value); break;}
 								  else if (nv->precision == 3) { fprintf_P(stderr,PSTR("%s:%1.3f"), nv->token, nv->value); break;}
@@ -217,7 +218,8 @@ void text_print_inline_values(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->value); break;}
+			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+								  if 	  (nv->precision == 0) { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->value); break;}
 								  else if (nv->precision == 1) { fprintf_P(stderr,PSTR("%s:%1.1f"), nv->value); break;}
 								  else if (nv->precision == 2) { fprintf_P(stderr,PSTR("%s:%1.2f"), nv->value); break;}
 								  else if (nv->precision == 3) { fprintf_P(stderr,PSTR("%s:%1.3f"), nv->value); break;}

@@ -473,11 +473,6 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 				str += sprintf((char *)str, "\"%s\":", nv->token);
 			}
 
-			// check for illegal float values
-			if (nv->valuetype == TYPE_FLOAT) {
-				if (isnan((double)nv->value) || isinf((double)nv->value)) { nv->value = 0;}
-			}
-
 			// serialize output value
 			if		(nv->valuetype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
 			else if (nv->valuetype == TYPE_INTEGER)	{
@@ -489,7 +484,7 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
 			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_FLOAT) {
+			else if (nv->valuetype == TYPE_FLOAT)   { nv_preprocess_float(nv);
 				if 		(nv->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)nv->value);}
 				else if (nv->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)nv->value);}
 				else if (nv->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)nv->value);}

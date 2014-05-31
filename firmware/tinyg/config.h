@@ -237,12 +237,17 @@ enum valueType {					// value typing for config and JSON
 #define F_INITIALIZE	0x01			// initialize this item (run set during initialization)
 #define F_PERSIST 		0x02			// persist this item when set is run
 #define F_NOSTRIP		0x04			// do not strip the group prefix from the token
-#define _f00			0x00
-#define _fin			F_INITIALIZE
-#define _fpe			F_PERSIST
+#define F_CONVERT		0x08			// set if unit conversion is required
+
+#define _f0				0x00
+#define _fi				(F_INITIALIZE)
+#define _fp				(F_PERSIST)
+#define _fn				(F_NOSTRIP)
+#define _fc				(F_CONVERT)
 #define _fip			(F_INITIALIZE | F_PERSIST)
-#define _fns			F_NOSTRIP
-#define _f07			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
+#define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
+#define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
+#define _fipnc			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT)
 
 /**** Structures ****/
 
@@ -264,6 +269,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
+	uint8_t unit_conversion_flag;		// set true if unit conversion is required on output
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
@@ -308,6 +314,7 @@ void nv_persist(nvObj_t *nv);		// main entry point for persistence
 // helpers
 uint8_t nv_get_type(nvObj_t *nv);
 stat_t nv_persist_offsets(uint8_t flag);
+void nv_preprocess_float(nvObj_t *nv);	// pre-process float values for units and illegal values
 
 index_t nv_get_index(const char_t *group, const char_t *token);
 index_t	nv_index_max(void);
@@ -328,7 +335,6 @@ stat_t set_int(nvObj_t *nv);		// set uint32_t integer value
 stat_t set_data(nvObj_t *nv);		// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);		// set floating point value
 stat_t set_flu(nvObj_t *nv);		// set floating point number with G20/G21 units conversion
-//stat_t get_flt(nvObj_t *nv);		// get floating point number with G20/G21 units conversion
 
 stat_t get_nul(nvObj_t *nv);		// get null value type
 stat_t get_ui8(nvObj_t *nv);		// get uint8_t value
