@@ -572,7 +572,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_fe","_fe6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_6], 0 },
 #endif
 	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
-	{ "",   "_le", _f0, 4, tx_print_nul, get_flt, set_nul,(float *)&mm.length_error, 0 }, // record error in length
+	{ "",   "_le", _f0, 7, tx_print_nul, get_flt, set_nul,(float *)&mm.length_error, 0 }, // record error in length
 
 #endif	//  __DIAGNOSTIC_PARAMETERS
 

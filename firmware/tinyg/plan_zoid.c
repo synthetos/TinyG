@@ -127,6 +127,7 @@ extern "C"{
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
+	mm.length_error = 0;
 	// B" case: Block is short - fits into a single body segment
 	// F case: Block is too short - run time < minimum segment time
 	
@@ -215,6 +216,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
+			mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 			return;
 		}
 
@@ -230,7 +232,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			if (bf->head_length > bf->tail_length) {
 				bf->head_length = (bf->head_length / (bf->head_length + bf->tail_length)) * bf->length;
 				computed_velocity = mp_get_target_velocity(bf->entry_velocity, bf->head_length, bf);
-				} else {
+			} else {
 				bf->tail_length = (bf->tail_length / (bf->head_length + bf->tail_length)) * bf->length;
 				computed_velocity = mp_get_target_velocity(bf->exit_velocity, bf->tail_length, bf);
 			}
@@ -249,6 +251,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 		}
+		mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 		return;
 	}
 
@@ -263,10 +266,10 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			if (fp_NOT_ZERO(bf->tail_length)) {			// HBT reduces to HT
 				bf->head_length += bf->body_length/2;
 				bf->tail_length += bf->body_length/2;
-				} else {									// HB reduces to H
+			} else {									// HB reduces to H
 				bf->head_length += bf->body_length;
 			}
-			} else {										// BT reduces to T
+		} else {										// BT reduces to T
 			bf->tail_length += bf->body_length;
 		}
 		bf->body_length = 0;
@@ -276,6 +279,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
+	mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 }
 
 /*	
