@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		433.03	// testing for trapezoid generator length errors
+#define TINYG_FIRMWARE_BUILD   		433.04	// Updated get_target_velocity()
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -54,7 +54,7 @@
 
 /****** RUNTIME SETTINGS ******/
 
-//#define __STEP_CORRECTION
+#define __STEP_CORRECTION
 //#define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
 //#define __BLOCK_ANNEALING
 

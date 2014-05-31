@@ -127,7 +127,6 @@ extern "C"{
 
 void mp_calculate_trapezoid(mpBuf_t *bf)
 {
-	mm.length_error = 0;
 	// B" case: Block is short - fits into a single body segment
 	// F case: Block is too short - run time < minimum segment time
 	
@@ -216,7 +215,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
-			mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 			return;
 		}
 
@@ -251,7 +249,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 		}
-		mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 		return;
 	}
 
@@ -279,7 +276,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
-	mm.length_error = bf->length - (bf->head_length + bf->body_length + bf->tail_length);
 }
 
 /*	
@@ -373,24 +369,27 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
  *
  *  J'(x) = (2*Vi*x - Vi² + 3*x²) / L²
  */
+
+#define GET_VELOCITY_ITERATIONS 2		// must be 0, 1, or 2
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {
-
     // 0 iterations (a reasonable estimate)
     float estimate = pow(L, 0.66666666) * bf->cbrt_jerk + Vi;
 
+#if (GET_VELOCITY_ITERATIONS >= 1)
     // 1st iteration
     float L_squared = L*L;
     float Vi_squared = Vi*Vi;
     float J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - bf->jerk;
     float J_d = (2*Vi*estimate - Vi_squared + 3*(estimate*estimate)) / L_squared;
     estimate = estimate - J_z/J_d;
-
+#endif
+#if (GET_VELOCITY_ITERATIONS >= 2)
     // 2nd iteration
     J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - bf->jerk;
     J_d = (2*Vi*estimate - Vi_squared + 3*(estimate*estimate)) / L_squared;
     estimate = estimate - J_z/J_d;
-
+#endif
     return estimate;
 
 /*
