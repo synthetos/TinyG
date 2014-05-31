@@ -643,7 +643,7 @@ static stat_t _exec_aline_tail()
  *		   90	    100	       -10		encoder is 10 steps behind commanded steps
  *	     -100	    -90	       -10		encoder is 10 steps behind commanded steps
  */
-
+/*
 static stat_t _exec_aline_segment()
 {
 	uint8_t i;
@@ -688,6 +688,72 @@ static stat_t _exec_aline_segment()
 #ifdef __JERK_EXEC
 	mr.elapsed_accel_time += mr.segment_accel_time;		// this is needed by jerk-based exec (NB: ignored if running the body)
 #endif
+	if (mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
+	return (STAT_EAGAIN);								// this section still has more segments to run
+}
+*/
+static stat_t _exec_aline_segment()
+{
+//	exec_debug_pin1 = 1;
+	uint8_t i;
+	float travel_steps[MOTORS];
+
+	// Set target position for the segment
+	// If the segment ends on a section waypoint synchronize to the head, body or tail end
+	// Otherwise if not at a section waypoint compute target from segment time and velocity
+	// Don't do waypoint correction if you are going into a hold.
+
+	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
+		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
+		copy_vector(mr.gm.target, mr.waypoint[mr.section]);
+		// reset target_c?
+	} else {
+		float segment_length = mr.segment_velocity * mr.segment_time;
+		for (i=0; i<AXES; i++) {
+			float new_offset = (mr.unit[i] * segment_length);
+
+			// Using the Kahan summation algorithm to mitigate floating-point errors
+			// Short form:
+			// mr.gm.target[i] = mr.position[i] + new_offset;
+
+			// Long form:
+			// Compute our offset including the previous roundoff error
+			float new_offset_corrected = new_offset - mr.position_c[i];
+			// Now add in our new_offset (corrected)
+			float new_target = mr.position[i] + new_offset_corrected;
+			// Now find and store our new roundoff error but subtracting all the tings we added up
+			mr.position_c[i] = (new_target - mr.position[i]) - new_offset_corrected;
+			mr.gm.target[i] = new_target;
+		}
+	}
+
+	// Convert target position to steps
+	// Bucket-brigade the old target down the chain before getting the new target from kinematics
+	//
+	// NB: The direct manipulation of steps to compute travel_steps only works for Cartesian kinematics.
+	//	   Other kinematics may require transforming travel distance as opposed to simply subtracting steps.
+
+	for (i=0; i<MOTORS; i++) {
+		mr.commanded_steps[i] = mr.position_steps[i];	// previous segment's position, delayed by 1 segment
+		mr.position_steps[i] = mr.target_steps[i];	 	// previous segment's target becomes position
+		mr.encoder_steps[i] = en_read_encoder(i);		// get current encoder position (time aligns to commanded_steps)
+		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i];
+	}
+	ik_kinematics(mr.gm.target, mr.target_steps);		// now determine the target steps...
+	for (i=0; i<MOTORS; i++) {							// and compute the distances to be traveled
+		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
+	}
+
+	// Call the stepper prep function
+
+	//	exec_debug_pin1 = 0;
+	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
+	//    exec_debug_pin1 = 1;
+	copy_vector(mr.position, mr.gm.target); 			// update position from target
+#ifdef __JERK_EXEC
+	mr.elapsed_accel_time += mr.segment_accel_time;		// this is needed by jerk-based exec (NB: ignored if running the body)
+#endif
+	//	exec_debug_pin1 = 0;
 	if (mr.segment_count == 0) return (STAT_OK);		// this section has run all its segments
 	return (STAT_EAGAIN);								// this section still has more segments to run
 }

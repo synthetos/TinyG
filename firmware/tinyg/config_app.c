@@ -106,11 +106,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "fv", _fipn,3, hw_print_fv, get_flt,   set_nul,  (float *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
 	{ "sys", "hp", _fipn,0, hw_print_hp, get_flt,   set_flt,  (float *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn,0, hw_print_hv, get_flt,   hw_set_hv,(float *)&cs.hw_version, TINYG_HARDWARE_VERSION },
-	{ "sys", "id", _fn , 0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
+	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fi,  0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },	// Model line number
-	{ "",   "line",_fi,  0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },	// Active line number - model or runtime line number
+	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },	// Model line number
+	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },	// Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
 	{ "",   "feed",_f0, 2, cm_print_feed, get_flt,     set_nul,(float *)&cm.gm.feed_rate,0 },	// feed rate
 	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },			// combined machine state
@@ -572,6 +572,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_fe","_fe6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_6], 0 },
 #endif
 	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
+	{ "",   "_le", _f0, 4, tx_print_nul, get_flt, set_nul,(float *)&mm.length_error, 0 }, // record error in length
+
 #endif	//  __DIAGNOSTIC_PARAMETERS
 
 	// Persistence for status report - must be in sequence

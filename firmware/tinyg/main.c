@@ -179,7 +179,7 @@ int main(void)
  */
 
 stat_t status_code;						// allocate a variable for the ritorno macro
-char shared_buf[MESSAGE_LEN];			// allocate a string for global message use
+char global_string_buf[MESSAGE_LEN];	// allocate a string for global message use
 
 //#ifdef __TEXT_MODE
 

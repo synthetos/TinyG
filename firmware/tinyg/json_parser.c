@@ -484,13 +484,14 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
 			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_FLOAT)   { nv_preprocess_float(nv);
-				if 		(nv->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)nv->value);}
-				else if (nv->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)nv->value);}
-				else if (nv->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)nv->value);}
-				else if (nv->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", (double)nv->value);}
-				else if (nv->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", (double)nv->value);}
-				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)nv->value);}
+			else if (nv->valuetype == TYPE_FLOAT)   { nv_preprocess_float(nv); 
+													  str += fntoa((char *)str, nv->value, nv->precision);
+//				if 		(nv->precision == 0) { str += (char_t)sprintf((char *)str, "%0.0f", (double)nv->value);}
+//				else if (nv->precision == 1) { str += (char_t)sprintf((char *)str, "%0.1f", (double)nv->value);}
+//				else if (nv->precision == 2) { str += (char_t)sprintf((char *)str, "%0.2f", (double)nv->value);}
+//				else if (nv->precision == 3) { str += (char_t)sprintf((char *)str, "%0.3f", (double)nv->value);}
+//				else if (nv->precision == 4) { str += (char_t)sprintf((char *)str, "%0.4f", (double)nv->value);}
+//				else 						  { str += (char_t)sprintf((char *)str, "%f",    (double)nv->value);}
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
 				if (fp_FALSE(nv->value)) { str += sprintf((char *)str, "false");}

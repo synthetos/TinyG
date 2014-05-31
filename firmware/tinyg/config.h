@@ -269,7 +269,6 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
-	uint8_t unit_conversion_flag;		// set true if unit conversion is required on output
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup

@@ -217,6 +217,8 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
 
+	float length_error;				// ++++ diagnostic
+
 #ifdef __UNIT_TEST_PLANNER
 	float test_case;
 	float test_velocity;
@@ -236,6 +238,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
+	float position_c[AXES];			// for Kahan summation function (_exec_aline_segment() )
 	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
