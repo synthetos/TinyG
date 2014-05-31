@@ -223,7 +223,7 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	float a_unit[AXES];
 	float b_unit[AXES];
 #endif
-	magic_t magic_end;			// magic number to test memory integrity
+	magic_t magic_end;				// magic number to test memory integrity
 } mpMoveMasterSingleton_t;
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
@@ -307,7 +307,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
-stat_t mp_aline(const GCodeState_t *gm_line);
+stat_t mp_aline(const GCodeState_t *gm_in);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
@@ -337,6 +337,7 @@ void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
 float* mp_get_planner_position_vector();
 
+// plan_zoid.c functions
 void mp_calculate_trapezoid(mpBuf_t *bf);
 float mp_get_target_length(const float Vi, const float Vt, const mpBuf_t *bf);
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);

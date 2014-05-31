@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
-	 * This file ("the software") is free software: you can redistribute it and/or modify
+ * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
  * Free Software Foundation. You should have received a copy of the GNU General Public
  * License, version 2 along with the software.  If not, see <http://www.gnu.org/licenses/>.
@@ -32,7 +32,7 @@
 #define TINYG_H_ONCE
 
 // common system includes
-#include <ctype.h>					
+#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		431.07	// Working on M8 G4 M9 issue; Testing
+#define TINYG_FIRMWARE_BUILD   		431.08	// Edits to the comments after sync with G2 build 044.01
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
