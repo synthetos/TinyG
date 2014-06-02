@@ -47,7 +47,7 @@ static stRunSingleton_t st_run;
 /**** Setup local functions ****/
 
 static void _load_move(void);
-static uint8_t _runtime_isbusy(void);
+static uint8_t _block_isbusy(void);
 //static void _request_load_move(void);
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
@@ -324,6 +324,7 @@ MOTATE_TIMER_INTERRUPT(dwell_timer_num)
 	dwell_timer.getInterruptCause(); // read SR to clear interrupt condition
 	if (--st_run.dda_ticks_downcount == 0) {
 		dwell_timer.stop();
+		st_run.block_busy = false;
 		_load_move();
 	}
 }
@@ -377,8 +378,8 @@ ISR(TIMER_DDA_ISR_vect)
 
 	// process end of segment
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// turn it off or it will keep stepping out the last segment
+	st_run.block_busy = false;							// ready for the next load
 	_load_move();										// load the next move at the current interrupt level
-
 }
 
 /****************************************************************************************
@@ -437,19 +438,20 @@ namespace Motate {	// Define timer inside Motate namespace
  *
  * st_request_load_move() - fires a software interrupt (timer) to request to load a move
  * load_move interrupt	  - interrupt handler for running the loader
- * _runtime_isbusy()	  - Return state of runtime
+ * _block_isbusy()		  - return state of currently excuting planner block (buffer)
  */
 
-static uint8_t _runtime_isbusy()
+static uint8_t _block_isbusy()
 {
-	if (st_run.dda_ticks_downcount != 0) return(true);
-	return(false);
+//	if (st_run.dda_ticks_downcount != 0) return(true);
+//	return(false);
+	return (st_run.block_busy);
 }
 
 #ifdef __AVR
 void st_request_load_move()
 {
-	if (_runtime_isbusy() == true) return;
+	if (_block_isbusy() == true) return;
 	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;				// clear interrupt condition
 	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
 }
@@ -463,7 +465,7 @@ ISR(TIMER_LOAD_ISR_vect) {							// loader SW interrupt
 #ifdef __ARM
 void st_request_load_move()
 {
-	if (_runtime_isbusy() == true) return;	
+	if (_block_isbusy() == true) return;	
 	load_timer.setInterruptPending();
 }
 
@@ -494,7 +496,7 @@ static void _load_move()
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
 //	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
-	if (_runtime_isbusy()) return;
+	if (_block_isbusy()) return;
 
 //++++
 //	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
@@ -509,6 +511,8 @@ static void _load_move()
 
 		// trap if segment prep is not complete
 		if (st_pre.segment_ready != true) printf("#### LOADER - SEGMENT NOT READY\n");
+
+		st_run.block_busy = true;
 
 		//**** setup the new segment ****
 
@@ -676,7 +680,6 @@ static void _load_move()
 #endif
 #ifdef __ARM
 #endif
-//		printf("+");
 		st_pre.segment_ready = false;						// flag prep buffer as stale
 		st_prep_null();										// shut off loader or it will keep trying
 		st_request_exec_move();								// exec and prep next segment
@@ -687,6 +690,7 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		st_run.block_busy = true;
 		st_prep_null();										// shut off loader or it will keep trying
 		return;
 	}
