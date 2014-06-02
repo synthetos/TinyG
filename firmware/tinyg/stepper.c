@@ -437,45 +437,7 @@ namespace Motate {	// Define timer inside Motate namespace
  *
  * st_request_load_move() - fires a software interrupt (timer) to request to load a move
  * load_move interrupt	  - interrupt handler for running the loader
- */
-
-#ifdef __AVR
-//static void _request_load_move()
-void st_request_load_move()
-{
-	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
-		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
-		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
-	} 	// else don't bother to interrupt. You'll just trigger an
-		// interrupt and find out the load routine is not ready for you
-}
-
-ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
-	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
-	_load_move();
-}
-#endif // __AVR
-
-#ifdef __ARM
-void st_request_load_move()
-{
-	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
-		load_timer.setInterruptPending();
-	} 	// ...else don't bother to interrupt.
-		// You'll just trigger an interrupt and find out the loader is not ready
-}
-
-namespace Motate {	// Define timer inside Motate namespace
-	MOTATE_TIMER_INTERRUPT(load_timer_num)				// load steppers SW interrupt
-	{
-		load_timer.getInterruptCause();					// read SR to clear interrupt condition
-		_load_move();
-	}
-} // namespace Motate
-#endif // __ARM
-
-/****************************************************************************************
- * _runtime_isbusy() - Return state of runtime
+ * _runtime_isbusy()	  - Return state of runtime
  */
 
 static uint8_t _runtime_isbusy()
@@ -483,6 +445,36 @@ static uint8_t _runtime_isbusy()
 	if (st_run.dda_ticks_downcount != 0) return(true);
 	return(false);
 }
+
+#ifdef __AVR
+void st_request_load_move()
+{
+	if (_runtime_isbusy() == true) return;
+	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;				// clear interrupt condition
+	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
+}
+
+ISR(TIMER_LOAD_ISR_vect) {							// loader SW interrupt
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;			// disable SW interrupt timer
+	_load_move();
+}
+#endif // __AVR
+
+#ifdef __ARM
+void st_request_load_move()
+{
+	if (_runtime_isbusy() == true) return;	
+	load_timer.setInterruptPending();
+}
+
+namespace Motate {	// Define timer inside Motate namespace
+	MOTATE_TIMER_INTERRUPT(load_timer_num)			// loader SW interrupt
+	{
+		load_timer.getInterruptCause();				// read SR to clear interrupt condition
+		_load_move();
+	}
+} // namespace Motate
+#endif // __ARM
 
 /****************************************************************************************
  * _load_move() - Dequeue move and load into stepper struct
@@ -677,12 +669,17 @@ static void _load_move()
 		}
 		ACCUMULATE_ENCODER(MOTOR_6);
 #endif
-		//**** do this last ****
+		// Finish up aline load and exit
 
+#ifdef __AVR
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
+#endif
+#ifdef __ARM
+#endif
+//		printf("+");
 		st_pre.segment_ready = false;						// flag prep buffer as stale
-		st_prep_null();										// needed to shut off timers if no moves left
-		st_request_exec_move();								// exec and prep next move
+		st_prep_null();										// shut off loader or it will keep trying
+		st_request_exec_move();								// exec and prep next segment
 		return;
 
 	// handle dwells
@@ -690,7 +687,7 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
-		st_prep_null();										// needed to shut off timers if no moves left
+		st_prep_null();										// shut off loader or it will keep trying
 		return;
 	}
 
@@ -785,10 +782,8 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 			if (correction_steps > 0) {
 				correction_steps = min3(correction_steps, fabs(travel_steps[motor]), STEP_CORRECTION_MAX);
-//				printf("+");	//++++
 			} else {
 				correction_steps = max3(correction_steps, -fabs(travel_steps[motor]), -STEP_CORRECTION_MAX);
-//				printf("-");	//++++
 			}
 			st_pre.mot[motor].corrected_steps += correction_steps;
 			travel_steps[motor] -= correction_steps;
@@ -815,6 +810,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 void st_prep_null()
 {
 	st_pre.move_type = MOVE_TYPE_NULL;
+//	st_pre.segment_ready = false;						// flag prep buffer as stale
 }
 
 /* 

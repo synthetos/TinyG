@@ -368,7 +368,8 @@ typedef struct stRunMotor {				// one per controlled motor
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	uint16_t magic_start;				// magic number to test memory integrity
-	uint32_t dda_ticks_downcount;		// tick down-counter (unscaled)
+	volatile uint8_t runtime_busy;		// set true when runtime is doing a move or a dwell
+	volatile uint32_t dda_ticks_downcount;// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];			// runtime motor structures
 	uint16_t magic_end;

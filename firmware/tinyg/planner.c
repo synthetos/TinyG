@@ -142,7 +142,7 @@ void mp_flush_planner()
  * mp_set_steps_to_runtime_position() - set encoder counts to the runtime position
  * 
  * Since steps are in motor space you have to run the position vector through inverse 
- * kinematics to get the right numbers. This means that in a non-cartesian robot changing 
+ * kinematics to get the right numbers. This means that in a non-Cartesian robot changing 
  * any position can result in changes to multiple step values. So this operation is provided 
  * as a single function and always uses the new position vector as an input.
  */
@@ -171,89 +171,6 @@ void mp_set_steps_to_runtime_position()
 		st_pre.mot[motor].corrected_steps = 0;
 	}
 }
-
-/*
- * mp_set_planner_position()   - set planner and runtime positions from a single axis
- * mp_set_planner_position_by_vector() - set runtime and runtime positions from a position vector
- *
- * 	In order to set the planner and runtime positions the following all need to line up:
- *
- *	- mm.position		 - current planner position
- *	- mr.position		 - current runtime position
- *	- mr.target_steps	 - next runtime position as steps
- *	- mr.position_steps  - current runtime position as steps (one segment behind the target)
- *	- mr.commanded_steps - steps 2 segments behind target steps (aligns with encoders)
- *  - encoder steps		 - current encoder position (should agree with commanded steps)
- *
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *	!!!!! DO NOT CALL THESE FUNCTIONS WHILE IN A MACHINING CYCLE !!!!!
- *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- *
- *	More specifically, do not call these functions if there are any moves in the planner
- *	or if the runtime is moving. The system must be quiescent or you will introduce positional
- *	errors. This is true because the planned / running moves have a different reference frame
- *	than the one you are now going to set. These functions should only be called during
- *	initialization sequences and during cycles (such as homing cycles) when you know there
- *	are no more moves in the planner and that all motion has stopped. Use cm_get_runtime_busy() if in doubt.
- */
-/*
- * mp_set_step_counts_from_position() - set step counters and encoders to the given position
- *
- *	Sets the step counters and encoders to match the position, which is in mm length units.
- *	This establishes the "step grid" relative to the current machine position.
- */
-/*
-void mp_set_planner_position(uint8_t axis, float position)
-{
-	mm.position[axis] = position;
-	mr.position[axis] = position;
-	mp_set_step_counts(mr.position);
-}
-
-void mp_set_planner_position_by_vector(float position[], float flags[])
-{
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(flags[axis])) {
-			mm.position[axis] = position[axis];
-			mr.position[axis] = position[axis];
-		}
-	}
-	mp_set_step_counts(mr.position);
-}
-
-void mp_set_runtime_position(uint8_t axis, float position)
-{
-	mr.position[axis] = position;
-	mp_set_step_counts(mr.position);
-}
-
-void mp_set_runtime_position_by_vector(float position[], float flags[])
-{
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(flags[axis])) {
-			mr.position[axis] = position[axis];
-		}
-	}
-	mp_set_step_counts(mr.position);
-}
-
-void mp_set_step_counts(float position[])
-{
-	float step_position[MOTORS];
-	ik_kinematics(position, step_position);					// convert lengths to steps in floating point
-	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-		mr.target_steps[motor] = step_position[motor];
-		mr.position_steps[motor] = step_position[motor];
-		mr.commanded_steps[motor] = step_position[motor];
-		en_set_encoder_steps(motor, step_position[motor]);	// write steps to encoder
-
-		// These must be zero:
-		mr.following_error[motor] = 0;
-		st_pre.mot[motor].corrected_steps = 0;
-	}
-}
-
-*/
 
 /************************************************************************************
  * mp_queue_command() - queue a synchronous Mcode, program control, or other command
@@ -332,8 +249,7 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	return (STAT_OK);
 }
 
-/**** PLANNER BUFFERS *****************************************************
- *
+/**** PLANNER BUFFERS ******************************************************************
  * Planner buffers are used to queue and operate on Gcode blocks. Each buffer 
  * contains one Gcode block which may be a move, and M code, or other command 
  * that must be executed synchronously with movement.
