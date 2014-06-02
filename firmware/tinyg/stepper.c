@@ -48,7 +48,6 @@ static stRunSingleton_t st_run;
 
 static void _load_move(void);
 static uint8_t _block_isbusy(void);
-//static void _request_load_move(void);
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
 // handy macro
@@ -448,6 +447,11 @@ static uint8_t _block_isbusy()
 	return (st_run.block_busy);
 }
 
+void st_set_block_busy()
+{
+	st_run.block_busy = true;
+}
+
 #ifdef __AVR
 void st_request_load_move()
 {
@@ -684,9 +688,10 @@ static void _load_move()
 		st_prep_null();										// shut off loader or it will keep trying
 		st_request_exec_move();								// exec and prep next segment
 		return;
+	}
 
 	// handle dwells
-	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
+	if (st_pre.move_type == MOVE_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
@@ -695,7 +700,7 @@ static void _load_move()
 		return;
 	}
 
-	// all non-aline, non-dwell cases drop to here (e.g. Null moves after Mcodes skip to here)
+	// ELSE: all non-aline, non-dwell cases drop to here (e.g. Mcodes and syncronized commands)
 	st_prep_null();											// needed to shut off timers if no moves left
 //	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back ++++
 	st_request_exec_move();									// exec and prep next move

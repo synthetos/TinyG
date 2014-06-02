@@ -159,6 +159,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 {
 	if (bf->move_state == MOVE_OFF) { return (STAT_NOOP);} 
 
+//	st_set_block_busy();
+
 	// start a new move by setting up local context (singleton)
 	if (mr.move_state == MOVE_OFF) {
 		if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP);}// stops here if holding

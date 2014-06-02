@@ -420,6 +420,7 @@ void stepper_init(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
+void st_set_block_busy(void);
 
 void st_reset(void);
 stat_t st_clc(nvObj_t *nv);
