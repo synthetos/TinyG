@@ -100,7 +100,7 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX 			600 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX 			800 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX 			150					// xtm		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
@@ -115,7 +115,7 @@
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
-#define Y_VELOCITY_MAX 			600
+#define Y_VELOCITY_MAX 			800
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX 			150
 #define Y_TRAVEL_MIN			0
@@ -130,7 +130,7 @@
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#define Z_VELOCITY_MAX 			600
+#define Z_VELOCITY_MAX 			800
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			75
 #define Z_TRAVEL_MIN			0
