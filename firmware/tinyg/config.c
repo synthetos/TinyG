@@ -271,14 +271,14 @@ stat_t set_flt(cmdObj_t *cmd)
  * The number "getted" will be in internal canonical units (mm), which is  
  * returned in external units (inches or mm) 
  */
-
+/*
 stat_t get_flu(cmdObj_t *cmd)
 {
 	get_flt(cmd);
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCH_PER_MM;
+	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCHES_PER_MM;
 	return (STAT_OK);
 }
-
+*/
 /*
  * set_flu() - set floating point number with G20/G21 units conversion
  *
@@ -463,6 +463,20 @@ stat_t cmd_persist_offsets(uint8_t flag)
 		}
 	}
 	return (STAT_OK);
+}
+
+/*
+ * nv_preprocess_float() - pre-promcess flaoting point number for units display and illegal valaues
+ */
+
+void nv_preprocess_float(cmdObj_t *cmd)
+{
+	if (isnan((double)cmd->value) || isinf((double)cmd->value)) return; // illegal float values
+	if (GET_TABLE_BYTE(flags) & F_CONVERT) {	// unit conversion required?
+		if (cm_get_units_mode(MODEL) == INCHES) {
+			cmd->value *= INCHES_PER_MM;
+		}
+	}
 }
 
 /******************************************************************************

@@ -208,8 +208,8 @@ char_t *escape_string(char_t *dst, char_t *src)
 char_t *pstr2str(const char_t *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(shared_buf, pgm_string, MESSAGE_LEN);
-	return (shared_buf);
+	strncpy_P(global_string_buf, pgm_string, MESSAGE_LEN);
+	return (global_string_buf);
 #endif
 #ifdef __ARM
 	return (pgm_string);

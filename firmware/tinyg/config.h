@@ -320,6 +320,7 @@ void cmd_persist(cmdObj_t *cmd);		// main entry point for persistence
 // helpers
 uint8_t cmd_get_type(cmdObj_t *cmd);
 stat_t cmd_persist_offsets(uint8_t flag);
+void nv_preprocess_float(cmdObj_t *nv);	// pre-process float values for units and illegal values
 
 index_t cmd_get_index(const char_t *group, const char_t *token);
 index_t	cmd_index_max(void);

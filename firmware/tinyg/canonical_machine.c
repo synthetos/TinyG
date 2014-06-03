@@ -2,7 +2,8 @@
  * canonical_machine.c - rs274/ngc canonical machine.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S Hart, Jr.
+ * Copyright (c) 2014 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -85,8 +86,8 @@
  *		and have no buffer.
  */
 
-#include "tinyg.h"		// #1
-#include "config.h"		// #2
+#include "tinyg.h"			// #1
+#include "config.h"			// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
@@ -181,6 +182,12 @@ void cm_set_motion_state(uint8_t motion_state)
  * Model State Getters and Setters *
  ***********************************/
 
+/*	These getters and setters will work on any gm model with inputs:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
+ */
 uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
 uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
@@ -194,6 +201,8 @@ uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spi
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 
+float cm_get_feed_rate(GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
+
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
@@ -202,12 +211,8 @@ void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);	// must reset offsets if you change absolute override
+	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
 }
-
-/*
- * cm_set_model_linenum() 	  - set line number in the model
- */
 
 void cm_set_model_linenum(uint32_t linenum)
 {
@@ -255,12 +260,18 @@ float cm_get_active_coord_offset(uint8_t axis)
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cm.offset[cm.gm.coord_system][axis];
 	if (cm.gmx.origin_offset_enable == true) 
-		offset += cm.gmx.origin_offset[axis]; 			// includes G5x and G92 compoenents
+		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
 	return (offset); 
 }
 
 /*
  * cm_get_work_offset() - return a coord offset from the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis) 
@@ -270,7 +281,14 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 
 /*
  * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
+
 void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -281,9 +299,14 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
 /*
  * cm_get_absolute_position() - get position of axis in absolute coordinates
  *
- * NOTE: Machine position is always returned in mm mode. No units conversion is performed
- * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
+ *
+ *	NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
+ *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
+
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
 {
 	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
@@ -297,6 +320,10 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  *
  * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by 
  *		 calling cm_get_model_coord_offset_vector() first.
+ *
+ *	This function accepts as input:
+ *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
+ *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
@@ -316,9 +343,24 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 
 /***********************************************************************************
  * CRITICAL HELPERS
- * Core functions supporting the canonical machining fucntions
+ * Core functions supporting the canonical machining functions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
+/* 
+ * cm_update_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_update_model_position_from_runtime() - set endpoint position from final runtime position
+ *
+ * 	These routines set the point position in the gcode model.
+ *
+ * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move) 
+ *	is achieved as soon as the move is planned and the move target becomes the new model position.
+ *	In reality the planner will (in all likelihood) have only just queued the move for later 
+ *	execution, and the real tool position is still close to the starting point. 
+ */
+
+void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
+void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
+
 /* 
  * cm_set_model_target() - set target vector in GM model
  *
@@ -1503,10 +1545,10 @@ static const char msg_g18[] PROGMEM = "G18 - XZ plane";
 static const char msg_g19[] PROGMEM = "G19 - YZ plane";
 static const char *const msg_plan[] PROGMEM = { msg_g17, msg_g18, msg_g19 };
 
-static const char msg_g61[] PROGMEM = "G61 - exact stop mode";
-static const char msg_g6a[] PROGMEM = "G61.1 - exact path mode";
+static const char msg_g61[] PROGMEM = "G61 - exact path mode";
+static const char msg_g6a[] PROGMEM = "G61.1 - exact stop mode";
 static const char msg_g64[] PROGMEM = "G64 - continuous mode";
-static const char *const msg_path[] PROGMEM = { msg_g61, msg_g61, msg_g64 };
+static const char *const msg_path[] PROGMEM = { msg_g61, msg_g6a, msg_g64 };
 
 static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
@@ -1655,7 +1697,7 @@ stat_t cm_get_vel(cmdObj_t *cmd)
 		cmd->value = 0;
 	} else {
 		cmd->value = mp_get_runtime_velocity();
-		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCH_PER_MM;
+		if (cm_get_units_mode(RUNTIME) == INCHES) cmd->value *= INCHES_PER_MM;
 	}
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
