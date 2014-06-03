@@ -408,7 +408,7 @@ static void _load_move()
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
-		TIMER_DDA.PER = st_pre.dda_period;
+//		TIMER_DDA.PER = st_pre.dda_period;
 
 		//**** MOTOR_1 LOAD ****
 
@@ -567,17 +567,28 @@ static void _load_move()
 
 		//**** do this last ****
 
+		TIMER_DDA.PER = st_pre.dda_period;
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-
-	// handle dwells
-	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
-		st_run.dda_ticks_downcount = st_pre.dda_ticks;
-		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
- 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		st_prep_null();										// needed to shut off timers if no moves left
+		st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC; // we are done with the prep buffer - flip the flag back
+		st_request_exec_move();								// exec and prep next move
+		return;
 	}
 
-	// all other cases drop to here (e.g. Null moves after Mcodes skip to here) 
-	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back
+	// handle dwells
+	if (st_pre.move_type == MOVE_TYPE_DWELL) {
+		st_run.dda_ticks_downcount = st_pre.dda_ticks;
+		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
+		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		st_prep_null();										// this stops the dwell from firing again
+		st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC; // we are done with the prep buffer - flip the flag back
+		st_request_exec_move();								// exec and prep next move
+		return;
+	}
+
+	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
+	st_prep_null();											// needed to shut off timers if no moves left
+	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;	// flip it back
 	st_request_exec_move();									// exec and prep next move
 }
 
