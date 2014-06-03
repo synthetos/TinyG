@@ -861,7 +861,7 @@ stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initia
 	return (STAT_OK);
 }
 
-stat_t st_set_mp(cmdObj_t *cmd)	// motor power level
+stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
 {
 	if (cmd->value < (float)0) cmd->value = 0;
 	if (cmd->value > (float)1) cmd->value = 1;
@@ -895,7 +895,7 @@ static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%10.4f%s\
 static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
-static const char fmt_0mp[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
+static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
 
 void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
 void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
@@ -922,7 +922,7 @@ void st_print_tr(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0tr, cm_get_un
 void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
 void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
 void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
-void st_print_mp(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0mp);}
+void st_print_pl(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0pl);}
 
 #endif // __TEXT_MODE
 

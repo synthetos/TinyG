@@ -215,6 +215,34 @@ char_t *pstr2str(const char_t *pgm_string)
 	return (pgm_string);
 #endif
 }
+
+/*
+ * fntoa() - return ASCII string given a float and a decimal precision value
+ *
+ *	Returns length of string, less the terminating NUL character
+ */
+char_t fntoa(char_t *str, float n, uint8_t precision)
+{
+    // handle special cases
+	if (isnan(n)) { 
+		strcpy(str, "nan");
+		return (3);
+
+	} else if (isinf(n)) { 
+		strcpy(str, "inf");
+		return (3);
+	
+	} else if (precision == 0 ) { return((char_t)sprintf((char *)str, "%0.0f", (double) n));
+	} else if (precision == 1 ) { return((char_t)sprintf((char *)str, "%0.1f", (double) n));
+	} else if (precision == 2 ) { return((char_t)sprintf((char *)str, "%0.2f", (double) n));
+	} else if (precision == 3 ) { return((char_t)sprintf((char *)str, "%0.3f", (double) n));
+	} else if (precision == 4 ) { return((char_t)sprintf((char *)str, "%0.4f", (double) n));
+	} else if (precision == 5 ) { return((char_t)sprintf((char *)str, "%0.5f", (double) n));
+	} else if (precision == 6 ) { return((char_t)sprintf((char *)str, "%0.6f", (double) n));
+	} else if (precision == 7 ) { return((char_t)sprintf((char *)str, "%0.7f", (double) n));
+	} else					    { return((char_t)sprintf((char *)str, "%f", (double) n)); }
+}
+
 /* 
  * compute_checksum() - calculate the checksum for a string
  * 

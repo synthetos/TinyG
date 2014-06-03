@@ -79,6 +79,7 @@ float max4(float x1, float x2, float x3, float x4);
 uint8_t isnumber(char_t c);
 char_t *escape_string(char_t *dst, char_t *src);
 char_t *pstr2str(const char_t *pgm_string);
+char_t fntoa(char_t *str, float n, uint8_t precision);
 uint16_t compute_checksum(char_t const *string, const uint16_t length);
 
 //*** other utilities ***

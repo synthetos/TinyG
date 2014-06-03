@@ -241,12 +241,18 @@ enum objType {						// object / value typing for config and JSON
 #define F_INITIALIZE	0x01			// initialize this item (run set during initialization)
 #define F_PERSIST 		0x02			// persist this item when set is run
 #define F_NOSTRIP		0x04			// do not strip the group prefix from the token
-#define _f00			0x00
-#define _fin			F_INITIALIZE
-#define _fpe			F_PERSIST
+#define F_CONVERT		0x08			// set if unit conversion is required
+
+#define _f0				0x00
+#define _fi				(F_INITIALIZE)
+#define _fp				(F_PERSIST)
+#define _fn				(F_NOSTRIP)
+#define _fc				(F_CONVERT)
 #define _fip			(F_INITIALIZE | F_PERSIST)
-#define _fns			F_NOSTRIP
-#define _f07			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
+#define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
+#define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
+#define _fipnc			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT)
+
 
 /**** Structures ****/
 

@@ -416,7 +416,6 @@ stat_t st_motor_power_callback(void);
 void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_dwell(float microseconds);
-//stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time, const uint8_t segment_time_change);
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
 
 stat_t st_set_sa(cmdObj_t *cmd);
@@ -426,7 +425,7 @@ stat_t st_set_pm(cmdObj_t *cmd);
 stat_t st_set_mt(cmdObj_t *cmd);
 stat_t st_set_md(cmdObj_t *cmd);
 stat_t st_set_me(cmdObj_t *cmd);
-stat_t st_set_mp(cmdObj_t *cmd);
+stat_t st_set_pl(cmdObj_t *cmd);
 
 #ifdef __TEXT_MODE
 
@@ -439,7 +438,7 @@ stat_t st_set_mp(cmdObj_t *cmd);
 	void st_print_mi(cmdObj_t *cmd);
 	void st_print_po(cmdObj_t *cmd);
 	void st_print_pm(cmdObj_t *cmd);
-	void st_print_mp(cmdObj_t *cmd);
+	void st_print_pl(cmdObj_t *cmd);
 
 #else
 
@@ -452,7 +451,7 @@ stat_t st_set_mp(cmdObj_t *cmd);
 	#define st_print_mi tx_print_stub
 	#define st_print_po tx_print_stub
 	#define st_print_pm tx_print_stub
-	#define st_print_mp tx_print_stub
+	#define st_print_pl tx_print_stub
 
 #endif // __TEXT_MODE
 
