@@ -368,7 +368,6 @@ typedef struct stRunMotor {				// one per controlled motor
 
 typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	uint16_t magic_start;				// magic number to test memory integrity
-	volatile uint8_t block_busy;		// true when current block is active (e.g. doing a move or a dwell)
 	uint32_t dda_ticks_downcount;// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];			// runtime motor structures
@@ -399,9 +398,11 @@ typedef struct stPrepMotor {
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;				// magic number to test memory integrity
-//	volatile uint8_t exec_state;		// move execution state
 	uint8_t move_type;					// move type
-	volatile uint8_t segment_ready;		// flag indicating the next segment is ready for loading
+	volatile uint8_t prep_ready;		// true when next segment is prepped and ready for loading
+	volatile uint8_t dda_running;		// true when dda is running a move or a dwell
+//	volatile uint8_t block_busy;		// true when current block is active (e.g. doing a move or a dwell)
+//	volatile uint8_t last_segment;		// true if exec is the last segment
 
 	uint16_t dda_period;				// DDA or dwell clock period setting
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
@@ -420,7 +421,8 @@ void stepper_init(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 uint8_t stepper_isbusy(void);
-void st_set_block_busy(void);
+//void st_set_prep_ready(void);
+//void st_clear_block_busy(void);
 
 void st_reset(void);
 stat_t st_clc(nvObj_t *nv);

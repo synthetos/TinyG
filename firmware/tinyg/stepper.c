@@ -47,7 +47,7 @@ static stRunSingleton_t st_run;
 /**** Setup local functions ****/
 
 static void _load_move(void);
-static uint8_t _block_isbusy(void);
+//static uint8_t _block_isbusy(void);
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
 
 // handy macro
@@ -312,6 +312,7 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
 //		mp_end_dwell();									// free the planner buffer
+		st_pre.dda_running = false;						// DDA timer is now stopped
 		_load_move();
 	}
 }
@@ -323,7 +324,7 @@ MOTATE_TIMER_INTERRUPT(dwell_timer_num)
 	dwell_timer.getInterruptCause(); // read SR to clear interrupt condition
 	if (--st_run.dda_ticks_downcount == 0) {
 		dwell_timer.stop();
-		st_run.block_busy = false;
+		st_pre.dda_running = false;						// DDA timer is now stopped
 		_load_move();
 	}
 }
@@ -377,7 +378,7 @@ ISR(TIMER_DDA_ISR_vect)
 
 	// process end of segment
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// turn it off or it will keep stepping out the last segment
-	st_run.block_busy = false;							// ready for the next load
+	st_pre.dda_running = false;							// DDA timer is now stopped
 	_load_move();										// load the next move at the current interrupt level
 }
 
@@ -390,72 +391,50 @@ ISR(TIMER_DDA_ISR_vect)
 #ifdef __AVR
 void st_request_exec_move()
 {
-//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting ++++
-		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
-		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;				// trigger a LO interrupt
-//	}
+	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
+	TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;				// trigger a LO interrupt
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
-//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// ++++
-		if (mp_exec_move() != STAT_NOOP) {
-//			st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back ++++
-			st_request_load_move();
-		}
-//	}
+	if (mp_exec_move() != STAT_NOOP) {
+		st_request_load_move();
+	}
 }
 #endif // __AVR
 
 #ifdef __ARM
 void st_request_exec_move()
 {
-//	if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// bother interrupting ++++
-		exec_timer.setInterruptPending();
-//	}
+	exec_timer.setInterruptPending();
 }
 
 namespace Motate {	// Define timer inside Motate namespace
 	MOTATE_TIMER_INTERRUPT(exec_timer_num)			// exec move SW interrupt
 	{
-		exec_timer.getInterruptCause();				// clears the interrupt condition
-//		if (st_pre.exec_state == PREP_BUFFER_OWNED_BY_EXEC) {	// ++++
-			if (mp_exec_move() != STAT_NOOP) {
-//				st_pre.exec_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back ++++
-				st_request_load_move();
-			}
-//		}
+	exec_timer.getInterruptCause();				// clears the interrupt condition
+		if (mp_exec_move() != STAT_NOOP) {
+			st_request_load_move();
+		}
 	}
 } // namespace Motate
 
 #endif // __ARM
+
 
 /****************************************************************************************
  * Loader sequencing code
  *
  * st_request_load_move() - fires a software interrupt (timer) to request to load a move
  * load_move interrupt	  - interrupt handler for running the loader
- * _block_isbusy()		  - return state of currently excuting planner block (buffer)
  */
-
-static uint8_t _block_isbusy()
-{
-//	if (st_run.dda_ticks_downcount != 0) return(true);
-//	return(false);
-	return (st_run.block_busy);
-}
-
-void st_set_block_busy()
-{
-	st_run.block_busy = true;
-}
 
 #ifdef __AVR
 void st_request_load_move()
 {
-	if (_block_isbusy() == true) return;
+//	if (_block_isbusy() == true) return;
 	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;				// clear interrupt condition
 	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
 }
@@ -469,7 +448,7 @@ ISR(TIMER_LOAD_ISR_vect) {							// loader SW interrupt
 #ifdef __ARM
 void st_request_load_move()
 {
-	if (_block_isbusy() == true) return;	
+//	if (_block_isbusy() == true) return;	
 	load_timer.setInterruptPending();
 }
 
@@ -481,6 +460,19 @@ namespace Motate {	// Define timer inside Motate namespace
 	}
 } // namespace Motate
 #endif // __ARM
+
+/*
+ * st_set_block_busy()	 - set block_busy flag
+ * st_clear_block_busy() - clear block_busy flag
+ * _block_isbusy()		 - return state of currently excuting planner block (buffer)
+ *
+ *	Helpers for sequencing loads and execs
+ */
+
+//void st_set_prep_ready() { st_pre.prep_ready = true;}
+//void st_clear_block_busy() { st_pre.block_busy = false;}
+//static uint8_t _block_isbusy() { return(st_pre.block_busy);}
+
 
 /****************************************************************************************
  * _load_move() - Dequeue move and load into stepper struct
@@ -494,13 +486,40 @@ namespace Motate {	// Define timer inside Motate namespace
  *	 - If axis has 0 steps the direction setting can be omitted
  *	 - If axis has 0 steps the motor must not be enabled to support power mode = 1
  */
+/* Notes on loader sequencing
+ *
+ *	There are 3 types of planner buffer blocks that require different sequencing in the loader.
+ *	Since these types may be intermixed they must all be dispatched by the loader. The 
+ *	block_busy flag is used to manage the sequencing.
+ *
+ *	(1) alines: Run 1 or more segments until the block is complete. Steps:
+ *
+ *		- 1st block:  block_busy == false. 
+ *					  Exec/prep the first segment. 
+ *					  Do not load anything
+ *					  Set block_busy  (true)
+ *
+ *		- Nth block:  block_busy == true. 
+ *					  Load the previous exec/prep, 
+ *					  Run the next exec/prep
+ *					  Must signal that it's the last exec (somehow)
+ *
+ *		- last block: Load previous exec/prep
+ *					  Do not exec/prep
+ *					  Clear block_busy  (false)
+ *
+ *	(2) dwells:
+ *
+ *	(3) commands sync'd with planner (Mcodes, gcode model changes): 
 
+ *
+ */
 static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
 //	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
-	if (_block_isbusy()) return;
+//	if (_block_isbusy()) return;
 
 //++++
 //	if (st_pre.exec_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
@@ -510,21 +529,30 @@ static void _load_move()
 //		return;
 //	}
 
-	// handle aline() loads first (most common case)  NB: there are no more lines, only alines()
+	//*** handle aline() loads first (most common case)  NB: there are no more lines, only alines()
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
-		// trap if segment prep is not complete
-		if (st_pre.segment_ready != true) printf("#### LOADER - SEGMENT NOT READY\n");
+		// DDA is running. Ignore the load request
+		if (st_pre.dda_running) {
+			return;
+		}
 
-		st_run.block_busy = true;
+		// Nothing's happening. Start a move
+		if (!st_pre.prep_ready) {
+			st_request_exec_move();										// exec and prep a move
+			return;
+		}
+
+		// ELSE: do a load. Calls an exec at the end
+
+		// trap if segment prep is not complete
+//		if (st_pre.prep_ready != true) printf("#### LOADER - SEGMENT NOT READY\n");
 
 		//**** setup the new segment ****
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
-#ifdef __AVR
-		TIMER_DDA.PER = st_pre.dda_period;
-#endif
+
 		//**** MOTOR_1 LOAD ****
 
 		// These sections are somewhat optimized for execution speed. The whole load operation
@@ -679,12 +707,10 @@ static void _load_move()
 #endif
 		// Finish up aline load and exit
 
-#ifdef __AVR
+		TIMER_DDA.PER = st_pre.dda_period;
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-#endif
-#ifdef __ARM
-#endif
-		st_pre.segment_ready = false;						// flag prep buffer as stale
+		st_pre.dda_running = true;							// DDA timer is now active
+		st_pre.prep_ready = false;							// prep buffer is stale
 		st_prep_null();										// shut off loader or it will keep trying
 		st_request_exec_move();								// exec and prep next segment
 		return;
@@ -695,15 +721,16 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
  		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
-		st_run.block_busy = true;
+		st_pre.dda_running = true;							// DDA timer is now active (counting dwell)
 		st_prep_null();										// shut off loader or it will keep trying
 		return;
 	}
 
 	// ELSE: all non-aline, non-dwell cases drop to here (e.g. Mcodes and syncronized commands)
-	st_prep_null();											// needed to shut off timers if no moves left
-//	st_pre.exec_state = PREP_BUFFER_OWNED_BY_EXEC;			// flip it back ++++
-	st_request_exec_move();									// exec and prep next move
+	if (!st_pre.dda_running) {
+		st_prep_null();											// needed to shut off timers if no moves left
+		st_request_exec_move();									// exec and prep next move
+	}
 }
 
 /***********************************************************************************
@@ -806,7 +833,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
-	st_pre.segment_ready = true;
+	st_pre.prep_ready = true;
 	return (STAT_OK);
 }
 
