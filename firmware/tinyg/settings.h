@@ -81,9 +81,7 @@
 
 //**** DEBUG SETTINGS ****
 
-#define __DEBUG
-
-#ifdef __DEBUG
+#ifdef __DEBUG_SETTINGS
 //#undef JSON_VERBOSITY
 //#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
