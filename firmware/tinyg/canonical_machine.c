@@ -1763,11 +1763,13 @@ stat_t cm_set_am(cmdObj_t *cmd)		// axis mode
  *	Are less than 1,000,000 they are bumped in and out of raw form. JSON mode always
  *	reports full raw jerk values, but will accept either form.
  */
+/*
 stat_t cm_get_jrk(cmdObj_t *cmd)
 {
 	get_flu(cmd);
 	return (STAT_OK);
 }
+*/
 
 stat_t cm_set_jrk(cmdObj_t *cmd)
 {

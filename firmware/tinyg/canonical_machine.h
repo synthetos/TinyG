@@ -663,8 +663,8 @@ stat_t cm_run_joga(cmdObj_t *cmd);		// start jogging cycle for a
 
 stat_t cm_get_am(cmdObj_t *cmd);		// get axis mode
 stat_t cm_set_am(cmdObj_t *cmd);		// set axis mode
-stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 stat_t cm_set_jrk(cmdObj_t *cmd);		// set jerk with 1,000,000 correction
+//stat_t cm_get_jrk(cmdObj_t *cmd);		// get jerk with 1,000,000 correction
 
 /*--- text_mode support functions ---*/
 

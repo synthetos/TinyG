@@ -62,6 +62,7 @@
 #define STATUS_REPORT_INTERVAL_MS	250				// milliseconds - set $SV=0 to disable
 
 #define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//#define SR_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF			// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -80,6 +81,9 @@
 
 //**** DEBUG SETTINGS ****
 
+#define __DEBUG
+
+#ifdef __DEBUG
 //#undef JSON_VERBOSITY
 //#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
@@ -88,6 +92,7 @@
 
 #undef STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#endif
 
 
 /**** MACHINE PROFILES ******************************************************/

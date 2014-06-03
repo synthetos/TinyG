@@ -341,7 +341,7 @@ stat_t set_int(cmdObj_t *cmd);		// set uint32_t integer value
 stat_t set_data(cmdObj_t *cmd);		// set uint32_t integer value blind cast
 stat_t set_flt(cmdObj_t *cmd);		// set floating point value
 stat_t set_flu(cmdObj_t *cmd);		// set floating point number with G20/G21 units conversion
-stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units conversion
+//stat_t get_flu(cmdObj_t *cmd);		// get floating point number with G20/G21 units conversion
 
 stat_t get_nul(cmdObj_t *cmd);		// get null value type
 stat_t get_ui8(cmdObj_t *cmd);		// get uint8_t value

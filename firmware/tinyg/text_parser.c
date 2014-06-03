@@ -33,6 +33,7 @@
 #include "json_parser.h"
 #include "report.h"
 #include "help.h"
+#include "util.h"
 #include "xio.h"					// for ASCII char definitions
 
 #ifdef __cplusplus
