@@ -242,18 +242,18 @@ stat_t hw_hard_reset_handler(void);
 
 void hw_request_bootloader(void);
 stat_t hw_bootloader_handler(void);
-stat_t hw_run_boot(cmdObj_t *cmd);
+stat_t hw_run_boot(nvObj_t *nv);
 
-stat_t hw_set_hv(cmdObj_t *cmd);
-stat_t hw_get_id(cmdObj_t *cmd);
+stat_t hw_set_hv(nvObj_t *nv);
+stat_t hw_get_id(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void hw_print_fb(cmdObj_t *cmd);
-	void hw_print_fv(cmdObj_t *cmd);
-	void hw_print_hp(cmdObj_t *cmd);
-	void hw_print_hv(cmdObj_t *cmd);
-	void hw_print_id(cmdObj_t *cmd);
+	void hw_print_fb(nvObj_t *nv);
+	void hw_print_fv(nvObj_t *nv);
+	void hw_print_hp(nvObj_t *nv);
+	void hw_print_hv(nvObj_t *nv);
+	void hw_print_id(nvObj_t *nv);
 
 #else
 

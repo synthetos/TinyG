@@ -165,7 +165,7 @@ void st_cycle_end(void)
 {
 }
 */
-stat_t st_clc(cmdObj_t *cmd)	// clear diagnostic counters, reset stepper prep
+stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
 {
 	st_reset();
 	return(STAT_OK);
@@ -784,52 +784,52 @@ static int8_t _get_motor(const index_t index)
  * This function will need to be rethought if microstep morphing is implemented
  */
 
-static void _set_motor_steps_per_unit(cmdObj_t *cmd) 
+static void _set_motor_steps_per_unit(nvObj_t *nv) 
 {
-	uint8_t m = _get_motor(cmd->index);
+	uint8_t m = _get_motor(nv->index);
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
 
-stat_t st_set_sa(cmdObj_t *cmd)			// motor step angle
+stat_t st_set_sa(nvObj_t *nv)			// motor step angle
 { 
-	set_flt(cmd);
-	_set_motor_steps_per_unit(cmd); 
+	set_flt(nv);
+	_set_motor_steps_per_unit(nv); 
 	return(STAT_OK);
 }
 
-stat_t st_set_tr(cmdObj_t *cmd)			// motor travel per revolution
+stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 { 
-	set_flu(cmd);
-	_set_motor_steps_per_unit(cmd); 
+	set_flu(nv);
+	_set_motor_steps_per_unit(nv); 
 	return(STAT_OK);
 }
 
-stat_t st_set_mi(cmdObj_t *cmd)			// motor microsteps
+stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
-	if (fp_NE(cmd->value,1) && fp_NE(cmd->value,2) && fp_NE(cmd->value,4) && fp_NE(cmd->value,8)) {
-		cmd_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
+	if (fp_NE(nv->value,1) && fp_NE(nv->value,2) && fp_NE(nv->value,4) && fp_NE(nv->value,8)) {
+		nv_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_ui8(cmd);							// set it anyway, even if it's unsupported
-	_set_motor_steps_per_unit(cmd);
-	_set_hw_microsteps(_get_motor(cmd->index), (uint8_t)cmd->value);
+	set_ui8(nv);							// set it anyway, even if it's unsupported
+	_set_motor_steps_per_unit(nv);
+	_set_hw_microsteps(_get_motor(nv->index), (uint8_t)nv->value);
 	return (STAT_OK);
 }
 
-stat_t st_set_pm(cmdObj_t *cmd)			// motor power mode
+stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 { 
-	ritorno (set_01(cmd));
-	if (fp_ZERO(cmd->value)) { // people asked this setting take effect immediately, hence:
-		_energize_motor(_get_motor(cmd->index));
+	ritorno (set_01(nv));
+	if (fp_ZERO(nv->value)) { // people asked this setting take effect immediately, hence:
+		_energize_motor(_get_motor(nv->index));
 	} else {
-		_deenergize_motor(_get_motor(cmd->index));
+		_deenergize_motor(_get_motor(nv->index));
 	}
 	return (STAT_OK);
 }
 
-stat_t st_set_mt(cmdObj_t *cmd)
+stat_t st_set_mt(nvObj_t *nv)
 {
-	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(cmd->value, IDLE_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_idle_timeout = min(IDLE_TIMEOUT_SECONDS_MAX, max(nv->value, IDLE_TIMEOUT_SECONDS_MIN));
 	return (STAT_OK);
 }
 
@@ -841,35 +841,35 @@ stat_t st_set_mt(cmdObj_t *cmd)
  * Setting a value of 0 will enable or disable all motors
  * Setting a value from 1 to MOTORS will enable or disable that motor only
  */ 
-stat_t st_set_md(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
+stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_deenergize_motors();
 	} else {
-		_deenergize_motor((uint8_t)cmd->value-1);
+		_deenergize_motor((uint8_t)nv->value-1);
 	}
 	return (STAT_OK);
 }
 
-stat_t st_set_me(cmdObj_t *cmd)	// Make sure this function is not part of initialization --> f00
+stat_t st_set_me(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)cmd->value == 0) || (cmd->objtype == TYPE_NULL)) {
+	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_energize_motors();
 	} else {
-		_energize_motor((uint8_t)cmd->value-1);
+		_energize_motor((uint8_t)nv->value-1);
 	}
 	return (STAT_OK);
 }
 
-stat_t st_set_pl(cmdObj_t *cmd)	// motor power level
+stat_t st_set_pl(nvObj_t *nv)	// motor power level
 {
-	if (cmd->value < (float)0) cmd->value = 0;
-	if (cmd->value > (float)1) cmd->value = 1;
-	set_flt(cmd);				// set the value in the motor config struct (st)
+	if (nv->value < (float)0) nv->value = 0;
+	if (nv->value > (float)1) nv->value = 1;
+	set_flt(nv);				// set the value in the motor config struct (st)
 	
-	uint8_t motor = _get_motor(cmd->index);
-	st_run.mot[motor].power_level = cmd->value;
-	_set_motor_power_level(motor, cmd->value);
+	uint8_t motor = _get_motor(nv->index);
+	st_run.mot[motor].power_level = nv->value;
+	_set_motor_power_level(motor, nv->value);
 	return(STAT_OK);
 }
 
@@ -897,32 +897,32 @@ static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=rever
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=remain powered,1=power down when idle]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
 
-void st_print_mt(cmdObj_t *cmd) { text_print_flt(cmd, fmt_mt);}
-void st_print_me(cmdObj_t *cmd) { text_print_nul(cmd, fmt_me);}
-void st_print_md(cmdObj_t *cmd) { text_print_nul(cmd, fmt_md);}
+void st_print_mt(nvObj_t *nv) { text_print_flt(nv, fmt_mt);}
+void st_print_me(nvObj_t *nv) { text_print_nul(nv, fmt_me);}
+void st_print_md(nvObj_t *nv) { text_print_nul(nv, fmt_md);}
 
-static void _print_motor_ui8(cmdObj_t *cmd, const char *format)
+static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, (uint8_t)cmd->value);
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
 }
 
-static void _print_motor_flt_units(cmdObj_t *cmd, const char *format, uint8_t units)
+static void _print_motor_flt_units(nvObj_t *nv, const char *format, uint8_t units)
 {
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value, GET_TEXT_ITEM(msg_units, units));
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
-static void _print_motor_flt(cmdObj_t *cmd, const char *format)
+static void _print_motor_flt(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, cmd->group, cmd->token, cmd->group, cmd->value);
+	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
 }
 
-void st_print_ma(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0ma);}
-void st_print_sa(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0sa, DEGREE_INDEX);}
-void st_print_tr(cmdObj_t *cmd) { _print_motor_flt_units(cmd, fmt_0tr, cm_get_units_mode(MODEL));}
-void st_print_mi(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0mi);}
-void st_print_po(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0po);}
-void st_print_pm(cmdObj_t *cmd) { _print_motor_ui8(cmd, fmt_0pm);}
-void st_print_pl(cmdObj_t *cmd) { _print_motor_flt(cmd, fmt_0pl);}
+void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
+void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
+void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
+void st_print_mi(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0mi);}
+void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
+void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}
+void st_print_pl(nvObj_t *nv) { _print_motor_flt(nv, fmt_0pl);}
 
 #endif // __TEXT_MODE
 

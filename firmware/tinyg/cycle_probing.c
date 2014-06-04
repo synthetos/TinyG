@@ -280,16 +280,16 @@ static stat_t _probing_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the probing callback
 	// - and not the main controller - it requires its own display processing
-	cmd_reset_list();
+	nv_reset_list();
     if (axis == -2) {
-        cmd_add_conditional_message((const char_t *)"Probing error - invalid probe destination");;
+        nv_add_conditional_message((const char_t *)"Probing error - invalid probe destination");;
     } else {
-        char message[CMD_MESSAGE_LEN];
+        char message[NV_MESSAGE_LEN];
         sprintf_P(message, PSTR("Probing error - %c axis cannot move during probing"), cm_get_axis_char(axis));
-        cmd_add_conditional_message((char_t *)message);
+        nv_add_conditional_message((char_t *)message);
     }
 	
-	cmd_print_list(STAT_PROBE_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
+	nv_print_list(STAT_PROBE_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
 	// clean up and exit
 	_probe_restore_settings();

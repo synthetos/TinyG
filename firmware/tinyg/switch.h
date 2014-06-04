@@ -145,11 +145,11 @@ uint8_t get_switch_type();
 /*
  * Switch config accessors and text functions
  */
-stat_t sw_set_st(cmdObj_t *cmd);
-stat_t sw_set_sw(cmdObj_t *cmd);
+stat_t sw_set_st(nvObj_t *nv);
+stat_t sw_set_sw(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
-	void sw_print_st(cmdObj_t *cmd);
+	void sw_print_st(nvObj_t *nv);
 #else
 	#define sw_print_st tx_print_stub
 #endif // __TEXT_MODE

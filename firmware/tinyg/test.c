@@ -57,9 +57,9 @@
  * 	By convention the character array containing the test must have the same 
  *	name as the file name.
  */
-uint8_t run_test(cmdObj_t *cmd)
+uint8_t run_test(nvObj_t *nv)
 {
-	switch ((uint8_t)cmd->value) {
+	switch ((uint8_t)nv->value) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
 
@@ -84,7 +84,7 @@ uint8_t run_test(cmdObj_t *cmd)
 		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
 #endif
 		default: {
-			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)cmd->value);
+			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)nv->value);
 			return (STAT_ERROR);
 		}
 	}

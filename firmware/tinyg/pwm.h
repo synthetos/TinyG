@@ -65,16 +65,16 @@ stat_t pwm_set_duty(uint8_t channel, float duty);
 
 #ifdef __TEXT_MODE
 
-	void pwm_print_p1frq(cmdObj_t *cmd);
-	void pwm_print_p1csl(cmdObj_t *cmd);
-	void pwm_print_p1csh(cmdObj_t *cmd);
-	void pwm_print_p1cpl(cmdObj_t *cmd);
-	void pwm_print_p1cph(cmdObj_t *cmd);
-	void pwm_print_p1wsl(cmdObj_t *cmd);
-	void pwm_print_p1wsh(cmdObj_t *cmd);
-	void pwm_print_p1wpl(cmdObj_t *cmd);
-	void pwm_print_p1wph(cmdObj_t *cmd);
-	void pwm_print_p1pof(cmdObj_t *cmd);
+	void pwm_print_p1frq(nvObj_t *nv);
+	void pwm_print_p1csl(nvObj_t *nv);
+	void pwm_print_p1csh(nvObj_t *nv);
+	void pwm_print_p1cpl(nvObj_t *nv);
+	void pwm_print_p1cph(nvObj_t *nv);
+	void pwm_print_p1wsl(nvObj_t *nv);
+	void pwm_print_p1wsh(nvObj_t *nv);
+	void pwm_print_p1wpl(nvObj_t *nv);
+	void pwm_print_p1wph(nvObj_t *nv);
+	void pwm_print_p1pof(nvObj_t *nv);
 
 #else
 

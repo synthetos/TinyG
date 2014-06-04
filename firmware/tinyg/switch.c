@@ -228,18 +228,18 @@ void sw_show_switch(void) {}
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
-stat_t sw_set_st(cmdObj_t *cmd)			// switch type (global)
+stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 {
-//	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	set_01(cmd);
+//	if (nv->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_01(nv);
 	switch_init();
 	return (STAT_OK);
 }
 
-stat_t sw_set_sw(cmdObj_t *cmd)			// switch setting
+stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 {
-	if (cmd->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	set_ui8(cmd);
+	if (nv->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	set_ui8(nv);
 	switch_init();
 	return (STAT_OK);
 }
@@ -253,10 +253,10 @@ stat_t sw_set_sw(cmdObj_t *cmd)			// switch setting
 #ifdef __TEXT_MODE
 
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
-void sw_print_st(cmdObj_t *cmd) { text_print_flt(cmd, fmt_st);}
+void sw_print_st(nvObj_t *nv) { text_print_flt(nv, fmt_st);}
 
 //static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
-//void sw_print_ss(cmdObj_t *cmd) { fprintf(stderr, fmt_ss, cmd->token, (uint8_t)cmd->value);}
+//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, (uint8_t)nv->value);}
 
 /*
 static const char msg_sw0[] PROGMEM = "Disabled";

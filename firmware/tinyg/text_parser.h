@@ -48,7 +48,7 @@ typedef struct txtSingleton {		// text mode data
 
 	/*** config values (PUBLIC) ***/
 
-	char_t format[CMD_FORMAT_LEN+1];
+	char_t format[NV_FORMAT_LEN+1];
 
 	/*** runtime values (PRIVATE) ***/
 
@@ -64,24 +64,24 @@ extern txtSingleton_t txt;
 	stat_t text_parser(char_t *str);
 	void text_response(const stat_t status, char_t *buf);
 	void text_print_list(stat_t status, uint8_t flags);
-	void text_print_inline_pairs(cmdObj_t *cmd);
-	void text_print_inline_values(cmdObj_t *cmd);
-	void text_print_multiline_formatted(cmdObj_t *cmd);
+	void text_print_inline_pairs(nvObj_t *nv);
+	void text_print_inline_values(nvObj_t *nv);
+	void text_print_multiline_formatted(nvObj_t *nv);
 
-	void tx_print_nul(cmdObj_t *cmd);
-	void tx_print_str(cmdObj_t *cmd);
-	void tx_print_ui8(cmdObj_t *cmd);
-	void tx_print_int(cmdObj_t *cmd);
-	void tx_print_flt(cmdObj_t *cmd);
+	void tx_print_nul(nvObj_t *nv);
+	void tx_print_str(nvObj_t *nv);
+	void tx_print_ui8(nvObj_t *nv);
+	void tx_print_int(nvObj_t *nv);
+	void tx_print_flt(nvObj_t *nv);
 
-	void text_print_nul(cmdObj_t *cmd, const char *format);
-	void text_print_str(cmdObj_t *cmd, const char *format);
-	void text_print_ui8(cmdObj_t *cmd, const char *format);
-	void text_print_int(cmdObj_t *cmd, const char *format);
-	void text_print_flt(cmdObj_t *cmd, const char *format);
-	void text_print_flt_units(cmdObj_t *cmd, const char *format, const char *units);
+	void text_print_nul(nvObj_t *nv, const char *format);
+	void text_print_str(nvObj_t *nv, const char *format);
+	void text_print_ui8(nvObj_t *nv, const char *format);
+	void text_print_int(nvObj_t *nv, const char *format);
+	void text_print_flt(nvObj_t *nv, const char *format);
+	void text_print_flt_units(nvObj_t *nv, const char *format, const char *units);
 
-	void tx_print_tv(cmdObj_t *cmd);
+	void tx_print_tv(nvObj_t *nv);
 
 #else
 
@@ -95,7 +95,7 @@ extern txtSingleton_t txt;
 	#define tx_print_str tx_print_stub
 	#define tx_print_tv tx_print_stub
 
-	void tx_print_stub(cmdObj_t *cmd);
+	void tx_print_stub(nvObj_t *nv);
 
 #endif
 

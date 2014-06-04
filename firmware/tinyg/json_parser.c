@@ -46,8 +46,8 @@ jsSingleton_t js;
 /**** local scope stuff ****/
 
 static stat_t _json_parser_kernal(char_t *str);
-//static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
-static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth);
+//static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth);
+static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 /****************************************************************************
@@ -91,7 +91,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size);
 void json_parser(char_t *str)
 {
 	stat_t status = _json_parser_kernal(str);
-	cmd_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
+	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
@@ -99,41 +99,41 @@ static stat_t _json_parser_kernal(char_t *str)
 {
 	stat_t status;
 	int8_t depth;
-	cmdObj_t *cmd = cmd_reset_list();				// get a fresh cmdObj list
+	nvObj_t *nv = nv_reset_list();				// get a fresh nvObj list
 	char_t group[GROUP_LEN+1] = {""};			// group identifier - starts as NUL
-	int8_t i = CMD_BODY_LEN;
+	int8_t i = NV_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
-	// parse the JSON command into the cmd body
+	// parse the JSON command into the nv body
 	do {
 		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); } // length error
-//		if ((status = _get_nv_pair_strict(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
-		if ((status = _get_nv_pair_relaxed(cmd, &str, &depth)) > STAT_EAGAIN) { // erred out
+//		if ((status = _get_nv_pair_strict(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
+		if ((status = _get_nv_pair_relaxed(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
 		if (group[0] != NUL) {
-			strncpy(cmd->group, group, GROUP_LEN);// copy the parent's group to this child
+			strncpy(nv->group, group, GROUP_LEN);// copy the parent's group to this child
 		}
 		// validate the token and get the index
-		if ((cmd->index = cmd_get_index(cmd->group, cmd->token)) == NO_MATCH) {
+		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_COMMAND);
 		}
-		if ((cmd_index_is_group(cmd->index)) && (cmd_group_is_prefixed(cmd->token))) {
-			strncpy(group, cmd->token, GROUP_LEN);// record the group ID
+		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
+			strncpy(group, nv->token, GROUP_LEN);// record the group ID
 		}
-		if ((cmd = cmd->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
+		if ((nv = nv->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
-	cmd = cmd_body;
-	if (cmd->objtype == TYPE_NULL){					// means GET the value
-		ritorno(cmd_get(cmd));						// ritorno returns w/status on any errors
+	nv = nv_body;
+	if (nv->valuetype == TYPE_NULL){					// means GET the value
+		ritorno(nv_get(nv));						// ritorno returns w/status on any errors
 	} else {
 		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
-		ritorno(cmd_set(cmd));						// set value or call a function (e.g. gcode)
-		cmd_persist(cmd);
+		ritorno(nv_set(nv));						// set value or call a function (e.g. gcode)
+		nv_persist(nv);
 	}
 	return (STAT_OK);								// only successful commands exit through this point
 }
@@ -169,7 +169,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 /*
  * _get_nv_pair_relaxed() - get the next name-value pair w/relaxed JSON rules
  *
- *	Parse the next statement and populate the command object (cmdObj).
+ *	Parse the next statement and populate the command object (nvObj).
  *
  *	Leaves string pointer (str) on the first character following the object.
  *	Which is the character just past the ',' separator if it's a multi-valued 
@@ -197,7 +197,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 #define MAX_PAD_CHARS 8
 #define MAX_NAME_CHARS 32
 
-static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
+static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 {
 	uint8_t i;
 	char_t *tmp;
@@ -206,7 +206,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	char_t terminators[] = {"},\""};			// close curly, comma and quote
 	char_t value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
 
-	cmd_reset_obj(cmd);							// wipes the object and sets the depth
+	nv_reset_obj(nv);							// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
@@ -223,7 +223,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(separators, (int)**pstr) != NULL) {
 			*(*pstr)++ = NUL;
-			strncpy(cmd->token, name, TOKEN_LEN+1);			// copy the string to the token
+			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
 			break;
 		}
 		if (i == MAX_NAME_CHARS) return (STAT_JSON_SYNTAX_ERROR);
@@ -240,53 +240,53 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
-		cmd->objtype = TYPE_NULL;
-		cmd->value = TYPE_NULL;
+		nv->valuetype = TYPE_NULL;
+		nv->value = TYPE_NULL;
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-		cmd->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
+		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
 		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
-		cmd->objtype = TYPE_FLOAT;
+		nv->valuetype = TYPE_FLOAT;
 
 	// object parent
 	} else if (**pstr == '{') { 
-		cmd->objtype = TYPE_PARENT;
-//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
+		nv->valuetype = TYPE_PARENT;
+//		*depth += 1;							// nv_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(STAT_EAGAIN);					// signal that there is more to parse
 
 	// strings
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
-		cmd->objtype = TYPE_STRING;
+		nv->valuetype = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
 		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
 		{
-			uint32_t *v = (uint32_t*)&cmd->value;
+			uint32_t *v = (uint32_t*)&nv->value;
 			*v = strtoul(*pstr, 0L, 0);
-			cmd->objtype = TYPE_DATA;
+			nv->valuetype = TYPE_DATA;
 		} else {
-			ritorno(cmd_copy_string(cmd, *pstr));
+			ritorno(nv_copy_string(nv, *pstr));
 		}
 	
 		*pstr = ++tmp;
 
 	// boolean true/false
 	} else if (**pstr == 't') { 
-		cmd->objtype = TYPE_BOOL;
-		cmd->value = true;
+		nv->valuetype = TYPE_BOOL;
+		nv->value = true;
 	} else if (**pstr == 'f') { 
-		cmd->objtype = TYPE_BOOL;
-		cmd->value = false;
+		nv->valuetype = TYPE_BOOL;
+		nv->value = false;
 
 	// arrays
 	} else if (**pstr == '[') {
-		cmd->objtype = TYPE_ARRAY;
-		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		nv->valuetype = TYPE_ARRAY;
+		ritorno(nv_copy_string(nv, *pstr));	// copy array into string for error displays
 		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
@@ -309,7 +309,7 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 /*
  * _get_nv_pair_strict() - get the next name-value pair w/strict JSON rules
  *
- *	Parse the next statement and populate the command object (cmdObj).
+ *	Parse the next statement and populate the command object (nvObj).
  *
  *	Leaves string pointer (str) on the first character following the object.
  *	Which is the character just past the ',' separator if it's a multi-valued 
@@ -327,19 +327,19 @@ static stat_t _get_nv_pair_relaxed(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
  *	cfgArray.
  */
  /*
-static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
+static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth)
 {
 	char_t *tmp;
 	char_t terminators[] = {"},"};
 
-	cmd_reset_obj(cmd);							// wipes the object and sets the depth
+	nv_reset_obj(nv);							// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// find leading and trailing name quotes and set pointers.
 	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
 	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
 	*tmp = NUL;
-	strncpy(cmd->token, *pstr, TOKEN_LEN);		// copy the string to the token
+	strncpy(nv->token, *pstr, TOKEN_LEN);		// copy the string to the token
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
 	*pstr = ++tmp;
@@ -348,54 +348,54 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
-		cmd->objtype = TYPE_NULL;
-		cmd->value = TYPE_NULL;
+		nv->valuetype = TYPE_NULL;
+		nv->value = TYPE_NULL;
 	
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-		cmd->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
+		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
 		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
-		cmd->objtype = TYPE_FLOAT;
+		nv->valuetype = TYPE_FLOAT;
 
 	// object parent
 	} else if (**pstr == '{') { 
-		cmd->objtype = TYPE_PARENT;
-//		*depth += 1;							// cmd_reset_obj() sets the next object's level so this is redundant
+		nv->valuetype = TYPE_PARENT;
+//		*depth += 1;							// nv_reset_obj() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(STAT_EAGAIN);					// signal that there is more to parse
 
 	// strings
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
-		cmd->objtype = TYPE_STRING;
+		nv->valuetype = TYPE_STRING;
 		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
 		*tmp = NUL;
 
-//		ritorno(cmd_copy_string(cmd, *pstr));
+//		ritorno(nv_copy_string(nv, *pstr));
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
 		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
 		{
-			uint32_t *v = (uint32_t*)&cmd->value;
+			uint32_t *v = (uint32_t*)&nv->value;
 			*v = strtoul(*pstr, 0L, 0);
-			cmd->objtype = TYPE_DATA;
+			nv->valuetype = TYPE_DATA;
 		} else {
-			ritorno(cmd_copy_string(cmd, *pstr));
+			ritorno(nv_copy_string(nv, *pstr));
 		}
 	
 		*pstr = ++tmp;
 
 	// boolean true/false
 	} else if (**pstr == 't') { 
-		cmd->objtype = TYPE_BOOL;
-		cmd->value = true;
+		nv->valuetype = TYPE_BOOL;
+		nv->value = true;
 	} else if (**pstr == 'f') { 
-		cmd->objtype = TYPE_BOOL;
-		cmd->value = false;
+		nv->valuetype = TYPE_BOOL;
+		nv->value = false;
 
 	// arrays
 	} else if (**pstr == '[') {
-		cmd->objtype = TYPE_ARRAY;
-		ritorno(cmd_copy_string(cmd, *pstr));	// copy array into string for error displays
+		nv->valuetype = TYPE_ARRAY;
+		ritorno(nv_copy_string(nv, *pstr));	// copy array into string for error displays
 		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
@@ -419,12 +419,12 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 /****************************************************************************
  * json_serialize() - make a JSON object string from JSON object array
  *
- *	*cmd is a pointer to the first element in the cmd list to serialize
+ *	*nv is a pointer to the first element in the nv list to serialize
  *	*out_buf is a pointer to the output string - usually what was the input string
  *	Returns the character count of the resulting string
  *
  * 	Operation:
- *	  - The cmdObj list is processed start to finish with no recursion
+ *	  - The nvObj list is processed start to finish with no recursion
  *
  *	  - Assume the first object is depth 0 or greater (the opening curly)
  *
@@ -434,7 +434,7 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a 
  *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
  *
- *	  - The list must have a terminating cmdObj where cmd->nx == NULL. 
+ *	  - The list must have a terminating nvObj where nv->nx == NULL. 
  *		The terminating object may or may not have data (empty or not empty).
  *
  *	Returns:
@@ -450,63 +450,63 @@ static stat_t _get_nv_pair_strict(cmdObj_t *cmd, char_t **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size) 
+uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size) 
 {
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
-	int8_t initial_depth = cmd->depth;
+	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
 
 	*str++ = '{'; 								// write opening curly
 
 	while (true) {
-		if (cmd->objtype != TYPE_EMPTY) {
+		if (nv->valuetype != TYPE_EMPTY) {
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			if (js.json_syntax == JSON_SYNTAX_RELAXED) {		// write name
-				str += sprintf((char *)str, "%s:", cmd->token);
+				str += sprintf((char *)str, "%s:", nv->token);
 			} else {
-				str += sprintf((char *)str, "\"%s\":", cmd->token);
+				str += sprintf((char *)str, "\"%s\":", nv->token);
 			}
 
 			// check for illegal float values
-			if (cmd->objtype == TYPE_FLOAT) {
-				if (isnan((double)cmd->value) || isinf((double)cmd->value)) { cmd->value = 0;}
+			if (nv->valuetype == TYPE_FLOAT) {
+				if (isnan((double)nv->value) || isinf((double)nv->value)) { nv->value = 0;}
 			}
 
 			// serialize output value
-			if		(cmd->objtype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
-			else if (cmd->objtype == TYPE_INTEGER)	{
-				str += (char_t)sprintf((char *)str, "%1.0f", (double)cmd->value);
+			if		(nv->valuetype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
+			else if (nv->valuetype == TYPE_INTEGER)	{
+				str += (char_t)sprintf((char *)str, "%1.0f", (double)nv->value);
 			}
-			else if (cmd->objtype == TYPE_DATA)	{
-				uint32_t *v = (uint32_t*)&cmd->value;
+			else if (nv->valuetype == TYPE_DATA)	{
+				uint32_t *v = (uint32_t*)&nv->value;
 				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
 			}
-			else if (cmd->objtype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*cmd->stringp);}
-			else if (cmd->objtype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*cmd->stringp);}
-			else if (cmd->objtype == TYPE_FLOAT)	{ nv_preprocess_float(cmd);
+			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
+			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
+			else if (nv->valuetype == TYPE_FLOAT)	{ nv_preprocess_float(nv);
 //													  str += fntoa((char *)str, nv->value, nv->precision);
-													  str += fntoa(str, cmd->value, cmd->precision);
+													  str += fntoa(str, nv->value, nv->precision);
 			}
-			else if (cmd->objtype == TYPE_BOOL) {
-				if (fp_FALSE(cmd->value)) { str += sprintf((char *)str, "false");}
+			else if (nv->valuetype == TYPE_BOOL) {
+				if (fp_FALSE(nv->value)) { str += sprintf((char *)str, "false");}
 				else { str += (char_t)sprintf((char *)str, "true"); }
 			}
-			if (cmd->objtype == TYPE_PARENT) {
+			if (nv->valuetype == TYPE_PARENT) {
 				*str++ = '{';
 				need_a_comma = false;
 			}
 		}
 		if (str >= str_max) { return (-1);}		// signal buffer overrun
-		if ((cmd = cmd->nx) == NULL) { break;}	// end of the list
+		if ((nv = nv->nx) == NULL) { break;}	// end of the list
 
-		while (cmd->depth < prev_depth--) {		// iterate the closing curlies
+		while (nv->depth < prev_depth--) {		// iterate the closing curlies
 			need_a_comma = true;
 			*str++ = '}';
 		}
-		prev_depth = cmd->depth;
+		prev_depth = nv->depth;
 	}
 
 	// closing curlies and NEWLINE
@@ -518,19 +518,19 @@ uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size)
 
 
 /*
- * json_print_object() - serialize and print the cmdObj array directly (w/o header & footer)
+ * json_print_object() - serialize and print the nvObj array directly (w/o header & footer)
  *
  *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
  *	Useful for reports and other simple output.
- *	Object list should be terminated by cmd->nx == NULL
+ *	Object list should be terminated by nv->nx == NULL
  */
-void json_print_object(cmdObj_t *cmd)
+void json_print_object(nvObj_t *nv)
 {
 #ifdef __SILENCE_JSON_RESPONSES
 	return;
 #endif
 
-	json_serialize(cmd, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
 	fprintf(stderr, "%s", (char *)cs.out_buf);
 }
 
@@ -542,7 +542,7 @@ void json_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case JSON_NO_PRINT: { break; } 
-		case JSON_OBJECT_FORMAT: { json_print_object(cmd_body); break; }
+		case JSON_OBJECT_FORMAT: { json_print_object(nv_body); break; }
 		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
 	}
 }
@@ -559,7 +559,7 @@ void json_print_list(stat_t status, uint8_t flags)
  *	JV_LINENUM,		// echo configs; gcode blocks return messages and line numbers as present
  *	JV_VERBOSE		// echos all configs and gcode blocks, line numbers and messages
  *
- *	This gets a bit complicated. The first cmdObj is the header, which must be set by reset_list().
+ *	This gets a bit complicated. The first nvObj is the header, which must be set by reset_list().
  *	The first object in the body will always have the gcode block or config command in it, 
  *	which you may or may not want to display. This is followed by zero or more displayable objects. 
  *	Then if you want a gcode line number you add that here to the end. Finally, a footer goes 
@@ -576,59 +576,59 @@ void json_print_response(uint8_t status)
 	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing
-	cmdObj_t *cmd = cmd_body;
+	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
-		cmd_reset_list();
-		cmd_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
+		nv_reset_list();
+		nv_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
-		uint8_t cmd_type;
+		uint8_t nv_type;
 		do {
-			if ((cmd_type = cmd_get_type(cmd)) == CMD_TYPE_NULL) break;
+			if ((nv_type = nv_get_type(nv)) == NV_TYPE_NULL) break;
 
-			if (cmd_type == CMD_TYPE_GCODE) {
+			if (nv_type == NV_TYPE_GCODE) {
 				if (js.echo_json_gcode_block == false) {	// kill command echo if not enabled
-					cmd->objtype = TYPE_EMPTY;
+					nv->valuetype = TYPE_EMPTY;
 				}
 
-//+++++		} else if (cmd_type == CMD_TYPE_CONFIG) {		// kill config echo if not enabled
+//+++++		} else if (nv_type == NV_TYPE_CONFIG) {		// kill config echo if not enabled
 //fix me		if (js.echo_json_configs == false) {
-//					cmd->objtype = TYPE_EMPTY;
+//					nv->valuetype = TYPE_EMPTY;
 //				}
 
-			} else if (cmd_type == CMD_TYPE_MESSAGE) {		// kill message echo if not enabled
+			} else if (nv_type == NV_TYPE_MESSAGE) {		// kill message echo if not enabled
 				if (js.echo_json_messages == false) {
-					cmd->objtype = TYPE_EMPTY;
+					nv->valuetype = TYPE_EMPTY;
 				}
 
-			} else if (cmd_type == CMD_TYPE_LINENUM) {		// kill line number echo if not enabled
-				if ((js.echo_json_linenum == false) || (fp_ZERO(cmd->value))) { // do not report line# 0
-					cmd->objtype = TYPE_EMPTY;
+			} else if (nv_type == NV_TYPE_LINENUM) {		// kill line number echo if not enabled
+				if ((js.echo_json_linenum == false) || (fp_ZERO(nv->value))) { // do not report line# 0
+					nv->valuetype = TYPE_EMPTY;
 				}
 			}
-		} while ((cmd = cmd->nx) != NULL);
+		} while ((nv = nv->nx) != NULL);
 	}
 
 	// Footer processing
-	while(cmd->objtype != TYPE_EMPTY) {						// find a free cmdObj at end of the list...
-		if ((cmd = cmd->nx) == NULL) {						//...or hit the NULL and return w/o a footer
-			json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+	while(nv->valuetype != TYPE_EMPTY) {						// find a free nvObj at end of the list...
+		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
+			json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
 			return;
 		}
 	}
-	char_t footer_string[CMD_FOOTER_LEN];
+	char_t footer_string[NV_FOOTER_LEN];
 	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
 	cs.linelen = 0;										// reset linelen so it's only reported once
 
-	cmd_copy_string(cmd, footer_string);				// link string to cmd object
-//	cmd->depth = 0;										// footer 'f' is a peer to response 'r' (hard wired to 0)
-	cmd->depth = js.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
-	cmd->objtype = TYPE_ARRAY;
-	strcpy(cmd->token, "f");							// terminate the list
-	cmd->nx = NULL;
+	nv_copy_string(nv, footer_string);				// link string to nv object
+//	nv->depth = 0;										// footer 'f' is a peer to response 'r' (hard wired to 0)
+	nv->depth = js.json_footer_depth;					// 0=footer is peer to response 'r', 1=child of response 'r'
+	nv->valuetype = TYPE_ARRAY;
+	strcpy(nv->token, "f");							// terminate the list
+	nv->nx = NULL;
 
 	// do all this to avoid having to serialize it twice
-	int16_t strcount = json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
+	int16_t strcount = json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
 	if (strcount < 0) { return;}						// encountered an overrun during serialization
 	if (strcount > OUTPUT_BUFFER_LEN - MAX_TAIL_LEN) { return;}	// would overrun during checksum generation
 	int16_t strcount2 = strcount;
@@ -651,10 +651,10 @@ void json_print_response(uint8_t status)
  * json_set_jv()
  */
 
-stat_t json_set_jv(cmdObj_t *cmd) 
+stat_t json_set_jv(nvObj_t *nv) 
 {
-	if (cmd->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	js.json_verbosity = cmd->value;
+	if (nv->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	js.json_verbosity = nv->value;
 
 	js.echo_json_footer = false;
 	js.echo_json_messages = false;
@@ -662,11 +662,11 @@ stat_t json_set_jv(cmdObj_t *cmd)
 	js.echo_json_linenum = false;
 	js.echo_json_gcode_block = false;
 
-	if (cmd->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
-	if (cmd->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
-	if (cmd->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
-	if (cmd->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
-	if (cmd->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
+	if (nv->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
+	if (nv->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
+	if (nv->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
+	if (nv->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
+	if (nv->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
 
 	return(STAT_OK);
 }
@@ -691,10 +691,10 @@ static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=foote
 static const char fmt_js[] PROGMEM = "[js]  json serialize style%9d [0=relaxed,1=strict]\n";
 static const char fmt_fs[] PROGMEM = "[fs]  footer style%17d [0=new,1=old]\n";
 
-void js_print_ej(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_ej);}
-void js_print_jv(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_jv);}
-void js_print_js(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_js);}
-void js_print_fs(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_fs);}
+void js_print_ej(nvObj_t *nv) { text_print_ui8(nv, fmt_ej);}
+void js_print_jv(nvObj_t *nv) { text_print_ui8(nv, fmt_jv);}
+void js_print_js(nvObj_t *nv) { text_print_ui8(nv, fmt_js);}
+void js_print_fs(nvObj_t *nv) { text_print_ui8(nv, fmt_fs);}
 
 #endif // __TEXT_MODE
 
@@ -707,17 +707,17 @@ void js_print_fs(cmdObj_t *cmd) { text_print_ui8(cmd, fmt_fs);}
 
 static void _test_parser(void);
 static void _test_serialize(void);
-static cmdObj_t * _reset_array(void);
-static cmdObj_t * _add_parent(cmdObj_t *cmd, char_t *token);
-static cmdObj_t * _add_string(cmdObj_t *cmd, char_t *token, char_t *string);
-static cmdObj_t * _add_integer(cmdObj_t *cmd, char_t *token, uint32_t integer);
-static cmdObj_t * _add_empty(cmdObj_t *cmd);
-static cmdObj_t * _add_array(cmdObj_t *cmd, char_t *footer);
+static nvObj_t * _reset_array(void);
+static nvObj_t * _add_parent(nvObj_t *nv, char_t *token);
+static nvObj_t * _add_string(nvObj_t *nv, char_t *token, char_t *string);
+static nvObj_t * _add_integer(nvObj_t *nv, char_t *token, uint32_t integer);
+static nvObj_t * _add_empty(nvObj_t *nv);
+static nvObj_t * _add_array(nvObj_t *nv, char_t *footer);
 static char_t * _clr(char_t *buf);
 static void _printit(void);
 
 #define ARRAY_LEN 8
-	cmdObj_t cmd_array[ARRAY_LEN];
+	nvObj_t nv_array[ARRAY_LEN];
 
 void js_unit_tests()
 {
@@ -727,72 +727,72 @@ void js_unit_tests()
 
 static void _test_serialize()
 {
-	cmdObj_t *cmd = cmd_array;
+	nvObj_t *nv = nv_array;
 //	printf("\n\nJSON serialization tests\n");
 
 	// null list
 	_reset_array();
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child
-	cmd = _reset_array();
-	cmd = _add_parent(cmd, (char_t *)"r");
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// single string element (message)
-	cmd = _reset_array();
-	cmd = _add_string(cmd, (char_t *)"msg", (char_t *)"test message");
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// string element and an integer element
-	cmd = _reset_array();
-	cmd = _add_string(cmd, (char_t *)"msg", (char_t *)"test message");
-	cmd = _add_integer(cmd, (char_t *)"answer", 42);
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a string and an integer element
-	cmd = _reset_array();
-	cmd = _add_parent(cmd, (char_t *)"r");
-	cmd = _add_string(cmd, (char_t *)"msg", (char_t *)"test message");
-	cmd = _add_integer(cmd, (char_t *)"answer", 42);
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_string(nv, (char_t *)"msg", (char_t *)"test message");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a null child followed by a final level 0 element (footer)
-	cmd = _reset_array();
-	cmd = _add_parent(cmd, (char_t *)"r");
-	cmd = _add_empty(cmd);
-	cmd = _add_string(cmd, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
-	cmd->pv->depth = 0;
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_empty(nv);
+	nv = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
+	nv->pv->depth = 0;
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// parent with a single element child followed by empties folowed by a final level 0 element
-	cmd = _reset_array();
-	cmd = _add_parent(cmd, (char_t *)"r");
-	cmd = _add_integer(cmd, (char_t *)"answer", 42);
-	cmd = _add_empty(cmd);
-	cmd = _add_empty(cmd);
-	cmd = _add_string(cmd, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
-	cmd->pv->depth = 0;
-	json_serialize(cmd_array, cs.out_buf, sizeof(cs.out_buf));
+	nv = _reset_array();
+	nv = _add_parent(nv, (char_t *)"r");
+	nv = _add_integer(nv, (char_t *)"answer", 42);
+	nv = _add_empty(nv);
+	nv = _add_empty(nv);
+	nv = _add_string(nv, (char_t *)"f", (char_t *)"[1,0,12,1234]");	// fake out a footer
+	nv->pv->depth = 0;
+	json_serialize(nv_array, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response object parent with no children w/footer
-	cmd_reset_list();											// works with the header/body/footer list
-	_add_array(cmd, (char_t *)"1,0,12,1234");					// fake out a footer
-	json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+	nv_reset_list();											// works with the header/body/footer list
+	_add_array(nv, (char_t *)"1,0,12,1234");					// fake out a footer
+	json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 
 	// response parent with one element w/footer
-	cmd_reset_list();											// works with the header/body/footer list
-	cmd_add_string((char_t *)"msg", (char_t *)"test message");
-	_add_array(cmd, (char_t *)"1,0,12,1234");					// fake out a footer
-	json_serialize(cmd_header, cs.out_buf, sizeof(cs.out_buf));
+	nv_reset_list();											// works with the header/body/footer list
+	nv_add_string((char_t *)"msg", (char_t *)"test message");
+	_add_array(nv, (char_t *)"1,0,12,1234");					// fake out a footer
+	json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
 	_printit();
 }
 
@@ -809,72 +809,72 @@ static void _printit(void)
 //	printf("%s", cs.out_buf);	
 }
 
-static cmdObj_t * _reset_array()
+static nvObj_t * _reset_array()
 {
-	cmdObj_t *cmd = cmd_array;
+	nvObj_t *nv = nv_array;
 	for (uint8_t i=0; i<ARRAY_LEN; i++) {
-		if (i == 0) { cmd->pv = NULL; } 
-		else { cmd->pv = (cmd-1);}
-		cmd->nx = (cmd+1);
-		cmd->index = 0;
-		cmd->token[0] = NUL;
-		cmd->depth = 0;
-		cmd->objtype = TYPE_EMPTY;
-		cmd++;
+		if (i == 0) { nv->pv = NULL; } 
+		else { nv->pv = (nv-1);}
+		nv->nx = (nv+1);
+		nv->index = 0;
+		nv->token[0] = NUL;
+		nv->depth = 0;
+		nv->valuetype = TYPE_EMPTY;
+		nv++;
 	}
-	(--cmd)->nx = NULL;				// correct last element
-	return (cmd_array);
+	(--nv)->nx = NULL;				// correct last element
+	return (nv_array);
 }
 
-static cmdObj_t * _add_parent(cmdObj_t *cmd, char_t *token)
+static nvObj_t * _add_parent(nvObj_t *nv, char_t *token)
 {
-	strncpy(cmd->token, token, TOKEN_LEN);
-	cmd->nx->depth = cmd->depth+1;
-	cmd->objtype = TYPE_PARENT;
-	return (cmd->nx);
+	strncpy(nv->token, token, TOKEN_LEN);
+	nv->nx->depth = nv->depth+1;
+	nv->valuetype = TYPE_PARENT;
+	return (nv->nx);
 }
 
-static cmdObj_t * _add_string(cmdObj_t *cmd, char_t *token, char_t *string)
+static nvObj_t * _add_string(nvObj_t *nv, char_t *token, char_t *string)
 {
-	strncpy(cmd->token, token, TOKEN_LEN);
-	cmd_copy_string(cmd, string);
-	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->objtype = TYPE_STRING;
-	return (cmd->nx);
+	strncpy(nv->token, token, TOKEN_LEN);
+	nv_copy_string(nv, string);
+	if (nv->depth < nv->pv->depth) { nv->depth = nv->pv->depth;}
+	nv->valuetype = TYPE_STRING;
+	return (nv->nx);
 }
 
-static cmdObj_t * _add_integer(cmdObj_t *cmd, char_t *token, uint32_t integer)
+static nvObj_t * _add_integer(nvObj_t *nv, char_t *token, uint32_t integer)
 {
-	strncpy(cmd->token, token, TOKEN_LEN);
-	cmd->value = (float)integer;
-	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->objtype = TYPE_INTEGER;
-	return (cmd->nx);
+	strncpy(nv->token, token, TOKEN_LEN);
+	nv->value = (float)integer;
+	if (nv->depth < nv->pv->depth) { nv->depth = nv->pv->depth;}
+	nv->valuetype = TYPE_INTEGER;
+	return (nv->nx);
 }
 
-cmdObj_t * _add_data(cmdObj_t *cmd, char *token, uint32_t integer)
+nvObj_t * _add_data(nvObj_t *nv, char *token, uint32_t integer)
 {
-	strncpy(cmd->token, token, TOKEN_LEN);
-	uint32_t *v = (uint32_t*)&cmd->value;
+	strncpy(nv->token, token, TOKEN_LEN);
+	uint32_t *v = (uint32_t*)&nv->value;
 	*v = integer;
-	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->objtype = TYPE_DATA;
-	return (cmd->nx);
+	if (nv->depth < nv->pv->depth) { nv->depth = nv->pv->depth;}
+	nv->valuetype = TYPE_DATA;
+	return (nv->nx);
 }
 
-static cmdObj_t * _add_empty(cmdObj_t *cmd)
+static nvObj_t * _add_empty(nvObj_t *nv)
 {
-	if (cmd->depth < cmd->pv->depth) { cmd->depth = cmd->pv->depth;}
-	cmd->objtype = TYPE_EMPTY;
-	return (cmd->nx);
+	if (nv->depth < nv->pv->depth) { nv->depth = nv->pv->depth;}
+	nv->valuetype = TYPE_EMPTY;
+	return (nv->nx);
 }
 
-static cmdObj_t * _add_array(cmdObj_t *cmd, char_t *array_string)
+static nvObj_t * _add_array(nvObj_t *nv, char_t *array_string)
 {
-	cmd->objtype = TYPE_ARRAY;
-//	strncpy(cmd->string, array_string, CMD_STRING_LEN);
-	cmd_copy_string(cmd, array_string);
-	return (cmd->nx);
+	nv->valuetype = TYPE_ARRAY;
+//	strncpy(nv->string, array_string, NV_STRING_LEN);
+	nv_copy_string(nv, array_string);
+	return (nv->nx);
 }
 
 static void _test_parser()

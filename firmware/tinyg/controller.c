@@ -115,15 +115,15 @@ void controller_init_assertions()
 
 	cfg.magic_start = MAGICNUM;		// assertions for config system are handled from the controller
 	cfg.magic_end = MAGICNUM;
-	cmdStr.magic_start = MAGICNUM;
-	cmdStr.magic_end = MAGICNUM;
+	nvStr.magic_start = MAGICNUM;
+	nvStr.magic_end = MAGICNUM;
 }
 
 stat_t controller_test_assertions()
 {
 	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	if ((cmdStr.magic_start != MAGICNUM) || (cmdStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((nvStr.magic_start != MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 //	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 
 	return (STAT_OK);
