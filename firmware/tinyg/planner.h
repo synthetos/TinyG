@@ -269,7 +269,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
-stat_t mp_aline(const GCodeState_t *gm_line);
+stat_t mp_aline(const GCodeState_t *gm_in);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
@@ -296,6 +296,7 @@ float mp_get_runtime_absolute_position(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
+float* mp_get_planner_position_vector(void);
 
 // plan_exec.c functions
 void mp_init_runtime(void);

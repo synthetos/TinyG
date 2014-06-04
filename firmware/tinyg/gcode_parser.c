@@ -173,7 +173,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	if (**pstr == NUL) { return (STAT_COMPLETE); }	// no more words
 
 	// get letter part
-	if(isupper(**pstr) == false) { return (STAT_EXPECTED_COMMAND_LETTER); }
+	if(isupper(**pstr) == false) { return (STAT_MALFORMED_COMMAND_INPUT); }
 	*letter = **pstr;
 	(*pstr)++;
 	
@@ -220,7 +220,7 @@ static stat_t _validate_gcode_block()
 	// look for commands that require an axis word to be present
 //	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
 //		if (_axis_changed() == false)
-//		return (STAT_GCODE_AXIS_WORD_MISSING);
+//		return (STAT_GCODE_AXIS_IS_MISSING);
 //	}
 	return (STAT_OK);
 }

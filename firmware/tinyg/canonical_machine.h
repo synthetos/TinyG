@@ -600,7 +600,7 @@ stat_t cm_resume_origin_offsets(void);				 			// G92.3
 
 stat_t cm_straight_traverse(float target[], float flags[]);
 stat_t cm_set_feed_rate(float feed_rate);						// F parameter
-stat_t cm_set_inverse_feed_rate_mode(uint8_t mode);				// True= inv mode
+stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 stat_t cm_straight_feed(float target[], float flags[]);			// G1
 stat_t cm_dwell(float seconds);									// G4, P parameter

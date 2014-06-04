@@ -77,8 +77,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-//		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-		return (STAT_GCODE_FEEDRATE_ERROR);		//++++
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
 	// Trap conditions where no arc movement will occur, but the system is still in 
@@ -225,7 +224,7 @@ static stat_t _compute_arc()
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
-	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE_ERROR); // too short to draw
+	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE); // arc is too short to draw
 
 	arc.time = _get_arc_time(arc.linear_travel, arc.angular_travel, arc.radius);
 

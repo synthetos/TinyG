@@ -65,6 +65,7 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
+float* mp_get_planner_position_vector() { return (mm.position);}
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -97,23 +98,48 @@ uint8_t mp_get_runtime_busy()
  *	executed once the accumulated error exceeds the minimums 
  */
 
-stat_t mp_aline(const GCodeState_t *gm_line)
+stat_t mp_aline(const GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
-	float exact_stop = 0;
+	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
+	uint8_t mr_flag = false;
+	uint8_t path_control_mode = cm_get_path_control(MODEL);
+
 
 	// trap error conditions
-	float length = get_axis_vector_length(gm_line->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE_ERROR);}
+	float length = get_axis_vector_length(gm_in->target, mm.position);
+	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 //	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}	// remove this line
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
 
-	memcpy(&bf->gm, gm_line, sizeof(GCodeState_t));	// copy model state into planner
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));	// copy model state into planner
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
+
+//----- staging in new code ----
+/*
+	// exit out if the move has zero movement. At all.
+	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
+
+	// trap short lines
+	//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
+	if (path_control_mode == PATH_CONTINUOUS) {
+		if (gm_in->move_time < MIN_BLOCK_TIME) {
+			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+			return (STAT_MINIMUM_TIME_MOVE);
+		}
+	}
+
+	// get a cleared buffer and setup move variables
+	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
+	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
+	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+*/
+//-----
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
@@ -166,7 +192,7 @@ stat_t mp_aline(const GCodeState_t *gm_line)
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
 
-	uint8_t mr_flag = false;
+//	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
 	copy_vector(mm.position, bf->gm.target);				// update planning position
 	mp_queue_write_buffer(MOVE_TYPE_ALINE);

@@ -99,13 +99,12 @@ uint8_t cm_straight_probe(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-//		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-		return (STAT_GCODE_FEEDRATE_ERROR);		//++++
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
 	// trap no axes specified
     if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
-        return (STAT_GCODE_AXIS_WORD_MISSING);
+		return (STAT_GCODE_AXIS_IS_MISSING);
 
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint
@@ -290,11 +289,11 @@ static stat_t _probing_error_exit(int8_t axis)
         cmd_add_conditional_message((char_t *)message);
     }
 	
-	cmd_print_list(STAT_PROBING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
+	cmd_print_list(STAT_PROBE_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
 	// clean up and exit
 	_probe_restore_settings();
-	return (STAT_PROBING_CYCLE_FAILED);
+	return (STAT_PROBE_CYCLE_FAILED);
 }
 
 

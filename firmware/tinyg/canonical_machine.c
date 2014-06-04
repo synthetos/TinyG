@@ -517,9 +517,48 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float tmp_time=0;					// used in computation
 	gcode_state->minimum_time = 8675309;// arbitrarily large number
 
-	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
-	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
-	//		 the canonical machine will be the target, but this is not required.
+	// compute times for feed motion
+	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+		if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
+			inv_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
+			cm.gm.feed_rate = 0;		// reset feed rate so next block requires an explicit feed rate setting
+			cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
+			} else {
+			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
+			square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
+			square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
+			if (fp_ZERO(xyz_time)) {
+				abc_time = sqrt(square(cm.gm.target[AXIS_A] - cm.gmx.position[AXIS_A]) + // in deg
+				square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
+				square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
+			}
+		}
+	}
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].feedrate_max;
+			} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
+		}
+		max_time = max(max_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		}
+	}
+	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
+}
+/*
+void cm_set_move_times(GCodeState_t *gcode_state)
+{
+	float inv_time=0;					// inverse time if doing a feed in G93 mode
+	float xyz_time=0;					// coordinated move linear part at req feed rate
+	float abc_time=0;					// coordinated move rotary part at req feed rate
+	float max_time=0;					// time required for the rate-limiting axis
+	float tmp_time=0;					// used in computation
+	gcode_state->minimum_time = 8675309;// arbitrarily large number
+
+	float *planner_position = mp_get_planner_position_vector();
 
 	// compute times for feed motion
 	if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
@@ -527,28 +566,32 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 			inv_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
 			cm.gm.feed_rate = 0;		// reset feed rate so next block requires an explicit feed rate setting
 			cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
-		} else {
-			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
-							square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
-							square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
+			} else {
+			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - planner_position[AXIS_X]) + // in mm
+			square(cm.gm.target[AXIS_Y] - planner_position[AXIS_Y]) +
+			square(cm.gm.target[AXIS_Z] - planner_position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
 			if (fp_ZERO(xyz_time)) {
-				abc_time = sqrt(square(cm.gm.target[AXIS_A] - cm.gmx.position[AXIS_A]) + // in deg
-								square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
-								square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
+				abc_time = sqrt(square(cm.gm.target[AXIS_A] - planner_position[AXIS_A]) + // in deg
+				square(cm.gm.target[AXIS_B] - planner_position[AXIS_B]) +
+				square(cm.gm.target[AXIS_C] - planner_position[AXIS_C])) / cm.gm.feed_rate; // in degree units
 			}
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].feedrate_max;
-		} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
+			tmp_time = fabs(cm.gm.target[axis] - planner_position[axis]) / cm.a[axis].feedrate_max;
+			} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+			tmp_time = fabs(cm.gm.target[axis] - planner_position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
-		gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gcode_state->minimum_time = min(gcode_state->minimum_time, tmp_time);
+		}
 	}
 	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
+*/
 
 /* 
  * cm_test_soft_limits() - return error code if soft limit is exceeded
@@ -1026,8 +1069,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-//		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-		return (STAT_GCODE_FEEDRATE_ERROR);		//++++
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
