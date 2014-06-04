@@ -508,8 +508,6 @@ void cm_set_model_position_from_runtime(stat_t status)
  *		any time required for acceleration or deceleration.
  */
 
-#define JENNIFER 8675309
-
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
 	float inv_time=0;					// inverse time if doing a feed in G93 mode
@@ -517,7 +515,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	float abc_time=0;					// coordinated move rotary part at req feed rate
 	float max_time=0;					// time required for the rate-limiting axis
 	float tmp_time=0;					// used in computation
-	gcode_state->minimum_time = JENNIFER;// arbitrarily large number
+	gcode_state->minimum_time = 8675309;// arbitrarily large number
 
 	// NOTE: In the below code all references to 'cm.gm.' read from the canonical machine gm, 
 	//		 not the target gcode model, which is referenced as target_gm->  In most cases 
@@ -1399,7 +1397,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_coord_system(cm.coord_system);		// reset to default coordinate system
 		cm_select_plane(cm.select_plane);			// reset to default arc plane
 		cm_set_distance_mode(cm.distance_mode);
-		cm_set_units_mode(cm.units_mode);			// reset to default units mode
+//++++	cm_set_units_mode(cm.units_mode);			// reset to default units mode +++ REMOVED +++
 		cm_spindle_control(SPINDLE_OFF);			// M5
 		cm_flood_coolant_control(false);			// M9
 		cm_set_inverse_feed_rate_mode(false);

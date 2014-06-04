@@ -266,32 +266,20 @@ stat_t set_flt(cmdObj_t *cmd)
 /***** GCODE SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS *****/
 
 /*
- * get_flu() - get floating point number with G20/G21 units conversion
- *
- * The number "getted" will be in internal canonical units (mm), which is  
- * returned in external units (inches or mm) 
- */
-/*
-stat_t get_flu(cmdObj_t *cmd)
-{
-	get_flt(cmd);
-	if (cm_get_units_mode(MODEL) == INCHES) cmd->value *= INCHES_PER_MM;
-	return (STAT_OK);
-}
-*/
-/*
  * set_flu() - set floating point number with G20/G21 units conversion
  *
- * The number "setted" will have been delivered in external units (inches or mm).
- * It is written to the target memory location in internal canonical units (mm),
- * but the original cmd->value is not changed so display works correctly.
+ * The number 'setted' will have been delivered in external units (inches or mm).
+ * It is written to the target memory location in internal canonical units (mm).
+ * The original nv->value is also changed so persistence works correctly.
+ * Displays should convert back from internal canonical form to external form.
  */
 
 stat_t set_flu(cmdObj_t *cmd)
 {
-	float tmp_value = cmd->value;
-	if (cm_get_units_mode(MODEL) == INCHES) tmp_value *= MM_PER_INCH; // convert to canonical units
-	*((float *)GET_TABLE_WORD(target)) = tmp_value;
+	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
+		cmd->value *= MM_PER_INCH;					// convert to canonical millimeter units
+	}
+	*((float *)GET_TABLE_WORD(target)) = cmd->value;// write value as millimeters or degrees
 	cmd->precision = GET_TABLE_WORD(precision);
 	cmd->objtype = TYPE_FLOAT;
 	return(STAT_OK);
