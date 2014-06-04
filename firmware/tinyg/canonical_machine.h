@@ -2,10 +2,10 @@
  * canonical_machine.h - rs274/ngc canonical machining functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
- * canonical machining functions as described in the NIST RS274/NGC v37
+ * canonical machining functions as described in the NIST RS274/NGC v3
  */
 /* This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -79,20 +79,21 @@ extern "C"{
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
- typedef struct GCodeState {			// Gcode model state - used by model, planning and runtime
- 	uint32_t linenum;					// Gcode block line number
+typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
+	uint32_t linenum;					// Gcode block line number
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-										// G82, G83 G84, G85, G86, G87, G88, G89 
+										// G82, G83 G84, G85, G86, G87, G88, G89
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
-	float feed_rate; 					// F - normalized to millimeters/minute
+	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
+
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
@@ -117,7 +118,6 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
-	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
@@ -141,17 +141,16 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 typedef struct GCodeInput {				// Gcode model inputs - meaning depends on context
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-										// G82, G83 G84, G85, G86, G87, G88, G89 
+										// G82, G83 G84, G85, G86, G87, G88, G89
 	uint8_t program_flow;				// used only by the gcode_parser
 	uint32_t linenum;					// N word or autoincrement in the model
 
 	float target[AXES]; 				// XYZABC where the move should go
 
 	float feed_rate; 					// F - normalized to millimeters/minute
-	float inverse_feed_rate; 			// ignored if inverse_feed_rate not active
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
-	uint8_t inverse_feed_rate_mode;		// G93 TRUE = inverse, FALSE = normal (G94)
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
@@ -249,7 +248,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 
 	uint8_t	g28_flag;				// true = complete a G28 move
 	uint8_t	g30_flag;				// true = complete a G30 move
-	uint8_t g10_persist_flag;		//.G10 changed offsets - persist them
+	uint8_t g10_persist_flag;		// G10 changed offsets - persist them
 	uint8_t feedhold_requested;		// feedhold character has been received
 	uint8_t queue_flush_requested;	// queue flush character has been received
 	uint8_t cycle_start_requested;	// cycle start character has been received (flag to end feedhold)
@@ -299,8 +298,8 @@ extern cmSingleton_t cm;		// canonical machine controller singleton
  */
 // *** Note: check config printout strings align with all the state variables
 
-// #### LAYER 8 CRITICAL REGION ###
-// #### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT #### 
+// ### LAYER 8 CRITICAL REGION ###
+// ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ###
 enum cmCombinedState {				// check alignment with messages in config.c / msg_stat strings
 	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
 	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
@@ -315,7 +314,7 @@ enum cmCombinedState {				// check alignment with messages in config.c / msg_sta
 	COMBINED_JOG,					// [10] jogging is treated as a cycle
 	COMBINED_SHUTDOWN,				// [11] machine in hard alarm state (shutdown)
 };
-//#### END CRITICAL REGION ####
+//### END CRITICAL REGION ###
 
 enum cmMachineState {
 	MACHINE_INITIALIZING = 0,		// machine is initializing
@@ -449,14 +448,20 @@ enum cmCoordSystem {
 #define COORD_SYSTEM_MAX G59		// set this manually to the last one
 
 enum cmPathControlMode {			// G Modal Group 13
-	PATH_EXACT_PATH = 0,			// G61
-	PATH_EXACT_STOP,				// G61.1
+	PATH_EXACT_PATH = 0,			// G61 - hits corners but does not stop if it does not need to.
+	PATH_EXACT_STOP,				// G61.1 - stops at all corners
 	PATH_CONTINUOUS					// G64 and typically the default mode
 };
 
 enum cmDistanceMode {
 	ABSOLUTE_MODE = 0,				// G90
 	INCREMENTAL_MODE				// G91
+};
+
+enum cmFeedRateMode {
+	INVERSE_TIME_MODE = 0,			// G93
+	UNITS_PER_MINUTE_MODE,			// G94
+	UNITS_PER_REVOLUTION_MODE		// G95 (unimplemented)
 };
 
 enum cmOriginOffset {
@@ -500,9 +505,12 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES
+ * Serves as a table of contents for the rather large canonical machine source file.
  */
-/*--- getters, setters and helper functions for canonical machining functions ---*/
 
+/*--- Internal functions and helpers ---*/
+
+// Model state getters and setters
 uint8_t cm_get_combined_state(void); 
 uint8_t cm_get_machine_state(void);
 uint8_t cm_get_cycle_state(void);
@@ -519,18 +527,21 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
 uint8_t cm_get_path_control(GCodeState_t *gcode_state);
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
-uint8_t cm_get_inverse_feed_rate_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
+float cm_get_feed_rate(GCodeState_t *gcode_state);
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
+void cm_set_model_linenum(uint32_t linenum);
 
+// Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gcode_state);
@@ -538,7 +549,9 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_set_move_times(GCodeState_t *gcode_state);
 
-void cm_set_model_linenum(uint32_t linenum);
+// Critical helpers
+void cm_update_model_position(void);
+void cm_update_model_position_from_runtime(void);
 void cm_set_model_target(float target[], float flag[]);
 void cm_set_model_position(stat_t status);
 void cm_set_model_position_from_runtime(stat_t status);

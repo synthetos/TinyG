@@ -321,8 +321,9 @@ static stat_t _parse_gcode_block(char_t *buf)
 					}
 					break;
 				}
-				case 93: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, true);
-				case 94: SET_MODAL (MODAL_GROUP_G5, inverse_feed_rate_mode, false);
+				case 93: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, INVERSE_TIME_MODE);
+				case 94: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_MINUTE_MODE);
+//				case 95: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_REVOLUTION_MODE);
 				default: status = STAT_UNRECOGNIZED_COMMAND;
 			}
 			break;
@@ -420,7 +421,7 @@ static stat_t _execute_gcode_block()
 	stat_t status = STAT_OK;
 
 	cm_set_model_linenum(cm.gn.linenum);
-	EXEC_FUNC(cm_set_inverse_feed_rate_mode, inverse_feed_rate_mode);
+	EXEC_FUNC(cm_set_feed_rate_mode, feed_rate_mode);
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
 	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
