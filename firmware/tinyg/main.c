@@ -359,37 +359,58 @@ static const char stat_201[] PROGMEM = "Move less than minimum length";
 static const char stat_202[] PROGMEM = "Move less than minimum time";
 static const char stat_203[] PROGMEM = "Machine is alarmed - Command not processed";	// current longest message 43 chars (including NUL)
 static const char stat_204[] PROGMEM = "Limit switch hit - Shutdown occurred";
-static const char stat_205[] PROGMEM = "205";
+static const char stat_205[] PROGMEM = "Trapezoid planner failed to converge";
 static const char stat_206[] PROGMEM = "206";
 static const char stat_207[] PROGMEM = "207";
 static const char stat_208[] PROGMEM = "208";
 static const char stat_209[] PROGMEM = "209";
 
-static const char stat_210[] PROGMEM = "Soft limit exceeded";
-static const char stat_211[] PROGMEM = "Soft limit exceeded - X min";
-static const char stat_212[] PROGMEM = "Soft limit exceeded - X max";
-static const char stat_213[] PROGMEM = "Soft limit exceeded - Y min";
-static const char stat_214[] PROGMEM = "Soft limit exceeded - Y max";
-static const char stat_215[] PROGMEM = "Soft limit exceeded - Z min";
-static const char stat_216[] PROGMEM = "Soft limit exceeded - Z max";
-static const char stat_217[] PROGMEM = "Soft limit exceeded - A min";
-static const char stat_218[] PROGMEM = "Soft limit exceeded - A max";
-static const char stat_219[] PROGMEM = "Soft limit exceeded - B min";
-static const char stat_220[] PROGMEM = "Soft limit exceeded - B max";
-static const char stat_221[] PROGMEM = "Soft limit exceeded - C min";
-static const char stat_222[] PROGMEM = "Soft limit exceeded - C max";
+static const char stat_210[] PROGMEM = "210";
+static const char stat_211[] PROGMEM = "211";
+static const char stat_212[] PROGMEM = "212";
+static const char stat_213[] PROGMEM = "213";
+static const char stat_214[] PROGMEM = "214";
+static const char stat_215[] PROGMEM = "215";
+static const char stat_216[] PROGMEM = "216";
+static const char stat_217[] PROGMEM = "217";
+static const char stat_218[] PROGMEM = "218";
+static const char stat_219[] PROGMEM = "219";
 
-static const char stat_223[] PROGMEM = "Homing cycle failed";
-static const char stat_224[] PROGMEM = "Homing Error - Bad or no axis specified";
-static const char stat_225[] PROGMEM = "Homing Error - Search velocity is zero";
-static const char stat_226[] PROGMEM = "Homing Error - Latch velocity is zero";
-static const char stat_227[] PROGMEM = "Homing Error - Travel min/max is zero";
-static const char stat_228[] PROGMEM = "Homing Error - Negative latch backoff";
-static const char stat_229[] PROGMEM = "Homing Error - Homing switches misconfigured";
+static const char stat_220[] PROGMEM = "Soft limit exceeded";
+static const char stat_221[] PROGMEM = "Soft limit exceeded - X min";
+static const char stat_222[] PROGMEM = "Soft limit exceeded - X max";
+static const char stat_223[] PROGMEM = "Soft limit exceeded - Y min";
+static const char stat_224[] PROGMEM = "Soft limit exceeded - Y max";
+static const char stat_225[] PROGMEM = "Soft limit exceeded - Z min";
+static const char stat_226[] PROGMEM = "Soft limit exceeded - Z max";
+static const char stat_227[] PROGMEM = "Soft limit exceeded - A min";
+static const char stat_228[] PROGMEM = "Soft limit exceeded - A max";
+static const char stat_229[] PROGMEM = "Soft limit exceeded - B min";
+static const char stat_230[] PROGMEM = "Soft limit exceeded - B max";
+static const char stat_231[] PROGMEM = "Soft limit exceeded - C min";
+static const char stat_232[] PROGMEM = "Soft limit exceeded - C max";
+static const char stat_233[] PROGMEM = "233";
+static const char stat_234[] PROGMEM = "234";
+static const char stat_235[] PROGMEM = "235";
+static const char stat_236[] PROGMEM = "236";
+static const char stat_237[] PROGMEM = "237";
+static const char stat_238[] PROGMEM = "238";
+static const char stat_239[] PROGMEM = "239";
 
-static const char stat_230[] PROGMEM = "Probe cycle failed";
-static const char stat_231[] PROGMEM = "Probe endpoint is starting point";
-static const char stat_232[] PROGMEM = "Jogging cycle failed";
+static const char stat_240[] PROGMEM = "Homing cycle failed";
+static const char stat_241[] PROGMEM = "Homing Error - Bad or no axis specified";
+static const char stat_242[] PROGMEM = "Homing Error - Search velocity is zero";
+static const char stat_243[] PROGMEM = "Homing Error - Latch velocity is zero";
+static const char stat_244[] PROGMEM = "Homing Error - Travel min/max is zero";
+static const char stat_245[] PROGMEM = "Homing Error - Negative latch backoff";
+static const char stat_246[] PROGMEM = "Homing Error - Homing switches misconfigured";
+static const char stat_247[] PROGMEM = "249";
+static const char stat_248[] PROGMEM = "249";
+static const char stat_249[] PROGMEM = "249";
+
+static const char stat_250[] PROGMEM = "Probe cycle failed";
+static const char stat_251[] PROGMEM = "Probe endpoint is starting point";
+static const char stat_252[] PROGMEM = "Jogging cycle failed";
 
 static const char *const stat_msg[] PROGMEM = {
 	stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -415,7 +436,9 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_200, stat_201, stat_202, stat_203, stat_204, stat_205, stat_206, stat_207, stat_208, stat_209,
 	stat_210, stat_211, stat_212, stat_213, stat_214, stat_215, stat_216, stat_217, stat_218, stat_219,
 	stat_220, stat_221, stat_222, stat_223, stat_224, stat_225, stat_226, stat_227, stat_228, stat_229,
-	stat_230, stat_231, stat_232
+	stat_230, stat_231, stat_232, stat_233, stat_234, stat_235, stat_236, stat_237, stat_238, stat_239,
+	stat_240, stat_241, stat_242, stat_243, stat_244, stat_245, stat_246, stat_247, stat_248, stat_249,
+	stat_250, stat_251, stat_252
 };
 
 char *get_status_message(stat_t status)

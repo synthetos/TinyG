@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.26	// split off trapezoid generator into its own file (plan_zoid.c)
+#define TINYG_FIRMWARE_BUILD   		410.27	// working in the trapezoid generator and added some more room in the status codes
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -505,39 +505,60 @@ char *get_status_message(stat_t status);
 #define	STAT_MINIMUM_TIME_MOVE 202						// move is less than minimum time
 #define	STAT_MACHINE_ALARMED 203						// machine is alarmed. Command not processed
 #define	STAT_LIMIT_SWITCH_HIT 204						// a limit switch was hit causing shutdown
-#define	STAT_ERROR_205 205
+#define	STAT_PLANNER_FAILED_TO_CONVERGE 205				// trapezoid generator can through this exception
 #define	STAT_ERROR_206 206
 #define	STAT_ERROR_207 207
 #define	STAT_ERROR_208 208
 #define	STAT_ERROR_209 209
 
-#define	STAT_SOFT_LIMIT_EXCEEDED 210					// soft limit error - axis unspecified
-#define	STAT_SOFT_LIMIT_EXCEEDED_XMIN 211				// soft limit error - X minimum
-#define	STAT_SOFT_LIMIT_EXCEEDED_XMAX 212				// soft limit error - X maximum
-#define	STAT_SOFT_LIMIT_EXCEEDED_YMIN 213				// soft limit error - Y minimum
-#define	STAT_SOFT_LIMIT_EXCEEDED_YMAX 214				// soft limit error - Y maximum
-#define	STAT_SOFT_LIMIT_EXCEEDED_ZMIN 215				// soft limit error - Z minimum
-#define	STAT_SOFT_LIMIT_EXCEEDED_ZMAX 216				// soft limit error - Z maximum
-#define	STAT_SOFT_LIMIT_EXCEEDED_AMIN 217				// soft limit error - A minimum
-#define	STAT_SOFT_LIMIT_EXCEEDED_AMAX 218				// soft limit error - A maximum
-#define	STAT_SOFT_LIMIT_EXCEEDED_BMIN 219				// soft limit error - B minimum
+#define	STAT_ERROR_210 210
+#define	STAT_ERROR_211 211
+#define	STAT_ERROR_212 212
+#define	STAT_ERROR_213 213
+#define	STAT_ERROR_214 214
+#define	STAT_ERROR_215 215
+#define	STAT_ERROR_216 216
+#define	STAT_ERROR_217 217
+#define	STAT_ERROR_218 218
+#define	STAT_ERROR_219 219
+
+#define	STAT_SOFT_LIMIT_EXCEEDED 220					// soft limit error - axis unspecified
+#define	STAT_SOFT_LIMIT_EXCEEDED_XMIN 221				// soft limit error - X minimum
+#define	STAT_SOFT_LIMIT_EXCEEDED_XMAX 222				// soft limit error - X maximum
+#define	STAT_SOFT_LIMIT_EXCEEDED_YMIN 223				// soft limit error - Y minimum
+#define	STAT_SOFT_LIMIT_EXCEEDED_YMAX 224				// soft limit error - Y maximum
+#define	STAT_SOFT_LIMIT_EXCEEDED_ZMIN 225				// soft limit error - Z minimum
+#define	STAT_SOFT_LIMIT_EXCEEDED_ZMAX 226				// soft limit error - Z maximum
+#define	STAT_SOFT_LIMIT_EXCEEDED_AMIN 227				// soft limit error - A minimum
+#define	STAT_SOFT_LIMIT_EXCEEDED_AMAX 228				// soft limit error - A maximum
+#define	STAT_SOFT_LIMIT_EXCEEDED_BMIN 229				// soft limit error - B minimum
 #define	STAT_SOFT_LIMIT_EXCEEDED_BMAX 220				// soft limit error - B maximum
-#define	STAT_SOFT_LIMIT_EXCEEDED_CMIN 221				// soft limit error - C minimum
-#define	STAT_SOFT_LIMIT_EXCEEDED_CMAX 222				// soft limit error - C maximum
+#define	STAT_SOFT_LIMIT_EXCEEDED_CMIN 231				// soft limit error - C minimum
+#define	STAT_SOFT_LIMIT_EXCEEDED_CMAX 232				// soft limit error - C maximum
+#define	STAT_ERROR_233 233
+#define	STAT_ERROR_234 234
+#define	STAT_ERROR_235 235
+#define	STAT_ERROR_236 236
+#define	STAT_ERROR_237 237
+#define	STAT_ERROR_238 238
+#define	STAT_ERROR_239 239
 
-#define	STAT_HOMING_CYCLE_FAILED 223					// homing cycle did not complete
-#define	STAT_HOMING_ERROR_BAD_OR_NO_AXIS 224
-#define	STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY 225
-#define	STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY 226
-#define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO 227
-#define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 228
-#define	STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION 229
+#define	STAT_HOMING_CYCLE_FAILED 240					// homing cycle did not complete
+#define	STAT_HOMING_ERROR_BAD_OR_NO_AXIS 241
+#define	STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY 242
+#define	STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY 243
+#define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO 244
+#define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 245
+#define	STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION 246
+#define	STAT_ERROR_247 247
+#define	STAT_ERROR_248 248
+#define	STAT_ERROR_249 249
 
-#define	STAT_PROBE_CYCLE_FAILED 230						// probing cycle did not complete
-#define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 231
-#define	STAT_JOGGING_CYCLE_FAILED 232					// jogging cycle did not complete
+#define	STAT_PROBE_CYCLE_FAILED 250						// probing cycle did not complete
+#define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 251
+#define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
 
-//#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 224
-//#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 225
+//#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 253
+//#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 254
 
 #endif // End of include guard: TINYG2_H_ONCE
