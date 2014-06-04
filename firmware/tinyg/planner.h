@@ -2,8 +2,8 @@
  * planner.h - cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
- * Copyright (c) 2013 Robert Giseburt
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -50,7 +50,7 @@ enum moveState {
 	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
 	MOVE_NEW,				// general value if you need an initialization
 	MOVE_RUN,				// general run state (for non-acceleration moves)
-	MOVE_SKIP				// mark a skipped block
+	MOVE_SKIP_BLOCK			// mark a skipped block
 };
 
 enum moveSection {
@@ -83,13 +83,26 @@ enum sectionState {
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
  */
-#define NOM_SEGMENT_USEC 		((float)5000)		// nominal segment time
-#define MIN_SEGMENT_USEC 		((float)2500)		// minimum segment time
-#define MIN_ARC_SEGMENT_USEC	((float)10000)		// minimum arc segment time
+#ifdef __AVR
+	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
+	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
+	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
+#endif
+#ifdef __ARM
+	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
+	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
+	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
+#endif
+
+
 #define NOM_SEGMENT_TIME 		(NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+//#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME*3	// factor for minimum size Gcode block to process
+#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME	// factor for minimum size Gcode block to process
+
+#define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
@@ -263,6 +276,7 @@ stat_t planner_test_assertions(void);
 void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
+void mp_set_steps_to_runtime_position(void);
 
 void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
 
@@ -297,6 +311,11 @@ void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
 uint8_t mp_get_runtime_busy(void);
 float* mp_get_planner_position_vector(void);
+
+// plan_zoid.c functions
+void mp_calculate_trapezoid(mpBuf_t *bf);
+float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf);
+float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 
 // plan_exec.c functions
 void mp_init_runtime(void);

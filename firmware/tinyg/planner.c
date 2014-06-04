@@ -1,9 +1,9 @@
 /*
- * planner.c - cartesian trajectory planning and motion execution
+ * planner.c - Cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2013 Rob Giseburt
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2014 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -56,10 +56,11 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
+#include "kinematics.h"
 #include "stepper.h"
+#include "encoder.h"
 #include "report.h"
 #include "util.h"
-//#include "xio.h"			// uncomment for debugging
 
 #ifdef __cplusplus
 extern "C"{
@@ -135,9 +136,16 @@ void mp_flush_planner()
 }
 
 /*
- * mp_set_planner_position() - sets both planner position by axis (mm struct)
- * mp_set_runtime_position() - sets both runtime position by axis (mr struct)
- *
+ * mp_set_planner_position() - set planner position for a single axis
+ * mp_set_runtime_position() - set runtime position for a single axis
+ * mp_set_steps_to_runtime_position() - set encoder counts to the runtime position
+ * 
+ * Since steps are in motor space you have to run the position vector through inverse 
+ * kinematics to get the right numbers. This means that in a non-Cartesian robot changing 
+ * any position can result in changes to multiple step values. So this operation is provided 
+ * as a single function and always uses the new position vector as an input.
+ */
+/*	REVIEW AND EDIT IF NECESSARY
  * 	Keeping track of position is complicated by the fact that moves exist in 
  *	several reference frames. The scheme to keep this straight is:
  *
@@ -159,6 +167,22 @@ void mp_set_planner_position(uint8_t axis, const float position)
 void mp_set_runtime_position(uint8_t axis, const float position)
 {
 	mr.position[axis] = position;
+}
+
+void mp_set_steps_to_runtime_position()
+{
+	float step_position[MOTORS];
+	ik_kinematics(mr.position, step_position);				// convert lengths to steps in floating point
+	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+		mr.target_steps[motor] = step_position[motor];
+		mr.position_steps[motor] = step_position[motor];
+		mr.commanded_steps[motor] = step_position[motor];
+		en_set_encoder_steps(motor, step_position[motor]);	// write steps to encoder register
+
+		// These must be zero:
+		mr.following_error[motor] = 0;
+		st_pre.mot[motor].corrected_steps = 0;
+	}
 }
 
 /************************************************************************************

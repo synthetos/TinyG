@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.25	// canonical machine updates: update_position(), inits, alarms; staged set_axis_origin replacement with set_position
+#define TINYG_FIRMWARE_BUILD   		410.26	// split off trapezoid generator into its own file (plan_zoid.c)
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

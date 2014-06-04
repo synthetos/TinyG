@@ -359,15 +359,17 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
 
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
-    ritorno(_verify_position(axis));
 	if (hm.set_coordinates != false) {						// do not set axis if in G28.4 cycle
-		cm_set_axis_origin(axis, 0);
-		mp_set_runtime_position(axis, 0);
+		cm_set_position(axis, 0);
 		cm.homed[axis] = true;
-	} else {
-		cm_set_axis_origin(axis, cm_get_work_position(RUNTIME, axis));
+		} else {
+		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+
+	// restore the proper handling of the limit switch
+//	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
+//	s->on_trailing = hm.switch_saved_on_trailing;
 	return (_set_homing_func(_homing_axis_start));
 }
 
