@@ -555,8 +555,8 @@ void cm_set_model_target(float target[], float flag[]);
 void cm_set_move_times(GCodeState_t *gcode_state);
 stat_t cm_test_soft_limits(float target[]);
 
-void cm_set_model_position(stat_t status);
-void cm_set_model_position_from_runtime(stat_t status);
+//void cm_set_model_position(stat_t status);
+//void cm_set_model_position_from_runtime(stat_t status);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
 

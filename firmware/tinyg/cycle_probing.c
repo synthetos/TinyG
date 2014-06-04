@@ -215,7 +215,7 @@ static stat_t _probing_finish()
         cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 
     // if we got here because of a feed hold we need to keep the model position correct
-	cm_set_model_position_from_runtime(STAT_OK);
+	cm_update_model_position_from_runtime();
 
     json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
     // printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);

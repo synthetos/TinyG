@@ -425,32 +425,8 @@ void cm_set_model_target(float target[], float flag[])
 	}
 }
 
-/* 
- * cm_set_model_position() - set endpoint position; uses internal canonical coordinates only
- * cm_set_model_position_from_runtime() - set endpoint position from final runtime position
- *
- * 	This routine sets the endpoint position in the gcode model if the move was successfully 
- *	completed (no errors). Leaving the endpoint position alone for errors allows 
- *	too-short-lines to accumulate into longer lines (line aggregation).
- *
- * 	Note: As far as the canonical machine is concerned the final position is achieved as soon 
- *	as the move is executed and the position is now the target. In reality the planner and 
- *	steppers will still be processing the action and the real tool position is still close 
- *	to the starting point. 
- */
-void cm_set_model_position(stat_t status) 
-{
-	if (status == STAT_OK) copy_vector(cm.gmx.position, cm.gm.target);
-}
-
-void cm_set_model_position_from_runtime(stat_t status)
-{
-	if (status == STAT_OK) copy_vector(cm.gmx.position, mr.gm.target);
-}
-
 /*
- * cm_set_move_times() 	- capture optimal and minimum move times into the gcode_state
- * _get_move_times() 	- get minimum and optimal move times
+ * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
  *
  *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
  *	on each participating axis - regardless of the feed rate requested. The minimum time is 
@@ -523,21 +499,21 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 			inv_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
 			cm.gm.feed_rate = 0;		// reset feed rate so next block requires an explicit feed rate setting
 			cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
-			} else {
+		} else {
 			xyz_time = sqrt(square(cm.gm.target[AXIS_X] - cm.gmx.position[AXIS_X]) + // in mm
-			square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
-			square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
+							square(cm.gm.target[AXIS_Y] - cm.gmx.position[AXIS_Y]) +
+							square(cm.gm.target[AXIS_Z] - cm.gmx.position[AXIS_Z])) / cm.gm.feed_rate; // in linear units
 			if (fp_ZERO(xyz_time)) {
 				abc_time = sqrt(square(cm.gm.target[AXIS_A] - cm.gmx.position[AXIS_A]) + // in deg
-				square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
-				square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
+								square(cm.gm.target[AXIS_B] - cm.gmx.position[AXIS_B]) +
+								square(cm.gm.target[AXIS_C] - cm.gmx.position[AXIS_C])) / cm.gm.feed_rate; // in degree units
 			}
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].feedrate_max;
-			} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+		} else { // cm.gm.motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
 			tmp_time = fabs(cm.gm.target[axis] - cm.gmx.position[axis]) / cm.a[axis].velocity_max;
 		}
 		max_time = max(max_time, tmp_time);
@@ -627,6 +603,9 @@ stat_t cm_test_soft_limits(float target[])
  * CANONICAL MACHINING FUNCTIONS
  *	Values are passed in pre-unit_converted state (from gn structure)
  *	All operations occur on gm (current model state)
+ *
+ * These are organized by section number (x.x.x) in the order they are
+ * found in NIST RS274 NGCv3
  ************************************************************************/
 
 /****************************************** 
@@ -638,12 +617,13 @@ stat_t cm_test_soft_limits(float target[])
 void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this code:
-//	memset(&cm, 0, sizeof(cm));				// do not reset canonicalMachineSingleton once it's been initialized
-	memset(&cm.gm, 0, sizeof(GCodeState_t));// clear all values, pointers and status
+//	memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
+	memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));
 
-	canonical_machine_init_assertions();
+	canonical_machine_init_assertions();		// establish assertions
+	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
 
 	// set gcode defaults
 	cm_set_units_mode(cm.units_mode);
@@ -651,6 +631,7 @@ void canonical_machine_init()
 	cm_select_plane(cm.select_plane);
 	cm_set_path_control(cm.path_control);
 	cm_set_distance_mode(cm.distance_mode);
+	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
 
 	cm.gmx.block_delete_switch = true;
 
@@ -661,8 +642,6 @@ void canonical_machine_init()
 	cm.feedhold_requested = false;
 	cm.queue_flush_requested = false;
 	cm.cycle_start_requested = false;
-
-	ACTIVE_MODEL = MODEL;			// setup initial Gcode model pointer
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;
@@ -697,11 +676,10 @@ stat_t canonical_machine_test_assertions(void)
 
 /*
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
- * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  * cm_clear() 	   - clear soft alarm
- *
- *	Fascinating: http://www.cncalarms.com/
+ * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  */
+
 stat_t cm_soft_alarm(stat_t status)
 {
 	rpt_exception(status);					// send alarm message
@@ -721,66 +699,49 @@ stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 
 stat_t cm_hard_alarm(stat_t status)
 {
-	// stop the steppers and the spindle
-	st_deenergize_motors();
+	// stop the motors and the spindle
+	stepper_init();							// hard stop
 	cm_spindle_control(SPINDLE_OFF);
 
 	// disable all MCode functions
-//	gpio_set_bit_off(SPINDLE_BIT);			//###### this current stuff is temporary
+//	gpio_set_bit_off(SPINDLE_BIT);			//++++ this current stuff is temporary
 //	gpio_set_bit_off(SPINDLE_DIR);
 //	gpio_set_bit_off(SPINDLE_PWM);
-//	gpio_set_bit_off(MIST_COOLANT_BIT);		//###### replace with exec function
-//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//###### replace with exec function
+//	gpio_set_bit_off(MIST_COOLANT_BIT);		//++++ replace with exec function
+//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//++++ replace with exec function
 
 	rpt_exception(status);					// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
 
-
 /**************************
  * Representation (4.3.3) *
  **************************/
-/*
- * Functions that affect the Gcode model only:
+
+/**************************************************************************
+ * Representation functions that affect the Gcode model only (asynchronous)
  *
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
  *
- * Functions that affect gcode model and are queued to planner
- *
- *	cm_set_coord_system()		- G54-G59
- *	cm_set_absolute_origin()	- G28.3 - model, planner and queue to runtime
- *	cm_set_axis_origin()		- set the origin of a single axis - model and planner
- *	cm_set_origin_offsets()		- G92
- *	cm_reset_origin_offsets()	- G92.1
- *	cm_suspend_origin_offsets()	- G92.2
- *	cm_resume_origin_offsets()	- G92.3
+ *	These functions assume input validation occurred upstream.
  */
 
-/*
- * cm_select_plane() - G17,G18,G19 select axis plane (AFFECTS MODEL ONLY)
- */
 stat_t cm_select_plane(uint8_t plane) 
 {
 	cm.gm.select_plane = plane;
 	return (STAT_OK);
 }
 
-/*
- * cm_set_units_mode() - G20, G21 (affects MODEL only)
- */
 stat_t cm_set_units_mode(uint8_t mode)
 {
 	cm.gm.units_mode = mode;		// 0 = inches, 1 = mm.
 	return(STAT_OK);
 }
 
-/*
- * cm_set_distance_mode() - G90, G91 (affects MODEL only)
- */
 stat_t cm_set_distance_mode(uint8_t mode)
 {
 	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
@@ -797,6 +758,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
  *	It also does not reset the work_offsets which may be accomplished by calling 
  *	cm_set_work_offsets() immediately afterwards.
  */
+
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
@@ -811,6 +773,9 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	return (STAT_OK);
 }
 
+/******************************************************************************************
+ * Representation functions that affect gcode model and are queued to planner (synchronous)
+ */
 /*
  * cm_set_coord_system() - G54-G59 
  * _exec_offset() - callback from planner
@@ -832,7 +797,7 @@ static void _exec_offset(float *value, float *flag)
 		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
-//	cm_set_work_offsets(RUNTIME);
+	cm_set_work_offsets(MODEL);
 }
 
 /*
@@ -846,6 +811,7 @@ static void _exec_offset(float *value, float *flag)
  *	command is queued and synchronized with the planner queue. At that point any axis that is set
  *	is also marked as homed.
  */
+
 stat_t cm_set_absolute_origin(float origin[], float flag[])
 {
 	float value[AXES];
@@ -880,6 +846,7 @@ static void _exec_absolute_origin(float *value, float *flag)
  *	Y axis. USE: With the axis(or axes) where you want it, issue g92.4 y0 
  *	(for example). The Y axis will now be set to 0 (or whatever value provided)
  */
+
 void cm_set_axis_origin(uint8_t axis, const float position)
 {
 	cm.gmx.position[axis] = position;
@@ -887,6 +854,35 @@ void cm_set_axis_origin(uint8_t axis, const float position)
 	mp_set_planner_position(axis, position);
 	mp_reset_step_counts();	// step counters are in motor space: resets all step counters
 	en_reset_encoders();	// encoders are in motor space: resets all encoders accordingly
+}
+
+/*
+ * cm_set_position() - set the position of a single axis in the model, planner and runtime
+ *
+ *	This command sets an axis/axes to a position provided as an argument. 
+ *	This is useful for setting origins for homing, probing, and other operations.
+ *
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *	!!!!! DO NOT CALL THIS FUNCTION WHILE IN A MACHINING CYCLE !!!!!
+ *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *
+ *	More specifically, do not call this function if there are any moves in the planner or 
+ *	if the runtime is moving. The system must be quiescent or you will introduce positional 
+ *	errors. This is true because the planned / running moves have a different reference frame 
+ *	than the one you are now going to set. These functions should only be called during 
+ *	initialization sequences and during cycles (such as homing cycles) when you know there 
+ *	are no more moves in the planner and that all motion has stopped. 
+ *	Use cm_get_runtime_busy() to be sure the system is quiescent. 
+ */
+
+void cm_set_position(uint8_t axis, float position)
+{
+	// TODO: Interlock involving runtime_busy test
+	cm.gmx.position[axis] = position;
+	cm.gm.target[axis] = position;
+	mp_set_planner_position(axis, position);
+	mp_set_runtime_position(axis, position);
+	mp_set_steps_to_runtime_position();
 }
 
 /* 
@@ -956,11 +952,11 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
-	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
-	cm_cycle_start();							// required for homing & other cycles
-	status = mp_aline(&cm.gm);					// run the move
-	cm_set_model_position(status);				// update position if the move was successful
+	cm_set_work_offsets(&cm.gm);		// capture the fully resolved offsets to the state
+	cm_set_move_times(&cm.gm);			// set move time and minimum time in the state
+	cm_cycle_start();					// required for homing & other cycles
+	status = mp_aline(&cm.gm);			// run the move
+	cm_update_model_position();			// update position if the move was successful
 	return (status);
 }
 

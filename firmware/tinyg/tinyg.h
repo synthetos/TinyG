@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.24	// Clean up canonical machine header file - no functional changes
+#define TINYG_FIRMWARE_BUILD   		410.25	// canonical machine updates: update_position(), inits, alarms; staged set_axis_origin replacement with set_position
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
