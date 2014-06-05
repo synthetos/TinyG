@@ -82,8 +82,8 @@
 //**** DEBUG SETTINGS ****
 
 #ifdef __DEBUG_SETTINGS
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY				JV_SILENT		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef SR_DEFAULTS
 #define SR_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
@@ -91,7 +91,6 @@
 #undef STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_VERBOSE		// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #endif
-
 
 /**** MACHINE PROFILES ******************************************************/
 
@@ -104,7 +103,7 @@
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// OMC OtherCutter
 //#include "settings/settings_othermill.h"				// OMC OtherMill
-//#include "settings/settings_pocketnc.h"					// PocketNC 5 axis machining center
+//#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer

@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.29	// set up defaults for tgfx
+#define TINYG_FIRMWARE_BUILD   		410.30	// added optional new trapezoid generator. Toggle __NEW_ZOID define in plan_zoid.c
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,30 +56,32 @@
 
 #define __STEP_CORRECTION
 #define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
-//#define __SIMULATION						// shorthand to keep from having to comment and uncomment the below:
-
-#ifndef __SIMULATION
-  #define __TEXT_MODE						// comment out to disable text mode support (saves ~9Kb)
-  #define __HELP_SCREENS					// comment out to disable help screens 		(saves ~3.5Kb)
-  #define __CANNED_TESTS 					// comment out to remove $tests 			(saves ~12Kb)
-#endif
-//  #define __TEST_99 						// comment out to remove diagnostic test 99
+#define __TEXT_MODE							// enables text mode support (~10Kb)
+#define __HELP_SCREENS						// enables help screens 	 (~3.5Kb)
+#define __CANNED_TESTS 						// enables $tests 			 (~12Kb)
+#define __TEST_99 							// enables diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
 
+#define __DEBUG_SETTINGS
+//#define __CANNED_STARTUP					// run any canned startup moves
+//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
+
+//#define __SIMULATION						// for software-only simulations
 #ifdef __SIMULATION
+  #undef  __TEXT_MODE
+  #undef  __HELP_SCREENS
+  #undef  __CANNED_TESTS
+  #ifndef __CANNED_STARTUP
   #define __CANNED_STARTUP					// run any canned startup moves
+  #endif
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-  #define __SUPPRESS_STARTUP_MESSAGES 		// what it says
-  #define __SUPPRESS_STATUS_REPORTS 		// what it says
-  #define __SUPPRESS_QUEUE_REPORTS 			// what it says
+  #define __SUPPRESS_STARTUP_MESSAGES
+  #define __SUPPRESS_STATUS_REPORTS
+  #define __SUPPRESS_QUEUE_REPORTS
   #define __SUPRESS_DIAGNOSTIC_DISPLAYS
   #define __SILENCE_JSON_RESPONSES
 #endif
-
-//#define __DEBUG_SETTINGS
-//#define __CANNED_STARTUP					// run any canned startup moves
-//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))

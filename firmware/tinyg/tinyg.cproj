@@ -273,12 +273,6 @@
     <Compile Include="settings\settings_othermill.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_pocketcnc_linear.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings\settings_pocketcnc_rotary.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="settings\settings_probotixV90.h">
       <SubType>compile</SubType>
     </Compile>
