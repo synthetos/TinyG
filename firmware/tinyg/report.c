@@ -81,7 +81,7 @@ void _startup_helper(stat_t status, const char_t *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
-	nv_reset_list();
+	nv_reset_nv_list();
 	nv_add_object((const char_t *)"fv");		// firmware version
 	nv_add_object((const char_t *)"fb");		// firmware build
 	nv_add_object((const char_t *)"hp");		// hardware platform
@@ -170,7 +170,7 @@ uint8_t _is_stat(nvObj_t *nv)
  */
 void sr_init_status_report()
 {
-	nvObj_t *nv = nv_reset_list();	// used for status report persistence locations
+	nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
 	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
 	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
@@ -297,7 +297,7 @@ static stat_t _populate_unfiltered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_list();		// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 	strcpy(nv->token, sr_str);
@@ -336,7 +336,7 @@ static uint8_t _populate_filtered_status_report()
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_list();		// sets nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list();		// sets nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
 	strcpy(nv->token, sr_str);
@@ -503,9 +503,9 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 /* Alternate Formulation for a Single report - using nvObj list
 
 	// get a clean nv object
-//	nvObj_t *nv = nv_reset_list();		// normally you do a list reset but the following is more time efficient
+//	nvObj_t *nv = nv_reset_nv_list();		// normally you do a list reset but the following is more time efficient
 	nvObj_t *nv = nv_body;
-	nv_reset_obj(nv);
+	nv_reset_nv(nv);
 	nv->nx = NULL;							// terminate the list
 
 	// make a qr object and print it
@@ -561,7 +561,7 @@ stat_t job_populate_job_report()
 {
 	const char_t job_str[] = "job";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_list();		// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object
 	strcpy(nv->token, job_str);

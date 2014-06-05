@@ -65,7 +65,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
  */
 stat_t text_parser(char_t *str)
 {
-	nvObj_t *nv = nv_reset_list();		// returns first object in the body
+	nvObj_t *nv = nv_reset_nv_list();		// returns first object in the body
 	stat_t status = STAT_OK;
 
 	// trap special displays
@@ -107,7 +107,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 	char_t separators[] = {" =:|\t"};		// RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
-//	nv_reset_obj(nv);						// initialize config object
+//	nv_reset_nv(nv);						// initialize config object
 	nv_copy_string(nv, str);				// make a copy for eventual reporting
 	if (*str == '$') str++;					// ignore leading $
 	for (rd = wr = str; *rd != NUL; rd++, wr++) {

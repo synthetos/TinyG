@@ -407,7 +407,7 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 {
 	// Generate the warning message. Since the error exit returns via the homing callback
 	// - and not the main controller - it requires its own display processing
-	nv_reset_list();
+	nv_reset_nv_list();
 
 	if (axis == -2) {
 		nv_add_conditional_message((const char_t *)"Homing error - Bad or no axis(es) specified");;

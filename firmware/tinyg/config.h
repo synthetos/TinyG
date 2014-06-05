@@ -2,7 +2,7 @@
  * config.h - configuration sub-system generic part (see config_app for application part)
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -115,19 +115,18 @@ extern "C"{
  *	The first element of the list is designated the response header element ("r") but the list 
  *	can also be serialized as a simple object by skipping over the header
  *
- *	To use the nv list first reset it by calling nv_reset_list(). This initializes the header, 
- *	marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects with 
- *	NX and PV pointers, and makes the last element the terminating element by setting its NX 
+ *	To use the nvObj list first reset it by calling nv_reset_nvObj_list(). This initializes the 
+ *	header, marks the the objects as TYPE_EMPTY (-1), resets the shared string, relinks all objects 
+ *	with NX and PV pointers, and makes the last element the terminating element by setting its NX 
  *	pointer to NULL. The terminating element may carry data, and will be processed.
  *
  *	When you use the list you can terminate your own last element, or just leave the EMPTY elements 
  *	to be skipped over during output serialization.
  * 
  * 	We don't use recursion so parent/child nesting relationships are captured in a 'depth' variable, 
- *	This must remain consistent if the curlies are to work out. In general you should not have to 
- *	track depth explicitly if you use nv_reset_list() or the accessor functions like 
- *	nv_add_integer() or nv_add_message(). If you see problems with curlies check the depth values
- *	in the lists.
+ *	This must remain consistent if the curlies are to work out. You should not have to track depth 
+ *	explicitly if you use nv_reset_nvObj_list() or the accessor functions like nv_add_integer() or 
+ *	nv_add_message(). If you see problems with curlies check the depth values in the lists.
  *
  *	Use the nv_print_list() dispatcher for all JSON and text output. Do not simply run through printf.
  */
@@ -147,13 +146,13 @@ extern "C"{
  *	  - JSON-mode display for single - element value e.g. xvm. Concatenate as above
  *	  - JSON-mode display of a parent/child group. Parent is named grp, children nems are tokens
  */
-/*	--- NV object string handling ---
+/*	--- nv object string handling ---
  *
- *	It's very expensive to allocate sufficient string space to each nvObj, so nvs use a cheater's 
+ *	It's very expensive to allocate sufficient string space to each nvObj, so nv uses a cheater's 
  *	malloc. A single string of length NV_SHARED_STRING_LEN is shared by all nvObjs for all strings. 
  *	The observation is that the total rendered output in JSON or text mode cannot exceed the size of 
  *	the output buffer (typ 256 bytes), So some number less than that is sufficient for shared strings. 
- *	This is all mediated through nv_copy_string(), nv_copy_string_P(), and nv_reset_list().
+ *	This is all mediated through nv_copy_string(), nv_copy_string_P(), and nv_reset_nv_list().
  */
 /*  --- Setting nvObj indexes ---
  *
@@ -173,7 +172,7 @@ extern "C"{
  **** DEFINITIONS AND SETTINGS *****************************************************
  ***********************************************************************************/
 
-// Sizing and footprints			// chose one based on # of elements in nvArray
+// Sizing and footprints			// chose one based on # of elements in cfgArray
 //typedef uint8_t index_t;			// use this if there are < 256 indexed objects
 typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 
@@ -191,7 +190,7 @@ typedef uint16_t index_t;			// use this if there are > 255 indexed objects
 #define GROUP_LEN 3					// max length of group prefix
 #define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
 #define NV_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
-#define NV_LIST_LEN (NV_BODY_LEN+2)// +2 allows for a header and a footer
+#define NV_LIST_LEN (NV_BODY_LEN+2) // +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
 
@@ -224,8 +223,8 @@ enum tgCommunicationsSticky {
 };
 */
 
-enum valueType {						// object / value typing for config and JSON
-	TYPE_EMPTY = -1,				// object has no value (which is not the same as "NULL")
+enum valueType {					// value typing for config and JSON
+	TYPE_EMPTY = -1,				// value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,						// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,					// value is a uint32_t
@@ -253,7 +252,6 @@ enum valueType {						// object / value typing for config and JSON
 #define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
 #define _fipnc			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT)
 
-
 /**** Structures ****/
 
 typedef struct nvString {				// shared string object
@@ -272,30 +270,28 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	struct nvObject *nx;				// pointer to next object or NULL if last object
 	index_t index;						// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
-	int8_t valuetype;						// see objType enum
+	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char_t (*stringp)[];				// pointer to array of characters from shared character array
-} nvObj_t; 							// OK, so it's not REALLY an object
+} nvObj_t; 								// OK, so it's not REALLY an object
 
-typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for nv table access
-typedef void (*fptrPrint)(nvObj_t *nv);// required for PROGMEM access
+typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cfg table access
+typedef void (*fptrPrint)(nvObj_t *nv);	// required for PROGMEM access
 
 typedef struct cfgItem {
 	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
 	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
-//	const char_t *format;				// pointer to formatted print string in FLASH
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
 	float *target;						// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
-
 
 /**** static allocation and definitions ****/
 
@@ -334,14 +330,13 @@ uint8_t nv_group_is_prefixed(char_t *group);
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);		// set nothing (no operation)
 stat_t set_ui8(nvObj_t *nv);		// set uint8_t value
-stat_t set_01(nvObj_t *nv);		// set a 0 or 1 value with validation
+stat_t set_01(nvObj_t *nv);			// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);		// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);		// set a 0, 1, 2 or 3 value with validation
 stat_t set_int(nvObj_t *nv);		// set uint32_t integer value
 stat_t set_data(nvObj_t *nv);		// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);		// set floating point value
 stat_t set_flu(nvObj_t *nv);		// set floating point number with G20/G21 units conversion
-//stat_t get_flu(nvObj_t *nv);		// get floating point number with G20/G21 units conversion
 
 stat_t get_nul(nvObj_t *nv);		// get null value type
 stat_t get_ui8(nvObj_t *nv);		// get uint8_t value
@@ -352,10 +347,10 @@ stat_t get_flt(nvObj_t *nv);		// get floating point value
 stat_t set_grp(nvObj_t *nv);		// set data for a group
 stat_t get_grp(nvObj_t *nv);		// get data for a group
 
-// object and list functions
+// nvObj and list functions
 void nv_get_nvObj(nvObj_t *nv);
-nvObj_t *nv_reset_obj(nvObj_t *nv);
-nvObj_t *nv_reset_list(void);
+nvObj_t *nv_reset_nv(nvObj_t *nv);
+nvObj_t *nv_reset_nv_list(void);
 
 stat_t nv_copy_string(nvObj_t *nv, const char_t *src);
 nvObj_t *nv_add_object(const char_t *token);

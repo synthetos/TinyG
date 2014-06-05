@@ -2,7 +2,7 @@
  * config.c - application independent configuration handling 
  * This file is part of the TinyG2 project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -35,6 +35,7 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
+//#include "persistence.h"
 #include "hardware.h"
 #include "help.h"
 #include "util.h"
@@ -52,20 +53,17 @@ extern "C"{
 nvStr_t nvStr;
 nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
 
-//nvStr_t nvStr;
-//nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
-
 /***********************************************************************************
  **** CODE *************************************************************************
  ***********************************************************************************/
-/* Primary access points to nv functions
+/* Primary access points to functions bound to text mode / JSON functions
  * These gatekeeper functions check index ranges so others don't have to
  *
  * nv_set() 	- Write a value or invoke a function - operates on single valued elements or groups
  * nv_get() 	- Build a nvObj with the values from the target & return the value
  *			   	  Populate nv body with single valued elements or groups (iterates)
  * nv_print()	- Output a formatted string for the value.
- * nv_persist()- persist value to NVM. Takes special cases into account
+ * nv_persist() - persist value to NVM. Takes special cases into account
  */
 stat_t nv_set(nvObj_t *nv)
 {
@@ -108,12 +106,20 @@ void nv_persist(nvObj_t *nv)
  */
 void config_init()
 {
-	nvObj_t *nv = nv_reset_list();
+	nvObj_t *nv = nv_reset_nv_list();
 	nvStr.magic_start = MAGICNUM;
 	nvStr.magic_end = MAGICNUM;
 	cfg.magic_start = MAGICNUM;
 	cfg.magic_end = MAGICNUM;
 
+#ifdef __ARM
+// ++++ The following code is offered until persistence is implemented.
+// ++++ Then you can use the AVR code (or something like it)
+	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
+	nv->value = true;
+	set_defaults(nv);
+#endif
+#ifdef __AVR
 	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
 	hw.nvm_base_addr = NVM_BASE_ADDR;
 	hw.nvm_profile_base = hw.nvm_base_addr;
@@ -134,6 +140,7 @@ void config_init()
 		}
 		sr_init_status_report();
 	}
+#endif
 }
 
 /*
@@ -163,10 +170,11 @@ stat_t set_defaults(nvObj_t *nv)
 /***** Generic Internal Functions *********************************************/
 
 /* Generic gets()
- *  get_nul() - get nothing (returns STAT_NOOP)
- *  get_ui8() - get value as 8 bit uint8_t
- *  get_int() - get value as 32 bit integer
- *  get_flt() - get value as float
+ *	get_nul()  - get nothing (returns STAT_NOOP)
+ *	get_ui8()  - get value as 8 bit uint8_t
+ *	get_int()  - get value as 32 bit integer
+ *	get_data() - get value as 32 bit integer blind cast
+ *	get_flt()  - get value as float
  *	get_format() - internal accessor for printf() format string
  */
 stat_t get_nul(nvObj_t *nv) 
@@ -207,13 +215,14 @@ stat_t get_flt(nvObj_t *nv)
 }
 
 /* Generic sets()
- *  set_nul() - set nothing (returns STAT_NOOP)
- *  set_ui8() - set value as 8 bit uint8_t value
- *  set_01()  - set a 0 or 1 uint8_t value with validation
- *  set_012() - set a 0, 1 or 2 uint8_t value with validation
- *	set_0123()- set a 0, 1, 2 or 3 uint8_t value with validation
- *  set_int() - set value as 32 bit integer
- *  set_flt() - set value as float
+ *	set_nul()  - set nothing (returns STAT_NOOP)
+ *	set_ui8()  - set value as 8 bit uint8_t value
+ *	set_01()   - set a 0 or 1 uint8_t value with validation
+ *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
+ *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
+ *	set_int()  - set value as 32 bit integer
+ *	set_data() - set value as 32 bit integer blind cast 
+ *	set_flt()  - set value as float
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_NOOP);}
 
@@ -244,7 +253,6 @@ stat_t set_0123(nvObj_t *nv)
 
 stat_t set_int(nvObj_t *nv)
 {
-//	*((uint32_t *)GET_TABLE_WORD(target)) = nv->value;
 	*((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
@@ -473,11 +481,11 @@ void nv_preprocess_float(nvObj_t *nv)
 /******************************************************************************
  * nvObj low-level object and list operations
  * nv_get_nvObj()		- setup a nv object by providing the index
- * nv_reset_obj()		- quick clear for a new nv object
- * nv_reset_list()		- clear entire header, body and footer for a new use
- * nv_copy_string()	- used to write a string to shared string storage and link it
+ * nv_reset_nv()		- quick clear for a new nv object
+ * nv_reset_nv_list()	- clear entire header, body and footer for a new use
+ * nv_copy_string()		- used to write a string to shared string storage and link it
  * nv_add_object()		- write contents of parameter to  first free object in the body
- * nv_add_integer()	- add an integer value to end of nv body (Note 1)
+ * nv_add_integer()		- add an integer value to end of nv body (Note 1)
  * nv_add_float()		- add a floating point value to end of nv body
  * nv_add_string()		- add a string object to end of nv body
  * nv_add_conditional_message() - add a message to nv body if messages are enabled
@@ -504,7 +512,7 @@ void nv_get_nvObj(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) { return; }	// sanity
 
 	index_t tmp = nv->index;
-	nv_reset_obj(nv);
+	nv_reset_nv(nv);
 	nv->index = tmp;
 
 	strcpy_P(nv->token, cfgArray[nv->index].token); // token field is always terminated
@@ -518,10 +526,10 @@ void nv_get_nvObj(nvObj_t *nv)
 			strcpy(nv->token, &nv->token[strlen(nv->group)]); // strip group from the token
 		}
 	}
-	((fptrCmd)GET_TABLE_WORD(get))(nv);	// populate the value
+	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
 }
  
-nvObj_t *nv_reset_obj(nvObj_t *nv)		// clear a single nvObj structure
+nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 {
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
@@ -543,10 +551,10 @@ nvObj_t *nv_reset_obj(nvObj_t *nv)		// clear a single nvObj structure
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
-nvObj_t *nv_reset_list()					// clear the header and response body
+nvObj_t *nv_reset_nv_list()					// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nv_list;				// set up linked list and initialize elements	
+	nvObj_t *nv = nv_list;					// set up linked list and initialize elements	
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);					// the ends are bogus & corrected later
 		nv->nx = (nv+1);
@@ -702,6 +710,23 @@ void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	} else {
 		text_print_list(status, text_flags);
 	}
+}
+
+/****************************************************************************
+ ***** Diagnostics **********************************************************
+ ****************************************************************************/
+
+void nv_dump_nv(nvObj_t *nv)
+{
+	printf ("i:%d, d:%d, t:%d, p:%d, v:%f, g:%s, t:%s, s:%s\n",
+			 nv->index,
+			 nv->depth,
+			 nv->valuetype,
+			 nv->precision,
+			 (double)nv->value,
+			 nv->group,
+			 nv->token,
+			 (char *)nv->stringp);
 }
 
 /************************************************************************************

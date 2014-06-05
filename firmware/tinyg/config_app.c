@@ -61,19 +61,18 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
-static stat_t _do_motors(nvObj_t *nv);	// print parameters for all motor groups
+static stat_t _do_motors(nvObj_t *nv);		// print parameters for all motor groups
 static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
-static stat_t _do_offsets(nvObj_t *nv);	// print offset parameters for G54-G59,G92, G28, G30
-static stat_t _do_all(nvObj_t *nv);		// print all parameters
+static stat_t _do_offsets(nvObj_t *nv);		// print offset parameters for G54-G59,G92, G28, G30
+static stat_t _do_all(nvObj_t *nv);			// print all parameters
 
 // communications settings and functions
 
-//static stat_t set_ic(nvObj_t *nv);		// ignore CR or LF on RX input
-static stat_t set_ec(nvObj_t *nv);		// expand CRLF on TX output
-static stat_t set_ee(nvObj_t *nv);		// enable character echo
-static stat_t set_ex(nvObj_t *nv);		// enable XON/XOFF and RTS/CTS flow control
+static stat_t set_ec(nvObj_t *nv);			// expand CRLF on TX output
+static stat_t set_ee(nvObj_t *nv);			// enable character echo
+static stat_t set_ex(nvObj_t *nv);			// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
-static stat_t get_rx(nvObj_t *nv);		// get bytes in RX buffer
+static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 
 /***********************************************************************************
@@ -455,7 +454,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","sv",  _fipn, 0, sr_print_sv,  get_ui8,   set_012,    (float *)&sr.status_report_verbosity,STATUS_REPORT_VERBOSITY },
 	{ "sys","si",  _fipn, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 
-//	{ "sys","ic",  _fipn, 0, print_ui8,    get_ui8,   set_ic,     (float *)&cfg.ignore_crlf,			COM_IGNORE_CRLF },
 	{ "sys","ec",  _fipn, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _fipn, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
 	{ "sys","ex",  _fipn, 0, co_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,	COM_ENABLE_FLOW_CONTROL },
@@ -508,47 +506,73 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "udd","udd2", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[2], USER_DATA_D2 },
 	{ "udd","udd3", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_d[3], USER_DATA_D3 },
 
-	{ "_te","_tex",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },  // X target endpoint
+	// Diagnostic parameters
+#ifdef __DIAGNOSTIC_PARAMETERS
+	{ "_te","_tex",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },			// X target endpoint
 	{ "_te","_tey",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
 	{ "_te","_tez",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
 	{ "_te","_tea",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_A], 0 },
+	{ "_te","_teb",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_B], 0 },
+	{ "_te","_tec",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_C], 0 },
 
-	{ "_tr","_trx",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },  // X target runtime
+	{ "_tr","_trx",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },			// X target runtime
 	{ "_tr","_try",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Y], 0 },
 	{ "_tr","_trz",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Z], 0 },
 	{ "_tr","_tra",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_A], 0 },
+	{ "_tr","_trb",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_B], 0 },
+	{ "_tr","_trc",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_C], 0 },
 
-	{ "_ts","_ts1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_1], 0 },  // Motor 1 target steps
-	{ "_ts","_ts2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },
-	{ "_ts","_ts3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },
-	{ "_ts","_ts4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },
-
-	{ "_ps","_ps1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_1], 0 },// Motor 1 position steps
-	{ "_ps","_ps2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },
-	{ "_ps","_ps3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },
-	{ "_ps","_ps4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },
-
-	{ "_cs","_cs1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_1], 0 },// Motor 1 commanded steps (delayed steps)
-	{ "_cs","_cs2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_2], 0 },
-	{ "_cs","_cs3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_3], 0 },
-	{ "_cs","_cs4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_4], 0 },
-
-	{ "_es","_es1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 }, // Motor 1 encoder steps
-	{ "_es","_es2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
-	{ "_es","_es3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
-	{ "_es","_es4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
-
+#if (MOTORS >= 1)
+	{ "_ts","_ts1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_1], 0 },		// Motor 1 target steps
+	{ "_ps","_ps1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_1], 0 },	// Motor 1 position steps
+	{ "_cs","_cs1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_1], 0 },	// Motor 1 commanded steps (delayed steps)
+	{ "_es","_es1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_1], 0 },	// Motor 1 encoder steps
 	{ "_xs","_xs1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_1].corrected_steps, 0 }, // Motor 1 correction steps applied
+	{ "_fe","_fe1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_1], 0 },	// Motor 1 following error in steps
+#endif
+#if (MOTORS >= 2)
+	{ "_ts","_ts2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_2], 0 },
+	{ "_ps","_ps2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_2], 0 },
+	{ "_cs","_cs2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_2], 0 },
+	{ "_es","_es2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_2], 0 },
 	{ "_xs","_xs2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_2].corrected_steps, 0 },
-	{ "_xs","_xs3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_3].corrected_steps, 0 },
-	{ "_xs","_xs4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_4].corrected_steps, 0 },
-
-	{ "_fe","_fe1",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_1], 0 }, // Motor 1 following error in steps
 	{ "_fe","_fe2",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_2], 0 },
+#endif
+#if (MOTORS >= 3)
+	{ "_ts","_ts3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_3], 0 },
+	{ "_ps","_ps3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_3], 0 },
+	{ "_cs","_cs3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_3], 0 },
+	{ "_es","_es3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_3], 0 },
+	{ "_xs","_xs3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_3].corrected_steps, 0 },
 	{ "_fe","_fe3",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_3], 0 },
+#endif
+#if (MOTORS >= 4)
+	{ "_ts","_ts4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_4], 0 },
+	{ "_ps","_ps4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_4], 0 },
+	{ "_cs","_cs4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_4], 0 },
+	{ "_es","_es4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_4], 0 },
+	{ "_xs","_xs4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_4].corrected_steps, 0 },
 	{ "_fe","_fe4",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_4], 0 },
+#endif
+#if (MOTORS >= 5)
+	{ "_ts","_ts5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_5], 0 },
+	{ "_ps","_ps5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_5], 0 },
+	{ "_cs","_cs5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_5], 0 },
+	{ "_es","_es5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_5], 0 },
+	{ "_xs","_xs6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_6].corrected_steps, 0 },
+	{ "_fe","_fe5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_5], 0 },
+#endif
+#if (MOTORS >= 6)
+	{ "_ts","_ts6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target_steps[MOTOR_6], 0 },
+	{ "_ps","_ps6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.position_steps[MOTOR_6], 0 },
+	{ "_cs","_cs6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.commanded_steps[MOTOR_6], 0 },
+	{ "_es","_es6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.encoder_steps[MOTOR_6], 0 },
+	{ "_xs","_xs5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_5].corrected_steps, 0 },
+	{ "_fe","_fe6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_6], 0 },
+#endif
+	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
 
-//	{ "",   "_dd1",_f0, 0, tx_print_nul, cm_dd1,  cm_dd1, (float *)&cs.null, 0 },
+#endif	//  __DIAGNOSTIC_PARAMETERS
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with NV_STATUS_REPORT_LEN in config.h ***
@@ -593,10 +617,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","3",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","4",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #if (MOTORS >= 5)
-//	{ "","5",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","5",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #endif
 #if (MOTORS >= 6)
-//	{ "","6",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
+	{ "","6",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #endif
 	{ "","x",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
 	{ "","y",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -629,6 +653,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","udc", _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 	{ "","udd", _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// user data group
 
+#ifdef __DIAGNOSTIC_PARAMETERS
 	{ "","_te",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis endpoint group
 	{ "","_tr",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target axis runtime group
 	{ "","_ts",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// target motor steps group
@@ -637,6 +662,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","_es",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// encoder steps group
 	{ "","_xs",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// correction steps group
 	{ "","_fe",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// following error group
+#endif
 
 	// Uber-group (groups of groups, for text-mode displays only)
 	// *** Must agree with NV_COUNT_UBER_GROUPS below ****
@@ -648,8 +674,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /***** Make sure these defines line up with any changes in the above table *****/
 
-#define NV_COUNT_UBER_GROUPS 	4 		// count of uber-groups
-#define NV_COUNT_GROUPS 		40		// count of simple groups
+#define NV_COUNT_UBER_GROUPS 	4 		// count of uber-groups, above
+#define STANDARD_GROUPS 		32		// count of standard groups, excluding diagnostic parameter groups
+
+#if (MOTORS >= 5)
+#define MOTOR_GROUP_5			1
+#else
+#define MOTOR_GROUP_5			0
+#endif
+
+#if (MOTORS >= 6)
+#define MOTOR_GROUP_6			1
+#else
+#define MOTOR_GROUP_6			0
+#endif
+
+#ifdef __DIAGNOSTIC_PARAMETERS
+#define DIAGNOSTIC_GROUPS 		8		// count of diagnostic groups only
+#else
+#define DIAGNOSTIC_GROUPS 		0
+#endif
+#define NV_COUNT_GROUPS 		(STANDARD_GROUPS + MOTOR_GROUP_5 + MOTOR_GROUP_6 + DIAGNOSTIC_GROUPS)
 
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define NV_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
@@ -682,7 +727,7 @@ static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to
 {
 	for (uint8_t i=0; i < NV_MAX_OBJECTS; i++) {
 		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
-		nv_reset_list();
+		nv_reset_nv_list();
 		nv = nv_body;
 		strncpy(nv->token, list[i], TOKEN_LEN);
 		nv->index = nv_get_index((const char_t *)"", nv->token);
@@ -795,9 +840,16 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 
 static stat_t get_rx(nvObj_t *nv)
 {
+#ifdef __AVR
 	nv->value = (float)xio_get_usb_rx_free();
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
+#endif
+#ifdef __ARM
+	nv->value = (float)254;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+#endif
 }
 
 /* run_sx()	- send XOFF, XON --- test only 
@@ -837,7 +889,7 @@ static stat_t set_baud(nvObj_t *nv)
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
-	char_t message[NV_MESSAGE_LEN]; 
+	char_t message[NV_MESSAGE_LEN];
 	sprintf_P(message, PSTR("*** NOTICE *** Resetting baud rate to %s"),GET_TEXT_ITEM(msg_baud, baud));
 	nv_add_conditional_message(message);
 	return (STAT_OK);
