@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.30	// added optional new trapezoid generator. Toggle __NEW_ZOID define in plan_zoid.c
+#define TINYG_FIRMWARE_BUILD   		410.31	// merging 430.21 - 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
