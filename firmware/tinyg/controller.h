@@ -2,7 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -34,7 +35,7 @@ extern "C"{
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
-// see also: tinyg.h MESSAGE_LEN and config.c NV_ lengths.
+// see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)

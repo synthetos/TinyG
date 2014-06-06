@@ -2,7 +2,8 @@
  * config_app.h - application-specific part of configuration sub-system
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -30,11 +31,11 @@ extern "C"{
 
 enum nvType {						// classification of commands
 	NV_TYPE_NULL = 0,
-	NV_TYPE_CONFIG,				// configuration commands
+	NV_TYPE_CONFIG,					// configuration commands
 	NV_TYPE_GCODE,					// gcode
-	NV_TYPE_REPORT,				// SR, QR and any other report
+	NV_TYPE_REPORT,					// SR, QR and any other report
 	NV_TYPE_MESSAGE,				// nv object carries a message
-	NV_TYPE_LINENUM				// nv object carries a gcode line number
+	NV_TYPE_LINENUM					// nv object carries a gcode line number
 };
 
 /***********************************************************************************
@@ -53,7 +54,7 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
-    
+
 	// user-defined data groups
 	uint32_t user_data_a[4];
 	uint32_t user_data_b[4];

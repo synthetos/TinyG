@@ -2,7 +2,7 @@
  * cycle_homing.c - homing cycle extension to canonical_machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -30,7 +30,7 @@
 #include "config.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "gcode_parser.h"
+//#include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
 #include "switch.h"
@@ -47,8 +47,15 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	int8_t axis;					// axis currently being homed
 	uint8_t min_mode;				// mode for min switch for this axis
 	uint8_t max_mode;				// mode for max switch for this axis
+
 	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
+//	int8_t homing_switch_axis;		// axis of current homing switch, or -1 if none
+//	uint8_t homing_switch_position;	// min/max position of current homing switch
+
 	int8_t limit_switch;			// limit switch for current axis, or -1 if none
+//	int8_t limit_switch_axis;		// axis of current limit switch, or -1 if none
+//	uint8_t limit_switch_position;	// min/max position of current limit switch
+
 	uint8_t homing_closed;			// 0=open, 1=closed
 	uint8_t limit_closed;			// 0=open, 1=closed
 	uint8_t set_coordinates;		// G28.4 flag. true = set coords to zero at the end of homing cycle
@@ -79,8 +86,6 @@ static struct hmHomingSingleton hm;
 static stat_t _set_homing_func(stat_t (*func)(int8_t axis));
 static stat_t _homing_axis_start(int8_t axis);
 static stat_t _homing_axis_clear(int8_t axis);
-//static stat_t _homing_axis_backoff_home(int8_t axis);
-//static stat_t _homing_axis_backoff_limit(int8_t axis);
 static stat_t _homing_axis_search(int8_t axis);
 static stat_t _homing_axis_latch(int8_t axis);
 static stat_t _homing_axis_zero_backoff(int8_t axis);
@@ -90,7 +95,6 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status);
 static stat_t _homing_finalize_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
 static stat_t _homing_abort(int8_t axis);
-//static int8_t _get_next_axes(int8_t axis);
 /*
 static void _homing_debug_print(int8_t axis) 
 {
@@ -108,6 +112,11 @@ static void _homing_debug_print(int8_t axis)
 	printf("saved_jerk:%f\n",(double)hm.saved_jerk);
 }
 */
+
+/***********************************************************************************
+ **** G28.2 Homing Cycle ***********************************************************
+ ***********************************************************************************/
+
 /*****************************************************************************
  * cm_homing_cycle_start()	- G28.2 homing cycle using limit switches
  *
@@ -163,10 +172,10 @@ static void _homing_debug_print(int8_t axis)
 stat_t cm_homing_cycle_start(void)
 {
 	// save relevant non-axis parameters from Gcode model
-	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
-	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
-	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
-	hm.saved_feed_rate = cm.gm.feed_rate;							//cm_get_feed_rate(ACTIVE_MODEL);
+	hm.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);
+	hm.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
+	hm.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
+	hm.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
     hm.target_position = 0;
 
 	// set working values
