@@ -24,7 +24,7 @@ See these links for more details.
 
 CURRENT MASTER VERSION
 ========
-The current master version is 0.96, BUILD 380.05
+The current master version is 0.96, BUILD 380.08
 Please refer to the [TinyG wiki](https://github.com/synthetos/TinyG/wiki) for documentation and user manuals
 
 **IMPORTANT: If you are running a TinyG version 6 or earlier be sure to set the $hv value to 6 after you load version 0.95. 
