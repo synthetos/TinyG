@@ -383,7 +383,7 @@ typedef struct stPrepMotor {
 
 typedef struct stPrepSingleton {
 	uint16_t magic_start;			// magic number to test memory integrity
-	volatile uint8_t exec_state;	// move execution state
+	volatile uint8_t buffer_state;	// prep buffer state - owned by exec or loader
 	uint8_t move_type;				// move type
 	
 	uint16_t dda_period;			// DDA or dwell clock period setting

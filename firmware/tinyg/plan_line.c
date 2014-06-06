@@ -190,7 +190,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 //	uint8_t mr_flag = false;
 	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
 	copy_vector(mm.position, bf->gm.target);				// update planning position
-	mp_queue_write_buffer(MOVE_TYPE_ALINE);
+	mp_commit_write_buffer(MOVE_TYPE_ALINE);
 	return (STAT_OK);
 }
 

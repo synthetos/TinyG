@@ -86,6 +86,8 @@ enum sectionState {
 #ifdef __AVR
 	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
 	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
+//	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
+//	#define MIN_SEGMENT_USEC 	((float)250)		// minimum segment time / minimum move time
 	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
 #endif
 #ifdef __ARM
@@ -135,7 +137,7 @@ enum sectionState {
  *	Macros and typedefs
  */
 
-typedef void (*cm_exec)(float[], float[]);	// callback to canonical_machine execution function
+typedef void (*cm_exec_t)(float[], float[]);	// callback to canonical_machine execution function
 
 /*
  *	Planner structures
@@ -155,7 +157,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
-	cm_exec cm_func;				// callback to canonical machine execution function
+	cm_exec_t cm_func;				// callback to canonical machine execution function
 
 	uint8_t buffer_state;			// used to manage queueing/dequeueing
 	uint8_t move_type;				// used to dispatch to run routine
@@ -199,6 +201,7 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
+	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
@@ -209,6 +212,7 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	float a_unit[AXES];
 	float b_unit[AXES];
 #endif
+	magic_t magic_end;
 } mpMoveMasterSingleton_t;
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
@@ -221,6 +225,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float unit[AXES];				// unit vector for axis scaling & planning
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
+	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
 	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
 
 	float target_steps[MOTORS];		// current MR target (absolute target as steps)
@@ -246,14 +251,24 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float jerk;						// max linear jerk
 	float jerk_div2;				// cached value for efficiency
 	float midpoint_velocity;		// velocity at accel/decel midpoint
-	float midpoint_acceleration;	// 
-	float accel_time;				// 
-	float segment_accel_time;		// 
-	float elapsed_accel_time;		// 
 
+#ifdef __JERK_EXEC
+	float midpoint_acceleration;	//
+	float accel_time;				//
+	float segment_accel_time;		//
+	float elapsed_accel_time;		//
+#endif
 									// values used exclusively by forward differencing acceleration
-	float forward_diff_1;			// forward difference level 1 (Acceleration)
-	float forward_diff_2;			// forward difference level 2 (Jerk - constant)
+	float forward_diff_1;			// forward difference level 1
+	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
+	float forward_diff_2;			// forward difference level 2
+	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
+	float forward_diff_3;			// forward difference level 3
+	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
+	float forward_diff_4;			// forward difference level 4
+	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
+	float forward_diff_5;			// forward difference level 5
+	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
 
 	GCodeState_t gm;				// gcode model state currently executing
 
@@ -278,7 +293,7 @@ void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 void mp_set_steps_to_runtime_position(void);
 
-void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag);
+void mp_queue_command(void(*cm_exec_t)(float[], float[]), float *value, float *flag);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
@@ -290,18 +305,24 @@ stat_t mp_end_hold(void);
 stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // planner buffer handlers
-void mp_init_buffers(void);
 uint8_t mp_get_planner_buffers_available(void);
-void mp_clear_buffer(mpBuf_t *bf); 
-void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
-void mp_queue_write_buffer(const uint8_t move_type);
-void mp_free_run_buffer(void);
-mpBuf_t * mp_get_write_buffer(void); 
+void mp_init_buffers(void);
+mpBuf_t * mp_get_write_buffer(void);
+void mp_unget_write_buffer(void);
+void mp_commit_write_buffer(const uint8_t move_type);
+
 mpBuf_t * mp_get_run_buffer(void);
+uint8_t mp_free_run_buffer(void);
 mpBuf_t * mp_get_first_buffer(void);
 mpBuf_t * mp_get_last_buffer(void);
-#define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))
+
+//mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf);
+//mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf);
+#define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	// use the macro instead
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
+
+void mp_clear_buffer(mpBuf_t *bf); 
+void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
 // plan_line.c functions
 float mp_get_runtime_velocity(void);
@@ -319,7 +340,7 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 
 // plan_exec.c functions
 void mp_init_runtime(void);
-void mp_reset_step_counts(void);
+void mp_reset_step_counts(void);	// ++++ Remove?
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
 
