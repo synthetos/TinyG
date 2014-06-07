@@ -246,18 +246,14 @@
  *********************************/
 //See hardware.h for platform specific stepper definitions
 
+enum prepBufferState {
+	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
+	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
+};
+
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
-/*
-enum motorPowerState {					// used w/start and stop flags to sequence motor power
-	MOTOR_OFF = 0,						// motor is stopped and deenergized
-	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
-	MOTOR_TIME_IDLE_TIMEOUT,			// run idle timeout
-	MOTOR_START_IDLE_TIMEOUT,			// transitional state to start idle timers
-	MOTOR_STOPPED,						// motor is stopped and fully energized
-	MOTOR_RUNNING						// motor is running (and fully energized)
-};
-*/
+
 enum motorPowerState {					// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,						// motor is stopped and deenergized
 	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
@@ -265,31 +261,23 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_POWER_TIMEOUT_START,			// transitional state to start power-down timeout
 	MOTOR_POWER_TIMEOUT_COUNTDOWN		// count down the time to de-energizing motors
 };
-/*
-enum motorPowerMode {
-	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
-	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
-	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
-	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
-};
-*/
-enum motorPowerMode {
-	MOTOR_POWERED_IN_CYCLE=0,		// motor is fully powered during cycles
-	MOTOR_POWERED_ONLY_WHEN_MOVING,			// idle motor shortly after it's stopped - even in cycle
-//	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
-//	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
-};
 
-enum prepBufferState {
-	PREP_BUFFER_OWNED_BY_LOADER = 0,	// staging buffer is ready for load
-	PREP_BUFFER_OWNED_BY_EXEC			// staging buffer is being loaded
+enum cmMotorPowerMode {
+	MOTOR_DISABLED,						// motor enable is deactivated
+	MOTOR_ALWAYS_POWERED,				// motor is always powered while machine is ON
+	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles, de-powered out of cycle
+	MOTOR_POWERED_ONLY_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
+//	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction for idle (FUTURE)
+//	MOTOR_ADAPTIVE_POWER				// adjust motor current with velocity (FUTURE)
+	MOTOR_POWER_MODE_MAX_VALUE			// for input range checking
 };
 
 // Stepper power management settings
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
-#define IDLE_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
-#define IDLE_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
-#define IDLE_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define MOTOR_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
+#define MOTOR_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
+#define MOTOR_TIMEOUT_SECONDS 		(float)0.1		// seconds in DISABLE_AXIS_WHEN_IDLE mode
+#define MOTOR_TIMEOUT_WHEN_MOVING	(float)0.25		// timeout for a motor in _ONLY_WHEN_MOVING mode
 
 /* DDA substepping
  * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
