@@ -552,7 +552,8 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_update_model_position(void);
 void cm_update_model_position_from_runtime(void);
 void cm_set_model_target(float target[], float flag[]);
-void cm_set_move_times(GCodeState_t *gcode_state);
+//void cm_set_move_times(GCodeState_t *gcode_state);
+void cm_calc_move_times(GCodeState_t *gms, const float position[]);
 stat_t cm_test_soft_limits(float target[]);
 
 //void cm_set_model_position(stat_t status);

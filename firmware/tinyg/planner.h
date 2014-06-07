@@ -86,8 +86,6 @@ enum sectionState {
 #ifdef __AVR
 	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
 	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
-//	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
-//	#define MIN_SEGMENT_USEC 	((float)250)		// minimum segment time / minimum move time
 	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
 #endif
 #ifdef __ARM
@@ -101,7 +99,6 @@ enum sectionState {
 #define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
-//#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME*3	// factor for minimum size Gcode block to process
 #define MIN_BLOCK_TIME			MIN_SEGMENT_TIME	// factor for minimum size Gcode block to process
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
@@ -203,15 +200,12 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
 	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
+
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
-#ifdef __UNIT_TEST_PLANNER
-	float test_case;
-	float test_velocity;
-	float a_unit[AXES];
-	float b_unit[AXES];
-#endif
+
+	GCodeState_t gm;				// preserved gcode model state for coalescing blocks
 	magic_t magic_end;
 } mpMoveMasterSingleton_t;
 
@@ -298,7 +292,7 @@ void mp_queue_command(void(*cm_exec_t)(float[], float[]), float *value, float *f
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
-stat_t mp_aline(const GCodeState_t *gm_in);
+stat_t mp_aline(GCodeState_t *gm_in);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);

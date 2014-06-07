@@ -41,6 +41,7 @@ extern "C"{
 #endif
 
 // aline planner routines / feedhold planning
+static void _calc_move_times(GCodeState_t *gms, const float position[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 static void _reset_replannable_list(void);
@@ -93,7 +94,7 @@ uint8_t mp_get_runtime_busy()
  *	executed once the accumulated error exceeds the minimums 
  */
 
-stat_t mp_aline(const GCodeState_t *gm_in)
+stat_t mp_aline(GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
 	float exact_stop = 0;				// preset this value OFF
@@ -101,7 +102,7 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	uint8_t mr_flag = false;
 	uint8_t path_control_mode = cm_get_path_control(MODEL);
 
-
+/*----- ORIGINAL CODE
 	// trap error conditions
 	float length = get_axis_vector_length(gm_in->target, mm.position);
 	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
@@ -114,52 +115,55 @@ stat_t mp_aline(const GCodeState_t *gm_in)
 	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
 	bf->length = length;
 
-//----- staging in new code ----
-/*
+*/
+//----- NEW CODE
 	// exit out if the move has zero movement. At all.
 	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
 
+	_calc_move_times(gm_in, mm.position);	// set move time and minimum time in the state
+
+/*
 	// trap short lines
-	//	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
 	if (path_control_mode == PATH_CONTINUOUS) {
 		if (gm_in->move_time < MIN_BLOCK_TIME) {
-			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+//			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+			rpt_exception(STAT_MINIMUM_TIME_MOVE);
 			return (STAT_MINIMUM_TIME_MOVE);
 		}
 	}
+*/
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
-*/
 //-----
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {
-		bf->unit[AXIS_X] = diff / length;
+		bf->unit[AXIS_X] = diff / bf->length;
 		bf->jerk = square(bf->unit[AXIS_X] * cm.a[AXIS_X].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Y] - mm.position[AXIS_Y])) {
-		bf->unit[AXIS_Y] = diff / length;
+		bf->unit[AXIS_Y] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_Y] * cm.a[AXIS_Y].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_Z] - mm.position[AXIS_Z])) {
-		bf->unit[AXIS_Z] = diff / length;
+		bf->unit[AXIS_Z] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_Z] * cm.a[AXIS_Z].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_A] - mm.position[AXIS_A])) {
-		bf->unit[AXIS_A] = diff / length;
+		bf->unit[AXIS_A] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_A] * cm.a[AXIS_A].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_B] - mm.position[AXIS_B])) {
-		bf->unit[AXIS_B] = diff / length;
+		bf->unit[AXIS_B] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_B] * cm.a[AXIS_B].jerk_max);
 	}
 	if (fp_NOT_ZERO(diff = bf->gm.target[AXIS_C] - mm.position[AXIS_C])) {
-		bf->unit[AXIS_C] = diff / length;
+		bf->unit[AXIS_C] = diff / bf->length;
 		bf->jerk += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLIER;
@@ -199,6 +203,105 @@ stat_t mp_aline(const GCodeState_t *gm_in)
  * _get_junction_vmax()
  * _reset_replannable_list()
  */
+
+/*
+ * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
+ *
+ *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
+ *	on each participating axis - regardless of the feed rate requested. The minimum time is 
+ *	the time limited by the rate-limiting axis. The minimum time is needed to compute the 
+ *	optimal time and is recorded for possible feed override computation..
+ *
+ *	"Optimal time" is either the time resulting from the requested feed rate or the minimum 
+ *	time if the requested feed rate is not achievable. Optimal times for traverses are always 
+ *	the minimum time.
+ *
+ *	Axis modes are taken into account by having cm_set_target() load the targets before 
+ *	calling this function.
+ *
+ *	The following times are compared and the longest is returned:
+ *	  -	G93 inverse time (if G93 is active)
+ *	  -	time for coordinated move at requested feed rate
+ *	  -	time that the slowest axis would require for the move
+ *
+ *	Sets the following variables in the gcode_state struct
+ *	  - move_time is set to optimal time
+ *	  - minimum_time is set to minimum time
+ */
+/* --- NIST RS274NGC_v3 Guidance ---
+ *
+ *	The following is verbatim text from NIST RS274NGC_v3. As I interpret A for moves that 
+ *	combine both linear and rotational movement, the feed rate should apply to the XYZ 
+ *	movement, with the rotational axis (or axes) timed to start and end at the same time 
+ *	the linear move is performed. It is possible under this case for the rotational move 
+ *	to rate-limit the linear move.
+ *
+ * 	2.1.2.5 Feed Rate
+ *
+ *	The rate at which the controlled point or the axes move is nominally a steady rate 
+ *	which may be set by the user. In the Interpreter, the interpretation of the feed 
+ *	rate is as follows unless inverse time feed rate mode is being used in the 
+ *	RS274/NGC view (see Section 3.5.19). The canonical machining functions view of feed 
+ *	rate, as described in Section 4.3.5.1, has conditions under which the set feed rate 
+ *	is applied differently, but none of these is used in the Interpreter.
+ *
+ *	A. 	For motion involving one or more of the X, Y, and Z axes (with or without 
+ *		simultaneous rotational axis motion), the feed rate means length units per
+ *		minute along the programmed XYZ path, as if the rotational axes were not moving.
+ *
+ *	B.	For motion of one rotational axis with X, Y, and Z axes not moving, the 
+ *		feed rate means degrees per minute rotation of the rotational axis.
+ *
+ *	C.	For motion of two or three rotational axes with X, Y, and Z axes not moving, 
+ *		the rate is applied as follows. Let dA, dB, and dC be the angles in degrees 
+ *		through which the A, B, and C axes, respectively, must move. 
+ *		Let D = sqrt(dA^2 + dB^2 + dC^2). Conceptually, D is a measure of total 
+ *		angular motion, using the usual Euclidean metric. Let T be the amount of 
+ *		time required to move through D degrees at the current feed rate in degrees 
+ *		per minute. The rotational axes should be moved in coordinated linear motion 
+ *		so that the elapsed time from the start to the end of the motion is T plus 
+ *		any time required for acceleration or deceleration.
+ */
+static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms = Gcode model state
+{
+	float inv_time=0;					// inverse time if doing a feed in G93 mode
+	float xyz_time=0;					// coordinated move linear part at req feed rate
+	float abc_time=0;					// coordinated move rotary part at req feed rate
+	float max_time=0;					// time required for the rate-limiting axis
+	float tmp_time=0;					// used in computation
+	gms->minimum_time = 8675309;		// arbitrarily large number
+
+	// compute times for feed motion
+	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
+			inv_time = gms->feed_rate;	// feed rate has been normalized to minutes
+			gms->feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
+			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
+			} else {
+			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +		// in mm
+							square(gms->target[AXIS_Y] - position[AXIS_Y]) +
+							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate; // in linear units
+			if (fp_ZERO(xyz_time)) {
+				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) + // in deg
+								square(gms->target[AXIS_B] - position[AXIS_B]) +
+								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate; // in degree units
+			}
+		}
+	}
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
+		} else { // motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].velocity_max;
+		}
+		max_time = max(max_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gms->minimum_time = min(gms->minimum_time, tmp_time);
+		}
+	}
+	gms->move_time = max4(inv_time, max_time, xyz_time, abc_time);
+}
 
 /* _plan_block_list() - plans the entire block list
  *

@@ -483,7 +483,49 @@ void cm_set_model_target(float target[], float flag[])
  *		so that the elapsed time from the start to the end of the motion is T plus 
  *		any time required for acceleration or deceleration.
  */
+/*
+void cm_calc_move_times(GCodeState_t *gms, const float position[])	// gms = Gcode model state
+{
+	float inv_time=0;					// inverse time if doing a feed in G93 mode
+	float xyz_time=0;					// coordinated move linear part at req feed rate
+	float abc_time=0;					// coordinated move rotary part at req feed rate
+	float max_time=0;					// time required for the rate-limiting axis
+	float tmp_time=0;					// used in computation
+	gms->minimum_time = 8675309;		// arbitrarily large number
 
+	// compute times for feed motion
+	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
+			inv_time = gms->feed_rate;	// feed rate has been normalized to minutes
+			gms->feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
+			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
+			} else {
+			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +		// in mm
+							square(gms->target[AXIS_Y] - position[AXIS_Y]) +
+							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate; // in linear units
+			if (fp_ZERO(xyz_time)) {
+				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) + // in deg
+								square(gms->target[AXIS_B] - position[AXIS_B]) +
+								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate; // in degree units
+			}
+		}
+	}
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
+		} else { // motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].velocity_max;
+		}
+		max_time = max(max_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gms->minimum_time = min(gms->minimum_time, tmp_time);
+		}
+	}
+	gms->move_time = max4(inv_time, max_time, xyz_time, abc_time);
+}
+*/
+/*
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
 	float inv_time=0;					// inverse time if doing a feed in G93 mode
@@ -524,6 +566,7 @@ void cm_set_move_times(GCodeState_t *gcode_state)
 	}
 	gcode_state->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
+*/
 /*
 void cm_set_move_times(GCodeState_t *gcode_state)
 {
@@ -943,7 +986,8 @@ stat_t cm_straight_traverse(float target[], float flags[])
 
 	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
-	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
+//	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
+//	cm_calc_move_times(&cm.gm, cm.gmx.position);// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
 	cm_update_model_position();
@@ -1066,7 +1110,8 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
-	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
+//	cm_set_move_times(&cm.gm);					// set move time and minimum time in the state
+//	cm_calc_move_times(&cm.gm, cm.gmx.position);// set move time and minimum time in the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
 	cm_update_model_position();

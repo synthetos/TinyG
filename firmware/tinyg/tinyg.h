@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.35	// updating top level planner - mostly planner buffer handling
+#define TINYG_FIRMWARE_BUILD   		410.37	// moved move time calculation to planner (from canonical machine)
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -560,6 +560,8 @@ char *get_status_message(stat_t status);
 #define	STAT_PROBE_CYCLE_FAILED 250						// probing cycle did not complete
 #define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 251
 #define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
+
+// !!! Do not exceed 255 without also changing stat_t typedef
 
 //#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 253
 //#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 254
