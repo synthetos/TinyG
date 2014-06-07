@@ -108,7 +108,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 //	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
 //		rpt_exception(STAT_MINIMUM_TIME_MOVE);
-		printf ("###:%1.0f", (double)(gm_in->move_time * 60000000));
+//		printf ("###:%1.0f", (double)(gm_in->move_time * 60000000));
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
@@ -117,7 +117,6 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
-//-----
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];

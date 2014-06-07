@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.41	// refining B" strategy
+#define TINYG_FIRMWARE_BUILD   		410.42	// testing on Probotix
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -63,8 +63,8 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __DEBUG_SETTINGS					// special settings. See settings.h
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
+#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
 //#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
