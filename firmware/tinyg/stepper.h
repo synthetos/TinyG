@@ -248,7 +248,7 @@
 
 // Currently there is no distinction between IDLE and OFF (DEENERGIZED)
 // In the future IDLE will be powered at a low, torque-maintaining current
-
+/*
 enum motorPowerState {					// used w/start and stop flags to sequence motor power
 	MOTOR_OFF = 0,						// motor is stopped and deenergized
 	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
@@ -257,12 +257,27 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 	MOTOR_STOPPED,						// motor is stopped and fully energized
 	MOTOR_RUNNING						// motor is running (and fully energized)
 };
-
+*/
+enum motorPowerState {					// used w/start and stop flags to sequence motor power
+	MOTOR_OFF = 0,						// motor is stopped and deenergized
+	MOTOR_IDLE,							// motor is stopped and may be partially energized for torque maintenance
+	MOTOR_RUNNING,						// motor is running (and fully energized)
+	MOTOR_POWER_TIMEOUT_START,			// transitional state to start power-down timeout
+	MOTOR_POWER_TIMEOUT_COUNTDOWN		// count down the time to de-energizing motors
+};
+/*
 enum motorPowerMode {
 	MOTOR_ENERGIZED_DURING_CYCLE=0,		// motor is fully powered during cycles
 	MOTOR_IDLE_WHEN_STOPPED,			// idle motor shortly after it's stopped - even in cycle
 	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
 	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
+};
+*/
+enum motorPowerMode {
+	MOTOR_POWERED_IN_CYCLE=0,		// motor is fully powered during cycles
+	MOTOR_POWERED_ONLY_WHEN_MOVING,			// idle motor shortly after it's stopped - even in cycle
+//	MOTOR_POWER_REDUCED_WHEN_IDLE,		// enable Vref current reduction (not implemented yet)
+//	DYNAMIC_MOTOR_POWER					// adjust motor current with velocity (not implemented yet)
 };
 
 enum prepBufferState {

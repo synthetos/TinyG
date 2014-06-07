@@ -183,7 +183,7 @@ static void _energize_motor(const uint8_t motor)
 		case (MOTOR_4): { PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm; break; }
 	}
 //	st_run.mot[motor].power_state = MOTOR_POWERED;
-	st_run.mot[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
+	st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;
 }
 
 static void _deenergize_motor(const uint8_t motor)
@@ -206,7 +206,7 @@ void st_energize_motors()
 {
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		_energize_motor(motor);
-		st_run.mot[motor].power_state = MOTOR_START_IDLE_TIMEOUT;
+		st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;
 	}
 }
 
@@ -222,14 +222,14 @@ stat_t st_motor_power_callback() 	// called by controller
 	// manage power for each motor individually
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
-		if (st_cfg.mot[motor].power_mode == MOTOR_ENERGIZED_DURING_CYCLE) {
+		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
 			switch (st_run.mot[motor].power_state) {
-				case (MOTOR_START_IDLE_TIMEOUT): {
+				case (MOTOR_POWER_TIMEOUT_START): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
-					st_run.mot[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+					st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 					continue;
 				}
-				case (MOTOR_TIME_IDLE_TIMEOUT): {
+				case (MOTOR_POWER_TIMEOUT_COUNTDOWN): {
 					if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
 						st_run.mot[motor].power_state = MOTOR_IDLE;
 						_deenergize_motor(motor);
@@ -239,14 +239,14 @@ stat_t st_motor_power_callback() 	// called by controller
 			}
 		}
 
-		if(st_cfg.mot[motor].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+		if(st_cfg.mot[motor].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 			switch (st_run.mot[motor].power_state) {
-				case (MOTOR_START_IDLE_TIMEOUT): {
+				case (MOTOR_POWER_TIMEOUT_START): {
 					st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(250);
-					st_run.mot[motor].power_state = MOTOR_TIME_IDLE_TIMEOUT;
+					st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 					continue;
 				}
-				case (MOTOR_TIME_IDLE_TIMEOUT): {
+				case (MOTOR_POWER_TIMEOUT_COUNTDOWN): {
 					if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
 						st_run.mot[motor].power_state = MOTOR_IDLE;
 						_deenergize_motor(motor);
@@ -386,7 +386,7 @@ static void _load_move()
 
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
 		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
-			st_run.mot[motor].power_state = MOTOR_START_IDLE_TIMEOUT;	// ...start motor power timeouts
+			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 		}
 		return;
 	}
@@ -442,9 +442,9 @@ static void _load_move()
 			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
-			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
-				st_run.mot[MOTOR_1].power_state = MOTOR_START_IDLE_TIMEOUT;
+				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
 		// accumulate counted steps to the step position and zero out counted steps for the segment currently being loaded
@@ -477,9 +477,9 @@ static void _load_move()
 			st_run.mot[MOTOR_2].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.mot[MOTOR_2].power_state = MOTOR_START_IDLE_TIMEOUT;
+				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_2);
@@ -513,9 +513,9 @@ static void _load_move()
 			st_run.mot[MOTOR_3].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.mot[MOTOR_3].power_state = MOTOR_START_IDLE_TIMEOUT;
+				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_3);
@@ -548,9 +548,9 @@ static void _load_move()
 			st_run.mot[MOTOR_4].power_state = MOTOR_RUNNING;
 			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_IDLE_WHEN_STOPPED) {
+			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.mot[MOTOR_4].power_state = MOTOR_START_IDLE_TIMEOUT;
+				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_4);
