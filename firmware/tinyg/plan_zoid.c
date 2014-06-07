@@ -145,25 +145,34 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	//********************************************
 	//********************************************
 
-	// B" case: Block is short - fits into a single body segment
 	// F case: Block is too short - run time < minimum segment time
-	
 	// Force block into a single segment body with limited velocities
 	// Accept the entry velocity, limit the cruise, and go for the best exit velocity
 	// you can get given the delta_vmax (maximum velocity slew) supportable.
 
 	float naiive_move_time = bf->length / bf->cruise_velocity;
+/*
+	if (naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {	// MIN_SEGMENT_TIME_PLUS_MARGIN > F case
+		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
+		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
+		bf->body_length = bf->length;
+		bf->head_length = 0;
+		bf->tail_length = 0;
+		// We are violating the jerk value but since it's a single segment move we don't use it.
+		printf("F'%1.0f ", (double)(naiive_move_time * 60000000));
+		return;
+	}
+*/
+	// B" case: Block is short - fits into a single body segment
+
 	if (naiive_move_time <= NOM_SEGMENT_TIME) {					// NOM_SEGMENT_TIME > B" case > MIN_SEGMENT_TIME_PLUS_MARGIN
-		if (naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {	// MIN_SEGMENT_TIME_PLUS_MARGIN > F case 
-			naiive_move_time = MIN_SEGMENT_TIME_PLUS_MARGIN;
-		}
 		bf->cruise_velocity = bf->length / naiive_move_time;
 		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-		printf("F ");
+		printf("B\"%1.0f ", (double)(naiive_move_time * 60000000));
 		return;
 	}
 

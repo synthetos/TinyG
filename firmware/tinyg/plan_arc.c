@@ -124,7 +124,8 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 //	ritorno(_test_arc_soft_limits());		// test if arc will trip soft limits
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
-	cm_update_model_position();				// set endpoint position if the arc was successful
+//	cm_update_model_position();				// set endpoint position if the arc was successful
+	cm_finalize_move();
 	return (STAT_OK);
 }
 

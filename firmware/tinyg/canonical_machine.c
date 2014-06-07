@@ -358,8 +358,22 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  *	execution, and the real tool position is still close to the starting point. 
  */
 
-void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
+//void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
+
+
+/* 
+ * cm_finalize_move() - perform final operations for a traverse or feed
+ */
+
+void cm_finalize_move() {
+	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
+
+	// reset feed rate so next block requires an explicit feed rate setting
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+		cm.gm.feed_rate = 0;
+	}
+}
 
 /* 
  * cm_set_model_target() - set target vector in GM model
@@ -800,7 +814,8 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
-	cm_update_model_position();
+	cm_finalize_move();
+//	cm_update_model_position();
 	return (STAT_OK);
 }
 
@@ -921,7 +936,8 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
-	cm_update_model_position();
+	cm_finalize_move();
+//	cm_update_model_position();
 	return (status);
 }
 

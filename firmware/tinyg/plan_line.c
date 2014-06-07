@@ -48,20 +48,19 @@ static void _reset_replannable_list(void);
 
 /* Runtime-specific setters and getters
  *
+ * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
- * mp_get_runtime_machine_position() - returns current axis position in machine coordinates
+ * mp_get_runtime_machine_position()- returns current axis position in machine coordinates
+ * mp_set_runtime_work_offset()		- set offsets in the MR struct
  * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
  *									  that were in effect at move planning time
- * mp_set_runtime_work_offset()
- * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  */
 
+void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
-float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
-void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
-float* mp_get_planner_position_vector() { return (mm.position);}
+float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
 /* 
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
@@ -102,39 +101,15 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	uint8_t mr_flag = false;
 	uint8_t path_control_mode = cm_get_path_control(MODEL);
 
-/*----- ORIGINAL CODE
-	// trap error conditions
-	float length = get_axis_vector_length(gm_in->target, mm.position);
-	if (length < MIN_LENGTH_MOVE) { return (STAT_MINIMUM_LENGTH_MOVE);}
-//	if (gm_line->move_time < MIN_TIME_MOVE) { return (STAT_MINIMUM_TIME_MOVE_ERROR);}	// remove this line
-
-	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) { return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));} // never supposed to fail
-
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));	// copy model state into planner
-	bf->bf_func = mp_exec_aline;					// register the callback to the exec function
-	bf->length = length;
-
-*/
-//----- NEW CODE
 	if (vector_equal(mm.position, gm_in->target)) 	// exit if the move has zero movement. At all.
 		return (STAT_OK);
 
 	_calc_move_times(gm_in, mm.position);			// set move time and minimum time in the state
-//	if (gm_in->move_time < MIN_BLOCK_TIME) {
-	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
+	if (gm_in->move_time < MIN_BLOCK_TIME) {
+//	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
 		rpt_exception(STAT_MINIMUM_TIME_MOVE);
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
-
-	// trap short lines
-//	if (path_control_mode == PATH_CONTINUOUS) {
-//		if (gm_in->move_time < MIN_BLOCK_TIME) {
-//			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
-//			rpt_exception(STAT_MINIMUM_TIME_MOVE);
-//			return (STAT_MINIMUM_TIME_MOVE);
-//		}
-//	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
@@ -202,13 +177,14 @@ stat_t mp_aline(GCodeState_t *gm_in)
 }
 
 /***** ALINE HELPERS *****
+ * _calc_move_times()
  * _plan_block_list()
  * _get_junction_vmax()
  * _reset_replannable_list()
  */
 
 /*
- * cm_set_move_times() - compute optimal and minimum move times into the gcode_state
+ * _calc_move_times() - compute optimal and minimum move times into the gcode_state
  *
  *	"Minimum time" is the fastest the move can be performed given the velocity constraints on each 
  *	participating axis - regardless of the feed rate requested. The minimum time is the time limited 
@@ -266,20 +242,19 @@ stat_t mp_aline(GCodeState_t *gm_in)
  */
 static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms = Gcode model state
 {
-	float inv_time=0;					// inverse time if doing a feed in G93 mode
-	float xyz_time=0;					// coordinated move linear part at req feed rate
-	float abc_time=0;					// coordinated move rotary part at req feed rate
-	float max_time=0;					// time required for the rate-limiting axis
-	float tmp_time=0;					// used in computation
-	gms->minimum_time = 8675309;		// arbitrarily large number
+	float inv_time=0;				// inverse time if doing a feed in G93 mode
+	float xyz_time=0;				// coordinated move linear part at req feed rate
+	float abc_time=0;				// coordinated move rotary part at req feed rate
+	float max_time=0;				// time required for the rate-limiting axis
+	float tmp_time=0;				// used in computation
+	gms->minimum_time = 8675309;	// arbitrarily large number
 
 	// compute times for feed motion
 	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
-			inv_time = gms->feed_rate;	// feed rate has been normalized to minutes
-			gms->feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
+			inv_time = gms->feed_rate;	// NB: feed rate was normalized to minutes by cm_set_feed_rate()
 			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
-			} else {
+		} else {
 			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +					// in millimeters
 							square(gms->target[AXIS_Y] - position[AXIS_Y]) +
 							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate;	// in linear units
