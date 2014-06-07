@@ -117,21 +117,24 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 */
 //----- NEW CODE
-	// exit out if the move has zero movement. At all.
-	if (vector_equal(mm.position, gm_in->target)) return (STAT_OK);
+	if (vector_equal(mm.position, gm_in->target)) 	// exit if the move has zero movement. At all.
+		return (STAT_OK);
 
-	_calc_move_times(gm_in, mm.position);	// set move time and minimum time in the state
-
-/*
-	// trap short lines
-	if (path_control_mode == PATH_CONTINUOUS) {
-		if (gm_in->move_time < MIN_BLOCK_TIME) {
-//			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
-			rpt_exception(STAT_MINIMUM_TIME_MOVE);
-			return (STAT_MINIMUM_TIME_MOVE);
-		}
+	_calc_move_times(gm_in, mm.position);			// set move time and minimum time in the state
+//	if (gm_in->move_time < MIN_BLOCK_TIME) {
+	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
+		rpt_exception(STAT_MINIMUM_TIME_MOVE);
+		return (STAT_MINIMUM_TIME_MOVE);
 	}
-*/
+
+	// trap short lines
+//	if (path_control_mode == PATH_CONTINUOUS) {
+//		if (gm_in->move_time < MIN_BLOCK_TIME) {
+//			printf("ALINE() line%lu %f\n", gm_in->linenum, (double)gm_in->move_time);
+//			rpt_exception(STAT_MINIMUM_TIME_MOVE);
+//			return (STAT_MINIMUM_TIME_MOVE);
+//		}
+//	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
@@ -205,19 +208,18 @@ stat_t mp_aline(GCodeState_t *gm_in)
  */
 
 /*
- * cm_set_move_times() - capture optimal and minimum move times into the gcode_state
+ * cm_set_move_times() - compute optimal and minimum move times into the gcode_state
  *
- *	"Minimum time" is the fastest the move can be performed given the velocity constraints 
- *	on each participating axis - regardless of the feed rate requested. The minimum time is 
- *	the time limited by the rate-limiting axis. The minimum time is needed to compute the 
- *	optimal time and is recorded for possible feed override computation..
+ *	"Minimum time" is the fastest the move can be performed given the velocity constraints on each 
+ *	participating axis - regardless of the feed rate requested. The minimum time is the time limited 
+ *	by the rate-limiting axis. The minimum time is needed to compute the optimal time and is 
+ *	recorded for possible feed override computation..
  *
- *	"Optimal time" is either the time resulting from the requested feed rate or the minimum 
- *	time if the requested feed rate is not achievable. Optimal times for traverses are always 
- *	the minimum time.
+ *	"Optimal time" is either the time resulting from the requested feed rate or the minimum time if 
+ *	the requested feed rate is not achievable. Optimal times for traverses are always the minimum time.
  *
- *	Axis modes are taken into account by having cm_set_target() load the targets before 
- *	calling this function.
+ *	The gcode state must have targets set prior by having cm_set_target(). Axis modes are taken into 
+ *	account by this.
  *
  *	The following times are compared and the longest is returned:
  *	  -	G93 inverse time (if G93 is active)
@@ -278,13 +280,13 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 			gms->feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
 			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
 			} else {
-			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +		// in mm
+			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +					// in millimeters
 							square(gms->target[AXIS_Y] - position[AXIS_Y]) +
-							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate; // in linear units
+							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate;	// in linear units
 			if (fp_ZERO(xyz_time)) {
-				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) + // in deg
+				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) +				// in degrees
 								square(gms->target[AXIS_B] - position[AXIS_B]) +
-								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate; // in degree units
+								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate; // in rotary units
 			}
 		}
 	}
