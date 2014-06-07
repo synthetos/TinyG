@@ -162,7 +162,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 */
 	// B" case: Block is short - fits into a single body segment
 
-	if (naiive_move_time <= NOM_SEGMENT_TIME) {					// NOM_SEGMENT_TIME > B" case > MIN_SEGMENT_TIME_PLUS_MARGIN
+	if (naiive_move_time <= NOM_SEGMENT_TIME) {		// NOM_SEGMENT_TIME > B" case > MIN_SEGMENT_TIME_PLUS_MARGIN
 		bf->entry_velocity = bf->pv->exit_velocity;
 		if (fp_NOT_ZERO(bf->entry_velocity)) {
 			bf->cruise_velocity = bf->entry_velocity;
@@ -171,16 +171,24 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->delta_vmax / 2;
 			bf->exit_velocity = bf->delta_vmax;
 		}
-
-//		bf->entry_velocity = bf->pv->exit_velocity;
-//		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
-//		bf->cruise_velocity = fabs(bf->entry_velocity - bf->exit_velocity) /2;
-
-//		bf->entry_velocity = bf->pv->exit_velocity;
-//		bf->cruise_velocity = bf->entry_velocity;
-//		bf->exit_velocity = bf->entry_velocity;
-//		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
-		
+/*
+		bf->entry_velocity = bf->pv->exit_velocity;
+		if (fp_ZERO(bf->entry_velocity)) {
+			bf->cruise_velocity = bf->delta_vmax / 2;
+			bf->exit_velocity = bf->delta_vmax;
+			} else {
+			if (bf->pv->entry_velocity < bf->pv->exit_velocity) {					// it's accelerating
+				bf->cruise_velocity = bf->entry_velocity + bf->delta_vmax / 2;
+				bf->exit_velocity = bf->entry_velocity + bf->delta_vmax;
+			} else if (bf->pv->entry_velocity > bf->pv->exit_velocity) {			// it's decelerating
+				bf->cruise_velocity = max(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax / 2));
+				bf->exit_velocity = max(0, (bf->entry_velocity - bf->delta_vmax));
+			} else {																// it's cruising
+				bf->cruise_velocity = bf->entry_velocity;
+				bf->exit_velocity = bf->entry_velocity;
+			}
+		}
+*/
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
