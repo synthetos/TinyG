@@ -361,7 +361,6 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 //void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
-
 /* 
  * cm_finalize_move() - perform final operations for a traverse or feed
  */

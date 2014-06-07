@@ -551,6 +551,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 // Critical helpers
 void cm_update_model_position(void);
 void cm_update_model_position_from_runtime(void);
+void cm_finalize_move();
 void cm_set_model_target(float target[], float flag[]);
 stat_t cm_test_soft_limits(float target[]);
 

@@ -107,7 +107,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	_calc_move_times(gm_in, mm.position);			// set move time and minimum time in the state
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 //	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
-		rpt_exception(STAT_MINIMUM_TIME_MOVE);
+//		rpt_exception(STAT_MINIMUM_TIME_MOVE);
+		printf ("###:%1.0f", (double)(gm_in->move_time * 60000000));
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
