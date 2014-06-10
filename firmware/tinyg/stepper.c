@@ -56,8 +56,8 @@ static void _request_load_move(void);
  **** CODE **************************************************************************
  ************************************************************************************/
 
-/* 
- * stepper_init() - initialize stepper motor subsystem 
+/*
+ * stepper_init() - initialize stepper motor subsystem
  *
  *	Notes:
  *	  - This init requires sys_init() to be run beforehand
@@ -140,7 +140,7 @@ uint8_t st_runtime_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {
 		return (false);
-	} 
+	}
 	return (true);
 }
 
@@ -191,7 +191,7 @@ static void _deenergize_motor(const uint8_t motor)
 
 static void _energize_motor(const uint8_t motor)
 {
-	if (st_cfg.mot[motor].power_mode == MOTOR_DISABLED) { 
+	if (st_cfg.mot[motor].power_mode == MOTOR_DISABLED) {
 		st_run.mot[motor].power_state = MOTOR_OFF;
 		_deenergize_motor(motor);
 		return;
@@ -207,7 +207,7 @@ static void _energize_motor(const uint8_t motor)
 
 static void _set_motor_power_level(const uint8_t motor, const float power_level)
 {
-	return;	
+	return;
 }
 
 void st_energize_motors()
@@ -234,9 +234,9 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
 				st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_idle_timeout * 1000);
 				st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			} 
+			}
 			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
+				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
 					st_run.mot[motor].power_state = MOTOR_IDLE;
 					_deenergize_motor(motor);
 				}
@@ -249,7 +249,7 @@ stat_t st_motor_power_callback() 	// called by controller
 				st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 			}
 			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) { 
+				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
 					st_run.mot[motor].power_state = MOTOR_IDLE;
 					_deenergize_motor(motor);
 				}
@@ -261,7 +261,7 @@ stat_t st_motor_power_callback() 	// called by controller
 		}
 
 		if(st_run.mot[motor].power_mode == DYNAMIC_MOTOR_POWER) {			// future
-			
+
 		}
 */
 	}
@@ -273,8 +273,8 @@ stat_t st_motor_power_callback() 	// called by controller
  *
  *	The step bit pulse width is ~1 uSec, which is OK for the TI DRV8811's.
  *	If you need to stretch the pulse I recommend moving the port OUTCLRs
- *	to the end of the routine. If you need more time than that use a 
- *	pulse OFF timer like grbl does so as not to spend any more time in 
+ *	to the end of the routine. If you need more time than that use a
+ *	pulse OFF timer like grbl does so as not to spend any more time in
  *	the ISR, which would limit the upper range of the DDA frequency.
  *
  *	Uses direct struct addresses and literal values for hardware devices -
@@ -356,8 +356,8 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
  *  TIMER_LOAD_ISR		- ISR for load move
  * _load_move()			- Dequeue move and load into stepper struct
  *
- *	_load_move() can only be called be called from an ISR at the same or higher level as 
- *	the DDA or dwell ISR. A software interrupt has been provided to allow a non-ISR to 
+ *	_load_move() can only be called be called from an ISR at the same or higher level as
+ *	the DDA or dwell ISR. A software interrupt has been provided to allow a non-ISR to
  *	request a load (see st_request_load_move())
  */
 
@@ -541,6 +541,17 @@ static void _load_move()
 		return;
 	}
 
+	// handle synchronous commands
+
+	if (st_pre.move_type == MOVE_TYPE_COMMAND) {
+//		st_pre.bf->cm_func(st_pre.bf->value_vector, st_pre.bf->flag_vector);	// 2 vectors used by callbacks
+		mp_run_command(st_pre.bf);
+		st_prep_null();										// this stops the dwell from firing again
+		st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
+		st_request_exec_move();								// exec and prep next move
+		return;
+	}
+
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
 	st_prep_null();											// needed to shut off timers if no moves left
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
@@ -550,11 +561,11 @@ static void _load_move()
 /***********************************************************************************
  * st_prep_line() - Prepare the next move for the loader
  *
- *	This function does the math on the next pulse segment and gets it ready for 
+ *	This function does the math on the next pulse segment and gets it ready for
  *	the loader. It deals with all the DDA optimizations and timer setups so that
- *	loading can be performed as rapidly as possible. It works in joint space 
- *	(motors) and it works in steps, not length units. All args are provided as 
- *	floats and converted to their appropriate integer types for the loader. 
+ *	loading can be performed as rapidly as possible. It works in joint space
+ *	(motors) and it works in steps, not length units. All args are provided as
+ *	floats and converted to their appropriate integer types for the loader.
  *
  * Args:
  *	  - steps[] are signed relative motion in steps for each motor. Steps are floats
@@ -593,7 +604,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
 
-//		st_pre.mot[i].accumulator_correction_flag = false;	
+//		st_pre.mot[i].accumulator_correction_flag = false;
 
 		// Skip this motor if there are no new steps. Leave all values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
@@ -627,16 +638,16 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 #ifdef __STEP_CORRECTION
 		// 'Nudge' correction strategy. Inject a single, scaled correction value then hold off
 
-		if ((--st_pre.mot[i].correction_holdoff < 0) && 
+		if ((--st_pre.mot[i].correction_holdoff < 0) &&
 			(fabs(following_error[i]) > STEP_CORRECTION_THRESHOLD)) {
 
 			st_pre.mot[i].correction_holdoff = STEP_CORRECTION_HOLDOFF;
 			correction_steps = following_error[i] * STEP_CORRECTION_FACTOR;
 
 			if (correction_steps > 0) {
-				correction_steps = min3(correction_steps, fabs(travel_steps[i]), STEP_CORRECTION_MAX); 
+				correction_steps = min3(correction_steps, fabs(travel_steps[i]), STEP_CORRECTION_MAX);
 			} else {
-				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX); 
+				correction_steps = max3(correction_steps, -fabs(travel_steps[i]), -STEP_CORRECTION_MAX);
 			}
 			st_pre.mot[i].corrected_steps += correction_steps;
 			travel_steps[i] -= correction_steps;
@@ -653,10 +664,8 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	return (STAT_OK);
 }
 
-/* 
+/*
  * st_prep_null() - Keeps the loader happy. Otherwise performs no action
- *
- *	Used by M codes, tool and spindle changes
  */
 
 void st_prep_null()
@@ -664,7 +673,17 @@ void st_prep_null()
 	st_pre.move_type = MOVE_TYPE_NULL;
 }
 
-/* 
+/*
+ * st_prep_command() - Stafge command to execution
+ */
+
+void st_prep_command(mpBuf_t *bf)
+{
+	st_pre.move_type = MOVE_TYPE_COMMAND;
+	st_pre.bf = bf;
+}
+
+/*
  * st_prep_dwell() 	 - Add a dwell to the move buffer
  */
 
@@ -739,7 +758,7 @@ static int8_t _get_motor(const index_t index)
  * This function will need to be rethought if microstep morphing is implemented
  */
 
-static void _set_motor_steps_per_unit(nvObj_t *nv) 
+static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
 	uint8_t m = _get_motor(nv->index);
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
@@ -747,16 +766,16 @@ static void _set_motor_steps_per_unit(nvObj_t *nv)
 }
 
 stat_t st_set_sa(nvObj_t *nv)			// motor step angle
-{ 
+{
 	set_flt(nv);
-	_set_motor_steps_per_unit(nv); 
+	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
 }
 
 stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
-{ 
+{
 	set_flu(nv);
-	_set_motor_steps_per_unit(nv); 
+	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
 }
 
@@ -772,7 +791,7 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 }
 
 stat_t st_set_pm(nvObj_t *nv)			// motor power mode
-{ 
+{
 	if (nv->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
 	set_ui8(nv);
 
@@ -797,7 +816,7 @@ stat_t st_set_mt(nvObj_t *nv)
  * Calling me or md with NULL will enable or disable all motors
  * Setting a value of 0 will enable or disable all motors
  * Setting a value from 1 to MOTORS will enable or disable that motor only
- */ 
+ */
 stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
 {
 	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
@@ -823,7 +842,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 	if (nv->value < (float)0) nv->value = 0;
 	if (nv->value > (float)1) nv->value = 1;
 	set_flt(nv);				// set the value in the motor config struct (st)
-	
+
 	uint8_t motor = _get_motor(nv->index);
 	st_run.mot[motor].power_level = nv->value;
 	_set_motor_power_level(motor, nv->value);

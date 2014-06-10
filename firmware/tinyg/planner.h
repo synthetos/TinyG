@@ -35,7 +35,7 @@
 extern "C"{
 #endif
 
-enum moveType {				// bf->move_type values 
+enum moveType {				// bf->move_type values
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
@@ -70,7 +70,7 @@ enum sectionState {
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 /* The following must apply:
- *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH 
+ *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH
  */
 #define ARC_SEGMENT_LENGTH 		((float)0.1)		// Arc segment size (mm).(0.03)
 #define MIN_LINE_LENGTH 		((float)0.08)		// Smallest line the system can plan (mm) (0.02)
@@ -112,8 +112,8 @@ enum sectionState {
 #define PLANNER_STARTUP_DELAY_SECONDS ((float)0.05)	// in seconds
 
 /* PLANNER_BUFFER_POOL_SIZE
- *	Should be at least the number of buffers requires to support optimal 
- *	planning in the case of very short lines or arc segments. 
+ *	Should be at least the number of buffers requires to support optimal
+ *	planning in the case of very short lines or arc segments.
  *	Suggest 12 min. Limit is 255
  */
 #define PLANNER_BUFFER_POOL_SIZE 28
@@ -142,7 +142,7 @@ typedef void (*cm_exec_t)(float[], float[]);	// callback to canonical_machine ex
 
 // All the enums that equal zero must be zero. Don't change this
 
-enum mpBufferState {				// bf->buffer_state values 
+enum mpBufferState {				// bf->buffer_state values
 	MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
 	MP_BUFFER_LOADING,				// being written ("checked out")
 	MP_BUFFER_QUEUED,				// in queue
@@ -186,6 +186,8 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
 
 } mpBuf_t;
+//#define value_vector gm.target		// alias for vector of values
+//#define flag_vector unit			// alias for vector of flags
 
 typedef struct mpBufferPool {		// ring buffer for sub-moves
 	magic_t magic_start;			// magic number to test memory integrity
@@ -289,6 +291,7 @@ void mp_set_runtime_position(uint8_t axis, const float position);
 void mp_set_steps_to_runtime_position(void);
 
 void mp_queue_command(void(*cm_exec_t)(float[], float[]), float *value, float *flag);
+stat_t mp_run_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
@@ -316,7 +319,7 @@ mpBuf_t * mp_get_last_buffer(void);
 #define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	// use the macro instead
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
-void mp_clear_buffer(mpBuf_t *bf); 
+void mp_clear_buffer(mpBuf_t *bf);
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
 // plan_line.c functions
