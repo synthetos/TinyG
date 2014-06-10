@@ -129,10 +129,14 @@ stat_t stepper_test_assertions()
 }
 
 /*
- * stepper_isbusy() - return TRUE if motors are running or a dwell is running
+ * st_runtime_isbusy() - return TRUE if runtime is busy:
+ *
+ *	Busy conditions:
+ *	- motors are running
+ *	- dwell is running
  */
 
-uint8_t stepper_isbusy()
+uint8_t st_runtime_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {
 		return (false);
@@ -264,8 +268,7 @@ stat_t st_motor_power_callback() 	// called by controller
 	return (STAT_OK);
 }
 
-/***** Interrupt Service Routines *****
- *
+/***** Stepper Interrupt Service Routine *****
  * ISR - DDA timer interrupt routine - service ticks from DDA timer
  *
  *	The step bit pulse width is ~1 uSec, which is OK for the TI DRV8811's.
@@ -314,17 +317,28 @@ ISR(TIMER_DDA_ISR_vect)
 	_load_move();										// load the next move
 }
 
+/***** Dwell Interrupt Service Routine *****
+ * ISR - DDA timer interrupt routine - service ticks from DDA timer
+ */
+
 ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
  		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
-//		mp_end_dwell();									// free the planner buffer
 		_load_move();
 	}
 }
 
-ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
-	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
-	_load_move();
+/****************************************************************************************
+ * st_request_exec_move() - SW interrupt to request to execute a move
+ * TIMER_EXEC_ISR		  - interrupt handler for calling exec function
+ */
+
+void st_request_exec_move()
+{
+	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
+		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
+		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
+	}
 }
 
 ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
@@ -337,50 +351,42 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 	}
 }
 
-/****************************************************************************************
- * Exec sequencing code - computes and prepares next load segment
- * st_request_exec_move()	- SW interrupt to request to execute a move
- * exec_timer interrupt		- interrupt handler for calling exec function
- */
-
-/* Software interrupts
+/**************************************************************************************************
+ * _request_load_move() - Set a software interrupt for a load
+ *  TIMER_LOAD_ISR		- ISR for load move
+ * _load_move()			- Dequeue move and load into stepper struct
  *
- * st_request_exec_move() - SW interrupt to request to execute a move
- * _request_load_move()   - SW interrupt to request to load a move
+ *	_load_move() can only be called be called from an ISR at the same or higher level as 
+ *	the DDA or dwell ISR. A software interrupt has been provided to allow a non-ISR to 
+ *	request a load (see st_request_load_move())
  */
-
-void st_request_exec_move()
-{
-	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
-		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
-		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
-	}
-}
 
 static void _request_load_move()
 {
-	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
-		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
-		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
-	} 	// else don't bother to interrupt. You'll just trigger an
+	if (st_runtime_isbusy()) return;					// don't request a load if the runtime is busy
+	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
+	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;				// trigger a HI interrupt
+
+//	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
+//		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
+//		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
+//	} 	// else don't bother to interrupt. You'll just trigger an
 		// interrupt and find out the load routine is not ready for you
 }
 
-/*
- * _load_move() - Dequeue move and load into stepper struct
- *
- *	This routine can only be called be called from an ISR at the same or 
- *	higher level as the DDA or dwell ISR. A software interrupt has been 
- *	provided to allow a non-ISR to request a load (see st_request_load_move())
- */
+ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
+	_load_move();
+}
+
 
 static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-	if (st_run.dda_ticks_downcount != 0) return;						// exit if it's still busy
-
-	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {				// if there are no moves to load...
+//	if (st_run.dda_ticks_downcount != 0) return;				// exit if it's still busy
+	if (st_runtime_isbusy()) return;							// exit if the runtime is busy
+	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 //		}

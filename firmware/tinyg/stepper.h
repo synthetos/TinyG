@@ -404,8 +404,8 @@ extern stPrepSingleton_t st_pre;	// only used by config_app diagnostics
 void stepper_init(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
-uint8_t stepper_isbusy(void);
 
+uint8_t st_runtime_isbusy(void);
 void st_reset(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
