@@ -16,14 +16,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* Is this code over documented? Possibly. 
+/* Is this code over documented? Possibly.
  * We try to follow this (at least we are evolving to it). It's worth a read.
  * ftp://ftp.idsoftware.com/idstuff/doom3/source/CodeStyleConventions.doc
  */
 /* Xmega project setup notes:
  * from: http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=117023
- * "Yes it's definitely worth making WinAVR work. To install WinAVR for the project use 
- * Project-Configuration Options and under Custom Options untick the "Use toolchain" box 
+ * "Yes it's definitely worth making WinAVR work. To install WinAVR for the project use
+ * Project-Configuration Options and under Custom Options untick the "Use toolchain" box
  * then set the top one to \winavr\bin\avr-gcc.exe  (C:\WinAVR-20100110\bin\avr-gcc.exe)
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
@@ -32,7 +32,7 @@
 #define TINYG_H_ONCE
 
 // common system includes
-#include <ctype.h>					
+#include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.47	// loader sequencing - moved command exec to prep buffer
+#define TINYG_FIRMWARE_BUILD   		410.48	// loader sequencing - minor cleanup from .47
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -115,7 +115,7 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), MESSAGE_LEN-1) 
+#define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), MESSAGE_LEN-1)
 
 // get units from array of strings in PGM and convert to RAM string
 #define GET_UNITS(a) 	   strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), MESSAGE_LEN-1)
@@ -138,8 +138,8 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define PROGMEM					// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
-typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t 
-								// because in C++ uint8_t and char are distinct types and 
+typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t
+								// because in C++ uint8_t and char are distinct types and
 								// we want chars to behave as uint8's
 
 													// gets rely on nv->index having been set
@@ -230,14 +230,14 @@ typedef uint16_t magic_t;		// magic number size
 #define PWM_1		0
 #define PWM_2		1
 
-/************************************************************************************ 
+/************************************************************************************
  * STATUS CODES
  *
  * The first code range (0-19) is aligned with the XIO codes and must be so.
  * Please don't change them without checking the corresponding values in xio.h
  *
  * Status codes are divided into ranges for clarity and extensibility. At some point
- * this may break down and the whole thing will get messy(er), but it's advised not 
+ * this may break down and the whole thing will get messy(er), but it's advised not
  * to change the values of existing status codes once they are in distribution.
  *
  * Ranges are:
@@ -251,11 +251,11 @@ typedef uint16_t magic_t;		// magic number size
  *
  * 130 -		Gcode and TinyG application errors and warnings
  *
- * See main.c for associated message strings. Any changes to the codes may also require 
+ * See main.c for associated message strings. Any changes to the codes may also require
  * changing the message strings and string array in main.c
  *
  * Most of the status codes (except STAT_OK) below are errors which would fail the command,
- * and are returned by the failed command and reported back via JSON or text. 
+ * and are returned by the failed command and reported back via JSON or text.
  * Some status codes are warnings do not fail the command. These can be used to generate
  * an exception report. These are labeled as WARNING
  */

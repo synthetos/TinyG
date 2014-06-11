@@ -379,13 +379,12 @@ ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
 	_load_move();
 }
 
-
 static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-//	if (st_run.dda_ticks_downcount != 0) return;				// exit if it's still busy
 	if (st_runtime_isbusy()) return;							// exit if the runtime is busy
+
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
@@ -542,9 +541,7 @@ static void _load_move()
 	}
 
 	// handle synchronous commands
-
 	if (st_pre.move_type == MOVE_TYPE_COMMAND) {
-//		st_pre.bf->cm_func(st_pre.bf->value_vector, st_pre.bf->flag_vector);	// 2 vectors used by callbacks
 		mp_run_command(st_pre.bf);
 		st_prep_null();										// this stops the dwell from firing again
 		st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
@@ -603,8 +600,6 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 //	uint8_t previous_direction;
 	float correction_steps;
 	for (uint8_t i=0; i<MOTORS; i++) {
-
-//		st_pre.mot[i].accumulator_correction_flag = false;
 
 		// Skip this motor if there are no new steps. Leave all values intact.
 		if (fp_ZERO(travel_steps[i])) { st_pre.mot[i].substep_increment = 0; continue;}
