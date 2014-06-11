@@ -184,12 +184,15 @@ void mp_set_steps_to_runtime_position()
  *
  *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
- *	  - cm_ function calls mp_queue_command which puts it in the planning queue.
+ *	  - cm_ function calls mp_queue_command which puts it in the planning queue (bf buffer).
  *		This involves setting some parameters and registering a callback to the
  *		execution function in the canonical machine
  *	  - the planning queue gets to the function and calls _exec_command()
- *	  - ...which passes the saved parameters to the callback function
- *	  - To finish up _exec_command() needs to run a null pre and free the planner buffer
+ *	  - ...which puts a pointer to the bf buffer in the prep stratuc (st_pre)
+ *	  - When the runtime gets to the end of the current activity (sending steps, counting a dwell)
+ *		if executes mp_runtime_command...
+ *	  - ...which uses the callback function in the bf and the saved parameters in the vectors
+ *	  - To finish up mp_runtime_command() needs to free the bf buffer
  *
  *	Doing it this way instead of synchronizing on queue empty simplifies the
  *	handling of feedholds, feed overrides, buffer flushes, and thread blocking,
@@ -219,22 +222,13 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 static stat_t _exec_command(mpBuf_t *bf)
 {
-/*
-	if (!st_runtime_isbusy()) {
-		bf->cm_func(bf->value_vector, bf->flag_vector);	// 2 vectors used by callbacks
-		st_prep_null();									// Must call a null prep to keep the loader happy.
-		if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & perform cycle_end if planner is empty
-	}
-	return (STAT_OK);
-*/
 	st_prep_command(bf);
 	return (STAT_OK);
 }
 
-stat_t mp_run_command(mpBuf_t *bf)
+stat_t mp_runtime_command(mpBuf_t *bf)
 {
 	bf->cm_func(bf->value_vector, bf->flag_vector);	// 2 vectors used by callbacks
-	st_prep_null();									// Must call a null prep to keep the loader happy.
 	if (mp_free_run_buffer()) cm_cycle_end();		// free buffer & perform cycle_end if planner is empty
 	return (STAT_OK);
 }

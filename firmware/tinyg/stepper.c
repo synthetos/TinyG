@@ -366,12 +366,6 @@ static void _request_load_move()
 	if (st_runtime_isbusy()) return;					// don't request a load if the runtime is busy
 	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
 	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;				// trigger a HI interrupt
-
-//	if (st_run.dda_ticks_downcount == 0) {				// bother interrupting
-//		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
-//		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;			// trigger a HI interrupt
-//	} 	// else don't bother to interrupt. You'll just trigger an
-		// interrupt and find out the load routine is not ready for you
 }
 
 ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
@@ -523,36 +517,22 @@ static void _load_move()
 
 		TIMER_DDA.PER = st_pre.dda_period;
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
-		st_prep_null();										// needed to shut off timers if no moves left
-		st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
-		st_request_exec_move();								// exec and prep next move
-		return;
-	}
 
 	// handle dwells
-	if (st_pre.move_type == MOVE_TYPE_DWELL) {
+	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
-		st_prep_null();										// this stops the dwell from firing again
-		st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
-		st_request_exec_move();								// exec and prep next move
-		return;
-	}
 
 	// handle synchronous commands
-	if (st_pre.move_type == MOVE_TYPE_COMMAND) {
-		mp_run_command(st_pre.bf);
-		st_prep_null();										// this stops the dwell from firing again
-		st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
-		st_request_exec_move();								// exec and prep next move
-		return;
+	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
+		mp_runtime_command(st_pre.bf);
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
-	st_prep_null();											// needed to shut off timers if no moves left
-	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;		// flip it back
-	st_request_exec_move();									// exec and prep next move
+	st_pre.move_type = MOVE_TYPE_NULL;
+	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
+	st_request_exec_move();								// exec and prep next move
 }
 
 /***********************************************************************************
@@ -672,10 +652,10 @@ void st_prep_null()
  * st_prep_command() - Stafge command to execution
  */
 
-void st_prep_command(mpBuf_t *bf)
+void st_prep_command(void *bf)
 {
 	st_pre.move_type = MOVE_TYPE_COMMAND;
-	st_pre.bf = bf;
+	st_pre.bf = (mpBuf_t *)bf;
 }
 
 /*

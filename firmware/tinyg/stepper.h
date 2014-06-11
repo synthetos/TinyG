@@ -419,6 +419,7 @@ stat_t st_motor_power_callback(void);
 
 void st_request_exec_move(void);
 void st_prep_null(void);
+void st_prep_command(void *bf);		// use a void pointer since we don't know about mpBuf_t yet)
 void st_prep_dwell(float microseconds);
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
 
