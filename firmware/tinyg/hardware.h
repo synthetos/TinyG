@@ -1,10 +1,10 @@
 /*
  * hardware.h - system hardware configuration - this file is platform specific
- *			  - AVR Xmega version 
+ *			  - AVR Xmega version
  *
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -32,7 +32,7 @@
  *	HI	Stepper DDA pulse generation		(set in stepper.h)
  *	HI	Stepper load routine SW interrupt	(set in stepper.h)
  *	HI	Dwell timer counter 				(set in stepper.h)
- *  LO	Segment execution SW interrupt		(set in stepper.h) 
+ *  LO	Segment execution SW interrupt		(set in stepper.h)
  *	MED	GPIO1 switch port					(set in gpio.h)
  *  MED	Serial RX for USB & RS-485			(set in xio_usart.h)
  *  MED	Serial TX for USB & RS-485			(set in xio_usart.h) (* see note)
@@ -117,7 +117,7 @@
  *	b0	(out) step			(SET is step,  CLR is rest)
  *	b1	(out) direction		(CLR = Clockwise)
  *	b2	(out) motor enable 	(CLR = Enabled)
- *	b3	(out) microstep 0 
+ *	b3	(out) microstep 0
  *	b4	(out) microstep 1
  *	b5	(out) output bit for GPIO port1
  *	b6	(in) min limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
@@ -215,9 +215,9 @@ enum cfgPortBits {			// motor control port bit positions
 	The initialization sequence is important. the order is:
 		- sys_init()	binds all ports to the device struct
 		- st_init() 	sets IO directions and sets stepper VPORTS and stepper specific functions
-		- gpio_init()	sets up input and output functions and required interrupts	
+		- gpio_init()	sets up input and output functions and required interrupts
 
-	Care needs to be taken in routines that use ports not to write to bits that are 
+	Care needs to be taken in routines that use ports not to write to bits that are
 	not assigned to the designated function - ur unpredicatable results will occur
 */
 

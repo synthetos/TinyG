@@ -1,5 +1,5 @@
 /*
- * config.c - application independent configuration handling 
+ * config.c - application independent configuration handling
  * This file is part of the TinyG2 project
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
@@ -99,7 +99,7 @@ void nv_persist(nvObj_t *nv)
  *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
  *	(2) if NVM is set up and at current config version use NVM data for config
  *
- *	You can assume the cfg struct has been zeroed by a hard reset. 
+ *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by tg_init()
  *
  * NOTE: Config assertions are handled from the controller
@@ -115,21 +115,21 @@ void config_init()
 #ifdef __ARM
 // ++++ The following code is offered until persistence is implemented.
 // ++++ Then you can use the AVR code (or something like it)
-	cfg.comm_mode = JSON_MODE;				// initial value until EEPROM is read
+	cfg.comm_mode = JSON_MODE;					// initial value until EEPROM is read
 	nv->value = true;
 	set_defaults(nv);
 #endif
 #ifdef __AVR
-	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
+	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	hw.nvm_base_addr = NVM_BASE_ADDR;
 	hw.nvm_profile_base = hw.nvm_base_addr;
-	nv->index = 0;							// this will read the first record in NVM
+	nv->index = 0;								// this will read the first record in NVM
 
 	nv_read_NVM_value(nv);
 	if (nv->value != cs.fw_build) {
-		nv->value = true;					// case (1) NVM is not setup or not in revision
+		nv->value = true;						// case (1) NVM is not setup or not in revision
 		set_defaults(nv);
-	} else {								// case (2) NVM is setup and in revision
+	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
@@ -146,24 +146,24 @@ void config_init()
 /*
  * set_defaults() - reset NVM with default values for active profile
  */
-stat_t set_defaults(nvObj_t *nv) 
+stat_t set_defaults(nvObj_t *nv)
 {
-	if (fp_FALSE(nv->value)) {				// failsafe. Must set true or no action occurs
+	if (fp_FALSE(nv->value)) {					// failsafe. Must set true or no action occurs
 		help_defa(nv);
 		return (STAT_OK);
 	}
-	cm_set_units_mode(MILLIMETERS);			// must do inits in MM mode
+	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			nv->value = GET_TABLE_FLOAT(def_value);
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			nv_set(nv);
-			nv_persist(nv);				// persist must occur when no other interrupts are firing
+			nv_persist(nv);						// persist must occur when no other interrupts are firing
 		}
 	}
-	rpt_print_initializing_message();		// don't start TX until all the NVM persistence is done
-	sr_init_status_report();				// reset status reports
+	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
+	sr_init_status_report();					// reset status reports
 	return (STAT_OK);
 }
 
@@ -177,8 +177,8 @@ stat_t set_defaults(nvObj_t *nv)
  *	get_flt()  - get value as float
  *	get_format() - internal accessor for printf() format string
  */
-stat_t get_nul(nvObj_t *nv) 
-{ 
+stat_t get_nul(nvObj_t *nv)
+{
 	nv->valuetype = TYPE_NULL;
 	return (STAT_NOOP);
 }
@@ -221,7 +221,7 @@ stat_t get_flt(nvObj_t *nv)
  *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
  *	set_int()  - set value as 32 bit integer
- *	set_data() - set value as 32 bit integer blind cast 
+ *	set_data() - set value as 32 bit integer blind cast
  *	set_flt()  - set value as float
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_NOOP);}
@@ -313,26 +313,26 @@ stat_t set_flu(nvObj_t *nv)
  *
  *	In JSON groups are carried as parent / child objects & can get and set elements:
  *	  {"x":""}						get all X axis parameters
- *	  {"x":{"vm":""}}				get X axis velocity max 
+ *	  {"x":{"vm":""}}				get X axis velocity max
  *	  {"x":{"vm":1000}}				set X axis velocity max
- *	  {"x":{"vm":"","fr":""}}		get X axis velocity max and feed rate 
+ *	  {"x":{"vm":"","fr":""}}		get X axis velocity max and feed rate
  *	  {"x":{"vm":1000,"fr";900}}	set X axis velocity max and feed rate
  *	  {"x":{"am":1,"fr":800,....}}	set multiple or all X axis parameters
  */
 
-/* 
+/*
  * get_grp() - read data from axis, motor, system or other group
  *
- *	get_grp() is a group expansion function that expands the parent group and returns 
- *	the values of all the children in that group. It expects the first nvObj in the 
- *	nvBody to have a valid group name in the token field. This first object will be set 
- *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent 
+ *	get_grp() is a group expansion function that expands the parent group and returns
+ *	the values of all the children in that group. It expects the first nvObj in the
+ *	nvBody to have a valid group name in the token field. This first object will be set
+ *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent
  *	group, which this group has none.
  *
  *	All subsequent nvObjs in the body will be populated with their values.
- *	The token field will be populated as will the parent name in the group field. 
+ *	The token field will be populated as will the parent name in the group field.
  *
- *	The sys group is an exception where the children carry a blank group field, even though 
+ *	The sys group is an exception where the children carry a blank group field, even though
  *	the sys parent is labeled as a TYPE_PARENT.
  */
 
@@ -340,7 +340,7 @@ stat_t get_grp(nvObj_t *nv)
 {
 	char_t *parent_group = nv->token;		// token in the parent nv object is the group
 	char_t group[GROUP_LEN+1];				// group string retrieved from cfgArray child
-	nv->valuetype = TYPE_PARENT;				// make first object the parent 
+	nv->valuetype = TYPE_PARENT;				// make first object the parent
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
@@ -353,7 +353,7 @@ stat_t get_grp(nvObj_t *nv)
 /*
  * set_grp() - get or set one or more values in a group
  *
- *	This functions is called "_set_group()" but technically it's a getter and 
+ *	This functions is called "_set_group()" but technically it's a getter and
  *	a setter. It iterates the group children and either gets the value or sets
  *	the value for each depending on the nv->valuetype.
  *
@@ -399,8 +399,8 @@ uint8_t nv_group_is_prefixed(char_t *group)
 
 /* nv_get_index() - get index from mnenonic token + group
  *
- * nv_get_index() is the most expensive routine in the whole config. It does a 
- * linear table scan of the PROGMEM strings, which of course could be further 
+ * nv_get_index() is the most expensive routine in the whole config. It does a
+ * linear table scan of the PROGMEM strings, which of course could be further
  * optimized with indexes or hashing.
  */
 index_t nv_get_index(const char_t *group, const char_t *token)
@@ -428,7 +428,7 @@ index_t nv_get_index(const char_t *group, const char_t *token)
 	return (NO_MATCH);
 }
 
-/* 
+/*
  * nv_get_type() - returns command type as a NV_TYPE enum
  */
 
@@ -528,7 +528,7 @@ void nv_get_nvObj(nvObj_t *nv)
 	}
 	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
 }
- 
+
 nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 {
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
@@ -542,7 +542,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 	if (nv->pv == NULL) { 					// set depth correctly
 		nv->depth = 0;
 	} else {
-		if (nv->pv->valuetype == TYPE_PARENT) { 
+		if (nv->pv->valuetype == TYPE_PARENT) {
 			nv->depth = nv->pv->depth + 1;
 		} else {
 			nv->depth = nv->pv->depth;
@@ -554,7 +554,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 nvObj_t *nv_reset_nv_list()					// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nv_list;					// set up linked list and initialize elements	
+	nvObj_t *nv = nv_list;					// set up linked list and initialize elements
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);					// the ends are bogus & corrected later
 		nv->nx = (nv+1);
@@ -690,8 +690,8 @@ nvObj_t *nv_add_conditional_message(const char_t *string)	// conditionally add a
 
 /**** nv_print_list() - print nv_array as JSON or text **********************
  *
- * 	Generate and print the JSON and text mode output strings. Use this function 
- *	for all text and JSON output that wants to be in a response header. 
+ * 	Generate and print the JSON and text mode output strings. Use this function
+ *	for all text and JSON output that wants to be in a response header.
  *	Don't just printf stuff.
  *
  *	Inputs:

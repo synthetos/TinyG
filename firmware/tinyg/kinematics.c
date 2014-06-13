@@ -2,7 +2,7 @@
  * kinematics.c - inverse kinematics routines
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -40,16 +40,16 @@ extern "C"{
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
  *
- *	Calls kinematics function(s). 
+ *	Calls kinematics function(s).
  *	Performs axis mapping & conversion of length units to steps (and deals with inhibited axes)
  *
- *	The reason steps are returned as floats (as opposed to, say, uint32_t) is to accommodate 
- *	fractional DDA steps. The DDA deals with fractional step values as fixed-point binary in 
- *	order to get the smoothest possible operation. Steps are passed to the move prep routine 
+ *	The reason steps are returned as floats (as opposed to, say, uint32_t) is to accommodate
+ *	fractional DDA steps. The DDA deals with fractional step values as fixed-point binary in
+ *	order to get the smoothest possible operation. Steps are passed to the move prep routine
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(float travel[], float steps[])
+void ik_kinematics(const float travel[], float steps[])
 {
 	float joint[AXES];
 
@@ -76,7 +76,7 @@ void ik_kinematics(float travel[], float steps[])
 /* The above is a loop unrolled version of this:
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		for (uint8_t motor=0; motor<MOTORS; motor++) {
-			if (st_cfg.mot[motor].motor_map == axis) { 
+			if (st_cfg.mot[motor].motor_map == axis) {
 				steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
 			}
 		}
@@ -89,10 +89,10 @@ void ik_kinematics(float travel[], float steps[])
  *
  *	You can glue in inverse kinematics here, but be aware of time budget constrants.
  *	This function is run during the _exec() portion of the cycle and will therefore
- *	be run once per interpolation segment. The total time for the segment load, 
- *	including the inverse kinematics transformation cannot exceed the segment time, 
- *	and ideally should be no more than 25-50% of the segment time. Currently segments 
- *	run avery 5 ms, but this might be lowered. To profile this time look at the 
+ *	be run once per interpolation segment. The total time for the segment load,
+ *	including the inverse kinematics transformation cannot exceed the segment time,
+ *	and ideally should be no more than 25-50% of the segment time. Currently segments
+ *	run avery 5 ms, but this might be lowered. To profile this time look at the
  *	time it takes to complete the mp_exec_move() function.
  */
 /*
@@ -100,11 +100,13 @@ static void _inverse_kinematics(float travel[], float joint[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
 		joint[i] = travel[i];
-	}	
+	}
 }
 */
 
-//############## UNIT TESTS ################
+// *************************************************
+// ***** UNIT TESTS ********************************
+// *************************************************
 
 //#define __UNIT_TEST_KINEMATICS
 #ifdef __UNIT_TESTS

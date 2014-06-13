@@ -2,7 +2,7 @@
  * gpio.c - general purpose IO bits
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
   * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,7 +25,7 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- *	This GPIO file is where all parallel port bits are managed that are 
+ *	This GPIO file is where all parallel port bits are managed that are
  *	not already taken up by steppers, serial ports, SPI or PDI programming
  *
  *	There are 2 GPIO ports:
@@ -34,14 +34,14 @@
  *				Four (4) output bits capable of driving 3.3v or 5v logic
  *
  *			  Note: On v6 and earlier boards there are also 4 inputs:
- *				Four (4) level converted input bits capable of being driven 
+ *				Four (4) level converted input bits capable of being driven
  *				by 3.3v or 5v logic - connected to B0 - B3 (now used for SPI)
  *
  *	  gpio2	  Located on 9x2 header on "bottom" edge of the board
  *				Eight (8) non-level converted input bits
  *				Eight (8) ground pins - one each "under" each input pin
  *				Two   (2) 3.3v power pins (on left edge of connector)
- *				Inputs can be used as switch contact inputs or 
+ *				Inputs can be used as switch contact inputs or
  *					3.3v input bits depending on port configuration
  *					**** These bits CANNOT be used as 5v inputs ****
  */
@@ -102,9 +102,9 @@ void gpio_led_on(uint8_t led)
 //	if (led == 2) return (gpio_set_bit_on(0x02));
 //	if (led == 3) return (gpio_set_bit_on(0x01));
 
-	if (led == 0) gpio_set_bit_on(0x08); else 
-	if (led == 1) gpio_set_bit_on(0x04); else 
-	if (led == 2) gpio_set_bit_on(0x02); else 
+	if (led == 0) gpio_set_bit_on(0x08); else
+	if (led == 1) gpio_set_bit_on(0x04); else
+	if (led == 2) gpio_set_bit_on(0x02); else
 	if (led == 3) gpio_set_bit_on(0x01);
 }
 
@@ -115,9 +115,9 @@ void gpio_led_off(uint8_t led)
 //	if (led == 2) return (gpio_set_bit_off(0x02));
 //	if (led == 3) return (gpio_set_bit_off(0x01));
 
-	if (led == 0) gpio_set_bit_off(0x08); else 
-	if (led == 1) gpio_set_bit_off(0x04); else 
-	if (led == 2) gpio_set_bit_off(0x02); else 
+	if (led == 0) gpio_set_bit_off(0x08); else
+	if (led == 1) gpio_set_bit_off(0x04); else
+	if (led == 2) gpio_set_bit_off(0x02); else
 	if (led == 3) gpio_set_bit_off(0x01);
 }
 
@@ -235,9 +235,9 @@ void gpio_toggle_port(uint8_t b)
 }
 */
 
-//###########################################################################
-//##### UNIT TESTS ##########################################################
-//###########################################################################
+// ***************************************************************************
+// ***** UNIT TESTS **********************************************************
+// ***************************************************************************
 
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_GPIO

@@ -2,7 +2,8 @@
  * main.c - TinyG - An embedded rs274/ngc CNC controller
  * This file is part of the TinyG project.
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -16,10 +17,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* See github.com/Synthetos/tinyg for code and docs on the wiki 
+/* See github.com/Synthetos/tinyg for code and docs on the wiki
  */
-
-#include <avr/interrupt.h>
 
 #include "tinyg.h"				// #1 There are some dependencies
 #include "config.h"				// #2
@@ -37,9 +36,15 @@
 #include "pwm.h"
 #include "xio.h"
 
+#ifdef __AVR
+#include <avr/interrupt.h>
 #include "xmega/xmega_interrupts.h"
-//#include "xmega/xmega_rtc.h"		// included via hardware.h
 //#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
+#endif // __AVR
+
+#ifdef __ARM
+#include "MotateTimers.h"
+using Motate::delay;
 
 #ifdef __cplusplus
 extern "C"{
@@ -48,9 +53,12 @@ extern "C"{
 void _init() __attribute__ ((weak));
 void _init() {;}
 
+void __libc_init_array(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+#endif // __ARM
 
 static void _application_init(void);
 static void _unit_tests(void);
@@ -82,7 +90,7 @@ int main(void)
 #endif
 	_unit_tests();					// run any unit tests that are enabled
 	run_canned_startup();			// run any pre-loaded commands
-	
+
 	// main loop
 	for (;;) {
 		controller_run( );			// single pass through the controller
@@ -120,7 +128,7 @@ static void _application_init(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
-	rpt_print_system_ready_message();// (LAST) announce system is ready	
+	rpt_print_system_ready_message();// (LAST) announce system is ready
 }
 
 /**** Status Messages ***************************************************************
@@ -425,7 +433,7 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_90, stat_91, stat_92, stat_93, stat_94, stat_95, stat_96, stat_97, stat_98, stat_99,
 	stat_100, stat_101, stat_102, stat_103, stat_104, stat_105, stat_106, stat_107, stat_108, stat_109,
 	stat_110, stat_111, stat_112, stat_113, stat_114, stat_115, stat_116, stat_117, stat_118, stat_119,
-	stat_120, stat_121, stat_122, stat_123, stat_124, stat_125, stat_126, stat_127, stat_128, stat_129, 
+	stat_120, stat_121, stat_122, stat_123, stat_124, stat_125, stat_126, stat_127, stat_128, stat_129,
 	stat_130, stat_131, stat_132, stat_133, stat_134, stat_135, stat_136, stat_137, stat_138, stat_139,
 	stat_140, stat_141, stat_142, stat_143, stat_144, stat_145, stat_146, stat_147, stat_148, stat_149,
 	stat_150, stat_151, stat_152, stat_153, stat_154, stat_155, stat_156, stat_157, stat_158, stat_159,
@@ -446,7 +454,7 @@ char *get_status_message(stat_t status)
 	return ((char *)GET_TEXT_ITEM(stat_msg, status));
 }
 /*
-#else 
+#else
 char *get_status_message(stat_t status)
 {
 	return ((char *)NULL);
@@ -458,7 +466,7 @@ char *get_status_message(stat_t status)
  * _unit_tests() - uncomment __UNITS... line in .h files to enable unit tests
  */
 
-static void _unit_tests(void) 
+static void _unit_tests(void)
 {
 #ifdef __UNIT_TESTS
 	XIO_UNITS;				// conditional unit tests for xio sub-system
