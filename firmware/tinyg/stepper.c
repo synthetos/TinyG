@@ -636,6 +636,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		st_pre.mot[i].substep_increment = round(fabs(travel_steps[i] * DDA_SUBSTEPS));
 	}
 	st_pre.move_type = MOVE_TYPE_ALINE;
+	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 	return (STAT_OK);
 }
 
@@ -646,16 +647,19 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 void st_prep_null()
 {
 	st_pre.move_type = MOVE_TYPE_NULL;
+//	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
+	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// signal that prep buffer is empty
 }
 
 /*
- * st_prep_command() - Stafge command to execution
+ * st_prep_command() - Stage command to execution
  */
 
 void st_prep_command(void *bf)
 {
 	st_pre.move_type = MOVE_TYPE_COMMAND;
 	st_pre.bf = (mpBuf_t *)bf;
+	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
 
 /*
@@ -667,6 +671,7 @@ void st_prep_dwell(float microseconds)
 	st_pre.move_type = MOVE_TYPE_DWELL;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
+	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
 
 /*
