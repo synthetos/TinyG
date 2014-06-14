@@ -337,8 +337,6 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf);
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 
 // plan_exec.c functions
-void mp_init_runtime(void);
-void mp_reset_step_counts(void);	// ++++ Remove?
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
 

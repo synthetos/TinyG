@@ -58,8 +58,10 @@ stat_t mp_exec_move()
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_run_buffer()) == NULL) return (STAT_NOOP);	// NULL means nothing's running
-
+	if ((bf = mp_get_run_buffer()) == NULL) {
+		st_prep_null();
+		return (STAT_NOOP);	// NULL means nothing's running
+	}
 	// Manage cycle and motion state transitions
 	// Cycle auto-start for lines only
 	if (bf->move_type == MOVE_TYPE_ALINE) {
@@ -145,23 +147,6 @@ stat_t mp_exec_move()
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
  */
-
-void mp_init_runtime()
-{
-	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-	planner_init_assertions();
-}
-
-void mp_reset_step_counts()
-{
-	for (uint8_t i=0; i < MOTORS; i++) {
-		mr.target_steps[i] = 0;
-		mr.position_steps[i] = 0;
-		mr.commanded_steps[i] = 0;
-		mr.following_error[i] = 0;	
-		st_pre.mot[i].corrected_steps = 0;
-	}
-}
 
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
