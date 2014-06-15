@@ -20,12 +20,13 @@
 /* See github.com/Synthetos/tinyg for code and docs on the wiki
  */
 
-#include "tinyg.h"				// #1 There are some dependencies
-#include "config.h"				// #2
+#include "tinyg.h"					// #1 There are some dependencies
+#include "config.h"					// #2
 #include "hardware.h"
+#include "persistence.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "json_parser.h"		// required for unit tests only
+#include "json_parser.h"			// required for unit tests only
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
@@ -39,7 +40,6 @@
 #ifdef __AVR
 #include <avr/interrupt.h>
 #include "xmega/xmega_interrupts.h"
-//#include "xmega/xmega_eeprom.h"	// uncomment for unit tests
 #endif // __AVR
 
 #ifdef __ARM
@@ -63,7 +63,36 @@ void __libc_init_array(void);
 static void _application_init(void);
 static void _unit_tests(void);
 
-void init( void )
+/******************** Application Code ************************/
+
+#ifdef __ARM
+const Motate::USBSettings_t Motate::USBSettings = {
+	/*gVendorID         = */ 0x1d50,
+	/*gProductID        = */ 0x606d,
+	/*gProductVersion   = */ TINYG_FIRMWARE_VERSION,
+	/*gAttributes       = */ kUSBConfigAttributeSelfPowered,
+	/*gPowerConsumption = */ 500
+};
+	/*gProductVersion   = */ //0.1,
+
+Motate::USBDevice< Motate::USBCDC > usb;
+//Motate::USBDevice< Motate::USBCDC, Motate::USBCDC > usb;
+
+typeof usb._mixin_0_type::Serial &SerialUSB = usb._mixin_0_type::Serial;
+//typeof usb._mixin_1_type::Serial &SerialUSB1 = usb._mixin_1_type::Serial;
+
+MOTATE_SET_USB_VENDOR_STRING( {'S' ,'y', 'n', 't', 'h', 'e', 't', 'o', 's'} )
+MOTATE_SET_USB_PRODUCT_STRING( {'T', 'i', 'n', 'y', 'G', ' ', 'v', '2'} )
+MOTATE_SET_USB_SERIAL_NUMBER_STRING( {'0','0','1'} )
+
+Motate::SPI<kSocket4_SPISlaveSelectPinNumber> spi;
+#endif
+
+/*
+ * _system_init()
+ */
+
+void _system_init(void)
 {
 #ifdef __ARM
 	SystemInit();
@@ -73,30 +102,15 @@ void init( void )
 
 	// Initialize C library
 	__libc_init_array();
+
+	usb.attach();					// USB setup
+	delay(1000);
 #endif
 }
 
-int main(void)
-{
-	// system initialization
-//	init();
-//	delay(1);
-//	usb.attach();					// USB setup
-//	delay(1000);
-
-	// TinyG application setup
-#ifndef __UNIT_TESTS
-	_application_init();
-#endif
-	_unit_tests();					// run any unit tests that are enabled
-	run_canned_startup();			// run any pre-loaded commands
-
-	// main loop
-	for (;;) {
-		controller_run( );			// single pass through the controller
-	}
-	return 0;
-}
+/*
+ * _application_init()
+ */
 
 static void _application_init(void)
 {
@@ -105,17 +119,19 @@ static void _application_init(void)
 
 	cli();
 
-	// hardware and low-level drivers
+	// do these first
 	hardware_init();				// system hardware setup 			- must be first
+	persistence_init();				// set up EEPROM or other NVM		- must be second
 	rtc_init();						// real time counter
-	xio_init();						// xmega io subsystem
+	xio_init();						// eXtended IO subsystem
+
+	// do these next
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
 	encoder_init();					// virtual encoders
 	switch_init();					// switches
 //	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
-	// application sub-systems
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
 	config_init();					// config records from eeprom 		- must be next app init
 	network_init();					// reset std devices if required	- must follow config_init()
@@ -130,6 +146,28 @@ static void _application_init(void)
 	sei();							// enable global interrupts
 	rpt_print_system_ready_message();// (LAST) announce system is ready
 }
+
+/*
+ * main()
+ */
+
+int main(void)
+{
+	// system initialization
+	_system_init();
+
+	// TinyG application setup
+	_application_init();
+	_unit_tests();					// run any unit tests that are enabled
+	run_canned_startup();			// run any pre-loaded commands
+
+	// main loop
+	for (;;) {
+		controller_run( );			// single pass through the controller
+	}
+	return 0;
+}
+
 
 /**** Status Messages ***************************************************************
  * get_status_message() - return the status message

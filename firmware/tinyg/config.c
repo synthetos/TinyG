@@ -1,6 +1,6 @@
 /*
  * config.c - application independent configuration handling
- * This file is part of the TinyG2 project
+ * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
@@ -35,12 +35,12 @@
 #include "canonical_machine.h"
 #include "json_parser.h"
 #include "text_parser.h"
-//#include "persistence.h"
+#include "persistence.h"
 #include "hardware.h"
 #include "help.h"
 #include "util.h"
 #include "xio.h"
-#include "xmega/xmega_eeprom.h"
+//#include "xmega/xmega_eeprom.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -89,7 +89,7 @@ void nv_persist(nvObj_t *nv)
 	return;
 #endif
 	if (nv_index_lt_groups(nv->index) == false) return;
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) nv_write_NVM_value(nv);
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) write_persistent_value(nv);
 }
 
 /************************************************************************************
@@ -120,12 +120,10 @@ void config_init()
 	set_defaults(nv);
 #endif
 #ifdef __AVR
-	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
-	hw.nvm_base_addr = NVM_BASE_ADDR;
-	hw.nvm_profile_base = hw.nvm_base_addr;
+	cm_set_units_mode(MILLIMETERS);				// must do inits in millimeter mode
 	nv->index = 0;								// this will read the first record in NVM
 
-	nv_read_NVM_value(nv);
+	read_persistent_value(nv);
 	if (nv->value != cs.fw_build) {
 		nv->value = true;						// case (1) NVM is not setup or not in revision
 		set_defaults(nv);
@@ -134,7 +132,7 @@ void config_init()
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-				nv_read_NVM_value(nv);
+				read_persistent_value(nv);
 				nv_set(nv);
 			}
 		}
@@ -727,48 +725,6 @@ void nv_dump_nv(nvObj_t *nv)
 			 nv->group,
 			 nv->token,
 			 (char *)nv->stringp);
-}
-
-/************************************************************************************
- ***** EEPROM access functions ******************************************************
- ************************************************************************************
- * nv_read_NVM_value()	 - return value (as float) by index
- * nv_write_NVM_value() - write to NVM by index, but only if the value has changed
- *
- *	It's the responsibility of the caller to make sure the index does not exceed range
- */
-stat_t nv_read_NVM_value(nvObj_t *nv)
-{
-#ifdef __AVR
-	int8_t nvm_byte_array[NVM_VALUE_LEN];
-	uint16_t nvm_address = hw.nvm_profile_base + (nv->index * NVM_VALUE_LEN);
-	(void)EEPROM_ReadBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	memcpy(&nv->value, &nvm_byte_array, NVM_VALUE_LEN);
-#endif // __AVR
-#ifdef __ARM
-	//+++++ No ARM persistence yet
-#endif // __ARM
-	return (STAT_OK);
-}
-
-stat_t nv_write_NVM_value(nvObj_t *nv)
-{
-#ifdef __AVR
-	if (cm.cycle_state != CYCLE_OFF) return (STAT_FILE_NOT_OPEN);	// can't write when machine is moving
-	float tmp = nv->value;
-	ritorno(nv_read_NVM_value(nv));
-	if (nv->value != tmp) {		// catches the isnan() case as well
-		nv->value = tmp;
-		int8_t nvm_byte_array[NVM_VALUE_LEN];
-		memcpy(&nvm_byte_array, &tmp, NVM_VALUE_LEN);
-		uint16_t nvm_address = hw.nvm_profile_base + (nv->index * NVM_VALUE_LEN);
-		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
-	}
-#endif // __AVR
-#ifdef __ARM
-	//+++++ No ARM persistence yet
-#endif // __ARM
-	return (STAT_OK);
 }
 
 /****************************************************************************

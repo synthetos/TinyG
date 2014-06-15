@@ -56,6 +56,7 @@ C_SRCS +=  \
 ../kinematics.c \
 ../main.c \
 ../network.c \
+../persistence.c \
 ../planner.c \
 ../plan_arc.c \
 ../plan_exec.c \
@@ -105,6 +106,7 @@ json_parser.o \
 kinematics.o \
 main.o \
 network.o \
+persistence.o \
 planner.o \
 plan_arc.o \
 plan_exec.o \
@@ -147,6 +149,7 @@ json_parser.o \
 kinematics.o \
 main.o \
 network.o \
+persistence.o \
 planner.o \
 plan_arc.o \
 plan_exec.o \
@@ -189,6 +192,7 @@ json_parser.d \
 kinematics.d \
 main.d \
 network.d \
+persistence.d \
 planner.d \
 plan_arc.d \
 plan_exec.d \
@@ -231,6 +235,7 @@ json_parser.d \
 kinematics.d \
 main.d \
 network.d \
+persistence.d \
 planner.d \
 plan_arc.d \
 plan_exec.d \
@@ -267,6 +272,8 @@ OUTPUT_FILE_DEP:= ./makedep.mk
 LIB_DEP+= 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

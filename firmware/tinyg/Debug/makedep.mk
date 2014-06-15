@@ -34,6 +34,8 @@ main.c
 
 network.c
 
+persistence.c
+
 planner.c
 
 plan_arc.c

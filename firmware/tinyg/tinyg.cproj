@@ -238,6 +238,12 @@
     <Compile Include="network.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="persistence.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="persistence.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="planner.c">
       <SubType>compile</SubType>
     </Compile>
