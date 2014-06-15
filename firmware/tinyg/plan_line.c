@@ -118,6 +118,10 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
 
+	if (gm_in->linenum == 162) {
+		printf("Hit 162 in aline\n");
+	};
+
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {

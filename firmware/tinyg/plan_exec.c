@@ -160,6 +160,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 		// initialization to process the new incoming bf buffer (Gcode block)
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
+		if (mr.gm.linenum == 162) {
+			printf("HERE\n");
+		};
 		bf->replannable = false;
 														// too short lines have already been removed
 		if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here
