@@ -531,6 +531,10 @@ static void _load_move()
 	// handle synchronous commands
 	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
+
+	// null 
+	} else {
+		printf("prep_null encountered\n");
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
