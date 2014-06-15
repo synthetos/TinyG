@@ -363,7 +363,9 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 
 static void _request_load_move()
 {
-	if (st_runtime_isbusy()) return;					// don't request a load if the runtime is busy
+	if (st_runtime_isbusy()) {
+		return;											// don't request a load if the runtime is busy
+	}
 	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
 	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;				// trigger a HI interrupt
 }
@@ -377,7 +379,9 @@ static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
-	if (st_runtime_isbusy()) return;							// exit if the runtime is busy
+	if (st_runtime_isbusy()) {
+		return;											// exit if the runtime is busy
+	}
 
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
@@ -562,10 +566,11 @@ static void _load_move()
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
-	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_EXEC) { return (cm_hard_alarm(STAT_INTERNAL_ERROR));
-		} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
-		} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
-		} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE);
+	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_EXEC) { 
+		return (cm_hard_alarm(STAT_INTERNAL_ERROR));
+	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
+	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
+	} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE);
 	}
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
