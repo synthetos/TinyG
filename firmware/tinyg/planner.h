@@ -156,7 +156,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec_t cm_func;				// callback to canonical machine execution function
 
-	float naiive_move_time;			// ++++test
+	float naiive_move_time;
 
 	uint8_t buffer_state;			// used to manage queueing/dequeueing
 	uint8_t move_type;				// used to dispatch to run routine

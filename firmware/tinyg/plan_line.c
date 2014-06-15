@@ -118,9 +118,9 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
 
-	if (gm_in->linenum == 162) {
-		printf("Hit 162 in aline\n");
-	};
+//	if (gm_in->linenum == 162) {
+//		printf("Line 162 reached in mp_aline()\n");
+//	};
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
@@ -380,16 +380,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) || 
 		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
 			bp->replannable = false;
-		   }
-		   		
-		// test for optimally planned trapezoids - only need to check various exit conditions
-//		if ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
-//			   (fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) )  ||
-//			 ( (bp->pv->replannable == false) &&
-//			   (fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
-//			bp->replannable = false;
-//		}
-
+		   }		   		
 	}
 	// finish up the last block move
 	bp->entry_velocity = bp->pv->exit_velocity;

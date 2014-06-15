@@ -56,10 +56,10 @@ static float _get_intersection_distance(const float Vi, const float Vf, const fl
  *	(Note: sections, not moves) so we can compute entry and exits for adjacent sections.
  *
  *	Inputs used are:
- *	  bf->length			- actual block length (must remain accurate)
- *	  bf->entry_velocity	- requested Ve
- *	  bf->cruise_velocity	- requested Vt
- *	  bf->exit_velocity		- requested Vx
+ *	  bf->length			- actual block length	(length is never changed)
+ *	  bf->entry_velocity	- requested Ve			(entry velocity is never changed)
+ *	  bf->cruise_velocity	- requested Vt			(is often changed)
+ *	  bf->exit_velocity		- requested Vx			(may be changed for degenerate cases)
  *	  bf->cruise_vmax		- used in some comparisons
  *	  bf->delta_vmax		- used to degrade velocity of pathologically short blocks
  *
@@ -147,25 +147,23 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// Accept the entry velocity, limit the cruise, and go for the best exit velocity
 	// you can get given the delta_vmax (maximum velocity slew) supportable.
 
-//	float naiive_move_time = bf->length / bf->cruise_velocity;
 //	bf->naiive_move_time = bf->length / bf->cruise_velocity;
-//	bf->naiive_move_time = bf->length / bf->entry_velocity;
-	bf->naiive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity);
+	bf->naiive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity); // average
 
-	if (bf->naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {	// MIN_SEGMENT_TIME_PLUS_MARGIN > F case
+	if (bf->naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
 		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
 		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-		printf("F'%1.0f ", (double)(bf->naiive_move_time * 60000000));
+//		printf("F'%1.0f ", (double)(bf->naiive_move_time * 60000000));
 		return;
 	}
 
-	// B" case: Block is short - fits into a single body segment
+	// B" case: Block is short, but fits into a single body segment
 
-	if (bf->naiive_move_time <= NOM_SEGMENT_TIME) {		// NOM_SEGMENT_TIME > B" case > MIN_SEGMENT_TIME_PLUS_MARGIN
+	if (bf->naiive_move_time <= NOM_SEGMENT_TIME) {
 		bf->entry_velocity = bf->pv->exit_velocity;
 		if (fp_NOT_ZERO(bf->entry_velocity)) {
 			bf->cruise_velocity = bf->entry_velocity;
@@ -174,46 +172,15 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->delta_vmax / 2;
 			bf->exit_velocity = bf->delta_vmax;
 		}
-/*
-		bf->entry_velocity = bf->pv->exit_velocity;
-		if (fp_ZERO(bf->entry_velocity)) {
-			bf->cruise_velocity = bf->delta_vmax / 2;
-			bf->exit_velocity = bf->delta_vmax;
-			} else {
-			if (bf->pv->entry_velocity < bf->pv->exit_velocity) {					// it's accelerating
-				bf->cruise_velocity = bf->entry_velocity + bf->delta_vmax / 2;
-				bf->exit_velocity = bf->entry_velocity + bf->delta_vmax;
-			} else if (bf->pv->entry_velocity > bf->pv->exit_velocity) {			// it's decelerating
-				bf->cruise_velocity = max(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax / 2));
-				bf->exit_velocity = max(0, (bf->entry_velocity - bf->delta_vmax));
-			} else {																// it's cruising
-				bf->cruise_velocity = bf->entry_velocity;
-				bf->exit_velocity = bf->entry_velocity;
-			}
-		}
-*/
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-		printf("B\"%1.0f ", (double)(bf->naiive_move_time * 60000000));
-//		printf("B\"%1.0f e:%1.1f c:%1.1f x:%1.1f\n", (double)(naiive_move_time * 60000000), 
+//		printf("B\"%1.0f ", (double)(bf->naiive_move_time * 60000000));
+//		printf("B\"%1.0f e:%1.1f c:%1.1f x:%1.1f\n", (double)(bf->naiive_move_time * 60000000),
 //			(double)bf->entry_velocity, (double)bf->cruise_velocity, (double)bf->exit_velocity);
 		return;
 	}
-/*
-
-	if (naiive_move_time <= NOM_SEGMENT_TIME) {					// NOM_SEGMENT_TIME > B" case > MIN_SEGMENT_TIME_PLUS_MARGIN
-		bf->cruise_velocity = bf->length / naiive_move_time;
-		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
-		bf->body_length = bf->length;
-		bf->head_length = 0;
-		bf->tail_length = 0;
-		// We are violating the jerk value but since it's a single segment move we don't use it.
-		printf("B\"%1.0f ", (double)(naiive_move_time * 60000000));
-		return;
-	}
-*/
 
 	// B case:  Velocities all match (or close enough)
 	//			This occurs frequently in normal gcode files with lots of short lines
@@ -223,7 +190,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
-		printf("B ");
+//		printf("B ");
 		return;
 	}
 
@@ -242,7 +209,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->tail_length = bf->length;
 			bf->head_length = 0;
-			printf("T\" ");
+//			printf("T\" ");
 			return;
 		}
 
@@ -253,7 +220,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->exit_velocity;
 			bf->head_length = bf->length;
 			bf->tail_length = 0;
-			printf("H\" ");
+//			printf("H\" ");
 			return;
 		}
 	}
@@ -284,7 +251,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
-			printf("HT ");
+//			printf("HT ");
 			return;
 		}
 
@@ -319,7 +286,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 		}
-		printf("HT' ");
+//		printf("HT' ");
 		return;
 	}
 
@@ -347,7 +314,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
-	printf("R ");
+//	printf("R ");
 }
 
 /*	
