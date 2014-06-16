@@ -44,8 +44,7 @@ static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
-static void _init_forward_diffs(float t0, float t2);
-
+static void _init_forward_diffs(float Vi, float Vt);
 
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
@@ -218,11 +217,11 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
-	//	  status	 bf->move_state	 Description
-	//    ---------	 --------------	 ----------------------------------------
-	//	  STAT_EAGAIN	 <don't care>	 mr buffer has more segments to run
-	//	  STAT_OK		 MOVE_STATE_RUN	 mr and bf buffers are done
-	//	  STAT_OK		 MOVE_STATE_NEW	 mr done; bf must be run again (it's been reused)
+	//	  status		bf->move_state		Description
+	//    -----------	--------------		----------------------------------------
+	//	  STAT_EAGAIN	<don't care>		mr buffer has more segments to run
+	//	  STAT_OK		MOVE_RUN			mr and bf buffers are done
+	//	  STAT_OK		MOVE_NEW			mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) { 
 		sr_request_status_report(SR_TIMED_REQUEST);		// continue reporting mr buffer
@@ -238,43 +237,149 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 }
 
 /* Forward difference math explained:
- * 	We're using two quadratic bezier curves end-to-end, forming the concave and convex 
- *	section of the s-curve. For each half we have three points:
  *
- *    T[0] is the start point, or the entry or middle of the "s". This will be one of:
- *			- entry_velocity (acceleration concave),
- *			- cruise_velocity (deceleration concave), or
- *			- midpoint_velocity (convex)
- *	  T[1] is the "control point" set to T[0] for concave sections, and T[2] for convex
- *	  T[2] is the end point of the quadratic, which will be the midpoint or endpoint of the s.
+ * We are using a quintic (fifth-degree) Bézier polynomial for the velocity curve. This gives us
+ * a "linear pop" (pop being the fifth derivative of position: velocity - 1st, jerk - 2nd, snap - 3rd,
+ * crackle - 4th, pop - 5th) velocity curve.
  *
- *  TODO MATH EXPLANATION
- *  
- *    A = T[0] - 2*T[1] + T[2]
- *    B = 2 * (T[1] - T[0])
- *    C = T[0]
- *    h = (1/mr.segments)
+ * The bezier curve takes the form:
  *
- *  forward_diff_1 = Ah^2+Bh = (T[0] - 2*T[1] + T[2])h*h + (2 * (T[1] - T[0]))h
- *  forward_diff_2 = 2Ah^2 = 2*(T[0] - 2*T[1] + T[2])h*h
+ *  V(t) = P_0 * B_0(t) + P_1 * B_1(t) + P_2 * B_2(t) + P_3 * B_3(t) + P_4 * B_4(t) + P_5 * B_5(t)
+ *
+ * Where 0 <= t <= 1, and V(t) is the velocity. P_0 through P_5 are the control points, and B_0(t)
+ * through B_5(t) are the Bernstein basis as follows:
+ *
+ *  B_0(t) =   (1-t)^5        =   -t^5 +  5t^4 - 10t^3 + 10t^2 -  5t   +   1
+ *  B_1(t) =  5(1-t)^4 * t    =   5t^5 - 20t^4 + 30t^3 - 20t^2 +  5t
+ *  B_2(t) = 10(1-t)^3 * t^2  = -10t^5 + 30t^4 - 30t^3 + 10t^2
+ *  B_3(t) = 10(1-t)^2 * t^3  =  10t^5 - 20t^4 + 10t^3
+ *  B_4(t) =  5(1-t)   * t^4  =  -5t^5 +  5t^4
+ *  B_5(t) =             t^5  =    t^5
+ *                                ^       ^       ^       ^       ^       ^
+ *                                |       |       |       |       |       |
+ *                                A       B       C       D       E       F
+ *
+ *
+ *  We will use forward-differencing to calculate each position through the curve. This require a
+ *  formula of the form:
+ *
+ *  V_f(t) = A*t^5 + B*t^4 + C*t^3 + D*t^2 + E*t + F
+ *  Looking at the above B_0(t) through B_5(t) expanded forms, if we take the coeffiecients of t^5
+ *  through t of the Bézier form of V(t), we can determine that:
+ *
+ *  A =    -P_0 +  5*P_1 - 10*P_2 + 10*P_3 -  5*P_4 +  P_5
+ *  B =   5*P_0 - 20*P_1 + 30*P_2 - 20*P_3 +  5*P_4
+ *  C = -10*P_0 + 30*P_1 - 30*P_2 + 10*P_3
+ *  D =  10*P_0 - 20*P_1 + 10*P_2
+ *  E = - 5*P_0 +  5*P_1
+ *  F =     P_0
+ *
+ *  Now, since we will (currently) *always* want the initial acceleration and jerk values to be 0,
+ *  We set P_i = P_0 = P_1 = P_2 (initial velocity), and P_t = P_3 = P_4 = P_5 (target velocity),
+ *  which, after simplification, resolves to:
+ *
+ *  A = - 6*P_i +  6*P_t
+ *  B =  15*P_i - 15*P_t
+ *  C = -10*P_i + 10*P_t
+ *  D = 0
+ *  E = 0
+ *  F = P_i
+ *
+ *  Given an interval count of I to get from P_i to P_t, we get the parametric "step" size of h = 1/I.
+ *
+ *  We need to calculate the initial value of forward differences (F_0 - F_5) such that the inital
+ *  velocity V = P_i, then we iterate over the following I times:
+ *
+ *  V   += F_5
+ *  F_5 += F_4
+ *  F_4 += F_3
+ *  F_3 += F_2
+ *  F_2 += F_1
+ *
+ *  See http://www.drdobbs.com/forward-difference-calculation-of-bezier/184403417 for an example of how to
+ *  calculate F_0 - F_5 for a cubic bezier curve. Since this is a quintic bezier curve, we need to extend
+ *  the formulas somewhat. I'll not go into the long-winded step-by-step here, but I will give the resulting
+ *  formulas:
+ *
+ *  a = A, b = B, c = C, d = D, e = E, f = F
+ *  F_5(t+h)-F_5(t) = (5ah)t^4 + (10ah^2 + 4bh)t^3 + (10ah^3 + 6bh^2 + 3ch)t^2 + (5ah^4 + 4bh^3 + 3ch^2 + 2dh)t +
+ *                        ah^5 + bh^4 + ch^3 + dh^2 + eh
+ *
+ *  a = 5ah
+ *  b = 10ah^2 + 4bh
+ *  c = 10ah^3 + 6bh^2 + 3ch
+ *  d = 5ah^4 + 4bh^3 + 3ch^2 + 2dh
+ *  (After substitution, simlification, and rearranging):
+ *  F_4(t+h)-F_4(t) = (20ah^2)t^3 + (60ah^3 + 12bh^2)t^2 + (70ah^4 + 24bh^3 + 6ch^2)t + 30ah^5 + 14bh^4 + 6ch^3 +
+ *                        2dh^2
+ *
+ *  a = (20ah^2)
+ *  b = (60ah^3 + 12bh^2)
+ *  c = (70ah^4 + 24bh^3 + 6ch^2)
+ *  (After substitution, simlification, and rearranging):
+ *  F_3(t+h)-F_3(t) = (60ah^3)t^2 + (180ah^4 + 24bh^3)t + 150ah^5 + 36bh^4 + 6ch^3
+ *
+ *  (You get the picture...)
+ *  F_2(t+h)-F_2(t) = (120ah^4)t + 240ah^5 + 24bh^4
+ *
+ *  F_1(t+h)-F_1(t) = 120ah^5
+ *
+ *  Normally, we could then assign t = 0, use the A-F values from above, and get out initial F_* values.
+ *  However, for the sake of "averaging" the velocity of each segment, we actually want to have the inital
+ *  V be be at t = h/2 and iterate I-1 times. So, the resulting F_* values are (steps not shown):
+ *
+ *  F_5 = (121Ah^5)/16 + 5Bh^4 + (13Ch^3)/4 + 2Dh^2 + Eh
+ *  F_4 = (165Ah^5)/2 + 29Bh^4 + 9Ch^3 + 2Dh^2
+ *  F_3 = 255Ah^5 + 48Bh^4 + 6Ch^3
+ *  F_2 = 300Ah^5 + 24Bh^4
+ *  F_1 = 120Ah^5
+ *
+ *  Note that with our current control points, D and E are actually 0.
  */
 
-static void _init_forward_diffs(float t0, float t2)		// NB: t1 will always be == t0, so we don't pass it
+static void _init_forward_diffs(float Vi, float Vt)
 {
-	// A = T[0] - 2*T[1] + T[2], if T[0] == T[1], then it becomes - T[0] + T[2]
-	float AH_squared = (t2 - t0) * square(1/mr.segments); // square(1/mr.segments) is H_squared
+	float A =  -6.0*Vi +  6.0*Vt;
+	float B =  15.0*Vi - 15.0*Vt;
+	float C = -10.0*Vi + 10.0*Vt;
+	// D = 0
+	// E = 0
+	// F = Vi
 
-	// Ah^2 + Bh, and B=2 * (T[1] - T[0]), if T[0] == T[1], then it becomes simply Ah^2
-	mr.forward_diff_1 = AH_squared;
-	mr.forward_diff_2 = AH_squared * 2;
-	mr.segment_velocity = t0;
+	float h   = 1/(mr.segments);
+//	float h_3 = h * h * h;
+//	float h_4 = h_3 * h;
+//	float h_5 = h_4 * h;
+
+	float Ah_5 = A * h * h * h * h * h;
+	float Bh_4 = B * h * h * h * h;
+	float Ch_3 = C * h * h * h;
+
+	mr.forward_diff_5 = (121.0/16.0)*Ah_5 + 5.0*Bh_4 + (13.0/4.0)*Ch_3;
+	mr.forward_diff_5_c = 0;
+	mr.forward_diff_4 = (165.0/2.0)*Ah_5 + 29.0*Bh_4 + 9.0*Ch_3;
+	mr.forward_diff_4_c = 0;
+	mr.forward_diff_3 = 255.0*Ah_5 + 48.0*Bh_4 + 6.0*Ch_3;
+	mr.forward_diff_3_c = 0;
+	mr.forward_diff_2 = 300.0*Ah_5 + 24.0*Bh_4;
+	mr.forward_diff_2_c = 0;
+	mr.forward_diff_1 = 120.0*Ah_5;
+	mr.forward_diff_1_c = 0;
+
+	// Calculate the initial velocity by calculating V(h/2)
+	float half_h = h/2.0;
+	float half_Ch_3 = C * half_h * half_h * half_h;
+	float half_Bh_4 = B * half_h * half_h * half_h * half_h;
+	float half_Ah_5 = C * half_h * half_h * half_h * half_h * half_h;
+	mr.segment_velocity = half_Ah_5 + half_Bh_4 + half_Ch_3 + Vi;
 }
 
-/*
+/*********************************************************************************************
  * _exec_aline_head()
  */
 static stat_t _exec_aline_head()
 {
+	// INITIALIZATION OF HEAD REGION
 	if (mr.section_state == SECTION_NEW) {					// initialize the move singleton (mr)
 		if (fp_ZERO(mr.head_length)) { 
 			mr.section = SECTION_BODY;
@@ -282,24 +387,33 @@ static stat_t _exec_aline_head()
 		}
 		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
 		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
+
+#ifdef __JERK_EXEC
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
-
-		// 4 lines needed by __JERK_EXEC
+//		_init_forward_diffs(mr.entry_velocity, mr.cruise_velocity);
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
 		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);	// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2;			// elapsed time starting point (offset)
 
+#else	// lines needed by fwd-diff exec
+		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC); // # of segments for the section
+		mr.segment_time = mr.gm.move_time / mr.segments;
+
 		// line needed by fwd-diff exec
-		_init_forward_diffs(mr.entry_velocity, mr.midpoint_velocity);
+		_init_forward_diffs(mr.entry_velocity, mr.cruise_velocity);
+		// Note: We'll set to SECTION_1st_HALF for one segment.
+#endif	// __JERK_EXEC
 
 		mr.segment_count = (uint32_t)mr.segments;
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_MINIMUM_TIME_MOVE);} // exit without advancing position
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_1st_HALF;
 	}
-	if (mr.section_state == SECTION_1st_HALF) {				// concave part of accel curve (period 1)
+	
+	// FIRST HALF (concave part of accel curve)
+	if (mr.section_state == SECTION_1st_HALF) {
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
@@ -308,38 +422,72 @@ static stat_t _exec_aline_head()
 			mr.elapsed_accel_time = mr.segment_accel_time / 2;	// start time from midpoint of segment
 		}
 #else
-		mr.segment_velocity += mr.forward_diff_1;
 		if (_exec_aline_segment() == STAT_OK) { 			// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = SECTION_2nd_HALF;
-			// Here's a trick: The second half of the S starts at the end of the first,
-			//  And the only thing that changes is the sign of mr.forward_diff_2
-			mr.forward_diff_2 = -mr.forward_diff_2;
+			// For forward differencing, we should have one segment in SECTION_1st_HALF.
+			// However, if it returns from that as STAT_OK, then there was only one segment in this section.
+			mr.section = SECTION_BODY;
+			mr.section_state = SECTION_NEW;
 		} else {
-			mr.forward_diff_1 += mr.forward_diff_2;
+			mr.section_state = SECTION_2nd_HALF;
 		}
 #endif
 		return(STAT_EAGAIN);
 	}
-	if (mr.section_state == SECTION_2nd_HALF) {					// convex part of accel curve (period 2)
+	
+	// SECOND HAF (convex part of accel curve)
+	if (mr.section_state == SECTION_2nd_HALF) {
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.midpoint_velocity +
 			(mr.elapsed_accel_time * mr.midpoint_acceleration) -
 			(square(mr.elapsed_accel_time) * mr.jerk_div2);
-#else
-		mr.segment_velocity += mr.forward_diff_1;
-		mr.forward_diff_1 += mr.forward_diff_2;
-#endif
 		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
 			mr.section = SECTION_BODY;
 			mr.section_state = SECTION_NEW;
 		}
-	}
+#else
+		// Using the Kahan summation algorithm to mitigate floating-point errors
+		//mr.segment_velocity += mr.forward_diff_5;
+		float y = mr.forward_diff_5 - mr.forward_diff_5_c;
+		float v = mr.segment_velocity + y;
+		mr.forward_diff_5_c = (v - mr.segment_velocity) - y;
+		mr.segment_velocity = v;
+
+		if (_exec_aline_segment() == STAT_OK) { 			// set up for body
+			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length))) return(STAT_OK); // ends the move
+			mr.section = SECTION_BODY;
+			mr.section_state = SECTION_NEW;
+		} else {
+			//mr.forward_diff_5 += mr.forward_diff_4;
+			y = mr.forward_diff_4 - mr.forward_diff_4_c;
+			v = mr.forward_diff_5 + y;
+			mr.forward_diff_4_c = (v - mr.forward_diff_5) - y;
+			mr.forward_diff_5 = v;
+
+			//mr.forward_diff_4 += mr.forward_diff_3;
+			y = mr.forward_diff_3 - mr.forward_diff_3_c;
+			v = mr.forward_diff_4 + y;
+			mr.forward_diff_3_c = (v - mr.forward_diff_4) - y;
+			mr.forward_diff_4 = v;
+
+			//mr.forward_diff_3 += mr.forward_diff_2;
+			y = mr.forward_diff_2 - mr.forward_diff_2_c;
+			v = mr.forward_diff_3 + y;
+			mr.forward_diff_2_c = (v - mr.forward_diff_3) - y;
+			mr.forward_diff_3 = v;
+
+			//mr.forward_diff_2 += mr.forward_diff_1;
+			y = mr.forward_diff_1 - mr.forward_diff_1_c;
+			v = mr.forward_diff_2 + y;
+			mr.forward_diff_1_c = (v - mr.forward_diff_2) - y;
+			mr.forward_diff_2 = v;
+		}
+#endif	// __JERK_EXEC
+	}	
 	return(STAT_EAGAIN);
 }
 
-/*
+/*********************************************************************************************
  * _exec_aline_body()
  *
  *	The body is broken into little segments even though it is a straight line so that 
@@ -371,33 +519,39 @@ static stat_t _exec_aline_body()
 	return(STAT_EAGAIN);
 }
 
-/*
+/*********************************************************************************************
  * _exec_aline_tail()
  */
 
 static stat_t _exec_aline_tail()
 {
+	// INITIALIZATION
 	if (mr.section_state == SECTION_NEW) {
 		if (fp_ZERO(mr.tail_length)) { return(STAT_OK);}	// end the move
+	
 		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
 		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
+
+#ifdef __JERK_EXEC
 		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC));// # of segments in *each half*
 		mr.segment_time = mr.gm.move_time / (2 * mr.segments);// time to advance for each segment
-
-		// 4 lines needed by jerk-based exec
+//		_init_forward_diffs(mr.entry_velocity, mr.cruise_velocity);
 		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
 		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.exit_velocity) / mr.accel_time;
 		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);// time to advance for each segment
 		mr.elapsed_accel_time = mr.segment_accel_time / 2; //compute time from midpoint of segment
-
-		// line needed by fwd-diff exec
-		_init_forward_diffs(mr.cruise_velocity, mr.midpoint_velocity);
-
+#else
+		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC);// # of segments for the section
+		mr.segment_time = mr.gm.move_time / mr.segments;// time to advance for each segment
+		_init_forward_diffs(mr.cruise_velocity, mr.exit_velocity);
+#endif
 		mr.segment_count = (uint32_t)mr.segments;
 		if (mr.segment_time < MIN_SEGMENT_TIME) { return(STAT_MINIMUM_TIME_MOVE);} // exit without advancing position
 		mr.section = SECTION_TAIL;
 		mr.section_state = SECTION_1st_HALF;
 	}
+
+	// FIRST HALF
 	if (mr.section_state == SECTION_1st_HALF) {				// convex part (period 4)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
@@ -407,34 +561,67 @@ static stat_t _exec_aline_tail()
 			mr.elapsed_accel_time = mr.segment_accel_time / 2;// start time from midpoint of segment
 		}
 #else
-		mr.segment_velocity += mr.forward_diff_1;
-		if (_exec_aline_segment() == STAT_OK) {				// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
+		if (_exec_aline_segment() == STAT_OK) {
+			// For forward differencing we should have one segment in SECTION_1st_HALF.
+			// However, if it returns from that as STAT_OK, then there was only one segment in this section.
+			// Show that we did complete section 2 ... effectively.
 			mr.section_state = SECTION_2nd_HALF;
-			// Here's a trick: The second half of the S starts at the end of the first,
-			//  And the only thing that changes is the sign of mr.forward_diff_2
-			mr.forward_diff_2 = -mr.forward_diff_2;
-			} else {
-			mr.forward_diff_1 += mr.forward_diff_2;
+			return STAT_OK;
+		} else {
+			mr.section_state = SECTION_2nd_HALF;
 		}
 #endif
 		return(STAT_EAGAIN);
 	}
+	
+	// SECOND HALF
 	if (mr.section_state == SECTION_2nd_HALF) {				// concave part (period 5)
 #ifdef __JERK_EXEC
 		mr.segment_velocity = mr.midpoint_velocity -
 		(mr.elapsed_accel_time * mr.midpoint_acceleration) +
 		(square(mr.elapsed_accel_time) * mr.jerk_div2);
-#else
-		mr.segment_velocity += mr.forward_diff_1;
-		mr.forward_diff_1 += mr.forward_diff_2;
-#endif
 		return (_exec_aline_segment()); 					// ends the move or continues EAGAIN
+#else
+		// Using the Kahan summation algorithm to mitigate floating-point errors
+		//mr.segment_velocity += mr.forward_diff_5;
+		float y = mr.forward_diff_5 - mr.forward_diff_5_c;
+		float v = mr.segment_velocity + y;
+		mr.forward_diff_5_c = (v - mr.segment_velocity) - y;
+		mr.segment_velocity = v;
+
+		if (_exec_aline_segment() == STAT_OK) { 			// set up for body
+			return STAT_OK;
+		} else {
+			//mr.forward_diff_5 += mr.forward_diff_4;
+			y = mr.forward_diff_4 - mr.forward_diff_4_c;
+			v = mr.forward_diff_5 + y;
+			mr.forward_diff_4_c = (v - mr.forward_diff_5) - y;
+			mr.forward_diff_5 = v;
+
+			//mr.forward_diff_4 += mr.forward_diff_3;
+			y = mr.forward_diff_3 - mr.forward_diff_3_c;
+			v = mr.forward_diff_4 + y;
+			mr.forward_diff_3_c = (v - mr.forward_diff_4) - y;
+			mr.forward_diff_4 = v;
+
+			//mr.forward_diff_3 += mr.forward_diff_2;
+			y = mr.forward_diff_2 - mr.forward_diff_2_c;
+			v = mr.forward_diff_3 + y;
+			mr.forward_diff_2_c = (v - mr.forward_diff_3) - y;
+			mr.forward_diff_3 = v;
+
+			//mr.forward_diff_2 += mr.forward_diff_1;
+			y = mr.forward_diff_1 - mr.forward_diff_1_c;
+			v = mr.forward_diff_2 + y;
+			mr.forward_diff_1_c = (v - mr.forward_diff_2) - y;
+			mr.forward_diff_2 = v;
+		}
+#endif
 	}
 	return(STAT_EAGAIN);									// should never get here
 }
 
-/*
+/*********************************************************************************************
  * _exec_aline_segment() - segment runner helper
  *
  * NOTES ON STEP ERROR CORRECTION:
@@ -495,7 +682,9 @@ static stat_t _exec_aline_segment()
 
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
+#ifdef __JERK_EXEC
 	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
+#endif
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
