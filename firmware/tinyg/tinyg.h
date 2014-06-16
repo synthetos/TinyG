@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.58	// alignment with 430.21 - re-installed new forward differencing math
+#define TINYG_FIRMWARE_BUILD   		410.59	// re-arranged forward differencing math; Kahan summation experiments
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -56,6 +56,8 @@
 
 #define __STEP_CORRECTION
 //#define __JERK_EXEC							// comment to use forward difference based exec vs jerk computed exec
+//#define __KAHAN							// Use Kahan summation in aline exec functions
+
 #define __TEXT_MODE							// enables text mode support (~10Kb)
 #define __HELP_SCREENS						// enables help screens 	 (~3.5Kb)
 #define __CANNED_TESTS 						// enables $tests 			 (~12Kb)
