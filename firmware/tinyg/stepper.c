@@ -2,8 +2,8 @@
  * stepper.c - stepper motor controls
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
- * Copyright (c) 2013 Robert Giseburt
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -335,17 +335,17 @@ ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 
 void st_request_exec_move()
 {
-	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC) { // bother interrupting
+	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC) {		// bother interrupting
 		TIMER_EXEC.PER = EXEC_TIMER_PERIOD;
-		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;			// trigger a LO interrupt
+		TIMER_EXEC.CTRLA = EXEC_TIMER_ENABLE;					// trigger a LO interrupt
 	}
 }
 
-ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
-	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
+ISR(TIMER_EXEC_ISR_vect) {										// exec move SW interrupt
+	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;						// disable SW interrupt timer
 	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC) {
 		if (mp_exec_move() != STAT_NOOP) {
-			st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
+			st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// flip it back
 			_request_load_move();
 		}
 	}
@@ -364,14 +364,16 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 static void _request_load_move()
 {
 	if (st_runtime_isbusy()) {
-		return;											// don't request a load if the runtime is busy
+		return;													// don't request a load if the runtime is busy
 	}
-	TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
-	TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;				// trigger a HI interrupt
+	if (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) {	// bother interrupting	
+		TIMER_LOAD.PER = LOAD_TIMER_PERIOD;
+		TIMER_LOAD.CTRLA = LOAD_TIMER_ENABLE;					// trigger a HI interrupt
+	}
 }
 
-ISR(TIMER_LOAD_ISR_vect) {								// load steppers SW interrupt
-	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;				// disable SW interrupt timer
+ISR(TIMER_LOAD_ISR_vect) {										// load steppers SW interrupt
+	TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;						// disable SW interrupt timer
 	_load_move();
 }
 
@@ -380,16 +382,15 @@ static void _load_move()
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
 	if (st_runtime_isbusy()) {
-		return;											// exit if the runtime is busy
+		return;													// exit if the runtime is busy
 	}
-
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 //		}
+		printf("PREP NOT READY FOR LOADER\n");
 		return;
 	}
-
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 

@@ -31,7 +31,6 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
-//#include "kinematics.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
@@ -173,10 +172,10 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
 
-//	uint8_t mr_flag = false;
-	_plan_block_list(bf, &mr_flag);							// replan block list and commit current block
-	copy_vector(mm.position, bf->gm.target);				// update planning position
-	mp_commit_write_buffer(MOVE_TYPE_ALINE);
+	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
+	_plan_block_list(bf, &mr_flag);				// replan block list
+	copy_vector(mm.position, bf->gm.target);	// set the planner position
+	mp_commit_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }
 
@@ -286,11 +285,11 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 
 /* _plan_block_list() - plans the entire block list
  *
- *	The block list is the circular buffer of planner buffers (bf's). The block 
- *	currently being planned is the "bf" block. The "first block" is the next block 
- *	to execute; queued immediately behind the currently executing block, aka the 
- *	"running" block. In some cases there is no first block because the list is empty 
- *	or there is only one block and it is already running. 
+ *	The block list is the circular buffer of planner buffers (bf's). The block currently
+ *	being planned is the "bf" block. The "first block" is the next block to execute;
+ *	queued immediately behind the currently executing block, aka the "running" block.
+ *	In some cases there is no first block because the list is empty or there is only
+ *	one block and it is already running.
  *
  *	If blocks following the first block are already optimally planned (non replannable)
  *	the first block that is not optimally planned becomes the effective first block.
@@ -302,9 +301,9 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
  *
  *	  bf (function arg)		- end of block list (last block in time)
  *	  bf->replannable		- start of block list set by last FALSE value [Note 1]
- *	  bf->move_type			- typically ALINE. Other move_types should be set to 
+ *	  bf->move_type			- typically MOVE_TYPE_ALINE. Other move_types should be set to
  *							  length=0, entry_vmax=0 and exit_vmax=0 and are treated
- *							  as a momentary hold (plan to zero and from zero).
+ *							  as a momentary stop (plan to zero and from zero).
  *
  *	  bf->length			- provides block length
  *	  bf->entry_vmax		- used during forward planning to set entry velocity
@@ -348,6 +347,9 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
  *		These routines also set all blocks in the list to be replannable so the 
  *		list can be recomputed regardless of exact stops and previous replanning 
  *		optimizations.
+ *
+ *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
+ *		mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
