@@ -549,14 +549,11 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
-void cm_update_model_position(void);
+//void cm_update_model_position(void);
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move();
 void cm_set_model_target(float target[], float flag[]);
 stat_t cm_test_soft_limits(float target[]);
-
-//void cm_set_model_position(stat_t status);
-//void cm_set_model_position_from_runtime(stat_t status);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
 
@@ -599,7 +596,7 @@ stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 
 // Machining Functions (4.3.6)
 stat_t cm_straight_feed(float target[], float flags[]);			// G1
-stat_t cm_arc_feed( float target[], float flags[], 				// G2, G3
+stat_t cm_arc_feed(	float target[], float flags[], 				// G2, G3
 					float i, float j, float k,
 					float radius, uint8_t motion_mode);
 

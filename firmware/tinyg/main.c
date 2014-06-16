@@ -60,7 +60,6 @@ void __libc_init_array(void);
 #endif // __cplusplus
 #endif // __ARM
 
-static void _application_init(void);
 static void _unit_tests(void);
 
 /******************** Application Code ************************/

@@ -2,8 +2,8 @@
  * plan_exec.c - execution function for acceleration managed lines
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2013 Rob Giseburt
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2014 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -67,10 +67,8 @@ stat_t mp_exec_move()
 	if (bf->move_type == MOVE_TYPE_ALINE) {
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
-	if (bf->bf_func != NULL) { 
-		return (bf->bf_func(bf)); 						// run the move callback in the planner buffer
-	}
-	return(cm_hard_alarm(STAT_INTERNAL_ERROR));			// never supposed to get here
+	if (bf->bf_func == NULL) return(cm_hard_alarm(STAT_INTERNAL_ERROR));// never supposed to get here
+	return (bf->bf_func(bf)); 							// run the move callback in the planner buffer
 }
 
 /*************************************************************************/
@@ -170,7 +168,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.section_state = SECTION_OFF;
 			bf->nx->replannable = false;				// prevent overplanning (Note 2)
 			st_prep_null();								// call this to keep the loader happy
-			mp_free_run_buffer();
+			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & end cycle if planner is empty
 			return (STAT_NOOP);
 		}
 		bf->move_state = MOVE_RUN;
@@ -192,10 +190,10 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
 
 		// generate the waypoints for position correction at section ends
-		for (uint8_t i=0; i<AXES; i++) {
-			mr.waypoint[SECTION_HEAD][i] = mr.position[i] + mr.unit[i] * mr.head_length;
-			mr.waypoint[SECTION_BODY][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length);
-			mr.waypoint[SECTION_TAIL][i] = mr.position[i] + mr.unit[i] * (mr.head_length + mr.body_length + mr.tail_length);
+		for (uint8_t axis=0; axis<AXES; axis++) {
+			mr.waypoint[SECTION_HEAD][axis] = mr.position[axis] + mr.unit[axis] * mr.head_length;
+			mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
+			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
 	}
 	// NB: from this point on the contents of the bf buffer do not affect execution
@@ -216,8 +214,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
-
-//		mp_free_run_buffer();							// free bf and send a status report
 		sr_request_status_report(SR_IMMEDIATE_REQUEST);
 	}
 
@@ -235,7 +231,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.section_state = SECTION_OFF;
 		bf->nx->replannable = false;					// prevent overplanning (Note 2)
 		if (bf->move_state == MOVE_RUN) {
-			mp_free_run_buffer();						// free bf if it's actually done
+			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & end cycle if planner is empty
 		}
 	}
 	return (status);

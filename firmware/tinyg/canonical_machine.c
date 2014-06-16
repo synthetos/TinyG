@@ -347,7 +347,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 /* 
- * cm_update_model_position() - set endpoint position; uses internal canonical coordinates only
+ * cm_finalize_move() - perform final operations for a traverse or feed
  * cm_update_model_position_from_runtime() - set endpoint position from final runtime position
  *
  * 	These routines set the point position in the gcode model.
@@ -358,21 +358,16 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  *	execution, and the real tool position is still close to the starting point. 
  */
 
-//void cm_update_model_position() { copy_vector(cm.gmx.position, cm.gm.target); }
-void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
-
-/* 
- * cm_finalize_move() - perform final operations for a traverse or feed
- */
-
 void cm_finalize_move() {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
-	// reset feed rate so next block requires an explicit feed rate setting
+	// if in ivnerse time mode reset feed rate so next block requires an explicit feed rate setting
 	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
 		cm.gm.feed_rate = 0;
 	}
 }
+
+void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
 /* 
  * cm_set_model_target() - set target vector in GM model
@@ -814,7 +809,6 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
 	cm_finalize_move();
-//	cm_update_model_position();
 	return (STAT_OK);
 }
 
@@ -936,7 +930,6 @@ stat_t cm_straight_feed(float target[], float flags[])
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
 	cm_finalize_move();
-//	cm_update_model_position();
 	return (status);
 }
 
@@ -1227,25 +1220,15 @@ stat_t cm_queue_flush()
 //	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
 
 #ifdef __AVR
-	xio_reset_usb_rx_buffers();		// flush serial queues
+	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif
-	mp_flush_planner();				// flush planner queue
+	mp_flush_planner();						// flush planner queue
 
-/* ++++ original position setting code removed - DELETE AFTER TESTING IS SOMPLETED
-// Note: The following uses low-level mp calls for absolute position.
-//		 It could also use cm_get_absolute_position(RUNTIME, axis);
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		mp_set_planner_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
-		cm.gmx.position[axis] = mp_get_runtime_absolute_position(axis);
-		cm.gm.target[axis] = cm.gmx.position[axis];
-	}
-  ++++ replacement position setting code under test */
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 	}
-
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	_exec_program_finalize(value, value);			// finalize now, not later
+	_exec_program_finalize(value, value);	// finalize now, not later
 	return (STAT_OK);
 }
 
@@ -1310,8 +1293,6 @@ static void _exec_program_finalize(float *value, float *flag)
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-
-//	st_cycle_end();									// UNUSED
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
 	nv_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
 }

@@ -2,7 +2,7 @@
  * plan_arc.c - arc planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
@@ -124,7 +124,6 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 //	ritorno(_test_arc_soft_limits());		// test if arc will trip soft limits
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
-//	cm_update_model_position();				// set endpoint position if the arc was successful
 	cm_finalize_move();
 	return (STAT_OK);
 }
@@ -329,8 +328,8 @@ static stat_t _compute_arc_offsets_from_radius()
 	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
 	float y = cm.gm.target[arc.plane_axis_1] - cm.gmx.position[arc.plane_axis_1];
 
-	float disc = 4 * square(arc.radius) - (square(x) + square(y));
-	// If the distance between endpoints is greater than the arc diameter, disc 
+	// *** From Forrest Green - Other Machine Co, 3/27/14
+	// If the distance between endpoints is greater than the arc diameter, disc
 	// will be negative indicating that the arc is offset into the complex plane
 	// beyond the reach of any real CNC. However, numerical errors can flip the
 	// sign of disc as it approaches zero (which happens as the arc angle approaches
@@ -339,8 +338,9 @@ static stat_t _compute_arc_offsets_from_radius()
 	// where the radius is actually too small (they will be treated as half circles),
 	// but ensures that all valid arcs end up reasonably close to their intended
 	// paths regardless of any numerical issues.
+	float disc = 4 * square(arc.radius) - (square(x) + square(y));
 
-	// == -(h * 2 / d)
+	// h_x2_div_d == -(h * 2 / d)
 	float h_x2_div_d = (disc > 0) ? -sqrt(disc) / hypot(x,y) : 0;
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
@@ -490,9 +490,9 @@ static stat_t _test_arc_soft_limits()
 }
 */
 
-//##########################################
-//############## UNIT TESTS ################
-//##########################################
+// *************************************************
+// ***** UNIT TESTS ********************************
+// *************************************************
 
 #ifdef __UNIT_TESTS
 #ifdef __UNIT_TEST_PLANNER

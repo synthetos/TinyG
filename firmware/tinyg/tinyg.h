@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.56	// installing new-style persistence
+#define TINYG_FIRMWARE_BUILD   		410.57	// alignment with 430.21 - updated alphabetically by file through plan_exec.c prior to re-installing new forward differencing math
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

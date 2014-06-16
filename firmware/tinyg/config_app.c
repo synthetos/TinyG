@@ -432,10 +432,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30c",_fi, 3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
 	// this is a 128bit UUID for identifying a previously committed job state
-	{ "jid","jida",_f0,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[0], 0},
-	{ "jid","jidb",_f0,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[1], 0},
-	{ "jid","jidc",_f0,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[2], 0},
-	{ "jid","jidd",_f0,  0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
+	{ "jid","jida",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[0], 0},
+	{ "jid","jidb",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[1], 0},
+	{ "jid","jidc",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[2], 0},
+	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
 
 	// System parameters
 	{ "sys","ja",  _fipn, 0, cm_print_ja,  get_flt,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
@@ -453,6 +453,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","qv",  _fipn, 0, qr_print_qv,  get_ui8,   set_0123,   (float *)&qr.queue_report_verbosity,QUEUE_REPORT_VERBOSITY },
 	{ "sys","sv",  _fipn, 0, sr_print_sv,  get_ui8,   set_012,    (float *)&sr.status_report_verbosity,STATUS_REPORT_VERBOSITY },
 	{ "sys","si",  _fipn, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+//	{ "sys","spi", _fipn, 0, xio_print_spi,get_ui8,   xio_set_spi,(float *)&xio.spi_state,			0 },
 
 	{ "sys","ec",  _fipn, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
 	{ "sys","ee",  _fipn, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,			COM_ENABLE_ECHO },
@@ -609,6 +610,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ****
+	// *** START COUNTING FROM HERE ***
 	{ "","sys",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// system group
 	{ "","p1", _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// PWM 1 group
 
@@ -622,6 +624,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #if (MOTORS >= 6)
 	{ "","6",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 #endif
+
 	{ "","x",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis groups
 	{ "","y",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","z",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
@@ -629,7 +632,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","b",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","c",  _f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 
-//	{ "","ss", _f0, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },
+//	{ "","ss", _f0, 0, tx_print_nul, get_grp, set_nul,(float *)&cs.null,0 },	// switch states
 	{ "","g54",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// coord offset groups
 	{ "","g55",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },
 	{ "","g56",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },

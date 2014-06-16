@@ -731,7 +731,6 @@ void js_unit_tests()
 static void _test_serialize()
 {
 	nvObj_t *nv = nv_array;
-//	printf("\n\nJSON serialization tests\n");
 
 	// null list
 	_reset_array();
