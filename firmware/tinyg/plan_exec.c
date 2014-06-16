@@ -235,7 +235,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		if (bf->move_state == MOVE_RUN) {
 			if (mp_free_run_buffer()) cm_cycle_end();	// free buffer & end cycle if planner is empty
 		}
-		st_prep_null();									// for final move
 	}
 	return (status);
 }
