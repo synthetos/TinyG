@@ -263,7 +263,7 @@ enum motorPowerState {					// used w/start and stop flags to sequence motor powe
 };
 
 enum cmMotorPowerMode {
-	MOTOR_DISABLED,						// motor enable is deactivated
+	MOTOR_DISABLED = 0,					// motor enable is deactivated
 	MOTOR_ALWAYS_POWERED,				// motor is always powered while machine is ON
 	MOTOR_POWERED_IN_CYCLE,				// motor fully powered during cycles, de-powered out of cycle
 	MOTOR_POWERED_ONLY_WHEN_MOVING,		// motor only powered while moving - idles shortly after it's stopped - even in cycle
@@ -272,7 +272,11 @@ enum cmMotorPowerMode {
 	MOTOR_POWER_MODE_MAX_VALUE			// for input range checking
 };
 
-// Stepper power management settings
+// Stepper power management settings (applicable to ARM only)
+#define Vcc	3.3							// volts
+#define MaxVref	2.25					// max vref for driver circuit. Our ckt is 2.25 volts
+#define POWER_LEVEL_SCALE_FACTOR ((MaxVref/Vcc)) // scale power level setting for voltage range
+
 // Min/Max timeouts allowed for motor disable. Allow for inertial stop; must be non-zero
 #define MOTOR_TIMEOUT_SECONDS_MIN 	(float)0.1		// seconds !!! SHOULD NEVER BE ZERO !!!
 #define MOTOR_TIMEOUT_SECONDS_MAX	(float)4294967	// (4294967295/1000) -- for conversion to uint32_t
@@ -280,17 +284,26 @@ enum cmMotorPowerMode {
 #define MOTOR_TIMEOUT_WHEN_MOVING	(float)0.25		// timeout for a motor in _ONLY_WHEN_MOVING mode
 
 /* DDA substepping
- * 	DDA_SUBSTEPS sets the amount of fractional precision for substepping in the DDA.
- *	Substepping is a fixed.point substitute allowing integer math (rather than FP) to be
- *	used in the pulse generation (DDA) and make pulse timing interpolation more accurate.
- *	The loss of number range implies that the overall maximum length move is shortened
- *	(which is true), but this is compensated for the fact that long moves are broken up
- *	into a series of short moves (5 ms) by the planner so that feed holds and overrides
- *	can interrupt a long move.
+ *	DDA Substepping is a fixed.point scheme to increase the resolution of the DDA pulse generation
+ *	while still using integer math (as opposed to floating point). Improving the accuracy of the DDA
+ *	results in more precise pulse timing and therefore less pulse jitter and smoother motor operation.
  *
- *	This value is set for maximum accuracy; best not to mess with this.
+ *	The DDA accumulator is an int32_t, so the accumulator has the number range of about 2.1 billion. 
+ *	The DDA_SUBSTEPS is used to multiply the step count for a segment to maximally use this number range.
+ *	DDA_SUBSTEPS can be computed for a given DDA clock rate and segment time not to exceed the available
+ *	number range. Variables are:
+ *
+ *		MAX_LONG == 2^31, maximum signed long (depth of accumulator. NB: accumulator values are negative)
+ *		FREQUENCY_DDA == DDA clock rate in Hz.
+ *		NOM_SEGMENT_TIME == upper bound of segment time in minutes
+ *		0.90 == a safety factor used to reduce the result from theoretical maximum
+ *
+ *	The number is about 8.5 million for the Xmega running a 50 KHz DDA with 5 millisecond segments
+ *	The ARM is about 1/2 that (or less) as the DDA clock rate is higher. Decreasing the nominal
+ *	segment time increases the number precision.
  */
-#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
+//#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
+#define DDA_SUBSTEPS ((MAX_LONG * 0.90) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position.
@@ -304,60 +317,63 @@ enum cmMotorPowerMode {
 #define STEP_CORRECTION_FACTOR		(float)0.25		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.60		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  5		// minimum number of segments to wait between error correction
-#define STEP_INITIAL_DIRECTION				false
-
+#define STEP_INITIAL_DIRECTION		DIRECTION_CW
 
 /*
  * Stepper control structures
  *
- *	There are 4 sets of structures involved in this operation;
+ *	There are 5 main structures involved in stepper operations;
  *
- *	data structure:						static to:		runs at:
+ *	data structure:						found in:		runs primarily at:
  *	  mpBuffer planning buffers (bf)	  planner.c		  main loop
  *	  mrRuntimeSingleton (mr)			  planner.c		  MED ISR
- *	  stPrepSingleton (sp)				  stepper.c		  MED ISR
- *	  stRunSingleton (st)				  stepper.c		  HI ISR
- *
- *	Care has been taken to isolate actions on these structures to the
- *	execution level in which they run and to use the minimum number of
- *	volatiles in these structures. This allows the compiler to optimize
- *	the stepper inner-loops better.
+ *	  stConfig (st_cfg)					  stepper.c		  write=bkgd, read=ISRs
+ *	  stPrepSingleton (st_pre)			  stepper.c		  MED ISR
+ *	  stRunSingleton (st_run)			  stepper.c		  HI ISR
+ *  
+ *	Care has been taken to isolate actions on these structures to the execution level
+ *	in which they run and to use the minimum number of volatiles in these structures. 
+ *	This allows the compiler to optimize the stepper inner-loops better.
  */
 
 // Motor config structure
 
-typedef struct stConfigMotor {		// per-motor configs
-	uint8_t	motor_map;				// map motor to axis
-	uint8_t microsteps;				// microsteps to apply for each axis (ex: 8)
-	uint8_t polarity;				// 0=normal polarity, 1=reverse motor direction
-	uint8_t power_mode;				// See stepper.h for enum
-	float power_level;				// set 0.000 to 1.000 for PMW vref setting
-	float step_angle;				// degrees per whole step (ex: 1.8)
-	float travel_rev;				// mm or deg of travel per motor revolution
-	float steps_per_unit;			// microsteps per mm (or degree) of travel
-	float units_per_step;			// mm or degrees of travel per microstep
-} stConfigMotor_t;
+typedef struct cfgMotor {				// per-motor configs
+	// public
+	uint8_t	motor_map;					// map motor to axis
+	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
+	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
+	uint8_t power_mode;					// See cmMotorPowerMode for enum
+	float power_level;					// set 0.000 to 1.000 for PMW vref setting
+	float step_angle;					// degrees per whole step (ex: 1.8)
+	float travel_rev;					// mm or deg of travel per motor revolution
+	float steps_per_unit;				// microsteps per mm (or degree) of travel
+	float units_per_step;				// mm or degrees of travel per microstep
 
-typedef struct stConfig {			// stepper configs
-	float motor_idle_timeout;		// seconds before setting motors to idle current (currently this is OFF)
-	stConfigMotor_t mot[MOTORS];	// settings for motors 1-4
+	// private
+	float power_level_scaled;			// scaled to internal range - must be between 0 and 1
+} cfgMotor_t;
+
+typedef struct stConfig {				// stepper configs
+	float motor_power_timeout;			// seconds before setting motors to idle current (currently this is OFF)
+	cfgMotor_t mot[MOTORS];				// settings for motors 1-N
 } stConfig_t;
 
 // Motor runtime structure. Used exclusively by step generation ISR (HI)
 
-typedef struct stRunMotor { 		// one per controlled motor
-	uint32_t substep_increment;		// total steps in axis times substeps factor
-	int32_t substep_accumulator;	// DDA phase angle accumulator
-	float power_level;				// power level for this segment (ARM only)
-	uint8_t power_state;			// state machine for managing motor power
-	uint32_t power_systick;			// sys_tick for next motor power state transition
+typedef struct stRunMotor { 			// one per controlled motor
+	uint32_t substep_increment;			// total steps in axis times substeps factor
+	int32_t substep_accumulator;		// DDA phase angle accumulator
+	uint8_t power_state;				// state machine for managing motor power
+	uint32_t power_systick;				// sys_tick for next motor power state transition
+	float power_level_dynamic;			// power level for this segment of idle (ARM only)
 } stRunMotor_t;
 
-typedef struct stRunSingleton {		// Stepper static values and axis parameters
-	uint16_t magic_start;			// magic number to test memory integrity
-	uint32_t dda_ticks_downcount;	// tick down-counter (unscaled)
-	uint32_t dda_ticks_X_substeps;	// ticks multiplied by scaling factor
-	stRunMotor_t mot[MOTORS];		// runtime motor structures
+typedef struct stRunSingleton {			// Stepper static values and axis parameters
+	uint16_t magic_start;				// magic number to test memory integrity
+	uint32_t dda_ticks_downcount;		// tick down-counter (unscaled)
+	uint32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
+	stRunMotor_t mot[MOTORS];			// runtime motor structures
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -369,8 +385,7 @@ typedef struct stPrepMotor {
 
 	// direction and direction change
 	int8_t direction;					// travel direction corrected for polarity
-//	uint8_t direction_change;			// set true if direction changed
-	uint8_t prev_direction;				// used to detect direction reversals for accumulator compensation
+	uint8_t prev_direction;				// travel direction from previous segment run for this motor
 	int8_t step_sign;					// set to +1 or -1 for encoders
 
 	// following error correction
