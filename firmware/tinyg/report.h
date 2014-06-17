@@ -2,7 +2,7 @@
  * report.h - TinyG status report and other reporting functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -83,7 +83,7 @@ typedef struct qrSingleton {		// data for queue reports
 	uint8_t prev_available;			// buffers available at last count
 	uint16_t buffers_added;			// buffers added since last count
 	uint16_t buffers_removed;		// buffers removed since last report
-	uint8_t motion_mode;			//+++++ diagnostic
+	uint8_t motion_mode;			// used to detect arc movement
 	uint32_t init_tick;				// time when values were last initialized or cleared
 
 } qrSingleton_t;

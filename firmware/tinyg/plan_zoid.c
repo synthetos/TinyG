@@ -36,12 +36,14 @@
 extern "C"{
 #endif
 
+/*
 //static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf)
 static float _get_intersection_distance(const float Vi, const float Vf, const float L, const mpBuf_t *bf)
 {
 //	return (L * bf->jerk - Vi_squared + Vt_squared)/(2 * bf->jerk);
 	return ((L * bf->jerk - Vi*Vi + Vf*Vf) / (2 * bf->jerk));
 }
+*/
 
 /*
  * mp_calculate_trapezoid() - calculate trapezoid parameters

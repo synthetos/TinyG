@@ -188,8 +188,6 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
 
 } mpBuf_t;
-//#define value_vector gm.target		// alias for vector of values
-//#define flag_vector unit			// alias for vector of flags
 
 typedef struct mpBufferPool {		// ring buffer for sub-moves
 	magic_t magic_start;			// magic number to test memory integrity
@@ -204,13 +202,11 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
 	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
-//	int8_t velocity_trend;			// indicates +1 for accelerating, -1 for decelerating, 0 for cruising
 
 	float prev_jerk;				// jerk values cached from previous move
 	float prev_recip_jerk;
 	float prev_cbrt_jerk;
 
-//	GCodeState_t gm;				// preserved gcode model state for coalescing blocks
 	magic_t magic_end;
 } mpMoveMasterSingleton_t;
 

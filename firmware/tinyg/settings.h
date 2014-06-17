@@ -41,7 +41,7 @@
 // Do not assume these are the effective settings. Check the machine profile 
 
 // Machine configuration settings
-#define CHORDAL_TOLERANCE 			0.01					// chord accuracy for arc drawing
+#define CHORDAL_TOLERANCE 			0.01					// chordal accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
@@ -63,8 +63,8 @@
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 
-//#define SR_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-#define SR_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
+//#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -87,8 +87,8 @@
 #undef JSON_VERBOSITY
 #define JSON_VERBOSITY				JV_SILENT				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
-#undef SR_DEFAULTS
-#define SR_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
+#undef STATUS_REPORT_DEFAULTS
+#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
 
 #undef STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_VERBOSE				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE

@@ -2,7 +2,7 @@
  * report.c - TinyG status report and other reporting functions.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,7 +45,7 @@ extern "C"{
 srSingleton_t sr;
 qrSingleton_t qr;
 
-/**** Exception Messages ************************************************************
+/**** Exception Reports ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
  *
@@ -65,7 +65,7 @@ void rpt_exception(uint8_t status)
 
 stat_t rpt_er(nvObj_t *nv)
 {
-	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report
+	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report for testing
 	return (STAT_OK);
 }
 
@@ -77,7 +77,8 @@ stat_t rpt_er(nvObj_t *nv)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-void _startup_helper(stat_t status, const char_t *msg)
+//void _startup_helper(stat_t status, const char_t *msg)
+void _startup_helper(stat_t status, const char *msg)
 {
 #ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
@@ -156,7 +157,7 @@ static uint8_t _populate_filtered_status_report(void);
 uint8_t _is_stat(nvObj_t *nv)
 {
 	char_t tok[TOKEN_LEN+1];
-	
+
 	GET_TOKEN_STRING(nv->value, tok);
 	if (strcmp(tok, "stat") == 0) { return (true);}
 	return (false);
@@ -172,7 +173,7 @@ void sr_init_status_report()
 {
 	nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
-	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { SR_DEFAULTS };	// see settings.h
+	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
 	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
@@ -413,11 +414,11 @@ void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
  *
  *	There are 2 ways to get queue reports:
  *
- *	 1.	Enable single ortriple queue reports iusing the QV variable. This will
+ *	 1.	Enable single or triple queue reports using the QV variable. This will
  *		return a queue report every time the buffer depth changes
  *
- *	 2.	Add qr, qi qne qo (or some combination) to the status report. This will
- *		reeturn queue report data when status reports are generated.
+ *	 2.	Add qr, qi and qo (or some combination) to the status report. This will
+ *		return queue report data when status reports are generated.
  */
 /*
  * qr_init_queue_report() - initialize or clear queue report values
@@ -446,7 +447,7 @@ void qr_request_queue_report(int8_t buffers)
 		qr.buffers_removed -= buffers;
 	}
 
-	// time-throttle requests while generatings arcs
+	// time-throttle requests while generating arcs
 	qr.motion_mode = cm_get_motion_mode(ACTIVE_MODEL);
 	if ((qr.motion_mode == MOTION_MODE_CW_ARC) || (qr.motion_mode == MOTION_MODE_CCW_ARC)) {
 		uint32_t tick = SysTickTimer_getValue();
@@ -517,7 +518,7 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 */
 
 /* 
- * Wrappers and Setters - for calling from nvArray table
+ * Wrappers and Setters - for calling from cfgArray table
  *
  * qr_get() - run a queue report (as data)
  * qi_get() - run a queue report - buffers in
@@ -526,7 +527,6 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 stat_t qr_get(nvObj_t *nv) 
 {
 	nv->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
-//	nv->value = (float)qr.buffers_available;
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -575,7 +575,7 @@ stat_t job_populate_job_report()
 		nv->index = job_start + i;
 		nv_get_nvObj(nv);
 
-		strcpy(tmp, nv->group);			// concatenate groups and tokens - do NOT use strncpy()
+		strcpy(tmp, nv->group);				// concatenate groups and tokens - do NOT use strncpy()
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);
 
@@ -592,13 +592,13 @@ stat_t job_set_job_report(nvObj_t *nv)
 		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
 		if (nv->valuetype == TYPE_INTEGER) {
 			cs.job_id[i] = nv->value;
-			nv->index = job_start + i;					// index of the SR persistence location
+			nv->index = job_start + i;		// index of the SR persistence location
 			nv_persist(nv);
 		} else {
 			return (STAT_INPUT_VALUE_UNSUPPORTED);
 		}
 	}
-	job_populate_job_report();			// return current values
+	job_populate_job_report();				// return current values
 	return (STAT_OK);
 }
 

@@ -388,7 +388,6 @@ static void _load_move()
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 //		}
-		printf("PREP NOT READY FOR LOADER\n");
 		return;
 	}
 	// handle aline loads first (most common case)  NB: there are no more lines, only alines

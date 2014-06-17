@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.63	// mp_exec_aline() end condition tests; changed serial parameters
+#define TINYG_FIRMWARE_BUILD   		410.64	// alignment with 430.21 through reports.c file
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
