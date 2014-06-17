@@ -59,8 +59,7 @@
 #define COM_ENABLE_QR			true
 
 #undef 	QUEUE_REPORT_VERBOSITY
-//#define QUEUE_REPORT_VERBOSITY			QR_FILTERED
-#define QUEUE_REPORT_VERBOSITY			QR_VERBOSE
+#define QUEUE_REPORT_VERBOSITY	QR_SINGLE
 
 // *** motor settings ***
 
@@ -150,7 +149,7 @@
 #define A_VELOCITY_MAX 					60000.0				// deg/min
 #define A_FEEDRATE_MAX 					7200.0				// deg/min
 #define A_TRAVEL_MAX 					375.0
-#define A_TRAVEL_MAX 					-1					// -1 means infinite, no limit
+#define A_TRAVEL_MIN 					-1					// -1 means infinite, no limit
 #define A_JERK_MAX 						24000				// yes, 24 Billion
 #define A_JUNCTION_DEVIATION 			0.1
 #define A_RADIUS 						1.0					// deg

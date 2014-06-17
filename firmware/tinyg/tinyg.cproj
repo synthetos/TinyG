@@ -283,6 +283,9 @@
     <Compile Include="settings\settings_default.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_hammer.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_lumenlabMicRoV3.h">
       <SubType>compile</SubType>
     </Compile>
@@ -295,10 +298,22 @@
     <Compile Include="settings\settings_othermill.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_pendulum.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_plotter_demo.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_pocketnc.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_probotixV90.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_shapeoko375.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_test.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_Ultimaker.h">

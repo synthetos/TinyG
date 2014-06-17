@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.64	// alignment with 430.21 through reports.c file
+#define TINYG_FIRMWARE_BUILD   		410.65	// alignment with 430.21 - settings files 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -75,9 +75,9 @@
   #undef  __TEXT_MODE
   #undef  __HELP_SCREENS
   #undef  __CANNED_TESTS
-  #ifndef __CANNED_STARTUP
+#ifndef __CANNED_STARTUP
   #define __CANNED_STARTUP					// run any canned startup moves
-  #endif
+#endif
   #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
   #define __SUPPRESS_STARTUP_MESSAGES
   #define __SUPPRESS_STATUS_REPORTS
