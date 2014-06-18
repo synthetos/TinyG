@@ -1,4 +1,4 @@
-/* 
+/*
  * plan_zoid.c - acceleration managed line planning and motion execution - trapezoid planner
  * This file is part of the TinyG project
  *
@@ -35,15 +35,6 @@
 #ifdef __cplusplus
 extern "C"{
 #endif
-
-/*
-//static float _get_intersection_distance(const float Vi_squared, const float Vt_squared, const float L, const mpBuf_t *bf)
-static float _get_intersection_distance(const float Vi, const float Vf, const float L, const mpBuf_t *bf)
-{
-//	return (L * bf->jerk - Vi_squared + Vt_squared)/(2 * bf->jerk);
-	return ((L * bf->jerk - Vi*Vi + Vf*Vf) / (2 * bf->jerk));
-}
-*/
 
 /*
  * mp_calculate_trapezoid() - calculate trapezoid parameters
@@ -158,7 +149,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-//		printf("F'%1.0f ", (double)(bf->naiive_move_time * 60000000));
 		return;
 	}
 
@@ -177,9 +167,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->head_length = 0;
 		bf->tail_length = 0;
 		// We are violating the jerk value but since it's a single segment move we don't use it.
-//		printf("B\"%1.0f ", (double)(bf->naiive_move_time * 60000000));
-//		printf("B\"%1.0f e:%1.1f c:%1.1f x:%1.1f\n", (double)(bf->naiive_move_time * 60000000),
-//			(double)bf->entry_velocity, (double)bf->cruise_velocity, (double)bf->exit_velocity);
 		return;
 	}
 
@@ -192,7 +179,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		bf->body_length = bf->length;
 		bf->head_length = 0;
 		bf->tail_length = 0;
-//		printf("B ");
 		return;
 	}
 
@@ -211,7 +197,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->tail_length = bf->length;
 			bf->head_length = 0;
-//			printf("T\" ");
 			return;
 		}
 
@@ -222,7 +207,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->cruise_velocity = bf->exit_velocity;
 			bf->head_length = bf->length;
 			bf->tail_length = 0;
-//			printf("H\" ");
 			return;
 		}
 	}
@@ -253,7 +237,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 				bf->entry_velocity = bf->cruise_velocity;
 				bf->exit_velocity = bf->cruise_velocity;
 			}
-//			printf("HT ");
 			return;
 		}
 
@@ -288,7 +271,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 			bf->head_length = bf->length;			//...or all head
 			bf->tail_length = 0;
 		}
-//		printf("HT' ");
 		return;
 	}
 
@@ -311,12 +293,11 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		}
 		bf->body_length = 0;
 
-		// If the body is a standalone make the cruise velocity match the entry velocity
-		// This removes a potential velocity discontinuity at the expense of top speed
+	// If the body is a standalone make the cruise velocity match the entry velocity
+	// This removes a potential velocity discontinuity at the expense of top speed
 	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
-//	printf("R ");
 }
 
 /*	
