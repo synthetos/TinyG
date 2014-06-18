@@ -180,7 +180,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
 		mr.tail_length = bf->tail_length;
-		
+
 		mr.entry_velocity = bf->entry_velocity;
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
@@ -388,7 +388,7 @@ static void _init_forward_diffs(float Vi, float Vt)
 static stat_t _exec_aline_head()
 {
 	if (mr.section_state == SECTION_NEW) {							// initialize the move singleton (mr)
-		if (fp_ZERO(mr.head_length)) { 
+		if (fp_ZERO(mr.head_length)) {
 			mr.section = SECTION_BODY;
 			return(_exec_aline_body());								// skip ahead to the body generator
 		}
@@ -423,7 +423,7 @@ static stat_t _exec_aline_head()
 			mr.section = SECTION_BODY;
 			mr.section_state = SECTION_NEW;
 		}
-	}	
+	}
 	return(STAT_EAGAIN);
 }
 #else // __ JERK_EXEC
@@ -517,7 +517,7 @@ static stat_t _exec_aline_body()
 	if (mr.section_state == SECTION_NEW) {
 		if (fp_ZERO(mr.body_length)) {
 			mr.section = SECTION_TAIL;
-			return(_exec_aline_tail());								// skip ahead to tail periods
+			return(_exec_aline_tail());						// skip ahead to tail periods
 		}
 		mr.gm.move_time = mr.body_length / mr.cruise_velocity;
 		mr.segments = ceil(uSec(mr.gm.move_time) / NOM_SEGMENT_USEC);
@@ -526,11 +526,11 @@ static stat_t _exec_aline_body()
 		mr.segment_count = (uint32_t)mr.segments;
 		if (mr.segment_time < MIN_SEGMENT_TIME) return(STAT_MINIMUM_TIME_MOVE); // exit without advancing position
 		mr.section = SECTION_BODY;
-		mr.section_state = SECTION_2nd_HALF;						// uses PERIOD_2 so last segment detection works
+		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
-	if (mr.section_state == SECTION_2nd_HALF) {						// straight part (period 3)
-		if (_exec_aline_segment() == STAT_OK) {						// OK means this section is done
-			if (fp_ZERO(mr.tail_length)) return(STAT_OK);			// ends the move
+	if (mr.section_state == SECTION_2nd_HALF) {				// straight part (period 3)
+		if (_exec_aline_segment() == STAT_OK) {				// OK means this section is done
+			if (fp_ZERO(mr.tail_length)) return(STAT_OK);	// ends the move
 			mr.section = SECTION_TAIL;
 			mr.section_state = SECTION_NEW;
 		}
@@ -572,10 +572,9 @@ static stat_t _exec_aline_tail()
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {						// SECOND HALF - concave part (period 5)
 		mr.segment_velocity = mr.midpoint_velocity -
-		(mr.elapsed_accel_time * mr.midpoint_acceleration) +
-		(square(mr.elapsed_accel_time) * mr.jerk_div2);
+			(mr.elapsed_accel_time * mr.midpoint_acceleration) +
+			(square(mr.elapsed_accel_time) * mr.jerk_div2);
 		return (_exec_aline_segment()); 							// ends the move or continues EAGAIN
-
 	}
 	return(STAT_EAGAIN);											// should never get here
 }
@@ -704,9 +703,9 @@ static stat_t _exec_aline_segment()
 
 	for (i=0; i<MOTORS; i++) {
 		mr.commanded_steps[i] = mr.position_steps[i];		// previous segment's position, delayed by 1 segment
-		mr.position_steps[i] = mr.target_steps[i];	 		// previous segment's target becomes position
+		mr.position_steps[i] = mr.target_steps[i];			// previous segment's target becomes position
 		mr.encoder_steps[i] = en_read_encoder(i);			// get current encoder position (time aligns to commanded_steps)
-		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i]; 
+		mr.following_error[i] = mr.encoder_steps[i] - mr.commanded_steps[i];
 	}
 	ik_kinematics(mr.gm.target, mr.target_steps);			// now determine the target steps...
 	for (i=0; i<MOTORS; i++) {								// and compute the distances to be traveled

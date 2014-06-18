@@ -149,7 +149,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// Accept the entry velocity, limit the cruise, and go for the best exit velocity
 	// you can get given the delta_vmax (maximum velocity slew) supportable.
 
-//	bf->naiive_move_time = bf->length / bf->cruise_velocity;
 	bf->naiive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity); // average
 
 	if (bf->naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
@@ -186,6 +185,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 	// B case:  Velocities all match (or close enough)
 	//			This occurs frequently in normal gcode files with lots of short lines
+	//			This case is not really necessary, but saves lots of processing time
 
 	if (((bf->cruise_velocity - bf->entry_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) &&
 	((bf->cruise_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE)) {

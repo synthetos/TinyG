@@ -299,21 +299,20 @@ enum cmMotorPowerMode {
  *		0.90 == a safety factor used to reduce the result from theoretical maximum
  *
  *	The number is about 8.5 million for the Xmega running a 50 KHz DDA with 5 millisecond segments
- *	The ARM is about 1/2 that (or less) as the DDA clock rate is higher. Decreasing the nominal
+ *	The ARM is about 1/4 that (or less) as the DDA clock rate is 4x higher. Decreasing the nominal
  *	segment time increases the number precision.
  */
-//#define DDA_SUBSTEPS				(float)5000000	// 5,000,000 accumulates substeps to max decimal places
 #define DDA_SUBSTEPS ((MAX_LONG * 0.90) / (FREQUENCY_DDA * (NOM_SEGMENT_TIME * 60)))
 
 /* Step correction settings
- *	Step correction settings determine how the encoder error is fed back to correct position.
- *	Since the following error is running 2 segments behind the current segment you have to be careful
+ *	Step correction settings determine how the encoder error is fed back to correct position errors.
+ *	Since the following_error is running 2 segments behind the current segment you have to be careful 
  *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
- *	is how much. If threshold is to small and/or amount too large you will get a runaway correction
- *	and error will grow instead of shrink
+ *	is how much. The holdoff is how many segments to wait before applying another correction. If threshold 
+ *	is too small and/or amount too large and/or holdoff is too small you may get a runaway correction 
+ *	and error will grow instead of shrink (or oscillate).
  */
-
-#define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction
+#define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction (in steps)
 #define STEP_CORRECTION_FACTOR		(float)0.25		// factor to apply to step correction for a single segment
 #define STEP_CORRECTION_MAX			(float)0.60		// max step correction allowed in a single segment
 #define STEP_CORRECTION_HOLDOFF		 	 	  5		// minimum number of segments to wait between error correction
@@ -361,7 +360,7 @@ typedef struct stConfig {				// stepper configs
 
 // Motor runtime structure. Used exclusively by step generation ISR (HI)
 
-typedef struct stRunMotor { 			// one per controlled motor
+typedef struct stRunMotor {				// one per controlled motor
 	uint32_t substep_increment;			// total steps in axis times substeps factor
 	int32_t substep_accumulator;		// DDA phase angle accumulator
 	uint8_t power_state;				// state machine for managing motor power
@@ -400,20 +399,20 @@ typedef struct stPrepMotor {
 } stPrepMotor_t;
 
 typedef struct stPrepSingleton {
-	uint16_t magic_start;			// magic number to test memory integrity
-	volatile uint8_t buffer_state;	// prep buffer state - owned by exec or loader
-	struct mpBuffer *bf;			// static pointer to relevant buffer
-	uint8_t move_type;				// move type
+	uint16_t magic_start;				// magic number to test memory integrity
+	volatile uint8_t buffer_state;		// prep buffer state - owned by exec or loader
+	struct mpBuffer *bf;				// static pointer to relevant buffer
+	uint8_t move_type;					// move type
 
-	uint16_t dda_period;			// DDA or dwell clock period setting
-	uint32_t dda_ticks;				// DDA or dwell ticks for the move
-	uint32_t dda_ticks_X_substeps;	// DDA ticks scaled by substep factor
-	stPrepMotor_t mot[MOTORS];		// prep time motor structs
+	uint16_t dda_period;				// DDA or dwell clock period setting
+	uint32_t dda_ticks;					// DDA or dwell ticks for the move
+	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
+	stPrepMotor_t mot[MOTORS];			// prep time motor structs
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
-extern stConfig_t st_cfg;			// config struct is exposed. The rest are private
-extern stPrepSingleton_t st_pre;	// only used by config_app diagnostics
+extern stConfig_t st_cfg;				// config struct is exposed. The rest are private
+extern stPrepSingleton_t st_pre;		// only used by config_app diagnostics
 
 /**** FUNCTION PROTOTYPES ****/
 
@@ -442,16 +441,13 @@ stat_t st_set_sa(nvObj_t *nv);
 stat_t st_set_tr(nvObj_t *nv);
 stat_t st_set_mi(nvObj_t *nv);
 stat_t st_set_pm(nvObj_t *nv);
+stat_t st_set_pl(nvObj_t *nv);
 stat_t st_set_mt(nvObj_t *nv);
 stat_t st_set_md(nvObj_t *nv);
 stat_t st_set_me(nvObj_t *nv);
-stat_t st_set_pl(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void st_print_mt(nvObj_t *nv);
-	void st_print_me(nvObj_t *nv);
-	void st_print_md(nvObj_t *nv);
 	void st_print_ma(nvObj_t *nv);
 	void st_print_sa(nvObj_t *nv);
 	void st_print_tr(nvObj_t *nv);
@@ -459,12 +455,12 @@ stat_t st_set_pl(nvObj_t *nv);
 	void st_print_po(nvObj_t *nv);
 	void st_print_pm(nvObj_t *nv);
 	void st_print_pl(nvObj_t *nv);
+	void st_print_mt(nvObj_t *nv);
+	void st_print_me(nvObj_t *nv);
+	void st_print_md(nvObj_t *nv);
 
 #else
 
-	#define st_print_mt tx_print_stub
-	#define st_print_me tx_print_stub
-	#define st_print_md tx_print_stub
 	#define st_print_ma tx_print_stub
 	#define st_print_sa tx_print_stub
 	#define st_print_tr tx_print_stub
@@ -472,6 +468,9 @@ stat_t st_set_pl(nvObj_t *nv);
 	#define st_print_po tx_print_stub
 	#define st_print_pm tx_print_stub
 	#define st_print_pl tx_print_stub
+	#define st_print_mt tx_print_stub
+	#define st_print_me tx_print_stub
+	#define st_print_md tx_print_stub
 
 #endif // __TEXT_MODE
 

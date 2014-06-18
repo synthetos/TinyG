@@ -346,7 +346,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  * Core functions supporting the canonical machining functions
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
-/* 
+/*
  * cm_finalize_move() - perform final operations for a traverse or feed
  * cm_update_model_position_from_runtime() - set endpoint position from final runtime position
  *

@@ -1,4 +1,4 @@
- /*
+/*
  * plan_line.c - acceleration managed line planning and motion execution
  * This file is part of the TinyG project
  *
@@ -61,7 +61,7 @@ float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]
 void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
-/* 
+/*
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
  *
  *	Use this function to sync to the queue. If you wait until it returns
@@ -80,7 +80,7 @@ uint8_t mp_get_runtime_busy()
  *	This function uses constant jerk motion equations to plan acceleration 
  *	and deceleration. The jerk is the rate of change of acceleration; it's
  *	the 1st derivative of acceleration, and the 3rd derivative of position. 
- *	Jerk is a measure of impact to the machine. Controlling jerk smoothes 
+ *	Jerk is a measure of impact to the machine. Controlling jerk smooths 
  *	transitions between moves and allows for faster feeds while controlling 
  *	machine oscillations and other undesirable side-effects.
  *
