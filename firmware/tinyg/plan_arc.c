@@ -490,21 +490,6 @@ static stat_t _test_arc_soft_limits()
 }
 */
 
-// *************************************************
-// ***** UNIT TESTS ********************************
-// *************************************************
-
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_PLANNER
-
-void mp_plan_arc_unit_tests()
-{
-//	_mp_test_buffers();
-}
-
-#endif
-#endif
-
 #ifdef __cplusplus
 }
 #endif

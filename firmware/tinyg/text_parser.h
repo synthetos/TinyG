@@ -103,19 +103,6 @@ stat_t text_parser_stub(char_t *str);
 void text_response_stub(const stat_t status, char_t *buf);
 void text_print_list_stub(stat_t status, uint8_t flags);
 
-
-/****************************************************************************
- ***** Unit Tests ***********************************************************
- ****************************************************************************/
-
-//#define __UNIT_TEST_TEXT				// uncomment to enable TEXT unit tests
-#ifdef __UNIT_TEST_TEXT
-void text_unit_tests(void);
-#define	TEXT_UNITS text_unit_tests();
-#else
-#define	TEXT_UNITS
-#endif // __UNIT_TEST_TEXT
-
 #ifdef __cplusplus
 }
 #endif

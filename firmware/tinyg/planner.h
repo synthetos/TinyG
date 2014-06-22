@@ -337,23 +337,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
 
-#ifdef __DEBUG
-void mp_dump_running_plan_buffer(void);
-void mp_dump_plan_buffer_by_index(uint8_t index);
-void mp_dump_runtime_state(void);
-#endif
-
-/*** Unit tests ***/
-
-//#define __UNIT_TEST_PLANNER	// uncomment to compile in planner unit tests
-#ifdef __UNIT_TEST_PLANNER
-void mp_unit_tests(void);
-void mp_plan_arc_unit_tests(void);
-#define	PLANNER_UNITS mp_unit_tests();
-#else
-#define	PLANNER_UNITS
-#endif // end __UNIT_TEST_PLANNER
-
 #ifdef __cplusplus
 }
 #endif

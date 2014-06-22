@@ -26,7 +26,6 @@
 #include "persistence.h"
 #include "controller.h"
 #include "canonical_machine.h"
-#include "json_parser.h"			// required for unit tests only
 #include "report.h"
 #include "planner.h"
 #include "stepper.h"
@@ -59,8 +58,6 @@ void __libc_init_array(void);
 }
 #endif // __cplusplus
 #endif // __ARM
-
-static void _unit_tests(void);
 
 /******************** Application Code ************************/
 
@@ -157,7 +154,6 @@ int main(void)
 
 	// TinyG application setup
 	_application_init();
-	_unit_tests();					// run any unit tests that are enabled
 	run_canned_startup();			// run any pre-loaded commands
 
 	// main loop
@@ -490,29 +486,4 @@ char *get_status_message(stat_t status)
 {
 	return ((char *)GET_TEXT_ITEM(stat_msg, status));
 }
-/*
-#else
-char *get_status_message(stat_t status)
-{
-	return ((char *)NULL);
-}
-#endif // __TEXT_MODE
-*/
 
-/*******************************************************************************
- * _unit_tests() - uncomment __UNITS... line in .h files to enable unit tests
- */
-
-static void _unit_tests(void)
-{
-#ifdef __UNIT_TESTS
-	XIO_UNITS;				// conditional unit tests for xio sub-system
-//	EEPROM_UNITS;			// if you want this you must include the .h file in this file
-	CONFIG_UNITS;
-	JSON_UNITS;
-//	GPIO_UNITS;
-	REPORT_UNITS;
-	PLANNER_UNITS;
-	PWM_UNITS;
-#endif
-}

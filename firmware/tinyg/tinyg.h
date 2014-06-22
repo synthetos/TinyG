@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.01	// imported from feature-410.06-base, build 410.69. Disabled motor power level for Xmega
+#define TINYG_FIRMWARE_BUILD   		435.02	// removed embedded unit tests. Refer to feature-410.06-base branch if needed
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -60,7 +60,7 @@
 
 #define __TEXT_MODE							// enables text mode support (~10Kb)
 #define __HELP_SCREENS						// enables help screens 	 (~3.5Kb)
-#define __CANNED_TESTS 						// enables $tests 			 (~12Kb)
+//#define __CANNED_TESTS 					// enables $tests 			 (~12Kb)
 #define __TEST_99 							// enables diagnostic test 99
 
 /****** DEVELOPMENT SETTINGS ******/
@@ -68,7 +68,6 @@
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
-//#define __UNIT_TESTS						// master enable for unit tests; USAGE: uncomment test in .h file
 
 //#define __SIMULATION						// for software-only simulations
 #ifdef __SIMULATION

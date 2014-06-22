@@ -74,10 +74,10 @@ pwmSingleton_t pwm;
 #define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
 /***** PWM code *****/
-/* 
+/*
  * pwm_init() - initialize pwm channels
  *
- *	Notes: 
+ *	Notes:
  *	  - Whatever level interrupts you use must be enabled in main()
  *	  - init assumes PWM1 output bit (D5) has been set to output previously (stepper.c)
  *	  - See system.h for timer and port assignments
@@ -132,7 +132,7 @@ ISR(PWM2_ISR_vect)
 }
 #endif // __ARM
 */
-/* 
+/*
  * pwm_set_freq() - set PWM channel frequency
  *
  *	channel	- PWM channel
@@ -180,8 +180,8 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 	return (STAT_OK);
 }
 
-/* 
- * pwm_set_duty() - set PWM channel duty cycle 
+/*
+ * pwm_set_duty() - set PWM channel duty cycle
  *
  *	channel	- PWM channel
  *	duty	- PWM duty cycle from 0% to 100%
@@ -254,45 +254,7 @@ void pwm_print_p1wpl(nvObj_t *nv) { text_print_flt(nv, fmt_p1wpl);}
 void pwm_print_p1wph(nvObj_t *nv) { text_print_flt(nv, fmt_p1wph);}
 void pwm_print_p1pof(nvObj_t *nv) { text_print_flt(nv, fmt_p1pof);}
 
-#endif //__TEXT_MODE 
-
-
-/****************************************************************************
- ***** Unit Tests ***********************************************************
- ****************************************************************************/
-
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_PWM
-
-void pwm_unit_tests()
-{
-	pwm_init();
-
-	pwm_set_freq(PWM_1,500);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-	pwm_set_freq(PWM_1,5000);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-	pwm_set_freq(PWM_1,100);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-}
-
-#endif // __UNIT_TEST_PWM
-#endif
+#endif //__TEXT_MODE
 
 #ifdef __cplusplus
 }

@@ -109,16 +109,6 @@ stat_t json_set_jv(nvObj_t *nv);
 
 #endif // __TEXT_MODE
 
-/* unit test setup */
-
-//#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
-#ifdef __UNIT_TEST_JSON
-void js_unit_tests(void);
-#define	JSON_UNITS js_unit_tests();
-#else
-#define	JSON_UNITS
-#endif // __UNIT_TEST_JSON
-
 #ifdef __cplusplus
 }
 #endif

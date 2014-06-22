@@ -144,16 +144,6 @@ stat_t qo_get(nvObj_t *nv);
 
 #endif // __TEXT_MODE
 
-
-/* unit test setup */
-//#define __UNIT_TEST_REPORT	// uncomment to enable report unit tests
-#ifdef __UNIT_TEST_REPORT
-void sr_unit_tests(void);
-#define	REPORT_UNITS sr_unit_tests();
-#else
-#define	REPORT_UNITS
-#endif // __UNIT_TEST_REPORT
-
 #ifdef __cplusplus
 }
 #endif

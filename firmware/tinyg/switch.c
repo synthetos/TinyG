@@ -31,11 +31,11 @@
  *	  - Hitting a homing switch puts the current move into feedhold
  *	  - Hitting a limit switch causes the machine to shut down and go into lockdown until reset
  *
- * 	The normally open switch modes (NO) trigger an interrupt on the falling edge 
- *	and lockout subsequent interrupts for the defined lockout period. This approach 
+ * 	The normally open switch modes (NO) trigger an interrupt on the falling edge
+ *	and lockout subsequent interrupts for the defined lockout period. This approach
  *	beats doing debouncing as an integration as switches fire immediately.
  *
- * 	The normally closed switch modes (NC) trigger an interrupt on the rising edge 
+ * 	The normally closed switch modes (NC) trigger an interrupt on the rising edge
  *	and lockout subsequent interrupts for the defined lockout period. Ditto on the method.
  */
 
@@ -49,7 +49,7 @@
 #include "text_parser.h"
 
 /*
- * variables and settings 
+ * variables and settings
  */
 											// timer for debouncing switches
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
@@ -60,11 +60,11 @@ static void _switch_isr_helper(uint8_t sw_num);
 /*
  * switch_init() - initialize homing/limit switches
  *
- *	This function assumes sys_init() and st_init() have been run previously to 
+ *	This function assumes sys_init() and st_init() have been run previously to
  *	bind the ports and set bit IO directions, repsectively. See system.h for details
  */
-/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm). 
- *	v6 and earlier use internal pullups only. Internal pullups are set 
+/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
+ *	v6 and earlier use internal pullups only. Internal pullups are set
  *	regardless of board type but are extraneous for v7 boards.
  */
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
@@ -131,7 +131,7 @@ static void _switch_isr_helper(uint8_t sw_num)
 
 void switch_rtc_callback(void)
 {
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) { 
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		if (sw.debounce[i] == SW_IDLE) continue;
 		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
 			sw.debounce[i] = SW_IDLE; continue;
@@ -169,7 +169,7 @@ uint8_t get_switch_type() { return sw.switch_type; }
  * reset_switches() - reset all switches and reset limit flag
  */
 
-void reset_switches() 
+void reset_switches()
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		sw.debounce[i] = SW_IDLE;
@@ -208,19 +208,17 @@ uint8_t read_switch(uint8_t sw_num)
 /*
  * _show_switch() - simple display routine
  */
-#ifdef __DEBUG
+/*
 void sw_show_switch(void)
 {
 	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
-		Zmin %d Zmax %d Amin %d Amax %d\n"), 
+		Zmin %d Zmax %d Amin %d Amax %d\n"),
 		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
 		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
 		sw.state[SW_MIN_Z], sw.state[SW_MAX_Z],
 		sw.state[SW_MIN_A], sw.state[SW_MAX_A]);
 }
-#else
-void sw_show_switch(void) {}
-#endif
+*/
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
@@ -289,7 +287,7 @@ static void _trigger_cycle_start(switch_t *s);
  *
  * switch_init() - initialize homing/limit switches
  *
- *	This function assumes all Motate pins have been set up and that 
+ *	This function assumes all Motate pins have been set up and that
  *	SW_PAIRS and SW_POSITIONS is accurate
  *
  *	Note: `type` and `mode` are not initialized as they should be set from configuration
@@ -304,9 +302,9 @@ void switch_init(void)
 	for (uint8_t axis=0; axis<SW_PAIRS; axis++) {
 		for (uint8_t position=0; position<SW_POSITIONS; position++) {
 			s = &sw.s[axis][position];
-			
+
 			s->type = sw.type;				// propagate type from global type
-//			s->mode = SW_MODE_DISABLED;		// set from config			
+//			s->mode = SW_MODE_DISABLED;		// set from config
 			s->state = false;
 			s->edge = SW_NO_EDGE;
 			s->debounce_ticks = SW_LOCKOUT_TICKS;
@@ -361,17 +359,17 @@ stat_t poll_switches()
 uint8_t read_switch(switch_t *s, uint8_t pin_value)
 {
 	// instant return conditions: switch disabled or in a lockout period
-	if (s->mode == SW_MODE_DISABLED) { 
-		return (false); 
+	if (s->mode == SW_MODE_DISABLED) {
+		return (false);
 	}
 	if (s->debounce_timeout > GetTickCount()) {
 		return (false);
 	}
 	// return if no change in state
 	uint8_t pin_sense_corrected = (pin_value ^ (s->type ^ 1));	// correct for NO or NC mode
-  	if ( s->state == pin_sense_corrected) { 
+  	if ( s->state == pin_sense_corrected) {
 		s->edge = SW_NO_EDGE;
-		if (s->state == SW_OPEN) { 
+		if (s->state == SW_OPEN) {
 			s->when_open(s);
 		} else {
 			s->when_closed(s);
@@ -390,7 +388,7 @@ uint8_t read_switch(switch_t *s, uint8_t pin_value)
 	return (true);
 }
 
-static void _trigger_feedhold(switch_t *s) 
+static void _trigger_feedhold(switch_t *s)
 {
 	IndicatorLed.toggle();
 	cm_request_feedhold();
@@ -403,7 +401,7 @@ static void _trigger_feedhold(switch_t *s)
 
 }
 
-static void _trigger_cycle_start(switch_t *s) 
+static void _trigger_cycle_start(switch_t *s)
 {
 	IndicatorLed.toggle();
 	cm_request_cycle_start();

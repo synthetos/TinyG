@@ -40,14 +40,4 @@ uint8_t gpio_read_bit(uint8_t b);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
 
-/* unit test setup */
-
-//#define __UNIT_TEST_GPIO				// uncomment to enable GPIO unit tests
-#ifdef __UNIT_TEST_GPIO
-void gpio_unit_tests(void);
-#define	GPIO_UNITS gpio_unit_tests();
-#else
-#define	GPIO_UNITS
-#endif // __UNIT_TEST_GPIO
-
 #endif

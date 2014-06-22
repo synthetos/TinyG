@@ -391,12 +391,4 @@ enum xioCodes {
     0x7F    DEL	
 */
 
-//#define __UNIT_TEST_XIO			// include and run xio unit tests
-#ifdef __UNIT_TEST_XIO
-void xio_unit_tests(void);
-#define	XIO_UNITS xio_unit_tests();
-#else
-#define	XIO_UNITS
-#endif // __UNIT_TEST_XIO
-
 #endif	// end of include guard: XIO_H_ONCE

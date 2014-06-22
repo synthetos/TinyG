@@ -636,23 +636,6 @@ void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
 
 #endif // __TEXT_MODE
 
-
-/****************************************************************************
- ***** Unit Tests ***********************************************************
- ****************************************************************************/
-
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_REPORT
-
-void sr_unit_tests(void)
-{
-	sr_init();
-	cs.communications_mode = STAT_JSON_MODE;
-	sr_run_status_report();
-}
-#endif	// __UNIT_TESTS
-#endif	// __UNIT_TESTS_REPORT
-
 #ifdef __cplusplus
 }
 #endif

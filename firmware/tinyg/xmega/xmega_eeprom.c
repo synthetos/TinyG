@@ -1,4 +1,4 @@
-/* Xmega Non Volatile Memory functions 
+/* Xmega Non Volatile Memory functions
  *
  * Ahem. Before you waste days trying to figure out why none of this works
  * in the simulator, you should realize that IT DOESN'T WORK IN THE WINAVR
@@ -7,9 +7,9 @@
  * Then before you waste more time figuring out why it doesn't work AT ALL,
  * realize that there is a serious bug in the xmega A3 processor family.
  * This is documented in Atmel release note AVR1008 and in the chip Errata.
- * This file contains workarounds to those problems. 
+ * This file contains workarounds to those problems.
  *
- * Some code was incorporated from the avr-xboot project: 
+ * Some code was incorporated from the avr-xboot project:
  *	https://github.com/alexforencich/xboot
  *	http://code.google.com/p/avr-xboot/wiki/Documentation
  *
@@ -23,14 +23,14 @@
  *
  * XMEGA EEPROM driver source file.
  *
- *      This file contains the function prototypes and enumerator 
- *		definitions for various configuration parameters for the 
+ *      This file contains the function prototypes and enumerator
+ *		definitions for various configuration parameters for the
  *		XMEGA EEPROM driver.
  *
- *      The driver is not intended for size and/or speed critical code, 
- *		since most functions are just a few lines of code, and the 
- *		function call overhead would decrease code performance. The driver 
- *		is intended for rapid prototyping and documentation purposes for 
+ *      The driver is not intended for size and/or speed critical code,
+ *		since most functions are just a few lines of code, and the
+ *		function call overhead would decrease code performance. The driver
+ *		is intended for rapid prototyping and documentation purposes for
  *		getting started with the XMEGA EEPROM module.
  *
  *      For size and/or speed critical code, it is recommended to copy the
@@ -51,33 +51,33 @@
  * Copyright (c) 2008, Atmel Corporation All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions 
+ * modification, are permitted provided that the following conditions
  * are met:
  *
- * 1. Redistributions of source code must retain the above copyright 
+ * 1. Redistributions of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright 
- * notice, this list of conditions and the following disclaimer in the 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
  *
- * 3. The name of ATMEL may not be used to endorse or promote products 
+ * 3. The name of ATMEL may not be used to endorse or promote products
  * derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE EXPRESSLY AND
- * SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY 
- * DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR ANY
+ * DIRECT,INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- * STRICT LIABILITY, OR FART (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR FART (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 
-/* 
+/*
  * Modified to support Xmega family processors
  * Modifications Copyright (c) 2010 Alden S. Hart, Jr.
  */
@@ -161,7 +161,7 @@ static inline void NVM_EXEC_WRAPPER(void)
  *************************************************************************/
 
 /*
- * Non Non-Volatile Memory RAM array & 
+ * Non Non-Volatile Memory RAM array &
  * functions to substitute for EEPROM for testing.
  */
 
@@ -220,12 +220,12 @@ void NNVM_ReadBytes(const uint16_t address, int8_t *buf, const uint16_t size)
 
 #endif // __NNVM
 
-/* 
+/*
  * EEPROM_WriteString() - write string to EEPROM; may span multiple pages
  *
- *	This function writes a character string to IO mapped EEPROM. 
- *	If memory mapped EEPROM is enabled this function will not work. 
- *	This functiom will cancel all ongoing EEPROM page buffer loading 
+ *	This function writes a character string to IO mapped EEPROM.
+ *	If memory mapped EEPROM is enabled this function will not work.
+ *	This functiom will cancel all ongoing EEPROM page buffer loading
  *	operations, if any.
  *
  *	A string may span multiple EEPROM pages. For each affected page it:
@@ -237,8 +237,8 @@ void NNVM_ReadBytes(const uint16_t address, int8_t *buf, const uint16_t size)
  *	If 'terminate' is TRUE, add a null to the string, if FALSE, don't.
  *
  *	Note that only the page buffer locations that have been copied into
- *	the page buffer (during string copy) will be affected when writing to 
- *	the EEPROM (using AtomicPageWrite). Page buffer locations that have not 
+ *	the page buffer (during string copy) will be affected when writing to
+ *	the EEPROM (using AtomicPageWrite). Page buffer locations that have not
  *	been loaded will be left untouched in EEPROM.
  *
  *	  address 	 must be between 0 and top-of-EEPROM (0x0FFF in a 256 or 192)
@@ -250,12 +250,12 @@ void NNVM_ReadBytes(const uint16_t address, int8_t *buf, const uint16_t size)
  *
  *	Background: The xmega EEPROM is rated at 100,000 operations (endurance).
  *	The endurance figure is dominated by the erase operation. Reads do not
- *	affect the endurance and writes have minimal effect. Erases occur at 
+ *	affect the endurance and writes have minimal effect. Erases occur at
  *	the page level, so a strategy to minimize page erases is needed. This
  *	function is a reasonably high endurance solution since erases only occur
  *	once for each time a string crosses a page, as opposed to once per byte
- *	written (as in EEPROM_WriteByte()). A slightly higher endurance solution 
- *	would be to store up multiple contiguous string writes and perform them 
+ *	written (as in EEPROM_WriteByte()). A slightly higher endurance solution
+ *	would be to store up multiple contiguous string writes and perform them
  *	as single page operations.
  */
 
@@ -316,7 +316,7 @@ uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const ui
 		EEPROM_FlushBuffer();	// ensure no unintentional data is written
 		NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc; // Page Load command
 		while (byteidx <= byteend) {
-#ifdef __NNVM	
+#ifdef __NNVM
 			NVM.ADDR0 = byteidx;
 			testbuffer[byteidx++] = buf[i++];
 #else
@@ -333,16 +333,16 @@ uint16_t EEPROM_WriteString(const uint16_t address, const char *string, const ui
 }
 */
 
-/* 
+/*
  * EEPROM_ReadString() - read string from EEPROM; may span multiple pages
  *
- *	This function reads a character string to IO mapped EEPROM. 
- *	If memory mapped EEPROM is enabled this function will not work. 
- *	A string may span multiple EEPROM pages. 
+ *	This function reads a character string to IO mapped EEPROM.
+ *	If memory mapped EEPROM is enabled this function will not work.
+ *	A string may span multiple EEPROM pages.
  *
  *		address		starting address of string in EEPROM space
  *		buf			buffer to read string into
- *		size		cutoff string and terminate at this length 
+ *		size		cutoff string and terminate at this length
  *		return		next address past string termination
  */
 
@@ -367,7 +367,7 @@ uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t siz
 		NVM_EXEC();
 		if (!(buf[i] = NVM.DATA0)) {
 			break;
-		}		
+		}
 	}
 	if (i == size) {		// null terinate the buffer overflow case
 		buf[i] = 0;
@@ -376,12 +376,12 @@ uint16_t EEPROM_ReadString(const uint16_t address, char *buf, const uint16_t siz
 #endif //__NNVM
 }
 
-/* 
+/*
  * EEPROM_WriteBytes() - write N bytes to EEPROM; may span multiple pages
  *
- *	This function writes a byte buffer to IO mapped EEPROM. 
- *	If memory mapped EEPROM is enabled this function will not work. 
- *	This functiom will cancel all ongoing EEPROM page buffer loading 
+ *	This function writes a byte buffer to IO mapped EEPROM.
+ *	If memory mapped EEPROM is enabled this function will not work.
+ *	This functiom will cancel all ongoing EEPROM page buffer loading
  *	operations, if any.
  *
  *	Returns address past the write
@@ -407,8 +407,8 @@ uint16_t EEPROM_WriteBytes(const uint16_t address, const int8_t *buf, const uint
 /*
  * EEPROM_ReadBytes() - read N bytes to EEPROM; may span multiple pages
  *
- *	This function reads a character string to IO mapped EEPROM. 
- *	If memory mapped EEPROM is enabled this function will not work. 
+ *	This function reads a character string to IO mapped EEPROM.
+ *	If memory mapped EEPROM is enabled this function will not work.
  *	A string may span multiple EEPROM pages.
  */
 
@@ -443,11 +443,11 @@ uint16_t EEPROM_ReadBytes(const uint16_t address, int8_t *buf, const uint16_t si
 
 // Look for NVM_EXEC_WRAPPER in places.
 
-/* 
+/*
  * EEPROM_WaitForNVM() - Wait for any NVM access to finish
  *
  *  This function blocks waiting for any NVM access to finish including EEPROM
- *  Use this function before any EEPROM accesses if you are not certain that 
+ *  Use this function before any EEPROM accesses if you are not certain that
  *	any previous operations are finished yet, like an EEPROM write.
  */
 
@@ -457,7 +457,7 @@ void EEPROM_WaitForNVM( void )
 	} while ((NVM.STATUS & NVM_NVMBUSY_bm) == NVM_NVMBUSY_bm);
 }
 
-/* 
+/*
  * EEPROM_FlushBuffer() - Flush temporary EEPROM page buffer.
  *
  *  This function flushes the EEPROM page buffers, and will cancel
@@ -476,7 +476,7 @@ void EEPROM_FlushBuffer( void )
 	}
 }
 
-/* 
+/*
  * EEPROM_WriteByte() 		- write one byte to EEPROM using IO mapping
  * EEPROM_WriteByteByPage() - write one byte using page addressing (MACRO)
  *
@@ -492,20 +492,20 @@ void EEPROM_FlushBuffer( void )
  *		  Use EEPROM_WriteString(), or write a new routine for binary blocks.
  */
 
-void EEPROM_WriteByte(uint16_t address, uint8_t value) 
+void EEPROM_WriteByte(uint16_t address, uint8_t value)
 {
 	EEPROM_DisableMapping();				// *** SAFETY ***
 	EEPROM_FlushBuffer();					// prevent unintentional write
 	NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;// load page_load command
 	NVM.ADDR0 = address & 0xFF; 			// set buffer addresses
 	NVM.ADDR1 = (address >> 8) & EEPROM_ADDR1_MASK_gm;
-	NVM.ADDR2 = 0x00; 
+	NVM.ADDR2 = 0x00;
 	NVM.DATA0 = value;	// load write data - triggers EEPROM page buffer load
 	NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;// Atomic Write (Erase&Write)
 	NVM_EXEC_WRAPPER(); // Load command, write protection signature & exec command
 }
 
-/* 
+/*
  * EEPROM_ReadByte() 	   - Read one byte from EEPROM using IO mapping.
  * EEPROM_ReadChar() 	   - Read one char from EEPROM using IO mapping.
  * EEPROM_ReadByteByPage() - Read one byte using page addressing
@@ -531,7 +531,7 @@ uint8_t EEPROM_ReadByte(uint16_t address)
 	return NVM.DATA0;
 }
 
-/* 
+/*
  * EEPROM_LoadByte() - Load single byte into temporary page buffer.
  *
  *  This function loads one byte into the temporary EEPROM page buffers.
@@ -559,12 +559,12 @@ void EEPROM_LoadByte(uint8_t byteAddr, uint8_t value)
 	NVM.DATA0 = value; // Set data, which triggers loading EEPROM page buffer
 }
 
-/* 
+/*
  * EEPROM_LoadPage() - Load entire page into temporary EEPROM page buffer.
  *
  *  This function loads an entire EEPROM page from an SRAM buffer to
- *  the EEPROM page buffers. 
- *	Make sure that the buffer is flushed before starting to load bytes. 
+ *  the EEPROM page buffers.
+ *	Make sure that the buffer is flushed before starting to load bytes.
  *	If memory mapped EEPROM is enabled this function will not work.
  *
  *  Note: Only the lower part of the address is used to address the buffer.
@@ -590,13 +590,13 @@ void EEPROM_LoadPage( const uint8_t * values )
 	}
 }
 
-/* 
+/*
  * EEPROM_AtomicWritePage() - Write already loaded page into EEPROM.
  *
  *	This function writes the contents of an already loaded EEPROM page
- *	buffer into EEPROM memory.  As this is an atomic write, the page in 
- *	EEPROM will be erased automatically before writing. Note that only the 
- *	page buffer locations that have been loaded will be used when writing 
+ *	buffer into EEPROM memory.  As this is an atomic write, the page in
+ *	EEPROM will be erased automatically before writing. Note that only the
+ *	page buffer locations that have been loaded will be used when writing
  *	to EEPROM. Page buffer locations that have not been loaded will be left
  *	untouched in EEPROM.
  *
@@ -614,7 +614,7 @@ inline void EEPROM_AtomicWritePage(uint8_t pageAddr)
 	NVM_EXEC();
 }
 
-/* 
+/*
  * EEPROM_ErasePage() - Erase EEPROM page.
  *
  *  This function erases one EEPROM page, so that every location reads 0xFF.
@@ -633,11 +633,11 @@ inline void EEPROM_ErasePage( uint8_t pageAddr )
 	NVM_EXEC_WRAPPER();
 }
 
-/* 
+/*
  * EEPROM_SplitWritePage() - Write (without erasing) EEPROM page.
  *
  *  This function writes the contents of an already loaded EEPROM page
- *  buffer into EEPROM memory. As this is a split write, the page in 
+ *  buffer into EEPROM memory. As this is a split write, the page in
  *	EEPROM will *NOT* be erased before writing.
  *
  *	  pageAddr  EEPROM Page address between 0 and EEPROM_SIZE/EEPROM_PAGESIZE
@@ -654,7 +654,7 @@ inline void EEPROM_SplitWritePage( uint8_t pageAddr )
 	NVM_EXEC_WRAPPER();
 }
 
-/* 
+/*
  * EEPROM_EraseAll() - Erase entire EEPROM memory to 0xFF
  */
 
@@ -665,64 +665,4 @@ inline void EEPROM_EraseAll( void )
 	NVM_EXEC_WRAPPER();
 }
 
-/*************************
- *	EEPROM Unit tests    *
- *************************/
-
-//#define __UNIT_TEST_EEPROM
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_EEPROM
-
-#ifndef FALSE
-#define FALSE (0)
-#endif
-#ifndef TRUE
-#define TRUE (1)
-#endif
-
-void _EEPROM_test_write(void);
-void _EEPROM_test_write_and_read(void);
-
-void EEPROM_unit_tests()
-{
-//	_EEPROM_test_write();
-	_EEPROM_test_write_and_read();
-}
-
-void _EEPROM_test_write_and_read()
-{
-	uint16_t address = 0;
-	char_t tbuf[16];
-
-	EEPROM_WriteString(address, "0123456789", TRUE);	// 10 chars + termination
-	EEPROM_ReadString(address, tbuf, 16);
-	printf("%s\n", (char *)tbuf);
-}
-
-void _EEPROM_test_write()
-{
-	// write fits easily in page 0, starts at 0, not terminated (return 0x06)
-	EEPROM_WriteString(0x00, "0123\n", FALSE);
-
-	// write fits easily in page 0, starts at 1, not terminated
-	EEPROM_WriteString(0x01, "0123\n", FALSE);
-
-	// write fits easily in page 0, starts at 2, terminated
-	EEPROM_WriteString(0x02, "01234567\n", TRUE);
-
-	// write overflows page 0, starts at 0x1C, terminated (return 0x26)
-	EEPROM_WriteString(0x1C, "01234567\n", TRUE);
-
-	// write fills page 1 completely, terminated (return 0x40)
-	EEPROM_WriteString(0x20, "0123456789abcdefghijklmnopqrst\n", TRUE);
-
-	// write fills page 1 completely, spills into page 2, terminated (return 0x46)
-	EEPROM_WriteString(0x20, "0123456789abcdefghijklmnopqrstuvwxyz\n", TRUE);
-
-	// write fills page 1 and 2 completely, spills into page 3, terminated (return 0x68)
-	EEPROM_WriteString(0x20, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]()\n", TRUE);
-}
-
-#endif
-#endif
 

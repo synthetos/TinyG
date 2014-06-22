@@ -93,14 +93,6 @@ stat_t pwm_set_duty(uint8_t channel, float duty);
 
 #endif // __TEXT_MODE
 
-//#define __UNIT_TEST_PWM		// uncomment to enable PWM unit tests
-#ifdef __UNIT_TEST_PWM
-void pwm_unit_tests(void);
-#define	PWM_UNITS pwm_unit_tests();
-#else
-#define	PWM_UNITS
-#endif
-
 #ifdef __cplusplus
 }
 #endif

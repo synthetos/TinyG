@@ -183,15 +183,15 @@ stat_t mp_aline(GCodeState_t *gm_in)
 /*
  * _calc_move_times() - compute optimal and minimum move times into the gcode_state
  *
- *	"Minimum time" is the fastest the move can be performed given the velocity constraints on each 
- *	participating axis - regardless of the feed rate requested. The minimum time is the time limited 
- *	by the rate-limiting axis. The minimum time is needed to compute the optimal time and is 
+ *	"Minimum time" is the fastest the move can be performed given the velocity constraints on each
+ *	participating axis - regardless of the feed rate requested. The minimum time is the time limited
+ *	by the rate-limiting axis. The minimum time is needed to compute the optimal time and is
  *	recorded for possible feed override computation..
  *
- *	"Optimal time" is either the time resulting from the requested feed rate or the minimum time if 
+ *	"Optimal time" is either the time resulting from the requested feed rate or the minimum time if
  *	the requested feed rate is not achievable. Optimal times for traverses are always the minimum time.
  *
- *	The gcode state must have targets set prior by having cm_set_target(). Axis modes are taken into 
+ *	The gcode state must have targets set prior by having cm_set_target(). Axis modes are taken into
  *	account by this.
  *
  *	The following times are compared and the longest is returned:
@@ -205,36 +205,36 @@ stat_t mp_aline(GCodeState_t *gm_in)
  */
 /* --- NIST RS274NGC_v3 Guidance ---
  *
- *	The following is verbatim text from NIST RS274NGC_v3. As I interpret A for moves that 
- *	combine both linear and rotational movement, the feed rate should apply to the XYZ 
- *	movement, with the rotational axis (or axes) timed to start and end at the same time 
- *	the linear move is performed. It is possible under this case for the rotational move 
+ *	The following is verbatim text from NIST RS274NGC_v3. As I interpret A for moves that
+ *	combine both linear and rotational movement, the feed rate should apply to the XYZ
+ *	movement, with the rotational axis (or axes) timed to start and end at the same time
+ *	the linear move is performed. It is possible under this case for the rotational move
  *	to rate-limit the linear move.
  *
  * 	2.1.2.5 Feed Rate
  *
- *	The rate at which the controlled point or the axes move is nominally a steady rate 
- *	which may be set by the user. In the Interpreter, the interpretation of the feed 
- *	rate is as follows unless inverse time feed rate mode is being used in the 
- *	RS274/NGC view (see Section 3.5.19). The canonical machining functions view of feed 
- *	rate, as described in Section 4.3.5.1, has conditions under which the set feed rate 
+ *	The rate at which the controlled point or the axes move is nominally a steady rate
+ *	which may be set by the user. In the Interpreter, the interpretation of the feed
+ *	rate is as follows unless inverse time feed rate mode is being used in the
+ *	RS274/NGC view (see Section 3.5.19). The canonical machining functions view of feed
+ *	rate, as described in Section 4.3.5.1, has conditions under which the set feed rate
  *	is applied differently, but none of these is used in the Interpreter.
  *
- *	A. 	For motion involving one or more of the X, Y, and Z axes (with or without 
+ *	A. 	For motion involving one or more of the X, Y, and Z axes (with or without
  *		simultaneous rotational axis motion), the feed rate means length units per
  *		minute along the programmed XYZ path, as if the rotational axes were not moving.
  *
- *	B.	For motion of one rotational axis with X, Y, and Z axes not moving, the 
+ *	B.	For motion of one rotational axis with X, Y, and Z axes not moving, the
  *		feed rate means degrees per minute rotation of the rotational axis.
  *
- *	C.	For motion of two or three rotational axes with X, Y, and Z axes not moving, 
- *		the rate is applied as follows. Let dA, dB, and dC be the angles in degrees 
- *		through which the A, B, and C axes, respectively, must move. 
- *		Let D = sqrt(dA^2 + dB^2 + dC^2). Conceptually, D is a measure of total 
- *		angular motion, using the usual Euclidean metric. Let T be the amount of 
- *		time required to move through D degrees at the current feed rate in degrees 
- *		per minute. The rotational axes should be moved in coordinated linear motion 
- *		so that the elapsed time from the start to the end of the motion is T plus 
+ *	C.	For motion of two or three rotational axes with X, Y, and Z axes not moving,
+ *		the rate is applied as follows. Let dA, dB, and dC be the angles in degrees
+ *		through which the A, B, and C axes, respectively, must move.
+ *		Let D = sqrt(dA^2 + dB^2 + dC^2). Conceptually, D is a measure of total
+ *		angular motion, using the usual Euclidean metric. Let T be the amount of
+ *		time required to move through D degrees at the current feed rate in degrees
+ *		per minute. The rotational axes should be moved in coordinated linear motion
+ *		so that the elapsed time from the start to the end of the motion is T plus
  *		any time required for acceleration or deceleration.
  */
 static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms = Gcode model state
@@ -329,17 +329,17 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
  *	  bf->jerk				- source of the other jerk variables. Used in mr.
  */
 /* Notes:
- *	[1]	Whether or not a block is planned is controlled by the bf->replannable 
- *		setting (set TRUE if it should be). Replan flags are checked during the 
- *		backwards pass and prune the replan list to include only the the latest 
+ *	[1]	Whether or not a block is planned is controlled by the bf->replannable
+ *		setting (set TRUE if it should be). Replan flags are checked during the
+ *		backwards pass and prune the replan list to include only the the latest
  *		blocks that require planning
  *
- *		In normal operation the first block (currently running block) is not 
- *		replanned, but may be for feedholds and feed overrides. In these cases 
- *		the prep routines modify the contents of the mr buffer and re-shuffle 
+ *		In normal operation the first block (currently running block) is not
+ *		replanned, but may be for feedholds and feed overrides. In these cases
+ *		the prep routines modify the contents of the mr buffer and re-shuffle
  *		the block list, re-enlisting the current bf buffer with new parameters.
- *		These routines also set all blocks in the list to be replannable so the 
- *		list can be recomputed regardless of exact stops and previous replanning 
+ *		These routines also set all blocks in the list to be replannable so the
+ *		list can be recomputed regardless of exact stops and previous replanning
  *		optimizations.
  *
  *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
@@ -395,7 +395,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
- */	
+ */
 static void _reset_replannable_list()
 {
 	mpBuf_t *bf = mp_get_first_buffer();
@@ -409,39 +409,39 @@ static void _reset_replannable_list()
 /*
  * _get_junction_vmax() - Sonny's algorithm - simple
  *
- *  Computes the maximum allowable junction speed by finding the velocity that will yield 
- *	the centripetal acceleration in the corner_acceleration value. The value of delta sets 
- *	the effective radius of curvature. Here's Sonny's (Sungeun K. Jeon's) explanation 
+ *  Computes the maximum allowable junction speed by finding the velocity that will yield
+ *	the centripetal acceleration in the corner_acceleration value. The value of delta sets
+ *	the effective radius of curvature. Here's Sonny's (Sungeun K. Jeon's) explanation
  *	of what's going on:
  *
- *	"First let's assume that at a junction we only look a centripetal acceleration to simply 
- *	things. At a junction of two lines, let's place a circle such that both lines are tangent 
- *	to the circle. The circular segment joining the lines represents the path for constant 
- *	centripetal acceleration. This creates a deviation from the path (let's call this delta), 
- *	which is the distance from the junction to the edge of the circular segment. Delta needs 
- *	to be defined, so let's replace the term max_jerk (see note 1) with max_junction_deviation, 
- *	or "delta". This indirectly sets the radius of the circle, and hence limits the velocity 
- *	by the centripetal acceleration. Think of the this as widening the race track. If a race 
- *	car is driving on a track only as wide as a car, it'll have to slow down a lot to turn 
- *	corners. If we widen the track a bit, the car can start to use the track to go into the 
+ *	"First let's assume that at a junction we only look a centripetal acceleration to simply
+ *	things. At a junction of two lines, let's place a circle such that both lines are tangent
+ *	to the circle. The circular segment joining the lines represents the path for constant
+ *	centripetal acceleration. This creates a deviation from the path (let's call this delta),
+ *	which is the distance from the junction to the edge of the circular segment. Delta needs
+ *	to be defined, so let's replace the term max_jerk (see note 1) with max_junction_deviation,
+ *	or "delta". This indirectly sets the radius of the circle, and hence limits the velocity
+ *	by the centripetal acceleration. Think of the this as widening the race track. If a race
+ *	car is driving on a track only as wide as a car, it'll have to slow down a lot to turn
+ *	corners. If we widen the track a bit, the car can start to use the track to go into the
  *	turn. The wider it is, the faster through the corner it can go.
  *
- * (Note 1: "max_jerk" refers to the old grbl/marlin max_jerk" approximation term, not the 
+ * (Note 1: "max_jerk" refers to the old grbl/marlin max_jerk" approximation term, not the
  *	tinyG jerk terms)
- * 
+ *
  *	If you do the geometry in terms of the known variables, you get:
  *		sin(theta/2) = R/(R+delta)  Re-arranging in terms of circle radius (R)
- *		R = delta*sin(theta/2)/(1-sin(theta/2). 
+ *		R = delta*sin(theta/2)/(1-sin(theta/2).
  *
- *	Theta is the angle between line segments given by: 
- *		cos(theta) = dot(a,b)/(norm(a)*norm(b)). 
+ *	Theta is the angle between line segments given by:
+ *		cos(theta) = dot(a,b)/(norm(a)*norm(b)).
  *
- *	Most of these calculations are already done in the planner. To remove the acos() 
- *	and sin() computations, use the trig half angle identity: 
- *		sin(theta/2) = +/- sqrt((1-cos(theta))/2). 
+ *	Most of these calculations are already done in the planner. To remove the acos()
+ *	and sin() computations, use the trig half angle identity:
+ *		sin(theta/2) = +/- sqrt((1-cos(theta))/2).
  *
- *	For our applications, this should always be positive. Now just plug the equations into 
- *	the centripetal acceleration equation: v_c = sqrt(a_max*R). You'll see that there are 
+ *	For our applications, this should always be positive. Now just plug the equations into
+ *	the centripetal acceleration equation: v_c = sqrt(a_max*R). You'll see that there are
  *	only two sqrt computations and no sine/cosines."
  *
  *	How to compute the radius using brute-force trig:
@@ -450,13 +450,13 @@ static void _reset_replannable_list()
  */
 /*  This version extends Chamnit's algorithm by computing a value for delta that takes
  *	the contributions of the individual axes in the move into account. This allows the
- *	control radius to vary by axis. This is necessary to support axes that have 
- *	different dynamics; such as a Z axis that doesn't move as fast as X and Y (such as a 
- *	screw driven Z axis on machine with a belt driven XY - like a Shapeoko), or rotary 
+ *	control radius to vary by axis. This is necessary to support axes that have
+ *	different dynamics; such as a Z axis that doesn't move as fast as X and Y (such as a
+ *	screw driven Z axis on machine with a belt driven XY - like a Shapeoko), or rotary
  *	axes ABC that have completely different dynamics than their linear counterparts.
  *
- *	The function takes the absolute values of the sum of the unit vector components as 
- *	a measure of contribution to the move, then scales the delta values from the non-zero 
+ *	The function takes the absolute values of the sum of the unit vector components as
+ *	a measure of contribution to the move, then scales the delta values from the non-zero
  *	axes into a composite delta to be used for the move. Shown for an XY vector:
  *
  *	 	U[i]	Unit sum of i'th axis	fabs(unit_a[i]) + fabs(unit_b[i])
@@ -503,19 +503,19 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  * mp_plan_hold_callback() - replan block list to execute hold
  * mp_end_hold() 		   - release the hold and restart block list
  *
- *	Feedhold is executed as cm.hold_state transitions executed inside 
+ *	Feedhold is executed as cm.hold_state transitions executed inside
  *	_exec_aline() and main loop callbacks to these functions:
  *	mp_plan_hold_callback() and mp_end_hold().
  */
 /*	Holds work like this:
- * 
+ *
  * 	  - Hold is asserted by calling cm_feedhold() (usually invoked via a ! char)
- *		If hold_state is OFF and motion_state is RUNning it sets 
+ *		If hold_state is OFF and motion_state is RUNning it sets
  *		hold_state to SYNC and motion_state to HOLD.
  *
- *	  - Hold state == SYNC tells the aline exec routine to execute the next aline 
- *		segment then set hold_state to PLAN. This gives the planner sufficient 
- *		time to replan the block list for the hold before the next aline segment 
+ *	  - Hold state == SYNC tells the aline exec routine to execute the next aline
+ *		segment then set hold_state to PLAN. This gives the planner sufficient
+ *		time to replan the block list for the hold before the next aline segment
  *		needs to be processed.
  *
  *	  - Hold state == PLAN tells the planner to replan the mr buffer, the current
@@ -523,17 +523,17 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *		hold. Hold planning replans the planner buffer queue down to zero and then
  *		back up from zero. Hold state is set to DECEL when planning is complete.
  *
- *	  - Hold state == DECEL persists until the aline execution runs to zero 
+ *	  - Hold state == DECEL persists until the aline execution runs to zero
  *		velocity, at which point hold state transitions to HOLD.
  *
- *	  - Hold state == HOLD persists until the cycle is restarted. A cycle start 
- *		is an asynchronous event that sets the cycle_start_flag TRUE. It can 
- *		occur any time after the hold is requested - either before or after 
+ *	  - Hold state == HOLD persists until the cycle is restarted. A cycle start
+ *		is an asynchronous event that sets the cycle_start_flag TRUE. It can
+ *		occur any time after the hold is requested - either before or after
  *		motion stops.
  *
- *	  - mp_end_hold() is executed from cm_feedhold_sequencing_callback() once the 
- *		hold state == HOLD and a cycle_start has been requested.This sets the hold 
- *		state to OFF which enables _exec_aline() to continue processing. Move 
+ *	  - mp_end_hold() is executed from cm_feedhold_sequencing_callback() once the
+ *		hold state == HOLD and a cycle_start has been requested.This sets the hold
+ *		state to OFF which enables _exec_aline() to continue processing. Move
  *		execution begins with the first buffer after the hold.
  *
  *	Terms used:
@@ -542,15 +542,15 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
  *	 - bp+1 is the bf buffer following bp+0. This runs through bp+N
  *	 - bp (by itself) just refers to the current buffer being adjusted / replanned
  *
- *	Details: Planning re-uses bp+0 as an "extra" buffer. Normally bp+0 is returned 
- *		to the buffer pool as it is redundant once mr is loaded. Use the extra 
- *		buffer to split the move in two where the hold decelerates to zero. Use 
+ *	Details: Planning re-uses bp+0 as an "extra" buffer. Normally bp+0 is returned
+ *		to the buffer pool as it is redundant once mr is loaded. Use the extra
+ *		buffer to split the move in two where the hold decelerates to zero. Use
  *		one buffer to go to zero, the other to replan up from zero. All buffers past
- *		that point are unaffected other than that they need to be replanned for velocity.  
+ *		that point are unaffected other than that they need to be replanned for velocity.
  *
- *	Note: There are multiple opportunities for more efficient organization of 
+ *	Note: There are multiple opportunities for more efficient organization of
  *		  code in this module, but the code is so complicated I just left it
- *		  organized for clarity and hoped for the best from compiler optimization. 
+ *		  organized for clarity and hoped for the best from compiler optimization.
  */
 
 static float _compute_next_segment_velocity()
@@ -578,7 +578,7 @@ stat_t mp_plan_hold_callback()
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.target, mr.position);
 
-/*	mr_available_length = 
+/*	mr_available_length =
 		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
 			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
 			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
@@ -596,8 +596,8 @@ stat_t mp_plan_hold_callback()
 	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
 	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
 	// is the velocity of the last segment, not the one that's going to be executed next.
-	// The braking_velocity needs to be the velocity of the next segment that has not yet 
-	// been computed. In the mean time, this hack will work. 
+	// The braking_velocity needs to be the velocity of the next segment that has not yet
+	// been computed. In the mean time, this hack will work.
 	if ((braking_length > mr_available_length) && (fp_ZERO(bp->exit_velocity))) {
 		braking_length = mr_available_length;
 	}
@@ -630,7 +630,7 @@ stat_t mp_plan_hold_callback()
 	mr.section_state = SECTION_NEW;
 	mr.tail_length = mr_available_length;
 	mr.cruise_velocity = braking_velocity;
-	mr.exit_velocity = braking_velocity - mp_get_target_velocity(0, mr_available_length, bp);	
+	mr.exit_velocity = braking_velocity - mp_get_target_velocity(0, mr_available_length, bp);
 
 	// Find the point where deceleration reaches zero. This could span multiple buffers.
 	braking_velocity = mr.exit_velocity;		// adjust braking velocity downward
@@ -674,7 +674,7 @@ stat_t mp_plan_hold_callback()
  */
 stat_t mp_end_hold()
 {
-	if (cm.hold_state == FEEDHOLD_END_HOLD) { 
+	if (cm.hold_state == FEEDHOLD_END_HOLD) {
 		cm.hold_state = FEEDHOLD_OFF;
 		mpBuf_t *bf;
 		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
@@ -686,383 +686,6 @@ stat_t mp_end_hold()
 	}
 	return (STAT_OK);
 }
-
-
-/********************************/
-/********************************/
-/****** PLANNER UNIT TESTS ******/
-/********************************/
-/********************************/
-
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_PLANNER
-
-// Comment in and out to enable/disable parts of the unit tests
-//#define __TEST_GET_TARGET_LENGTH
-//#define __TEST_GET_TARGET_VELOCITY
-#define __TEST_CALCULATE_TRAPEZOID
-//#define __TEST_GET_JUNCTION_VMAX
-
-// Prototypes and local defines
-#ifdef __TEST_GET_TARGET_LENGTH
-static void _test_get_target_length(void);
-#endif
-
-#ifdef __TEST_GET_TARGET_VELOCITY
-static void _test_get_target_velocity(void);
-#endif
-
-#ifdef __TEST_CALCULATE_TRAPEZOID
-static void _test_trapezoid(float length, float Ve, float Vt, float Vx, mpBuf_t *bf);
-static void _test_calculate_trapezoid(void);
-#endif
-
-#ifdef __TEST_GET_JUNCTION_VMAX
-static void _make_unit_vector(float unit[], float x, float y, float z, float a, float b, float c);
-static void _test_get_junction_vmax(void);
-#endif
-
-//#define JERK_TEST_VALUE (float)20000000	// set this to the value in the profile you are running
-//#define JERK_TEST_VALUE (float)50000000	// set this to the value in the profile you are running
-//#define JERK_TEST_VALUE (float)100000000	// set this to the value in the profile you are running
-//static void _set_jerk(const float jerk, mpBuf_t *bf);
-
-void mp_unit_tests()
-{
-#ifdef __TEST_GET_TARGET_LENGTH
-	_test_get_target_length();
-#endif
-
-#ifdef __TEST_GET_TARGET_VELOCITY
-	_test_get_target_velocity();
-#endif
-
-#ifdef __TEST_CALCULATE_TRAPEZOID
-	_test_calculate_trapezoid();
-#endif
-
-#ifdef __TEST_GET_JUNCTION_VMAX
-	_test_get_junction_vmax();
-#endif
-}
-
-/************************************/
-/***** __TEST_GET_TARGET_LENGTH *****/
-/************************************/
-
-#ifdef __TEST_GET_TARGET_LENGTH
-static void _test_get_target_length()
-{
-	mpBuf_t *bf = mp_get_write_buffer();
-	bf->jerk = 1800000;
-	bf->recip_jerk = 1/bf->jerk;
-	float L;
-	float Vi;
-	float Vt;
-
-	Vi = 0;
-	Vt = 300;
-	L = mp_get_target_length(Vi, Vt, bf);		// result: L = 3.872983
-	Vt = mp_get_target_velocity(Vi, L, bf);	// result: Vt = 300
-
-	Vi = 165;
-	Vt = 300;
-	L = mp_get_target_length(Vi, Vt, bf);		// result: L = 4.027018
-	Vt = mp_get_target_velocity(Vi, L, bf);	// result: Vt = 300
-
-	Vi = 523;
-	Vt = 600;
-	L = mp_get_target_length(Vi, Vt, bf);		// result: L = 7.344950
-	Vt = mp_get_target_velocity(Vi, L, bf);	// result: Vt = 600
-
-	Vi = 200;
-	Vt = 400;
-	L = mp_get_target_length(Vi, Vt, bf);		// result: L = 6.324555
-	Vt = mp_get_target_velocity(Vi, L, bf);	// result: Vt = 400
-
-	Vi = 174;
-	Vt = 347;
-	L = mp_get_target_length(Vi, Vt, bf);		// result: L = 5.107690
-	Vt = mp_get_target_velocity(Vi, L, bf);	// result: Vt = 347
-}
-#endif	// __TEST_GET_TARGET_LENGTH
-
-
-/**************************************/
-/***** __TEST_GET_TARGET_VELOCITY *****/
-/**************************************/
-
-#ifdef __TEST_GET_TARGET_VELOCITY
-static void _test_get_target_velocity()
-{
-	mpBuf_t *bf = mp_get_write_buffer();
-
-	float L = 3.872983;
-	float Vi = 0;
-	float Vt; 			// 300
-	bf->jerk = 1800000;
-
-	Vt = mp_get_target_velocity(Vi, L, bf);
-}
-#endif	// __TEST_GET_TARGET_VELOCITY
-
-
-/**************************************/
-/***** __TEST_CALCULATE_TRAPEZOID *****/
-/**************************************/
-
-/* These tests are calibrated for settings_default.h profile values:
-
-#define JERK_MAX 				20			// "20,000,000" mm/(min^3), see #define below
-#define JUNCTION_DEVIATION		0.05		// default value, in mm
-#define JUNCTION_ACCELERATION	100000		// centripetal acceleration around corners
-
-Other assumptions include:
-
-#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
-#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
-
-*/
-
-#ifdef __TEST_CALCULATE_TRAPEZOID
-
-#define JERK_TEST_VALUE (float)20000000		// set this to the value in the profile you are running
-
-static void _test_trapezoid(float length, float Ve, float Vt, float Vx, mpBuf_t *bf)
-{
-	bf->length = length;
-	bf->entry_velocity = Ve;
-	bf->cruise_velocity = Vt;
-	bf->exit_velocity = Vx;
-	bf->cruise_vmax = Vt;
-	bf->jerk = JERK_TEST_VALUE;
-	bf->recip_jerk = 1/bf->jerk;
-	bf->cbrt_jerk = cbrt(bf->jerk);
-	mp_calculate_trapezoid(bf);
-}
-
-static void _test_calculate_trapezoid()
-{
-	mpBuf_t *bf = mp_get_write_buffer();
-
-//	_test_trapezoid(0.0001,	800,	800, 	800,bf);	// B case
-//	_test_trapezoid(0.001,	800,	800, 	800,bf);	// B case
-//	_test_trapezoid(0.01,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(0.05,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(0.1,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(1.0,	800,	800, 	800,bf);	// B case
-	_test_trapezoid(10.0,	800,	800, 	800,bf);	// B case
-
-// F cases: line below minimum velocity.
-//				   	L	 	Ve  	Vt		Vx
-//	_test_trapezoid(0.0001, 0,		100,	0,		bf);
-//	_test_trapezoid(0.001, 	0,		100,	0,		bf);
-	_test_trapezoid(0.0001, 1000,	1000,	1000,	bf);	// min length = 0.0833...
-	_test_trapezoid(0.001, 	1000,	1000,	1000,	bf);	// min length = 0.0833..
-	_test_trapezoid(0.01, 	1000,	1000,	1000,	bf);	// min length = 0.0833..
-
-
-// B cases: body-only line above minimum velocity. At std settings nominal length == 0.00833333
-//				   	L	 	Ve  	Vt		Vx
-	_test_trapezoid(0.08, 	1000,	1000,	1000,	bf);	// min length = 0.0833..
-	_test_trapezoid(0.09, 	1000,	1000,	1000,	bf);	// min length = 0.0833..
-	_test_trapezoid(0.009, 	0,		100,	0,		bf);
-
-	_test_trapezoid(0.1, 	0,	100,	0,	bf);
-
-// no-fit cases: line below minimum velocity or length
-//				   	L	 Ve  	Vt		Vx
-	_test_trapezoid(1.0, 0,		0.001,	0,	bf);
-	_test_trapezoid(0.0, 0,		100,	0,	bf);
-	_test_trapezoid(0.01, 0,	100,	0,	bf);
-
-// 1 section cases (H,B and T)
-//				   	L	 Ve  	Vt		Vx
-	_test_trapezoid(1.0, 800,	800, 	800,bf);	// B case
-	_test_trapezoid(0.8, 0,		400, 	0, bf);		// B case
-	_test_trapezoid(0.8, 200,	400, 	0, bf);
-	_test_trapezoid(2.0, 400,	400, 	0, bf);
-	_test_trapezoid(0.8, 0,		400, 	200,bf);
-
-// 2 section cases (HT)
-//				   	L   Ve  	Vt		Vx
-	_test_trapezoid(0.8, 0,		200, 	0, bf);		// requested fit HT case (exact fit)
-	_test_trapezoid(0.8, 0,		400, 	0, bf);		// symmetric rate-limited HT case
-	_test_trapezoid(0.8, 200,	400, 	0, bf);		// asymmetric rate-limited HT case
-	_test_trapezoid(2.0, 400,	400, 	0, bf);
-	_test_trapezoid(0.8, 0,		400, 	200,bf);
-
-// requested-fit cases
-//				   	L  	 Ve  	Vt		Vx
-	_test_trapezoid(0.8, 400,	400, 	0, 	 bf);
-	_test_trapezoid(0.8, 600,	600, 	200, bf);
-	_test_trapezoid(0.8, 0,		400, 	400, bf);
-	_test_trapezoid(0.8, 200,	600, 	600, bf);
-
-// HBT - 3 section cases
-//				   	L    Ve  	Vt		Vx
-	_test_trapezoid(0.8, 0,		190, 	0, bf);
-	_test_trapezoid(2.0, 200,	400, 	0, bf);
-
-
-
-/*
-// test cases drawn from Mudflap
-//				   	L		Ve  	  Vt		Vx
-	_test_trapezoid(0.6604, 000.000,  800.000,  000.000, bf);	// line 50
-	_test_trapezoid(0.8443, 000.000,  805.855,  000.000, bf);	// line 55
-	_test_trapezoid(0.8443, 000.000,  805.855,  393.806, bf);	// line 55'
-	_test_trapezoid(0.7890, 393.805,  955.829,  000.000, bf);	// line 60
-	_test_trapezoid(0.7890, 393.806,  955.829,  390.294, bf);	// line 60'
-	_test_trapezoid(0.9002, 390.294,  833.884,  000.000, bf);	// line 65
-
-	_test_trapezoid(0.9002, 390.294,  833.884,  455.925, bf);	// line 65'
-	_test_trapezoid(0.9002, 390.294,  833.884,  806.895, bf);	// line 65"
-	_test_trapezoid(0.9735, 455.925,  806.895,  000.000, bf);	// line 70
-	_test_trapezoid(0.9735, 455.925,  806.895,  462.101, bf);	// line 70'
-
-	_test_trapezoid(0.9735, 806.895,  806.895,  802.363, bf);	// line 70"
-
-	_test_trapezoid(0.9935, 462.101,  802.363,  000.000, bf);	// line 75
-	_test_trapezoid(0.9935, 462.101,  802.363,  000.000, bf);	// line 75'
-	_test_trapezoid(0.9935, 802.363,  802.363,  477.729, bf);	// line 75"
-	_test_trapezoid(0.9935, 802.363,  802.363,  802.363, bf);	// line 75"
-	_test_trapezoid(1.0441, 477.729,  843.274,  000.000, bf);	// line 80
-	_test_trapezoid(1.0441, 802.363,  843.274,  388.515, bf);	// line 80'
-	_test_trapezoid(1.0441, 802.363,  843.274,  803.990, bf);	// line 80"
-	_test_trapezoid(0.7658, 388.515,  803.990,  000.000, bf);	// line 85
-	_test_trapezoid(0.7658, 803.990,  803.990,  733.618, bf);	// line 85'
-	_test_trapezoid(0.7658, 803.990,  803.990,  802.363, bf);	// line 85"
-	_test_trapezoid(1.9870, 733.618,  802.363,  000.000, bf);	// line 90
-	_test_trapezoid(1.9870, 802.363,  802.363,  727.371, bf);	// line 90'
-	_test_trapezoid(1.9870, 802.363,  802.363,  802.363, bf);	// line 90'
-	_test_trapezoid(1.9617, 727.371,  802.425,  000.000, bf);	// line 95
-	_test_trapezoid(1.9617, 727.371,  802.425,  000.000, bf);	// line 95'
-	_test_trapezoid(1.9617, 802.363,  802.425,  641.920, bf);	// line 95"
-	_test_trapezoid(1.9617, 802.363,  802.425,  802.425, bf);	// line 95"'
-	_test_trapezoid(1.6264, 641.920,  826.209,  000.000, bf);	// line 100
-	_test_trapezoid(1.6264, 802.425,  826.209,  266.384, bf);	// line 100'
-	_test_trapezoid(1.6264, 802.425,  826.209,  658.149, bf);	// line 100"
-	_test_trapezoid(1.6264, 802.425,  826.209,  679.360, bf);	// line 100"'
-	_test_trapezoid(0.4348, 266.384,  805.517,  000.000, bf);	// line 105
-	_test_trapezoid(0.4348, 658.149,  805.517,  391.765, bf);	// line 105'
-	_test_trapezoid(0.4348, 679.360,  805.517,  412.976, bf);	// line 105"
-	_test_trapezoid(0.7754, 391.765,  939.343,  000.000, bf);	// line 110
-	_test_trapezoid(0.7754, 412.976,  939.343,  376.765, bf);	// line 110'
-	_test_trapezoid(0.7754, 802.425,  826.209,  679.360, bf);	// line 110"
-	_test_trapezoid(0.7754, 412.976,  939.343,  804.740, bf);	// line 110"'
-	_test_trapezoid(0.7313, 376.765,  853.107,  000.000, bf);	// line 115
-	_test_trapezoid(0.7313, 804.740,  853.107,  437.724, bf);	// line 115'
-	_test_trapezoid(0.7313, 804.740,  853.107,  683.099, bf);	// line 115"
-	_test_trapezoid(0.7313, 804.740,  853.107,  801.234, bf);	// line 115"'
-	_test_trapezoid(0.9158, 437.724,  801.233,  000.000, bf);	// line 120
-	_test_trapezoid(0.9158, 683.099,  801.233,  245.375, bf);	// line 120'
-	_test_trapezoid(0.9158, 801.233,  801.233,  617.229, bf);	// line 120"
-	_test_trapezoid(0.3843, 245.375,  807.080,  000.000, bf);	// line 125
-	_test_trapezoid(0.3843, 617.229,  807.080,  371.854, bf);	// line 125'  6,382,804 cycles
-*/
-
-/*
-// test cases drawn from braid_600mm					 		// expected results
-//				   	L   	Ve  		Vt		Vx
-	_test_trapezoid(0.327,	000.000,	600,	000.000, bf); // Ve=0 	   	Vc=110.155
-	_test_trapezoid(0.327,	000.000,	600,	174.538, bf); // Ve=0, 	   	Vc=174.744	Vx=174.537
-	_test_trapezoid(0.327,	174.873,	600,	173.867, bf); // Ve=174.873	Vc=185.356	Vx=173.867
-	_test_trapezoid(0.327,	173.593,	600,	000.000, bf); // Ve=174.873	Vc=185.356	Vx=173.867
-	_test_trapezoid(0.327,	347.082,	600,	173.214, bf); // Ve=174.873	Vc=185.356	Vx=173.867
-*/
-}
-
-#endif // __TEST_CALCULATE_TRAPEZOID
-
-
-/************************************/
-/***** __TEST_GET_JUNCTION_VMAX *****/
-/************************************/
-
-#ifdef __TEST_GET_JUNCTION_VMAX
-
-static void _make_unit_vector(float unit[], float x, float y, float z, float a, float b, float c)
-{
-	float length = sqrt(x*x + y*y + z*z + a*a + b*b + c*c);
-	unit[AXIS_X] = x/length;
-	unit[AXIS_Y] = y/length;
-	unit[AXIS_Z] = z/length;
-	unit[AXIS_A] = a/length;
-	unit[AXIS_B] = b/length;
-	unit[AXIS_C] = c/length;
-}
-
-static void _test_get_junction_vmax()
-{
-//	cfg.a[AXIS_X].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[AXIS_Y].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[AXIS_Z].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[AXIS_A].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[AXIS_B].jerk_max = JERK_TEST_VALUE;
-//	cfg.a[AXIS_C].jerk_max = JERK_TEST_VALUE;
-//	mm.jerk_transition_size = 0.5;
-//	mm.jerk_limit_max = 184.2;
-/*
-	mm.test_case = 1;				// straight line along X axis
-	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 1.0000, 0.0000, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 2;				// angled straight line
-	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.7071, 0.7071, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 3;				// 5 degree bend
-	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.9962, 0.0872, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 4;				// 30 degrees
-	_make_unit_vector(mm.a_unit, 1.0000, 0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.8660, 0.5000, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 5;				// 45 degrees
-	_make_unit_vector(mm.a_unit, 0.8660,	0.5000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.2588,	0.9659, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 6;				// 60 degrees
-	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.5000,	0.8660, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 7;				// 90 degrees
-	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit, 0.0000,	1.0000, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 8;				// 90 degrees rotated 45 degrees
-	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit,-0.7071, 0.7071, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 9;				// 120 degrees
-	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit,-0.5000,	0.8660, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 10;				// 150 degrees
-	_make_unit_vector(mm.a_unit, 1.0000,	0.0000, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit,-0.8660,	0.5000, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-
-	mm.test_case = 11;				// 180 degrees
-	_make_unit_vector(mm.a_unit, 0.7071, 0.7071, 0, 0, 0, 0);
-	_make_unit_vector(mm.b_unit,-0.7071,-0.7071, 0, 0, 0, 0);
-	mm.test_velocity = _get_junction_vmax(mm.a_unit, mm.b_unit);
-*/
-}
-#endif // __TEST_GET_JUNCTION_VMAX
-#endif // __UNIT_TEST_PLANNER
-#endif // __UNIT_TESTS
 
 #ifdef __cplusplus
 }
