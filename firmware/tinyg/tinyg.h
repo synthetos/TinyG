@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		410.69	// spaces and tabs
+#define TINYG_FIRMWARE_BUILD   		435.01	// imported from feature-410.06-base, build 410.69. Disabled motor power level for Xmega
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)

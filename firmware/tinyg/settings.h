@@ -61,8 +61,9 @@
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE=
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
-//#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
-#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
+#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","momo","stat"
+//tgfx-friendly defaults
+//#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -74,7 +75,6 @@
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
 // Comm mode and echo levels
-#define COM_IGNORE_CRLF				IGNORE_OFF				// 0=accept either CR or LF, 1=ignore CR, 2=ignoreLF
 #define COM_EXPAND_CR				false
 #define COM_ENABLE_ECHO				false
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
@@ -82,8 +82,8 @@
 //**** DEBUG SETTINGS ****
 
 #ifdef __DEBUG_SETTINGS
-//#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY				JV_SILENT				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#undef JSON_VERBOSITY
+#define JSON_VERBOSITY				JV_SILENT				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef STATUS_REPORT_DEFAULTS
 #define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
@@ -96,14 +96,14 @@
 
 // machine default profiles - choose only one:
 
-//#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// OMC OtherCutter
-#include "settings/settings_othermill.h"				// OMC OtherMill
+//#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit

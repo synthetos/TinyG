@@ -48,7 +48,9 @@ static stRunSingleton_t st_run;
 
 static void _load_move(void);
 static void _request_load_move(void);
+#ifdef __ARM
 static void _set_motor_power_level(const uint8_t motor, const float power_level);
+#endif
 
 // handy macro
 #define _f_to_period(f) (uint16_t)((float)F_CPU / (float)f)
@@ -81,7 +83,7 @@ template<pin_number step_num,			// Setup a stepper template to hold our pins
 
 struct Stepper {
 	/* stepper pin assignments */
-	
+
 	OutputPin<step_num> step;
 	OutputPin<dir_num> dir;
 	OutputPin<enable_num> enable;
@@ -386,12 +388,12 @@ static void _energize_motor(const uint8_t motor)
  * _set_motor_power_level()	- applies the power level to the requested motor.
  *
  *	The power_level must be a compensated PWM value - presumably one of:
- *		st_cfg.mot[motor].power_level_scaled 
+ *		st_cfg.mot[motor].power_level_scaled
  *		st_run.mot[motor].power_level_dynamic
  */
+#ifdef __ARM
 static void _set_motor_power_level(const uint8_t motor, const float power_level)
 {
-#ifdef __ARM
 	// power_level must be scaled properly for the driver's Vref voltage requirements
 	if (!motor_1.enable.isNull()) if (motor == MOTOR_1) motor_1.vref = power_level;
 	if (!motor_2.enable.isNull()) if (motor == MOTOR_2) motor_2.vref = power_level;
@@ -399,8 +401,8 @@ static void _set_motor_power_level(const uint8_t motor, const float power_level)
 	if (!motor_4.enable.isNull()) if (motor == MOTOR_4) motor_4.vref = power_level;
 	if (!motor_5.enable.isNull()) if (motor == MOTOR_5) motor_5.vref = power_level;
 	if (!motor_6.enable.isNull()) if (motor == MOTOR_6) motor_6.vref = power_level;
-#endif
 }
+#endif
 
 void st_energize_motors()
 {
@@ -472,7 +474,7 @@ stat_t st_motor_power_callback() 	// called by controller
 
 #ifdef __AVR
 /*
- *	Uses direct struct addresses and literal values for hardware devices - it's faster than 
+ *	Uses direct struct addresses and literal values for hardware devices - it's faster than
  *	using indexed timer and port accesses. I checked. Even when -0s or -03 is used.
  */
 ISR(TIMER_DDA_ISR_vect)
@@ -708,8 +710,8 @@ namespace Motate {	// Define timer inside Motate namespace
 /****************************************************************************************
  * _load_move() - Dequeue move and load into stepper struct
  *
- *	This routine can only be called be called from an ISR at the same or 
- *	higher level as the DDA or dwell ISR. A software interrupt has been 
+ *	This routine can only be called be called from an ISR at the same or
+ *	higher level as the DDA or dwell ISR. A software interrupt has been
  *	provided to allow a non-ISR to request a load (see st_request_load_move())
  *
  *	In aline() code:
@@ -1187,9 +1189,9 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
  * st_set_pl() - set motor power level
  *
  *	Input value may vary from 0.000 to 1.000 The setting is scaled to allowable PWM range.
- *	This function sets both the scaled and dynamic power levels, and applies the 
+ *	This function sets both the scaled and dynamic power levels, and applies the
  *	scaled value to the vref.
- */ 
+ */
 stat_t st_set_pl(nvObj_t *nv)	// motor power level
 {
 #ifdef __ARM
@@ -1199,7 +1201,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
  		nv->value /= 100;		// accommodate old 0-100 inputs
 	}
 	set_flt(nv);	// set power_setting value in the motor config struct (st)
-	
+
 	uint8_t motor = _get_motor(nv->index);
 	st_cfg.mot[motor].power_level_scaled = (nv->value * POWER_LEVEL_SCALE_FACTOR);
 	st_run.mot[motor].power_level_dynamic = (st_cfg.mot[motor].power_level_scaled);
