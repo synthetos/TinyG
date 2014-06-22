@@ -24,11 +24,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*	The values in this file are the default settings that are loaded into a virgin EEPROM, 
- *	and can be changed using the config commands. After initial load the EEPROM values 
+/*	The values in this file are the default settings that are loaded into a virgin EEPROM,
+ *	and can be changed using the config commands. After initial load the EEPROM values
  *	(or changed values) are used.
  *
- *	System and hardware settings that you shouldn't need to change are in hardware.h  
+ *	System and hardware settings that you shouldn't need to change are in hardware.h
  *	Application settings that also shouldn't need to be changed are in tinyg.h
  */
 
@@ -38,7 +38,7 @@
 /**** GENERAL SETTINGS ******************************************************/
 
 // **** PLEASE NOTE **** Any of these may be overridden in machine profiles
-// Do not assume these are the effective settings. Check the machine profile 
+// Do not assume these are the effective settings. Check the machine profile
 
 // Machine configuration settings
 #define CHORDAL_TOLERANCE 			0.01					// chordal accuracy for arc drawing
@@ -82,8 +82,8 @@
 //**** DEBUG SETTINGS ****
 
 #ifdef __DEBUG_SETTINGS
-#undef JSON_VERBOSITY
-#define JSON_VERBOSITY				JV_SILENT				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#undef JSON_VERBOSITY
+//#define JSON_VERBOSITY				JV_SILENT				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef STATUS_REPORT_DEFAULTS
 #define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
@@ -96,14 +96,14 @@
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// OMC OtherCutter
-//#include "settings/settings_othermill.h"				// OMC OtherMill
+#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
