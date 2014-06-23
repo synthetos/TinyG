@@ -336,11 +336,11 @@ stat_t set_flu(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
-	char_t *parent_group = nv->token;		// token in the parent nv object is the group
-	char_t group[GROUP_LEN+1];				// group string retrieved from cfgArray child
-	nv->valuetype = TYPE_PARENT;				// make first object the parent
+	char_t *parent_group = nv->token;				// token in the parent nv object is the group
+	char_t group[GROUP_LEN+1];						// group string retrieved from cfgArray child
+	nv->valuetype = TYPE_PARENT;					// make first object the parent
 	for (index_t i=0; nv_index_is_single(i); i++) {
-		strcpy_P(group, cfgArray[i].group);  // don't need strncpy as it's always terminated
+		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
 		if (strcmp(parent_group, group) != 0) continue;
 		(++nv)->index = i;
 		nv_get_nvObj(nv);
@@ -364,7 +364,7 @@ stat_t set_grp(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
-		else if (nv->valuetype == TYPE_NULL)	// NULL means GET the value
+		else if (nv->valuetype == TYPE_NULL)		// NULL means GET the value
 			nv_get(nv);
 		else {
 			nv_set(nv);

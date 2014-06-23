@@ -1285,12 +1285,6 @@ static void _print_motor_flt_units(nvObj_t *nv, const char *format, uint8_t unit
 	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
-static void _print_motor_flu_units(nvObj_t *nv, const char *format, uint8_t units)
-{
-	if (units == INCHES) nv->value *= INCHES_PER_MM;	// convert value to inches for display
-	_print_motor_flt_units(nv, format, units);
-}
-
 static void _print_motor_flt(nvObj_t *nv, const char *format)
 {
 	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
@@ -1298,7 +1292,7 @@ static void _print_motor_flt(nvObj_t *nv, const char *format)
 
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
 void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
-void st_print_tr(nvObj_t *nv) { _print_motor_flu_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
+void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
 void st_print_mi(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0mi);}
 void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
 void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}

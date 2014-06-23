@@ -26,12 +26,12 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- * 	This code is a loose implementation of Kramer, Proctor and Messina's canonical 
+ * 	This code is a loose implementation of Kramer, Proctor and Messina's canonical
  *	machining functions as described in the NIST RS274/NGC v3
  *
- *	The canonical machine is the layer between the Gcode parser and the motion control 
- *	code for a specific robot. It keeps state and executes commands - passing the 
- *	stateless commands to the motion planning layer. 
+ *	The canonical machine is the layer between the Gcode parser and the motion control
+ *	code for a specific robot. It keeps state and executes commands - passing the
+ *	stateless commands to the motion planning layer.
  */
 /* --- System state contexts - Gcode models ---
  *
@@ -44,45 +44,45 @@
  *
  *	It's a bit more complicated than this. The 'gm' struct contains the core Gcode model
  *	context. This originates in the canonical machine and is copied to each planner buffer
- *	(bf buffer) during motion planning. Finally, the gm context is passed to the runtime 
- *	(mr) for the RUNTIME context. So at last count the Gcode model exists in as many as 
+ *	(bf buffer) during motion planning. Finally, the gm context is passed to the runtime
+ *	(mr) for the RUNTIME context. So at last count the Gcode model exists in as many as
  *	30 copies in the system. (1+28+1)
  *
- *	Depending on the need, any one of these contexts may be called for reporting or by 
- *	a function. Most typically, all new commends from the gcode parser work form the MODEL 
- *	context, and status reports pull from the RUNTIME while in motion, and from MODEL when 
- *	at rest. A convenience is provided in the ACTIVE_MODEL pointer to point to the right 
+ *	Depending on the need, any one of these contexts may be called for reporting or by
+ *	a function. Most typically, all new commends from the gcode parser work form the MODEL
+ *	context, and status reports pull from the RUNTIME while in motion, and from MODEL when
+ *	at rest. A convenience is provided in the ACTIVE_MODEL pointer to point to the right
  *	context.
  */
 /* --- Synchronizing command execution ---
  *
- *	Some gcode commands only set the MODEL state for interpretation of the current Gcode 
- *	block. For example, cm_set_feed_rate(). This sets the MODEL so the move time is 
- *	properly calculated for the current (and subsequent) blocks, so it's effected 
+ *	Some gcode commands only set the MODEL state for interpretation of the current Gcode
+ *	block. For example, cm_set_feed_rate(). This sets the MODEL so the move time is
+ *	properly calculated for the current (and subsequent) blocks, so it's effected
  *	immediately.
  *
- *	"Synchronous commands" are commands that affect the runtime need to be synchronized 
- *	with movement. Examples include G4 dwells, program stops and ends, and most M commands. 
- *	These are queued into the planner queue and execute from the queue. Synchronous commands 
+ *	"Synchronous commands" are commands that affect the runtime need to be synchronized
+ *	with movement. Examples include G4 dwells, program stops and ends, and most M commands.
+ *	These are queued into the planner queue and execute from the queue. Synchronous commands
  *	work like this:
  *
- *	  - Call the cm_xxx_xxx() function which will do any input validation and return an 
+ *	  - Call the cm_xxx_xxx() function which will do any input validation and return an
  *		error if it detects one.
  *
- *	  - The cm_ function calls mp_queue_command(). Arguments are a callback to the _exec_...() 
- *		function, which is the runtime execution routine, and any arguments that are needed 
+ *	  - The cm_ function calls mp_queue_command(). Arguments are a callback to the _exec_...()
+ *		function, which is the runtime execution routine, and any arguments that are needed
  *		by the runtime. See typedef for *exec in planner.h for details
  *
  *	  - mp_queue_command() stores the callback and the args in a planner buffer.
  *
- *	  - When planner execution reaches the buffer it executes the callback w/ the args. 
- *		Take careful note that the callback executes under an interrupt, so beware of 
+ *	  - When planner execution reaches the buffer it executes the callback w/ the args.
+ *		Take careful note that the callback executes under an interrupt, so beware of
  *		variables that may need to be volatile.
  *
  *	Note:
- *	  - The synchronous command execution mechanism uses 2 vectors in the bf buffer to store 
- *		and return values for the callback. It's obvious, but impractical to pass the entire 
- *		bf buffer to the callback as some of these commands are actually executed locally 
+ *	  - The synchronous command execution mechanism uses 2 vectors in the bf buffer to store
+ *		and return values for the callback. It's obvious, but impractical to pass the entire
+ *		bf buffer to the callback as some of these commands are actually executed locally
  *		and have no buffer.
  */
 
@@ -140,9 +140,9 @@ static int8_t _get_axis_type(const index_t index);
  *
  * cm_get_combined_state() - combines raw states into something a user might want to see
  * cm_get_machine_state()
- * cm_get_motion_state() 
- * cm_get_cycle_state() 
- * cm_get_hold_state() 
+ * cm_get_motion_state()
+ * cm_get_cycle_state()
+ * cm_get_hold_state()
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
@@ -167,8 +167,8 @@ uint8_t cm_get_motion_state() { return cm.motion_state;}
 uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
 
-void cm_set_motion_state(uint8_t motion_state) 
-{ 
+void cm_set_motion_state(uint8_t motion_state)
+{
 	cm.motion_state = motion_state;
 
 	switch (motion_state) {
@@ -228,8 +228,8 @@ void cm_set_model_linenum(uint32_t linenum)
 /*
  * Notes on Coordinate System and Offset functions
  *
- * All positional information in the canonical machine is kept as absolute coords and in 
- *	canonical units (mm). The offsets are only used to translate in and out of canonical form 
+ * All positional information in the canonical machine is kept as absolute coords and in
+ *	canonical units (mm). The offsets are only used to translate in and out of canonical form
  *	during interpretation and response.
  *
  * Managing the coordinate systems & offsets is somewhat complicated. The following affect offsets:
@@ -259,9 +259,9 @@ float cm_get_active_coord_offset(uint8_t axis)
 {
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cm.offset[cm.gm.coord_system][axis];
-	if (cm.gmx.origin_offset_enable == true) 
+	if (cm.gmx.origin_offset_enable == true)
 		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
-	return (offset); 
+	return (offset);
 }
 
 /*
@@ -274,7 +274,7 @@ float cm_get_active_coord_offset(uint8_t axis)
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis) 
+float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 {
 	return (gcode_state->work_offset[axis]);
 }
@@ -307,7 +307,7 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
  *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
 
-float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis) 
+float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
 {
 	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
 	return (mp_get_runtime_absolute_position(axis));
@@ -318,7 +318,7 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  *
  *	... that means in prevailing units (mm/inch) and with all offsets applied
  *
- * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by 
+ * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by
  *		 calling cm_get_model_coord_offset_vector() first.
  *
  *	This function accepts as input:
@@ -328,7 +328,7 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis) 
+float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 {
 	float position;
 
@@ -352,10 +352,10 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  *
  * 	These routines set the point position in the gcode model.
  *
- * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move) 
+ * 	Note: As far as the canonical machine is concerned the final position of a Gcode block (move)
  *	is achieved as soon as the move is planned and the move target becomes the new model position.
- *	In reality the planner will (in all likelihood) have only just queued the move for later 
- *	execution, and the real tool position is still close to the starting point. 
+ *	In reality the planner will (in all likelihood) have only just queued the move for later
+ *	execution, and the real tool position is still close to the starting point.
  */
 
 void cm_finalize_move() {
@@ -369,7 +369,7 @@ void cm_finalize_move() {
 
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
-/* 
+/*
  * cm_set_model_target() - set target vector in GM model
  *
  * This is a core routine. It handles:
@@ -389,7 +389,7 @@ void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.g
  *	Axes that need processing are signaled in flag[]
  */
 
-// ESTEE: _calc_ABC is a fix to workaround a gcc compiler bug wherein it runs out of spill 
+// ESTEE: _calc_ABC is a fix to workaround a gcc compiler bug wherein it runs out of spill
 //        registers we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
 
@@ -433,14 +433,14 @@ void cm_set_model_target(float target[], float flag[])
 	}
 }
 
-/* 
+/*
  * cm_test_soft_limits() - return error code if soft limit is exceeded
  *
  *	Must be called with target properly set in GM struct. Best done after cm_set_model_target().
  *
- *	Tests for soft limit for any homed axis if min and max are different values. You can set min 
- *	and max to 0,0 to disable soft limits for an axis. Also will not test a min or a max if the 
- *	value is < -1000000 (negative one million). This allows a single end to be tested w/the other 
+ *	Tests for soft limit for any homed axis if min and max are different values. You can set min
+ *	and max to 0,0 to disable soft limits for an axis. Also will not test a min or a max if the
+ *	value is < -1000000 (negative one million). This allows a single end to be tested w/the other
  *	disabled, should that requirement ever arise.
  */
 stat_t cm_test_soft_limits(float target[])
@@ -472,7 +472,7 @@ stat_t cm_test_soft_limits(float target[])
  * found in NIST RS274 NGCv3
  ************************************************************************/
 
-/****************************************** 
+/******************************************
  * Initialization and Termination (4.3.2) *
  ******************************************/
 /*
@@ -596,7 +596,7 @@ stat_t cm_hard_alarm(stat_t status)
  *	These functions assume input validation occurred upstream.
  */
 
-stat_t cm_select_plane(uint8_t plane) 
+stat_t cm_select_plane(uint8_t plane)
 {
 	cm.gm.select_plane = plane;
 	return (STAT_OK);
@@ -617,11 +617,11 @@ stat_t cm_set_distance_mode(uint8_t mode)
 /*
  * cm_set_coord_offsets() - G10 L2 Pn (affects MODEL only)
  *
- *	This function applies the offset to the GM model but does not persist the offsets 
- *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle 
+ *	This function applies the offset to the GM model but does not persist the offsets
+ *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
  *	has ended. You can also use $g54x - $g59c config functions to change offsets.
  *
- *	It also does not reset the work_offsets which may be accomplished by calling 
+ *	It also does not reset the work_offsets which may be accomplished by calling
  *	cm_set_work_offsets() immediately afterwards.
  */
 
@@ -643,7 +643,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
  * Representation functions that affect gcode model and are queued to planner (synchronous)
  */
 /*
- * cm_set_coord_system() - G54-G59 
+ * cm_set_coord_system() - G54-G59
  * _exec_offset() - callback from planner
  */
 stat_t cm_set_coord_system(uint8_t coord_system)
@@ -669,20 +669,20 @@ static void _exec_offset(float *value, float *flag)
 /*
  * cm_set_position() - set the position of a single axis in the model, planner and runtime
  *
- *	This command sets an axis/axes to a position provided as an argument. 
+ *	This command sets an axis/axes to a position provided as an argument.
  *	This is useful for setting origins for homing, probing, and other operations.
  *
  *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  *	!!!!! DO NOT CALL THIS FUNCTION WHILE IN A MACHINING CYCLE !!!!!
  *  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  *
- *	More specifically, do not call this function if there are any moves in the planner or 
- *	if the runtime is moving. The system must be quiescent or you will introduce positional 
- *	errors. This is true because the planned / running moves have a different reference frame 
- *	than the one you are now going to set. These functions should only be called during 
- *	initialization sequences and during cycles (such as homing cycles) when you know there 
- *	are no more moves in the planner and that all motion has stopped. 
- *	Use cm_get_runtime_busy() to be sure the system is quiescent. 
+ *	More specifically, do not call this function if there are any moves in the planner or
+ *	if the runtime is moving. The system must be quiescent or you will introduce positional
+ *	errors. This is true because the planned / running moves have a different reference frame
+ *	than the one you are now going to set. These functions should only be called during
+ *	initialization sequences and during cycles (such as homing cycles) when you know there
+ *	are no more moves in the planner and that all motion has stopped.
+ *	Use cm_get_runtime_busy() to be sure the system is quiescent.
  */
 
 void cm_set_position(uint8_t axis, float position)
@@ -700,12 +700,12 @@ void cm_set_position(uint8_t axis, float position)
  * cm_set_absolute_origin() - G28.3 - model, planner and queue to runtime
  * _exec_absolute_origin()  - callback from planner
  *
- *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not necessarily) 
+ *	cm_set_absolute_origin() takes a vector of origins (presumably 0's, but not necessarily)
  *	and applies them to all axes where the corresponding position in the flag vector is true (1).
  *
- *	This is a 2 step process. The model and planner contexts are set immediately, the runtime 
- *	command is queued and synchronized with the planner queue. This includes the runtime position 
- *	and the step recording done by the encoders. At that point any axis that is set is also marked 
+ *	This is a 2 step process. The model and planner contexts are set immediately, the runtime
+ *	command is queued and synchronized with the planner queue. This includes the runtime position
+ *	and the step recording done by the encoders. At that point any axis that is set is also marked
  *	as homed.
  */
 
@@ -736,7 +736,7 @@ static void _exec_absolute_origin(float *value, float *flag)
 	mp_set_steps_to_runtime_position();
 }
 
-/* 
+/*
  * cm_set_origin_offsets() 		- G92
  * cm_reset_origin_offsets() 	- G92.1
  * cm_suspend_origin_offsets() 	- G92.2
@@ -751,7 +751,7 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 	cm.gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - 
+			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] -
 									  cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
@@ -788,7 +788,7 @@ stat_t cm_resume_origin_offsets()
 	return (STAT_OK);
 }
 
-/***************************** 
+/*****************************
  * Free Space Motion (4.3.4) *
  *****************************/
 /*
@@ -892,13 +892,13 @@ stat_t cm_set_path_control(uint8_t mode)
 	return (STAT_OK);
 }
 
-/******************************* 
+/*******************************
  * Machining Functions (4.3.6) *
  *******************************/
-/* 
+/*
  * cm_arc_feed() - SEE plan_arc.c(pp)
  */
- 
+
 /*
  * cm_dwell() - G4, P parameter (seconds)
  */
@@ -933,7 +933,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	return (status);
 }
 
-/***************************** 
+/*****************************
  * Spindle Functions (4.3.7) *
  *****************************/
 // see spindle.c, spindle.h
@@ -948,7 +948,7 @@ stat_t cm_straight_feed(float target[], float flags[])
  * cm_change_tool()		- M6 (This might become a complete tool change cycle)
  * _exec_change_tool()	- execution callback
  *
- * Note: These functions don't actually do anything for now, and there's a bug 
+ * Note: These functions don't actually do anything for now, and there's a bug
  *		 where T and M in different blocks don;t work correctly
  */
 stat_t cm_select_tool(uint8_t tool_select)
@@ -976,7 +976,7 @@ static void _exec_change_tool(float *value, float *flag)
 	cm.gm.tool = (uint8_t)value[0];
 }
 
-/*********************************** 
+/***********************************
  * Miscellaneous Functions (4.3.9) *
  ***********************************/
 /*
@@ -1158,7 +1158,7 @@ void cm_message(char_t *message)
  * cm_flush_planner() - Flush planner queue and correct model positions
  *
  * Feedholds, queue flushes and cycles starts are all related. The request functions set
- *	flags for these. The sequencing callback interprets the flags according to the 
+ *	flags for these. The sequencing callback interprets the flags according to the
  *	following rules:
  *
  *	A feedhold request received during motion should be honored
@@ -1166,15 +1166,15 @@ void cm_message(char_t *message)
  *	A feedhold request received during a motion stop should be ignored and reset
  *
  *	A queue flush request received during motion should be ignored but not reset
- *	A queue flush request received during a feedhold should be deferred until 
+ *	A queue flush request received during a feedhold should be deferred until
  *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
  *	A queue flush request received during a motion stop should be honored
  *
  *	A cycle start request received during motion should be ignored and reset
- *	A cycle start request received during a feedhold should be deferred until 
+ *	A cycle start request received during a feedhold should be deferred until
  *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
  *		If a queue flush request is also present the queue flush should be done first
- *	A cycle start request received during a motion stop should be honored and 
+ *	A cycle start request received during a motion stop should be honored and
  *		should start to run anything in the planner queue
  */
 
@@ -1239,7 +1239,7 @@ stat_t cm_queue_flush()
  * cm_cycle_start()
  * cm_cycle_end()
  * cm_program_stop()			- M0
- * cm_optional_program_stop()	- M1	
+ * cm_optional_program_stop()	- M1
  * cm_program_end()				- M2, M30
  *
  * cm_program_end() implements M2 and M30
@@ -1261,11 +1261,11 @@ stat_t cm_queue_flush()
  *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
  *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
  * 	5. Not implemented
- *	6. Not implemented 
+ *	6. Not implemented
  *	7. The spindle is stopped (like M5)
- *	8. Motion mode is canceled like G80 (not set to G1) 
+ *	8. Motion mode is canceled like G80 (not set to G1)
  *	9. Coolant is turned off (like M9)
- *	+  Default INCHES or MM units mode is restored ($gun) 
+ *	+  Default INCHES or MM units mode is restored ($gun)
  */
 
 static void _exec_program_finalize(float *value, float *flag)
@@ -1316,13 +1316,13 @@ void cm_cycle_end()
 }
 
 void cm_program_stop()
-{ 
+{
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	mp_queue_command(_exec_program_finalize, value, value);
 }
 
 void cm_optional_program_stop()
-{ 
+{
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	mp_queue_command(_exec_program_finalize, value, value);
 }
@@ -1534,7 +1534,7 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_ofs()  - get current work offset (runtime)
  * cm_get_pos()  - get current work position (runtime)
  * cm_get_mpos() - get current machine position (runtime)
- * 
+ *
  * cm_print_pos()- print work position (with proper units)
  * cm_print_mpos()- print machine position (always mm units)
  * cm_print_coor()- print coordinate offsets with linear units
@@ -1584,7 +1584,7 @@ stat_t cm_get_line(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-stat_t cm_get_vel(nvObj_t *nv) 
+stat_t cm_get_vel(nvObj_t *nv)
 {
 	if (cm_get_motion_state() == MOTION_STOP) {
 		nv->value = 0;
@@ -1597,7 +1597,7 @@ stat_t cm_get_vel(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-stat_t cm_get_pos(nvObj_t *nv) 
+stat_t cm_get_pos(nvObj_t *nv)
 {
 	nv->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
@@ -1605,7 +1605,7 @@ stat_t cm_get_pos(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-stat_t cm_get_mpo(nvObj_t *nv) 
+stat_t cm_get_mpo(nvObj_t *nv)
 {
 	nv->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
@@ -1613,7 +1613,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-stat_t cm_get_ofs(nvObj_t *nv) 
+stat_t cm_get_ofs(nvObj_t *nv)
 {
 	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
@@ -1621,7 +1621,7 @@ stat_t cm_get_ofs(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-/* 
+/*
  * AXIS GET AND SET FUNCTIONS
  *
  * cm_get_am()	- get axis mode w/enumeration string
@@ -1647,13 +1647,13 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 }
 
 /*
- * cm_set_jrk()	- set jerk value 
+ * cm_set_jrk()	- set jerk value
  *
- *	Jerk values can be rather large, often in the billions. This makes for some pretty big 
+ *	Jerk values can be rather large, often in the billions. This makes for some pretty big
  *	numbers for people to deal with. Jerk values are stored in the system in truncated format;
- *	values are divided by 1,000,000 then reconstituted before use. 
+ *	values are divided by 1,000,000 then reconstituted before use.
  *
- *	cm_set_jrk() will accept either truncated or untrunctated jerk numbers as input. If the 
+ *	cm_set_jrk() will accept either truncated or untrunctated jerk numbers as input. If the
  *	number is > 1,000,000 it is divided by 1,000,000 before storing. Numbers are accepted in
  *	either millimeter or inch mode and converted to millimeter mode.
  */
@@ -1668,11 +1668,11 @@ stat_t cm_set_jrk(nvObj_t *nv)
 /*
  * Commands
  *
- * cm_run_qf() - flush planner queue 
+ * cm_run_qf() - flush planner queue
  * cm_run_home() - run homing sequence
  */
 
-stat_t cm_run_qf(nvObj_t *nv) 
+stat_t cm_run_qf(nvObj_t *nv)
 {
 	cm_request_queue_flush();
 	return (STAT_OK);
@@ -1878,24 +1878,21 @@ static void _print_axis_ui8(nvObj_t *nv, const char *format)
 	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
 }
 
-static void _print_axis_flu(nvObj_t *nv, const char *format)
+static void _print_axis_flt(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {				// linear axis
-		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;					// convert value to inches for display
-		}
-		units = (char *)GET_UNITS(MODEL);				// ASCII display for units
+	if (_get_axis_type(nv->index) == 0) {	// linear
+		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
 	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, units);
 }
 
-static void _print_axis_coord_flu(nvObj_t *nv, const char *format)
+static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {				// linear axis
+	if (_get_axis_type(nv->index) == 0) {	// linear
 		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
@@ -1917,23 +1914,23 @@ void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 	GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
 }
 
-void cm_print_fr(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xfr);}
-void cm_print_vm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xvm);}
-void cm_print_tm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xtm);}
-void cm_print_tn(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xtn);}
-void cm_print_jm(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjm);}
-void cm_print_jh(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjh);}
-void cm_print_jd(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xjd);}
-void cm_print_ra(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xra);}
+void cm_print_fr(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xfr);}
+void cm_print_vm(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xvm);}
+void cm_print_tm(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xtm);}
+void cm_print_tn(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xtn);}
+void cm_print_jm(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjm);}
+void cm_print_jh(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjh);}
+void cm_print_jd(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjd);}
+void cm_print_ra(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xra);}
 void cm_print_sn(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsn);}
 void cm_print_sx(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsx);}
-void cm_print_sv(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xsv);}
-void cm_print_lv(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xlv);}
-void cm_print_lb(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xlb);}
-void cm_print_zb(nvObj_t *nv) { _print_axis_flu(nv, fmt_Xzb);}
+void cm_print_sv(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xsv);}
+void cm_print_lv(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xlv);}
+void cm_print_lb(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xlb);}
+void cm_print_zb(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xzb);}
 
-void cm_print_cofs(nvObj_t *nv) { _print_axis_coord_flu(nv, fmt_cofs);}
-void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flu(nv, fmt_cpos);}
+void cm_print_cofs(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cofs);}
+void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cpos);}
 
 void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
