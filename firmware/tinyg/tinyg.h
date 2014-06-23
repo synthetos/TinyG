@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.02	// removed embedded unit tests. Refer to feature-410.06-base branch if needed
+#define TINYG_FIRMWARE_BUILD   		435.03	// testing
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
 #define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
@@ -58,10 +58,10 @@
 //#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
 //#define __KAHAN							// Use Kahan summation in aline exec functions
 
-#define __TEXT_MODE							// enables text mode support (~10Kb)
-#define __HELP_SCREENS						// enables help screens 	 (~3.5Kb)
-//#define __CANNED_TESTS 					// enables $tests 			 (~12Kb)
-#define __TEST_99 							// enables diagnostic test 99
+#define __TEXT_MODE							// enables text mode	(~10Kb)
+#define __HELP_SCREENS						// enables help screens (~3.5Kb)
+#define __CANNED_TESTS 						// enables $tests 		(~12Kb)
+#define __TEST_99 							// enables diagnostic test 99 (independent of other tests)
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -119,7 +119,7 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), MESSAGE_LEN-1)
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) 	   strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), MESSAGE_LEN-1)
+#define GET_UNITS(a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), MESSAGE_LEN-1)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings
