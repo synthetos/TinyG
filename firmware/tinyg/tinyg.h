@@ -45,12 +45,12 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.05	// using default settings
+#define TINYG_FIRMWARE_BUILD   		435.06	// added platform and version enumerations & defines
 #endif
-#define TINYG_FIRMWARE_VERSION		0.97	// firmware major version
-#define TINYG_HARDWARE_PLATFORM		1		// hardware platform indicator (1 = Xmega series)
-#define TINYG_HARDWARE_VERSION		8		// hardware platform revision number (defaults to)
-#define TINYG_HARDWARE_VERSION_MAX (TINYG_HARDWARE_VERSION)
+#define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
+#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
+#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		// see hardware.h
+#define TINYG_HARDWARE_VERSION_MAX	TINYG_HARDWARE_VERSION
 
 /****** COMPILE-TIME SETTINGS ******/
 
