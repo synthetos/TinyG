@@ -247,7 +247,8 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 	gms->minimum_time = 8675309;	// arbitrarily large number
 
 	// compute times for feed motion
-	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+//	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
+	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
 			inv_time = gms->feed_rate;	// NB: feed rate was normalized to minutes by cm_set_feed_rate()
 			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
@@ -263,6 +264,19 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (gms->motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE) {
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].velocity_max;
+		} else {
+			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
+		}
+		max_time = max(max_time, tmp_time);
+		// collect minimum time if not zero
+		if (tmp_time > 0) {
+			gms->minimum_time = min(gms->minimum_time, tmp_time);
+		}
+	}
+/*
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
 		} else { // motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
@@ -274,6 +288,7 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 			gms->minimum_time = min(gms->minimum_time, tmp_time);
 		}
 	}
+*/
 	gms->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
 
