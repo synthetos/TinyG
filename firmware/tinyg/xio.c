@@ -18,8 +18,8 @@
  */
 /* ----- XIO - Xmega Device System ----
  *
- * XIO provides common access to native and derived xmega devices (see table below) 
- * XIO devices are compatible with avr-gcc stdio and also provide some special functions 
+ * XIO provides common access to native and derived xmega devices (see table below)
+ * XIO devices are compatible with avr-gcc stdio and also provide some special functions
  * that are not found in stdio.
  *
  * Stdio support:
@@ -27,9 +27,9 @@
  * 	- Stdio compatible putc() and getc() functions provided for each device
  *	- This enables fgets, printf, scanf, and other stdio functions
  * 	- Full support for formatted printing is provided (including floats)
- * 	- Assignment of a default device to stdin, stdout & stderr is provided 
+ * 	- Assignment of a default device to stdin, stdout & stderr is provided
  *	- printf() and printf_P() send to stdout, so use fprintf() to stderr
- *		for things that should't go over RS485 in SLAVE mode 
+ *		for things that should't go over RS485 in SLAVE mode
  *
  * Facilities provided beyond stdio:
  *	- Supported devices include:
@@ -43,7 +43,7 @@
  *		- gets() - non-blocking input line reader - extends fgets
  *		- ctrl() - ioctl-like knockoff for setting device parameters (flags)
  *		- signal handling: interrupt on: feedhold, cycle_start, ctrl-x software reset
- *		- interrupt buffered RX and TX functions 
+ *		- interrupt buffered RX and TX functions
  *		- XON/XOFF software flow control
  */
 /* ----- XIO - Some Internals ----
@@ -69,7 +69,7 @@
  *	xio_getc<device>() - read a character from the device (stdio compatible)
  *	xio_putc<device>() - write a character to the device (stdio compatible)
  *
- * The virtual level uses XIO_DEV_xxx numeric device IDs for reference. 
+ * The virtual level uses XIO_DEV_xxx numeric device IDs for reference.
  * Lower layers are called using the device structure pointer xioDev_t *d
  * The stdio compatible functions use pointers to the stdio FILE structs.
  */
@@ -97,7 +97,7 @@ xioSingleton_t xio;
 void xio_init()
 {
 	// set memory integrity check
-	xio_set_stderr(0);				// set a bogus value; may be overwritten with a real value			
+	xio_set_stderr(0);				// set a bogus value; may be overwritten with a real value
 
 	// setup device types
 	xio_init_usart();
@@ -118,7 +118,7 @@ void xio_init()
  * xio_test_assertions() - validate operating state
  *
  * NOTE: xio device assertions are set up as part of xio_open_generic()
- *		 This system is kind of brittle right now becuase if a device is 
+ *		 This system is kind of brittle right now becuase if a device is
  *		 not set up then it will fail in the assertions test. Need to fix this.
  */
 
@@ -156,16 +156,16 @@ void xio_reset_working_flags(xioDev_t *d)
  * xio_init_device() - generic initialization function for any device
  *
  *	This binds the main fucntions and sets up the stdio FILE structure
- *	udata is used to point back to the device struct so it can be gotten 
- *	from getc() and putc() functions. 
+ *	udata is used to point back to the device struct so it can be gotten
+ *	from getc() and putc() functions.
  *
  *	Requires device open() to be run prior to using the device
  */
-void xio_open_generic(uint8_t dev, x_open_t x_open, 
-								   x_ctrl_t x_ctrl, 
-								   x_gets_t x_gets, 
-								   x_getc_t x_getc, 
-								   x_putc_t x_putc, 
+void xio_open_generic(uint8_t dev, x_open_t x_open,
+								   x_ctrl_t x_ctrl,
+								   x_gets_t x_gets,
+								   x_getc_t x_getc,
+								   x_putc_t x_putc,
 								   x_flow_t x_flow)
 {
 	xioDev_t *d = &ds[dev];
@@ -184,12 +184,12 @@ void xio_open_generic(uint8_t dev, x_open_t x_open,
 
 	// setup the stdio FILE struct and link udata back to the device struct
 	fdev_setup_stream(&d->file, x_putc, x_getc, _FDEV_SETUP_RW);
-	fdev_set_udata(&d->file, d);		// reference yourself for udata 
+	fdev_set_udata(&d->file, d);		// reference yourself for udata
 }
 
 /********************************************************************************
- * PUBLIC ENTRY POINTS - acces the functions via the XIO_DEV number
- * xio_open() - open function 
+ * PUBLIC ENTRY POINTS - access the functions via the XIO_DEV number
+ * xio_open() - open function
  * xio_gets() - entry point for non-blocking get line function
  * xio_getc() - entry point for getc (not stdio compatible)
  * xio_putc() - entry point for putc (not stdio compatible)
@@ -203,19 +203,19 @@ FILE *xio_open(uint8_t dev, const char *addr, flags_t flags)
 	return (ds[dev].x_open(dev, addr, flags));
 }
 
-int xio_gets(const uint8_t dev, char *buf, const int size) 
+int xio_gets(const uint8_t dev, char *buf, const int size)
 {
 	return (ds[dev].x_gets(&ds[dev], buf, size));
 }
 
-int xio_getc(const uint8_t dev) 
-{ 
-	return (ds[dev].x_getc(&ds[dev].file)); 
+int xio_getc(const uint8_t dev)
+{
+	return (ds[dev].x_getc(&ds[dev].file));
 }
 
 int xio_putc(const uint8_t dev, const char c)
 {
-	return (ds[dev].x_putc(c, &ds[dev].file)); 
+	return (ds[dev].x_putc(c, &ds[dev].file));
 }
 
 /*
@@ -273,14 +273,14 @@ void xio_fc_null(xioDev_t *d)
  * xio_set_stdout() - set stdout from device number
  * xio_set_stderr() - set stderr from device number
  *
- *	stderr is defined in stdio as __iob[2]. Turns out stderr is the last RAM 
- *	allocated by the linker for this project. We usae that to keep a shadow 
+ *	stderr is defined in stdio as __iob[2]. Turns out stderr is the last RAM
+ *	allocated by the linker for this project. We usae that to keep a shadow
  *	of __iob[2] for stack overflow detection and other memory corruption.
  */
 void xio_set_stdin(const uint8_t dev) { stdin  = &ds[dev].file; }
 void xio_set_stdout(const uint8_t dev) { stdout = &ds[dev].file; }
 void xio_set_stderr(const uint8_t dev)
 {
-	stderr = &ds[dev].file; 
+	stderr = &ds[dev].file;
 	xio.stderr_shadow = stderr;		// this is the last thing in RAM, so we use it as a memory corruption canary
 }

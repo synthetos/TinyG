@@ -96,24 +96,42 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float exact_stop = 0;				// preset this value OFF
 	float junction_velocity;
 	uint8_t mr_flag = false;
-//	uint8_t path_control_mode = cm_get_path_control(MODEL);
 
 	if (vector_equal(mm.position, gm_in->target)) 	// exit if the move has zero movement. At all.
 		return (STAT_OK);
-
+/*
 	_calc_move_times(gm_in, mm.position);			// set move time and minimum time in the state
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
-//	if (gm_in->minimum_time < MIN_BLOCK_TIME) {
-//		rpt_exception(STAT_MINIMUM_TIME_MOVE);
-//		printf ("###:%1.0f", (double)(gm_in->move_time * 60000000));
 		return (STAT_MINIMUM_TIME_MOVE);
 	}
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
-	bf->length = get_axis_vector_length(gm_in->target, mm.position);// compute the length
-	bf->bf_func = mp_exec_aline;									// register the callback to the exec function
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));					// copy model state into planner buffer
+	bf->length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
+	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
+*/
+	float length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
+	_calc_move_times(gm_in, mm.position);								// set move time and minimum time in the state
+
+	if (gm_in->move_time < MIN_BLOCK_TIME) {
+		// If _calc_move_times() says the move will take less than the minimum move time
+		// get a more accurate time estimate based on starting velocity and acceleration.
+		float delta_velocity = pow(length, 0.66666666) * mm.prev_cbrt_jerk;
+		float entry_velocity = 0;
+		if ((bf = mp_get_run_buffer()) != NULL) entry_velocity = bf->exit_velocity;
+		float move_time = (2 * length) / (2*entry_velocity + delta_velocity);
+		if (move_time < MIN_BLOCK_TIME) {
+			return (STAT_MINIMUM_TIME_MOVE);
+		}
+	}
+
+	// get a cleared buffer and setup move variables
+	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
+	bf->length = length;
+//	bf->length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
+	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
+	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
@@ -247,7 +265,6 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 	gms->minimum_time = 8675309;	// arbitrarily large number
 
 	// compute times for feed motion
-//	if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
 	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
 			inv_time = gms->feed_rate;	// NB: feed rate was normalized to minutes by cm_set_feed_rate()
@@ -275,20 +292,6 @@ static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms =
 			gms->minimum_time = min(gms->minimum_time, tmp_time);
 		}
 	}
-/*
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (gms->motion_mode == MOTION_MODE_STRAIGHT_FEED) {
-			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
-		} else { // motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE
-			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].velocity_max;
-		}
-		max_time = max(max_time, tmp_time);
-		// collect minimum time if not zero
-		if (tmp_time > 0) {
-			gms->minimum_time = min(gms->minimum_time, tmp_time);
-		}
-	}
-*/
 	gms->move_time = max4(inv_time, max_time, xyz_time, abc_time);
 }
 
