@@ -157,11 +157,11 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 
 	float naiive_move_time;
 
-	uint8_t buffer_state;			// used to manage queueing/dequeueing
+	uint8_t buffer_state;			// used to manage queuing/dequeuing
 	uint8_t move_type;				// used to dispatch to run routine
 	uint8_t move_code;				// byte that can be used by used exec functions
 	uint8_t move_state;				// move state machine sequence
-	uint8_t replannable;			// TRUE if move can be replanned
+	uint8_t replannable;			// TRUE if move can be re-planned
 
 	float unit[AXES];				// unit vector for axis scaling & planning
 

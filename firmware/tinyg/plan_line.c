@@ -99,28 +99,29 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 	if (vector_equal(mm.position, gm_in->target)) 	// exit if the move has zero movement. At all.
 		return (STAT_OK);
-/*
-	_calc_move_times(gm_in, mm.position);			// set move time and minimum time in the state
-	if (gm_in->move_time < MIN_BLOCK_TIME) {
-		return (STAT_MINIMUM_TIME_MOVE);
-	}
 
-	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
-	bf->length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
-	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
-*/
-	float length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
-	_calc_move_times(gm_in, mm.position);								// set move time and minimum time in the state
+	// If _calc_move_times() says the move will take less than the minimum move time
+	// get a more accurate time estimate based on starting velocity and acceleration.
+	// The time of the move is determined by its initial velocity (Vi) and how much
+	// acceleration will be occur. For this we need to look at the exit velocity of
+	// the previous block. There are 3 possible cases:
+	//	(1) There is no previous block. Vi = 0
+	//	(2) Previous block is optimally planned. Vi = previous block's exit_velocity
+	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
+	_calc_move_times(gm_in, mm.position);									// set move time and minimum time in the state
+	float length = get_axis_vector_length(gm_in->target, mm.position);		// compute the length (needed later)
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
-		// If _calc_move_times() says the move will take less than the minimum move time
-		// get a more accurate time estimate based on starting velocity and acceleration.
-		float delta_velocity = pow(length, 0.66666666) * mm.prev_cbrt_jerk;
-		float entry_velocity = 0;
-		if ((bf = mp_get_run_buffer()) != NULL) entry_velocity = bf->exit_velocity;
-		float move_time = (2 * length) / (2*entry_velocity + delta_velocity);
+		float delta_velocity = pow(length, 0.66666666) * mm.prev_cbrt_jerk;	// max velocity change for this move
+		float entry_velocity = 0;											// pre-set as if no previous block
+		if ((bf = mp_get_run_buffer()) != NULL) {
+			if (bf->replannable == true) {									// not optimally planned
+				entry_velocity = bf->entry_velocity + bf->delta_vmax;
+			} else {														// optimally planned
+				entry_velocity = bf->exit_velocity;
+			}
+		}
+		float move_time = (2 * length) / (2*entry_velocity + delta_velocity);// compute execution time for this move
 		if (move_time < MIN_BLOCK_TIME) {
 			return (STAT_MINIMUM_TIME_MOVE);
 		}
@@ -128,9 +129,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL)); // never supposed to fail
-	bf->length = length;
-//	bf->length = get_axis_vector_length(gm_in->target, mm.position);	// compute the length
 	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
+	bf->length = length;
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
 
 	// compute both the unit vector and the jerk term in the same pass for efficiency

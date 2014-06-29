@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.08	// testing forum issue post-6262 (more)
+#define TINYG_FIRMWARE_BUILD   		435.09	// refining plan_line velocity test
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
