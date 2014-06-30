@@ -53,17 +53,17 @@ enum hwPlatform {
 	HM_PLATFORM_NONE = 0,
 
 	HW_PLATFORM_TINYG_XMEGA,	// TinyG code base on Xmega boards.
-								//	hwRevision 7 = TinyG v7 and earlier
-								//	hwRevision 8 = TinyG v8
+								//	hwVersion 7 = TinyG v7 and earlier
+								//	hwVersion 8 = TinyG v8
 
 	HW_PLATFORM_G2_DUE,			// G2 code base on native Arduino Due
 
 	HW_PLATFORM_TINYG_V9		// G2 code base on v9 boards
-								//  hwRevision 0 = v9c
-								//  hwRevision 1 = v9d
-								//  hwRevision 2 = v9f
-								//  hwRevision 3 = v9h
-								//  hwRevision 4 = v9i
+								//  hwVersion 0 = v9c
+								//  hwVersion 1 = v9d
+								//  hwVersion 2 = v9f
+								//  hwVersion 3 = v9h
+								//  hwVersion 4 = v9i
 };
 
 #define HW_VERSION_TINYGV6		6
