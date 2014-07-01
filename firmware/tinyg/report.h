@@ -33,10 +33,10 @@ extern "C"{
 #endif
 
 /**** Configs, Definitions and Structures ****/
-// Note: If you are looking for the defaults for the status report see settings.h
-
-#define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS 	// max number of status report elements - see cfgArray
-												// **** must also line up in cfgArray, se00 - seXX ****
+//
+// Notes: 
+//		- The NV_STATUS_REPORT_LEN define is in config.h
+//		- The status report defaults can be found in settings.h
 
 #define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
 

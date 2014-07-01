@@ -200,10 +200,10 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	index_t sr_start = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
+		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) break;
 		if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
 			status_report_list[i] = nv->index;
-			nv->value = nv->index;					// persist the index as the value
+			nv->value = nv->index;						// persist the index as the value
 			nv->index = sr_start + i;					// index of the SR persistence location
 			nv_persist(nv);
 			elements++;
@@ -213,7 +213,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	}
 	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
-	_populate_unfiltered_status_report();			// return current values
+	_populate_unfiltered_status_report();				// return current values
 	return (STAT_OK);
 }
 

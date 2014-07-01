@@ -172,64 +172,66 @@ extern "C"{
  **** DEFINITIONS AND SETTINGS *****************************************************
  ***********************************************************************************/
 
-// Sizing and footprints			// chose one based on # of elements in cfgArray
-//typedef uint8_t index_t;			// use this if there are < 256 indexed objects
-typedef uint16_t index_t;			// use this if there are > 255 indexed objects
+// Sizing and footprints				// chose one based on # of elements in cfgArray
+//typedef uint8_t index_t;				// use this if there are < 256 indexed objects
+typedef uint16_t index_t;				// use this if there are > 255 indexed objects
 
-									// defines allocated from stack (not-pre-allocated)
-#define NV_FORMAT_LEN 128			// print formatting string max length
-#define NV_MESSAGE_LEN 128			// sufficient space to contain end-user messages
+										// defines allocated from stack (not-pre-allocated)
+#define NV_FORMAT_LEN 128				// print formatting string max length
+#define NV_MESSAGE_LEN 128				// sufficient space to contain end-user messages
 
-									// pre-allocated defines (take RAM permanently)
-#define NV_SHARED_STRING_LEN 512	// shared string for string values
-#define NV_BODY_LEN 30				// body elements - allow for 1 parent + N children
-									// (each body element takes about 30 bytes of RAM)
+										// pre-allocated defines (take RAM permanently)
+#define NV_SHARED_STRING_LEN 512		// shared string for string values
+#define NV_BODY_LEN 30					// body elements - allow for 1 parent + N children
+										// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change
 
-#define GROUP_LEN 3					// max length of group prefix
-#define TOKEN_LEN 5					// mnemonic token string: group prefix + short token
-#define NV_FOOTER_LEN 18			// sufficient space to contain a JSON footer array
-#define NV_LIST_LEN (NV_BODY_LEN+2) // +2 allows for a header and a footer
-#define NV_MAX_OBJECTS (NV_BODY_LEN-1)// maximum number of objects in a body string
+#define GROUP_LEN 3						// max length of group prefix
+#define TOKEN_LEN 5						// mnemonic token string: group prefix + short token
+#define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
+#define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
+#define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
+#define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
+											// **** must also line up in cfgArray, se00 - seXX ****
 
 enum tgCommunicationsMode {
-	TEXT_MODE = 0,					// text command line mode
-	JSON_MODE,						// strict JSON construction
-	JSON_MODE_RELAXED				// relaxed JSON construction (future)
+	TEXT_MODE = 0,						// text command line mode
+	JSON_MODE,							// strict JSON construction
+	JSON_MODE_RELAXED					// relaxed JSON construction (future)
 };
 
 enum flowControl {
-	FLOW_CONTROL_OFF = 0,			// flow control disabled
-	FLOW_CONTROL_XON,				// flow control uses XON/XOFF
-	FLOW_CONTROL_RTS				// flow control uses RTS/CTS
+	FLOW_CONTROL_OFF = 0,				// flow control disabled
+	FLOW_CONTROL_XON,					// flow control uses XON/XOFF
+	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
 };
 
 /*
-enum lineTermination {				// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
-	IGNORE_OFF = 0,					// accept either CR or LF as termination on RX text line
-	IGNORE_CR,						// ignore CR on RX
-	IGNORE_LF						// ignore LF on RX
+enum lineTermination {					// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
+	IGNORE_OFF = 0,						// accept either CR or LF as termination on RX text line
+	IGNORE_CR,							// ignore CR on RX
+	IGNORE_LF							// ignore LF on RX
 };
 */
 /*
 enum tgCommunicationsSticky {
-	NOT_STICKY = 0,					// communications mode changes automatically
-	STICKY							// communications mode does not change
+	NOT_STICKY = 0,						// communications mode changes automatically
+	STICKY								// communications mode does not change
 };
 */
 
-enum valueType {					// value typing for config and JSON
-	TYPE_EMPTY = -1,				// value struct is empty (which is not the same as "NULL")
-	TYPE_NULL = 0,					// value is 'null' (meaning the JSON null value)
-	TYPE_BOOL,						// value is "true" (1) or "false"(0)
-	TYPE_INTEGER,					// value is a uint32_t
-	TYPE_DATA,						// value is blind cast to uint32_t
-	TYPE_FLOAT,						// value is a floating point number
-	TYPE_STRING,					// value is in string field
-	TYPE_ARRAY,						// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT						// object is a parent to a sub-object
+enum valueType {						// value typing for config and JSON
+	TYPE_EMPTY = -1,					// value struct is empty (which is not the same as "NULL")
+	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
+	TYPE_BOOL,							// value is "true" (1) or "false"(0)
+	TYPE_INTEGER,						// value is a uint32_t
+	TYPE_DATA,							// value is blind cast to uint32_t
+	TYPE_FLOAT,							// value is a floating point number
+	TYPE_STRING,						// value is in string field
+	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
+	TYPE_PARENT							// object is a parent to a sub-object
 };
 
 /**** operations flags and shorthand ****/
