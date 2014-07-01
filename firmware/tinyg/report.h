@@ -34,7 +34,7 @@ extern "C"{
 
 /**** Configs, Definitions and Structures ****/
 //
-// Notes: 
+// Notes:
 //		- The NV_STATUS_REPORT_LEN define is in config.h
 //		- The status report defaults can be found in settings.h
 
@@ -96,7 +96,7 @@ extern qrSingleton_t qr;
 /**** Function Prototypes ****/
 
 void rpt_print_message(char *msg);
-void rpt_exception(uint8_t status);
+stat_t rpt_exception(uint8_t status);
 
 stat_t rpt_er(nvObj_t *nv);
 void rpt_print_loading_configs_message(void);

@@ -103,7 +103,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 #endif
 }
 
-/* 
+/*
  * controller_init_assertions()
  * controller_test_assertions() - check memory integrity of controller
  */
@@ -112,50 +112,41 @@ void controller_init_assertions()
 {
 	cs.magic_start = MAGICNUM;
 	cs.magic_end = MAGICNUM;
-
-	cfg.magic_start = MAGICNUM;		// assertions for config system are handled from the controller
-	cfg.magic_end = MAGICNUM;
-	nvStr.magic_start = MAGICNUM;
-	nvStr.magic_end = MAGICNUM;
 }
 
 stat_t controller_test_assertions()
 {
-	if ((cs.magic_start 	!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end 	  != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	if ((nvStr.magic_start != MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-
+	if ((cs.magic_start		!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
-/* 
+/*
  * controller_run() - MAIN LOOP - top-level controller
  *
- * The order of the dispatched tasks is very important. 
+ * The order of the dispatched tasks is very important.
  * Tasks are ordered by increasing dependency (blocking hierarchy).
  * Tasks that are dependent on completion of lower-level tasks must be
- * later in the list than the task(s) they are dependent upon. 
+ * later in the list than the task(s) they are dependent upon.
  *
- * Tasks must be written as continuations as they will be called repeatedly, 
- * and are called even if they are not currently active. 
+ * Tasks must be written as continuations as they will be called repeatedly,
+ * and are called even if they are not currently active.
  *
- * The DISPATCH macro calls the function and returns to the controller parent 
- * if not finished (STAT_EAGAIN), preventing later routines from running 
- * (they remain blocked). Any other condition - OK or ERR - drops through 
+ * The DISPATCH macro calls the function and returns to the controller parent
+ * if not finished (STAT_EAGAIN), preventing later routines from running
+ * (they remain blocked). Any other condition - OK or ERR - drops through
  * and runs the next routine in the list.
  *
  * A routine that had no action (i.e. is OFF or idle) should return STAT_NOOP
  */
 
-void controller_run() 
-{ 
-	while (true) { 
+void controller_run()
+{
+	while (true) {
 		_controller_HSM();
 	}
 }
 
-#define	DISPATCH(func) if (func == STAT_EAGAIN) return; 
+#define	DISPATCH(func) if (func == STAT_EAGAIN) return;
 static void _controller_HSM()
 {
 //----- Interrupt Service Routines are the highest priority controller functions ----//
@@ -183,6 +174,7 @@ static void _controller_HSM()
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
+	DISPATCH(nv_persist_G10_callback());		// persis G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
@@ -195,13 +187,13 @@ static void _controller_HSM()
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
-/***************************************************************************** 
+/*****************************************************************************
  * _command_dispatch() - dispatch line received from active input device
  *
  *	Reads next command line and dispatches to relevant parser or action
  *	Accepts commands if the move queue has room - EAGAINS if it doesn't
  *	Manages cutback to serial input from file devices (EOF)
- *	Also responsible for prompts and for flow control 
+ *	Also responsible for prompts and for flow control
  */
 
 static stat_t _command_dispatch()
@@ -270,9 +262,9 @@ static stat_t _command_dispatch()
  * _shutdown_idler() - blink rapidly and prevent further activity from occurring
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
- *	Shutdown idler flashes indicator LED rapidly to show everything is not OK. 
- *	Shutdown idler returns EAGAIN causing the control loop to never advance beyond 
- *	this point. It's important that the reset handler is still called so a SW reset 
+ *	Shutdown idler flashes indicator LED rapidly to show everything is not OK.
+ *	Shutdown idler returns EAGAIN causing the control loop to never advance beyond
+ *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) or bootloader request can be processed.
  */
 
@@ -394,13 +386,14 @@ static stat_t _limit_switch_handler(void)
 	return (STAT_OK);
 }
 
-/* 
+/*
  * _system_assertions() - check memory integrity and other assertions
  */
 #define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
 
 stat_t _system_assertions()
 {
+	emergency___everybody_to_get_from_street(config_test_assertions());
 	emergency___everybody_to_get_from_street(controller_test_assertions());
 	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
 	emergency___everybody_to_get_from_street(planner_test_assertions());

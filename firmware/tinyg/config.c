@@ -40,7 +40,6 @@
 #include "help.h"
 #include "util.h"
 #include "xio.h"
-//#include "xmega/xmega_eeprom.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -51,7 +50,7 @@ extern "C"{
  ***********************************************************************************/
 
 nvStr_t nvStr;
-nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
+nvList_t nvl;
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -63,17 +62,17 @@ nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
  * nv_get() 	- Build a nvObj with the values from the target & return the value
  *			   	  Populate nv body with single valued elements or groups (iterates)
  * nv_print()	- Output a formatted string for the value.
- * nv_persist() - persist value to NVM. Takes special cases into account
+ * nv_persist() - persist value to non-volatile storage. Takes special cases into account
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
+	if (nv->index >= nv_index_max()) return (STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) { return(STAT_INTERNAL_RANGE_ERROR);}
+	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
@@ -83,6 +82,7 @@ void nv_print(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
+/*
 void nv_persist(nvObj_t *nv)
 {
 #ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
@@ -90,6 +90,15 @@ void nv_persist(nvObj_t *nv)
 #endif
 	if (nv_index_lt_groups(nv->index) == false) return;
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) write_persistent_value(nv);
+}
+*/
+stat_t nv_persist(nvObj_t *nv)
+{
+#ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
+	if (nv_index_lt_groups(nv->index) == false) return(STAT_INTERNAL_RANGE_ERROR);
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) return(write_persistent_value(nv));
+#endif
+	return (STAT_OK);
 }
 
 /************************************************************************************
@@ -107,10 +116,7 @@ void nv_persist(nvObj_t *nv)
 void config_init()
 {
 	nvObj_t *nv = nv_reset_nv_list();
-	nvStr.magic_start = MAGICNUM;
-	nvStr.magic_end = MAGICNUM;
-	cfg.magic_start = MAGICNUM;
-	cfg.magic_end = MAGICNUM;
+	config_init_assertions();
 
 #ifdef __ARM
 // ++++ The following code is offered until persistence is implemented.
@@ -157,11 +163,35 @@ stat_t set_defaults(nvObj_t *nv)
 			nv->value = GET_TABLE_FLOAT(def_value);
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			nv_set(nv);
-			nv_persist(nv);						// persist must occur when no other interrupts are firing
+			nv_persist(nv);
 		}
 	}
 	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
 	sr_init_status_report();					// reset status reports
+	return (STAT_OK);
+}
+
+/*
+ * config_init_assertions()
+ * config_test_assertions() - check memory integrity of config sub-system
+ */
+
+void config_init_assertions()
+{
+	cfg.magic_start = MAGICNUM;
+	cfg.magic_end = MAGICNUM;
+	nvl.magic_start = MAGICNUM;
+	nvl.magic_end = MAGICNUM;
+	nvStr.magic_start = MAGICNUM;
+	nvStr.magic_end = MAGICNUM;
+}
+
+stat_t config_test_assertions()
+{
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
@@ -443,12 +473,14 @@ uint8_t nv_get_type(nvObj_t *nv)
 }
 
 /*
- * nv_persist_offsets() - write any changed G54 (et al) offsets back to NVM
+ * nv_persist_offsets() - write any changed coordinate offsets back to persistence
+ * nv_persist_G10_callback() - write any changed G10 values back to persistence
  */
 
-stat_t nv_persist_offsets(uint8_t flag)
+//stat_t nv_persist_offsets(uint8_t flag)
+stat_t nv_persist_G10_callback()
 {
-	if (flag == true) {
+	if ((cm.cycle_state == CYCLE_OFF) && (cm.g10_persist_flag == true)) {
 		nvObj_t nv;
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
@@ -552,7 +584,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 nvObj_t *nv_reset_nv_list()					// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nv_list;					// set up linked list and initialize elements
+	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);					// the ends are bogus & corrected later
 		nv->nx = (nv+1);
@@ -563,7 +595,7 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 		nv->token[0] = NUL;
 	}
 	(--nv)->nx = NULL;
-	nv = nv_list;							// setup response header element ('r')
+	nv = nvl.list;							// setup response header element ('r')
 	nv->pv = NULL;
 	nv->depth = 0;
 	nv->valuetype = TYPE_PARENT;

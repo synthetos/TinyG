@@ -1273,36 +1273,36 @@ static void _exec_program_finalize(float *value, float *flag)
 	cm.machine_state = (uint8_t)value[0];
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
-		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
+		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
 	}
-	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-	cm.cycle_start_requested = false;				// cancel any pending cycle start request
-	mp_zero_segment_velocity();						// for reporting purposes
+	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
+	cm.cycle_start_requested = false;					// cancel any pending cycle start request
+	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
-		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
-	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
-		cm_set_coord_system(cm.coord_system);		// reset to default coordinate system
-		cm_select_plane(cm.select_plane);			// reset to default arc plane
+		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
+	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
+		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
+		cm_select_plane(cm.select_plane);				// reset to default arc plane
 		cm_set_distance_mode(cm.distance_mode);
-//++++	cm_set_units_mode(cm.units_mode);			// reset to default units mode +++ REMOVED +++
-		cm_spindle_control(SPINDLE_OFF);			// M5
-		cm_flood_coolant_control(false);			// M9
-		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// G94
-	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
+//++++	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
+		cm_spindle_control(SPINDLE_OFF);				// M5
+		cm_flood_coolant_control(false);				// M9
+		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
-	nv_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
+	sr_request_status_report(SR_IMMEDIATE_REQUEST);		// request a final status report (not unfiltered)
+//	nv_persist_offsets(cm.g10_persist_flag);			// persist offsets if any changes made
 }
 
 void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
+	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
 		cm.cycle_state = CYCLE_MACHINING;
-		qr_init_queue_report();						// clear queue reporting buffer counts
+		qr_init_queue_report();							// clear queue reporting buffer counts
 	}
 
 }

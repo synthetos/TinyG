@@ -258,7 +258,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 				case 2:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CW_ARC);
 				case 3:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CCW_ARC);
 				case 4:  SET_NON_MODAL (next_action, NEXT_ACTION_DWELL);
-				case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_COORD_DATA);
+				case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G10_DATA);
 				case 17: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XY);
 				case 18: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XZ);
 				case 19: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_YZ);
@@ -407,7 +407,7 @@ static stat_t _parse_gcode_block(char_t *buf)
  *		17. set distance mode (G90, G91)
  *		18. set retract mode (G98, G99)
  *		19a. homing functions (G28.2, G28.3, G28.1, G28, G30)
- *		19b. change coordinate system data (G10)
+ *		19b. update system data (G10)
  *		19c. set axis offsets (G92, G92.1, G92.2, G92.3)
  *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
  *		21. stop and end (M0, M1, M2, M30, M60)
@@ -427,18 +427,18 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
 	EXEC_FUNC(cm_spindle_override_factor, spindle_override_factor);
-	EXEC_FUNC(cm_select_tool, tool_select);			// tool_select is where it's written
+	EXEC_FUNC(cm_select_tool, tool_select);					// tool_select is where it's written
 	EXEC_FUNC(cm_change_tool, tool_change);
-	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
+	EXEC_FUNC(cm_spindle_control, spindle_mode); 			// spindle on or off
 	EXEC_FUNC(cm_mist_coolant_control, mist_coolant);
-	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF
+	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);		// also disables mist coolant if OFF
 	EXEC_FUNC(cm_feed_rate_override_enable, feed_rate_override_enable);
 	EXEC_FUNC(cm_traverse_override_enable, traverse_override_enable);
 	EXEC_FUNC(cm_spindle_override_enable, spindle_override_enable);
 	EXEC_FUNC(cm_override_enables, override_enables);
 
-	if (cm.gn.next_action == NEXT_ACTION_DWELL) { 	// G4 - dwell
-		ritorno(cm_dwell(cm.gn.parameter));			// return if error, otherwise complete the block
+	if (cm.gn.next_action == NEXT_ACTION_DWELL) { 			// G4 - dwell
+		ritorno(cm_dwell(cm.gn.parameter));					// return if error, otherwise complete the block
 	}
 	EXEC_FUNC(cm_select_plane, select_plane);
 	EXEC_FUNC(cm_set_units_mode, units_mode);
@@ -461,7 +461,7 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
@@ -482,10 +482,13 @@ static stat_t _execute_gcode_block()
 	}
 	cm_set_absolute_override(MODEL, false);	 // un-set absolute override once the move is planned
 
-	// do the M stops: M0, M1, M2, M30, M60
+	// do the program stops and ends : M0, M1, M2, M30, M60
 	if (cm.gf.program_flow == true) {
-		if (cm.gn.program_flow == PROGRAM_STOP) { cm_program_stop(); }
-		else { cm_program_end(); }
+		if (cm.gn.program_flow == PROGRAM_STOP) {
+			cm_program_stop();
+		} else {
+			cm_program_end();
+		}
 	}
 	return (status);
 }

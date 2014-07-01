@@ -52,30 +52,30 @@ extern "C"{
 /*****************************************************************************
  * GCODE MODEL - The following GCodeModel/GCodeInput structs are used:
  *
- * - gm is the core Gcode model state. It keeps the internal gcode state model in 
- *	 normalized, canonical form. All values are unit converted (to mm) and in the 
- *	 machine coordinate system (absolute coordinate system). Gm is owned by the 
+ * - gm is the core Gcode model state. It keeps the internal gcode state model in
+ *	 normalized, canonical form. All values are unit converted (to mm) and in the
+ *	 machine coordinate system (absolute coordinate system). Gm is owned by the
  *	 canonical machine layer and should be accessed only through cm_ routines.
  *
- *	 The gm core struct is copied and passed as context to the runtime where it is 
+ *	 The gm core struct is copied and passed as context to the runtime where it is
  *	 used for planning, replanning, and reporting.
  *
- * - gmx is the extended gcode model variables that are only used by the canonical 
+ * - gmx is the extended gcode model variables that are only used by the canonical
  *	 machine and do not need to be passed further down.
  *
- * - gn is used by the gcode interpreter and is re-initialized for each 
- *   gcode block.It accepts data in the new gcode block in the formats 
- *	 present in the block (pre-normalized forms). During initialization 
+ * - gn is used by the gcode interpreter and is re-initialized for each
+ *   gcode block.It accepts data in the new gcode block in the formats
+ *	 present in the block (pre-normalized forms). During initialization
  *	 some state elements are necessarily restored from gm.
  *
- * - gf is used by the gcode parser interpreter to hold flags for any data 
- *	 that has changed in gn during the parse. cm.gf.target[] values are also used 
+ * - gf is used by the gcode parser interpreter to hold flags for any data
+ *	 that has changed in gn during the parse. cm.gf.target[] values are also used
  *	 by the canonical machine during set_target().
  *
- * - cfg (config struct in config.h) is also used heavily and contains some 
- *	 values that might be considered to be Gcode model values. The distinction 
- *	 is that all values in the config are persisted and restored, whereas the 
- *	 gm structs are transient. So cfg has the G54 - G59 offsets, but gm has the 
+ * - cfg (config struct in config.h) is also used heavily and contains some
+ *	 values that might be considered to be Gcode model values. The distinction
+ *	 is that all values in the config are persisted and restored, whereas the
+ *	 gm structs are transient. So cfg has the G54 - G59 offsets, but gm has the
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
@@ -113,7 +113,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
 
-	float position[AXES];				// XYZABC model position (Note: not used in gn or gf) 
+	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
@@ -206,7 +206,7 @@ typedef struct cmAxis {
 } cfgAxis_t;
 
 typedef struct cmSingleton {		// struct to manage cm globals and cycles
-	magic_t magic_start;			// magic number to test memory integity	
+	magic_t magic_start;			// magic number to test memory integity
 
 	/**** Config variables (PUBLIC) ****/
 
@@ -269,7 +269,7 @@ typedef struct cmSingleton {		// struct to manage cm globals and cycles
 extern cmSingleton_t cm;		// canonical machine controller singleton
 
 /*****************************************************************************
- * 
+ *
  * MACHINE STATE MODEL
  *
  * The following main variables track canonical machine state and state transitions.
@@ -361,8 +361,8 @@ enum cmProbeState {					// applies to cm.probe_state
 	PROBE_WAITING					// probe is waiting to be started
 };
 
-/* The difference between NextAction and MotionMode is that NextAction is 
- * used by the current block, and may carry non-modal commands, whereas 
+/* The difference between NextAction and MotionMode is that NextAction is
+ * used by the current block, and may carry non-modal commands, whereas
  * MotionMode persists across blocks (as G modal group 1)
  */
 
@@ -371,11 +371,11 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
-	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates 
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
-	NEXT_ACTION_SET_COORD_DATA,			// G10
+	NEXT_ACTION_SET_G10_DATA,			// G10
 	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
 	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
@@ -427,7 +427,7 @@ enum cmCanonicalPlane {				// canonical plane - translates to:
 									// 		axis_0	axis_1	axis_2
 	CANON_PLANE_XY = 0,				// G17    X		  Y		  Z
 	CANON_PLANE_XZ,					// G18    X		  Z		  Y
-	CANON_PLANE_YZ					// G19	  Y		  Z		  X							
+	CANON_PLANE_YZ					// G19	  Y		  Z		  X
 };
 
 enum cmUnitsMode {
@@ -511,7 +511,7 @@ enum cmAxisMode {					// axis modes (ordered: see _cm_get_feed_time())
 /*--- Internal functions and helpers ---*/
 
 // Model state getters and setters
-uint8_t cm_get_combined_state(void); 
+uint8_t cm_get_combined_state(void);
 uint8_t cm_get_machine_state(void);
 uint8_t cm_get_cycle_state(void);
 uint8_t cm_get_motion_state(void);
@@ -721,7 +721,7 @@ stat_t cm_set_jrk(nvObj_t *nv);			// set jerk with 1,000,000 correction
 	void cm_print_gpa(nvObj_t *nv);
 	void cm_print_gdi(nvObj_t *nv);
 
-	void cm_print_lin(nvObj_t *nv);		// generic print for linear values 
+	void cm_print_lin(nvObj_t *nv);		// generic print for linear values
 	void cm_print_pos(nvObj_t *nv);		// print runtime work position in prevailing units
 	void cm_print_mpo(nvObj_t *nv);		// print runtime work position always in MM uints
 	void cm_print_ofs(nvObj_t *nv);		// print runtime work offset always in MM uints
@@ -778,7 +778,7 @@ stat_t cm_set_jrk(nvObj_t *nv);			// set jerk with 1,000,000 correction
 	#define cm_print_gpa tx_print_stub
 	#define cm_print_gdi tx_print_stub
 
-	#define cm_print_lin tx_print_stub		// generic print for linear values 
+	#define cm_print_lin tx_print_stub		// generic print for linear values
 	#define cm_print_pos tx_print_stub		// print runtime work position in prevailing units
 	#define cm_print_mpo tx_print_stub		// print runtime work position always in MM uints
 	#define cm_print_ofs tx_print_stub		// print runtime work offset always in MM uints

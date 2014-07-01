@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.12	// Validating config settings functions
+#define TINYG_FIRMWARE_BUILD   		435.13	// added memory guard and assertions tests for config system
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
@@ -308,10 +308,10 @@ char *get_status_message(stat_t status);
 #define STAT_GENERIC_EXCEPTION_REPORT 29	// used for test
 #define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 30
 #define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 31
+#define	STAT_FLOAT_IS_INFINITE 32
+#define	STAT_FLOAT_IS_NAN 33
+#define	STAT_PERSISTENCE_ERROR 34
 
-#define	STAT_ERROR_32 32
-#define	STAT_ERROR_33 33
-#define	STAT_ERROR_34 34
 #define	STAT_ERROR_35 35
 #define	STAT_ERROR_36 36
 #define	STAT_ERROR_37 37
@@ -373,9 +373,9 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_88 88
 #define	STAT_ERROR_89 89
 
-#define	STAT_ERROR_90 90
-
 // Assertion failures - build down from 99 until they meet the system internal errors
+
+#define	STAT_CONFIG_ASSERTION_FAILURE 90
 #define	STAT_XIO_ASSERTION_FAILURE 91
 #define	STAT_ENCODER_ASSERTION_FAILURE 92
 #define	STAT_STEPPER_ASSERTION_FAILURE 93

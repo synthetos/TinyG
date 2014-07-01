@@ -212,12 +212,12 @@ static const char stat_26[] PROGMEM = "Initialization failure";
 static const char stat_27[] PROGMEM = "System alarm - shutting down";
 static const char stat_28[] PROGMEM = "Failed to get planner buffer";
 static const char stat_29[] PROGMEM = "Generic exception report";
-static const char stat_30[] PROGMEM = "st_prep_line() move time is infinite";
-static const char stat_31[] PROGMEM = "st_prep_line() move time is NAN";
+static const char stat_30[] PROGMEM = "Move time is infinite";
+static const char stat_31[] PROGMEM = "Move time is NAN";
+static const char stat_32[] PROGMEM = "Float is infinite";
+static const char stat_33[] PROGMEM = "Float is NAN";
+static const char stat_34[] PROGMEM = "Persistence error";
 
-static const char stat_32[] PROGMEM = "32";
-static const char stat_33[] PROGMEM = "33";
-static const char stat_34[] PROGMEM = "34";
 static const char stat_35[] PROGMEM = "35";
 static const char stat_36[] PROGMEM = "36";
 static const char stat_37[] PROGMEM = "37";
@@ -273,8 +273,8 @@ static const char stat_86[] PROGMEM = "86";
 static const char stat_87[] PROGMEM = "87";
 static const char stat_88[] PROGMEM = "88";
 static const char stat_89[] PROGMEM = "89";
-static const char stat_90[] PROGMEM = "90";
 
+static const char stat_90[] PROGMEM = "Config sub-system assertion failure";
 static const char stat_91[] PROGMEM = "IO sub-system assertion failure";
 static const char stat_92[] PROGMEM = "Encoder assertion failure";
 static const char stat_93[] PROGMEM = "Stepper assertion failure";

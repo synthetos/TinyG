@@ -26,6 +26,7 @@
  */
 #include "tinyg.h"
 #include "persistence.h"
+#include "report.h"
 #include "canonical_machine.h"
 #include "util.h"
 
@@ -58,7 +59,7 @@ void persistence_init()
 	nvm.nvm_base_addr = NVM_BASE_ADDR;
 	nvm.nvm_profile_base = 0;
 #endif
-	return;	
+	return;
 }
 
 /************************************************************************************
@@ -90,12 +91,14 @@ stat_t read_persistent_value(nvObj_t *nv)
 #ifdef __AVR
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF)	// can't write when machine is moving 
-		return (STAT_FILE_NOT_OPEN);
+	if (cm.cycle_state != CYCLE_OFF) return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
+	if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
+	if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
 
 	float tmp_value = nv->value;
 	ritorno(read_persistent_value(nv));
-	if (nv->value != tmp_value) {		// catches the isnan() case as well
+//	if (nv->value != tmp_value) {				// catches the isnan() case as well
+	if (fp_NE(nv->value, tmp_value)) {
 		nv->value = tmp_value;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
 		memcpy(&nvm_byte_array, &tmp_value, NVM_VALUE_LEN);
@@ -109,6 +112,9 @@ stat_t write_persistent_value(nvObj_t *nv)
 #ifdef __ARM
 stat_t write_persistent_value(nvObj_t *nv)
 {
+	if (cm.cycle_state != CYCLE_OFF) return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
+	if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
+	if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
 	return (STAT_OK);
 }
 #endif // __ARM
