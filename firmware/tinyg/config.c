@@ -123,6 +123,7 @@ void config_init()
 
 	read_persistent_value(nv);
 	if (nv->value != cs.fw_build) {
+//	if (fp_NE(nv->value, cs.fw_build)) {
 		nv->value = true;						// case (1) NVM is not setup or not in revision
 		set_defaults(nv);
 	} else {									// case (2) NVM is setup and in revision
@@ -158,8 +159,14 @@ stat_t set_defaults(nvObj_t *nv)
 			nv_persist(nv);
 		}
 	}
-	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
 	sr_init_status_report();					// reset status reports
+	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
+
+	// The values in nv are now garbage. Mark the nv as $defa so it displays well.
+	strncpy(nv->token, "defa", TOKEN_LEN);
+//	nv->index = nv_get_index("", nv->token);	// correct, but not required
+	nv->valuetype = TYPE_INTEGER;
+	nv->value = 1;
 	return (STAT_OK);
 }
 
