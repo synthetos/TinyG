@@ -633,7 +633,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			cm.offset[coord_system][axis] = offset[axis];
-			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+			cm.g10_persist_flag = true;		// this will persist offsets once machining cycle is over
 		}
 	}
 	return (STAT_OK);
@@ -1294,7 +1294,6 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
 	sr_request_status_report(SR_IMMEDIATE_REQUEST);		// request a final status report (not unfiltered)
-//	nv_persist_offsets(cm.g10_persist_flag);			// persist offsets if any changes made
 }
 
 void cm_cycle_start()

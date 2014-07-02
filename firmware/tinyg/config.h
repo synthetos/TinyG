@@ -324,7 +324,6 @@ stat_t nv_persist(nvObj_t *nv);			// main entry point for persistence
 
 // helpers
 uint8_t nv_get_type(nvObj_t *nv);
-//stat_t nv_persist_offsets(uint8_t flag);
 stat_t nv_persist_G10_callback(void);	// callback to persist G10 changes out-of-cycle
 void nv_preprocess_float(nvObj_t *nv);	// pre-process float values for units and illegal values
 

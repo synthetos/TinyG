@@ -63,6 +63,8 @@ nvList_t nvl;
  *			   	  Populate nv body with single valued elements or groups (iterates)
  * nv_print()	- Output a formatted string for the value.
  * nv_persist() - persist value to non-volatile storage. Takes special cases into account
+ *
+ *	!!!! NOTE: nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
  */
 stat_t nv_set(nvObj_t *nv)
 {
@@ -82,17 +84,7 @@ void nv_print(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
-/*
-void nv_persist(nvObj_t *nv)
-{
-#ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	return;
-#endif
-	if (nv_index_lt_groups(nv->index) == false) return;
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) write_persistent_value(nv);
-}
-*/
-stat_t nv_persist(nvObj_t *nv)
+stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	if (nv_index_lt_groups(nv->index) == false) return(STAT_INTERNAL_RANGE_ERROR);
@@ -473,11 +465,9 @@ uint8_t nv_get_type(nvObj_t *nv)
 }
 
 /*
- * nv_persist_offsets() - write any changed coordinate offsets back to persistence
  * nv_persist_G10_callback() - write any changed G10 values back to persistence
  */
 
-//stat_t nv_persist_offsets(uint8_t flag)
 stat_t nv_persist_G10_callback()
 {
 	if ((cm.cycle_state == CYCLE_OFF) && (cm.g10_persist_flag == true)) {
@@ -487,7 +477,7 @@ stat_t nv_persist_G10_callback()
 				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				nv.index = nv_get_index((const char_t *)"", nv.token);
 				nv.value = cm.offset[i][j];
-				nv_persist(&nv);				// only writes changed values
+				nv_persist(&nv);				// Note: only writes values that have changed
 			}
 		}
 	}

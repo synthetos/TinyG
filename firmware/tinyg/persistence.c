@@ -97,7 +97,6 @@ stat_t write_persistent_value(nvObj_t *nv)
 
 	float tmp_value = nv->value;
 	ritorno(read_persistent_value(nv));
-//	if (nv->value != tmp_value) {				// catches the isnan() case as well
 	if (fp_NE(nv->value, tmp_value)) {
 		nv->value = tmp_value;
 		int8_t nvm_byte_array[NVM_VALUE_LEN];
