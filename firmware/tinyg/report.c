@@ -49,8 +49,9 @@ qrSingleton_t qr;
  * rpt_exception() - generate an exception message - always in JSON format
  *
  * Returns incoming status value
- * WARNING: Do not call this function from MED or HI interrupts (LO is OK) or there is
- *			a potential for deadlock in the TX buffer.
+ *
+ * WARNING: Do not call this function from MED or HI interrupts (LO is OK)
+ *			or there is a potential for deadlock in the TX buffer.
  */
 stat_t rpt_exception(uint8_t status)
 {
@@ -63,16 +64,15 @@ stat_t rpt_exception(uint8_t status)
 				TINYG_FIRMWARE_BUILD, status, get_status_message(status));
 		}
 	}
-	return (status);
+	return (status);			// makes it possible to inline, e.g: return(rpt_exception(status));
 }
 
 /*
- * rpt_er()		   - send a bogus exception report for testing purposes (it's not real)
+ * rpt_er()	- send a bogus exception report for testing purposes (it's not real)
  */
 stat_t rpt_er(nvObj_t *nv)
 {
-	rpt_exception(STAT_GENERIC_EXCEPTION_REPORT);	// bogus exception report for testing
-	return (STAT_OK);
+	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT)); // bogus exception report for testing
 }
 
 /**** Application Messages *********************************************************

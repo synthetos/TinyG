@@ -45,6 +45,8 @@
 extern "C"{
 #endif
 
+static void _set_defa(nvObj_t *nv);
+
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
@@ -94,11 +96,11 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 }
 
 /************************************************************************************
- * config_init()  - called once on hard reset
+ * config_init() - called once on hard reset
  *
  * Performs one of 2 actions:
- *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
- *	(2) if NVM is set up and at current config version use NVM data for config
+ *	(1) if persistence is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(2) if persistence is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -114,8 +116,9 @@ void config_init()
 // ++++ The following code is offered until persistence is implemented.
 // ++++ Then you can use the AVR code (or something like it)
 	cfg.comm_mode = JSON_MODE;					// initial value until EEPROM is read
-	nv->value = true;
-	set_defaults(nv);
+//	nv->value = true;
+//	set_defaults(nv);
+	_set_defa(nv);
 #endif
 #ifdef __AVR
 	cm_set_units_mode(MILLIMETERS);				// must do inits in millimeter mode
@@ -124,8 +127,9 @@ void config_init()
 	read_persistent_value(nv);
 	if (nv->value != cs.fw_build) {
 //	if (fp_NE(nv->value, cs.fw_build)) {
-		nv->value = true;						// case (1) NVM is not setup or not in revision
-		set_defaults(nv);
+//		nv->value = true;						// case (1) NVM is not setup or not in revision
+//		set_defaults(nv);
+		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
@@ -141,16 +145,13 @@ void config_init()
 }
 
 /*
- * set_defaults() - reset NVM with default values for active profile
+ * set_defaults() - reset persistence with default values for machine profile
+ * _set_defa() - helper function and called directly from config_init()
  */
-stat_t set_defaults(nvObj_t *nv)
-{
-	if (fp_FALSE(nv->value)) {					// failsafe. Must set true or no action occurs
-		help_defa(nv);
-		return (STAT_OK);
-	}
-	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 
+static void _set_defa(nvObj_t *nv)
+{
+	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			nv->value = GET_TABLE_FLOAT(def_value);
@@ -161,9 +162,16 @@ stat_t set_defaults(nvObj_t *nv)
 	}
 	sr_init_status_report();					// reset status reports
 	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
+}
 
-	// The values in nv are now garbage. Mark the nv as $defa so it displays well.
-	strncpy(nv->token, "defa", TOKEN_LEN);
+stat_t set_defaults(nvObj_t *nv)
+{
+	// failsafe. nv->value must be true or no action occurs
+	if (fp_FALSE(nv->value)) return(help_defa(nv));
+	_set_defa(nv);
+
+	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
+//	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
 //	nv->index = nv_get_index("", nv->token);	// correct, but not required
 	nv->valuetype = TYPE_INTEGER;
 	nv->value = 1;

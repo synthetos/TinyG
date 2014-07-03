@@ -550,7 +550,7 @@ stat_t cm_soft_alarm(stat_t status)
 {
 	rpt_exception(status);					// send alarm message
 	cm.machine_state = MACHINE_ALARM;
-	return (status);
+	return (status);						// NB: More efficient than inlining rpt_exception() call.
 }
 
 stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
@@ -627,8 +627,9 @@ stat_t cm_set_distance_mode(uint8_t mode)
 
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
-		return (STAT_INTERNAL_RANGE_ERROR);
+	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
+//		return(rpt_exception(STAT_INTERNAL_RANGE_ERROR));				// ++++ make this a more maningful status code
+		return(STAT_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
@@ -916,7 +917,8 @@ stat_t cm_straight_feed(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+//		return(rpt_exception(STAT_GCODE_FEEDRATE_NOT_SPECIFIED));
+		return(STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 	cm_set_model_target(target, flags);
