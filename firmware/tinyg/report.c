@@ -187,6 +187,10 @@ void sr_init_status_report()
 		if (sr_defaults[i][0] == NUL) break;				// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
 		nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
+		if (nv->value == NO_MATCH) {
+			rpt_exception(STAT_BAD_STATUS_REPORT_SETTING);	// trap mis-configured profile settings
+			return;
+		}
 		if (_is_stat(nv) == true)
 			sr.stat_index = nv->value;						// identify index for 'stat' if status is in the report
 		nv_set(nv);
@@ -197,6 +201,9 @@ void sr_init_status_report()
 
 /*
  * sr_set_status_report() - interpret an SR setup string and return current report
+ *
+ *	Note: By the time it's here any unrecognized token have been detected by the JSON or text parser.
+ *		  In other words, it will never get to here if there is an unrecognized token in the SR string.
  */
 stat_t sr_set_status_report(nvObj_t *nv)
 {
@@ -218,8 +225,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	}
 	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
-	_populate_unfiltered_status_report();					// return current values
-	return (STAT_OK);
+	return(_populate_unfiltered_status_report());			// return current values
 }
 
 /*

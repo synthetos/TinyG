@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.16	// more work on $defa
+#define TINYG_FIRMWARE_BUILD   		435.17	// testing status report setup
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
@@ -306,13 +306,13 @@ char *get_status_message(stat_t status);
 #define	STAT_ALARMED 27
 #define	STAT_FAILED_TO_GET_PLANNER_BUFFER 28
 #define STAT_GENERIC_EXCEPTION_REPORT 29	// used for test
+
 #define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 30
 #define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 31
 #define	STAT_FLOAT_IS_INFINITE 32
 #define	STAT_FLOAT_IS_NAN 33
 #define	STAT_PERSISTENCE_ERROR 34
-
-#define	STAT_ERROR_35 35
+#define	STAT_BAD_STATUS_REPORT_SETTING 35
 #define	STAT_ERROR_36 36
 #define	STAT_ERROR_37 37
 #define	STAT_ERROR_38 38
@@ -389,7 +389,7 @@ char *get_status_message(stat_t status);
 // Application and data input errors
 
 // Generic data input errors
-#define	STAT_UNRECOGNIZED_COMMAND 100			// parser didn't recognize the command
+#define	STAT_UNRECOGNIZED_NAME 100				// parser didn't recognize the name
 #define	STAT_MALFORMED_COMMAND_INPUT 101		// malformed line to parser
 #define	STAT_BAD_NUMBER_FORMAT 102				// number format error
 #define	STAT_INPUT_EXCEEDS_MAX_LENGTH 103		// input string is too long

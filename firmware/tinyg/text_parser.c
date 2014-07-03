@@ -132,7 +132,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 
 	// validate and post-process the token
 	if ((nv->index = nv_get_index((const char_t *)"", nv->token)) == NO_MATCH) { // get index or fail it
-		return (STAT_UNRECOGNIZED_COMMAND);
+		return (STAT_UNRECOGNIZED_NAME);
 	}
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
 

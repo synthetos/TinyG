@@ -212,17 +212,18 @@ static const char stat_26[] PROGMEM = "Initialization failure";
 static const char stat_27[] PROGMEM = "System alarm - shutting down";
 static const char stat_28[] PROGMEM = "Failed to get planner buffer";
 static const char stat_29[] PROGMEM = "Generic exception report";
+
 static const char stat_30[] PROGMEM = "Move time is infinite";
 static const char stat_31[] PROGMEM = "Move time is NAN";
 static const char stat_32[] PROGMEM = "Float is infinite";
 static const char stat_33[] PROGMEM = "Float is NAN";
 static const char stat_34[] PROGMEM = "Persistence error";
-
-static const char stat_35[] PROGMEM = "35";
+static const char stat_35[] PROGMEM = "Bad status report setting";
 static const char stat_36[] PROGMEM = "36";
 static const char stat_37[] PROGMEM = "37";
 static const char stat_38[] PROGMEM = "38";
 static const char stat_39[] PROGMEM = "39";
+
 static const char stat_40[] PROGMEM = "40";
 static const char stat_41[] PROGMEM = "41";
 static const char stat_42[] PROGMEM = "42";
@@ -285,7 +286,7 @@ static const char stat_97[] PROGMEM = "Stack overflow detected";
 static const char stat_98[] PROGMEM = "Memory fault detected";
 static const char stat_99[] PROGMEM = "Generic assertion failure";
 
-static const char stat_100[] PROGMEM = "Unrecognized command";
+static const char stat_100[] PROGMEM = "Unrecognized command or config name";
 static const char stat_101[] PROGMEM = "Malformed command";
 static const char stat_102[] PROGMEM = "Bad number format";
 static const char stat_103[] PROGMEM = "Input exceeds max length";

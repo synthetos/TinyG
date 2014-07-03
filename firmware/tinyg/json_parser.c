@@ -118,7 +118,7 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
 		// validate the token and get the index
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
-			return (STAT_UNRECOGNIZED_COMMAND);
+			return (STAT_UNRECOGNIZED_NAME);
 		}
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID

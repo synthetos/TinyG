@@ -397,7 +397,7 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
+	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_NAME);
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
