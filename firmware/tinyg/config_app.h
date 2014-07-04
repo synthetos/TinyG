@@ -85,21 +85,21 @@ uint8_t job_report_callback();
 
 #ifdef __TEXT_MODE
 
-	void co_print_ec(nvObj_t *nv);
-	void co_print_ee(nvObj_t *nv);
-	void co_print_ex(nvObj_t *nv);
-	void co_print_baud(nvObj_t *nv);
-	void co_print_net(nvObj_t *nv);
-	void co_print_rx(nvObj_t *nv);
+	void cfg_print_ec(nvObj_t *nv);
+	void cfg_print_ee(nvObj_t *nv);
+	void cfg_print_ex(nvObj_t *nv);
+	void cfg_print_baud(nvObj_t *nv);
+	void cfg_print_net(nvObj_t *nv);
+	void cfg_print_rx(nvObj_t *nv);
 
 #else 
 
-	#define co_print_ec tx_print_stub
-	#define co_print_ee tx_print_stub
-	#define co_print_ex tx_print_stub
-	#define co_print_baud tx_print_stub
-	#define co_print_net tx_print_stub
-	#define co_print_rx tx_print_stub
+	#define cfg_print_ec tx_print_stub
+	#define cfg_print_ee tx_print_stub
+	#define cfg_print_ex tx_print_stub
+	#define cfg_print_baud tx_print_stub
+	#define cfg_print_net tx_print_stub
+	#define cfg_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
 

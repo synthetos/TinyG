@@ -466,11 +466,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","si",  _fipn, 0, sr_print_si,  get_int,   sr_set_si,  (float *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
 //	{ "sys","spi", _fipn, 0, xio_print_spi,get_ui8,   xio_set_spi,(float *)&xio.spi_state,			0 },
 
-	{ "sys","ec",  _fipn, 0, co_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
-	{ "sys","ee",  _fipn, 0, co_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,		COM_ENABLE_ECHO },
-	{ "sys","ex",  _fipn, 0, co_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,COM_ENABLE_FLOW_CONTROL },
-	{ "sys","baud",_fn,   0, co_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
-	{ "sys","net", _fipn, 0, co_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,		NETWORK_MODE },
+	{ "sys","ec",  _fipn, 0, cfg_print_ec,  get_ui8,   set_ec,     (float *)&cfg.enable_cr,			COM_EXPAND_CR },
+	{ "sys","ee",  _fipn, 0, cfg_print_ee,  get_ui8,   set_ee,     (float *)&cfg.enable_echo,		COM_ENABLE_ECHO },
+	{ "sys","ex",  _fipn, 0, cfg_print_ex,  get_ui8,   set_ex,     (float *)&cfg.enable_flow_control,COM_ENABLE_FLOW_CONTROL },
+	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
+	{ "sys","net", _fipn, 0, cfg_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,		NETWORK_MODE },
 
 	// switch state readers
 /*
@@ -723,8 +723,43 @@ uint8_t nv_index_is_single(index_t index) { return ((index <= NV_INDEX_END_SINGL
 uint8_t nv_index_is_group(index_t index) { return (((index >= NV_INDEX_START_GROUPS) && (index < NV_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GROUPS) ? true : false);}
 
+/***** APPLICATION SPECIFIC CONFIGS AND EXTENSIONS TO GENERIC FUNCTIONS *****/
 
-/**** UberGroup Operations ****************************************************
+/*
+ * set_flu() - set floating point number with G20/G21 units conversion
+ *
+ * The number 'setted' will have been delivered in external units (inches or mm).
+ * It is written to the target memory location in internal canonical units (mm).
+ * The original nv->value is also changed so persistence works correctly.
+ * Displays should convert back from internal canonical form to external form.
+ */
+
+stat_t set_flu(nvObj_t *nv)
+{
+	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
+		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
+	}
+	*((float *)GET_TABLE_WORD(target)) = nv->value;// write value as millimeters or degrees
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
+	return(STAT_OK);
+}
+
+/*
+ * preprocess_float() - pre-process floating point number for units display
+ */
+
+void preprocess_float(nvObj_t *nv)
+{
+	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
+	if (GET_TABLE_BYTE(flags) & F_CONVERT) {	// unit conversion required?
+		if (cm_get_units_mode(MODEL) == INCHES) {
+			nv->value *= INCHES_PER_MM;
+		}
+	}
+}
+
+/**** TinyG UberGroup Operations ****************************************************
  * Uber groups are groups of groups organized for convenience:
  *	- motors		- group of all motor groups
  *	- axes			- group of all axis groups
@@ -861,7 +896,7 @@ static stat_t get_rx(nvObj_t *nv)
 	return (STAT_OK);
 #endif
 #ifdef __ARM
-	nv->value = (float)254;
+	nv->value = (float)254;				// ARM always says the serial buffer is available (max)
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
@@ -933,12 +968,12 @@ static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200
 static const char fmt_net[] PROGMEM = "[net]  network mode%16d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
-void co_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
-void co_print_ee(nvObj_t *nv) { text_print_ui8(nv, fmt_ee);}
-void co_print_ex(nvObj_t *nv) { text_print_ui8(nv, fmt_ex);}
-void co_print_baud(nvObj_t *nv) { text_print_ui8(nv, fmt_baud);}
-void co_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
-void co_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
+void cfg_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
+void cfg_print_ee(nvObj_t *nv) { text_print_ui8(nv, fmt_ee);}
+void cfg_print_ex(nvObj_t *nv) { text_print_ui8(nv, fmt_ex);}
+void cfg_print_baud(nvObj_t *nv) { text_print_ui8(nv, fmt_baud);}
+void cfg_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
+void cfg_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
 
 #endif // __TEXT_MODE
 

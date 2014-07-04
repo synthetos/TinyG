@@ -316,45 +316,40 @@ void config_init_assertions(void);
 stat_t config_test_assertions(void);
 
 // main entry points for core access functions
-stat_t nv_get(nvObj_t *nv);				// main entry point for get value
-stat_t nv_set(nvObj_t *nv);				// main entry point for set value
-void nv_print(nvObj_t *nv);				// main entry point for print value
-//void nv_persist(nvObj_t *nv);			// main entry point for persistence
-stat_t nv_persist(nvObj_t *nv);			// main entry point for persistence
+stat_t nv_get(nvObj_t *nv);					// main entry point for get value
+stat_t nv_set(nvObj_t *nv);					// main entry point for set value
+void nv_print(nvObj_t *nv);					// main entry point for print value
+stat_t nv_persist(nvObj_t *nv);				// main entry point for persistence
 
 // helpers
 uint8_t nv_get_type(nvObj_t *nv);
-stat_t nv_persist_G10_callback(void);	// callback to persist G10 changes out-of-cycle
-void nv_preprocess_float(nvObj_t *nv);	// pre-process float values for units and illegal values
-
 index_t nv_get_index(const char_t *group, const char_t *token);
-index_t	nv_index_max(void);
-uint8_t nv_index_lt_max(index_t index);
-uint8_t nv_index_ge_max(index_t index);
-uint8_t nv_index_is_single(index_t index);
-uint8_t nv_index_is_group(index_t index);
-uint8_t nv_index_lt_groups(index_t index);
+index_t	nv_index_max(void);					// (see config_app.c)
+//uint8_t nv_index_lt_max(index_t index);		// (see config_app.c)
+//uint8_t nv_index_ge_max(index_t index);
+uint8_t nv_index_is_single(index_t index);	// (see config_app.c)
+uint8_t nv_index_is_group(index_t index);	// (see config_app.c)
+uint8_t nv_index_lt_groups(index_t index);	// (see config_app.c)
 uint8_t nv_group_is_prefixed(char_t *group);
 
 // generic internal functions and accessors
-stat_t set_nul(nvObj_t *nv);			// set nothing (no operation)
-stat_t set_ui8(nvObj_t *nv);			// set uint8_t value
-stat_t set_01(nvObj_t *nv);				// set a 0 or 1 value with validation
-stat_t set_012(nvObj_t *nv);			// set a 0, 1 or 2 value with validation
-stat_t set_0123(nvObj_t *nv);			// set a 0, 1, 2 or 3 value with validation
-stat_t set_int(nvObj_t *nv);			// set uint32_t integer value
-stat_t set_data(nvObj_t *nv);			// set uint32_t integer value blind cast
-stat_t set_flt(nvObj_t *nv);			// set floating point value
-stat_t set_flu(nvObj_t *nv);			// set floating point number with G20/G21 units conversion
+stat_t set_nul(nvObj_t *nv);				// set nothing (no operation)
+stat_t set_ui8(nvObj_t *nv);				// set uint8_t value
+stat_t set_01(nvObj_t *nv);					// set a 0 or 1 value with validation
+stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
+stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
+stat_t set_int(nvObj_t *nv);				// set uint32_t integer value
+stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
+stat_t set_flt(nvObj_t *nv);				// set floating point value
 
-stat_t get_nul(nvObj_t *nv);			// get null value type
-stat_t get_ui8(nvObj_t *nv);			// get uint8_t value
-stat_t get_int(nvObj_t *nv);			// get uint32_t integer value
-stat_t get_data(nvObj_t *nv);			// get uint32_t integer value blind cast
-stat_t get_flt(nvObj_t *nv);			// get floating point value
+stat_t get_nul(nvObj_t *nv);				// get null value type
+stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
+stat_t get_int(nvObj_t *nv);				// get uint32_t integer value
+stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast
+stat_t get_flt(nvObj_t *nv);				// get floating point value
 
-stat_t set_grp(nvObj_t *nv);			// set data for a group
-stat_t get_grp(nvObj_t *nv);			// get data for a group
+stat_t set_grp(nvObj_t *nv);				// set data for a group
+stat_t get_grp(nvObj_t *nv);				// get data for a group
 
 // nvObj and list functions
 void nv_get_nvObj(nvObj_t *nv);
@@ -369,6 +364,11 @@ nvObj_t *nv_add_string(const char_t *token, const char_t *string);
 nvObj_t *nv_add_conditional_message(const char_t *string);
 void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
+// application specific helpers and functions (config_app.c)
+stat_t set_flu(nvObj_t *nv);				// set floating point number with G20/G21 units conversion
+void preprocess_float(nvObj_t *nv);			// pre-process float values for units and illegal values
+
+// diagnostics
 void nv_dump_nv(nvObj_t *nv);
 
 /*********************************************************************************************

@@ -370,6 +370,34 @@ void cm_finalize_move() {
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
 /*
+ * cm_deferred_write_callback() - write any changed G10 values back to persistence
+ *
+ *	Only runs if there is G10 data to write, there is no movement, and the serial queues are quiescent
+ *	This could be made tighter by issuing an XOFF or ~CTS beforehand and releasing it afterwards.
+ */
+
+stat_t cm_deferred_write_callback()
+{
+	if ((cm.cycle_state == CYCLE_OFF) && (cm.deferred_write_flag == true)) {
+#ifdef __AVR
+		if (xio_isbusy()) return (STAT_OK);		// don't write back if serial RX is not empty
+#endif
+		cm.deferred_write_flag = false;
+		nvObj_t nv;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				nv.index = nv_get_index((const char_t *)"", nv.token);
+				nv.value = cm.offset[i][j];
+				nv_persist(&nv);				// Note: only writes values that have changed
+			}
+		}
+	}
+	return (STAT_OK);
+}
+
+
+/*
  * cm_set_model_target() - set target vector in GM model
  *
  * This is a core routine. It handles:
@@ -634,7 +662,7 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			cm.offset[coord_system][axis] = offset[axis];
-			cm.g10_persist_flag = true;		// this will persist offsets once machining cycle is over
+			cm.deferred_write_flag = true;								// persist offsets once machining cycle is over
 		}
 	}
 	return (STAT_OK);

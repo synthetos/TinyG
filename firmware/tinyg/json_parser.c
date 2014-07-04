@@ -489,7 +489,7 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
 			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_FLOAT)	{ nv_preprocess_float(nv);
+			else if (nv->valuetype == TYPE_FLOAT)	{ preprocess_float(nv);
 //													  str += fntoa((char *)str, nv->value, nv->precision);
 													  str += fntoa(str, nv->value, nv->precision);
 			}

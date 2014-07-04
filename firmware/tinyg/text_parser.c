@@ -195,7 +195,7 @@ void text_print_inline_pairs(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
@@ -215,7 +215,7 @@ void text_print_inline_values(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
@@ -233,7 +233,7 @@ void text_print_multiline_formatted(nvObj_t *nv)
 {
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		if (nv->valuetype != TYPE_PARENT) {
-			nv_preprocess_float(nv);
+			preprocess_float(nv);
 			nv_print(nv);
 		}
 		if ((nv = nv->nx) == NULL) return;

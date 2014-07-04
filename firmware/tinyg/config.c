@@ -309,28 +309,6 @@ stat_t set_flt(nvObj_t *nv)
 	return(STAT_OK);
 }
 
-/***** GCODE SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS *****/
-
-/*
- * set_flu() - set floating point number with G20/G21 units conversion
- *
- * The number 'setted' will have been delivered in external units (inches or mm).
- * It is written to the target memory location in internal canonical units (mm).
- * The original nv->value is also changed so persistence works correctly.
- * Displays should convert back from internal canonical form to external form.
- */
-
-stat_t set_flu(nvObj_t *nv)
-{
-	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
-		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
-	}
-	*((float *)GET_TABLE_WORD(target)) = nv->value;// write value as millimeters or degrees
-	nv->precision = GET_TABLE_WORD(precision);
-	nv->valuetype = TYPE_FLOAT;
-	return(STAT_OK);
-}
-
 /************************************************************************************
  * Group operations
  *
@@ -477,40 +455,6 @@ uint8_t nv_get_type(nvObj_t *nv)
 	if (strcmp("err",nv->token) == 0) return (NV_TYPE_MESSAGE); 	// errors are reported as messages
 	if (strcmp("n",  nv->token) == 0) return (NV_TYPE_LINENUM);
 	return (NV_TYPE_CONFIG);
-}
-
-/*
- * nv_persist_G10_callback() - write any changed G10 values back to persistence
- */
-
-stat_t nv_persist_G10_callback()
-{
-	if ((cm.cycle_state == CYCLE_OFF) && (cm.g10_persist_flag == true)) {
-		nvObj_t nv;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				nv.index = nv_get_index((const char_t *)"", nv.token);
-				nv.value = cm.offset[i][j];
-				nv_persist(&nv);				// Note: only writes values that have changed
-			}
-		}
-	}
-	return (STAT_OK);
-}
-
-/*
- * nv_preprocess_float() - pre-promcess flaoting point number for units display and illegal valaues
- */
-
-void nv_preprocess_float(nvObj_t *nv)
-{
-	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
-	if (GET_TABLE_BYTE(flags) & F_CONVERT) {	// unit conversion required?
-		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;
-		}
-	}
 }
 
 /******************************************************************************

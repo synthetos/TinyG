@@ -174,7 +174,7 @@ static void _controller_HSM()
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
-	DISPATCH(nv_persist_G10_callback());		// persist G10 changes when not in machining cycle
+	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
