@@ -48,13 +48,6 @@
 #include "canonical_machine.h"
 #include "text_parser.h"
 
-/*
- * variables and settings
- */
-											// timer for debouncing switches
-#define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
-#define SW_DEGLITCH_TICKS 3					// 3=30ms
-
 static void _switch_isr_helper(uint8_t sw_num);
 
 /*

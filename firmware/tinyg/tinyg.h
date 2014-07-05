@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.18	// testing G10 deferred writeback code; tightening up writeback conditions
+#define TINYG_FIRMWARE_BUILD   		435.19	// back-porting changes from sync with G2 builds up to 47.05 (homing changes)
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
@@ -399,6 +399,7 @@ char *get_status_message(stat_t status);
 #define	STAT_INPUT_VALUE_UNSUPPORTED 107		// input error: value is not supported
 #define	STAT_JSON_SYNTAX_ERROR 108				// JSON input string is not well formed
 #define	STAT_JSON_TOO_MANY_PAIRS 109			// JSON input string has too many JSON pairs
+
 #define	STAT_JSON_TOO_LONG 110					// JSON output exceeds buffer size
 #define	STAT_CONFIG_NOT_TAKEN 111				// configuration value not taken while in machining cycle
 #define	STAT_COMMAND_NOT_ACCEPTED 112			// command cannot be accepted at this time
@@ -409,6 +410,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_117 117
 #define	STAT_ERROR_118 118
 #define	STAT_ERROR_119 119
+
 #define	STAT_ERROR_120 120
 #define	STAT_ERROR_121 121
 #define	STAT_ERROR_122 122
@@ -427,32 +429,29 @@ char *get_status_message(stat_t status);
 #define	STAT_GCODE_COMMAND_UNSUPPORTED 131				// G command is not supported
 #define	STAT_MCODE_COMMAND_UNSUPPORTED 132				// M command is not supported
 #define	STAT_GCODE_MODAL_GROUP_VIOLATION 133			// gcode modal group error
-
 #define	STAT_GCODE_AXIS_IS_MISSING 134					// command requires at least one axis present
 #define STAT_GCODE_AXIS_CANNOT_BE_PRESENT 135			// error if G80 has axis words
 #define STAT_GCODE_AXIS_IS_INVALID 136					// an axis is specified that is illegal for the command
 #define STAT_GCODE_AXIS_IS_NOT_CONFIGURED 137			// WARNING: attempt to program an axis that is disabled
 #define STAT_GCODE_AXIS_NUMBER_IS_MISSING 138			// axis word is missing its value
 #define STAT_GCODE_AXIS_NUMBER_IS_INVALID 139	 		// axis word value is illegal
+
 #define STAT_GCODE_ACTIVE_PLANE_IS_MISSING 140			// active plane is not programmed
 #define STAT_GCODE_ACTIVE_PLANE_IS_INVALID 141			// active plane selected is not valid for this command
-
 #define	STAT_GCODE_FEEDRATE_NOT_SPECIFIED 142			// move has no feedrate
 #define STAT_GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED 143	// G38.2 and some canned cycles cannot accept inverse time mode
 #define STAT_GCODE_ROTARY_AXIS_CANNOT_BE_USED 144		// G38.2 and some other commands cannot have rotary axes
 #define STAT_GCODE_G53_WITHOUT_G0_OR_G1 145				// G0 or G1 must be active for G53
-
 #define STAT_REQUESTED_VELOCITY_EXCEEDS_LIMITS 146
 #define STAT_CUTTER_COMPENSATION_CANNOT_BE_ENABLED 147
 #define STAT_PROGRAMMED_POINT_SAME_AS_CURRENT_POINT 148
-
 #define	STAT_SPINDLE_SPEED_BELOW_MINIMUM 149
+
 #define	STAT_SPINDLE_SPEED_MAX_EXCEEDED 150
 #define	STAT_S_WORD_IS_MISSING 151
 #define	STAT_S_WORD_IS_INVALID 152
 #define	STAT_SPINDLE_MUST_BE_OFF 153
 #define	STAT_SPINDLE_MUST_BE_TURNING 154				// some canned cycles require spindle to be turning when called
-
 #define	STAT_ARC_SPECIFICATION_ERROR 155				// generic arc specification error
 #define STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE 156	// arc is missing axis (axes) required by selected plane
 #define STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE 157 // one or both offsets are not specified
@@ -465,11 +464,11 @@ char *get_status_message(stat_t status);
 #define STAT_P_WORD_IS_NEGATIVE 163						// dwells require positive P values
 #define STAT_P_WORD_IS_NOT_AN_INTEGER 164				// G10s and other commands require integer P numbers
 #define STAT_P_WORD_IS_NOT_VALID_TOOL_NUMBER 165
-
 #define STAT_D_WORD_IS_MISSING 166
 #define STAT_D_WORD_IS_INVALID 167
 #define STAT_E_WORD_IS_MISSING 168
 #define STAT_E_WORD_IS_INVALID 169
+
 #define STAT_H_WORD_IS_MISSING 170
 #define STAT_H_WORD_IS_INVALID 171
 #define STAT_L_WORD_IS_MISSING 172
@@ -491,6 +490,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_187 187
 #define	STAT_ERROR_188 188
 #define	STAT_ERROR_189 189
+
 #define	STAT_ERROR_190 190
 #define	STAT_ERROR_191 191
 #define	STAT_ERROR_192 192
@@ -536,6 +536,7 @@ char *get_status_message(stat_t status);
 #define	STAT_SOFT_LIMIT_EXCEEDED_AMIN 227				// soft limit error - A minimum
 #define	STAT_SOFT_LIMIT_EXCEEDED_AMAX 228				// soft limit error - A maximum
 #define	STAT_SOFT_LIMIT_EXCEEDED_BMIN 229				// soft limit error - B minimum
+
 #define	STAT_SOFT_LIMIT_EXCEEDED_BMAX 220				// soft limit error - B maximum
 #define	STAT_SOFT_LIMIT_EXCEEDED_CMIN 231				// soft limit error - C minimum
 #define	STAT_SOFT_LIMIT_EXCEEDED_CMAX 232				// soft limit error - C maximum
@@ -551,7 +552,7 @@ char *get_status_message(stat_t status);
 #define	STAT_HOMING_ERROR_BAD_OR_NO_AXIS 241
 #define	STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY 242
 #define	STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY 243
-#define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IS_ZERO 244
+#define	STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL 244
 #define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 245
 #define	STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION 246
 #define	STAT_ERROR_247 247
@@ -563,8 +564,5 @@ char *get_status_message(stat_t status);
 #define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
 
 // !!! Do not exceed 255 without also changing stat_t typedef
-
-//#define	STAT_PREP_LINE_MOVE_TIME_IS_INFINITE 253
-//#define	STAT_PREP_LINE_MOVE_TIME_IS_NAN 254
 
 #endif // End of include guard: TINYG2_H_ONCE

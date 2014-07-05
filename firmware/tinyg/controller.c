@@ -116,7 +116,7 @@ void controller_init_assertions()
 
 stat_t controller_test_assertions()
 {
-	if ((cs.magic_start		!= MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
@@ -198,6 +198,7 @@ static void _controller_HSM()
 
 static stat_t _command_dispatch()
 {
+#ifdef __AVR
 	stat_t status;
 
 	// read input line or return if not a completed line
@@ -218,6 +219,33 @@ static stat_t _command_dispatch()
 		}
 		return (status);								// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
+#endif // __AVR
+#ifdef __ARM
+	// detect USB connection and transition to disconnected state if it disconnected
+	if (SerialUSB.isConnected() == false) cs.state = CONTROLLER_NOT_CONNECTED;
+
+	// read input line and return if not a completed line
+	if (cs.state == CONTROLLER_READY) {
+		if (read_line(cs.in_buf, &cs.read_index, sizeof(cs.in_buf)) != STAT_OK) {
+			cs.bufp = cs.in_buf;
+			return (STAT_OK);	// This is an exception: returns OK for anything NOT OK, so the idler always runs
+		}
+	} else if (cs.state == CONTROLLER_NOT_CONNECTED) {
+		if (SerialUSB.isConnected() == false) return (STAT_OK);
+		cm_request_queue_flush();
+		rpt_print_system_ready_message();
+		cs.state = CONTROLLER_STARTUP;
+
+	} else if (cs.state == CONTROLLER_STARTUP) {		// run startup code
+		cs.state = CONTROLLER_READY;
+
+	} else {
+		return (STAT_OK);
+	}
+	cs.read_index = 0;
+#endif // __ARM
+
+	// set up the buffers
 	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 
@@ -389,7 +417,7 @@ static stat_t _limit_switch_handler(void)
 /*
  * _system_assertions() - check memory integrity and other assertions
  */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) { cm_hard_alarm(status_code); return(status_code); }
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
 
 stat_t _system_assertions()
 {

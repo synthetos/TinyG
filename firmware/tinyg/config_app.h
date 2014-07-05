@@ -92,7 +92,7 @@ uint8_t job_report_callback();
 	void cfg_print_net(nvObj_t *nv);
 	void cfg_print_rx(nvObj_t *nv);
 
-#else 
+#else
 
 	#define cfg_print_ec tx_print_stub
 	#define cfg_print_ee tx_print_stub

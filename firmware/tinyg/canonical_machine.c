@@ -386,7 +386,7 @@ stat_t cm_deferred_write_callback()
 		nvObj_t nv;
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				nv.index = nv_get_index((const char_t *)"", nv.token);
 				nv.value = cm.offset[i][j];
 				nv_persist(&nv);				// Note: only writes values that have changed
@@ -395,7 +395,6 @@ stat_t cm_deferred_write_callback()
 	}
 	return (STAT_OK);
 }
-
 
 /*
  * cm_set_model_target() - set target vector in GM model
@@ -656,8 +655,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
-//		return(rpt_exception(STAT_INTERNAL_RANGE_ERROR));				// ++++ make this a more maningful status code
-		return(STAT_INTERNAL_RANGE_ERROR);
+		return (STAT_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
@@ -946,7 +944,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 //		return(rpt_exception(STAT_GCODE_FEEDRATE_NOT_SPECIFIED));
-		return(STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 	cm_set_model_target(target, flags);
@@ -1135,7 +1133,7 @@ stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 	return (STAT_OK);
 }
 
-stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
+stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 {
 	cm.gmx.spindle_override_enable = flag;
 	cm.gmx.spindle_override_factor = cm.gn.parameter;
@@ -1333,14 +1331,13 @@ void cm_cycle_start()
 		cm.cycle_state = CYCLE_MACHINING;
 		qr_init_queue_report();							// clear queue reporting buffer counts
 	}
-
 }
 
 void cm_cycle_end()
 {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-		_exec_program_finalize(value,value);
+		_exec_program_finalize(value, value);
 	}
 }
 
@@ -1501,7 +1498,6 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 #endif // __TEXT_MODE
 
 /***** AXIS HELPERS *****************************************************************
- *
  * cm_get_axis_char() - return ASCII char for axis given the axis number
  * _get_axis()		  - return axis number or -1 if NA
  * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA

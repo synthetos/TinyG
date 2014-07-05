@@ -258,7 +258,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 				case 2:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CW_ARC);
 				case 3:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CCW_ARC);
 				case 4:  SET_NON_MODAL (next_action, NEXT_ACTION_DWELL);
-				case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G10_DATA);
+				case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_COORD_DATA);
 				case 17: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XY);
 				case 18: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XZ);
 				case 19: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_YZ);
@@ -461,7 +461,7 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}

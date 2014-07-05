@@ -228,7 +228,7 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	uint8_t distance_mode;				// G90,G91 reset default
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+	float offset[COORDS+1][AXES];		// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
 
 	// settings for axes X,Y,Z,A B,C
 	cfgAxis_t a[AXES];
@@ -269,7 +269,6 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 extern cmSingleton_t cm;				// canonical machine controller singleton
 
 /*****************************************************************************
- *
  * MACHINE STATE MODEL
  *
  * The following main variables track canonical machine state and state transitions.
@@ -375,7 +374,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
-	NEXT_ACTION_SET_G10_DATA,			// G10
+	NEXT_ACTION_SET_COORD_DATA,			// G10
 	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
 	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
@@ -599,7 +598,6 @@ stat_t cm_straight_feed(float target[], float flags[]);			// G1
 stat_t cm_arc_feed(	float target[], float flags[], 				// G2, G3
 					float i, float j, float k,
 					float radius, uint8_t motion_mode);
-
 stat_t cm_dwell(float seconds);									// G4, P parameter
 
 // Spindle Functions (4.3.7)

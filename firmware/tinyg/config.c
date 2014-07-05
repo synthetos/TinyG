@@ -70,7 +70,7 @@ nvList_t nvl;
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return (STAT_INTERNAL_RANGE_ERROR);
+	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
@@ -116,8 +116,6 @@ void config_init()
 // ++++ The following code is offered until persistence is implemented.
 // ++++ Then you can use the AVR code (or something like it)
 	cfg.comm_mode = JSON_MODE;					// initial value until EEPROM is read
-//	nv->value = true;
-//	set_defaults(nv);
 	_set_defa(nv);
 #endif
 #ifdef __AVR
@@ -125,10 +123,8 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (nv->value != cs.fw_build) {
+	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
 //	if (fp_NE(nv->value, cs.fw_build)) {
-//		nv->value = true;						// case (1) NVM is not setup or not in revision
-//		set_defaults(nv);
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
