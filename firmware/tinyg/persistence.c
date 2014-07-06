@@ -92,9 +92,12 @@ stat_t read_persistent_value(nvObj_t *nv)
 stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF) return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-	if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
-	if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
-
+/* not needed
+	if (nv->valuetype == TYPE_FLOAT) {
+		if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
+		if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
+	}
+*/
 	float tmp_value = nv->value;
 	ritorno(read_persistent_value(nv));
 	if (fp_NE(nv->value, tmp_value)) {
@@ -112,8 +115,12 @@ stat_t write_persistent_value(nvObj_t *nv)
 stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF) return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-	if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
-	if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
+/* not needed
+	if (nv->valuetype == TYPE_FLOAT) {
+		if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
+		if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
+	}
+*/
 	return (STAT_OK);
 }
 #endif // __ARM
