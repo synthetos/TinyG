@@ -47,14 +47,14 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	uint8_t min_mode;				// mode for min switch for this axis
 	uint8_t max_mode;				// mode for max switch for this axis
 
-#ifdef __NEW_SWITCHES
+#ifndef __NEW_SWITCHES
+	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
+	int8_t limit_switch;			// limit switch for current axis, or -1 if none
+#else
 	int8_t homing_switch_axis;		// axis of current homing switch, or -1 if none
 	uint8_t homing_switch_position;	// min/max position of current homing switch
 	int8_t limit_switch_axis;		// axis of current limit switch, or -1 if none
 	uint8_t limit_switch_position;	// min/max position of current limit switch
-#else
-	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
-	int8_t limit_switch;			// limit switch for current axis, or -1 if none
 #endif
 	void (*switch_saved_on_trailing)(struct swSwitch *s);
 
@@ -279,12 +279,12 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
 
 	// determine the switch setup and that config is OK
-#ifdef __NEW_SWITCHES
-	hm.min_mode = get_switch_mode(axis, SW_MIN);
-	hm.max_mode = get_switch_mode(axis, SW_MAX);
-#else
+#ifndef __NEW_SWITCHES
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
 	hm.max_mode = get_switch_mode(MAX_SWITCH(axis));
+#else
+	hm.min_mode = get_switch_mode(axis, SW_MIN);
+	hm.max_mode = get_switch_mode(axis, SW_MAX);
 #endif
 
 	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {	  // one or the other must be homing
@@ -296,14 +296,14 @@ static stat_t _homing_axis_start(int8_t axis)
 
 	// setup parameters homing to the minimum switch
 	if (hm.min_mode & SW_HOMING_BIT) {
-#ifdef __NEW_SWITCHES
+#ifndef __NEW_SWITCHES
+		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
+		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
+#else
 		hm.homing_switch_axis = axis;
 		hm.homing_switch_position = SW_MIN;					// the min is the homing switch
 		hm.limit_switch_axis = axis;
 		hm.limit_switch_position = SW_MAX;					// the max would be the limit switch
-#else
-		hm.homing_switch = MIN_SWITCH(axis);				// the min is the homing switch
-		hm.limit_switch = MAX_SWITCH(axis);					// the max would be the limit switch
 #endif
 		hm.search_travel = -travel_distance;				// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
@@ -311,21 +311,29 @@ static stat_t _homing_axis_start(int8_t axis)
 
 	// setup parameters for positive travel (homing to the maximum switch)
 	} else {
-#ifdef __NEW_SWITCHES
+#ifndef __NEW_SWITCHES
+		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
+		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
+#else
 		hm.homing_switch_axis = axis;
 		hm.homing_switch_position = SW_MAX;					// the max is the homing switch
 		hm.limit_switch_axis = axis;
 		hm.limit_switch_position = SW_MIN;					// the min would be the limit switch
-#else
-		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
-		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
 #endif
 		hm.search_travel = travel_distance;					// search travels in positive direction
 		hm.latch_backoff = -cm.a[axis].latch_backoff;		// latch travels in negative direction
 		hm.zero_backoff = -cm.a[axis].zero_backoff;
 	}
 
-#ifdef __NEW_SWITCHES
+#ifndef __NEW_SWITCHES
+	// if homing is disabled for the axis then skip to the next axis
+	uint8_t sw_mode = get_switch_mode(hm.homing_switch);
+	if ((sw_mode != SW_MODE_HOMING) && (sw_mode != SW_MODE_HOMING_LIMIT)) {
+		return (_set_homing_func(_homing_axis_start));
+	}
+	// disable the limit switch parameter if there is no limit switch
+	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) hm.limit_switch = -1;
+#else
 //	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
 //	_bind_switch_settings(s);
 	_bind_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
@@ -339,14 +347,6 @@ static stat_t _homing_axis_start(int8_t axis)
 	if (get_switch_mode(hm.limit_switch_axis, hm.limit_switch_position) == SW_MODE_DISABLED) {
 		hm.limit_switch_axis = -1;
 	}
-#else
-	// if homing is disabled for the axis then skip to the next axis
-	uint8_t sw_mode = get_switch_mode(hm.homing_switch);
-	if ((sw_mode != SW_MODE_HOMING) && (sw_mode != SW_MODE_HOMING_LIMIT)) {
-		return (_set_homing_func(_homing_axis_start));
-	}
-	// disable the limit switch parameter if there is no limit switch
-	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) hm.limit_switch = -1;
 #endif
 
 	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
@@ -357,18 +357,18 @@ static stat_t _homing_axis_start(int8_t axis)
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-#ifdef __NEW_SWITCHES
-	if (read_switch(hm.homing_switch_axis, hm.homing_switch_position) == SW_CLOSED) {
+#ifndef __NEW_SWITCHES
+	if (read_switch(hm.homing_switch) == SW_CLOSED) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (read_switch(hm.limit_switch_axis, hm.limit_switch_position) == SW_CLOSED) {
+		} else if (read_switch(hm.limit_switch) == SW_CLOSED) {
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
-	} else { // no move needed, so target position is same as current position
+		} else { // no move needed, so target position is same as current position
 		hm.target_position = cm_get_absolute_position(MODEL, axis);
 	}
 #else
-	if (read_switch(hm.homing_switch) == SW_CLOSED) {
+	if (read_switch(hm.homing_switch_axis, hm.homing_switch_position) == SW_CLOSED) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (read_switch(hm.limit_switch) == SW_CLOSED) {
+	} else if (read_switch(hm.limit_switch_axis, hm.limit_switch_position) == SW_CLOSED) {
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	} else { // no move needed, so target position is same as current position
 		hm.target_position = cm_get_absolute_position(MODEL, axis);
@@ -389,9 +389,14 @@ static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	// verify assumption that we arrived here because of homing switch closure
 	// rather than user-initiated feedhold or other disruption
+#ifndef __NEW_SWITCHES
 	if (read_switch(hm.homing_switch) != SW_CLOSED)
-//	if (read_switch(hm.homing_switch_axis, hm.homing_switch_position) != SW_CLOSED)
 		return (_set_homing_func(_homing_abort));
+#else
+	if (read_switch(hm.homing_switch_axis, hm.homing_switch_position) != SW_CLOSED)
+		return (_set_homing_func(_homing_abort));
+#endif
+
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
 	return (_set_homing_func(_homing_axis_zero_backoff));
 }
@@ -413,9 +418,11 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	}
 
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
-//	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
-//	s->on_trailing = hm.switch_saved_on_trailing;
-//	_restore_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
+#ifdef __NEW_SWITCHES
+	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
+	s->on_trailing = hm.switch_saved_on_trailing;
+	_restore_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
+#endif
 	return (_set_homing_func(_homing_axis_start));
 }
 
@@ -441,7 +448,9 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 static stat_t _homing_abort(int8_t axis)
 {
 	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
-//	_restore_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
+#ifdef __NEW_SWITCHES
+	_restore_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
+#endif
 	_homing_finalize_exit(axis);
 	sr_request_status_report(SR_TIMED_REQUEST);
 	return (STAT_HOMING_CYCLE_FAILED);						// homing state remains HOMING_NOT_HOMED
