@@ -25,14 +25,12 @@
  */
 
 #include "tinyg.h"
-#include "util.h"
 #include "config.h"
 #include "json_parser.h"
 #include "text_parser.h"
-#include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
-#include "switch.h"
+#include "util.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -41,11 +39,11 @@ extern "C"{
 /**** Jogging singleton structure ****/
 
 struct jmJoggingSingleton {			// persistent jogging runtime variables
-	// controls for homing cycle
+	// controls for jogging cycle
 	int8_t axis;					// axis currently being jogged
 	float dest_pos;					// distance relative to start position to travel
 	float start_pos;
-	float velocity_start;			// current jog feed
+	float velocity_start;			// initial jog feed
 	float velocity_max;
 
 	uint8_t (*func)(int8_t axis);	// binding for callback function state machine
@@ -73,13 +71,13 @@ static stat_t _jogging_finalize_exit(int8_t axis);
  */
 /*	--- Some further details ---
  *
- *	Note: When coding a cycle (like this one) you get to perform one queued 
- *	move per entry into the continuation, then you must exit. 
+ *	Note: When coding a cycle (like this one) you get to perform one queued
+ *	move per entry into the continuation, then you must exit.
  *
- *	Another Note: When coding a cycle (like this one) you must wait until 
+ *	Another Note: When coding a cycle (like this one) you must wait until
  *	the last move has actually been queued (or has finished) before declaring
- *	the cycle to be done. Otherwise there is a nasty race condition in the 
- *	tg_controller() that will accept the next command before the position of 
+ *	the cycle to be done. Otherwise there is a nasty race condition in the
+ *	tg_controller() that will accept the next command before the position of
  *	the final move has been recorded in the Gcode model. That's what the call
  *	to cm_isbusy() is about.
  */
@@ -97,7 +95,7 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
 	jog.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
     jog.saved_jerk = cm.a[axis].jerk_max;
-    
+
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(ABSOLUTE_MODE);
@@ -201,20 +199,18 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;						// required
 	cm_cycle_end();
-    
-    printf("{\"jog\":0}\n");
-    
+    printf("{\"jog\":0}\n");						// needed by OMC jogging function
 	return (STAT_OK);
 }
 
 /*
 static stat_t _jogging_error_exit(int8_t axis)
 {
-	// Generate the warning message. Since the error exit returns via the jogging callback 
-	// - and not the main controller - it requires its own display processing 
+	// Generate the warning message. Since the error exit returns via the jogging callback
+	// - and not the main controller - it requires its own display processing
 //	nv_reset_nv_list();
-	_jogging_finalize_exit(axis);				// clean up
-	return (STAT_JOGGING_CYCLE_FAILED);			// jogging state
+	_jogging_finalize_exit(axis);					// clean up
+	return (STAT_JOGGING_CYCLE_FAILED);				// jogging state
 }
 */
 

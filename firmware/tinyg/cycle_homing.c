@@ -39,9 +39,6 @@
 extern "C"{
 #endif
 
-/**** Defines and Macros ****/
-//#define __NEW_SWITCHES			// Homing using v9 style switch code
-
 /**** Homing singleton structure ****/
 
 struct hmHomingSingleton {			// persistent homing runtime variables

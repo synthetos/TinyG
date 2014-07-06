@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.19	// back-porting changes from sync with G2 builds up to 47.05 (homing changes)
+#define TINYG_FIRMWARE_BUILD   		435.20	// back-porting changes from G2 build 47.07; probing cycle
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
@@ -55,6 +55,7 @@
 /****** COMPILE-TIME SETTINGS ******/
 
 #define __STEP_CORRECTION
+//#define __NEW_SWITCHES					// Using v9 style switch code
 //#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
 //#define __KAHAN							// Use Kahan summation in aline exec functions
 
