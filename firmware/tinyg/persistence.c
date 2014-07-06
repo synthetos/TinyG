@@ -106,6 +106,8 @@ stat_t write_persistent_value(nvObj_t *nv)
 		memcpy(&nvm_byte_array, &tmp_value, NVM_VALUE_LEN);
 		uint16_t nvm_address = nvm.nvm_profile_base + (nv->index * NVM_VALUE_LEN);
 		(void)EEPROM_WriteBytes(nvm_address, nvm_byte_array, NVM_VALUE_LEN);
+	} else {
+		nv->value = tmp_value;		// restore value in case the NVM was a NAN
 	}
 	return (STAT_OK);
 }

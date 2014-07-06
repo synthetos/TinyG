@@ -73,29 +73,35 @@ static stat_t _probing_finish();
 static stat_t _probing_finalize_exit();
 static stat_t _probing_error_exit(int8_t axis);
 
-static stat_t _set_pb_func(uint8_t (*func)());
 
+/**** HELPERS ***************************************************************************
+ * _set_pb_func() - a convenience for setting the next dispatch vector and exiting
+ */
 
-/*****************************************************************************
+uint8_t _set_pb_func(uint8_t (*func)())
+{
+	pb.func = func;
+	return (STAT_EAGAIN);
+}
+
+/****************************************************************************************
  * cm_probing_cycle_start()	- G38.2 homing cycle using limit switches
  * cm_probing_callback() 	- main loop callback for running the homing cycle
  *
- */
-/*	--- Some further details ---
+ *	--- Some further details ---
  *
  *	All cm_probe_cycle_start does is prevent any new commands from queueing to the
  *	planner so that the planner can move to a sop and report MACHINE_PROGRAM_STOP.
  *	OK, it also queues the function that's called once motion has stopped.
  *
- *	Note: When coding a cycle (like this one) you get to perform one queued
- *	move per entry into the continuation, then you must exit.
+ *	Note: When coding a cycle (like this one) you get to perform one queued move per
+ *	entry into the continuation, then you must exit.
  *
- *	Another Note: When coding a cycle (like this one) you must wait until
- *	the last move has actually been queued (or has finished) before declaring
- *	the cycle to be done. Otherwise there is a nasty race condition in the
- *	tg_controller() that will accept the next command before the position of
- *	the final move has been recorded in the Gcode model. That's what the call
- *	to cm_get_runtime_busy() is about.
+ *	Another Note: When coding a cycle (like this one) you must wait until the last move
+ *	has actually been queued (or has finished) before declaring the cycle to be done.
+ *	Otherwise there is a nasty race condition in the tg_controller() that will accept
+ *	the next command before the position of the final move has been recorded in the
+ *	Gcode model. That's what the call to cm_get_runtime_busy() is about.
  *
  *  ESTEE: is this still true???   ASH: Yes.
  */
@@ -108,8 +114,8 @@ uint8_t cm_straight_probe(float target[], float flags[])
 	}
 
 	// trap no axes specified
-	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
-//	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
+//	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
+	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
 		return (STAT_GCODE_AXIS_IS_MISSING);
 
 	// set probe move endpoint
@@ -162,8 +168,8 @@ static uint8_t _probing_init()
 
 	// error if the probe target requires a move along the A/B/C axes
 	for ( uint8_t axis=AXIS_A; axis<AXES; axis++ ) {
-		if (pb.start_position[axis] != pb.target[axis])
-//		if (fp_NE(pb.start_position[axis], pb.target[axis]))
+//		if (pb.start_position[axis] != pb.target[axis])
+		if (fp_NE(pb.start_position[axis], pb.target[axis]))
 			_probing_error_exit(axis);
 	}
 
@@ -178,12 +184,6 @@ static uint8_t _probing_init()
 	for( uint8_t i=0; i<NUM_SWITCHES; i++ )
 		pb.saved_switch_mode[i] = sw.mode[i];
 
-	// probe in absolute machine coords
-	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system
-	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode
-	cm_set_distance_mode(ABSOLUTE_MODE);
-	cm_set_coord_system(ABSOLUTE_COORDS);
-
 	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
 	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
 	sw.switch_type = SW_TYPE_NORMALLY_OPEN;							// contact probes are NO switches... usually
@@ -192,28 +192,22 @@ static uint8_t _probing_init()
 	pb.probe_switch_axis = AXIS_Z;									// FIXME: hardcoded...
 	pb.probe_switch_position = SW_MIN;								// FIXME: hardcoded...
 
-	// probe in absolute machine coords
-	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
-	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
-	cm_set_distance_mode(ABSOLUTE_MODE);
-	cm_set_coord_system(ABSOLUTE_COORDS);
-
 	pb.saved_switch_mode = sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode;
 	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = SW_MODE_HOMING;
 
 	pb.saved_switch_type = sw.s[pb.probe_switch_axis][pb.probe_switch_position].type;
 	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = SW_TYPE_NORMALLY_OPEN; // contact probes are NO switches... usually.
-	switch_init();										// re-init to pick up new switch settings
+	switch_init();													// re-init to pick up new switch settings
 #endif
-/*
+
 	// probe in absolute machine coords
 	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);
-*/
+
 	cm_spindle_control(SPINDLE_OFF);
-	return (_set_pb_func(_probing_start));				// start the move
+	return (_set_pb_func(_probing_start));							// start the move
 }
 
 /*
@@ -267,10 +261,14 @@ static stat_t _probing_finish()
 	return (_set_pb_func(_probing_finalize_exit));
 }
 
-// called when exiting on success or error
+/*
+ * _probe_restore_settings()
+ * _probing_finalize_exit()
+ * _probing_error_exit()
+ */
+
 static void _probe_restore_settings()
 {
-//	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
 	cm_queue_flush();
 	qr_request_queue_report(0);
 
@@ -309,11 +307,6 @@ static stat_t _probing_finalize_exit()
 	return (STAT_OK);
 }
 
-
-/*
- * _probing_error_exit()
- */
-
 static stat_t _probing_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the probing callback
@@ -326,21 +319,9 @@ static stat_t _probing_error_exit(int8_t axis)
 		sprintf_P(message, PSTR("Probing error - %c axis cannot move during probing"), cm_get_axis_char(axis));
 		nv_add_conditional_message((char_t *)message);
 	}
-
 	nv_print_list(STAT_PROBE_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
 	// clean up and exit
 	_probe_restore_settings();
 	return (STAT_PROBE_CYCLE_FAILED);
-}
-
-/**** HELPERS ****************************************************************/
-/*
- * _set_hm_func() - a convenience for setting the next dispatch vector and exiting
- */
-
-uint8_t _set_pb_func(uint8_t (*func)())
-{
-	pb.func = func;
-	return (STAT_EAGAIN);
 }
