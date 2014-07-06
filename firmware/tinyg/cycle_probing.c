@@ -28,10 +28,7 @@
 #include "config.h"
 #include "json_parser.h"
 #include "text_parser.h"
-//#include "gcode_parser.h"
 #include "canonical_machine.h"
-//#include "planner.h"
-//#include "stepper.h"
 #include "spindle.h"
 #include "report.h"
 #include "switch.h"
@@ -44,39 +41,27 @@
 struct pbProbingSingleton {						// persistent probing runtime variables
 	stat_t (*func)();							// binding for callback function state machine
 
-	// what switch should we check?
-	uint8_t probe_switch;
-//	uint8_t probe_switch_axis;					// probe switch axis
-//	uint8_t probe_switch_position;				//...and position
-
-	// save the probe switch's original settings
-	uint8_t saved_switch_mode[NUM_SWITCHES];
-//	uint8_t saved_switch_mode;
-	uint8_t saved_switch_type;					// NO/NC
+	// switch configuration
+#ifndef __NEW_SWITCHES
+	uint8_t probe_switch;						// which switch should we check?
+	uint8_t saved_switch_type;					// saved switch type NO/NC
+	uint8_t saved_switch_mode[NUM_SWITCHES];	// save the probe switch's original settings
+#else
+	uint8_t probe_switch_axis;					// which axis should we check?
+	uint8_t probe_switch_position;				//...and position
+	uint8_t saved_switch_type;					// saved switch type NO/NC
+	uint8_t saved_switch_mode;					// save the probe switch's original settings
+#endif
 
 	// state saved from gcode model
 	uint8_t saved_distance_mode;				// G90,G91 global setting
 	uint8_t saved_coord_system;					// G54 - G59 setting
-
-	// probe destination
-	float start_position[AXES];
-	float target[AXES];
-	float flags[AXES];
-
-/*
-	// state saved from gcode model
-	uint8_t saved_switch_type;					// saved switch type NC/NO
-	uint8_t saved_switch_mode[NUM_SWITCHES];
-	uint8_t probe_switch;						// what switch should we check?
-	uint8_t saved_distance_mode;				// G90,G91 global setting
-	uint8_t saved_coord_system;					// G54 - G59 setting
-
-	// probe destination
-	float start_position[AXES];
-	float target[AXES];
-	float flags[AXES];
-*/
 	float saved_jerk[AXES];						// saved and restored for each axis
+
+	// probe destination
+	float start_position[AXES];
+	float target[AXES];
+	float flags[AXES];
 };
 static struct pbProbingSingleton pb;
 
@@ -123,8 +108,8 @@ uint8_t cm_straight_probe(float target[], float flags[])
 	}
 
 	// trap no axes specified
-//	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
-	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
+	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
+//	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
 		return (STAT_GCODE_AXIS_IS_MISSING);
 
 	// set probe move endpoint
@@ -164,12 +149,10 @@ static uint8_t _probing_init()
 	cm.probe_state = PROBE_FAILED;
 	cm.cycle_state = CYCLE_PROBE;
 
-	// initialize the axes
+	// initialize the axes - save the jerk settings & switch to the jerk_homing settings
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
-		// save the jerk settings & switch to the jerk_homing settings
 		pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
 		cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
-
 		pb.start_position[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 	}
 
@@ -179,8 +162,8 @@ static uint8_t _probing_init()
 
 	// error if the probe target requires a move along the A/B/C axes
 	for ( uint8_t axis=AXIS_A; axis<AXES; axis++ ) {
-//		if (pb.start_position[axis] != pb.target[axis])
-		if (fp_NE(pb.start_position[axis], pb.target[axis]))
+		if (pb.start_position[axis] != pb.target[axis])
+//		if (fp_NE(pb.start_position[axis], pb.target[axis]))
 			_probing_error_exit(axis);
 	}
 
@@ -191,17 +174,29 @@ static uint8_t _probing_init()
 	// Can't because switch mode is global and our probe is NO, not NC.
 
 #ifndef __NEW_SWITCHES	// old style switch code:
-	pb.probe_switch = SW_MIN_Z;							// FIXME: hardcoded...
+	pb.probe_switch = SW_MIN_Z;										// FIXME: hardcoded...
 	for( uint8_t i=0; i<NUM_SWITCHES; i++ )
 		pb.saved_switch_mode[i] = sw.mode[i];
 
+	// probe in absolute machine coords
+	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system
+	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode
+	cm_set_distance_mode(ABSOLUTE_MODE);
+	cm_set_coord_system(ABSOLUTE_COORDS);
+
 	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
-	pb.saved_switch_type = sw.switch_type;				// save the switch type for recovery later.
-	sw.switch_type = SW_TYPE_NORMALLY_OPEN;				// contact probes are NO switches... usually
-	switch_init();										// re-init to pick up new switch settings
+	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
+	sw.switch_type = SW_TYPE_NORMALLY_OPEN;							// contact probes are NO switches... usually
+	switch_init();													// re-init to pick up new switch settings
 #else // new style switch code:
-	pb.probe_switch_axis = AXIS_Z;						// FIXME: hardcoded...
-	pb.probe_switch_position = SW_MIN;					// FIXME: hardcoded...
+	pb.probe_switch_axis = AXIS_Z;									// FIXME: hardcoded...
+	pb.probe_switch_position = SW_MIN;								// FIXME: hardcoded...
+
+	// probe in absolute machine coords
+	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
+	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
+	cm_set_distance_mode(ABSOLUTE_MODE);
+	cm_set_coord_system(ABSOLUTE_COORDS);
 
 	pb.saved_switch_mode = sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode;
 	sw.s[pb.probe_switch_axis][pb.probe_switch_position].mode = SW_MODE_HOMING;
@@ -210,13 +205,13 @@ static uint8_t _probing_init()
 	sw.s[pb.probe_switch_axis][pb.probe_switch_position].type = SW_TYPE_NORMALLY_OPEN; // contact probes are NO switches... usually.
 	switch_init();										// re-init to pick up new switch settings
 #endif
-
+/*
 	// probe in absolute machine coords
 	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);
-
+*/
 	cm_spindle_control(SPINDLE_OFF);
 	return (_set_pb_func(_probing_start));				// start the move
 }
@@ -228,8 +223,11 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
 	// initial probe state, don't probe if we're already contacted!
+#ifndef __NEW_SWITCHES
 	int8_t probe = read_switch(pb.probe_switch);
-//	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
+#else
+	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
+#endif
 
 	if( probe==SW_OPEN ) {
 		ritorno(cm_straight_feed(pb.target, pb.flags));
@@ -243,9 +241,11 @@ static stat_t _probing_start()
 
 static stat_t _probing_finish()
 {
+#ifndef __NEW_SWITCHES
 	int8_t probe = read_switch(pb.probe_switch);
-//	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
-
+#else
+	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
+#endif
 	cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEEDED : PROBE_FAILED;
 
 	for( uint8_t axis=0; axis<AXES; axis++ )
@@ -255,8 +255,7 @@ static stat_t _probing_finish()
 	cm_update_model_position_from_runtime();
 
 	json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
-/*
-	printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
+/*	printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
 	if (fp_TRUE(pb.flags[AXIS_X])) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);
 	if (fp_TRUE(pb.flags[AXIS_Y])) printf_P(PSTR(",\"y\":%0.3f"), cm.probe_results[AXIS_Y]);
 	if (fp_TRUE(pb.flags[AXIS_Z])) printf_P(PSTR(",\"z\":%0.3f"), cm.probe_results[AXIS_Z]);
@@ -321,7 +320,7 @@ static stat_t _probing_error_exit(int8_t axis)
 	// - and not the main controller - it requires its own display processing
 	nv_reset_nv_list();
 	if (axis == -2) {
-		nv_add_conditional_message((const char_t *)"Probing error - invalid probe destination");;
+		nv_add_conditional_message((const char_t *)"Probing error - invalid probe destination");
 	} else {
 		char message[NV_MESSAGE_LEN];
 		sprintf_P(message, PSTR("Probing error - %c axis cannot move during probing"), cm_get_axis_char(axis));

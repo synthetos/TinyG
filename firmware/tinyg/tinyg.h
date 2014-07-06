@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.20	// back-porting changes from G2 build 47.07; probing cycle
+#define TINYG_FIRMWARE_BUILD   		435.20	// back-porting changes from G2 build 47.07; testing probing cycle
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h

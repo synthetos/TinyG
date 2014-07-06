@@ -24,10 +24,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* util.c/.h contains a dog's breakfast of supporting functions that are 
+/* util.c/.h contains a dog's breakfast of supporting functions that are
  * not specific to tinyg: including:
  *
- *	  - math and min/max utilities and extensions 
+ *	  - math and min/max utilities and extensions
  *	  - vector manipulation utilities
  *	  - support for debugging routines
  */
@@ -53,8 +53,8 @@ extern "C"{
 
 extern float vector[AXES]; // vector of axes for passing to subroutines
 
-#define clear_vector(a) memset(a,0,sizeof(a))
-#define	copy_vector(d,s) memcpy(d,s,sizeof(d))
+#define clear_vector(a) (memset(a,0,sizeof(a)))
+#define	copy_vector(d,s) (memcpy(d,s,sizeof(d)))
 
 float get_axis_vector_length(const float a[], const float b[]);
 uint8_t vector_equal(const float a[], const float b[]);
