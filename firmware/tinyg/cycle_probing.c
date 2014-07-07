@@ -114,7 +114,6 @@ uint8_t cm_straight_probe(float target[], float flags[])
 	}
 
 	// trap no axes specified
-//	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z])
 	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
 		return (STAT_GCODE_AXIS_IS_MISSING);
 
@@ -248,6 +247,7 @@ static stat_t _probing_finish()
 	// if we got here because of a feed hold we need to keep the model position correct
 	cm_update_model_position_from_runtime();
 
+	// If probe was successful the 'e' word == 1, otherwise e == 0 to signal an error
 	json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
 /*	printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
 	if (fp_TRUE(pb.flags[AXIS_X])) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);

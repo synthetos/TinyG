@@ -27,7 +27,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif // __cplusplus
+#endif
 
 struct gcodeParserSingleton {	 	  // struct to manage globals
 	uint8_t modals[MODAL_GROUP_COUNT];// collects modal groups in a block
