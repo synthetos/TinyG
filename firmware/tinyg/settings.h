@@ -96,14 +96,14 @@
 
 // machine default profiles - choose only one:
 
-//#include "settings/settings_default.h"				// Default settings for release
+#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// OMC OtherCutter
-#include "settings/settings_othermill.h"				// OMC OtherMill
+//#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
@@ -126,7 +126,7 @@
 #define P1_CCW_PHASE_LO                 0.125
 #define P1_CCW_PHASE_HI                 0.2
 #define P1_PWM_PHASE_OFF                0.1
-#endif//P1_PWM_FREQUENCY
+#endif //P1_PWM_FREQUENCY
 
 
 /*** User-Defined Data Defaults ***/

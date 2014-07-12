@@ -83,7 +83,7 @@
         <InterfaceName>PDI</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800003265</ToolNumber>
+      <ToolNumber>J41800005101</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <UseGdb>True</UseGdb>
@@ -308,6 +308,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_shapeoko2.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_shapeoko375.h">
