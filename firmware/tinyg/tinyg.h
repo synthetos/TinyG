@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		435.25	// prep for edge push
+#define TINYG_FIRMWARE_BUILD   		436.01	// fixed error in G10 coordinate system updates when in inches mode
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
