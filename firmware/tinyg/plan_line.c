@@ -168,26 +168,42 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	}
 	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLIER;
 #else
-	// compute unit vector and find the right jerk to use
-	// uses body_length for length of each axis contribution
-	// uses tail length for deceleration length comparison
+	// Compute the unit vector and find the right jerk to use (combined operations)
+	// To determine the jerk value to use for the block we want to find the axis for which
+	// the jerk cannot be exceeded - the 'jerk-limit' axis. This is the axis for which
+	// the time to decelerate from the target velocity to zero would be the longest.
+	// We need the following:
+	//
+	//		J = max_jerk for this axis
+	//		D = distance traveled for this move for this axis
+	//		L = total length of the move in all axes
+	//		C = "axis contribution"
+	//
+	// For each axis: C = sqrt(1/J) * (D/L)
+	//
+	//	We need the jerk from the axis with the highest contribution Since we only need the
+	//	highest number the computation can be simplified as long as the relative values remain
+	//	properly rank ordered. Simplifications are:
+	//
+	//		C = (1/J) * (D/L)²			Square the expression to remove the square root
+	//		C = (1/J) * x² * (1/L²)		Re-arranged to optimize divides for pre-calculated values
+	//									(x² is the axis length squared, aka D²)
 
+	float C;					// contribution term. C = T * a
+	float maxC = 0;
 	float axis_length;
-	float axis_velocity;
-	float axis_tail;
-	float longest_tail = 0;
+	float recip_L2 = 1/square(bf->length);
+
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
-			bf->unit[axis] = axis_length / bf->length;		// unit vector term
-			axis_velocity = fabs(axis_length) / bf->gm.move_time;
-			axis_tail = axis_velocity * sqrt(axis_velocity / cm.a[axis].jerk_max);
-			if (axis_tail > longest_tail) {
-				longest_tail = axis_tail;
+			bf->unit[axis] = axis_length / bf->length;						// compute unit vector term (zeros are already zero)
+			C = square(axis_length) * recip_L2 * (1/cm.a[axis].jerk_max);	// squaring axis_length ensures it's positive
+			if (C > maxC) {
+				maxC = C;
 				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
-				bf->jerk_limit_axis = axis;		// needed for junction vmax calculation
+				bf->jerk_limit_axis = axis;									// needed for junction vmax calculation
 			}
 		}
-//		printf("l:%f, v:%f, t:%f, j:%f\n", axis_length, axis_velocity, axis_tail, bf->jerk);
 	}
 #endif
 
