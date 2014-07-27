@@ -31,21 +31,21 @@
 #include "planner.h"
 #include "report.h"
 #include "util.h"
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 /*
  * mp_calculate_trapezoid() - calculate trapezoid parameters
  *
- *	This rather brute-force and long-ish function sets section lengths and velocities 
- *	based on the line length and velocities requested. It modifies the incoming 
- *	bf buffer and returns accurate head, body and tail lengths, and accurate or 
- *	reasonably approximate velocities. We care about accuracy on lengths, less 
- *	so for velocity (as long as velocity err's on the side of too slow). 
+ *	This rather brute-force and long-ish function sets section lengths and velocities
+ *	based on the line length and velocities requested. It modifies the incoming
+ *	bf buffer and returns accurate head, body and tail lengths, and accurate or
+ *	reasonably approximate velocities. We care about accuracy on lengths, less
+ *	so for velocity (as long as velocity err's on the side of too slow).
  *
- *	Note: We need the velocities to be set even for zero-length sections 
+ *	Note: We need the velocities to be set even for zero-length sections
  *	(Note: sections, not moves) so we can compute entry and exits for adjacent sections.
  *
  *	Inputs used are:
@@ -64,29 +64,29 @@ extern "C"{
  *	  bf->body_length		- bf->length allocated to body
  *	  bf->tail_length		- bf->length allocated to tail
  *
- *	Note: The following conditions must be met on entry: 
+ *	Note: The following conditions must be met on entry:
  *		bf->length must be non-zero (filter these out upstream)
  *		bf->entry_velocity <= bf->cruise_velocity >= bf->exit_velocity
  */
 /*	Classes of moves:
  *
  *	  Requested-Fit - The move has sufficient length to achieve the target velocity
- *		(cruise velocity). I.e: it will accommodate the acceleration / deceleration 
+ *		(cruise velocity). I.e: it will accommodate the acceleration / deceleration
  *		profile in the given length.
  *
- *	  Rate-Limited-Fit - The move does not have sufficient length to achieve target 
- *		velocity. In this case the cruise velocity will be set lower than the requested 
+ *	  Rate-Limited-Fit - The move does not have sufficient length to achieve target
+ *		velocity. In this case the cruise velocity will be set lower than the requested
  *		velocity (incoming bf->cruise_velocity). The entry and exit velocities are satisfied.
  *
  *	  Degraded-Fit - The move does not have sufficient length to transition from
- *		the entry velocity to the exit velocity in the available length. These 
+ *		the entry velocity to the exit velocity in the available length. These
  *		velocities are not negotiable, so a degraded solution is found.
  *
- *	  	In worst cases the move cannot be executed as the required execution time is 
- *		less than the minimum segment time. The first degradation is to reduce the 
- *		move to a body-only segment with an average velocity. If that still doesn't 
+ *	  	In worst cases the move cannot be executed as the required execution time is
+ *		less than the minimum segment time. The first degradation is to reduce the
+ *		move to a body-only segment with an average velocity. If that still doesn't
  *		fit then the move velocity is reduced so it fits into a minimum segment.
- *		This will reduce the velocities in that region of the planner buffer as the 
+ *		This will reduce the velocities in that region of the planner buffer as the
  *		moves are replanned to that worst-case move.
  *
  *	Various cases handled (H=head, B=body, T=tail)
@@ -113,7 +113,7 @@ extern "C"{
  *	  	B"	<short>		line is very short but drawable; is treated as a body only
  *		F	<too short>	force fit: This block is slowed down until it can be executed
  */
-/*	NOTE: The order of the cases/tests in the code is pretty important. Start with the 
+/*	NOTE: The order of the cases/tests in the code is pretty important. Start with the
  *	  shortest cases first and work up. Not only does this simplify the order of the tests,
  *	  but it reduces execution time when you need it most - when tons of pathologically
  *	  short Gcode blocks are being thrown at you.
@@ -185,7 +185,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// Head-only and tail-only short-line cases
 	//	 H" and T" degraded-fit cases
 	//	 H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
-	
+
 	bf->body_length = 0;
 	float minimum_length = mp_get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
@@ -300,26 +300,26 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	}
 }
 
-/*	
+/*
  * mp_get_target_length()	  - derive accel/decel length from delta V and jerk
  * mp_get_target_velocity() - derive velocity achievable from delta V and length
  *
  *	This set of functions returns the fourth thing knowing the other three.
- *	
+ *
  * 	  Jm = the given maximum jerk
  *	  T  = time of the entire move
  *    Vi = initial velocity
- *    Vf = final velocity 
+ *    Vf = final velocity
  *	  T  = 2*sqrt((Vt-Vi)/Jm)
  *	  As = The acceleration at inflection point between convex and concave portions of the S-curve.
  *	  As = (Jm*T)/2
  *    Ar = ramp acceleration
  *	  Ar = As/2 = (Jm*T)/4
  *
- *	mp_get_target_length() is a convenient function for determining the optimal_length (L) 
+ *	mp_get_target_length() is a convenient function for determining the optimal_length (L)
  *	of a line given the initial velocity (Vi), final velocity (Vf) and maximum jerk (Jm).
  *
- *	The length (distance) equation is derived from: 
+ *	The length (distance) equation is derived from:
  *
  *	 a)	L = (Vf-Vi) * T - (Ar*T^2)/2	... which becomes b) with substitutions for Ar and T
  *	 b) L = (Vf-Vi) * 2*sqrt((Vf-Vi)/Jm) - (2*sqrt((Vf-Vi)/Jm) * (Vf-Vi))/2
@@ -332,8 +332,8 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
  *			Cannot assume Vf>=Vi due to rounding errors and use of PLANNER_VELOCITY_TOLERANCE
  *			  necessitating the introduction of fabs()
  *
- * 	mp_get_target_velocity() is a convenient function for determining Vf target velocity for 
- *	a given the initial velocity (Vi), length (L), and maximum jerk (Jm). 
+ * 	mp_get_target_velocity() is a convenient function for determining Vf target velocity for
+ *	a given the initial velocity (Vi), length (L), and maximum jerk (Jm).
  *	Equation d) is b) solved for Vf. Equation e) is c) solved for Vf. Use e) (obviously)
  *
  *	 d)	Vf = (sqrt(L)*(L/sqrt(1/Jm))^(1/6)+(1/Jm)^(1/4)*Vi)/(1/Jm)^(1/4)
@@ -350,7 +350,7 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 }
 
 /* Regarding mp_get_target_velocity:
- * 
+ *
  * We do some Newton-Raphson iterations to narrow it down.
  * We need a formula that includes known variables except the one we want to find,
  * and has a root [Z(x) = 0] at the value (x) we are looking for.
@@ -415,7 +415,8 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 #endif
     return estimate;
 }
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

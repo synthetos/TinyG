@@ -30,11 +30,11 @@
 #define PLANNER_H_ONCE
 
 #include "canonical_machine.h"	// used for GCodeState_t
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 enum moveType {				// bf->move_type values
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
 	MOVE_TYPE_ALINE,		// acceleration planned line
@@ -115,7 +115,7 @@ enum sectionState {
  *	planning in the case of very short lines or arc segments.
  *	Suggest 12 min. Limit is 255
  */
-#define PLANNER_BUFFER_POOL_SIZE 28
+#define PLANNER_BUFFER_POOL_SIZE 32
 #define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 /* Some parameters for _generate_trapezoid()
@@ -181,8 +181,9 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float braking_velocity;			// current value for braking velocity
 
 	float jerk;						// maximum linear jerk term for this move
-	float recip_jerk;				// 1/Jm used for planning (compute-once)
-	float cbrt_jerk;				// cube root of Jm used for planning (compute-once)
+	uint8_t jerk_limit_axis;		// rate limiting axis that determines which jerk to use
+	float recip_jerk;				// 1/Jm used for planning (computed and cached)
+	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
 
 	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
 
@@ -336,9 +337,9 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
-
+/*
 #ifdef __cplusplus
 }
 #endif
-
+*/
 #endif	// End of include Guard: PLANNER_H_ONCE

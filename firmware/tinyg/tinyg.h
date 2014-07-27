@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		436.01	// fixed error in G10 coordinate system updates when in inches mode
+#define TINYG_FIRMWARE_BUILD   		436.02	// working on jerk selection - intermediate commit
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
@@ -67,7 +67,7 @@
 /****** DEVELOPMENT SETTINGS ******/
 
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
-//#define __DEBUG_SETTINGS					// special settings. See settings.h
+#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
 
 //#define __SIMULATION						// for software-only simulations

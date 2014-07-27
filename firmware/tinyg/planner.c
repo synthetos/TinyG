@@ -61,11 +61,11 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 // Allocate planner structures
 
 mpBufferPool_t mb;				// move buffer queue
@@ -474,7 +474,8 @@ uint8_t mp_get_buffer_index(mpBuf_t *bf)
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
  ***********************************************************************************/
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

@@ -17,8 +17,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* This module actually contains some parts that belong ion the canonical machine, 
- * and other parts that belong at the motion planner level, but the whole thing is 
+/* This module actually contains some parts that belong ion the canonical machine,
+ * and other parts that belong at the motion planner level, but the whole thing is
  * treated as if it were part of the motion planner.
  */
 
@@ -28,11 +28,11 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "util.h"
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 // Allocate arc planner singleton structure
 
 arc_t arc;
@@ -67,7 +67,7 @@ void cm_arc_init()
 /*
  * cm_arc_feed() - canonical machine entry point for arc
  *
- * Generates an arc by queueing line segments to the move buffer. The arc is 
+ * Generates an arc by queueing line segments to the move buffer. The arc is
  * approximated by generating a large number of tiny, linear segments.
  */
 stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
@@ -80,11 +80,11 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
-	// Trap conditions where no arc movement will occur, but the system is still in 
-	// arc motion mode - this is not an error. This can happen when a F word or M 
+	// Trap conditions where no arc movement will occur, but the system is still in
+	// arc motion mode - this is not an error. This can happen when a F word or M
 	// word is by itself.(The tests below are organized for execution efficiency)
 	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
-		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] + 
+		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] +
 					  flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
 			return (STAT_OK);
 		}
@@ -103,14 +103,14 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
-	// Set the arc plane for the current G17/G18/G19 setting 
-	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane 
+	// Set the arc plane for the current G17/G18/G19 setting
+	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane
 	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
-		arc.plane_axis_0 = AXIS_X;		
+		arc.plane_axis_0 = AXIS_X;
 		arc.plane_axis_1 = AXIS_Y;
 		arc.linear_axis  = AXIS_Z;
 	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
-		arc.plane_axis_0 = AXIS_X;		
+		arc.plane_axis_0 = AXIS_X;
 		arc.plane_axis_1 = AXIS_Z;
 		arc.linear_axis  = AXIS_Y;
 	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
@@ -131,13 +131,13 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 /*
  * cm_arc_callback() - generate an arc
  *
- *	cm_arc_callback() is called from the controller main loop. Each time it's called it 
+ *	cm_arc_callback() is called from the controller main loop. Each time it's called it
  *	queues as many arc segments (lines) as it can before it blocks, then returns.
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
 
-stat_t cm_arc_callback() 
+stat_t cm_arc_callback()
 {
 	if (arc.run_state == MOVE_OFF) { return (STAT_NOOP);}
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
@@ -147,7 +147,7 @@ stat_t cm_arc_callback()
 	arc.gm.target[arc.plane_axis_1] = arc.center_1 + cos(arc.theta) * arc.radius;
 	arc.gm.target[arc.linear_axis] += arc.segment_linear_travel;
 	mp_aline(&arc.gm);								// run the line
-	copy_vector(arc.position, arc.gm.target);		// update arc current position	
+	copy_vector(arc.position, arc.gm.target);		// update arc current position
 
 	if (--arc.segment_count > 0) return (STAT_EAGAIN);
 	arc.run_state = MOVE_OFF;
@@ -160,7 +160,7 @@ stat_t cm_arc_callback()
  *	OK to call if no arc is running
  */
 
-void cm_abort_arc() 
+void cm_abort_arc()
 {
 	arc.run_state = MOVE_OFF;
 }
@@ -168,9 +168,9 @@ void cm_abort_arc()
 /*
  * _compute_arc() - compute arc from I and J (arc center point)
  *
- *	The theta calculation sets up an clockwise or counterclockwise arc from the current 
- *	position to the target position around the center designated by the offset vector. 
- *	All theta-values measured in radians of deviance from the positive y-axis. 
+ *	The theta calculation sets up an clockwise or counterclockwise arc from the current
+ *	position to the target position around the center designated by the offset vector.
+ *	All theta-values measured in radians of deviance from the positive y-axis.
  *
  *                      | <- theta == 0
  *                    * * *
@@ -195,7 +195,7 @@ static stat_t _compute_arc()
 
 	// calculate the theta (angle) of the target point
 	float theta_end = _get_theta(
-		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0], 
+		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
  		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
 	if(isnan(theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
@@ -247,23 +247,23 @@ static stat_t _compute_arc()
 	return (STAT_OK);
 }
 
-/* 
- * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius. 
+/*
+ * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius.
  *
- *  Needs to calculate the center of the circle that has the designated radius and 
+ *  Needs to calculate the center of the circle that has the designated radius and
  *	passes through both the current position and the target position
- *		  
+ *
  *	This method calculates the following set of equations where:
- *	`  [x,y] is the vector from current to target position, 
- *		d == magnitude of that vector, 
- *		h == hypotenuse of the triangle formed by the radius of the circle, 
- *			 the distance to the center of the travel vector. 
- *		  
+ *	`  [x,y] is the vector from current to target position,
+ *		d == magnitude of that vector,
+ *		h == hypotenuse of the triangle formed by the radius of the circle,
+ *			 the distance to the center of the travel vector.
+ *
  *	A vector perpendicular to the travel vector [-y,x] is scaled to the length
  *	of h [-y/d*h, x/d*h] and added to the center of the travel vector [x/2,y/2]
- *	to form the new point [i,j] at [x/2-y/d*h, y/2+x/d*h] which will be the 
+ *	to form the new point [i,j] at [x/2-y/d*h, y/2+x/d*h] which will be the
  *	center of the arc.
- *        
+ *
  *		d^2 == x^2 + y^2
  *		h^2 == r^2 - (d/2)^2
  *		i == x/2 - y/d*h
@@ -276,24 +276,24 @@ static stat_t _compute_arc()
  *                         -              |
  *           [0,0] ->  C -----------------+--------------- T  <- [x,y]
  *                     | <------ d/2 ---->|
- *                  
+ *
  *		C - Current position
  *		T - Target position
  *		O - center of circle that pass through both C and T
  *		d - distance from C to T
  *		r - designated radius
  *		h - distance from center of CT to O
- *  
+ *
  *	Expanding the equations:
  *		d -> sqrt(x^2 + y^2)
  *		h -> sqrt(4 * r^2 - x^2 - y^2)/2
- *		i -> (x - (y * sqrt(4 * r^2 - x^2 - y^2)) / sqrt(x^2 + y^2)) / 2 
+ *		i -> (x - (y * sqrt(4 * r^2 - x^2 - y^2)) / sqrt(x^2 + y^2)) / 2
  *		j -> (y + (x * sqrt(4 * r^2 - x^2 - y^2)) / sqrt(x^2 + y^2)) / 2
- * 
- *	Which can be written:  
+ *
+ *	Which can be written:
  *		i -> (x - (y * sqrt(4 * r^2 - x^2 - y^2))/sqrt(x^2 + y^2))/2
  *		j -> (y + (x * sqrt(4 * r^2 - x^2 - y^2))/sqrt(x^2 + y^2))/2
- *  
+ *
  *	Which we for size and speed reasons optimize to:
  *		h_x2_div_d = sqrt(4 * r^2 - x^2 - y^2)/sqrt(x^2 + y^2)
  *		i = (x - (y * h_x2_div_d))/2
@@ -301,19 +301,19 @@ static stat_t _compute_arc()
  *
  * ----Computing clockwise vs counter-clockwise motion ----
  *
- *	The counter clockwise circle lies to the left of the target direction. 
- *	When offset is positive the left hand circle will be generated - 
+ *	The counter clockwise circle lies to the left of the target direction.
+ *	When offset is positive the left hand circle will be generated -
  *	when it is negative the right hand circle is generated.
  *
  *                                   T  <-- Target position
- *  
- *                                   ^ 
+ *
+ *                                   ^
  *      Clockwise circles with       |     Clockwise circles with
  *		this center will have        |     this center will have
- *      > 180 deg of angular travel  |     < 180 deg of angular travel, 
+ *      > 180 deg of angular travel  |     < 180 deg of angular travel,
  *                        \          |      which is a good thing!
  *                         \         |         /
- *  center of arc when  ->  x <----- | -----> x <- center of arc when 
+ *  center of arc when  ->  x <----- | -----> x <- center of arc when
  *  h_x2_div_d is positive           |             h_x2_div_d is negative
  *                                   |
  *                                   C  <-- Current position
@@ -348,8 +348,8 @@ static stat_t _compute_arc_offsets_from_radius()
 
 	// Negative R is g-code-alese for "I want a circle with more than 180 degrees
 	// of travel" (go figure!), even though it is advised against ever generating
-	// such circles in a single line of g-code. By inverting the sign of 
-	// h_x2_div_d the center of the circles is placed on the opposite side of 
+	// such circles in a single line of g-code. By inverting the sign of
+	// h_x2_div_d the center of the circles is placed on the opposite side of
 	// the line of travel and thus we get the unadvisably long arcs as prescribed.
 	if (arc.radius < 0) { h_x2_div_d = -h_x2_div_d; }
 
@@ -363,11 +363,11 @@ static stat_t _compute_arc_offsets_from_radius()
 /*
  * _get_arc_time ()
  *
- *	This is a naiive rate-limiting function. The arc drawing time is computed not 
- *	to exceed the time taken in the slowest dimension - in the arc plane or in 
- *	linear travel. Maximum feed rates are compared in each dimension, but the 
- *	comparison assumes that the arc will have at least one segment where the unit 
- *	vector is 1 in that dimension. This is not true for any arbitrary arc, with 
+ *	This is a naiive rate-limiting function. The arc drawing time is computed not
+ *	to exceed the time taken in the slowest dimension - in the arc plane or in
+ *	linear travel. Maximum feed rates are compared in each dimension, but the
+ *	comparison assumes that the arc will have at least one segment where the unit
+ *	vector is 1 in that dimension. This is not true for any arbitrary arc, with
  *	the result that the time returned may be less than optimal.
  *
  *	Room for improvement: At least take the hypotenuse of the planar movement and
@@ -400,7 +400,7 @@ static float _get_arc_time (const float linear_travel,	// in mm
 	return (move_time);
 }
 
-/* 
+/*
  * _get_theta(float x, float y)
  *
  *	Find the angle in radians of deviance from the positive y axis
@@ -423,14 +423,14 @@ static float _get_theta(const float x, const float y)
 }
 
 
-/* 
+/*
  * _test_arc_soft_limits() - return error code if soft limit is exceeded
  *
  *	Test if arc extends beyond arc plane boundaries set in soft limits.
  *
- *	The arc starting position (S) and target (T) define 2 points that divide the 
- *	arc plane into 9 rectangles. The center of the arc is (C). S and T define the 
- *	endpoints of two possible arcs; one that is less than or equal to 180 degrees (acute) 
+ *	The arc starting position (S) and target (T) define 2 points that divide the
+ *	arc plane into 9 rectangles. The center of the arc is (C). S and T define the
+ *	endpoints of two possible arcs; one that is less than or equal to 180 degrees (acute)
  *	and one that is greater than 180 degrees (obtuse), depending on the location of (C).
  *
  *	-------------------------------  plane boundaries in X and Y
@@ -447,28 +447,28 @@ static float _get_theta(const float x, const float y)
  *  |         |         |         |
  *	-------------------------------
  *
- *	C will fall along a diagnonal bisecting 7, 5 and 3, but there is some tolerance in the 
- *	circle algorithm that allows C to deviate from the centerline slightly. As the centerline 
- *	approaches the line connecting S and T the acute arcs will be "above" S and T in sections 
- *	5 or 3, and the obtuse arcs will be "below" in sections 5 or 7. But it's simpler, because 
+ *	C will fall along a diagnonal bisecting 7, 5 and 3, but there is some tolerance in the
+ *	circle algorithm that allows C to deviate from the centerline slightly. As the centerline
+ *	approaches the line connecting S and T the acute arcs will be "above" S and T in sections
+ *	5 or 3, and the obtuse arcs will be "below" in sections 5 or 7. But it's simpler, because
  *	we know if the arc is greater than 180 degrees if the angular travel value is > pi.
  *
  *	The example below only tests the X axis (0 axis), but testing the other axis is similar
  *
  *	  - If Cx <= Sx and arc is acute; no test is needed
  *
- *	  - If Cx <= Sx and arc is obtuse; test if the radius is greater than 
+ *	  - If Cx <= Sx and arc is obtuse; test if the radius is greater than
  *			the distance from Cx to the negative X boundary
  *
  *	  - If Sx < Cx < Tx and arc is acute; test if the radius is greater than
  *			the distance from Cx to the positive X boundary
- *	
+ *
  *	  - If Sx < Cx < Tx and arc is obtuse; test if the radius is greater than
  *			the distance from Cx to the positive X boundary
  *
  *	The arc plane is defined by 0 and 1 depending on G17/G18/G19 plane selected,
  *	corresponding to arc planes XY, XZ, YZ, respectively.
- *	
+ *
  *	Must be called with all the following set in the arc struct
  *	  -	arc starting position (arc.position)
  *	  - arc ending position (arc.gm.target)
@@ -485,11 +485,12 @@ static stat_t _test_arc_soft_limits()
 	return (cm_test_soft_limits(arc.gm.target));
 
 	// test the 4 arc center point
-//	if (arc.gm.target[arc.plane_axis_0] 
+//	if (arc.gm.target[arc.plane_axis_0]
 	return(STAT_OK);
 }
 */
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

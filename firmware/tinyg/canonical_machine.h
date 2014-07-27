@@ -30,11 +30,11 @@
 
 #ifndef CANONICAL_MACHINE_H_ONCE
 #define CANONICAL_MACHINE_H_ONCE
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 #include "config.h"
 
 /* Defines, Macros, and  Assorted Parameters */
@@ -808,9 +808,9 @@ stat_t cm_set_jrk(nvObj_t *nv);			// set jerk with 1,000,000 correction
 	#define cm_print_cpos tx_print_stub
 
 #endif // __TEXT_MODE
-
+/*
 #ifdef __cplusplus
 }
 #endif
-
+*/
 #endif // End of include guard: CANONICAL_MACHINE_H_ONCE

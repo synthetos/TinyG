@@ -35,9 +35,9 @@
 #include "report.h"
 #include "util.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+//#ifdef __cplusplus
+//extern "C"{
+//#endif
 
 // aline planner routines / feedhold planning
 static void _calc_move_times(GCodeState_t *gms, const float position[]);
@@ -89,7 +89,12 @@ uint8_t mp_get_runtime_busy()
  *	that are too short to move will accumulate and get executed once the accumulated error
  *	exceeds the minimums.
  */
-
+/*
+#define axis_length bf->body_length
+#define axis_velocity bf->cruise_velocity
+#define axis_tail bf->tail_length
+#define longest_tail bf->head_length
+*/
 stat_t mp_aline(GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
@@ -133,6 +138,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->length = length;
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
 
+#define __NEW_JERK
+#ifndef __NEW_JERK
 	// compute both the unit vector and the jerk term in the same pass for efficiency
 	float diff = bf->gm.target[AXIS_X] - mm.position[AXIS_X];
 	if (fp_NOT_ZERO(diff)) {
@@ -160,6 +167,29 @@ stat_t mp_aline(GCodeState_t *gm_in)
 		bf->jerk += square(bf->unit[AXIS_C] * cm.a[AXIS_C].jerk_max);
 	}
 	bf->jerk = sqrt(bf->jerk) * JERK_MULTIPLIER;
+#else
+	// compute unit vector and find the right jerk to use
+	// uses body_length for length of each axis contribution
+	// uses tail length for deceleration length comparison
+
+	float axis_length;
+	float axis_velocity;
+	float axis_tail;
+	float longest_tail = 0;
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
+			bf->unit[axis] = axis_length / bf->length;		// unit vector term
+			axis_velocity = fabs(axis_length) / bf->gm.move_time;
+			axis_tail = axis_velocity * sqrt(axis_velocity / cm.a[axis].jerk_max);
+			if (axis_tail > longest_tail) {
+				longest_tail = axis_tail;
+				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
+				bf->jerk_limit_axis = axis;		// needed for junction vmax calculation
+			}
+		}
+//		printf("l:%f, v:%f, t:%f, j:%f\n", axis_length, axis_velocity, axis_tail, bf->jerk);
+	}
+#endif
 
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
 		bf->cbrt_jerk = mm.prev_cbrt_jerk;
@@ -258,37 +288,41 @@ stat_t mp_aline(GCodeState_t *gm_in)
 static void _calc_move_times(GCodeState_t *gms, const float position[])	// gms = Gcode model state
 {
 	float inv_time=0;				// inverse time if doing a feed in G93 mode
-	float xyz_time=0;				// coordinated move linear part at req feed rate
-	float abc_time=0;				// coordinated move rotary part at req feed rate
+	float xyz_time=0;				// coordinated move linear part at requested feed rate
+	float abc_time=0;				// coordinated move rotary part at requested feed rate
 	float max_time=0;				// time required for the rate-limiting axis
 	float tmp_time=0;				// used in computation
 	gms->minimum_time = 8675309;	// arbitrarily large number
+//	gms->limiting_axis = AXIS_X;	// by default
 
 	// compute times for feed motion
 	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
-			inv_time = gms->feed_rate;	// NB: feed rate was normalized to minutes by cm_set_feed_rate()
+			inv_time = gms->feed_rate;	// NB: feed rate was un-inverted to minutes by cm_set_feed_rate()
 			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
 		} else {
-			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +					// in millimeters
+			// compute length of linear move in millimeters. Feed rate is provided as mm/min
+			xyz_time = sqrt(square(gms->target[AXIS_X] - position[AXIS_X]) +
 							square(gms->target[AXIS_Y] - position[AXIS_Y]) +
-							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate;	// in linear units
+							square(gms->target[AXIS_Z] - position[AXIS_Z])) / gms->feed_rate;
+
+			// if no linear axes, compute length of multi-axis rotary move in degrees. Feed rate is provided as degrees/min
 			if (fp_ZERO(xyz_time)) {
-				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) +				// in degrees
+				abc_time = sqrt(square(gms->target[AXIS_A] - position[AXIS_A]) +
 								square(gms->target[AXIS_B] - position[AXIS_B]) +
-								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate; // in rotary units
+								square(gms->target[AXIS_C] - position[AXIS_C])) / gms->feed_rate;
 			}
 		}
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (gms->motion_mode == MOTION_MODE_STRAIGHT_TRAVERSE) {
 			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].velocity_max;
-		} else {
+		} else { // MOTION_MODE_STRAIGHT_FEED
 			tmp_time = fabs(gms->target[axis] - position[axis]) / cm.a[axis].feedrate_max;
 		}
 		max_time = max(max_time, tmp_time);
-		// collect minimum time if not zero
-		if (tmp_time > 0) {
+
+		if (tmp_time > 0) { 	// collect minimum time if this axis is not zero
 			gms->minimum_time = min(gms->minimum_time, tmp_time);
 		}
 	}
@@ -391,12 +425,6 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		mp_calculate_trapezoid(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
-/*
-		if ((bp->exit_velocity == bp->exit_vmax) || (bp->exit_velocity == bp->nx->entry_vmax) ||
-		   ((bp->pv->replannable == false) && (bp->exit_velocity == bp->entry_velocity + bp->delta_vmax))) {
-			bp->replannable = false;
-		}
-*/
 		if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
 				(fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) ) ||
 			  ( (bp->pv->replannable == false) &&
@@ -512,7 +540,9 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	float delta = (sqrt(a_delta) + sqrt(b_delta))/2;
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
-	return(sqrt(radius * cm.junction_acceleration));
+	float velocity = sqrt(radius * cm.junction_acceleration);
+	printf ("v:%f\n", velocity);	//++++
+	return (velocity);
 }
 
 /*************************************************************************
@@ -704,7 +734,8 @@ stat_t mp_end_hold()
 	}
 	return (STAT_OK);
 }
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/
