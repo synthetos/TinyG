@@ -201,27 +201,22 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
 			bf->unit[axis] = axis_length / bf->length;						// compute unit vector term (zeros are already zero)
-			C = square(axis_length) * recip_L2 * (1/cm.a[axis].jerk_max);	// squaring axis_length ensures it's positive
+//			C = square(axis_length) * recip_L2 * (1/cm.a[axis].jerk_max);	// squaring axis_length ensures it's positive
+			C = square(axis_length) * recip_L2 * cm.a[axis].recip_jerk;		// squaring axis_length ensures it's positive
 			if (C > maxC) {
 				maxC = C;
-				bf->jerk = (cm.a[axis].jerk_max / fabs(bf->unit[axis])) * JERK_MULTIPLIER;
-				bf->jerk_limit_axis = axis;									// needed for junction vmax calculation
+				bf->jerk_axis = axis;										// also needed for junction vmax calculation
 			}
 		}
 	}
-	printf("j:%0.0f\n", bf->jerk);
+	// set up and pre-compute the jerk terms needed for this round of planning
+//	bf->jerk = cm.a[bf->jerk_axis].recip_jerk * fabs(bf->unit[bf->jerk_axis]);// scale the jerk
+	bf->jerk = cm.a[bf->jerk_axis].jerk_max * JERK_MULTIPLIER / fabs(bf->unit[bf->jerk_axis]);	// scale the jerk
 #endif
-
-	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
-		bf->cbrt_jerk = mm.prev_cbrt_jerk;
-		bf->recip_jerk = mm.prev_recip_jerk;
-	} else {
-		bf->cbrt_jerk = cbrt(bf->jerk);
-		bf->recip_jerk = 1/bf->jerk;
-		mm.prev_jerk = bf->jerk;
-		mm.prev_cbrt_jerk = bf->cbrt_jerk;
-		mm.prev_recip_jerk = bf->recip_jerk;
-	}
+	bf->recip_jerk = 1/bf->jerk;
+	bf->cbrt_jerk = cbrt(bf->jerk);											// compute cached jerk terms used by planning
+	mm.prev_cbrt_jerk = bf->cbrt_jerk;										// used before this point next time around
+//	printf("j:%0.0f\n", bf->jerk);	//+++++
 
 	// finish up the current block variables
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
@@ -562,7 +557,7 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
 	float velocity = sqrt(radius * cm.junction_acceleration);
-	printf ("v:%f\n", velocity);	//++++
+//	printf ("v:%f\n", velocity);	//+++++
 	return (velocity);
 }
 

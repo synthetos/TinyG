@@ -1671,21 +1671,45 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 	return(STAT_OK);
 }
 
-/*
- * cm_set_jrk()	- set jerk value
+/**** Jerk functions
+ * cm_get_axis_jerk() - returns jerk for an axis
+ * cm_set_axis_jerk() - sets the jerk for an axis, including recirpcal and cached values
+ *
+ * cm_set_xjm()		  - set jerk max value - called from dispatch table
+ * cm_set_xjh()		  - set jerk homing value - called from dispatch table
  *
  *	Jerk values can be rather large, often in the billions. This makes for some pretty big
  *	numbers for people to deal with. Jerk values are stored in the system in truncated format;
  *	values are divided by 1,000,000 then reconstituted before use.
  *
- *	cm_set_jrk() will accept either truncated or untrunctated jerk numbers as input. If the
- *	number is > 1,000,000 it is divided by 1,000,000 before storing. Numbers are accepted in
- *	either millimeter or inch mode and converted to millimeter mode.
+ *	The set_xjm() nad set_xjh() functions will accept either truncated or untruncated jerk
+ *	numbers as input. If the number is > 1,000,000 it is divided by 1,000,000 before storing.
+ *	Numbers are accepted in either millimeter or inch mode and converted to millimeter mode.
+ *
+ *	The axis_jerk() functions expect the jerk in divided-by 1,000,000 form
  */
-
-stat_t cm_set_jrk(nvObj_t *nv)
+float cm_get_axis_jerk(uint8_t axis)
 {
-	if (nv->value > 1000000) nv->value /= 1000000;
+	return (cm.a[axis].jerk_max);
+}
+
+void cm_set_axis_jerk(uint8_t axis, float jerk)
+{
+	cm.a[axis].jerk_max = jerk;
+	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
+}
+
+stat_t cm_set_xjm(nvObj_t *nv)
+{
+	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
+	set_flu(nv);
+	cm_set_axis_jerk(_get_axis(nv->index), nv->value);
+	return(STAT_OK);
+}
+
+stat_t cm_set_xjh(nvObj_t *nv)
+{
+	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
 	set_flu(nv);
 	return(STAT_OK);
 }

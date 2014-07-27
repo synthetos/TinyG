@@ -156,8 +156,10 @@ static uint8_t _probing_init()
 
 	// initialize the axes - save the jerk settings & switch to the jerk_homing settings
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
-		pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
-		cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
+//		pb.saved_jerk[axis] = cm.a[axis].jerk_max;		// save the max jerk value
+		pb.saved_jerk[axis] = cm_get_axis_jerk(axis);	// save the max jerk value
+//		cm.a[axis].jerk_max = cm.a[axis].jerk_homing;	// use the homing jerk for probe
+		cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);	// use the homing jerk for probe
 		pb.start_position[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 	}
 
@@ -285,7 +287,8 @@ static void _probe_restore_settings()
 
 	// restore axis jerk
 	for( uint8_t axis=0; axis<AXES; axis++ )
-		cm.a[axis].jerk_max = pb.saved_jerk[axis];
+//		cm.a[axis].jerk_max = pb.saved_jerk[axis];
+		cm_set_axis_jerk(axis, pb.saved_jerk[axis]);
 
 	// restore coordinate system and distance mode
 	cm_set_coord_system(pb.saved_coord_system);

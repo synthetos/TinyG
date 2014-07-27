@@ -94,7 +94,8 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
 	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
 	jog.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
-    jog.saved_jerk = cm.a[axis].jerk_max;
+//	jog.saved_jerk = cm.a[axis].jerk_max;
+	jog.saved_jerk = cm_get_axis_jerk(axis);
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -175,7 +176,8 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 #else
     // use a really slow jerk so we ramp up speed
     // FIXME: need asymmetric accel/deaccel jerk for this to work...
-    cm.a[axis].jerk_max = 25;
+//	cm.a[axis].jerk_max = 25;
+	cm_set_axis_jerk(axis, 25);
     //cm.a[axis].jerk_accel = 10;
     //cm.a[axis].jerk_deaccel = 900;
 #endif
@@ -191,7 +193,8 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
 	mp_flush_planner(); 							// FIXME: not sure what to do on exit
-    cm.a[axis].jerk_max = jog.saved_jerk;
+//	cm.a[axis].jerk_max = jog.saved_jerk;
+	cm_set_axis_jerk(axis, jog.saved_jerk);
 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);

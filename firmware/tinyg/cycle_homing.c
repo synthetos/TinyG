@@ -348,7 +348,8 @@ static stat_t _homing_axis_start(int8_t axis)
 	}
 #endif
 
-	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
+//	hm.saved_jerk = cm.a[axis].jerk_max;					// save the max jerk value
+	hm.saved_jerk = cm_get_axis_jerk(axis);					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
 
@@ -379,7 +380,8 @@ static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
 	ritorno(_verify_position(axis));
-	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;			// use the homing jerk for search onward
+//	cm.a[axis].jerk_max = cm.a[axis].jerk_homing;			// use the homing jerk for search onward
+	cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
 }
@@ -414,8 +416,9 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 	} else {
 		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
 	}
+//	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+	cm_set_axis_jerk(axis, hm.saved_jerk);					// restore the max jerk value
 
-	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
 #ifdef __NEW_SWITCHES
 	switch_t *s = &sw.s[hm.homing_switch_axis][hm.homing_switch_position];
 	s->on_trailing = hm.switch_saved_on_trailing;
@@ -445,7 +448,8 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 
 static stat_t _homing_abort(int8_t axis)
 {
-	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+//	cm.a[axis].jerk_max = hm.saved_jerk;					// restore the max jerk value
+	cm_set_axis_jerk(axis, hm.saved_jerk);					// restore the max jerk value
 #ifdef __NEW_SWITCHES
 	_restore_switch_settings(&sw.s[hm.homing_switch_axis][hm.homing_switch_position]);
 #endif
