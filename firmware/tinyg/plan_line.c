@@ -188,6 +188,10 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//		C = (1/J) * (D/L)²			Square the expression to remove the square root
 	//		C = (1/J) * x² * (1/L²)		Re-arranged to optimize divides for pre-calculated values
 	//									(x² is the axis length squared, aka D²)
+	//
+	// Finally, the selected jerk term needs to be scaled by the reciprocal of the absolute value
+	// of the jerk-limit axis's unit vector term. This way when the move is finally decomposed into
+	// its constituent axes for execution the jerk for that axis will be at it's maximum value.
 
 	float C;					// contribution term. C = T * a
 	float maxC = 0;
@@ -200,11 +204,12 @@ stat_t mp_aline(GCodeState_t *gm_in)
 			C = square(axis_length) * recip_L2 * (1/cm.a[axis].jerk_max);	// squaring axis_length ensures it's positive
 			if (C > maxC) {
 				maxC = C;
-				bf->jerk = cm.a[axis].jerk_max * JERK_MULTIPLIER;
+				bf->jerk = (cm.a[axis].jerk_max / fabs(bf->unit[axis])) * JERK_MULTIPLIER;
 				bf->jerk_limit_axis = axis;									// needed for junction vmax calculation
 			}
 		}
 	}
+	printf("j:%0.0f\n", bf->jerk);
 #endif
 
 	if (fabs(bf->jerk - mm.prev_jerk) < JERK_MATCH_PRECISION) {	// can we re-use jerk terms?
