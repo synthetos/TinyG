@@ -221,8 +221,7 @@ static stat_t _verify_position(int8_t axis)
 {
     // abort if we aren't in the expected position (e.g. due to a user-initiated feedhold)
     if (fp_NE(cm_get_absolute_position(MODEL, axis), hm.target_position)) {
-        _set_homing_func(_homing_abort);
-        return STAT_EAGAIN;
+        return _set_homing_func(_homing_abort);
     }
     return STAT_OK;
 }
