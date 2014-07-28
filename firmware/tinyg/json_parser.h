@@ -2,7 +2,7 @@
  * json_parser.h - JSON parser and JSON support for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -86,19 +86,19 @@ extern jsSingleton_t js;
 /**** Function Prototypes ****/
 
 void json_parser(char_t *str);
-uint16_t json_serialize(cmdObj_t *cmd, char_t *out_buf, uint16_t size);
-void json_print_object(cmdObj_t *cmd);
+uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size);
+void json_print_object(nvObj_t *nv);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
 
-stat_t json_set_jv(cmdObj_t *cmd);
+stat_t json_set_jv(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void js_print_ej(cmdObj_t *cmd);
-	void js_print_jv(cmdObj_t *cmd);
-	void js_print_js(cmdObj_t *cmd);
-	void js_print_fs(cmdObj_t *cmd);
+	void js_print_ej(nvObj_t *nv);
+	void js_print_jv(nvObj_t *nv);
+	void js_print_js(nvObj_t *nv);
+	void js_print_fs(nvObj_t *nv);
 
 #else
 
@@ -108,16 +108,6 @@ stat_t json_set_jv(cmdObj_t *cmd);
 	#define js_print_fs tx_print_stub
 
 #endif // __TEXT_MODE
-
-/* unit test setup */
-
-#define __UNIT_TEST_JSON				// uncomment to enable JSON unit tests
-#ifdef __UNIT_TEST_JSON
-void js_unit_tests(void);
-#define	JSON_UNITS js_unit_tests();
-#else
-#define	JSON_UNITS
-#endif // __UNIT_TEST_JSON
 
 #ifdef __cplusplus
 }

@@ -26,8 +26,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -35,7 +35,7 @@
 /**** Otherlab OtherMill profile ***************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
 #define JERK_MAX					500			// 500 million mm/(min^3)
@@ -51,8 +51,11 @@
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
-#undef  SR_DEFAULTS
-#define SR_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
+#undef MOTOR_POWER_MODE
+#define MOTOR_POWER_MODE MOTOR_POWERED_IN_CYCLE
+
+#undef  STATUS_REPORT_DEFAULTS
+#define STATUS_REPORT_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -75,14 +78,11 @@
 #undef	STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED
 
-#undef SR_VERBOSITY
-#define SR_VERBOSITY				SR_FILTERED
-
 #undef COM_ENABLE_FLOW_CONTROL
 #define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
 
 #undef GCODE_DEFAULT_COORD_SYSTEM
-#undef GCODE_DEFAULT_UNITS 
+#undef GCODE_DEFAULT_UNITS
 #undef GCODE_DEFAULT_PLANE
 #undef GCODE_DEFAULT_COORD_SYSTEM
 #undef GCODE_DEFAULT_PATH_CONTROL
@@ -101,7 +101,7 @@
 #define M4_TRAVEL_PER_REV 		5.08				// 1tr
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
-#define M4_POWER_MODE 			0					// 1pm		TRUE=low power idle enabled 
+#define M4_POWER_MODE 			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP 			AXIS_Y
@@ -109,7 +109,7 @@
 #define M3_TRAVEL_PER_REV 		5.08				// 1tr
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
-#define M3_POWER_MODE 			0					
+#define M3_POWER_MODE 			MOTOR_POWER_MODE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
@@ -122,15 +122,15 @@
 #endif
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
-#define M2_POWER_MODE 			0					
+#define M2_POWER_MODE 			MOTOR_POWER_MODE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP 			AXIS_A
 #define M1_STEP_ANGLE 			1.8
 #define M1_TRAVEL_PER_REV 		360					// degrees moved per motor rev
 #define M1_MICROSTEPS 			8
-#define M1_POLARITY 			1			
-#define M1_POWER_MODE 			1					
+#define M1_POLARITY 			1
+#define M1_POWER_MODE 			MOTOR_POWER_MODE
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -191,11 +191,11 @@
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_VELOCITY_MAX 			((X_VELOCITY_MAX/M1_TRAVEL_PER_REV)*360) // set to the same speed as X axis
 #define A_FEEDRATE_MAX 			A_VELOCITY_MAX
-#define A_TRAVEL_MAX 			0				// max=0 min=0 means infinite, no limit
 #define A_TRAVEL_MIN 			0
+#define A_TRAVEL_MAX 			0				// max=0 min=0 means infinite, no limit
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600
@@ -207,8 +207,8 @@
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600
 #define B_FEEDRATE_MAX 			B_VELOCITY_MAX
-#define B_TRAVEL_MAX 			0
 #define B_TRAVEL_MIN			0
+#define B_TRAVEL_MAX 			0
 #define B_JERK_MAX 				JERK_MAX
 #define B_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define B_RADIUS 				1
@@ -216,8 +216,8 @@
 #define C_AXIS_MODE 			AXIS_DISABLED
 #define C_VELOCITY_MAX 			3600
 #define C_FEEDRATE_MAX 			C_VELOCITY_MAX
-#define C_TRAVEL_MAX 			0
 #define C_TRAVEL_MIN			0
+#define C_TRAVEL_MAX 			0
 #define C_JERK_MAX 				JERK_MAX
 #define C_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define C_RADIUS 				1

@@ -1,10 +1,11 @@
 /*
- * hardware.h - system hardware configuration - this file is platform specific
- *			  - AVR Xmega version 
+ * hardware.h - system hardware configuration
+ *				THIS FILE IS HARDWARE PLATFORM SPECIFIC - AVR Xmega version
  *
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -32,7 +33,7 @@
  *	HI	Stepper DDA pulse generation		(set in stepper.h)
  *	HI	Stepper load routine SW interrupt	(set in stepper.h)
  *	HI	Dwell timer counter 				(set in stepper.h)
- *  LO	Segment execution SW interrupt		(set in stepper.h) 
+ *  LO	Segment execution SW interrupt		(set in stepper.h)
  *	MED	GPIO1 switch port					(set in gpio.h)
  *  MED	Serial RX for USB & RS-485			(set in xio_usart.h)
  *  MED	Serial TX for USB & RS-485			(set in xio_usart.h) (* see note)
@@ -46,6 +47,35 @@
 
 #ifndef HARDWARE_H_ONCE
 #define HARDWARE_H_ONCE
+
+/*--- Hardware platform enumerations ---*/
+
+enum hwPlatform {
+	HM_PLATFORM_NONE = 0,
+
+	HW_PLATFORM_TINYG_XMEGA,	// TinyG code base on Xmega boards.
+								//	hwVersion 7 = TinyG v7 and earlier
+								//	hwVersion 8 = TinyG v8
+
+	HW_PLATFORM_G2_DUE,			// G2 code base on native Arduino Due
+
+	HW_PLATFORM_TINYG_V9		// G2 code base on v9 boards
+								//  hwVersion 0 = v9c
+								//  hwVersion 1 = v9d
+								//  hwVersion 2 = v9f
+								//  hwVersion 3 = v9h
+								//  hwVersion 4 = v9i
+};
+
+#define HW_VERSION_TINYGV6		6
+#define HW_VERSION_TINYGV7		7
+#define HW_VERSION_TINYGV8		8
+
+#define HW_VERSION_TINYGV9C		0
+#define HW_VERSION_TINYGV9D		1
+#define HW_VERSION_TINYGV9F		2
+#define HW_VERSION_TINYGV9H		3
+#define HW_VERSION_TINYGV9I		4
 
 ////////////////////////////
 /////// AVR VERSION ////////
@@ -117,7 +147,7 @@
  *	b0	(out) step			(SET is step,  CLR is rest)
  *	b1	(out) direction		(CLR = Clockwise)
  *	b2	(out) motor enable 	(CLR = Enabled)
- *	b3	(out) microstep 0 
+ *	b3	(out) microstep 0
  *	b4	(out) microstep 1
  *	b5	(out) output bit for GPIO port1
  *	b6	(in) min limit switch on GPIO 2 (note: motor controls and GPIO2 port mappings are not the same)
@@ -215,9 +245,9 @@ enum cfgPortBits {			// motor control port bit positions
 	The initialization sequence is important. the order is:
 		- sys_init()	binds all ports to the device struct
 		- st_init() 	sets IO directions and sets stepper VPORTS and stepper specific functions
-		- gpio_init()	sets up input and output functions and required interrupts	
+		- gpio_init()	sets up input and output functions and required interrupts
 
-	Care needs to be taken in routines that use ports not to write to bits that are 
+	Care needs to be taken in routines that use ports not to write to bits that are
 	not assigned to the designated function - ur unpredicatable results will occur
 */
 
@@ -225,11 +255,6 @@ typedef struct hmSingleton {
 	PORT_t *st_port[MOTORS];		// bindings for stepper motor ports (stepper.c)
 	PORT_t *sw_port[MOTORS];		// bindings for switch ports (GPIO2)
 	PORT_t *out_port[MOTORS];		// bindings for output ports (GPIO1)
-
-	// Non-volatile RAM
-	uint16_t nvm_base_addr;			// NVM base address
-	uint16_t nvm_profile_base;		// NVM base address of current profile
-
 } hwSingleton_t;
 hwSingleton_t hw;
 
@@ -242,18 +267,18 @@ stat_t hw_hard_reset_handler(void);
 
 void hw_request_bootloader(void);
 stat_t hw_bootloader_handler(void);
-stat_t hw_run_boot(cmdObj_t *cmd);
+stat_t hw_run_boot(nvObj_t *nv);
 
-stat_t hw_set_hv(cmdObj_t *cmd);
-stat_t hw_get_id(cmdObj_t *cmd);
+stat_t hw_set_hv(nvObj_t *nv);
+stat_t hw_get_id(nvObj_t *nv);
 
 #ifdef __TEXT_MODE
 
-	void hw_print_fb(cmdObj_t *cmd);
-	void hw_print_fv(cmdObj_t *cmd);
-	void hw_print_hp(cmdObj_t *cmd);
-	void hw_print_hv(cmdObj_t *cmd);
-	void hw_print_id(cmdObj_t *cmd);
+	void hw_print_fb(nvObj_t *nv);
+	void hw_print_fv(nvObj_t *nv);
+	void hw_print_hp(nvObj_t *nv);
+	void hw_print_hv(nvObj_t *nv);
+	void hw_print_id(nvObj_t *nv);
 
 #else
 

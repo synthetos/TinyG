@@ -2,7 +2,7 @@
  * plan_arc.h - arc planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
  * This file ("the software") is free software: you can redistribute it and/or modify

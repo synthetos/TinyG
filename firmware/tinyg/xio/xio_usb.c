@@ -36,21 +36,17 @@
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
-// Fast accessors
-#define USB ds[XIO_DEV_USB]
-#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
-
 /*
- * xio_putc_usb() 
+ * xio_putc_usb()
  * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
  *
  * 	These are co-routines that work in tandem.
  * 	xio_putc_usb() is a more efficient form derived from xio_putc_usart()
- * 
- *	The TX interrupt dilemma: TX interrupts occur when the USART DATA register is 
- *	empty (and the ISR must disable interrupts when nothing's left to read, or they 
+ *
+ *	The TX interrupt dilemma: TX interrupts occur when the USART DATA register is
+ *	empty (and the ISR must disable interrupts when nothing's left to read, or they
  *	keep firing). If the TX buffer is completely empty (TXCIF is set) then enabling
- *	interrupts does no good. The USART won't interrupt and the TX circular buffer 
+ *	interrupts does no good. The USART won't interrupt and the TX circular buffer
  *	never empties. So the routine that puts chars in the TX buffer must always force
  *	an interrupt.
  */
@@ -60,7 +56,7 @@ int xio_putc_usb(const char c, FILE *stream)
 	buffer_t next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
 	if (next_tx_buf_head == 0)
 		next_tx_buf_head = TX_BUFFER_SIZE-1; 			// detect wrap and adjust; -1 avoids off-by-one
-	while (next_tx_buf_head == USBu.tx_buf_tail) 
+	while (next_tx_buf_head == USBu.tx_buf_tail)
 		sleep_mode(); 									// sleep until there is space in the buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
 	USBu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
@@ -108,19 +104,19 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 	} else {
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer has no data; force another interrupt
 	}
-} 
+}
 
 /*
  * Pin Change (edge-detect) interrupt for CTS pin.
  */
 
-ISR(USB_CTS_ISR_vect)	
+ISR(USB_CTS_ISR_vect)
 {
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;		// force another interrupt
 }
 
 
-/* 
+/*
  * USB_RX_ISR - USB receiver interrupt (RX)
  *
  * RX buffer states can be one of:
@@ -136,11 +132,11 @@ ISR(USB_CTS_ISR_vect)
  * Flow Control:
  *	- Flow control is not implemented. Need to work RTS line.
  *	- Flow control should cut off at high water mark, re-enable at low water mark
- *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full) 
+ *	- High water mark should have about 4 - 8 bytes left in buffer (~95% full)
  *	- Low water mark about 50% full
  */
 
-ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int 
+ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 

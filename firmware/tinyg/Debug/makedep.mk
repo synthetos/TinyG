@@ -34,6 +34,8 @@ main.c
 
 network.c
 
+persistence.c
+
 planner.c
 
 plan_arc.c
@@ -41,6 +43,8 @@ plan_arc.c
 plan_exec.c
 
 plan_line.c
+
+plan_zoid.c
 
 pwm.c
 

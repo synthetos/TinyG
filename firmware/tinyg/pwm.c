@@ -2,7 +2,7 @@
  * pwm.c - pulse width modulation drivers
  * This file is part of the TinyG project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,14 +25,16 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <avr/interrupt.h>
-
 #include "tinyg.h"		// #1
 #include "config.h"		// #2
 #include "hardware.h"
 #include "text_parser.h"
 #include "gpio.h"
 #include "pwm.h"
+
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 #ifdef __cplusplus
 extern "C"{
@@ -72,10 +74,10 @@ pwmSingleton_t pwm;
 #define PWM2_INTCTRLB		0					// timer interrupt level (0=off, 1=lo, 2=med, 3=hi)
 
 /***** PWM code *****/
-/* 
+/*
  * pwm_init() - initialize pwm channels
  *
- *	Notes: 
+ *	Notes:
  *	  - Whatever level interrupts you use must be enabled in main()
  *	  - init assumes PWM1 output bit (D5) has been set to output previously (stepper.c)
  *	  - See system.h for timer and port assignments
@@ -83,14 +85,15 @@ pwmSingleton_t pwm;
  */
 void pwm_init()
 {
+#ifdef __AVR
 	gpio_set_bit_off(SPINDLE_PWM);
 
 	// setup PWM channel 1
-	memset(&pwm.p[PWM_1], 0, sizeof(pwmChannel_t));		// clear parent structure 
+	memset(&pwm.p[PWM_1], 0, sizeof(pwmChannel_t));		// clear parent structure
 	pwm.p[PWM_1].timer = &TIMER_PWM1;					// bind timer struct to PWM struct array
 	pwm.p[PWM_1].ctrla = PWM1_CTRLA_CLKSEL;				// initialize starting clock operating range
 	pwm.p[PWM_1].timer->CTRLB = PWM1_CTRLB;
-	pwm.p[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;		// set interrupt level	
+	pwm.p[PWM_1].timer->INTCTRLB = PWM1_INTCTRLB;		// set interrupt level
 
 	// setup PWM channel 2
 	memset(&pwm.p[PWM_2], 0, sizeof(pwmChannel_t));		// clear all values, pointers and status
@@ -98,23 +101,38 @@ void pwm_init()
 	pwm.p[PWM_2].ctrla = PWM2_CTRLA_CLKSEL;
 	pwm.p[PWM_2].timer->CTRLB = PWM2_CTRLB;
 	pwm.p[PWM_2].timer->INTCTRLB = PWM2_INTCTRLB;
+#endif // __AVR
 }
 
 /*
  * ISRs for PWM timers
  */
-
-ISR(PWM1_ISR_vect) 
+#ifdef __AVR
+ISR(PWM1_ISR_vect)
 {
 	return;
 }
 
-ISR(PWM2_ISR_vect) 
+ISR(PWM2_ISR_vect)
+{
+	return;
+}
+#endif // __AVR
+/*
+#ifdef __ARM
+MOTATE_TIMER_INTERRUPT
+ISR(PWM1_ISR_vect)
 {
 	return;
 }
 
-/* 
+ISR(PWM2_ISR_vect)
+{
+	return;
+}
+#endif // __ARM
+*/
+/*
  * pwm_set_freq() - set PWM channel frequency
  *
  *	channel	- PWM channel
@@ -130,29 +148,40 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
 	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_VALUE_TOO_SMALL);}
 
+#ifdef __AVR
 	// set the period and the prescaler
 	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
-	if (prescale <= 1) { 
+	if (prescale <= 1) {
 		pwm.p[chan].timer->PER = F_CPU/freq;
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
-	} else if (prescale <= 2) { 
+	} else if (prescale <= 2) {
 		pwm.p[chan].timer->PER = F_CPU/2/freq;
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
-	} else if (prescale <= 4) { 
+	} else if (prescale <= 4) {
 		pwm.p[chan].timer->PER = F_CPU/4/freq;
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
-	} else if (prescale <= 8) { 
+	} else if (prescale <= 8) {
 		pwm.p[chan].timer->PER = F_CPU/8/freq;
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
-	} else { 
+	} else {
 		pwm.p[chan].timer->PER = F_CPU/64/freq;
 		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
 	}
+#endif // __AVR
+
+#ifdef __ARM
+	if (chan == PWM_1) {
+		spindle_pwm_pin.setFrequency(freq);
+	} else if (chan == PWM_2) {
+		secondary_pwm_pin.setFrequency(freq);
+	}
+#endif // __ARM
+
 	return (STAT_OK);
 }
 
-/* 
- * pwm_set_duty() - set PWM channel duty cycle 
+/*
+ * pwm_set_duty() - set PWM channel duty cycle
  *
  *	channel	- PWM channel
  *	duty	- PWM duty cycle from 0% to 100%
@@ -166,14 +195,24 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 
 stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-    if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
-    if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
-    
+	if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
+	if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
+
+	#ifdef __AVR
 	// Ffrq = Fper/(2N(CCA+1))
 	// Fpwm = Fper/((N(PER+1))
-	
 	float period_scalar = pwm.p[chan].timer->PER;
 	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
+	#endif // __AVR
+
+	#ifdef __ARM
+	if (chan == PWM_1) {
+		spindle_pwm_pin = duty;
+	} else if (chan == PWM_2) {
+		secondary_pwm_pin = duty;
+	}
+	#endif // __ARM
+
 	return (STAT_OK);
 }
 
@@ -193,67 +232,29 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
 
 #ifdef __TEXT_MODE
 
-static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm frequency   %15.3f Hz\n";
-static const char fmt_p1csl[] PROGMEM = "[p1csl] pwm cw speed lo %15.3f RPM\n";
-static const char fmt_p1csh[] PROGMEM = "[p1csh] pwm cw speed hi %15.3f RPM\n";
+static const char fmt_p1frq[] PROGMEM = "[p1frq] pwm frequency   %15.0f Hz\n";
+static const char fmt_p1csl[] PROGMEM = "[p1csl] pwm cw speed lo %15.0f RPM\n";
+static const char fmt_p1csh[] PROGMEM = "[p1csh] pwm cw speed hi %15.0f RPM\n";
 static const char fmt_p1cpl[] PROGMEM = "[p1cpl] pwm cw phase lo %15.3f [0..1]\n";
 static const char fmt_p1cph[] PROGMEM = "[p1cph] pwm cw phase hi %15.3f [0..1]\n";
-static const char fmt_p1wsl[] PROGMEM = "[p1wsl] pwm ccw speed lo%15.3f RPM\n";
-static const char fmt_p1wsh[] PROGMEM = "[p1wsh] pwm ccw speed hi%15.3f RPM\n";
+static const char fmt_p1wsl[] PROGMEM = "[p1wsl] pwm ccw speed lo%15.0f RPM\n";
+static const char fmt_p1wsh[] PROGMEM = "[p1wsh] pwm ccw speed hi%15.0f RPM\n";
 static const char fmt_p1wpl[] PROGMEM = "[p1wpl] pwm ccw phase lo%15.3f [0..1]\n";
 static const char fmt_p1wph[] PROGMEM = "[p1wph] pwm ccw phase hi%15.3f [0..1]\n";
 static const char fmt_p1pof[] PROGMEM = "[p1pof] pwm phase off   %15.3f [0..1]\n";
 
-void pwm_print_p1frq(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1frq);}
-void pwm_print_p1csl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csl);}
-void pwm_print_p1csh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1csh);}
-void pwm_print_p1cpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cpl);}
-void pwm_print_p1cph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1cph);}
-void pwm_print_p1wsl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsl);}
-void pwm_print_p1wsh(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wsh);}
-void pwm_print_p1wpl(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wpl);}
-void pwm_print_p1wph(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1wph);}
-void pwm_print_p1pof(cmdObj_t *cmd) { text_print_flt(cmd, fmt_p1pof);}
+void pwm_print_p1frq(nvObj_t *nv) { text_print_flt(nv, fmt_p1frq);}
+void pwm_print_p1csl(nvObj_t *nv) { text_print_flt(nv, fmt_p1csl);}
+void pwm_print_p1csh(nvObj_t *nv) { text_print_flt(nv, fmt_p1csh);}
+void pwm_print_p1cpl(nvObj_t *nv) { text_print_flt(nv, fmt_p1cpl);}
+void pwm_print_p1cph(nvObj_t *nv) { text_print_flt(nv, fmt_p1cph);}
+void pwm_print_p1wsl(nvObj_t *nv) { text_print_flt(nv, fmt_p1wsl);}
+void pwm_print_p1wsh(nvObj_t *nv) { text_print_flt(nv, fmt_p1wsh);}
+void pwm_print_p1wpl(nvObj_t *nv) { text_print_flt(nv, fmt_p1wpl);}
+void pwm_print_p1wph(nvObj_t *nv) { text_print_flt(nv, fmt_p1wph);}
+void pwm_print_p1pof(nvObj_t *nv) { text_print_flt(nv, fmt_p1pof);}
 
-#endif //__TEXT_MODE 
-
-
-/****************************************************************************
- ***** Unit Tests ***********************************************************
- ****************************************************************************/
-
-#ifdef __UNIT_TESTS
-#ifdef __UNIT_TEST_PWM
-
-void pwm_unit_tests()
-{
-	pwm_init();
-
-	pwm_set_freq(PWM_1,500);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-	pwm_set_freq(PWM_1,5000);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-	pwm_set_freq(PWM_1,100);
-	pwm_set_duty(PWM_1,100);
-	pwm_set_duty(PWM_1,75);
-	pwm_set_duty(PWM_1,51);
-	pwm_set_duty(PWM_1,10);
-	pwm_set_duty(PWM_1,0);
-
-}
-
-#endif // __UNIT_TEST_PWM
-#endif
+#endif //__TEXT_MODE
 
 #ifdef __cplusplus
 }

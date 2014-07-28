@@ -2,7 +2,7 @@
  * settings_openpnp.h - OpenPNP settings
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -142,7 +142,7 @@
 #define A_VELOCITY_MAX			60000
 #define A_FEEDRATE_MAX			48000
 #define A_TRAVEL_MAX			400					// degrees
-#define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
+#define A_TRAVEL_MIN 			-1					// -1 means infinite, no limit
 #define A_JERK_MAX				24000				// yes, 24 billion
 #define A_JUNCTION_DEVIATION	0.1
 #define A_RADIUS				1.0

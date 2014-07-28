@@ -2,7 +2,7 @@
  * settings_shapeoko375.h - Shapeoko 375mm table
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,114 +28,79 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in system.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in system.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
 /***********************************************************************/
-/**** Shapoko 375mm profile ********************************************/
+/**** Shaepoko 375mm profile *******************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Shapeoko 375mm profile"
 
-#define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
-#define JUNCTION_ACCELERATION	2000000	// 2 million - centripetal acceleration around corners
+#define JUNCTION_DEVIATION		0.01		// default value, in mm - smaller is faster
+#define JUNCTION_ACCELERATION	2000000		// 2 million - centripetal acceleration around corners
+//#define JUNCTION_ACCELERATION	20000000	// 20 million - centripetal acceleration around corners
 
 // *** settings.h overrides ***
 
 #undef COMM_MODE
 #define COMM_MODE				JSON_MODE
 
-#undef JSON_VERBOSITY
-//#define JSON_VERBOSITY 			JV_CONFIGS
-#define JSON_VERBOSITY 			JV_VERBOSE
-
 #undef SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X	// 1ma
-#define M1_STEP_ANGLE			1.8		// 1sa
-#define M1_TRAVEL_PER_REV		36.54	// 1tr
-#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				1		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
+#define M1_MOTOR_MAP 			AXIS_X				// 1ma
+#define M1_STEP_ANGLE			1.8					// 1sa
+#define M1_TRAVEL_PER_REV		36.54				// 1tr
+#define M1_MICROSTEPS			8					// 1mi		1,2,4,8
+#define M1_POLARITY				1					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		36.54
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			0
+#define M2_POWER_MODE			MOTOR_POWER_MODE
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			4
 #define M3_POLARITY				1
-#define M3_POWER_MODE			1
+#define M3_POWER_MODE			MOTOR_POWER_MODE
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		360		// degrees per motor rev - no gearing
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
-#define M4_POWER_MODE			0
+#define M4_POWER_MODE			MOTOR_POWER_MODE
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_MOTOR_MAP			AXIS_B
 #define M5_STEP_ANGLE			1.8
 #define M5_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
 #define M5_MICROSTEPS			8
 #define M5_POLARITY				0
-#define M5_POWER_MODE			1
+#define M5_POWER_MODE			MOTOR_POWER_MODE
+#define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M6_MOTOR_MAP			AXIS_C
 #define M6_STEP_ANGLE			1.8
 #define M6_TRAVEL_PER_REV		180		// degrees per motor rev - 1:2 gearing
 #define M6_MICROSTEPS			8
 #define M6_POLARITY				0
-#define M6_POWER_MODE			1
-
-#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M6_POWER_MODE			MOTOR_POWER_MODE
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
-
-
-/* Mapping for dual grantry setup
-#define M1_MOTOR_MAP 			AXIS_X	// 1ma
-#define M1_STEP_ANGLE			0.9		// 1sa
-#define M1_TRAVEL_PER_REV		36.54	// 1tr
-#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1		// 1pm		TRUE=low power idle enabled 
-
-#define M2_MOTOR_MAP			AXIS_Y
-#define M2_STEP_ANGLE			0.9
-#define M2_TRAVEL_PER_REV		36.54
-#define M2_MICROSTEPS			8
-#define M2_POLARITY				1
-#define M2_POWER_MODE			1
-
-#define M3_MOTOR_MAP			AXIS_Y
-#define M3_STEP_ANGLE			0.9
-#define M3_TRAVEL_PER_REV		36.54
-#define M3_MICROSTEPS			8
-#define M3_POLARITY				0
-#define M3_POWER_MODE			1
-
-#define M4_MOTOR_MAP			AXIS_Z
-#define M4_STEP_ANGLE			0.45
-#define M4_TRAVEL_PER_REV		2.1166
-#define M4_MICROSTEPS			8
-#define M4_POLARITY				1
-#define M4_POWER_MODE			0
-*/
 
 // *** axis settings ***
 

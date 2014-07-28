@@ -2,7 +2,7 @@
  * settings_default.h - default machine profile
  * This file is part of the TinyG2 project
  *
- * Copyright (c) 2012 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -47,6 +47,8 @@
 
 // **** settings.h overrides ****
 
+#undef MOTOR_POWER_MODE
+#define MOTOR_POWER_MODE		MOTOR_ALWAYS_POWERED
 // *** motor settings ***
 
 #define M5_MOTOR_MAP 			AXIS_X					// 1ma
@@ -54,7 +56,7 @@
 #define M5_TRAVEL_PER_REV		2.438					// 1tr
 #define M5_MICROSTEPS			2						// 1mi		1,2,4,8
 #define M5_POLARITY				0						// 1po		0=normal, 1=reversed
-#define M5_POWER_MODE			0						// 1pm		standard
+#define M5_POWER_MODE			MOTOR_POWER_MODE		// 1pm		standard
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL		// 1mp
 
 #define M2_MOTOR_MAP	 		AXIS_Y
@@ -62,7 +64,7 @@
 #define M2_TRAVEL_PER_REV		2.438
 #define M2_MICROSTEPS			1
 #define M2_POLARITY				0
-#define M2_POWER_MODE			0
+#define M2_POWER_MODE			MOTOR_POWER_MODE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Z
@@ -70,7 +72,7 @@
 #define M3_TRAVEL_PER_REV		2.54
 #define M3_MICROSTEPS			2
 #define M3_POLARITY				1
-#define M3_POWER_MODE			0
+#define M3_POWER_MODE			MOTOR_POWER_MODE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_A
@@ -78,7 +80,7 @@
 #define M4_TRAVEL_PER_REV		45			// degrees moved per motor rev
 #define M4_MICROSTEPS			1
 #define M4_POLARITY				0
-#define M4_POWER_MODE			0
+#define M4_POWER_MODE			MOTOR_POWER_MODE
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M1_MOTOR_MAP			AXIS_B
@@ -86,7 +88,7 @@
 #define M1_TRAVEL_PER_REV		45			// degrees moved per motor rev
 #define M1_MICROSTEPS			1
 #define M1_POLARITY				0
-#define M1_POWER_MODE			0
+#define M1_POWER_MODE			MOTOR_POWER_MODE
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M6_MOTOR_MAP			AXIS_C
@@ -94,7 +96,7 @@
 #define M6_TRAVEL_PER_REV		360			// degrees moved per motor rev
 #define M6_MICROSTEPS			8
 #define M6_POLARITY				0
-#define M6_POWER_MODE			0
+#define M6_POWER_MODE			MOTOR_POWER_MODE
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 // *** axis settings ***

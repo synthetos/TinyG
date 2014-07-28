@@ -2,7 +2,7 @@
  * gpio.c - general purpose IO bits - including limit switches, inputs, outputs
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -39,15 +39,5 @@ void gpio_led_toggle(uint8_t led);
 uint8_t gpio_read_bit(uint8_t b);
 void gpio_set_bit_on(uint8_t b);
 void gpio_set_bit_off(uint8_t b);
-
-/* unit test setup */
-
-//#define __UNIT_TEST_GPIO				// uncomment to enable GPIO unit tests
-#ifdef __UNIT_TEST_GPIO
-void gpio_unit_tests(void);
-#define	GPIO_UNITS gpio_unit_tests();
-#else
-#define	GPIO_UNITS
-#endif // __UNIT_TEST_GPIO
 
 #endif

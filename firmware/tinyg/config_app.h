@@ -2,7 +2,8 @@
  * config_app.h - application-specific part of configuration sub-system
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,13 +29,13 @@ extern "C"{
  **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
  ***********************************************************************************/
 
-enum cmdType {						// classification of commands
-	CMD_TYPE_NULL = 0,
-	CMD_TYPE_CONFIG,				// configuration commands
-	CMD_TYPE_GCODE,					// gcode
-	CMD_TYPE_REPORT,				// SR, QR and any other report
-	CMD_TYPE_MESSAGE,				// cmd object carries a message
-	CMD_TYPE_LINENUM				// cmd object carries a gcode line number
+enum nvType {						// classification of commands
+	NV_TYPE_NULL = 0,
+	NV_TYPE_CONFIG,					// configuration commands
+	NV_TYPE_GCODE,					// gcode
+	NV_TYPE_REPORT,					// SR, QR and any other report
+	NV_TYPE_MESSAGE,				// nv object carries a message
+	NV_TYPE_LINENUM					// nv object carries a gcode line number
 };
 
 /***********************************************************************************
@@ -53,7 +54,7 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
-    
+
 	// user-defined data groups
 	uint32_t user_data_a[4];
 	uint32_t user_data_b[4];
@@ -72,9 +73,9 @@ extern cfgParameters_t cfg;
 stat_t set_baud_callback(void);
 
 // job config
-void job_print_job(cmdObj_t *cmd);
-stat_t job_get(cmdObj_t *cmd);
-stat_t job_set(cmdObj_t *cmd);
+void job_print_job(nvObj_t *nv);
+stat_t job_get(nvObj_t *nv);
+stat_t job_set(nvObj_t *nv);
 uint8_t job_report_callback();
 
 /***********************************************************************************
@@ -84,21 +85,21 @@ uint8_t job_report_callback();
 
 #ifdef __TEXT_MODE
 
-	void co_print_ec(cmdObj_t *cmd);
-	void co_print_ee(cmdObj_t *cmd);
-	void co_print_ex(cmdObj_t *cmd);
-	void co_print_baud(cmdObj_t *cmd);
-	void co_print_net(cmdObj_t *cmd);
-	void co_print_rx(cmdObj_t *cmd);
+	void cfg_print_ec(nvObj_t *nv);
+	void cfg_print_ee(nvObj_t *nv);
+	void cfg_print_ex(nvObj_t *nv);
+	void cfg_print_baud(nvObj_t *nv);
+	void cfg_print_net(nvObj_t *nv);
+	void cfg_print_rx(nvObj_t *nv);
 
-#else 
+#else
 
-	#define co_print_ec tx_print_stub
-	#define co_print_ee tx_print_stub
-	#define co_print_ex tx_print_stub
-	#define co_print_baud tx_print_stub
-	#define co_print_net tx_print_stub
-	#define co_print_rx tx_print_stub
+	#define cfg_print_ec tx_print_stub
+	#define cfg_print_ee tx_print_stub
+	#define cfg_print_ex tx_print_stub
+	#define cfg_print_baud tx_print_stub
+	#define cfg_print_net tx_print_stub
+	#define cfg_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
 

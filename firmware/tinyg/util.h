@@ -2,7 +2,7 @@
  * util.h - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,10 +24,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* util.c/.h contains a dog's breakfast of supporting functions that are 
+/* util.c/.h contains a dog's breakfast of supporting functions that are
  * not specific to tinyg: including:
  *
- *	  - math and min/max utilities and extensions 
+ *	  - math and min/max utilities and extensions
  *	  - vector manipulation utilities
  *	  - support for debugging routines
  */
@@ -53,9 +53,8 @@ extern "C"{
 
 extern float vector[AXES]; // vector of axes for passing to subroutines
 
-#define clear_vector(a) memset(a,0,sizeof(a))
-#define	copy_vector(d,s) memcpy(d,s,sizeof(d))
-//void copy_vector(float dst[], const float src[]);
+#define clear_vector(a) (memset(a,0,sizeof(a)))
+#define	copy_vector(d,s) (memcpy(d,s,sizeof(d)))
 
 float get_axis_vector_length(const float a[], const float b[]);
 uint8_t vector_equal(const float a[], const float b[]);
@@ -78,7 +77,8 @@ float max4(float x1, float x2, float x3, float x4);
 
 uint8_t isnumber(char_t c);
 char_t *escape_string(char_t *dst, char_t *src);
-char_t *pstr2str(const char_t *pgm_string);
+char_t *pstr2str(const char *pgm_string);
+char_t fntoa(char_t *str, float n, uint8_t precision);
 uint16_t compute_checksum(char_t const *string, const uint16_t length);
 
 //*** other utilities ***
@@ -138,7 +138,7 @@ uint32_t SysTickTimer_getValue(void);
 #define MAX_LONG (2147483647)
 #define MAX_ULONG (4294967295)
 #define MM_PER_INCH (25.4)
-#define INCH_PER_MM (1/25.4)
+#define INCHES_PER_MM (1/25.4)
 #define MICROSECONDS_PER_MINUTE ((float)60000000)
 #define uSec(a) ((float)(a * MICROSECONDS_PER_MINUTE))
 

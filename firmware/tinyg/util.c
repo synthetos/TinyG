@@ -2,7 +2,7 @@
  * util.c - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -164,7 +164,7 @@ float max4(float x1, float x2, float x3, float x4)
  */
 
 /*
-char_t * strcpy_U( char_t * dst, const char_t * src )
+uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
 {
 	uint16_t index = 0;
 	do {
@@ -205,16 +205,44 @@ char_t *escape_string(char_t *dst, char_t *src)
  *	allocation and max length. On the ARM it's a pass through that just returns the address 
  *	of the input string
  */
-char_t *pstr2str(const char_t *pgm_string)
+char_t *pstr2str(const char *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(shared_buf, pgm_string, MESSAGE_LEN);
-	return (shared_buf);
+	strncpy_P(global_string_buf, pgm_string, MESSAGE_LEN);
+	return (global_string_buf);
 #endif
 #ifdef __ARM
-	return (pgm_string);
+	return ((char_t *)pgm_string);
 #endif
 }
+
+/*
+ * fntoa() - return ASCII string given a float and a decimal precision value
+ *
+ *	Returns length of string, less the terminating NUL character
+ */
+char_t fntoa(char_t *str, float n, uint8_t precision)
+{
+    // handle special cases
+	if (isnan(n)) { 
+		strcpy(str, "nan");
+		return (3);
+
+	} else if (isinf(n)) { 
+		strcpy(str, "inf");
+		return (3);
+	
+	} else if (precision == 0 ) { return((char_t)sprintf((char *)str, "%0.0f", (double) n));
+	} else if (precision == 1 ) { return((char_t)sprintf((char *)str, "%0.1f", (double) n));
+	} else if (precision == 2 ) { return((char_t)sprintf((char *)str, "%0.2f", (double) n));
+	} else if (precision == 3 ) { return((char_t)sprintf((char *)str, "%0.3f", (double) n));
+	} else if (precision == 4 ) { return((char_t)sprintf((char *)str, "%0.4f", (double) n));
+	} else if (precision == 5 ) { return((char_t)sprintf((char *)str, "%0.5f", (double) n));
+	} else if (precision == 6 ) { return((char_t)sprintf((char *)str, "%0.6f", (double) n));
+	} else if (precision == 7 ) { return((char_t)sprintf((char *)str, "%0.7f", (double) n));
+	} else					    { return((char_t)sprintf((char *)str, "%f", (double) n)); }
+}
+
 /* 
  * compute_checksum() - calculate the checksum for a string
  * 

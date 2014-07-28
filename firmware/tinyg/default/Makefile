@@ -7,7 +7,6 @@ PROJECT = tinyg
 MCU = atxmega192a3
 TARGET = tinyg.elf
 CC = avr-gcc
-TINYG_FIRMWARE_BUILD = 410.11
 
 CPP = avr-g++
 
@@ -16,8 +15,7 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -DTINYG_FIRMWARE_BUILD=$(TINYG_FIRMWARE_BUILD)
-CFLAGS += -gdwarf-2 -std=gnu99 -Wall     -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -gdwarf-2 -std=gnu99 -Wall        -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -42,13 +40,13 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
-OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o xio.o cycle_jogging.o plan_exec.o encoder.o 
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o xio.o cycle_jogging.o plan_exec.o encoder.o plan_zoid.o persistence.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss install
+all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss
 
 ## Compile
 util.o: ../util.c
@@ -168,6 +166,12 @@ plan_exec.o: ../plan_exec.c
 encoder.o: ../encoder.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
+plan_zoid.o: ../plan_zoid.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+persistence.o: ../persistence.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
 ##Link
 $(TARGET): $(OBJECTS)
 	 $(CC) $(LDFLAGS) $(OBJECTS) $(LINKONLYOBJECTS) $(LIBDIRS) $(LIBS) -o $(TARGET)
@@ -180,9 +184,6 @@ $(TARGET): $(OBJECTS)
 
 %.lss: $(TARGET)
 	avr-objdump -h -S $< > $@
-
-install:
-	cp ./tinyg.hex ~/Desktop/tinyg-${TINYG_FIRMWARE_BUILD}.hex
 
 size: ${TARGET}
 	@echo

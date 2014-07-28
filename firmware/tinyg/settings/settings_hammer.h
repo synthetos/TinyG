@@ -2,7 +2,7 @@
  * settings_hammer.h - machine profile for hammer demo
  * Part of TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart Jr.
+ * Copyright (c) 2013 - 2014 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -89,8 +89,8 @@
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			VELOCITY_MAX 		// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 			150					// xtm		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
+#define X_TRAVEL_MAX 			150					// xtm		travel between switches or crashes
 #define X_JERK_MAX 				JERK_MAX			// xjm
 #define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -104,13 +104,12 @@
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			VELOCITY_MAX
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX 			150
 #define Y_TRAVEL_MIN			0
+#define Y_TRAVEL_MAX 			150
 #define Y_JERK_MAX 				JERK_MAX
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX 		SW_MODE_DISABLED
-//#define Y_SWITCH_MODE_MAX 		SW_MODE_LIMIT
 #define Y_SEARCH_VELOCITY 		500
 #define Y_LATCH_VELOCITY 		100
 #define Y_LATCH_BACKOFF 		2
@@ -121,8 +120,8 @@
 #define Z_VELOCITY_MAX 			VELOCITY_MAX
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX 			75
-#define Z_JERK_MAX 				JERK_MAX
 #define Z_TRAVEL_MIN			0
+#define Z_JERK_MAX 				JERK_MAX
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
@@ -136,7 +135,7 @@
 #define A_AXIS_MODE 			AXIS_STANDARD
 #define A_VELOCITY_MAX 			ROTARY_VELOCITY_MAX
 #define A_FEEDRATE_MAX 			ROTARY_VELOCITY_MAX
-#define A_TRAVEL_MAX 			-1
+#define A_TRAVEL_MIN 			-1
 #define A_TRAVEL_MAX 			-1										// -1 means infinite, no limit
 #define A_JERK_MAX 				ROTARY_JERK_MAX
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION

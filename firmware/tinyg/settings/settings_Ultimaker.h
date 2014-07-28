@@ -2,7 +2,7 @@
  * settings_Ultimaker.h - Ultimaker motion demo
  * This file is part of the the TinyG project
  *
- * Copyright (c) 2010 - 2012 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -47,38 +47,38 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X		// 1ma
-#define M1_STEP_ANGLE 			1.8			// 1sa
-#define M1_TRAVEL_PER_REV		40.5		// 1tr
-#define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
+#define M1_MOTOR_MAP 			AXIS_X				// 1ma
+#define M1_STEP_ANGLE 			1.8					// 1sa
+#define M1_TRAVEL_PER_REV		40.5				// 1tr
+#define M1_MICROSTEPS			8					// 1mi		1,2,4,8
+#define M1_POLARITY				0					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.5
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			1
+#define M2_POWER_MODE			MOTOR_POWER_MODE
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		3.00
 #define M3_MICROSTEPS			8
 #define M3_POLARITY				1
-#define M3_POWER_MODE			1
+#define M3_POWER_MODE			MOTOR_POWER_MODE
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		360			// degrees moved per motor rev
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
-#define M4_POWER_MODE			1
-
-#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
-#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
+#define M4_POWER_MODE			MOTOR_POWER_MODE
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
+
 #define M5_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M6_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -87,8 +87,8 @@
 #define X_AXIS_MODE 			AXIS_STANDARD			// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX 			10000 					// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX			// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX 			212						// xtm		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
+#define X_TRAVEL_MAX 			212						// xtm		travel between switches or crashes
 #define X_JERK_MAX 				50000					// xjm		yes, that's "50 billion" mm/(min^3)
 #define X_JERK_HOMING			7500					// xjh
 #define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION		// xjd
@@ -104,8 +104,8 @@
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			10000
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX 			190
 #define Y_TRAVEL_MIN			0
+#define Y_TRAVEL_MAX 			190
 #define Y_JERK_MAX 				50000					// 50 billion
 #define Y_JERK_HOMING			7500
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
@@ -121,8 +121,8 @@
 #define Z_AXIS_MODE				AXIS_STANDARD
 #define Z_VELOCITY_MAX			2000
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
-#define Z_TRAVEL_MAX			220
 #define Z_TRAVEL_MIN			0
+#define Z_TRAVEL_MAX			220
 #define Z_JERK_MAX				50						// 50 million
 #define Z_JERK_HOMING			1000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
@@ -138,9 +138,9 @@
 #define A_AXIS_MODE				AXIS_STANDARD
 #define A_VELOCITY_MAX			3600
 #define A_FEEDRATE_MAX			A_VELOCITY_MAX
-#define A_TRAVEL_MAX			-1
+#define A_TRAVEL_MIN			-1
 #define A_TRAVEL_MAX 			-1					// -1 means infinite, no limit
-#define A_JERK_MAX				20						// 20 million
+#define A_JERK_MAX				20					// 20 million
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define A_RADIUS				1
 #define A_SWITCH_MODE_MIN		SW_MODE_DISABLED
@@ -154,8 +154,8 @@
 #define B_AXIS_MODE				AXIS_DISABLED
 #define B_VELOCITY_MAX			3600
 #define B_FEEDRATE_MAX			B_VELOCITY_MAX
-#define B_TRAVEL_MAX			-1
 #define B_TRAVEL_MIN			-1
+#define B_TRAVEL_MAX			-1
 #define B_JERK_MAX				20
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
@@ -163,8 +163,8 @@
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
 #define C_FEEDRATE_MAX			C_VELOCITY_MAX
-#define C_TRAVEL_MAX			-1
 #define C_TRAVEL_MIN			-1
+#define C_TRAVEL_MAX			-1
 #define C_JERK_MAX				20
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
