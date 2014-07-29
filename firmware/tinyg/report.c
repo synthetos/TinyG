@@ -219,6 +219,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 			nv->value = nv->index;							// persist the index as the value
 			nv->index = sr_start + i;						// index of the SR persistence location
 			nv_persist(nv);
+            elements++;
 		} else {
 			return (STAT_INPUT_VALUE_UNSUPPORTED);
 		}
