@@ -1220,8 +1220,9 @@ stat_t cm_feedhold_sequencing_callback()
 		cm.feedhold_requested = false;
 	}
 	if (cm.queue_flush_requested == true) {
-		if ((cm.motion_state == MOTION_STOP) ||
-			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
+		if (((cm.motion_state == MOTION_STOP) ||
+			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) &&
+			!cm_get_runtime_busy()) {
 			cm.queue_flush_requested = false;
 			cm_queue_flush();
 		}
@@ -1241,12 +1242,8 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
-// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which
-//		 issues !%~ in rapid succession. So it's commented out for now. The correct way to handle
-//		 this in the tinyg code is to queue the % queue flush until after the feedhold stops,
-//		 and queue the ~ cycle start until after that.
-//	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
-
+	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}
+    
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif
