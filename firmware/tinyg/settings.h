@@ -110,10 +110,10 @@
 //#include "settings/settings_lumenlabMicRoV3.h"		// Lumenlabs micRo v3
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othercutter.h"			// OMC OtherCutter
-//#include "settings/settings_othermill.h"				// OMC OtherMill
+#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
-#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
+//#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
 //#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
