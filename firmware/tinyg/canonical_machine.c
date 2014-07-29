@@ -1248,6 +1248,7 @@ stat_t cm_queue_flush()
 	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif
 	mp_flush_planner();						// flush planner queue
+    qr_request_queue_report(0);             // request a queue report, since we've changed the number of buffers available
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
