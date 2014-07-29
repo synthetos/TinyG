@@ -1289,6 +1289,7 @@ stat_t cm_queue_flush()
 	xio_reset_usb_rx_buffers();		// flush serial queues
 #endif
 	mp_flush_planner();				// flush planner queue
+    qr_request_queue_report(0);             // request a queue report, since we've changed the number of buffers available
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
