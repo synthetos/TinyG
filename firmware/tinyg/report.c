@@ -44,6 +44,7 @@ extern "C"{
 
 srSingleton_t sr;
 qrSingleton_t qr;
+rxSingleton_t rx;
 
 /**** Exception Reports ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
@@ -511,6 +512,25 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 	}
 	qr_init_queue_report();
 	return (STAT_OK);
+}
+
+/*
+ * rx_request_rx_report() - request an update on usb serial buffer space available
+ */
+void rx_request_rx_report(void) {
+    rx.rx_report_requested = true;
+    rx.space_available = xio_get_usb_rx_free();
+}
+
+/*
+ * rx_report_callback() - send rx report if one has been requested
+ */
+stat_t rx_report_callback(void) {
+    if (!rx.rx_report_requested) { return (STAT_NOOP); }
+    rx.rx_report_requested = false;
+    
+    fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);
+    return (STAT_OK);
 }
 
 /* Alternate Formulation for a Single report - using nvObj list
