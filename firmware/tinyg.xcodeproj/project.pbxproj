@@ -115,7 +115,6 @@
 		204C2FDD183D4B970058D2F2 /* plan_arc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = plan_arc.c; sourceTree = "<group>"; };
 		204C2FDE183D4B970058D2F2 /* plan_arc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = plan_arc.h; sourceTree = "<group>"; };
 		204C2FDF183D4B970058D2F2 /* plan_line.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = plan_line.c; sourceTree = "<group>"; };
-		204C2FE0183D4B970058D2F2 /* plan_line.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = plan_line.h; sourceTree = "<group>"; };
 		204C2FE1183D4B970058D2F2 /* planner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = planner.c; sourceTree = "<group>"; };
 		204C2FE2183D4B970058D2F2 /* planner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = planner.h; sourceTree = "<group>"; };
 		204C2FE3183D4B970058D2F2 /* pwm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pwm.c; sourceTree = "<group>"; };
@@ -192,6 +191,7 @@
 		204C302E183D4B970058D2F2 /* xmega_rtc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xmega_rtc.c; sourceTree = "<group>"; };
 		204C302F183D4B970058D2F2 /* xmega_rtc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xmega_rtc.h; sourceTree = "<group>"; };
 		204C3030183D4B970058D2F2 /* xmega_wdt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xmega_wdt.c; sourceTree = "<group>"; };
+		E21E39E9193F9C6300D483F8 /* plan_exec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = plan_exec.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -239,8 +239,8 @@
 				204C2FDC183D4B970058D2F2 /* network.h */,
 				204C2FDD183D4B970058D2F2 /* plan_arc.c */,
 				204C2FDE183D4B970058D2F2 /* plan_arc.h */,
+				E21E39E9193F9C6300D483F8 /* plan_exec.c */,
 				204C2FDF183D4B970058D2F2 /* plan_line.c */,
-				204C2FE0183D4B970058D2F2 /* plan_line.h */,
 				204C2FE1183D4B970058D2F2 /* planner.c */,
 				204C2FE2183D4B970058D2F2 /* planner.h */,
 				204C2FE3183D4B970058D2F2 /* pwm.c */,
