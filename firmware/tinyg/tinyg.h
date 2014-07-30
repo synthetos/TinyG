@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.02	// merge OMC changes - bumped build number for runtime busy gate in sequencing callback
+#define TINYG_FIRMWARE_BUILD   		437.03	// merge OMC changes - manually merged On queue flush send QR and and RX reports 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
