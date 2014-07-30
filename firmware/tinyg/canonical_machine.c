@@ -1250,6 +1250,8 @@ stat_t cm_queue_flush()
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
 	printf("{\"rx\":%i}\n", xio_get_usb_rx_free());	// report updated free space in serial buffer
 
+	// Note: The following uses low-level mp calls for absolute position.
+	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 	}
