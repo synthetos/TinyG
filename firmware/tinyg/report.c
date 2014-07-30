@@ -202,8 +202,9 @@ void sr_init_status_report()
 /*
  * sr_set_status_report() - interpret an SR setup string and return current report
  *
- *	Note: By the time it's here any unrecognized token have been detected by the JSON or text parser.
- *		  In other words, it will never get to here if there is an unrecognized token in the SR string.
+ *	Note: By the time this function is called any unrecognized tokens have been detected and
+ *	rejected by the JSON or text parser. In other words, it should never get to here if
+ *	there is an unrecognized token in the SR string.
  */
 stat_t sr_set_status_report(nvObj_t *nv)
 {

@@ -45,7 +45,8 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.05	// merge OMC changes - bumped build number for Jogging cycle improvements; save feed rate mode
+#define TINYG_FIRMWARE_BUILD   		437.06	// merge OMC changes - bumped build number for Fix bug in sr_set_status_reports where it was incorrectly counting the number of modes set
+
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
