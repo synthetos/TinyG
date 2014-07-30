@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.06	// merge OMC changes - bumped build number for Fix bug in sr_set_status_reports where it was incorrectly counting the number of modes set
+#define TINYG_FIRMWARE_BUILD   		437.07	// merge OMC changes - checkpoint. No other changes
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
