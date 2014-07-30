@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.04	// merge OMC changes - merged Homing Cycle improvements (misc); get rid of verify position
+#define TINYG_FIRMWARE_BUILD   		437.05	// merge OMC changes - bumped build number for Jogging cycle improvements; save feed rate mode
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
