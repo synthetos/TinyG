@@ -53,6 +53,7 @@ struct jmJoggingSingleton {			// persistent jogging runtime variables
 	uint8_t saved_units_mode;		// G20,G21 global setting
 	uint8_t saved_coord_system;		// G54 - G59 setting
 	uint8_t saved_distance_mode;	// G90,G91 global setting
+	uint8_t saved_feed_rate_mode;   // G93,G94 global setting
 	float saved_jerk;				// saved and restored for each axis homed
 };
 static struct jmJoggingSingleton jog;
@@ -90,17 +91,18 @@ static stat_t _jogging_finalize_exit(int8_t axis);
 stat_t cm_jogging_cycle_start(uint8_t axis)
 {
 	// save relevant non-axis parameters from Gcode model
-	jog.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);			//cm.gm.units_mode;
-	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);		//cm.gm.coord_system;
-	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);	//cm.gm.distance_mode;
-	jog.saved_feed_rate = cm_get_distance_mode(ACTIVE_MODEL);		//cm.gm.feed_rate;
-//	jog.saved_jerk = cm.a[axis].jerk_max;
+	jog.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);
+	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
+	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
+	jog.saved_feed_rate_mode = cm_get_feed_rate_mode(ACTIVE_MODEL);
+	jog.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
 	jog.saved_jerk = cm_get_axis_jerk(axis);
-
+    
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(ABSOLUTE_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);			// jogging is done in machine coordinates
+	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);
 
 	jog.velocity_start = JOGGING_START_VELOCITY;	// see canonical_machine.h for #define
 	jog.velocity_max = cm.a[axis].velocity_max;
@@ -153,7 +155,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	float direction = jog.start_pos <= jog.dest_pos ? 1. : -1.;
 	float delta = abs(jog.dest_pos - jog.start_pos);
 
-	cm_set_feed_rate(velocity);
+	cm.gm.feed_rate = velocity;
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
 
@@ -165,7 +167,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	while( delta>ramp_dist && offset < delta && steps < max_steps )
 	{
 		vect[axis] = jog.start_pos + offset * direction;
-		cm_set_feed_rate(velocity);
+		cm.gm.feed_rate = velocity;
 		ritorno(cm_straight_feed(vect, flags));
 
 		steps++;
@@ -183,7 +185,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 #endif
 
 	// final move
-	cm_set_feed_rate(jog.velocity_max);
+	cm.gm.feed_rate = jog.velocity_max;
 	vect[axis] = jog.dest_pos;
 	ritorno(cm_straight_feed(vect, flags));
     return (_set_jogging_func(_jogging_finalize_exit));
@@ -193,16 +195,17 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 {
 	mp_flush_planner(); 							// FIXME: not sure what to do on exit
-//	cm.a[axis].jerk_max = jog.saved_jerk;
 	cm_set_axis_jerk(axis, jog.saved_jerk);
 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
-	cm_set_feed_rate(jog.saved_feed_rate);
+  cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
+	cm.gm.feed_rate = jog.saved_feed_rate;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;						// required
-	cm_cycle_end();
-    printf("{\"jog\":0}\n");						// needed by OMC jogging function
+	cm.cycle_state = CYCLE_OFF;
+  cm_cycle_end();
+  printf("{\"jog\":0}\n");
+    
 	return (STAT_OK);
 }
 
