@@ -1243,7 +1243,7 @@ stat_t cm_feedhold_sequencing_callback()
 stat_t cm_queue_flush()
 {
 	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}
-    
+
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif

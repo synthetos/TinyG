@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		436.05	// working on jerk selection algorithm
+#define TINYG_FIRMWARE_BUILD   		437.02	// merge OMC changes - bumped build number for runtime busy gate in sequencing callback
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
