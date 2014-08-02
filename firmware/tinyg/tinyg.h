@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.11	// merge OMC changes - complete (skipped 10 because the decimal doesn't display well)
+#define TINYG_FIRMWARE_BUILD   		438.01	// testing inches mode issues
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

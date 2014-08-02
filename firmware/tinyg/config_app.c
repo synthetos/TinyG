@@ -449,8 +449,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
 
 	// System parameters
-	{ "sys","ja",  _fipn, 0, cm_print_ja,  get_flt,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
-	{ "sys","ct",  _fipn, 4, cm_print_ct,  get_flt,   set_flu,    (float *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
+	{ "sys","ja",  _fipnc,0, cm_print_ja,  get_flt,   set_flu,    (float *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
+	{ "sys","ct",  _fipnc,4, cm_print_ct,  get_flt,   set_flu,    (float *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
 	{ "sys","sl",  _fipn, 0, cm_print_sl,  get_ui8,   set_ui8,    (float *)&cm.soft_limit_enable,	SOFT_LIMIT_ENABLE },
 	{ "sys","st",  _fipn, 0, sw_print_st,  get_ui8,   sw_set_st,  (float *)&sw.switch_type,			SWITCH_TYPE },
 	{ "sys","mt",  _fipn, 2, st_print_mt,  get_flt,   st_set_mt,  (float *)&st_cfg.motor_power_timeout,MOTOR_IDLE_TIMEOUT},
@@ -977,7 +977,7 @@ static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
-static const char fmt_net[] PROGMEM = "[net]  network mode%16d [0=master]\n";
+static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
 void cfg_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
