@@ -100,8 +100,8 @@ uint8_t _set_pb_func(uint8_t (*func)())
  *
  *	Another Note: When coding a cycle (like this one) you must wait until
  *	the last move has actually been queued (or has finished) before declaring
- *	the cycle to be done. Otherwise there is a nasty race condition in the 
- *	tg_controller() that will accept the next command before the position of 
+ *	the cycle to be done. Otherwise there is a nasty race condition in the
+ *	tg_controller() that will accept the next command before the position of
  *	the final move has been recorded in the Gcode model. That's what the call
  *	to cm_get_runtime_busy() is about.
  */
@@ -220,9 +220,9 @@ static stat_t _probing_start()
 	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
 #endif
 
-	if( probe==SW_OPEN ) {
-		ritorno(cm_straight_feed(pb.target, pb.flags));
-	}
+    if( probe==SW_OPEN ) {
+        ritorno(cm_straight_feed(pb.target, pb.flags));
+    }
 	return (_set_pb_func(_probing_finish));
 }
 
@@ -238,7 +238,7 @@ static stat_t _probing_finish()
 	int8_t probe = read_switch(pb.probe_switch_axis, pb.probe_switch_position);
 #endif
 	cm.probe_state = (probe==SW_CLOSED) ? PROBE_SUCCEEDED : PROBE_FAILED;
-    
+
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		// if we got here because of a feed hold we need to keep the model position correct
 		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
@@ -269,7 +269,7 @@ static stat_t _probing_finish()
 static void _probe_restore_settings()
 {
 	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
-	
+
 #ifndef __NEW_SWITCHES // restore switch settings (old style)
 	sw.switch_type = pb.saved_switch_type;
 	sw.mode[pb.probe_switch] = pb.saved_switch_mode;
@@ -290,8 +290,8 @@ static void _probe_restore_settings()
 
 	// update the model with actual position
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
-	cm.cycle_state = CYCLE_OFF;
 	cm_cycle_end();
+	cm.cycle_state = CYCLE_OFF;
 }
 
 static stat_t _probing_finalize_exit()

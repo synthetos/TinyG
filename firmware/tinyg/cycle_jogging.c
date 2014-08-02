@@ -97,7 +97,7 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
 	jog.saved_feed_rate_mode = cm_get_feed_rate_mode(ACTIVE_MODEL);
 	jog.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
 	jog.saved_jerk = cm_get_axis_jerk(axis);
-    
+
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
 	cm_set_distance_mode(ABSOLUTE_MODE);
@@ -199,13 +199,13 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_coord_system(jog.saved_coord_system);	// restore to work coordinate system
 	cm_set_units_mode(jog.saved_units_mode);
 	cm_set_distance_mode(jog.saved_distance_mode);
-  cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
+	cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
 	cm.gm.feed_rate = jog.saved_feed_rate;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
-  cm_cycle_end();
-  printf("{\"jog\":0}\n");
-    
+
+	printf("{\"jog\":0}\n");
 	return (STAT_OK);
 }
 

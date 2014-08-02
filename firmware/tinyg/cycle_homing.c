@@ -423,7 +423,7 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	ritorno(cm_straight_feed(vect, flags));
 	return (STAT_EAGAIN);
 }
-    
+
 /*
  * _homing_abort() - end homing cycle in progress
  */
@@ -478,7 +478,8 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm.gm.feed_rate = hm.saved_feed_rate;
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	cm.cycle_state = CYCLE_OFF;
-	cm_cycle_end();
+//	cm_cycle_end();					//+++++ TEST THIS
+	cm.cycle_state = CYCLE_OFF;
 	return (STAT_OK);
 }
 

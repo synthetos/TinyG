@@ -170,6 +170,7 @@ static void _controller_HSM()
 //	DISPATCH(switch_debounce_callback());		// debounce switches
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
+	DISPATCH(rx_report_callback());             // conditionally send rx report
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_jogging_callback());			// jog function

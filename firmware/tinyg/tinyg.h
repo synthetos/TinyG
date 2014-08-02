@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.07	// merge OMC changes - checkpoint. No other changes
+#define TINYG_FIRMWARE_BUILD   		437.08	// merge OMC changes - manual merge of Replace rx buffer print statement with request rx report mechanism
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
