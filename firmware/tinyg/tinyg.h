@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		437.09	// merge OMC changes - manual pass - checkpoint 1
+#define TINYG_FIRMWARE_BUILD   		437.11	// merge OMC changes - complete (skipped 10 because the decimal doesn't display well)
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
