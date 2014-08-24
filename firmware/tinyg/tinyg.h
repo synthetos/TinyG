@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		438.01	// testing inches mode issues
+#define TINYG_FIRMWARE_BUILD   		438.02	// prep for edge push; fix persistence bug
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -68,7 +68,7 @@
 /****** DEVELOPMENT SETTINGS ******/
 
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
-#define __DEBUG_SETTINGS					// special settings. See settings.h
+//#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
 
 //#define __SIMULATION						// for software-only simulations
