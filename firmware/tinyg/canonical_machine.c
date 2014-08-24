@@ -101,11 +101,11 @@
 #include "hardware.h"
 #include "util.h"
 #include "xio.h"			// for serial queue flush
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
@@ -370,6 +370,33 @@ void cm_finalize_move() {
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
 /*
+ * cm_deferred_write_callback() - write any changed G10 values back to persistence
+ *
+ *	Only runs if there is G10 data to write, there is no movement, and the serial queues are quiescent
+ *	This could be made tighter by issuing an XOFF or ~CTS beforehand and releasing it afterwards.
+ */
+
+stat_t cm_deferred_write_callback()
+{
+	if ((cm.cycle_state == CYCLE_OFF) && (cm.deferred_write_flag == true)) {
+#ifdef __AVR
+		if (xio_isbusy()) return (STAT_OK);		// don't write back if serial RX is not empty
+#endif
+		cm.deferred_write_flag = false;
+		nvObj_t nv;
+		for (uint8_t i=1; i<=COORDS; i++) {
+			for (uint8_t j=0; j<AXES; j++) {
+				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
+				nv.index = nv_get_index((const char_t *)"", nv.token);
+				nv.value = cm.offset[i][j];
+				nv_persist(&nv);				// Note: only writes values that have changed
+			}
+		}
+	}
+	return (STAT_OK);
+}
+
+/*
  * cm_set_model_target() - set target vector in GM model
  *
  * This is a core routine. It handles:
@@ -550,7 +577,7 @@ stat_t cm_soft_alarm(stat_t status)
 {
 	rpt_exception(status);					// send alarm message
 	cm.machine_state = MACHINE_ALARM;
-	return (status);
+	return (status);						// NB: More efficient than inlining rpt_exception() call.
 }
 
 stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
@@ -627,13 +654,13 @@ stat_t cm_set_distance_mode(uint8_t mode)
 
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) { // you can't set G53
+	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
 		return (STAT_INTERNAL_RANGE_ERROR);
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			cm.offset[coord_system][axis] = offset[axis];
-			cm.g10_persist_flag = true;		// this will persist offsets to NVM once move has stopped
+			cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
+			cm.deferred_write_flag = true;								// persist offsets once machining cycle is over
 		}
 	}
 	return (STAT_OK);
@@ -916,6 +943,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
+//		return(rpt_exception(STAT_GCODE_FEEDRATE_NOT_SPECIFIED));
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
@@ -1105,7 +1133,7 @@ stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 	return (STAT_OK);
 }
 
-stat_t cm_spindle_override_factor(uint8_t flag)	// M50.1
+stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 {
 	cm.gmx.spindle_override_enable = flag;
 	cm.gmx.spindle_override_factor = cm.gn.parameter;
@@ -1192,8 +1220,9 @@ stat_t cm_feedhold_sequencing_callback()
 		cm.feedhold_requested = false;
 	}
 	if (cm.queue_flush_requested == true) {
-		if ((cm.motion_state == MOTION_STOP) ||
-			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) {
+		if (((cm.motion_state == MOTION_STOP) ||
+			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) &&
+			!cm_get_runtime_busy()) {
 			cm.queue_flush_requested = false;
 			cm_queue_flush();
 		}
@@ -1213,17 +1242,16 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
-// NOTE: Although the following trap is technically correct it breaks OMC-style jogging, which
-//		 issues !%~ in rapid succession. So it's commented out for now. The correct way to handle
-//		 this in the tinyg code is to queue the % queue flush until after the feedhold stops,
-//		 and queue the ~ cycle start until after that.
-//	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}	// can't flush during movement
-
+	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif
 	mp_flush_planner();						// flush planner queue
+	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
+	rx_request_rx_report();
 
+	// Note: The following uses low-level mp calls for absolute position.
+	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 	}
@@ -1273,45 +1301,43 @@ static void _exec_program_finalize(float *value, float *flag)
 	cm.machine_state = (uint8_t)value[0];
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
-		cm.cycle_state = CYCLE_OFF;					// don't end cycle if homing, probing, etc.
+		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
 	}
-	cm.hold_state = FEEDHOLD_OFF;					// end feedhold (if in feed hold)
-	cm.cycle_start_requested = false;				// cancel any pending cycle start request
-	mp_zero_segment_velocity();						// for reporting purposes
+	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
+	cm.cycle_start_requested = false;					// cancel any pending cycle start request
+	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
-		cm_reset_origin_offsets();					// G92.1 - we do G91.1 instead of G92.2
-	//	cm_suspend_origin_offsets();				// G92.2 - as per Kramer
-		cm_set_coord_system(cm.coord_system);		// reset to default coordinate system
-		cm_select_plane(cm.select_plane);			// reset to default arc plane
+		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
+	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
+		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
+		cm_select_plane(cm.select_plane);				// reset to default arc plane
 		cm_set_distance_mode(cm.distance_mode);
-//++++	cm_set_units_mode(cm.units_mode);			// reset to default units mode +++ REMOVED +++
-		cm_spindle_control(SPINDLE_OFF);			// M5
-		cm_flood_coolant_control(false);			// M9
-		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// G94
-	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);// NIST specifies G1, but we cancel motion mode. Safer.
+//++++	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
+		cm_spindle_control(SPINDLE_OFF);				// M5
+		cm_flood_coolant_control(false);				// M9
+		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-	sr_request_status_report(SR_IMMEDIATE_REQUEST);	// request a final status report (not unfiltered)
-	nv_persist_offsets(cm.g10_persist_flag);		// persist offsets if any changes made
+	sr_request_status_report(SR_IMMEDIATE_REQUEST);		// request a final status report (not unfiltered)
 }
 
 void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {				// don't (re)start homing, probe or other canned cycles
+	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
 		cm.cycle_state = CYCLE_MACHINING;
-		qr_init_queue_report();						// clear queue reporting buffer counts
+		qr_init_queue_report();							// clear queue reporting buffer counts
 	}
-
 }
 
 void cm_cycle_end()
 {
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-		_exec_program_finalize(value,value);
+		_exec_program_finalize(value, value);
 	}
 }
 
@@ -1472,7 +1498,6 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 #endif // __TEXT_MODE
 
 /***** AXIS HELPERS *****************************************************************
- *
  * cm_get_axis_char() - return ASCII char for axis given the axis number
  * _get_axis()		  - return axis number or -1 if NA
  * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
@@ -1646,21 +1671,45 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 	return(STAT_OK);
 }
 
-/*
- * cm_set_jrk()	- set jerk value
+/**** Jerk functions
+ * cm_get_axis_jerk() - returns jerk for an axis
+ * cm_set_axis_jerk() - sets the jerk for an axis, including recirpcal and cached values
+ *
+ * cm_set_xjm()		  - set jerk max value - called from dispatch table
+ * cm_set_xjh()		  - set jerk homing value - called from dispatch table
  *
  *	Jerk values can be rather large, often in the billions. This makes for some pretty big
  *	numbers for people to deal with. Jerk values are stored in the system in truncated format;
  *	values are divided by 1,000,000 then reconstituted before use.
  *
- *	cm_set_jrk() will accept either truncated or untrunctated jerk numbers as input. If the
- *	number is > 1,000,000 it is divided by 1,000,000 before storing. Numbers are accepted in
- *	either millimeter or inch mode and converted to millimeter mode.
+ *	The set_xjm() nad set_xjh() functions will accept either truncated or untruncated jerk
+ *	numbers as input. If the number is > 1,000,000 it is divided by 1,000,000 before storing.
+ *	Numbers are accepted in either millimeter or inch mode and converted to millimeter mode.
+ *
+ *	The axis_jerk() functions expect the jerk in divided-by 1,000,000 form
  */
-
-stat_t cm_set_jrk(nvObj_t *nv)
+float cm_get_axis_jerk(uint8_t axis)
 {
-	if (nv->value > 1000000) nv->value /= 1000000;
+	return (cm.a[axis].jerk_max);
+}
+
+void cm_set_axis_jerk(uint8_t axis, float jerk)
+{
+	cm.a[axis].jerk_max = jerk;
+	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
+}
+
+stat_t cm_set_xjm(nvObj_t *nv)
+{
+	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
+	set_flu(nv);
+	cm_set_axis_jerk(_get_axis(nv->index), nv->value);
+	return(STAT_OK);
+}
+
+stat_t cm_set_xjh(nvObj_t *nv)
+{
+	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
 	set_flu(nv);
 	return(STAT_OK);
 }
@@ -1816,7 +1865,7 @@ void cm_print_gdi(nvObj_t *nv) { text_print_int(nv, fmt_gdi);}
 /* system state print functions */
 
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
-const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%16.3f%s\n";
+const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%17.4f%s\n";
 const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
 const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
 const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
@@ -1937,7 +1986,8 @@ void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
 
 #endif // __TEXT_MODE
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

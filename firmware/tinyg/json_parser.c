@@ -118,7 +118,7 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
 		// validate the token and get the index
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
-			return (STAT_UNRECOGNIZED_COMMAND);
+			return (STAT_UNRECOGNIZED_NAME);
 		}
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
@@ -489,7 +489,7 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
 			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_FLOAT)	{ nv_preprocess_float(nv);
+			else if (nv->valuetype == TYPE_FLOAT)	{ preprocess_float(nv);
 //													  str += fntoa((char *)str, nv->value, nv->precision);
 													  str += fntoa(str, nv->value, nv->precision);
 			}

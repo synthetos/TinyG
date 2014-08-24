@@ -40,18 +40,19 @@
 #include "help.h"
 #include "util.h"
 #include "xio.h"
-//#include "xmega/xmega_eeprom.h"
 
 #ifdef __cplusplus
 extern "C"{
 #endif
+
+static void _set_defa(nvObj_t *nv);
 
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
  ***********************************************************************************/
 
 nvStr_t nvStr;
-nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
+nvList_t nvl;
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -63,17 +64,19 @@ nvObj_t nv_list[NV_LIST_LEN];	// JSON header element
  * nv_get() 	- Build a nvObj with the values from the target & return the value
  *			   	  Populate nv body with single valued elements or groups (iterates)
  * nv_print()	- Output a formatted string for the value.
- * nv_persist() - persist value to NVM. Takes special cases into account
+ * nv_persist() - persist value to non-volatile storage. Takes special cases into account
+ *
+ *	!!!! NOTE: nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) { return (STAT_INTERNAL_RANGE_ERROR);}
+	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) { return(STAT_INTERNAL_RANGE_ERROR);}
+	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
@@ -83,21 +86,21 @@ void nv_print(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
-void nv_persist(nvObj_t *nv)
+stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
-#ifdef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	return;
+#ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
+	if (nv_index_lt_groups(nv->index) == false) return(STAT_INTERNAL_RANGE_ERROR);
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) return(write_persistent_value(nv));
 #endif
-	if (nv_index_lt_groups(nv->index) == false) return;
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) write_persistent_value(nv);
+	return (STAT_OK);
 }
 
 /************************************************************************************
- * config_init()  - called once on hard reset
+ * config_init() - called once on hard reset
  *
  * Performs one of 2 actions:
- *	(1) if NVM is set up or out-of-rev load RAM and NVM with settings.h defaults
- *	(2) if NVM is set up and at current config version use NVM data for config
+ *	(1) if persistence is set up or out-of-rev load RAM and NVM with settings.h defaults
+ *	(2) if persistence is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by tg_init()
@@ -107,26 +110,22 @@ void nv_persist(nvObj_t *nv)
 void config_init()
 {
 	nvObj_t *nv = nv_reset_nv_list();
-	nvStr.magic_start = MAGICNUM;
-	nvStr.magic_end = MAGICNUM;
-	cfg.magic_start = MAGICNUM;
-	cfg.magic_end = MAGICNUM;
+	config_init_assertions();
 
 #ifdef __ARM
 // ++++ The following code is offered until persistence is implemented.
 // ++++ Then you can use the AVR code (or something like it)
 	cfg.comm_mode = JSON_MODE;					// initial value until EEPROM is read
-	nv->value = true;
-	set_defaults(nv);
+	_set_defa(nv);
 #endif
 #ifdef __AVR
 	cm_set_units_mode(MILLIMETERS);				// must do inits in millimeter mode
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (nv->value != cs.fw_build) {
-		nv->value = true;						// case (1) NVM is not setup or not in revision
-		set_defaults(nv);
+	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
+//	if (fp_NE(nv->value, cs.fw_build)) {
+		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
@@ -142,26 +141,60 @@ void config_init()
 }
 
 /*
- * set_defaults() - reset NVM with default values for active profile
+ * set_defaults() - reset persistence with default values for machine profile
+ * _set_defa() - helper function and called directly from config_init()
  */
-stat_t set_defaults(nvObj_t *nv)
-{
-	if (fp_FALSE(nv->value)) {					// failsafe. Must set true or no action occurs
-		help_defa(nv);
-		return (STAT_OK);
-	}
-	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 
+static void _set_defa(nvObj_t *nv)
+{
+	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 			nv->value = GET_TABLE_FLOAT(def_value);
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			nv_set(nv);
-			nv_persist(nv);						// persist must occur when no other interrupts are firing
+			nv_persist(nv);
 		}
 	}
-	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
 	sr_init_status_report();					// reset status reports
+	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
+}
+
+stat_t set_defaults(nvObj_t *nv)
+{
+	// failsafe. nv->value must be true or no action occurs
+	if (fp_FALSE(nv->value)) return(help_defa(nv));
+	_set_defa(nv);
+
+	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
+//	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
+//	nv->index = nv_get_index("", nv->token);	// correct, but not required
+	nv->valuetype = TYPE_INTEGER;
+	nv->value = 1;
+	return (STAT_OK);
+}
+
+/*
+ * config_init_assertions()
+ * config_test_assertions() - check memory integrity of config sub-system
+ */
+
+void config_init_assertions()
+{
+	cfg.magic_start = MAGICNUM;
+	cfg.magic_end = MAGICNUM;
+	nvl.magic_start = MAGICNUM;
+	nvl.magic_end = MAGICNUM;
+	nvStr.magic_start = MAGICNUM;
+	nvStr.magic_end = MAGICNUM;
+}
+
+stat_t config_test_assertions()
+{
+	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
@@ -272,28 +305,6 @@ stat_t set_flt(nvObj_t *nv)
 	return(STAT_OK);
 }
 
-/***** GCODE SPECIFIC EXTENSIONS TO GENERIC FUNCTIONS *****/
-
-/*
- * set_flu() - set floating point number with G20/G21 units conversion
- *
- * The number 'setted' will have been delivered in external units (inches or mm).
- * It is written to the target memory location in internal canonical units (mm).
- * The original nv->value is also changed so persistence works correctly.
- * Displays should convert back from internal canonical form to external form.
- */
-
-stat_t set_flu(nvObj_t *nv)
-{
-	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
-		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
-	}
-	*((float *)GET_TABLE_WORD(target)) = nv->value;// write value as millimeters or degrees
-	nv->precision = GET_TABLE_WORD(precision);
-	nv->valuetype = TYPE_FLOAT;
-	return(STAT_OK);
-}
-
 /************************************************************************************
  * Group operations
  *
@@ -360,7 +371,7 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_COMMAND);
+	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_NAME);
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
@@ -442,40 +453,6 @@ uint8_t nv_get_type(nvObj_t *nv)
 	return (NV_TYPE_CONFIG);
 }
 
-/*
- * nv_persist_offsets() - write any changed G54 (et al) offsets back to NVM
- */
-
-stat_t nv_persist_offsets(uint8_t flag)
-{
-	if (flag == true) {
-		nvObj_t nv;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				sprintf(nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				nv.index = nv_get_index((const char_t *)"", nv.token);
-				nv.value = cm.offset[i][j];
-				nv_persist(&nv);				// only writes changed values
-			}
-		}
-	}
-	return (STAT_OK);
-}
-
-/*
- * nv_preprocess_float() - pre-promcess flaoting point number for units display and illegal valaues
- */
-
-void nv_preprocess_float(nvObj_t *nv)
-{
-	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
-	if (GET_TABLE_BYTE(flags) & F_CONVERT) {	// unit conversion required?
-		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;
-		}
-	}
-}
-
 /******************************************************************************
  * nvObj low-level object and list operations
  * nv_get_nvObj()		- setup a nv object by providing the index
@@ -552,7 +529,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 nvObj_t *nv_reset_nv_list()					// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nv_list;					// set up linked list and initialize elements
+	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);					// the ends are bogus & corrected later
 		nv->nx = (nv+1);
@@ -563,7 +540,7 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 		nv->token[0] = NUL;
 	}
 	(--nv)->nx = NULL;
-	nv = nv_list;							// setup response header element ('r')
+	nv = nvl.list;							// setup response header element ('r')
 	nv->pv = NULL;
 	nv->depth = 0;
 	nv->valuetype = TYPE_PARENT;

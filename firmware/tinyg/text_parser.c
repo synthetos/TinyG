@@ -132,7 +132,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 
 	// validate and post-process the token
 	if ((nv->index = nv_get_index((const char_t *)"", nv->token)) == NO_MATCH) { // get index or fail it
-		return (STAT_UNRECOGNIZED_COMMAND);
+		return (STAT_UNRECOGNIZED_NAME);
 	}
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
 
@@ -195,7 +195,7 @@ void text_print_inline_pairs(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
@@ -215,7 +215,7 @@ void text_print_inline_values(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ nv_preprocess_float(nv);
+			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
@@ -233,7 +233,7 @@ void text_print_multiline_formatted(nvObj_t *nv)
 {
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		if (nv->valuetype != TYPE_PARENT) {
-			nv_preprocess_float(nv);
+			preprocess_float(nv);
 			nv_print(nv);
 		}
 		if ((nv = nv->nx) == NULL) return;

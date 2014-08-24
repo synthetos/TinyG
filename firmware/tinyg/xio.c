@@ -118,7 +118,7 @@ void xio_init()
  * xio_test_assertions() - validate operating state
  *
  * NOTE: xio device assertions are set up as part of xio_open_generic()
- *		 This system is kind of brittle right now becuase if a device is
+ *		 This system is kind of brittle right now because if a device is
  *		 not set up then it will fail in the assertions test. Need to fix this.
  */
 
@@ -138,6 +138,26 @@ uint8_t xio_test_assertions()
 //	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
 	return (STAT_OK);
+}
+
+/*
+ * xio_isbusy() - return TRUE if XIO sub-system is busy
+ *
+ *	This function is here so that the caller can detect that the serial system is active
+ *	and therefore generating interrupts. This is a hack for the earlier AVRs that require
+ *	interrupts to be disabled for EEPROM write so the caller can see if the XIO system is
+ *	quiescent. This is used by the G10 deferred writeback persistence functions.
+ *
+ *	Idle conditions:
+ *	- The serial RX buffer is empty, indicating with some probability that data is not being sent
+ *	- The serial TX buffers are empty
+ */
+
+uint8_t xio_isbusy()
+{
+	if (xio_get_rx_bufcount_usart(&USBu) != 0) return (false);
+	if (xio_get_tx_bufcount_usart(&USBu) != 0) return (false);
+	return (true);
 }
 
 /*

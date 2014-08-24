@@ -34,11 +34,11 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 // execute routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
@@ -88,22 +88,22 @@ stat_t mp_exec_move()
  *	 STAT_EAGAIN	move is not finished - has more segments to run
  *	 STAT_NOOP		cause no operation from the steppers - do not load the move
  *	 STAT_xxxxx		fatal error. Ends the move and frees the bf buffer
- *	
- *	This routine is called from the (LO) interrupt level. The interrupt 
+ *
+ *	This routine is called from the (LO) interrupt level. The interrupt
  *	sequencing relies on the behaviors of the routines being exactly correct.
- *	Each call to _exec_aline() must execute and prep *one and only one* 
- *	segment. If the segment is the not the last segment in the bf buffer the 
- *	_aline() must return STAT_EAGAIN. If it's the last segment it must return 
- *	STAT_OK. If it encounters a fatal error that would terminate the move it 
- *	should return a valid error code. Failure to obey this will introduce 
+ *	Each call to _exec_aline() must execute and prep *one and only one*
+ *	segment. If the segment is the not the last segment in the bf buffer the
+ *	_aline() must return STAT_EAGAIN. If it's the last segment it must return
+ *	STAT_OK. If it encounters a fatal error that would terminate the move it
+ *	should return a valid error code. Failure to obey this will introduce
  *	subtle and very difficult to diagnose bugs (trust me on this).
  *
- *	Note 1 Returning STAT_OK ends the move and frees the bf buffer. 
+ *	Note 1 Returning STAT_OK ends the move and frees the bf buffer.
  *		   Returning STAT_OK at this point does NOT advance position meaning any
  *		   position error will be compensated by the next move.
  *
- *	Note 2 Solves a potential race condition where the current move ends but the 
- * 		   new move has not started because the previous move is still being run 
+ *	Note 2 Solves a potential race condition where the current move ends but the
+ * 		   new move has not started because the previous move is still being run
  *		   by the steppers. Planning can overwrite the new move.
  */
 /* OPERATION:
@@ -111,13 +111,13 @@ stat_t mp_exec_move()
  *	  http://www.et.byu.edu/~ered/ME537/Notes/Ch5.pdf
  *	  http://www.scribd.com/doc/63521608/Ed-Red-Ch5-537-Jerk-Equations
  *
- *	A full trapezoid is divided into 5 periods Periods 1 and 2 are the 
- *	first and second halves of the acceleration ramp (the concave and convex 
- *	parts of the S curve in the "head"). Periods 3 and 4 are the first 
- *	and second parts of the deceleration ramp (the tail). There is also 
+ *	A full trapezoid is divided into 5 periods Periods 1 and 2 are the
+ *	first and second halves of the acceleration ramp (the concave and convex
+ *	parts of the S curve in the "head"). Periods 3 and 4 are the first
+ *	and second parts of the deceleration ramp (the tail). There is also
  *	a period for the constant-velocity plateau of the trapezoid (the body).
- *	There are various degraded trapezoids possible, including 2 section 
- *	combinations (head and tail; head and body; body and tail), and single 
+ *	There are various degraded trapezoids possible, including 2 section
+ *	combinations (head and tail; head and body; body and tail), and single
  *	sections - any one of the three.
  *
  *	The equations that govern the acceleration and deceleration ramps are:
@@ -127,9 +127,9 @@ stat_t mp_exec_move()
  *	  Period 3	  V = Vi - Jm*(T^2)/2
  *	  Period 4	  V = Vh + As*T + Jm*(T^2)/2
  *
- * 	These routines play some games with the acceleration and move timing 
- *	to make sure this actually all works out. move_time is the actual time of the 
- *	move, accel_time is the time valaue needed to compute the velocity - which 
+ * 	These routines play some games with the acceleration and move timing
+ *	to make sure this actually all works out. move_time is the actual time of the
+ *	move, accel_time is the time valaue needed to compute the velocity - which
  *	takes the initial velocity into account (move_time does not need to).
  */
 /* --- State transitions - hierarchical state machine ---
@@ -140,10 +140,10 @@ stat_t mp_exec_move()
  * 	 or just remains _OFF
  *
  *	mr.move_state transitions on first call from _OFF to one of _HEAD, _BODY, _TAIL
- *	Within each section state may be 
+ *	Within each section state may be
  *	 _NEW - trigger initialization
  *	 _RUN1 - run the first part
- *	 _RUN2 - run the second part 
+ *	 _RUN2 - run the second part
  *
  *	Note: For a direct math implementation see build 357.xx or earlier
  *		  Builds 358 onward have only forward difference code
@@ -199,9 +199,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 	//**** main dispatcher to process segments ***
 	stat_t status = STAT_OK;
-	if (mr.section == SECTION_HEAD) { status = _exec_aline_head();} else 
+	if (mr.section == SECTION_HEAD) { status = _exec_aline_head();} else
 	if (mr.section == SECTION_BODY) { status = _exec_aline_body();} else
-	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else 
+	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else
 	if (mr.move_state == MOVE_SKIP_BLOCK) { status = STAT_OK;}
 	else { return(cm_hard_alarm(STAT_INTERNAL_ERROR));}	// never supposed to get here
 
@@ -223,7 +223,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	//	  STAT_OK		MOVE_RUN			mr and bf buffers are done
 	//	  STAT_OK		MOVE_NEW			mr done; bf must be run again (it's been reused)
 
-	if (status == STAT_EAGAIN) { 
+	if (status == STAT_EAGAIN) {
 		sr_request_status_report(SR_TIMED_REQUEST);		// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_OFF;						// reset mr buffer
@@ -238,8 +238,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 /* Forward difference math explained:
  *
- *	We are using a quintic (fifth-degree) Bezier polynomial for the velocity curve. 
- *	This gives us a "linear pop" velocity curve; with pop being the sixth derivative of position: 
+ *	We are using a quintic (fifth-degree) Bezier polynomial for the velocity curve.
+ *	This gives us a "linear pop" velocity curve; with pop being the sixth derivative of position:
  *	velocity - 1st, acceleration - 2nd, jerk - 3rd, snap - 4th, crackle - 5th, pop - 6th
  *
  * The Bezier curve takes the form:
@@ -260,7 +260,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *		                              A       B       C       D       E       F
  *
  *
- *  We use forward-differencing to calculate each position through the curve. 
+ *  We use forward-differencing to calculate each position through the curve.
  *	This requires a formula of the form:
  *
  *		V_f(t) = A*t^5 + B*t^4 + C*t^3 + D*t^2 + E*t + F
@@ -296,13 +296,13 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *		F_3 += F_2
  *		F_2 += F_1
  *
- *	See http://www.drdobbs.com/forward-difference-calculation-of-bezier/184403417 for an example of 
- *	how to calculate F_0 - F_5 for a cubic bezier curve. Since this is a quintic bezier curve, we 
- *	need to extend the formulas somewhat. I'll not go into the long-winded step-by-step here, 
+ *	See http://www.drdobbs.com/forward-difference-calculation-of-bezier/184403417 for an example of
+ *	how to calculate F_0 - F_5 for a cubic bezier curve. Since this is a quintic bezier curve, we
+ *	need to extend the formulas somewhat. I'll not go into the long-winded step-by-step here,
  *	but it gives the resulting formulas:
  *
  *		a = A, b = B, c = C, d = D, e = E, f = F
- *		F_5(t+h)-F_5(t) = (5ah)t^4 + (10ah^2 + 4bh)t^3 + (10ah^3 + 6bh^2 + 3ch)t^2 + 
+ *		F_5(t+h)-F_5(t) = (5ah)t^4 + (10ah^2 + 4bh)t^3 + (10ah^3 + 6bh^2 + 3ch)t^2 +
  *			(5ah^4 + 4bh^3 + 3ch^2 + 2dh)t + ah^5 + bh^4 + ch^3 + dh^2 + eh
  *
  *		a = 5ah
@@ -311,7 +311,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *		d = 5ah^4 + 4bh^3 + 3ch^2 + 2dh
  *
  *  (After substitution, simplification, and rearranging):
- *		F_4(t+h)-F_4(t) = (20ah^2)t^3 + (60ah^3 + 12bh^2)t^2 + (70ah^4 + 24bh^3 + 6ch^2)t + 
+ *		F_4(t+h)-F_4(t) = (20ah^2)t^3 + (60ah^3 + 12bh^2)t^2 + (70ah^4 + 24bh^3 + 6ch^2)t +
  *			30ah^5 + 14bh^4 + 6ch^3 + 2dh^2
  *
  *		a = (20ah^2)
@@ -509,7 +509,7 @@ static stat_t _exec_aline_head()
 /*********************************************************************************************
  * _exec_aline_body()
  *
- *	The body is broken into little segments even though it is a straight line so that 
+ *	The body is broken into little segments even though it is a straight line so that
  *	feedholds can happen in the middle of a line with a minimum of latency
  */
 static stat_t _exec_aline_body()
@@ -660,12 +660,12 @@ static stat_t _exec_aline_tail()
  *
  * NOTES ON STEP ERROR CORRECTION:
  *
- *	The commanded_steps are the target_steps delayed by one more segment. 
+ *	The commanded_steps are the target_steps delayed by one more segment.
  *	This lines them up in time with the encoder readings so a following error can be generated
- * 
- *	The following_error term is positive if the encoder reading is greater than (ahead of) 
- *	the commanded steps, and negative (behind) if the encoder reading is less than the 
- *	commanded steps. The following error is not affected by the direction of movement - 
+ *
+ *	The following_error term is positive if the encoder reading is greater than (ahead of)
+ *	the commanded steps, and negative (behind) if the encoder reading is less than the
+ *	commanded steps. The following error is not affected by the direction of movement -
  *	it's purely a statement of relative position. Examples:
  *
  *    Encoder Commanded   Following Err
@@ -722,7 +722,8 @@ static stat_t _exec_aline_segment()
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
-
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

@@ -46,7 +46,7 @@ OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
+all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss
 
 ## Compile
 util.o: ../util.c

@@ -191,6 +191,7 @@ static const char stat_06[] PROGMEM = "Hard reset";
 static const char stat_07[] PROGMEM = "End of line";
 static const char stat_08[] PROGMEM = "End of file";
 static const char stat_09[] PROGMEM = "File not open";
+
 static const char stat_10[] PROGMEM = "Max file size exceeded";
 static const char stat_11[] PROGMEM = "No such device";
 static const char stat_12[] PROGMEM = "Buffer empty";
@@ -212,17 +213,18 @@ static const char stat_26[] PROGMEM = "Initialization failure";
 static const char stat_27[] PROGMEM = "System alarm - shutting down";
 static const char stat_28[] PROGMEM = "Failed to get planner buffer";
 static const char stat_29[] PROGMEM = "Generic exception report";
-static const char stat_30[] PROGMEM = "st_prep_line() move time is infinite";
-static const char stat_31[] PROGMEM = "st_prep_line() move time is NAN";
 
-static const char stat_32[] PROGMEM = "32";
-static const char stat_33[] PROGMEM = "33";
-static const char stat_34[] PROGMEM = "34";
-static const char stat_35[] PROGMEM = "35";
+static const char stat_30[] PROGMEM = "Move time is infinite";
+static const char stat_31[] PROGMEM = "Move time is NAN";
+static const char stat_32[] PROGMEM = "Float is infinite";
+static const char stat_33[] PROGMEM = "Float is NAN";
+static const char stat_34[] PROGMEM = "Persistence error";
+static const char stat_35[] PROGMEM = "Bad status report setting";
 static const char stat_36[] PROGMEM = "36";
 static const char stat_37[] PROGMEM = "37";
 static const char stat_38[] PROGMEM = "38";
 static const char stat_39[] PROGMEM = "39";
+
 static const char stat_40[] PROGMEM = "40";
 static const char stat_41[] PROGMEM = "41";
 static const char stat_42[] PROGMEM = "42";
@@ -273,8 +275,8 @@ static const char stat_86[] PROGMEM = "86";
 static const char stat_87[] PROGMEM = "87";
 static const char stat_88[] PROGMEM = "88";
 static const char stat_89[] PROGMEM = "89";
-static const char stat_90[] PROGMEM = "90";
 
+static const char stat_90[] PROGMEM = "Config sub-system assertion failure";
 static const char stat_91[] PROGMEM = "IO sub-system assertion failure";
 static const char stat_92[] PROGMEM = "Encoder assertion failure";
 static const char stat_93[] PROGMEM = "Stepper assertion failure";
@@ -285,7 +287,7 @@ static const char stat_97[] PROGMEM = "Stack overflow detected";
 static const char stat_98[] PROGMEM = "Memory fault detected";
 static const char stat_99[] PROGMEM = "Generic assertion failure";
 
-static const char stat_100[] PROGMEM = "Unrecognized command";
+static const char stat_100[] PROGMEM = "Unrecognized command or config name";
 static const char stat_101[] PROGMEM = "Malformed command";
 static const char stat_102[] PROGMEM = "Bad number format";
 static const char stat_103[] PROGMEM = "Input exceeds max length";
@@ -294,9 +296,10 @@ static const char stat_105[] PROGMEM = "Input value too large";
 static const char stat_106[] PROGMEM = "Input value range error";
 static const char stat_107[] PROGMEM = "Input value unsupported";
 static const char stat_108[] PROGMEM = "JSON syntax error";
-static const char stat_109[] PROGMEM = "JSON input has too many pairs";	// current longest message: 30 chars
+static const char stat_109[] PROGMEM = "JSON input has too many pairs";
+
 static const char stat_110[] PROGMEM = "JSON output too long";
-static const char stat_111[] PROGMEM = "Config not taken during machining cycle";
+static const char stat_111[] PROGMEM = "Config not taken during cycle";
 static const char stat_112[] PROGMEM = "Command cannot be taken at this time";
 static const char stat_113[] PROGMEM = "113";
 static const char stat_114[] PROGMEM = "114";
@@ -305,6 +308,7 @@ static const char stat_116[] PROGMEM = "116";
 static const char stat_117[] PROGMEM = "117";
 static const char stat_118[] PROGMEM = "118";
 static const char stat_119[] PROGMEM = "119";
+
 static const char stat_120[] PROGMEM = "120";
 static const char stat_121[] PROGMEM = "121";
 static const char stat_122[] PROGMEM = "122";
@@ -320,36 +324,33 @@ static const char stat_130[] PROGMEM = "Generic Gcode input error";
 static const char stat_131[] PROGMEM = "Gcode command unsupported";
 static const char stat_132[] PROGMEM = "M code unsupported";
 static const char stat_133[] PROGMEM = "Gcode modal group violation";
-
 static const char stat_134[] PROGMEM = "Axis word missing";
 static const char stat_135[] PROGMEM = "Axis cannot be present";
 static const char stat_136[] PROGMEM = "Axis is invalid for this command";
 static const char stat_137[] PROGMEM = "Axis is disabled";
 static const char stat_138[] PROGMEM = "Axis target position is missing";
 static const char stat_139[] PROGMEM = "Axis target position is invalid";
+
 static const char stat_140[] PROGMEM = "Selected plane is missing";
 static const char stat_141[] PROGMEM = "Selected plane is invalid";
-
 static const char stat_142[] PROGMEM = "Feedrate not specified";
 static const char stat_143[] PROGMEM = "Inverse time mode cannot be used with this command";
 static const char stat_144[] PROGMEM = "Rotary axes cannot be used with this command";
 static const char stat_145[] PROGMEM = "G0 or G1 must be active for G53";
-
 static const char stat_146[] PROGMEM = "Requested velocity exceeds limits";
 static const char stat_147[] PROGMEM = "Cutter compensation cannot be enabled";
 static const char stat_148[] PROGMEM = "Programmed point same as current point";
-
 static const char stat_149[] PROGMEM = "Spindle speed below minimum";
+
 static const char stat_150[] PROGMEM = "Spindle speed exceeded maximum";
 static const char stat_151[] PROGMEM = "Spindle S word is missing";
 static const char stat_152[] PROGMEM = "Spindle S word is invalid";
 static const char stat_153[] PROGMEM = "Spindle must be off for this command";
 static const char stat_154[] PROGMEM = "Spindle must be turning for this command";
-
 static const char stat_155[] PROGMEM = "Arc specification error";
 static const char stat_156[] PROGMEM = "Arc specification error - missing axis(es)";
 static const char stat_157[] PROGMEM = "Arc specification error - missing offset(s)";
-static const char stat_158[] PROGMEM = "Arc specification error - radius arc out of tolerance";
+static const char stat_158[] PROGMEM = "Arc specification error - radius arc out of tolerance";	// current longest message: 56 chard
 static const char stat_159[] PROGMEM = "Arc specification error - endpoint is starting point";
 
 static const char stat_160[] PROGMEM = "P word is missing";
@@ -358,11 +359,11 @@ static const char stat_162[] PROGMEM = "P word is zero";
 static const char stat_163[] PROGMEM = "P word is negative";
 static const char stat_164[] PROGMEM = "P word is not an integer";
 static const char stat_165[] PROGMEM = "P word is not a valid tool number";
-
 static const char stat_166[] PROGMEM = "D word is missing";
 static const char stat_167[] PROGMEM = "D word is invalid";
 static const char stat_168[] PROGMEM = "E word is missing";
 static const char stat_169[] PROGMEM = "E word is invalid";
+
 static const char stat_170[] PROGMEM = "H word is missing";
 static const char stat_171[] PROGMEM = "H word is invalid";
 static const char stat_172[] PROGMEM = "L word is missing";
@@ -384,6 +385,7 @@ static const char stat_186[] PROGMEM = "186";
 static const char stat_187[] PROGMEM = "187";
 static const char stat_188[] PROGMEM = "188";
 static const char stat_189[] PROGMEM = "189";
+
 static const char stat_190[] PROGMEM = "190";
 static const char stat_191[] PROGMEM = "191";
 static const char stat_192[] PROGMEM = "192";
@@ -442,11 +444,11 @@ static const char stat_240[] PROGMEM = "Homing cycle failed";
 static const char stat_241[] PROGMEM = "Homing Error - Bad or no axis specified";
 static const char stat_242[] PROGMEM = "Homing Error - Search velocity is zero";
 static const char stat_243[] PROGMEM = "Homing Error - Latch velocity is zero";
-static const char stat_244[] PROGMEM = "Homing Error - Travel min/max is zero";
+static const char stat_244[] PROGMEM = "Homing Error - Travel min & max are the same";
 static const char stat_245[] PROGMEM = "Homing Error - Negative latch backoff";
 static const char stat_246[] PROGMEM = "Homing Error - Homing switches misconfigured";
-static const char stat_247[] PROGMEM = "249";
-static const char stat_248[] PROGMEM = "249";
+static const char stat_247[] PROGMEM = "247";
+static const char stat_248[] PROGMEM = "248";
 static const char stat_249[] PROGMEM = "249";
 
 static const char stat_250[] PROGMEM = "Probe cycle failed";

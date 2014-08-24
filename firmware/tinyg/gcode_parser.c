@@ -27,7 +27,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif // __cplusplus
+#endif
 
 struct gcodeParserSingleton {	 	  // struct to manage globals
 	uint8_t modals[MODAL_GROUP_COUNT];// collects modal groups in a block
@@ -271,7 +271,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME);
 						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
 						case 4: SET_NON_MODAL (next_action, NEXT_ACTION_HOMING_NO_SET);
-						default: status = STAT_UNRECOGNIZED_COMMAND;
+						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
 				}
@@ -279,14 +279,14 @@ static stat_t _parse_gcode_block(char_t *buf)
 					switch (_point(value)) {
 						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GOTO_G30_POSITION);
 						case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G30_POSITION);
-						default: status = STAT_UNRECOGNIZED_COMMAND;
+						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
 				}
 				case 38: {
 					switch (_point(value)) {
 						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE);
-						default: status = STAT_UNRECOGNIZED_COMMAND;
+						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
 				}
@@ -303,7 +303,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 					switch (_point(value)) {
 						case 0: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_PATH);
 						case 1: SET_MODAL (MODAL_GROUP_G13, path_control, PATH_EXACT_STOP);
-						default: status = STAT_UNRECOGNIZED_COMMAND;
+						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
 				}
@@ -317,14 +317,14 @@ static stat_t _parse_gcode_block(char_t *buf)
 						case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
 						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
 						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS);
-						default: status = STAT_UNRECOGNIZED_COMMAND;
+						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
 				}
 				case 93: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, INVERSE_TIME_MODE);
 				case 94: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_MINUTE_MODE);
 //				case 95: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_REVOLUTION_MODE);
-				default: status = STAT_UNRECOGNIZED_COMMAND;
+				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 			}
 			break;
 
@@ -345,7 +345,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 				case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
 				case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
 				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
-				default: status = STAT_UNRECOGNIZED_COMMAND;
+				default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
 			}
 			break;
 
@@ -368,7 +368,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);		// line number
 			case 'L': break;										// not used for anything
-			default: status = STAT_UNRECOGNIZED_COMMAND;
+			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 		}
 		if(status != STAT_OK) break;
 	}
@@ -407,7 +407,7 @@ static stat_t _parse_gcode_block(char_t *buf)
  *		17. set distance mode (G90, G91)
  *		18. set retract mode (G98, G99)
  *		19a. homing functions (G28.2, G28.3, G28.1, G28, G30)
- *		19b. change coordinate system data (G10)
+ *		19b. update system data (G10)
  *		19c. set axis offsets (G92, G92.1, G92.2, G92.3)
  *		20. perform motion (G0 to G3, G80-G89) as modified (possibly) by G53
  *		21. stop and end (M0, M1, M2, M30, M60)
@@ -427,18 +427,18 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
 	EXEC_FUNC(cm_spindle_override_factor, spindle_override_factor);
-	EXEC_FUNC(cm_select_tool, tool_select);			// tool_select is where it's written
+	EXEC_FUNC(cm_select_tool, tool_select);					// tool_select is where it's written
 	EXEC_FUNC(cm_change_tool, tool_change);
-	EXEC_FUNC(cm_spindle_control, spindle_mode); 	// spindle on or off
+	EXEC_FUNC(cm_spindle_control, spindle_mode); 			// spindle on or off
 	EXEC_FUNC(cm_mist_coolant_control, mist_coolant);
-	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);	// also disables mist coolant if OFF
+	EXEC_FUNC(cm_flood_coolant_control, flood_coolant);		// also disables mist coolant if OFF
 	EXEC_FUNC(cm_feed_rate_override_enable, feed_rate_override_enable);
 	EXEC_FUNC(cm_traverse_override_enable, traverse_override_enable);
 	EXEC_FUNC(cm_spindle_override_enable, spindle_override_enable);
 	EXEC_FUNC(cm_override_enables, override_enables);
 
-	if (cm.gn.next_action == NEXT_ACTION_DWELL) { 	// G4 - dwell
-		ritorno(cm_dwell(cm.gn.parameter));			// return if error, otherwise complete the block
+	if (cm.gn.next_action == NEXT_ACTION_DWELL) { 			// G4 - dwell
+		ritorno(cm_dwell(cm.gn.parameter));					// return if error, otherwise complete the block
 	}
 	EXEC_FUNC(cm_select_plane, select_plane);
 	EXEC_FUNC(cm_set_units_mode, units_mode);
@@ -482,10 +482,13 @@ static stat_t _execute_gcode_block()
 	}
 	cm_set_absolute_override(MODEL, false);	 // un-set absolute override once the move is planned
 
-	// do the M stops: M0, M1, M2, M30, M60
+	// do the program stops and ends : M0, M1, M2, M30, M60
 	if (cm.gf.program_flow == true) {
-		if (cm.gn.program_flow == PROGRAM_STOP) { cm_program_stop(); }
-		else { cm_program_end(); }
+		if (cm.gn.program_flow == PROGRAM_STOP) {
+			cm_program_stop();
+		} else {
+			cm_program_end();
+		}
 	}
 	return (status);
 }

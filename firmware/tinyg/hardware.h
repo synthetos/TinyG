@@ -1,10 +1,11 @@
 /*
- * hardware.h - system hardware configuration - this file is platform specific
- *			  - AVR Xmega version
+ * hardware.h - system hardware configuration
+ *				THIS FILE IS HARDWARE PLATFORM SPECIFIC - AVR Xmega version
  *
  * This file is part of the TinyG project
  *
  * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2014 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the

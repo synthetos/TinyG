@@ -24,9 +24,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* util contains a dog's breakfast of supporting functions that are not specific to tinyg: 
+/* util contains a dog's breakfast of supporting functions that are not specific to tinyg:
  * including:
- *	  - math and min/max utilities and extensions 
+ *	  - math and min/max utilities and extensions
  *	  - vector manipulation utilities
  */
 
@@ -71,7 +71,7 @@ uint8_t vector_equal(const float a[], const float b[])
 	return (false);
 }
 
-float get_axis_vector_length(const float a[], const float b[]) 
+float get_axis_vector_length(const float a[], const float b[])
 {
 	return (sqrt(square(a[AXIS_X] - b[AXIS_X]) +
 				 square(a[AXIS_Y] - b[AXIS_Y]) +
@@ -126,16 +126,16 @@ float *set_vector_by_axis(float value, uint8_t axis)
 float min3(float x1, float x2, float x3)
 {
 	float min = x1;
-	if (x2 < min) { min = x2;} 
-	if (x3 < min) { return (x3);} 
+	if (x2 < min) { min = x2;}
+	if (x3 < min) { return (x3);}
 	return (min);
 }
 
 float min4(float x1, float x2, float x3, float x4)
 {
 	float min = x1;
-	if (x2 < min) { min = x2;} 
-	if (x3 < min) { min = x3;} 
+	if (x2 < min) { min = x2;}
+	if (x3 < min) { min = x3;}
 	if (x4 < min) { return (x4);}
 	return (min);
 }
@@ -143,16 +143,16 @@ float min4(float x1, float x2, float x3, float x4)
 float max3(float x1, float x2, float x3)
 {
 	float max = x1;
-	if (x2 > max) { max = x2;} 
-	if (x3 > max) { return (x3);} 
+	if (x2 > max) { max = x2;}
+	if (x3 > max) { return (x3);}
 	return (max);
 }
 
 float max4(float x1, float x2, float x3, float x4)
 {
 	float max = x1;
-	if (x2 > max) { max = x2;} 
-	if (x3 > max) { max = x3;} 
+	if (x2 > max) { max = x2;}
+	if (x3 > max) { max = x3;}
 	if (x4 > max) { return (x4);}
 	return (max);
 }
@@ -168,7 +168,7 @@ uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
 {
 	uint16_t index = 0;
 	do {
-		dst[index] = src[index];	
+		dst[index] = src[index];
 	} while (src[index++] != 0);
 	return dst;
 }
@@ -182,7 +182,7 @@ uint8_t isnumber(char_t c)
 	return (isdigit(c));
 }
 
-char_t *escape_string(char_t *dst, char_t *src) 
+char_t *escape_string(char_t *dst, char_t *src)
 {
 	char_t c;
 	char_t *start_dst = dst;
@@ -197,12 +197,12 @@ char_t *escape_string(char_t *dst, char_t *src)
 /*
  * pstr2str() - return an AVR style progmem string as a RAM string. No effect on ARMs
  *
- *	This function deals with FLASH memory string confusion between the AVR serias and ARMs. 
- *	AVRs typically have xxxxx_P() functions which take strings from FLASH as args. 
- *	On ARMs there is no need for this as strings are handled identically in FLASH and RAM. 
+ *	This function deals with FLASH memory string confusion between the AVR serias and ARMs.
+ *	AVRs typically have xxxxx_P() functions which take strings from FLASH as args.
+ *	On ARMs there is no need for this as strings are handled identically in FLASH and RAM.
  *
- *	This function copies a string from FLASH to a pre-allocated RAM buffer - see main.c for 
- *	allocation and max length. On the ARM it's a pass through that just returns the address 
+ *	This function copies a string from FLASH to a pre-allocated RAM buffer - see main.c for
+ *	allocation and max length. On the ARM it's a pass through that just returns the address
  *	of the input string
  */
 char_t *pstr2str(const char *pgm_string)
@@ -224,14 +224,14 @@ char_t *pstr2str(const char *pgm_string)
 char_t fntoa(char_t *str, float n, uint8_t precision)
 {
     // handle special cases
-	if (isnan(n)) { 
+	if (isnan(n)) {
 		strcpy(str, "nan");
 		return (3);
 
-	} else if (isinf(n)) { 
+	} else if (isinf(n)) {
 		strcpy(str, "inf");
 		return (3);
-	
+
 	} else if (precision == 0 ) { return((char_t)sprintf((char *)str, "%0.0f", (double) n));
 	} else if (precision == 1 ) { return((char_t)sprintf((char *)str, "%0.1f", (double) n));
 	} else if (precision == 2 ) { return((char_t)sprintf((char *)str, "%0.2f", (double) n));
@@ -243,17 +243,17 @@ char_t fntoa(char_t *str, float n, uint8_t precision)
 	} else					    { return((char_t)sprintf((char *)str, "%f", (double) n)); }
 }
 
-/* 
+/*
  * compute_checksum() - calculate the checksum for a string
- * 
+ *
  *	Stops calculation on null termination or length value if non-zero.
  *
- * 	This is based on the the Java hashCode function. 
+ * 	This is based on the the Java hashCode function.
  *	See http://en.wikipedia.org/wiki/Java_hashCode()
  */
 #define HASHMASK 9999
 
-uint16_t compute_checksum(char_t const *string, const uint16_t length) 
+uint16_t compute_checksum(char_t const *string, const uint16_t length)
 {
 	uint32_t h = 0;
 	uint16_t len = strlen(string);

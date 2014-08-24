@@ -24,13 +24,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* XIO devices are compatible with avr-gcc stdio, so formatted printing 
- * is supported. To use this sub-system outside of TinyG you may need 
+/* XIO devices are compatible with avr-gcc stdio, so formatted printing
+ * is supported. To use this sub-system outside of TinyG you may need
  * some defines in tinyg.h. See notes at end of this file for more details.
  */
 /* Note: anything that includes xio.h first needs the following:
  * 	#include <stdio.h>				// needed for FILE def'n
- *	#include <stdbool.h>			// needed for true and false 
+ *	#include <stdbool.h>			// needed for true and false
  *	#include <avr/pgmspace.h>		// defines prog_char, PSTR
  */
 /* Note: This file contains load of sub-includes near the middle
@@ -40,18 +40,18 @@
  *	#include "xio_signals.h"
  *	(possibly more)
  */
-/* 
+/*
  * CAVEAT EMPTOR: File under "watch your ass":
  *
- * 	  - Short story: Do not call ANYTHING that can print (i.e. send chars to the TX 
- *		buffer) from a medium or hi interrupt. This obviously includes any printf() 
- *		function, but also exception reports, cm_soft_alarm(), cm_hard_alarm() and a 
+ * 	  - Short story: Do not call ANYTHING that can print (i.e. send chars to the TX
+ *		buffer) from a medium or hi interrupt. This obviously includes any printf()
+ *		function, but also exception reports, cm_soft_alarm(), cm_hard_alarm() and a
  *		few other functions that call stdio print functions.
  *
- * 	  - Longer Story: The stdio printf() functions use character drivers provided by 
+ * 	  - Longer Story: The stdio printf() functions use character drivers provided by
  *		tinyg to access the low-level Xmega devices. Specifically xio_putc_usb() in xio_usb.c,
- *		and xio_putc_rs485() in xio_rs485.c. Since stdio does not understand non-blocking 
- *		IO these functions must block if there is no space in the TX buffer. Blocking is 
+ *		and xio_putc_rs485() in xio_rs485.c. Since stdio does not understand non-blocking
+ *		IO these functions must block if there is no space in the TX buffer. Blocking is
  *		accomplished using sleep_mode(). The IO system is the only place where sleep_mode()
  *		is used. Everything else in TinyG is non-blocking. Sleep is woken (exited) whenever
  *		any interrupt fires. So there must always be a viable interrupt source running when
@@ -91,6 +91,10 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
+// Fast accessors
+#define USB ds[XIO_DEV_USB]
+#define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
+
 /******************************************************************************
  * Device structures
  *
@@ -99,7 +103,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
  * field to back-reference the generic struct so getc & putc can get at it.
  * Lastly there's an 'x' struct which contains data specific to each dev type.
  *
- * The generic open() function sets up the generic struct and the FILE stream. 
+ * The generic open() function sets up the generic struct and the FILE stream.
  * the device opens() set up the extended struct and bind it ot the generic.
  ******************************************************************************/
 // NOTE" "FILE *" is another way of saying "struct __file *"
@@ -176,6 +180,7 @@ extern struct controllerSingleton tg;		// needed by init() for default source
 void xio_init(void);
 void xio_init_assertions(void);
 uint8_t xio_test_assertions(void);
+uint8_t xio_isbusy(void);
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);
@@ -188,11 +193,11 @@ int xio_set_baud(const uint8_t dev, const uint8_t baud_rate);
 // generic functions (private, but at virtual level)
 int xio_ctrl_generic(xioDev_t *d, const flags_t flags);
 
-void xio_open_generic(uint8_t dev, x_open_t x_open, 
-								   x_ctrl_t x_ctrl, 
-								   x_gets_t x_gets, 
-								   x_getc_t x_getc, 
-								   x_putc_t x_putc, 
+void xio_open_generic(uint8_t dev, x_open_t x_open,
+								   x_ctrl_t x_ctrl,
+								   x_gets_t x_gets,
+								   x_getc_t x_getc,
+								   x_putc_t x_putc,
 								   x_flow_t x_flow);
 
 void xio_fc_null(xioDev_t *d);			// NULL flow control callback
@@ -230,7 +235,7 @@ void xio_set_stderr(const uint8_t dev);
 #define XIO_NOLINEMODE	((uint16_t)1<<13)		// no special <CR><LF> read handling
 
 /*
- * Generic XIO signals and error conditions. 
+ * Generic XIO signals and error conditions.
  * See signals.h for application specific signal defs and routines.
  */
 
@@ -256,7 +261,7 @@ enum xioSignals {
 #define ETX (char)0x03		// ^c - ETX
 #define ENQ (char)0x05		// ^e - ENQuire
 #define BEL (char)0x07		// ^g - BEL
-#define BS  (char)0x08		// ^h - backspace 
+#define BS  (char)0x08		// ^h - backspace
 #define TAB (char)0x09		// ^i - character
 #define LF	(char)0x0A		// ^j - line feed
 #define VT	(char)0x0B		// ^k - kill stop
@@ -280,10 +285,10 @@ enum xioSignals {
 //#define CHAR_BOOTLOADER ESC
 
 /* XIO return codes
- * These codes are the "inner nest" for the STAT_ return codes. 
+ * These codes are the "inner nest" for the STAT_ return codes.
  * The first N TG codes correspond directly to these codes.
  * This eases using XIO by itself (without tinyg) and simplifes using
- * tinyg codes with no mapping when used together. This comes at the cost 
+ * tinyg codes with no mapping when used together. This comes at the cost
  * of making sure these lists are aligned. STAT_should be based on this list.
  */
 
@@ -291,12 +296,12 @@ enum xioCodes {
 	XIO_OK = 0,				// OK - ALWAYS ZERO
 	XIO_ERR,				// generic error return (errors start here)
 	XIO_EAGAIN,				// function would block here (must be called again)
-	XIO_NOOP,				// function had no-operation	
+	XIO_NOOP,				// function had no-operation
 	XIO_COMPLETE,			// operation complete
 	XIO_TERMINATE,			// operation terminated (gracefully)
 	XIO_RESET,				// operation reset (ungraceful)
 	XIO_EOL,				// function returned end-of-line
-	XIO_EOF,				// function returned end-of-file 
+	XIO_EOF,				// function returned end-of-file
 	XIO_FILE_NOT_OPEN,		// file is not open
 	XIO_FILE_SIZE_EXCEEDED, // maximum file size exceeded
 	XIO_NO_SUCH_DEVICE,		// illegal or unavailable device
@@ -313,7 +318,7 @@ enum xioCodes {
 
 
 
-/* ASCII characters used by Gcode or otherwise unavailable for special use. 
+/* ASCII characters used by Gcode or otherwise unavailable for special use.
     See NIST sections 3.3.2.2, 3.3.2.3 and Appendix E for Gcode uses.
     See http://www.json.org/ for JSON notation
 
@@ -337,12 +342,12 @@ enum xioCodes {
     0x0F    SI      ctrl-O
     0x10    DLE     ctrl-P
     0x11    DC1     ctrl-Q      XOFF
-    0x12    DC2     ctrl-R		
+    0x12    DC2     ctrl-R
     0x13    DC3     ctrl-S      XON
-    0x14    DC4     ctrl-T		
+    0x14    DC4     ctrl-T
     0x15    NAK     ctrl-U
     0x16    SYN     ctrl-V
-    0x17    ETB     ctrl-W    
+    0x17    ETB     ctrl-W
     0x18    CAN     ctrl-X      TinyG / grbl software reset
     0x19    EM      ctrl-Y
     0x1A    SUB     ctrl-Z
@@ -357,10 +362,10 @@ enum xioCodes {
     0x22    "       quote       JSON notation
     0x23    #       number      Gcode parameter prefix; JSON topic prefix character
     0x24    $       dollar      TinyG / grbl out-of-cycle settings prefix
-    0x25    &       ampersand   universal symbol for logical AND (not used here)    
+    0x25    &       ampersand   universal symbol for logical AND (not used here)
     0x26    %       percent		Queue Flush character (trapped and removed from serial stream)
 								Also sometimes used as a file-start and file-end character in Gcode files
-    0x27    '       single quote	
+    0x27    '       single quote
     0x28    (       open paren  Gcode comments
     0x29    )       close paren Gcode comments
     0x2A    *       asterisk    Gcode expressions; JSON wildcard character
@@ -383,12 +388,12 @@ enum xioCodes {
     0x5E    ^       caret       Reserved for TinyG in-cycle command prefix
     0x5F    _       underscore
 
-    0x60    `       grave accnt	
+    0x60    `       grave accnt
     0x7B    {       open curly  JSON notation
     0x7C    |       pipe        universal symbol for logical OR (not used here)
     0x7D    }       close curly JSON notation
     0x7E    ~       tilde       TinyG cycle start (trapped and removed from serial stream)
-    0x7F    DEL	
+    0x7F    DEL
 */
 
 #endif	// end of include guard: XIO_H_ONCE

@@ -922,8 +922,8 @@ static void _load_move()
 		mp_runtime_command(st_pre.bf);
 
 	// null
-	} else {
-		printf("prep_null encountered\n");
+//	} else {
+//		printf("prep_null encountered\n");
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
@@ -1041,7 +1041,6 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 void st_prep_null()
 {
 	st_pre.move_type = MOVE_TYPE_NULL;
-//	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// signal that prep buffer is empty
 }
 

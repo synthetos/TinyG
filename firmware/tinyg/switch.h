@@ -26,7 +26,7 @@
  */
 /* Switch processing functions under Motate
  *
- *	Switch processing turns pin transitions into reliable switch states. 
+ *	Switch processing turns pin transitions into reliable switch states.
  *	There are 2 main operations:
  *
  *	  - read pin		get raw data from a pin
@@ -41,12 +41,11 @@
 #define SWITCH_H_ONCE
 
 /*
- * Generic variables and settings 
+ * Common variables and settings
  */
-
-// macros for finding the index into the switch table give the axis number
-#define MIN_SWITCH(axis) (axis*2)
-#define MAX_SWITCH(axis) (axis*2+1)
+											// timer for debouncing switches
+#define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
+#define SW_DEGLITCH_TICKS 3					// 3=30ms
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -69,8 +68,12 @@ enum swState {
 };
 
 /*
- * AVR specific (old switch handling code)
+ * Defines for old switch handling code
  */
+// macros for finding the index into the switch table give the axis number
+#define MIN_SWITCH(axis) (axis*2)
+#define MAX_SWITCH(axis) (axis*2+1)
+
 enum swDebounce {							// state machine for managing debouncing and lockout
 	SW_IDLE = 0,
 	SW_DEGLITCHING,
@@ -90,6 +93,25 @@ enum swNums {	 			// indexes into switch arrays
 };
 #define SW_OFFSET SW_MAX_X	// offset between MIN and MAX switches
 #define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
+
+/*
+ * Defines for new switch handling code
+ */
+
+// switch array configuration / sizing
+#define SW_PAIRS				HOMING_AXES	// number of axes that can have switches
+#define SW_POSITIONS			2			// swPosition is either SW_MIN or SW)MAX
+
+enum swPosition {
+	SW_MIN = 0,
+	SW_MAX
+};
+
+enum swEdge {
+	SW_NO_EDGE = 0,
+	SW_LEADING,
+	SW_TRAILING,
+};
 
 /*
  * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
@@ -115,18 +137,42 @@ enum swNums {	 			// indexes into switch arrays
 // Note 1: The term "thrown" is used because switches could be normally-open
 //		   or normally-closed. "Thrown" means activated or hit.
  */
-struct swStruct {							// switch state
-	uint8_t switch_type;					// 0=NO, 1=NC - applies to all switches
-	uint8_t limit_flag;						// 1=limit switch thrown - do a lockout
-	uint8_t sw_num_thrown;					// number of switch that was just thrown
-	uint8_t state[NUM_SWITCHES];			// 0=OPEN, 1=CLOSED (depends on switch type)
-	volatile uint8_t mode[NUM_SWITCHES];	// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-	volatile uint8_t debounce[NUM_SWITCHES];// switch debouncer state machine - see swDebounce
-	volatile int8_t count[NUM_SWITCHES];	// deglitching and lockout counter
+struct swStruct {								// switch state
+	uint8_t switch_type;						// 0=NO, 1=NC - applies to all switches
+	uint8_t limit_flag;							// 1=limit switch thrown - do a lockout
+	uint8_t sw_num_thrown;						// number of switch that was just thrown
+	uint8_t state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
+	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
+	volatile uint8_t debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
+	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
 };
 struct swStruct sw;
 
-/*
+//*** Structures from new-style switch code --- NOT YET FOLDED IN ***//
+
+typedef struct swSwitch {						// one struct per switch
+	// public
+	uint8_t type;								// swType: 0=NO, 1=NC
+	uint8_t mode;								// 0=disabled, 1=homing, 2=limit, 3=homing+limit
+	uint8_t state;								// set true if switch is closed
+
+	// private
+	uint8_t edge;								// keeps a transient record of edges for immediate inquiry
+	uint16_t debounce_ticks;					// number of millisecond ticks for debounce lockout
+	uint32_t debounce_timeout;					// time to expire current debounce lockout, or 0 if no lockout
+	void (*when_open)(struct swSwitch *s);		// callback to action function when sw is open - passes *s, returns void
+	void (*when_closed)(struct swSwitch *s);	// callback to action function when closed
+	void (*on_leading)(struct swSwitch *s);		// callback to action function for leading edge onset
+	void (*on_trailing)(struct swSwitch *s);	// callback to action function for trailing edge
+} switch_t;
+typedef void (*sw_callback)(switch_t *s);		// typedef for switch action callback
+
+typedef struct swSwitchArray {					// array of switches
+	uint8_t type;								// switch type for entire array (default)
+	switch_t s[SW_PAIRS][SW_POSITIONS];
+} switches_t;
+
+/****************************************************************************************
  * Function prototypes
  */
 void switch_init(void);
