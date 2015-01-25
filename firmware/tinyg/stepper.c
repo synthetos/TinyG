@@ -334,6 +334,19 @@ stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
  * st_motor_power_callback() - callback to manage motor power sequencing
  */
 
+uint8_t st_get_motor_enable_state(uint8_t motor)
+{
+	uint8_t port;
+	switch(motor) {
+		case (MOTOR_1): { port = PORT_MOTOR_1_VPORT.OUT; break; }
+		case (MOTOR_2): { port = PORT_MOTOR_2_VPORT.OUT; break; }
+		case (MOTOR_3): { port = PORT_MOTOR_3_VPORT.OUT; break; }
+		case (MOTOR_4): { port = PORT_MOTOR_4_VPORT.OUT; break; }
+		default: port = 0xff;	// defaults to disabled for bad motor input value
+	}
+	return ((port & MOTOR_ENABLE_BIT_bm) ? 0 : 1);	// returns 1 if motor is enabled (motor is actually active low)
+}
+
 static void _deenergize_motor(const uint8_t motor)
 {
 #ifdef __AVR
@@ -465,36 +478,10 @@ stat_t st_motor_power_callback() 	// called by controller
 				_deenergize_motor(motor);
 			}
 		}
-/*
-		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
-			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
-				st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
-				st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			}
-			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
-					st_run.mot[motor].power_state = MOTOR_IDLE;
-					_deenergize_motor(motor);
-				}
-			}
-		}
-
-		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
-			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
-				st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(MOTOR_TIMEOUT_WHEN_MOVING * 1000);
-				st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			}
-			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-				if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
-					st_run.mot[motor].power_state = MOTOR_IDLE;
-					_deenergize_motor(motor);
-				}
-			}
-		}
-*/
 	}
 	return (STAT_OK);
 }
+
 
 /******************************
  * Interrupt Service Routines *

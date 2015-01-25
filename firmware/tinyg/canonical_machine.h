@@ -2,7 +2,7 @@
  * canonical_machine.h - rs274/ngc canonical machining functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
  * This code is a loose implementation of Kramer, Proctor and Messina's
  * canonical machining functions as described in the NIST RS274/NGC v3
@@ -680,6 +680,7 @@ stat_t cm_get_feed(nvObj_t *nv);
 stat_t cm_get_pos(nvObj_t *nv);			// get runtime work position...
 stat_t cm_get_mpo(nvObj_t *nv);			// get runtime machine position...
 stat_t cm_get_ofs(nvObj_t *nv);			// get runtime work offset...
+stat_t cm_get_pwr(nvObj_t *nv);			// get motor power enable state
 
 stat_t cm_run_qf(nvObj_t *nv);			// run queue flush
 stat_t cm_run_home(nvObj_t *nv);		// start homing cycle
@@ -726,8 +727,9 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 
 	void cm_print_lin(nvObj_t *nv);		// generic print for linear values
 	void cm_print_pos(nvObj_t *nv);		// print runtime work position in prevailing units
-	void cm_print_mpo(nvObj_t *nv);		// print runtime work position always in MM uints
-	void cm_print_ofs(nvObj_t *nv);		// print runtime work offset always in MM uints
+	void cm_print_mpo(nvObj_t *nv);		// print runtime work position always in MM units
+	void cm_print_ofs(nvObj_t *nv);		// print runtime work offset always in MM units
+	void cm_print_pwr(nvObj_t *nv);		// print motor power state
 
 	void cm_print_ja(nvObj_t *nv);		// global CM settings
 	void cm_print_ct(nvObj_t *nv);
@@ -785,6 +787,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	#define cm_print_pos tx_print_stub		// print runtime work position in prevailing units
 	#define cm_print_mpo tx_print_stub		// print runtime work position always in MM uints
 	#define cm_print_ofs tx_print_stub		// print runtime work offset always in MM uints
+	#define cm_print_pwr tx_print_stub		// print motor power state
 
 	#define cm_print_ja tx_print_stub		// global CM settings
 	#define cm_print_ct tx_print_stub

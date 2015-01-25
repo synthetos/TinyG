@@ -2,8 +2,8 @@
  * canonical_machine.c - rs274/ngc canonical machine.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S Hart, Jr.
- * Copyright (c) 2014 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S Hart, Jr.
+ * Copyright (c) 2014 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -127,6 +127,7 @@ static void _exec_program_finalize(float *value, float *flag);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
+static int8_t _get_motor(const index_t index);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -1501,6 +1502,7 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
  * cm_get_axis_char() - return ASCII char for axis given the axis number
  * _get_axis()		  - return axis number or -1 if NA
  * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
+ * _get_motor()		  - return motor number or -1 if NA
  */
 
 char_t cm_get_axis_char(const int8_t axis)
@@ -1533,6 +1535,18 @@ static int8_t _get_axis_type(const index_t index)
 	return (0);
 }
 
+static int8_t _get_motor(const index_t index)
+{
+	char_t *ptr;
+	char_t tmp[TOKEN_LEN+1];
+	char_t motors[] = {"123456"};
+
+	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for a motor by number
+	if ((ptr = strchr(motors, tmp[3])) == NULL) {		// character in the #3 array position
+		return (-1);
+	}
+	return (ptr - motors);
+}
 
 /**** Functions called directly from cfgArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values
@@ -1652,6 +1666,13 @@ stat_t cm_get_ofs(nvObj_t *nv)
 	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
+stat_t cm_get_pwr(nvObj_t *nv)
+{
+	nv->value = st_get_motor_enable_state(_get_motor(nv->index));
+	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1930,6 +1951,7 @@ const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%s\n";
 const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%s\n";
 const char fmt_cofs[] PROGMEM = "[%s%s] %s %s offset%20.3f%s\n";
 const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
+const char fmt_pwr[] PROGMEM = "Motor %c power state:%2.0f\n";
 
 static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
@@ -1966,6 +1988,13 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
+static void _print_motor(nvObj_t *nv, const char *format)
+{
+	char motors[] = {"123456"};
+	uint8_t motor = _get_motor(nv->index);
+	fprintf_P(stderr, format, motors[motor], nv->value);
+}
+
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
 	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
@@ -1993,6 +2022,8 @@ void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cpos);}
 void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
+
+void cm_print_pwr(nvObj_t *nv) { _print_motor(nv, fmt_pwr);}
 
 #endif // __TEXT_MODE
 /*

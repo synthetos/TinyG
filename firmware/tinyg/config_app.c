@@ -2,7 +2,7 @@
  * config_app.c - application-specific part of configuration data
  * This file is part of the TinyG2 project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -171,6 +171,13 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jog","joga",_f0, 0, tx_print_nul, get_nul, cm_run_joga, (float *)&cm.jogging_dest, 0},
 //	{ "jog","jogb",_f0, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
 //	{ "jog","jogc",_f0, 0, tx_print_nul, get_nul, cm_run_jogc, (float *)&cm.jogging_dest, 0},
+
+	{ "pwr","pwr1",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},	// motor power enable readouts
+	{ "pwr","pwr2",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
+	{ "pwr","pwr3",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
+	{ "pwr","pwr4",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
+//	{ "pwr","pwr5",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
+//	{ "pwr","pwr6",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
@@ -472,7 +479,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,   set_baud,   (float *)&cfg.usb_baud_rate,		XIO_BAUD_115200 },
 	{ "sys","net", _fipn, 0, cfg_print_net, get_ui8,   set_ui8,    (float *)&cs.network_mode,		NETWORK_MODE },
 
-	// switch state readers
+	// switch state readouts
 /*
 	{ "ss","ss0",  _f0, 0, print_ss, get_ui8, set_nul, (float *)&sw.state[0], 0 },
 	{ "ss","ss1",  _f0, 0, print_ss, get_ui8, set_nul, (float *)&sw.state[1], 0 },
@@ -659,6 +666,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","ofs",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// work offset group
 	{ "","hom",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis homing state group
 	{ "","prb",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// probing state group
+	{ "","pwr",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// motor power enagled group
 	{ "","jog",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_f0, 0, tx_print_nul, get_grp, set_grp,(float *)&cs.null,0 },	// job ID group
 
@@ -689,7 +697,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 /***** Make sure these defines line up with any changes in the above table *****/
 
 #define NV_COUNT_UBER_GROUPS 	4 		// count of uber-groups, above
-#define STANDARD_GROUPS 		32		// count of standard groups, excluding diagnostic parameter groups
+#define STANDARD_GROUPS 		33		// count of standard groups, excluding diagnostic parameter groups
 
 #if (MOTORS >= 5)
 #define MOTOR_GROUP_5			1
