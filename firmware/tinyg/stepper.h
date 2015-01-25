@@ -2,8 +2,8 @@
  * stepper.h - stepper motor interface
  * This file is part of TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -288,7 +288,7 @@ enum cmMotorPowerMode {
  *	while still using integer math (as opposed to floating point). Improving the accuracy of the DDA
  *	results in more precise pulse timing and therefore less pulse jitter and smoother motor operation.
  *
- *	The DDA accumulator is an int32_t, so the accumulator has the number range of about 2.1 billion. 
+ *	The DDA accumulator is an int32_t, so the accumulator has the number range of about 2.1 billion.
  *	The DDA_SUBSTEPS is used to multiply the step count for a segment to maximally use this number range.
  *	DDA_SUBSTEPS can be computed for a given DDA clock rate and segment time not to exceed the available
  *	number range. Variables are:
@@ -306,10 +306,10 @@ enum cmMotorPowerMode {
 
 /* Step correction settings
  *	Step correction settings determine how the encoder error is fed back to correct position errors.
- *	Since the following_error is running 2 segments behind the current segment you have to be careful 
+ *	Since the following_error is running 2 segments behind the current segment you have to be careful
  *	not to overcompensate. The threshold determines if a correction should be applied, and the factor
- *	is how much. The holdoff is how many segments to wait before applying another correction. If threshold 
- *	is too small and/or amount too large and/or holdoff is too small you may get a runaway correction 
+ *	is how much. The holdoff is how many segments to wait before applying another correction. If threshold
+ *	is too small and/or amount too large and/or holdoff is too small you may get a runaway correction
  *	and error will grow instead of shrink (or oscillate).
  */
 #define STEP_CORRECTION_THRESHOLD	(float)2.00		// magnitude of forwarding error to apply correction (in steps)
@@ -329,9 +329,9 @@ enum cmMotorPowerMode {
  *	  stConfig (st_cfg)					  stepper.c		  write=bkgd, read=ISRs
  *	  stPrepSingleton (st_pre)			  stepper.c		  MED ISR
  *	  stRunSingleton (st_run)			  stepper.c		  HI ISR
- *  
+ *
  *	Care has been taken to isolate actions on these structures to the execution level
- *	in which they run and to use the minimum number of volatiles in these structures. 
+ *	in which they run and to use the minimum number of volatiles in these structures.
  *	This allows the compiler to optimize the stepper inner-loops better.
  */
 

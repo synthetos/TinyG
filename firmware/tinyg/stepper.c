@@ -2,8 +2,8 @@
  * stepper.c - stepper motor controls
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -435,6 +435,37 @@ stat_t st_motor_power_callback() 	// called by controller
 	// manage power for each motor individually
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 
+		// de-energize motor if disabled
+		if (st_cfg.mot[motor].power_mode == MOTOR_DISABLED) {
+			_deenergize_motor(motor);
+			continue;
+		}
+
+		// energize motor if it's always enabled
+		if (st_cfg.mot[motor].power_mode == MOTOR_ALWAYS_POWERED) {
+			_energize_motor(motor);
+			continue;
+		}
+
+		uint32_t time_value = (uint32_t)(MOTOR_TIMEOUT_WHEN_MOVING * 1000);
+		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
+			time_value = (uint32_t)(st_cfg.motor_power_timeout * 1000);
+		}
+
+		// start a countdown if MOTOR_POWERED_IN_CYCLE || MOTOR_POWERED_ONLY_WHEN_MOVING
+		if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
+			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
+			st_run.mot[motor].power_systick = SysTickTimer_getValue() + time_value;
+		}
+
+		// run the countdown if you are in a countdown
+		if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
+			if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
+				st_run.mot[motor].power_state = MOTOR_IDLE;
+				_deenergize_motor(motor);
+			}
+		}
+/*
 		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
 			if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
 				st_run.mot[motor].power_systick = SysTickTimer_getValue() + (uint32_t)(st_cfg.motor_power_timeout * 1000);
@@ -460,6 +491,7 @@ stat_t st_motor_power_callback() 	// called by controller
 				}
 			}
 		}
+*/
 	}
 	return (STAT_OK);
 }
@@ -734,7 +766,7 @@ static void _load_move()
 //		}
 		return;
 	}
-	// handle aline loads first (most common case)  NB: there are no more lines, only alines
+	// handle aline loads first (most common case)
 	if (st_pre.move_type == MOVE_TYPE_ALINE) {
 
 		//**** setup the new segment ****
@@ -771,11 +803,15 @@ static void _load_move()
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
+			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 			// Enable the stepper and start motor power management
-			PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
-			st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;// set power management state
-			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
+			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_DISABLED) {
+				PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;				// deenergize motor
+			} else {
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
+				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;// set power management state
+			}
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
@@ -799,9 +835,13 @@ static void _load_move()
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
+			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_DISABLED) {
+				PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+			} else {
+				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
+			}
 		} else {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -823,9 +863,13 @@ static void _load_move()
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
+			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_DISABLED) {
+				PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+			} else {
+				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
+			}
 		} else {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
@@ -847,9 +891,13 @@ static void _load_move()
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
-			PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
+			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_DISABLED) {
+				PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
+			} else {
+				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
+			}
 		} else {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;

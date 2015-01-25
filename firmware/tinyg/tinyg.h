@@ -2,7 +2,7 @@
  * tinyg.h - tinyg main header
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.01	// fix feed rate display in inches mode
+#define TINYG_FIRMWARE_BUILD   		438.04	// power management changes
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
