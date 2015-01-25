@@ -1622,6 +1622,15 @@ stat_t cm_get_vel(nvObj_t *nv)
 	return (STAT_OK);
 }
 
+stat_t cm_get_feed(nvObj_t *nv)
+{
+	nv->value = cm_get_feed_rate(ACTIVE_MODEL);
+	if (cm_get_units_mode(ACTIVE_MODEL) == INCHES) nv->value *= INCHES_PER_MM;
+	nv->precision = GET_TABLE_WORD(precision);
+	nv->valuetype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
 stat_t cm_get_pos(nvObj_t *nv)
 {
 	nv->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
