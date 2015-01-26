@@ -172,12 +172,16 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "jog","jogb",_f0, 0, tx_print_nul, get_nul, cm_run_jogb, (float *)&cm.jogging_dest, 0},
 //	{ "jog","jogc",_f0, 0, tx_print_nul, get_nul, cm_run_jogc, (float *)&cm.jogging_dest, 0},
 
-	{ "pwr","pwr1",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},	// motor power enable readouts
-	{ "pwr","pwr2",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
-	{ "pwr","pwr3",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
-	{ "pwr","pwr4",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
-//	{ "pwr","pwr5",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
-//	{ "pwr","pwr6",_f0, 0, cm_print_pwr, cm_get_pwr, set_nul, (float *)&cs.null, 0},
+	{ "pwr","pwr1",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},	// motor power enable readouts
+	{ "pwr","pwr2",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
+	{ "pwr","pwr3",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
+	{ "pwr","pwr4",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
+#if (MOTORS >= 5)
+	{ "pwr","pwr5",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
+#endif
+#if (MOTORS >= 6)
+	{ "pwr","pwr6",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
+#endif
 
 	// Reports, tests, help, and messages
 	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object

@@ -1534,7 +1534,7 @@ static int8_t _get_axis_type(const index_t index)
 	if (axis == -1) return (-1);
 	return (0);
 }
-
+/*
 static int8_t _get_motor(const index_t index)
 {
 	char_t *ptr;
@@ -1547,6 +1547,7 @@ static int8_t _get_motor(const index_t index)
 	}
 	return (ptr - motors);
 }
+*/
 
 /**** Functions called directly from cfgArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values
@@ -1666,13 +1667,6 @@ stat_t cm_get_ofs(nvObj_t *nv)
 	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
-	return (STAT_OK);
-}
-
-stat_t cm_get_pwr(nvObj_t *nv)
-{
-	nv->value = st_get_motor_enable_state(_get_motor(nv->index));
-	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
@@ -1934,24 +1928,23 @@ void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIV
  * 	cm_print_mpo() - print position with fixed unit display - always in Degrees or MM
  */
 
-const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %s\n";
-const char fmt_Xfr[] PROGMEM = "[%s%s] %s feedrate maximum%11.0f%s/min\n";
-const char fmt_Xvm[] PROGMEM = "[%s%s] %s velocity maximum%11.0f%s/min\n";
-const char fmt_Xtm[] PROGMEM = "[%s%s] %s travel maximum%17.3f%s\n";
-const char fmt_Xtn[] PROGMEM = "[%s%s] %s travel minimum%17.3f%s\n";
-const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 million\n";
-const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
-const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
-const char fmt_Xra[] PROGMEM = "[%s%s] %s radius value%20.4f%s\n";
-const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%12.0f%s/min\n";
-const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%13.0f%s/min\n";
-const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%s\n";
-const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%s\n";
-const char fmt_cofs[] PROGMEM = "[%s%s] %s %s offset%20.3f%s\n";
-const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
-const char fmt_pwr[] PROGMEM = "Motor %c power state:%2.0f\n";
+static const char fmt_Xam[] PROGMEM = "[%s%s] %s axis mode%18d %s\n";
+static const char fmt_Xfr[] PROGMEM = "[%s%s] %s feedrate maximum%11.0f%s/min\n";
+static const char fmt_Xvm[] PROGMEM = "[%s%s] %s velocity maximum%11.0f%s/min\n";
+static const char fmt_Xtm[] PROGMEM = "[%s%s] %s travel maximum%17.3f%s\n";
+static const char fmt_Xtn[] PROGMEM = "[%s%s] %s travel minimum%17.3f%s\n";
+static const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 million\n";
+static const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
+static const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
+static const char fmt_Xra[] PROGMEM = "[%s%s] %s radius value%20.4f%s\n";
+static const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+static const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+static const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%12.0f%s/min\n";
+static const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%13.0f%s/min\n";
+static const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%s\n";
+static const char fmt_Xzb[] PROGMEM = "[%s%s] %s zero backoff%19.3f%s\n";
+static const char fmt_cofs[] PROGMEM = "[%s%s] %s %s offset%20.3f%s\n";
+static const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 
 static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
@@ -1988,13 +1981,6 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
-static void _print_motor(nvObj_t *nv, const char *format)
-{
-	char motors[] = {"123456"};
-	uint8_t motor = _get_motor(nv->index);
-	fprintf_P(stderr, format, motors[motor], nv->value);
-}
-
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
 	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
@@ -2022,8 +2008,6 @@ void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cpos);}
 void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
-
-void cm_print_pwr(nvObj_t *nv) { _print_motor(nv, fmt_pwr);}
 
 #endif // __TEXT_MODE
 /*

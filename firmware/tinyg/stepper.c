@@ -344,6 +344,8 @@ uint8_t st_get_motor_enable_state(uint8_t motor)
 		case (MOTOR_4): { port = PORT_MOTOR_4_VPORT.OUT; break; }
 		default: port = 0xff;	// defaults to disabled for bad motor input value
 	}
+	printf("%d : %d\n", port, (port & MOTOR_ENABLE_BIT_bm));
+
 	return ((port & MOTOR_ENABLE_BIT_bm) ? 0 : 1);	// returns 1 if motor is enabled (motor is actually active low)
 }
 
@@ -1154,6 +1156,7 @@ static int8_t _get_motor(const index_t index)
 	char_t motors[] = {"123456"};
 	char_t tmp[TOKEN_LEN+1];
 
+	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for a motor by number
 	strcpy_P(tmp, cfgArray[index].group);
 	if ((ptr = strchr(motors, tmp[0])) == NULL) {
 		return (-1);
@@ -1244,6 +1247,17 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 	return(STAT_OK);
 }
 
+/*
+ * st_get_pwr()	- get motor enable power state
+ */
+stat_t st_get_pwr(nvObj_t *nv)
+{
+	nv->value = st_get_motor_enable_state(_get_motor(nv->index));
+//	printf("%s %s : %f\n", nv->group, nv->token, nv->value);
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
 /* GLOBAL FUNCTIONS (SYSTEM LEVEL)
  *
  * st_set_mt() - set motor timeout in seconds
@@ -1304,6 +1318,7 @@ static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=disabled,1=always on,2=in cycle,3=when moving]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
+static const char fmt_pwr[] PROGMEM = "Motor %c power enabled state:%2.0f\n";
 
 void st_print_mt(nvObj_t *nv) { text_print_flt(nv, fmt_mt);}
 void st_print_me(nvObj_t *nv) { text_print_nul(nv, fmt_me);}
@@ -1324,6 +1339,15 @@ static void _print_motor_flt(nvObj_t *nv, const char *format)
 	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
 }
 
+static void _print_motor_pwr(nvObj_t *nv, const char *format)
+{
+//	char motors[] = {"123456"};
+//	fprintf_P(stderr, format, motors[motor], nv->value);
+//	int8_t motor = _get_motor(nv->index);
+//	fprintf_P(stderr, format, motor, nv->value);
+	fprintf_P(stderr, format, nv->token[0], nv->value);
+}
+
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
 void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
 void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
@@ -1331,5 +1355,6 @@ void st_print_mi(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0mi);}
 void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
 void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}
 void st_print_pl(nvObj_t *nv) { _print_motor_flt(nv, fmt_0pl);}
+void st_print_pwr(nvObj_t *nv){ _print_motor_pwr(nv, fmt_pwr);}
 
 #endif // __TEXT_MODE
