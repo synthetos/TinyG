@@ -334,7 +334,7 @@ stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
  * st_motor_power_callback() - callback to manage motor power sequencing
  */
 
-uint8_t st_get_motor_enable_state(uint8_t motor)
+static uint8_t _motor_is_enabled(uint8_t motor)
 {
 	uint8_t port;
 	switch(motor) {
@@ -344,8 +344,6 @@ uint8_t st_get_motor_enable_state(uint8_t motor)
 		case (MOTOR_4): { port = PORT_MOTOR_4_VPORT.OUT; break; }
 		default: port = 0xff;	// defaults to disabled for bad motor input value
 	}
-	printf("%d : %d\n", port, (port & MOTOR_ENABLE_BIT_bm));
-
 	return ((port & MOTOR_ENABLE_BIT_bm) ? 0 : 1);	// returns 1 if motor is enabled (motor is actually active low)
 }
 
@@ -458,7 +456,7 @@ stat_t st_motor_power_callback() 	// called by controller
 
 		// energize motor if it's always enabled
 		if (st_cfg.mot[motor].power_mode == MOTOR_ALWAYS_POWERED) {
-			_energize_motor(motor);
+			if (! _motor_is_enabled(motor)) _energize_motor(motor);
 			continue;
 		}
 
@@ -958,9 +956,7 @@ static void _load_move()
 	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
 
-	// null
-//	} else {
-//		printf("prep_null encountered\n");
+	// else it's null - do nothing
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
@@ -1252,8 +1248,8 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
  */
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	nv->value = st_get_motor_enable_state(_get_motor(nv->index));
-//	printf("%s %s : %f\n", nv->group, nv->token, nv->value);
+	// translate ASCII motor number to integer, zero based
+	nv->value = _motor_is_enabled(nv->token[0] - 0x31);	
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1341,10 +1337,6 @@ static void _print_motor_flt(nvObj_t *nv, const char *format)
 
 static void _print_motor_pwr(nvObj_t *nv, const char *format)
 {
-//	char motors[] = {"123456"};
-//	fprintf_P(stderr, format, motors[motor], nv->value);
-//	int8_t motor = _get_motor(nv->index);
-//	fprintf_P(stderr, format, motor, nv->value);
 	fprintf_P(stderr, format, nv->token[0], nv->value);
 }
 
