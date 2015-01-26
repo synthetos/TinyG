@@ -789,17 +789,14 @@ static void _load_move()
 			SET_ENCODER_STEP_SIGN(MOTOR_1, st_pre.mot[MOTOR_1].step_sign);
 
 			// Enable the stepper and start motor power management
-			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_DISABLED) {
-				PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;				// deenergize motor
-			} else {
+			if (st_cfg.mot[MOTOR_1].power_mode != MOTOR_DISABLED) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;// set power management state
 			}
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
-//			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_IN_CYCLE) {
-				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
@@ -820,14 +817,11 @@ static void _load_move()
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			SET_ENCODER_STEP_SIGN(MOTOR_2, st_pre.mot[MOTOR_2].step_sign);
-			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_DISABLED) {
-				PORT_MOTOR_2_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-			} else {
+			if (st_cfg.mot[MOTOR_2].power_mode != MOTOR_DISABLED) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-//			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
@@ -849,14 +843,11 @@ static void _load_move()
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			SET_ENCODER_STEP_SIGN(MOTOR_3, st_pre.mot[MOTOR_3].step_sign);
-			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_DISABLED) {
-				PORT_MOTOR_3_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-			} else {
+			if (st_cfg.mot[MOTOR_3].power_mode != MOTOR_DISABLED) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-//			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
@@ -878,68 +869,17 @@ static void _load_move()
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
 			}
 			SET_ENCODER_STEP_SIGN(MOTOR_4, st_pre.mot[MOTOR_4].step_sign);
-			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_DISABLED) {
-				PORT_MOTOR_4_VPORT.OUT |= MOTOR_ENABLE_BIT_bm;
-			} else {
+			if (st_cfg.mot[MOTOR_4].power_mode != MOTOR_DISABLED) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-//			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
 			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
 		ACCUMULATE_ENCODER(MOTOR_4);
-#endif
-#if (MOTORS >= 5)	//**** MOTOR_5 LOAD ****
-		if ((st_run.mot[MOTOR_5].substep_increment = st_pre.mot[MOTOR_5].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_5].accumulator_correction_flag == true) {
-				st_pre.mot[MOTOR_5].accumulator_correction_flag = false;
-				st_run.mot[MOTOR_5].substep_accumulator *= st_pre.mot[MOTOR_5].accumulator_correction;
-			}
-			if (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction) {
-				st_pre.mot[MOTOR_5].prev_direction = st_pre.mot[MOTOR_5].direction;
-				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
-				if (st_pre.mot[MOTOR_5].direction == DIRECTION_CW)
-				PORT_MOTOR_5_VPORT.OUT &= ~DIRECTION_BIT_bm; else
-				PORT_MOTOR_5_VPORT.OUT |= DIRECTION_BIT_bm;
-			}
-			PORT_MOTOR_5_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
-			SET_ENCODER_STEP_SIGN(MOTOR_5, st_pre.mot[MOTOR_5].step_sign);
-		} else {
-			if (st_cfg.mot[MOTOR_5].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
-				PORT_MOTOR_5_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
-			}
-		}
-		ACCUMULATE_ENCODER(MOTOR_5);
-#endif
-#if (MOTORS >= 6)	//**** MOTOR_6 LOAD ****
-		if ((st_run.mot[MOTOR_6].substep_increment = st_pre.mot[MOTOR_6].substep_increment) != 0) {
-			if (st_pre.mot[MOTOR_6].accumulator_correction_flag == true) {
-				st_pre.mot[MOTOR_6].accumulator_correction_flag = false;
-				st_run.mot[MOTOR_6].substep_accumulator *= st_pre.mot[MOTOR_6].accumulator_correction;
-			}
-			if (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction) {
-				st_pre.mot[MOTOR_6].prev_direction = st_pre.mot[MOTOR_6].direction;
-				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
-				if (st_pre.mot[MOTOR_6].direction == DIRECTION_CW)
-				PORT_MOTOR_6_VPORT.OUT &= ~DIRECTION_BIT_bm; else
-				PORT_MOTOR_6_VPORT.OUT |= DIRECTION_BIT_bm;
-			}
-			PORT_MOTOR_6_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-			st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
-			SET_ENCODER_STEP_SIGN(MOTOR_6, st_pre.mot[MOTOR_6].step_sign);
-		} else {
-			if (st_cfg.mot[MOTOR_6].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
-				PORT_MOTOR_6_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
-				st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
-			}
-		}
-		ACCUMULATE_ENCODER(MOTOR_6);
 #endif
 		//**** do this last ****
 
