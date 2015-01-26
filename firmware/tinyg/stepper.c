@@ -446,36 +446,32 @@ void st_deenergize_motors()
 stat_t st_motor_power_callback() 	// called by controller
 {
 	// manage power for each motor individually
-	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
+	for (uint8_t m = MOTOR_1; m < MOTORS; m++) {
 
-		// de-energize motor if disabled
-		if (st_cfg.mot[motor].power_mode == MOTOR_DISABLED) {
-			_deenergize_motor(motor);
+		// de-energize motor if it's set to MOTOR_DISABLED
+		if (st_cfg.mot[m].power_mode == MOTOR_DISABLED) {
+			_deenergize_motor(m);
 			continue;
 		}
 
-		// energize motor if it's always enabled
-		if (st_cfg.mot[motor].power_mode == MOTOR_ALWAYS_POWERED) {
-			if (! _motor_is_enabled(motor)) _energize_motor(motor);
+		// energize motor if it's set to MOTOR_ALWAYS_POWERED 
+		if (st_cfg.mot[m].power_mode == MOTOR_ALWAYS_POWERED) {
+			if (! _motor_is_enabled(m)) _energize_motor(m);
 			continue;
 		}
 
-		uint32_t time_value = (uint32_t)(MOTOR_TIMEOUT_WHEN_MOVING * 1000);
-		if (st_cfg.mot[motor].power_mode == MOTOR_POWERED_IN_CYCLE) {
-			time_value = (uint32_t)(st_cfg.motor_power_timeout * 1000);
-		}
-
-		// start a countdown if MOTOR_POWERED_IN_CYCLE || MOTOR_POWERED_ONLY_WHEN_MOVING
-		if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_START) {
-			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			st_run.mot[motor].power_systick = SysTickTimer_getValue() + time_value;
+		// start a countdown if MOTOR_POWERED_IN_CYCLE or MOTOR_POWERED_ONLY_WHEN_MOVING
+		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
+			st_run.mot[m].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
+			st_run.mot[m].power_systick = SysTickTimer_getValue() + 
+											(st_cfg.motor_power_timeout * 1000);
 		}
 
 		// run the countdown if you are in a countdown
-		if (st_run.mot[motor].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-			if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
-				st_run.mot[motor].power_state = MOTOR_IDLE;
-				_deenergize_motor(motor);
+		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
+			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {
+				st_run.mot[m].power_state = MOTOR_IDLE;
+				_deenergize_motor(m);
 			}
 		}
 	}
@@ -801,7 +797,8 @@ static void _load_move()
 			}
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
-			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+//			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -830,7 +827,8 @@ static void _load_move()
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+//			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -858,7 +856,8 @@ static void _load_move()
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+//			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -886,7 +885,8 @@ static void _load_move()
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+//			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -1143,23 +1143,16 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
  ***********************************************************************************/
 
 /* HELPERS
- * _get_motor() - helper to return motor number as an index or -1 if na
+ * _get_motor() - helper to return motor number as an index
  */
 
-static int8_t _get_motor(const index_t index)
+#define _get_motor(a) (a->token[0] - 0x31)
+/*
+static int8_t _get_motor(const nvObj_t *nv)
 {
-	char_t *ptr;
-	char_t motors[] = {"123456"};
-	char_t tmp[TOKEN_LEN+1];
-
-	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for a motor by number
-	strcpy_P(tmp, cfgArray[index].group);
-	if ((ptr = strchr(motors, tmp[0])) == NULL) {
-		return (-1);
-	}
-	return (ptr - motors);
+	return (nv->token[0] - 0x31);
 }
-
+*/
 /*
  * _set_motor_steps_per_unit() - what it says
  * This function will need to be rethought if microstep morphing is implemented
@@ -1167,7 +1160,7 @@ static int8_t _get_motor(const index_t index)
 
 static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
-	uint8_t m = _get_motor(nv->index);
+	uint8_t m = _get_motor(nv);
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
 	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
 }
@@ -1201,7 +1194,7 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 	}
 	set_ui8(nv);						// set it anyway, even if it's unsupported
 	_set_motor_steps_per_unit(nv);
-	_set_hw_microsteps(_get_motor(nv->index), (uint8_t)nv->value);
+	_set_hw_microsteps(_get_motor(nv), (uint8_t)nv->value);
 	return (STAT_OK);
 }
 
@@ -1209,13 +1202,8 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
 	if (nv->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
 	set_ui8(nv);
-
-	if (fp_ZERO(nv->value)) {			// people asked this setting take effect immediately, hence:
-		_energize_motor(_get_motor(nv->index));
-	} else {
-		_deenergize_motor(_get_motor(nv->index));
-	}
 	return (STAT_OK);
+	// NOTE: The motor power callback makes these setting take effect immediately
 }
 
 /*
@@ -1235,10 +1223,10 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 	}
 	set_flt(nv);	// set power_setting value in the motor config struct (st)
 
-	uint8_t motor = _get_motor(nv->index);
-	st_cfg.mot[motor].power_level_scaled = (nv->value * POWER_LEVEL_SCALE_FACTOR);
-	st_run.mot[motor].power_level_dynamic = (st_cfg.mot[motor].power_level_scaled);
-	_set_motor_power_level(motor, st_cfg.mot[motor].power_level_scaled);
+	uint8_t m = _get_motor(nv);
+	st_cfg.mot[m].power_level_scaled = (nv->value * POWER_LEVEL_SCALE_FACTOR);
+	st_run.mot[m].power_level_dynamic = (st_cfg.mot[m].power_level_scaled);
+	_set_motor_power_level(m, st_cfg.mot[m].power_level_scaled);
 #endif
 	return(STAT_OK);
 }
@@ -1248,8 +1236,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
  */
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	// translate ASCII motor number to integer, zero based
-	nv->value = _motor_is_enabled(nv->token[0] - 0x31);	
+	nv->value = _motor_is_enabled(_get_motor(nv));	
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }

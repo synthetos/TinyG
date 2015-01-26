@@ -127,7 +127,6 @@ static void _exec_program_finalize(float *value, float *flag);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
-static int8_t _get_motor(const index_t index);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -1502,7 +1501,6 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
  * cm_get_axis_char() - return ASCII char for axis given the axis number
  * _get_axis()		  - return axis number or -1 if NA
  * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
- * _get_motor()		  - return motor number or -1 if NA
  */
 
 char_t cm_get_axis_char(const int8_t axis)
@@ -1534,20 +1532,6 @@ static int8_t _get_axis_type(const index_t index)
 	if (axis == -1) return (-1);
 	return (0);
 }
-/*
-static int8_t _get_motor(const index_t index)
-{
-	char_t *ptr;
-	char_t tmp[TOKEN_LEN+1];
-	char_t motors[] = {"123456"};
-
-	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for a motor by number
-	if ((ptr = strchr(motors, tmp[3])) == NULL) {		// character in the #3 array position
-		return (-1);
-	}
-	return (ptr - motors);
-}
-*/
 
 /**** Functions called directly from cfgArray table - mostly wrappers ****
  * _get_msg_helper() - helper to get string values

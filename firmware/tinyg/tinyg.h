@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		438.06	// more work on power management
+#define TINYG_FIRMWARE_BUILD   		438.07	// INTERIM COMMIT
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
