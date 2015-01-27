@@ -2,7 +2,7 @@
  * settings.h - default runtime settings
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -41,7 +41,7 @@
 // Do not assume these are the effective settings. Check the machine profile
 
 // Machine configuration settings
-#define CHORDAL_TOLERANCE 			0.01					// chordal accuracy for arc drawing
+#define CHORDAL_TOLERANCE 			0.1						// chordal accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
@@ -87,7 +87,6 @@
 #define QUEUE_REPORT_VERBOSITY		QR_SINGLE				// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
 #undef JSON_VERBOSITY
-//#define JSON_VERBOSITY				JV_SILENT			// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_VERBOSITY				JV_MESSAGES				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef STATUS_REPORT_DEFAULTS
@@ -95,7 +94,6 @@
 //#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
 
 #undef STATUS_REPORT_VERBOSITY
-//#define STATUS_REPORT_VERBOSITY		SR_VERBOSE				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #endif
 
@@ -103,7 +101,7 @@
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_hammer.h"					// Hammer torque demo
 //#include "settings/settings_pendulum.h"				// Pendulum motion demo
@@ -114,7 +112,7 @@
 //#include "settings/settings_pocketnc.h"				// PocketNC 5 axis machining center
 //#include "settings/settings_probotixV90.h"			// Probotix FireballV90
 //#include "settings/settings_shapeoko375.h"			// Shapeoko 375mm kit
-//#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
+#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
