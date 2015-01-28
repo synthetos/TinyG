@@ -2,7 +2,7 @@
  * settings_pendulum.h - Pendulum demo
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -37,7 +37,7 @@
 /**** Default profile for pendulum demo ********************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to PENDULUM demo profile"
 
 #define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
@@ -56,33 +56,33 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X	// 1ma
-#define M1_STEP_ANGLE			1.8		// 1sa
-#define M1_TRAVEL_PER_REV		5.08	// 1tr
-#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			0		// 1pm		TRUE=low power idle enabled 
+#define M1_MOTOR_MAP 			AXIS_X					// 1ma
+#define M1_STEP_ANGLE			1.8						// 1sa
+#define M1_TRAVEL_PER_REV		5.08					// 1tr
+#define M1_MICROSTEPS			8						// 1mi		1,2,4,8
+#define M1_POLARITY				0						// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// 1pm
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		5.08
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			0
+#define M2_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		1.25
 #define M3_MICROSTEPS			4
 #define M3_POLARITY				1
-#define M3_POWER_MODE			1
+#define M3_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M4_MOTOR_MAP			AXIS_A
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		360		// degrees per motor rev - no gearing
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
-#define M4_POWER_MODE			0
+#define M4_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
@@ -98,7 +98,7 @@
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
 #define X_TRAVEL_MAX			1400				// xtm		travel between switches or crashes
-#define X_JERK_MAX				200			// xjm		200 million
+#define X_JERK_MAX				200					// xjm		200 million
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_DISABLED	// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -106,7 +106,7 @@
 #define X_LATCH_VELOCITY		100					// xlv		mm/min
 #define X_LATCH_BACKOFF			20					// xlb		mm
 #define X_ZERO_BACKOFF			3					// xzb		mm
-#define X_JERK_HOMING			10000			// xjh
+#define X_JERK_HOMING			10000				// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			X_VELOCITY_MAX

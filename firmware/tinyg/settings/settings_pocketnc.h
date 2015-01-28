@@ -2,7 +2,7 @@
  * settings_default.h - default machine profile
  * This file is part of the TinyG2 project
  *
- * Copyright (c) 2012 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 /***********************************************************************/
@@ -38,7 +38,7 @@
 // NOTE: Non-machine specific systems settings have been moved to settings.h
 // These may be overridden using undefs
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to PocketNC settings"
 
 #define JERK_MAX 				20			// yes, that's "20,000,000" mm/(min^3)

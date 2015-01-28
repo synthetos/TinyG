@@ -2,7 +2,7 @@
  * settings_probotix.h - Probotix Fireball V90 machine profile
  * This file is part the TinyG project
  *
- * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -37,7 +37,7 @@
 /**** Probotix Fireball V90 profile ************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
 
 #define JERK_MAX 				100			// yes, that's "100,000,000" mm/(min^3)

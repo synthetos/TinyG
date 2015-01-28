@@ -2,7 +2,7 @@
  * settings_zen7x12.h - Zen Toolworks 7x12 machine profile
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -33,7 +33,7 @@
 /**** Zen Toolworks 7x12 profile ***************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
 
 #define JERK_MAX_LINEAR 		500			// 500,000,000 mm/(min^3)
@@ -59,7 +59,7 @@
 #define M1_TRAVEL_PER_REV		1.25				// 1tr
 #define M1_MICROSTEPS			8					// 1mi		1,2,4,8
 #define M1_POLARITY				1		// REVERSE	// 1po		0=normal, 1=reverse
-#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP	 		AXIS_Y

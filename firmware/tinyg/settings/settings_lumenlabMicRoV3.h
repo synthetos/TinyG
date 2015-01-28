@@ -2,7 +2,7 @@
  * settings_liumenlabMicRoV3.h - LumenLabs MicRo V3 machine profile
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -37,7 +37,7 @@
 /**** Lumenlabs micRo v3 profile ***************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Lumenlabs Micro v3 profile"
 
 #define JERK_MAX 				50	// yes, that's "50,000,000" mm/(min^3)
@@ -46,33 +46,33 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X		// 1ma
-#define M1_STEP_ANGLE 			1.8			// 1sa
-#define M1_TRAVEL_PER_REV		2.54		// 1tr
-#define M1_MICROSTEPS			8			// 1mi		1,2,4,8
-#define M1_POLARITY				0			// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			1			// 1pm		TRUE=low power idle enabled 
+#define M1_MOTOR_MAP 			AXIS_X					// 1ma
+#define M1_STEP_ANGLE 			1.8						// 1sa
+#define M1_TRAVEL_PER_REV		2.54					// 1tr
+#define M1_MICROSTEPS			8						// 1mi		1,2,4,8
+#define M1_POLARITY				0						// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// 1pm
 
 #define M2_MOTOR_MAP	 		AXIS_Y		// note the dual Y axis
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		2.54
 #define M2_MICROSTEPS			8
 #define M2_POLARITY				0
-#define M2_POWER_MODE			1
+#define M2_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M3_MOTOR_MAP			AXIS_Y		// dual Y
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		2.54
 #define M3_MICROSTEPS			8
 #define M3_POLARITY				0
-#define M3_POWER_MODE			1
+#define M3_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		2.54
 #define M4_MICROSTEPS			8
 #define M4_POLARITY				0
-#define M4_POWER_MODE			1
+#define M4_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL

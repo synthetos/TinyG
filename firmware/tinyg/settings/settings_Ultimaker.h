@@ -2,7 +2,7 @@
  * settings_Ultimaker.h - Ultimaker motion demo
  * This file is part of the the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -37,7 +37,7 @@
 /**** Ultimaker profile ************************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Ultimaker profile"
 
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
@@ -52,7 +52,7 @@
 #define M1_TRAVEL_PER_REV		40.5				// 1tr
 #define M1_MICROSTEPS			8					// 1mi		1,2,4,8
 #define M1_POLARITY				0					// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled 
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP	 		AXIS_Y
@@ -92,10 +92,10 @@
 #define X_JERK_MAX 				50000					// xjm		yes, that's "50 billion" mm/(min^3)
 #define X_JERK_HOMING			7500					// xjh
 #define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION		// xjd
-//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT	// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
-//#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT			// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING			// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
-#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT, 
+//#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT	// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT,
+//#define X_SWITCH_MODE_MAX		SW_MODE_LIMIT			// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT,
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING			// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT,
+#define X_SWITCH_MODE_MAX		SW_MODE_DISABLED		// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT,
 #define X_SEARCH_VELOCITY 		3000					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		200						// xlv		mm/min
 #define X_LATCH_BACKOFF 		10						// xlb		mm
