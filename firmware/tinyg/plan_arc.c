@@ -2,8 +2,7 @@
  * plan_arc.c - arc planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -37,9 +36,7 @@ extern "C"{
 
 arc_t arc;
 
-
 // Local functions
-
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
@@ -121,6 +118,9 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
+//	if (fp_ZERO(arc.length)) {				// arc is too short to draw
+//			return (STAT_OK);
+//	}
 //	ritorno(_test_arc_soft_limits());		// test if arc will trip soft limits
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
@@ -194,17 +194,17 @@ static stat_t _compute_arc()
 	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
 	// calculate the theta (angle) of the target point
-	float theta_end = _get_theta(
+	arc.theta_end = _get_theta(
 		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
  		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-	if(isnan(theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
+	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
 	// ensure that the difference is positive so we have clockwise travel
-	if (theta_end < arc.theta) { theta_end += 2*M_PI; }
+	if (arc.theta_end < arc.theta) { arc.theta_end += 2*M_PI; }
 
 	// compute angular travel and invert if gcode wants a counterclockwise arc
 	// if angular travel is zero interpret it as a full circle
-	arc.angular_travel = theta_end - arc.theta;
+	arc.angular_travel = arc.theta_end - arc.theta;
 	if (fp_ZERO(arc.angular_travel)) {
 		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;

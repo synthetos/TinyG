@@ -3,7 +3,6 @@
  * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -33,12 +32,12 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 
 	float position[AXES];		// accumulating runtime position
 	float offset[3]; 	 		// IJK offsets
-//	float endpoint[AXES];
 
 	float length;				// length of line or helix in mm
 	float time;					// total running time for arc (derived)
-	float theta;				// total angle specified by arc
 	float radius;				// Raw R value, or computed via offsets
+	float theta;				// total angle specified by arc
+	float theta_end;			// interim calcualtion
 	float angular_travel;		// travel along the arc
 	float linear_travel;		// travel along linear axis of arc
 
