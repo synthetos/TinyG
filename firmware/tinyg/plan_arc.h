@@ -2,7 +2,7 @@
  * plan_arc.h - arc planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,7 +24,7 @@
 extern "C"{
 #endif
 
-// See planner.h for MM_PER_ARC_SEGMENT setting
+// See planner.h for MM_PER_ARC_SEGMENT and other arc setting #defines
 
 typedef struct arArcSingleton {	// persistent planner and runtime variables
 	magic_t magic_start;
@@ -40,6 +40,8 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 	float theta_end;			// interim calcualtion
 	float angular_travel;		// travel along the arc
 	float linear_travel;		// travel along linear axis of arc
+	uint8_t full_circle;		// set true if full circle arcs specified
+	uint32_t rotations;			// Number of full rotations for full circles
 
 	uint8_t plane_axis_0;		// arc plane axis 0 - e.g. X for G17
 	uint8_t plane_axis_1;		// arc plane axis 1 - e.g. Y for G17

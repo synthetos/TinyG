@@ -2,8 +2,8 @@
  * planner.h - cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -102,9 +102,18 @@ enum sectionState {
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
+/* ARC_360_TOLERANCE / ARC_360_MINIMUM_RADIUS
+ *	If the starting and ending points of an arc are the same it means the Gcode
+ *	has requested a 360 degree arc. There is a knife-edge comparison needed between 
+ *	this case and the case of a very short arc. See plan_arc /_compute_arc() comments.
+ *	If the radius is less than a minimum value then it can't be a 360 either.
+ */
+#define ARC_360_TOLERANCE		((float)0.00001)
+#define ARC_360_MINIMUM_RADIUS	((float)0.1)
+
 /* PLANNER_STARTUP_DELAY_SECONDS
  *	Used to introduce a short dwell before planning an idle machine.
- *  If you don;t do this the first block will always plan to zero as it will
+ *  If you don't do this the first block will always plan to zero as it will
  *	start executing before the next block arrives from the serial port.
  *	This causes the machine to stutter once on startup.
  */
