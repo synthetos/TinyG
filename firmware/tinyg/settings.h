@@ -41,7 +41,7 @@
 // Do not assume these are the effective settings. Check the machine profile
 
 // Machine configuration settings
-#define CHORDAL_TOLERANCE 			0.1						// chordal accuracy for arc drawing
+#define CHORDAL_TOLERANCE 			0.01					// chordal accuracy for arc drawing
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 

@@ -42,7 +42,6 @@ static stat_t _compute_arc_offsets_from_radius(void);
 static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static float _get_theta(const float x, const float y);
 static stat_t _test_arc_soft_limits(void);
-static stat_t _test_360_soft_limits(void);
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
@@ -212,15 +211,9 @@ static stat_t _compute_arc()
 	if (arc.theta_end < arc.theta) { arc.theta_end += 2*M_PI; }
 
 	// Compute angular travel and invert if Gcode wants a counterclockwise arc
-	// If angular travel is zero interpret it as a full circle.
-	// Herein lies the Gcode arc specification ambiguity (one of them):
-	// If the angular travel is less than a minimum amount it means one of 2 things
-	// (1) the Gcode has requested a 360 degree arc, or (2) the arc is very short
-	// but not 360 degrees. We apply a heuristic that if any part of a 360 circle 
-	// would fall outside the soft-limit bounds it must be a short arc.
-	
 	arc.angular_travel = arc.theta_end - arc.theta;
 	
+	// If no endpoint was provided interpret it as a full circle.
 	if (arc.full_circle) {
 		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;
@@ -232,22 +225,7 @@ static stat_t _compute_arc()
 			arc.angular_travel -= 2*M_PI;
 		}
 	}
-/*
-//	if (fp_ZERO(arc.angular_travel)) {
-	if (arc.angular_travel < ARC_360_TOLERANCE) {
-		if (_test_360_soft_limits() == STAT_OK) {
-			if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-				arc.angular_travel -= 2*M_PI;
-			} else {
-				arc.angular_travel = 2*M_PI;
-			}
-		}
-	} else {
-		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-			arc.angular_travel -= 2*M_PI;
-		}
-	}
-*/
+
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
 	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
@@ -537,31 +515,6 @@ static stat_t _test_arc_soft_limits()
 		ritorno(_test_arc_soft_limit_plane_axis(arc.center_1, arc.plane_axis_1));
 	}
 	return(STAT_OK);
-}
-
-/*
- * _test_360_soft_limits() - return error status if soft limit is exceeded
- *
- *	This is a simpler test that determines if a 360 degree arc would exceed soft limits
- */
-
-static stat_t _test_360_soft_limits()
-{
-	if (
-		// do offsets lie outside limit plane?
-		(arc.center_0 > cm.a[arc.plane_axis_0].travel_max) || 
-		(arc.center_0 < cm.a[arc.plane_axis_0].travel_min) || 
-		(arc.center_1 > cm.a[arc.plane_axis_1].travel_max) ||
-		(arc.center_1 < cm.a[arc.plane_axis_1].travel_min) ||
-
-		// do circle extents lie outside limit plane?
-		((arc.center_0 + arc.radius) > cm.a[arc.plane_axis_0].travel_max) ||
-		((arc.center_0 - arc.radius) < cm.a[arc.plane_axis_0].travel_min) ||
-		((arc.center_1 + arc.radius) > cm.a[arc.plane_axis_1].travel_max) ||
-		((arc.center_1 - arc.radius) < cm.a[arc.plane_axis_1].travel_min)) {
-			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
-	return(STAT_OK);	
 }
 
 /*
