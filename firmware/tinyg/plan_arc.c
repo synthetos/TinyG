@@ -39,7 +39,8 @@ arc_t arc;
 // Local functions
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
-static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
+//static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
+static void _estimate_arc_time(void);
 static float _get_theta(const float x, const float y);
 static stat_t _test_arc_soft_limits(void);
 
@@ -228,30 +229,43 @@ static stat_t _compute_arc()
 
 	// Find the radius, calculate travel in the depth axis of the helix,
 	// and compute the time it should take to perform the move
+	// Length is the total mm of travel of the helix (or just a planar arc)
 	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
 	arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
+	arc.planar_travel = arc.angular_travel * arc.radius;
+	arc.length = hypot(arc.planar_travel, fabs(arc.linear_travel));
 
-	// length is the total mm of travel of the helix (or just a planar arc)
-	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
-	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE); // arc is too short to draw
-
-	arc.time = _get_arc_time(arc.linear_travel, arc.angular_travel, arc.radius);
+	// arc is too short to process
+	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE); 
 
 	// Find the minimum number of segments that meets these constraints...
-	float segments_required_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
-	float segments_required_for_minimum_distance = arc.length / cm.arc_segment_len;
-	float segments_required_for_minimum_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
-	arc.segments = floor(min3(segments_required_for_chordal_accuracy,
-							   segments_required_for_minimum_distance,
-							   segments_required_for_minimum_time));
+	_estimate_arc_time();	// get an estimate of execution time to inform segment calculation
+/*
+	float segments_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
+	float segments_for_minimum_distance = arc.length / cm.arc_segment_len;
+	float segments_for_minimum_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+
+	arc.segments = floor(min3(segments_for_chordal_accuracy,
+							  segments_for_minimum_distance,
+							  segments_for_minimum_time));
+*/
+	arc.seg_chord = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
+	arc.seg_distance = arc.length / cm.arc_segment_len;
+	arc.seg_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+	arc.segments = floor(min3(arc.seg_chord, arc.seg_distance, arc.seg_time));
 
 	arc.segments = max(arc.segments, 1);		//...but is at least 1 segment
 	arc.gm.move_time = arc.time / arc.segments;	// gcode state struct gets segment_time, not arc time
 	arc.segment_count = (int32_t)arc.segments;
 	arc.segment_theta = arc.angular_travel / arc.segments;
 	arc.segment_linear_travel = arc.linear_travel / arc.segments;
-	arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
-	arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
+
+	// could calculate the center, but it's given to us by the offsets
+	// arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
+	// arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
+	arc.center_0 = arc.offset[arc.plane_axis_0];
+	arc.center_1 = arc.offset[arc.plane_axis_1];
+
 	arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
 	return (STAT_OK);
 }
@@ -370,43 +384,32 @@ static stat_t _compute_arc_offsets_from_radius()
 }
 
 /*
- * _get_arc_time ()
+ * _estimate_arc_time ()
  *
- *	This is a naiive rate-limiting function. The arc drawing time is computed not
- *	to exceed the time taken in the slowest dimension - in the arc plane or in
- *	linear travel. Maximum feed rates are compared in each dimension, but the
- *	comparison assumes that the arc will have at least one segment where the unit
- *	vector is 1 in that dimension. This is not true for any arbitrary arc, with
- *	the result that the time returned may be less than optimal.
- *
- *	Room for improvement: At least take the hypotenuse of the planar movement and
- *	the linear travel into account, but how many people actually use helixes?
+ *	Returns a naiive estimate of arc execution time to inform segment calculation.
+ *	The arc time is computed not to exceed the time taken in the slowest dimension
+ *	in the arc plane or in linear travel. Maximum feed rates are compared in each 
+ *	dimension, but the comparison assumes that the arc will have at least one segment 
+ *	where the unit vector is 1 in that dimension. This is not true for any arbitrary arc, 
+ *	with the result that the time returned may be less than optimal.
  */
-static float _get_arc_time (const float linear_travel,	// in mm
-							const float angular_travel,	// in radians
-							const float radius)			// in mm
+static void _estimate_arc_time ()
 {
-	float tmp;
-	float move_time=0;	// picks through the times and retains the slowest
-	float planar_travel = fabs(angular_travel * radius);// travel in arc plane
-
+	// Determine move time at requested feed rate
 	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
-		move_time = cm.gm.feed_rate;	// feed rate has been normalized to minutes
+		arc.time = cm.gm.feed_rate;		// inverse feed rate has been normalized to minutes
 		cm.gm.feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
 		cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
 	} else {
-		move_time = sqrt(square(planar_travel) + square(linear_travel)) / cm.gm.feed_rate;
+		arc.time = arc.length / cm.gm.feed_rate;
 	}
-	if ((tmp = planar_travel/cm.a[arc.plane_axis_0].feedrate_max) > move_time) {
-		move_time = tmp;
+
+	// Downgrade the time if there is a rate-limiting axis
+	arc.time = max(arc.time, arc.planar_travel/cm.a[arc.plane_axis_0].feedrate_max);
+	arc.time = max(arc.time, arc.planar_travel/cm.a[arc.plane_axis_1].feedrate_max);
+	if (fabs(arc.linear_travel) > 0) {
+		arc.time = max(arc.time, fabs(arc.linear_travel/cm.a[arc.linear_axis].feedrate_max));
 	}
-	if ((tmp = planar_travel/cm.a[arc.plane_axis_1].feedrate_max) > move_time) {
-		move_time = tmp;
-	}
-	if ((tmp = fabs(linear_travel/cm.a[arc.linear_axis].feedrate_max)) > move_time) {
-		move_time = tmp;
-	}
-	return (move_time);
 }
 
 /*

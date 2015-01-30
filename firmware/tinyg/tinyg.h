@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.02	// arc generation work
+#define TINYG_FIRMWARE_BUILD   		439.03	// arc generation work
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
