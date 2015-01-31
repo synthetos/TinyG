@@ -46,7 +46,7 @@
 // *** settings.h overrides ***
 
 #undef CHORDAL_TOLERANCE
-#define CHORDAL_TOLERANCE 		0.1		// chordal accuracy for arc drawing
+#define CHORDAL_TOLERANCE 		0.01		// chordal accuracy for arc drawing
 
 #undef COMM_MODE
 #define COMM_MODE				JSON_MODE
@@ -111,8 +111,9 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			50000 				// xvm		G0 max velocity in mm/min
-#define X_FEEDRATE_MAX			30000				// xfr 		G1 max feed rate in mm/min
+//#define X_VELOCITY_MAX			50000 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX			2400 				// xvm		G0 max velocity in mm/min
+#define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MAX			285					// xtm		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
 #define X_JERK_MAX				10000				// xjm		in million mm/(min^3)
@@ -126,8 +127,9 @@
 #define X_ZERO_BACKOFF			3					// xzb		mm
 
 #define Y_AXIS_MODE				AXIS_STANDARD
-#define Y_VELOCITY_MAX			50000
-#define Y_FEEDRATE_MAX			30000
+//#define Y_VELOCITY_MAX			50000
+#define Y_VELOCITY_MAX			2400
+#define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MAX			320
 #define Y_TRAVEL_MIN			0
 #define Y_JERK_MAX				10000				// in millions

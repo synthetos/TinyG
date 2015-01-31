@@ -204,19 +204,19 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
-			bf->unit[axis] = axis_length / bf->length;						// compute unit vector term (zeros are already zero)
-			C = square(axis_length) * recip_L2 * cm.a[axis].recip_jerk;		// squaring axis_length ensures it's positive
+			bf->unit[axis] = axis_length / bf->length;					// compute unit vector term (zeros are already zero)
+			C = square(axis_length) * recip_L2 * cm.a[axis].recip_jerk;	// squaring axis_length ensures it's positive
 			if (C > maxC) {
 				maxC = C;
-				bf->jerk_axis = axis;										// also needed for junction vmax calculation
+				bf->jerk_axis = axis;						// also needed for junction vmax calculation
 			}
 		}
 	}
 	// set up and pre-compute the jerk terms needed for this round of planning
 	bf->jerk = cm.a[bf->jerk_axis].jerk_max * JERK_MULTIPLIER / fabs(bf->unit[bf->jerk_axis]);	// scale the jerk
 	bf->recip_jerk = 1/bf->jerk;
-	bf->cbrt_jerk = cbrt(bf->jerk);											// compute cached jerk terms used by planning
-	mm.prev_cbrt_jerk = bf->cbrt_jerk;										// used before this point next time around
+	bf->cbrt_jerk = cbrt(bf->jerk);							// compute cached jerk terms used by planning
+	mm.prev_cbrt_jerk = bf->cbrt_jerk;						// used before this point next time around
 
 	// finish up the current block variables
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
