@@ -203,7 +203,9 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float recip_L2 = 1/square(bf->length);
 
 	for (uint8_t axis=0; axis<AXES; axis++) {
-		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
+//		if (fp_NOT_ZERO(axis_length = bf->gm.target[axis] - mm.position[axis])) {
+		axis_length = bf->gm.target[axis] - mm.position[axis];
+		if (fabs(axis_length) > 0) {
 			bf->unit[axis] = axis_length / bf->length;					// compute unit vector term (zeros are already zero)
 			C = square(axis_length) * recip_L2 * cm.a[axis].recip_jerk;	// squaring axis_length ensures it's positive
 			if (C > maxC) {
