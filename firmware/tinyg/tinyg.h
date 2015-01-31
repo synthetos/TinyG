@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.03	// arc generation work
+#define TINYG_FIRMWARE_BUILD   		439.04	// folded in planner aline() optimizations from G2 and dev
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

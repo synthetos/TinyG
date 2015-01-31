@@ -78,7 +78,7 @@ enum sectionState {
 #define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
 
 #define JERK_MULTIPLIER			((float)1000000)
-#define JERK_MATCH_PRECISION	((float)1000)		// precision to which jerk must match to be considered effectively the same
+#define JERK_MATCH_TOLERANCE	((float)1000)		// precision to which jerk must match to be considered effectively the same
 
 /* ESTD_SEGMENT_USEC	 Microseconds per planning segment
  *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
@@ -203,9 +203,9 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	magic_t magic_start;			// magic number to test memory integrity
 	float position[AXES];			// final move position for planning purposes
 
-//	float prev_jerk;				// jerk values cached from previous move
-//	float prev_recip_jerk;
-	float prev_cbrt_jerk;
+	float jerk;						// jerk values cached from previous block
+	float recip_jerk;
+	float cbrt_jerk;
 
 	magic_t magic_end;
 } mpMoveMasterSingleton_t;
