@@ -27,11 +27,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "util.h"
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 // Allocate arc planner singleton structure
 
 arc_t arc;
@@ -39,7 +35,6 @@ arc_t arc;
 // Local functions
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
-//static float _get_arc_time (const float linear_travel, const float angular_travel, const float radius);
 static void _estimate_arc_time(void);
 static float _get_theta(const float x, const float y);
 static stat_t _test_arc_soft_limits(void);
@@ -65,31 +60,69 @@ void cm_arc_init()
 /*
  * cm_arc_feed() - canonical machine entry point for arc
  *
- * Generates an arc by queueing line segments to the move buffer. The arc is
- * approximated by generating a large number of tiny, linear segments.
+ * Generates an arc by queuing line segments to the move buffer. 
+ * The arc is approximated by generating a large number of tiny, linear segments.
  */
-stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
-				   float i, float j, float k, 	 // raw arc offsets
-				   float radius, 				 // non-zero radius implies radius mode
-				   uint8_t motion_mode)			 // defined motion mode
+stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
+				   float i, float j, float k,		// raw arc offsets
+				   float radius, 					// non-zero radius implies radius mode
+				   uint8_t motion_mode)				// defined motion mode
 {
-	// trap zero feed rate condition
+	////////////////////////////////////////////////////
+	// Trap arc specification errors and other errors
+
+	// trap missing feed rate
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
-	// Trap conditions where no arc movement will occur, but the system is still in
-	// arc motion mode - this is not an error. This can happen when a F word or M
-	// word is by itself.(The tests below are organized for execution efficiency)
-	if ( fp_ZERO(i) && fp_ZERO(j) && fp_ZERO(k) && fp_ZERO(radius) ) {
-		if ( fp_ZERO((flags[AXIS_X] + flags[AXIS_Y] + flags[AXIS_Z] +
-					  flags[AXIS_A] + flags[AXIS_B] + flags[AXIS_C]))) {
-			return (STAT_OK);
+	// radius format arc specification errors
+	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			// true if radius arc
+	if(radius_f) {
+		bool target_X = fp_NOT_ZERO(cm.gf.target[AXIS_X]);	// true if X axis has been specified in the Gcode block
+		bool target_Y = fp_NOT_ZERO(cm.gf.target[AXIS_Y]);	// true if Y axis...
+		bool target_Z = fp_NOT_ZERO(cm.gf.target[AXIS_Z]);	// true if Z axis...
+
+		// at least one axis coordinate needs to be specified (e.g. X while you're on the XZ plane)
+		if ((cm.gm.select_plane == CANON_PLANE_XY && !target_X && !target_Y) ||
+			(cm.gm.select_plane == CANON_PLANE_XZ && !target_X && !target_Z) ||
+			(cm.gm.select_plane == CANON_PLANE_YZ && !target_Y && !target_Z)) {
+			return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
+		}
+	
+	// center format arc specification errors (offsets)
+	} else {
+		bool offset_0 = fp_NOT_ZERO(cm.gf.arc_offset[0]);	// true if offset 0 has bee specified in the Gcode block
+		bool offset_1 = fp_NOT_ZERO(cm.gf.arc_offset[1]);
+		bool offset_2 = fp_NOT_ZERO(cm.gf.arc_offset[2]);
+
+		// it's an error if no offsets are specified
+		if ((cm.gm.select_plane == CANON_PLANE_XY && !offset_0 && !offset_1) ||
+			(cm.gm.select_plane == CANON_PLANE_XZ && !offset_0 && !offset_2) ||
+			(cm.gm.select_plane == CANON_PLANE_YZ && !offset_1 && !offset_2)) {
+			return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
+		}
+
+		// it's an error to specify an irrelevant offset (e.g. K while you're on the XZ plane)
+		if ((cm.gm.select_plane == CANON_PLANE_XY && offset_2) ||
+			(cm.gm.select_plane == CANON_PLANE_XZ && offset_1) ||
+			(cm.gm.select_plane == CANON_PLANE_YZ && offset_0)) {
+			return (STAT_ARC_SPECIFICATION_ERROR);
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////////////
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
+
+	if(radius_f) {									// in radius mode it's an error for start == end
+		if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
+			(fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
+			(fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
+			return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
+		}
+	}
+
 	cm.gm.motion_mode = motion_mode;
 	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
@@ -97,13 +130,15 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	// populate the arc control singleton
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
 	arc.radius = _to_millimeters(radius);			// set arc radius or zero
+
+	// offsets will be overridden later if in radius mode. This is the behavior we want.
 	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
 	// Set the arc plane for the current G17/G18/G19 setting
 	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane
-	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
+	if (cm.gm.select_plane == CANON_PLANE_XY) {		// G17 - the vast majority of arcs are G17 (XY) plane
 		arc.plane_axis_0 = AXIS_X;
 		arc.plane_axis_1 = AXIS_Y;
 		arc.linear_axis  = AXIS_Z;
@@ -130,7 +165,7 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 		return (cm_soft_alarm(status));
 	}
 
-	// run it
+	///////// run it ////////////////////////////
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
 	cm_finalize_move();
@@ -203,28 +238,26 @@ static stat_t _compute_arc()
 	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
 	// Calculate the theta (angle) of the target point
-	arc.theta_end = _get_theta(
+	float theta_end = _get_theta (
 		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
  		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
+	if(isnan(theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
-	// Ensure that the difference is positive so we have clockwise travel
-	if (arc.theta_end < arc.theta) { arc.theta_end += 2*M_PI; }
-
-	// Compute angular travel and invert if Gcode wants a counterclockwise arc
-	arc.angular_travel = arc.theta_end - arc.theta;
-	
-	// If no endpoint was provided interpret it as a full circle.
-	if (arc.full_circle) {
-		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-			arc.angular_travel -= 2*M_PI;
-		} else {
+	if (arc.full_circle) {									// If no endpoint provided interpret as full circle
+		if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {
 			arc.angular_travel = 2*M_PI;
+		} else {
+			arc.angular_travel = -2*M_PI;
 		}
-	} else {
-		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
+	} else {												// Otherwise process as a normal arc segment
+		arc.angular_travel = theta_end - arc.theta;			// Compute angular travel
+		if (theta_end < arc.theta) theta_end += 2*M_PI;		// Make distance positive (i.e. CW)
+		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {		// Reverse travel direction if it's CCW arc
 			arc.angular_travel -= 2*M_PI;
 		}
+	}
+	if (cm.gm.select_plane == CANON_PLANE_YZ) {				// Invert YZ plane arcs for proper CW orientation
+		arc.angular_travel *= -1;
 	}
 
 	// Find the radius, calculate travel in the depth axis of the helix,
@@ -240,7 +273,7 @@ static stat_t _compute_arc()
 
 	// Find the minimum number of segments that meets these constraints...
 	_estimate_arc_time();	// get an estimate of execution time to inform segment calculation
-/*
+
 	float segments_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
 	float segments_for_minimum_distance = arc.length / cm.arc_segment_len;
 	float segments_for_minimum_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
@@ -248,11 +281,6 @@ static stat_t _compute_arc()
 	arc.segments = floor(min3(segments_for_chordal_accuracy,
 							  segments_for_minimum_distance,
 							  segments_for_minimum_time));
-*/
-	arc.seg_chord = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
-	arc.seg_distance = arc.length / cm.arc_segment_len;
-	arc.seg_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
-	arc.segments = floor(min3(arc.seg_chord, arc.seg_distance, arc.seg_time));
 
 	arc.segments = max(arc.segments, 1);		//...but is at least 1 segment
 	arc.gm.move_time = arc.time / arc.segments;	// gcode state struct gets segment_time, not arc time
@@ -519,9 +547,3 @@ static stat_t _test_arc_soft_limits()
 	}
 	return(STAT_OK);
 }
-
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
