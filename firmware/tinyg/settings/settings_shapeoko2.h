@@ -71,7 +71,7 @@
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.00
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				0		// Y1 is normal polarity
+#define M2_POLARITY				0
 #define M2_POWER_MODE			MOTOR_POWER_MODE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -79,7 +79,7 @@
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		40.00
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1		// Y2 is reversed polarity
+#define M3_POLARITY				1		// Y2 is opposite polarity from Y1
 #define M3_POWER_MODE			MOTOR_POWER_MODE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 

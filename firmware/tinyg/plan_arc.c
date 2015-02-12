@@ -60,7 +60,7 @@ void cm_arc_init()
 /*
  * cm_arc_feed() - canonical machine entry point for arc
  *
- * Generates an arc by queuing line segments to the move buffer. 
+ * Generates an arc by queuing line segments to the move buffer.
  * The arc is approximated by generating a large number of tiny, linear segments.
  */
 stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
@@ -89,7 +89,12 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 			(cm.gm.select_plane == CANON_PLANE_YZ && !target_Y && !target_Z)) {
 			return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
 		}
-	
+
+		// radius value must be non-zero and greater than minimum radius
+		if (cm.gn.arc_radius < MIN_ARC_RADIUS) {
+			return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
+		}
+
 	// center format arc specification errors (offsets)
 	} else {
 		bool offset_0 = fp_NOT_ZERO(cm.gf.arc_offset[0]);	// true if offset 0 has bee specified in the Gcode block
@@ -114,7 +119,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	//////////////////////////////////////////////////////////////////////////////////
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
-
+/*
 	if(radius_f) {									// in radius mode it's an error for start == end
 		if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
 			(fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
@@ -122,19 +127,24 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 			return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
 		}
 	}
-
+*/
 	cm.gm.motion_mode = motion_mode;
 	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
-
-	// populate the arc control singleton
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
-	arc.radius = _to_millimeters(radius);			// set arc radius or zero
 
-	// offsets will be overridden later if in radius mode. This is the behavior we want.
-	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
-	arc.offset[1] = _to_millimeters(j);
-	arc.offset[2] = _to_millimeters(k);
+	if(radius_f) {									// in radius mode it's an error for start == end
+		if ((fp_EQ(arc.position[AXIS_X], arc.gm.target[AXIS_X])) &&
+			(fp_EQ(arc.position[AXIS_Y], arc.gm.target[AXIS_Y])) &&
+			(fp_EQ(arc.position[AXIS_Z], arc.gm.target[AXIS_Z]))) {
+			return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
+		}
+		arc.radius = _to_millimeters(radius);		// set arc radius or zero
+	} else {
+		arc.offset[0] = _to_millimeters(i);			// copy offsets with conversion to canonical form (mm)
+		arc.offset[1] = _to_millimeters(j);
+		arc.offset[2] = _to_millimeters(k);
+	}
 
 	// Set the arc plane for the current G17/G18/G19 setting
 	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane
@@ -152,7 +162,8 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 		arc.linear_axis  = AXIS_X;
 	}
 	// determine if this is a full circle arc. Evaluates true if no target is set
-	arc.full_circle = !((uint32_t)flags[arc.plane_axis_0] | (uint32_t)flags[arc.plane_axis_1]);
+	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+	(fp_ZERO(cm.gn.parameter) ? (arc.rotations = 1) : (arc.rotations = floor(cm.gn.parameter)));
 
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
@@ -165,7 +176,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 		return (cm_soft_alarm(status));
 	}
 
-	///////// run it ////////////////////////////
+	///////// run it //////////
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
 	cm_finalize_move();
@@ -245,22 +256,22 @@ static stat_t _compute_arc()
 
 	if (arc.full_circle) {									// If no endpoint provided interpret as full circle
 		if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {
-			arc.angular_travel = 2*M_PI;
+			arc.angular_travel = 2*M_PI * arc.rotations;
 		} else {
-			arc.angular_travel = -2*M_PI;
+			arc.angular_travel = -2*M_PI * arc.rotations;
 		}
 	} else {												// Otherwise process as a normal arc segment
-		arc.angular_travel = theta_end - arc.theta;			// Compute angular travel
 		if (theta_end < arc.theta) theta_end += 2*M_PI;		// Make distance positive (i.e. CW)
+		arc.angular_travel = theta_end - arc.theta;			// Compute angular travel
 		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {		// Reverse travel direction if it's CCW arc
 			arc.angular_travel -= 2*M_PI;
 		}
 	}
-	if (cm.gm.select_plane == CANON_PLANE_YZ) {				// Invert YZ plane arcs for proper CW orientation
+	if (cm.gm.select_plane == CANON_PLANE_XZ) {				// Invert G18 XZ plane arcs for proper CW orientation
 		arc.angular_travel *= -1;
 	}
 
-	// Find the radius, calculate travel in the depth axis of the helix,
+	// Find the radius, calculate travel in the depth axis of the helix
 	// and compute the time it should take to perform the move
 	// Length is the total mm of travel of the helix (or just a planar arc)
 	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
@@ -269,7 +280,7 @@ static stat_t _compute_arc()
 	arc.length = hypot(arc.planar_travel, fabs(arc.linear_travel));
 
 	// arc is too short to process
-	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE); 
+	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE);
 
 	// Find the minimum number of segments that meets these constraints...
 	_estimate_arc_time();	// get an estimate of execution time to inform segment calculation
@@ -416,9 +427,9 @@ static stat_t _compute_arc_offsets_from_radius()
  *
  *	Returns a naiive estimate of arc execution time to inform segment calculation.
  *	The arc time is computed not to exceed the time taken in the slowest dimension
- *	in the arc plane or in linear travel. Maximum feed rates are compared in each 
- *	dimension, but the comparison assumes that the arc will have at least one segment 
- *	where the unit vector is 1 in that dimension. This is not true for any arbitrary arc, 
+ *	in the arc plane or in linear travel. Maximum feed rates are compared in each
+ *	dimension, but the comparison assumes that the arc will have at least one segment
+ *	where the unit vector is 1 in that dimension. This is not true for any arbitrary arc,
  *	with the result that the time returned may be less than optimal.
  */
 static void _estimate_arc_time ()
@@ -521,7 +532,7 @@ static stat_t _test_arc_soft_limit_plane_axis(float center, uint8_t plane_axis)
 {
 	if (center <= arc.position[plane_axis]) {
 		if (arc.angular_travel < M_PI) {							// case (1)
-			return (STAT_OK);		
+			return (STAT_OK);
 		}
 		if ((center - arc.radius) < cm.a[plane_axis].travel_min) {	// case (2)
 			return (STAT_SOFT_LIMIT_EXCEEDED);
@@ -537,10 +548,10 @@ static stat_t _test_arc_soft_limits()
 {
 	if (cm.soft_limit_enable == true) {
 
-		// Test if target falls outside boundaries. This is a 3 dimensional test 
+		// Test if target falls outside boundaries. This is a 3 dimensional test
 		// so it also checks the linear axis of the arc (helix axis)
 		ritorno(cm_test_soft_limits(arc.gm.target));
-	
+
 		// test arc extents
 		ritorno(_test_arc_soft_limit_plane_axis(arc.center_0, arc.plane_axis_0));
 		ritorno(_test_arc_soft_limit_plane_axis(arc.center_1, arc.plane_axis_1));

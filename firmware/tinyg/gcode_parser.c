@@ -351,7 +351,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 
 			case 'T': SET_NON_MODAL (tool_select, (uint8_t)trunc(value));
 			case 'F': SET_NON_MODAL (feed_rate, value);
-			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select
+			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select, rotations
 			case 'S': SET_NON_MODAL (spindle_speed, value);
 			case 'X': SET_NON_MODAL (target[AXIS_X], value);
 			case 'Y': SET_NON_MODAL (target[AXIS_Y], value);

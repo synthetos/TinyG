@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.05	// prep for push to edge
+#define TINYG_FIRMWARE_BUILD   		439.06	// arc testing
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -457,7 +457,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ARC_SPECIFICATION_ERROR 155				// generic arc specification error
 #define STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE 156	// arc is missing axis (axes) required by selected plane
 #define STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE 157 // one or both offsets are not specified
-#define STAT_ARC_RADIUS_OUT_OF_TOLERANCE 158			// WARNING - radius arc is too large - accuracy in question
+#define STAT_ARC_RADIUS_OUT_OF_TOLERANCE 158			// WARNING - radius arc is too small or too large - accuracy in question
 #define STAT_ARC_ENDPOINT_IS_STARTING_POINT 159
 
 #define STAT_P_WORD_IS_MISSING 160						// P must be present for dwells and other functions
