@@ -119,7 +119,7 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 	//////////////////////////////////////////////////////////////////////////////////
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
-/*
+
 	if(radius_f) {									// in radius mode it's an error for start == end
 		if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
 			(fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
@@ -127,18 +127,13 @@ stat_t cm_arc_feed(float target[], float flags[],	// arc endpoints
 			return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
 		}
 	}
-*/
+
 	cm.gm.motion_mode = motion_mode;
 	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
 
 	if(radius_f) {									// in radius mode it's an error for start == end
-		if ((fp_EQ(arc.position[AXIS_X], arc.gm.target[AXIS_X])) &&
-			(fp_EQ(arc.position[AXIS_Y], arc.gm.target[AXIS_Y])) &&
-			(fp_EQ(arc.position[AXIS_Z], arc.gm.target[AXIS_Z]))) {
-			return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
-		}
 		arc.radius = _to_millimeters(radius);		// set arc radius or zero
 	} else {
 		arc.offset[0] = _to_millimeters(i);			// copy offsets with conversion to canonical form (mm)

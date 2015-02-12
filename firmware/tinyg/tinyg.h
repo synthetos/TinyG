@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.06	// arc testing
+#define TINYG_FIRMWARE_BUILD   		439.06	// edge push; power management; arc behaviors
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
