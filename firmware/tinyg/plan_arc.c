@@ -159,12 +159,12 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
-	arc.rotations = floor(cm.gn.parameter);         // P must be an integer
+	arc.rotations = floor(fabs(cm.gn.parameter));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
 	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
 
-	// compute arc runtime values and prep for execution by the callback
+	// compute arc runtime values
 	ritorno(_compute_arc());
 
 /*	// test arc soft limits
@@ -241,56 +241,35 @@ static stat_t _compute_arc()
 	// Compute IJK offset coordinates. These override any current IJK offsets
 	if (fp_NOT_ZERO(arc.radius)) ritorno(_compute_arc_offsets_from_radius()); // returns if error
 
-	// Calculate the theta (angle) of the current point (see header notes)
-	// Arc.theta is starting point for theta (theta_start)
+	// Calculate the theta (angle) of the current point (position)
+	// arc.theta is starting point for theta (is also needed for calculating center point)
 	arc.theta = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
 	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
-    // compute the angular travel
-	// first calculate the theta (angle) of the target point
-	arc.theta_end = _get_theta(
-		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
- 		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
-	if (arc.theta_end < arc.theta) arc.theta_end += 2*M_PI; // make the difference positive so we have clockwise travel
-	arc.angular_travel = arc.theta_end - arc.theta; 	    // compute angular travel
+    //// compute the angular travel ////
+	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
+    	arc.angular_travel = 0;                             // angular travel always starts as zero for full circles
+    	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;    // handle the valid case of a full circle arc w/P=0
 
-/// experimental from here...
+    } else {                                                // ... it's not a full circle
+	    arc.theta_end = _get_theta(                         // calculate the theta (angle) of the target endpoint
+	        arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
+	        arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
+	    if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
-    if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {         // reverse travel direction if it's CCW arc
-        arc.angular_travel -= 2*M_PI;
-    }
+	    if (arc.theta_end < arc.theta)                      // make the difference positive so we have clockwise travel
+            arc.theta_end += 2*M_PI;
+	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
+    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC)       // reverse travel direction if it's CCW arc
+            arc.angular_travel -= 2*M_PI;
+	}
 
-	if (arc.full_circle) {  	                            // adjust angular travel if full circle
-    	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;
-        arc.angular_travel = 0;
-    }
-
-    if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in rotations
+    if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in travel for rotations
         arc.angular_travel += 2*M_PI * arc.rotations;
     } else {
         arc.angular_travel -= 2*M_PI * arc.rotations;
     }
-
-/* ... to here
-	// adjust angular travel for full circle
-	if (arc.full_circle) {
-        if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;
-    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-        	arc.angular_travel = -2*M_PI * arc.rotations;
-        } else {
-        	arc.angular_travel = 2*M_PI * arc.rotations;
-    	}
-
-    // process as a normal arc segment
-	} else {
-    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { // reverse travel direction if it's CCW arc
-        	arc.angular_travel -= 2*M_PI;
-    	}
-	}
-*/
-    // invert G18 XZ plane arcs for proper CW orientation
-    if (cm.gm.select_plane == CANON_PLANE_XZ) {
+    if (cm.gm.select_plane == CANON_PLANE_XZ) {             // invert G18 XZ plane arcs for proper CW orientation
     	arc.angular_travel *= -1;
 	}
 
