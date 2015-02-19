@@ -70,57 +70,68 @@ void cm_arc_init()
  * Generates an arc by queuing line segments to the move buffer. The arc is
  * approximated by generating a large number of tiny, linear segments.
  */
-stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
-				   float i, float j, float k, 	 // raw arc offsets
-				   float radius, 				 // non-zero radius implies radius mode
-				   uint8_t motion_mode)			 // defined motion mode
+stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
+				   float i, float j, float k,           // raw arc offsets
+				   float radius,                        // non-zero radius implies radius mode
+				   uint8_t motion_mode)                 // defined motion mode
 {
 	////////////////////////////////////////////////////
-	// Trap arc specification errors and other errors
+	// Set axis plane and trap arc specification errors
 
 	// trap missing feed rate
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
     	return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
-	// radius format arc specification errors
-	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			// true if radius arc
-	if(radius_f) {
-    	bool target_X = fp_NOT_ZERO(cm.gf.target[AXIS_X]);	// true if X axis has been specified in the Gcode block
-    	bool target_Y = fp_NOT_ZERO(cm.gf.target[AXIS_Y]);	// true if Y axis...
-    	bool target_Z = fp_NOT_ZERO(cm.gf.target[AXIS_Z]);	// true if Z axis...
+    // set radius mode flag and do simple test(s)
+	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			    // set true if radius arc
+    if ((radius_f) && (cm.gn.arc_radius < MIN_ARC_RADIUS)) {    // radius value must be + and > minimum radius
+        return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
+    }
 
-    	// at least one axis coordinate needs to be specified (e.g. X while you're on the XZ plane)
-    	if ((cm.gm.select_plane == CANON_PLANE_XY && !target_X && !target_Y) ||
-    	(cm.gm.select_plane == CANON_PLANE_XZ && !target_X && !target_Z) ||
-    	(cm.gm.select_plane == CANON_PLANE_YZ && !target_Y && !target_Z)) {
-        	return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
-    	}
+	bool target_x = fp_NOT_ZERO(flags[AXIS_X]);	                // set true if X axis has been specified
+	bool target_y = fp_NOT_ZERO(flags[AXIS_Y]);
+	bool target_z = fp_NOT_ZERO(flags[AXIS_Z]);
 
-    	// radius value must be non-zero and greater than minimum radius
-    	if (cm.gn.arc_radius < MIN_ARC_RADIUS) {
-        	return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
-    	}
+    bool offset_i = fp_NOT_ZERO(i);	                            // set true if offset I has been specified
+    bool offset_j = fp_NOT_ZERO(j);
+    bool offset_k = fp_NOT_ZERO(k);
 
-    	// center format arc specification errors (offsets)
-    } else {
-    	bool offset_0 = fp_NOT_ZERO(cm.gf.arc_offset[0]);	// true if offset 0 has been specified in the Gcode block
-    	bool offset_1 = fp_NOT_ZERO(cm.gf.arc_offset[1]);
-    	bool offset_2 = fp_NOT_ZERO(cm.gf.arc_offset[2]);
+	// Set the arc plane for the current G17/G18/G19 setting and test specification conditions
+	// Plane axis 0 and 1 are the arc plane, the linear axis is normal to the arc plane.
+	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
+    	arc.plane_axis_0 = AXIS_X;
+    	arc.plane_axis_1 = AXIS_Y;
+    	arc.linear_axis  = AXIS_Z;
+        if (radius_f) {
+            if (!(target_x || target_y)) {      // must have at least one endpoint specified
+        	    return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
+            }
+        } else { // center format arc tests
+            if (offset_k) { // it's OK to be missing either or both i and j, but error if k is present
+        	    return (STAT_ARC_SPECIFICATION_ERROR);
+            }
+        }
 
-    	// it's an error if no offsets are specified
-    	if ((cm.gm.select_plane == CANON_PLANE_XY && !offset_0 && !offset_1) ||
-    	(cm.gm.select_plane == CANON_PLANE_XZ && !offset_0 && !offset_2) ||
-    	(cm.gm.select_plane == CANON_PLANE_YZ && !offset_1 && !offset_2)) {
-        	return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
-    	}
+    } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
+    	arc.plane_axis_0 = AXIS_X;
+    	arc.plane_axis_1 = AXIS_Z;
+    	arc.linear_axis  = AXIS_Y;
+        if (radius_f) {
+            if (!(target_x || target_z)) { return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);}
+        } else {
+            if (offset_j) { return (STAT_ARC_SPECIFICATION_ERROR);}
+        }
 
-    	// it's an error to specify an irrelevant offset (e.g. K while you're on the XZ plane)
-    	if ((cm.gm.select_plane == CANON_PLANE_XY && offset_2) ||
-    	(cm.gm.select_plane == CANON_PLANE_XZ && offset_1) ||
-    	(cm.gm.select_plane == CANON_PLANE_YZ && offset_0)) {
-        	return (STAT_ARC_SPECIFICATION_ERROR);
-    	}
+    } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
+    	arc.plane_axis_0 = AXIS_Y;
+    	arc.plane_axis_1 = AXIS_Z;
+    	arc.linear_axis  = AXIS_X;
+        if (radius_f) {
+            if (!(target_y || target_z)) { return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);}
+        } else {
+            if (offset_i) { return (STAT_ARC_SPECIFICATION_ERROR);}
+        }
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////
@@ -145,22 +156,6 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
-
-	// Set the arc plane for the current G17/G18/G19 setting
-	// Plane axis 0 and 1 are the arc plane, 2 is the linear axis normal to the arc plane
-	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
-		arc.plane_axis_0 = AXIS_X;
-		arc.plane_axis_1 = AXIS_Y;
-		arc.linear_axis  = AXIS_Z;
-	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
-		arc.plane_axis_0 = AXIS_X;
-		arc.plane_axis_1 = AXIS_Z;
-		arc.linear_axis  = AXIS_Y;
-	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
-		arc.plane_axis_0 = AXIS_Y;
-		arc.plane_axis_1 = AXIS_Z;
-		arc.linear_axis  = AXIS_X;
-	}
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
 	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
@@ -255,36 +250,29 @@ static stat_t _compute_arc()
 	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
 	// ensure that the difference is positive so we have clockwise travel
-	if (arc.theta_end < arc.theta) { arc.theta_end += 2*M_PI; }
+	if (arc.theta_end < arc.theta)
+        arc.theta_end += 2*M_PI;
 
-	// compute angular travel and invert if gcode wants a counterclockwise arc
-	// if angular travel is zero interpret it as a full circle
-/*
+	// compute angular travel
 	arc.angular_travel = arc.theta_end - arc.theta;
-	if (fp_ZERO(arc.angular_travel)) {
-		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-			arc.angular_travel -= 2*M_PI;
-		} else {
-			arc.angular_travel = 2*M_PI;
-		}
-	} else {
-		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
-			arc.angular_travel -= 2*M_PI;
-		}
-	}
-*/
-	if (arc.full_circle) {									// If no endpoint provided interpret as full circle
+
+	// adjust angular travel for full circle or CCW arc if arc segment only
+	if (arc.full_circle) {
     	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
         	arc.angular_travel = -2*M_PI * arc.rotations;
         } else {
         	arc.angular_travel = 2*M_PI * arc.rotations;
     	}
-	} else {												// Otherwise process as a normal arc segment
-    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {		// Reverse travel direction if it's CCW arc
+
+    // process as a normal arc segment
+	} else {
+    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { // reverse travel direction if it's CCW arc
         	arc.angular_travel -= 2*M_PI;
     	}
 	}
-	if (cm.gm.select_plane == CANON_PLANE_XZ) {				// Invert G18 XZ plane arcs for proper CW orientation
+
+    // invert G18 XZ plane arcs for proper CW orientation
+    if (cm.gm.select_plane == CANON_PLANE_XZ) {
     	arc.angular_travel *= -1;
 	}
 

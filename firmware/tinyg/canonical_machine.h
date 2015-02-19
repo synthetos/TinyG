@@ -597,8 +597,8 @@ stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented
 stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(float target[], float flags[]);			// G1
-stat_t cm_arc_feed(	float target[], float flags[], 				// G2, G3
+stat_t cm_straight_feed(float target[], float flags[]);		    // G1
+stat_t cm_arc_feed(	float target[], float flags[],              // G2, G3
 					float i, float j, float k,
 					float radius, uint8_t motion_mode);
 stat_t cm_dwell(float seconds);									// G4, P parameter

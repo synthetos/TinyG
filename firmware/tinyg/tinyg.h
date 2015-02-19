@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.04	// checkpoint - arcs fail by performing multiple whole circles
+#define TINYG_FIRMWARE_BUILD        440.05	// revised arc error checking - validates on concentric quarter circles
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
