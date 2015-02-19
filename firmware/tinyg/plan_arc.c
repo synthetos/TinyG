@@ -249,17 +249,18 @@ static stat_t _compute_arc()
 	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
 	// calculate the theta (angle) of the target point
-	float theta_end = _get_theta(
+	arc.theta_end = _get_theta(
 		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
  		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-	if(isnan(theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
+	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
 
 	// ensure that the difference is positive so we have clockwise travel
-	if (theta_end < arc.theta) { theta_end += 2*M_PI; }
+	if (arc.theta_end < arc.theta) { arc.theta_end += 2*M_PI; }
 
 	// compute angular travel and invert if gcode wants a counterclockwise arc
 	// if angular travel is zero interpret it as a full circle
-	arc.angular_travel = theta_end - arc.theta;
+/*
+	arc.angular_travel = arc.theta_end - arc.theta;
 	if (fp_ZERO(arc.angular_travel)) {
 		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;
@@ -270,6 +271,21 @@ static stat_t _compute_arc()
 		if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
 			arc.angular_travel -= 2*M_PI;
 		}
+	}
+*/
+	if (arc.full_circle) {									// If no endpoint provided interpret as full circle
+    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
+        	arc.angular_travel = -2*M_PI * arc.rotations;
+        } else {
+        	arc.angular_travel = 2*M_PI * arc.rotations;
+    	}
+	} else {												// Otherwise process as a normal arc segment
+    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {		// Reverse travel direction if it's CCW arc
+        	arc.angular_travel -= 2*M_PI;
+    	}
+	}
+	if (cm.gm.select_plane == CANON_PLANE_XZ) {				// Invert G18 XZ plane arcs for proper CW orientation
+    	arc.angular_travel *= -1;
 	}
 
 	// Find the radius, calculate travel in the depth axis of the helix,
