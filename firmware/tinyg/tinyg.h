@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		438.05	// added power state readouts (virtual LEDs)
+#define TINYG_FIRMWARE_BUILD   		438.09	// added feedhold exception to motor timeouts
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
