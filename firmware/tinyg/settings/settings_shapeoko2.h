@@ -2,7 +2,7 @@
  * settings_shapeoko375.h - Shapeoko2 500mm table
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -107,9 +107,9 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX			50000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX			220					// xtm		travel between switches or crashes
+#define X_TRAVEL_MAX			420					// xtm		travel between switches or crashes
 #define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
 #define X_JERK_MAX				5000				// xjm		yes, that's "5 billion" mm/(min^3)
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
@@ -122,9 +122,9 @@
 #define X_JERK_HOMING			10000				// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
-#define Y_VELOCITY_MAX			16000
+#define Y_VELOCITY_MAX			50000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX			220
+#define Y_TRAVEL_MAX			420
 #define Y_TRAVEL_MIN			0
 #define Y_JERK_MAX				5000
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
@@ -137,11 +137,11 @@
 #define Y_JERK_HOMING			10000				// xjh
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			800
+#define Z_VELOCITY_MAX			1200
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX			100
 #define Z_TRAVEL_MIN			0
-#define Z_JERK_MAX				50					// 50,000,000
+#define Z_JERK_MAX				100
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
