@@ -127,12 +127,20 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
+
+    if(radius_f) {									// in radius mode it's an error for start == end
+        if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
+        (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
+        (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
+            return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
+        }
+    }
+
 	cm.gm.motion_mode = motion_mode;
 	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
-
-	// populate the arc control singleton
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
+
 	arc.radius = _to_millimeters(radius);			// set arc radius or zero
 	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
 	arc.offset[1] = _to_millimeters(j);
@@ -154,9 +162,21 @@ stat_t cm_arc_feed(float target[], float flags[],// arc endpoints
 		arc.linear_axis  = AXIS_X;
 	}
 
+	// determine if this is a full circle arc. Evaluates true if no target is set
+	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+	(fp_ZERO(cm.gn.parameter) ? (arc.rotations = 1) : (arc.rotations = floor(cm.gn.parameter)));
+
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
-//	ritorno(_test_arc_soft_limits());		// test if arc will trip soft limits
+
+/*	// test arc soft limits
+	stat_t status = _test_arc_soft_limits();
+	if (status != STAT_OK) {
+    	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+    	copy_vector(cm.gm.target, cm.gmx.position);		// reset model position
+    	return (cm_soft_alarm(status));
+	}
+*/
 	cm_cycle_start();						// if not already started
 	arc.run_state = MOVE_RUN;				// enable arc to be run from the callback
 	cm_finalize_move();
