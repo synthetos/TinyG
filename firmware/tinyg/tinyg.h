@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		438.09	// added feedhold exception to motor timeouts
+#define TINYG_FIRMWARE_BUILD   		438.11	// tuned up Shapeoko2 profile settings; updated profiles for power management
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

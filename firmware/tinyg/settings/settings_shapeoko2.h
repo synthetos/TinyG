@@ -56,33 +56,37 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 			AXIS_X	// 1ma
-#define M1_STEP_ANGLE			1.8		// 1sa
-#define M1_TRAVEL_PER_REV		40.00	// 1tr
-#define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			2		// 1pm		TRUE=low power idle enabled
+#define M1_MOTOR_MAP 			AXIS_X				// 1ma
+#define M1_STEP_ANGLE			1.8					// 1sa
+#define M1_TRAVEL_PER_REV		40.00				// 1tr
+#define M1_MICROSTEPS			8					// 1mi		1,2,4,8
+#define M1_POLARITY				0					// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		standard
+#define M1_POWER_LEVEL			MOTOR_POWER_LEVEL	// 1mp
 
 #define M2_MOTOR_MAP			AXIS_Y
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.00
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				0
-#define M2_POWER_MODE			2
+#define M2_POLARITY				0		// Y1 is normal polarity
+#define M2_POWER_MODE			MOTOR_POWER_MODE
+#define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Y
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		40.00
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1
-#define M3_POWER_MODE			2
+#define M3_POLARITY				1		// Y2 is reversed polarity
+#define M3_POWER_MODE			MOTOR_POWER_MODE
+#define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		2.1166
 #define M4_MICROSTEPS			4
 #define M4_POLARITY				0
-#define M4_POWER_MODE			2
+#define M4_POWER_MODE			MOTOR_POWER_MODE
+#define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M5_MOTOR_MAP			AXIS_B
 #define M5_STEP_ANGLE			1.8
@@ -194,15 +198,6 @@
 #define C_LATCH_BACKOFF			5
 #define C_ZERO_BACKOFF			2
 #define C_JERK_HOMING			C_JERK_MAX
-
-#ifdef __PLAN_R2
-#undef  X_JERK_MAX
-#define X_JERK_MAX				6					// xjm
-#undef  Y_JERK_MAX
-#define Y_JERK_MAX				6					// xjm
-#undef  Z_JERK_MAX
-#define Z_JERK_MAX				600000				//
-#endif
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 // Our convention is:

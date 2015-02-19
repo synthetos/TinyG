@@ -25,8 +25,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -34,7 +34,7 @@
 /**** Otherlab profile *************************************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Othercutter settings"
 
 #define JERK_MAX				900	// yes, that's "900,000,000" mm/(min^3)
@@ -63,12 +63,12 @@
 
 // *** motor settings ***
 
-#define M1_MOTOR_MAP 		AXIS_X		// 1ma
-#define M1_STEP_ANGLE 		1.8			// 1sa
-#define M1_TRAVEL_PER_REV 	54.023		// 1tr
-#define M1_MICROSTEPS 		8			// 1mi		1,2,4,8
-#define M1_POLARITY 		1			// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE 		1			// 1pm		TRUE=low power idle enabled 
+#define M1_MOTOR_MAP 		AXIS_X					// 1ma
+#define M1_STEP_ANGLE 		1.8						// 1sa
+#define M1_TRAVEL_PER_REV 	54.023					// 1tr
+#define M1_MICROSTEPS 		8						// 1mi		1,2,4,8
+#define M1_POLARITY 		1						// 1po		0=normal, 1=reversed
+#define M1_POWER_MODE 		MOTOR_POWERED_IN_CYCLE	// 1pm
 
 #define M2_MOTOR_MAP 		AXIS_Y
 #define M2_STEP_ANGLE 		1.8
@@ -88,7 +88,7 @@
 #define M4_STEP_ANGLE 		1.8
 #define M4_TRAVEL_PER_REV 	180.0		// degrees moved per motor rev
 #define M4_MICROSTEPS 		8
-#define M4_POLARITY 		1			
+#define M4_POLARITY 		1
 #define M4_POWER_MODE 		1			// hold
 
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL

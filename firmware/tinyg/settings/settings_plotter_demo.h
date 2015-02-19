@@ -2,7 +2,7 @@
  * settings_plotter_demo.h - Plotter demo
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2013 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change 
- *		 are in hardware.h  Application settings that also shouldn't need 
+ *		 System and hardware settings that you shouldn't need to change
+ *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
 
@@ -37,7 +37,7 @@
 /**** Default profile for pendulum demo ********************************/
 /***********************************************************************/
 
-// ***> NOTE: The init message must be a single line with no CRs or LFs 
+// ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to PLOTTER demo profile"
 
 #define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
@@ -116,7 +116,7 @@
 #define Y_FEEDRATE_MAX			55000
 #define Y_TRAVEL_MIN			0
 #define Y_TRAVEL_MAX			310
-#define Y_JERK_MAX				35000	
+#define Y_JERK_MAX				35000
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
@@ -149,7 +149,7 @@
 #define A_TRAVEL_MAX 			-1										// -1 means infinite, no limit
 #define A_JERK_MAX 				(X_JERK_MAX*(360/M1_TRAVEL_PER_REV))
 #define A_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628)) 
+#define A_RADIUS 				(M1_TRAVEL_PER_REV/(2*3.14159628))
 #define A_SWITCH_MODE_MIN 		SW_MODE_HOMING
 #define A_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		600

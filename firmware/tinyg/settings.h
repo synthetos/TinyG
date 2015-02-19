@@ -45,7 +45,11 @@
 #define SOFT_LIMIT_ENABLE			0						// 0 = off, 1 = on
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_OPEN	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
-#define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE
+#define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// one of: MOTOR_DISABLED					(0)
+															//		   MOTOR_ALWAYS_POWERED				(1)
+															//		   MOTOR_POWERED_IN_CYCLE			(2)
+															//		   MOTOR_POWERED_ONLY_WHEN_MOVING	(3)
+
 #define MOTOR_IDLE_TIMEOUT			2.00					// seconds to maintain motor at full power before idling
 #define MOTOR_POWER_LEVEL			0.25					// default motor power level (0,000 - 1.000, ARM only)
 
