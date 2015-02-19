@@ -255,6 +255,24 @@ static stat_t _compute_arc()
 	if (arc.theta_end < arc.theta) arc.theta_end += 2*M_PI; // make the difference positive so we have clockwise travel
 	arc.angular_travel = arc.theta_end - arc.theta; 	    // compute angular travel
 
+/// experimental from here...
+
+    if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {         // reverse travel direction if it's CCW arc
+        arc.angular_travel -= 2*M_PI;
+    }
+
+	if (arc.full_circle) {  	                            // adjust angular travel if full circle
+    	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;
+        arc.angular_travel = 0;
+    }
+
+    if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in rotations
+        arc.angular_travel += 2*M_PI * arc.rotations;
+    } else {
+        arc.angular_travel -= 2*M_PI * arc.rotations;
+    }
+
+/* ... to here
 	// adjust angular travel for full circle
 	if (arc.full_circle) {
         if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;
@@ -270,7 +288,7 @@ static stat_t _compute_arc()
         	arc.angular_travel -= 2*M_PI;
     	}
 	}
-
+*/
     // invert G18 XZ plane arcs for proper CW orientation
     if (cm.gm.select_plane == CANON_PLANE_XZ) {
     	arc.angular_travel *= -1;

@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.06	// testing error checking
+#define TINYG_FIRMWARE_BUILD        440.07	// re-arranging angular travel for multiple circles (P)
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
