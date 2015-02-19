@@ -69,36 +69,21 @@ enum sectionState {
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
-/* The following must apply:
- *	  MM_PER_ARC_SEGMENT >= MIN_LINE_LENGTH >= MIN_SEGMENT_LENGTH
- */
-#define ARC_SEGMENT_LENGTH 		((float)0.1)		// Arc segment size (mm).(0.03)
-#define MIN_LINE_LENGTH 		((float)0.08)		// Smallest line the system can plan (mm) (0.02)
-#define MIN_SEGMENT_LENGTH 		((float)0.05)		// Smallest accel/decel segment (mm). Set to produce ~10 ms segments (0.01)
-#define MIN_LENGTH_MOVE 		((float)0.001)		// millimeters
+#define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
+#define MIN_ARC_RADIUS          ((float)0.1)
 
-#define JERK_MULTIPLIER			((float)1000000)
-#define JERK_MATCH_PRECISION	((float)1000)		// precision to which jerk must match to be considered effectively the same
+#define JERK_MULTIPLIER         ((float)1000000)
+#define JERK_MATCH_PRECISION    ((float)1000)		// precision to which jerk must match to be considered effectively the same
 
-/* ESTD_SEGMENT_USEC	 Microseconds per planning segment
- *	Should be experimentally adjusted if the MIN_SEGMENT_LENGTH is changed
- */
-#ifdef __AVR
-	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
-	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
-	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
-#endif
-#ifdef __ARM
-	#define NOM_SEGMENT_USEC 	((float)5000)		// nominal segment time
-	#define MIN_SEGMENT_USEC 	((float)2500)		// minimum segment time / minimum move time
-	#define MIN_ARC_SEGMENT_USEC ((float)10000)		// minimum arc segment time
-#endif
+#define NOM_SEGMENT_USEC        ((float)5000)		// nominal segment time
+#define MIN_SEGMENT_USEC        ((float)2500)		// minimum segment time / minimum move time
+#define MIN_ARC_SEGMENT_USEC    ((float)10000)		// minimum arc segment time
 
-#define NOM_SEGMENT_TIME 		(NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_SEGMENT_TIME 		(MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_ARC_SEGMENT_TIME 	(MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
-#define MIN_TIME_MOVE  			MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
-#define MIN_BLOCK_TIME			MIN_SEGMENT_TIME	// factor for minimum size Gcode block to process
+#define NOM_SEGMENT_TIME        (NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_SEGMENT_TIME        (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_ARC_SEGMENT_TIME    (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+#define MIN_TIME_MOVE           MIN_SEGMENT_TIME 	// minimum time a move can be is one segment
+#define MIN_BLOCK_TIME          MIN_SEGMENT_TIME	// factor for minimum size Gcode block to process
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 

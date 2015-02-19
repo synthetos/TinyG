@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		440.01	// feature branch for adding new arc code - baseline
+#define TINYG_FIRMWARE_BUILD        440.02	// added new arc specification error check tests - passes quad circle test
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
