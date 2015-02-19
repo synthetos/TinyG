@@ -89,22 +89,23 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
         return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
     }
 
+    // setup some flags
 	bool target_x = fp_NOT_ZERO(flags[AXIS_X]);	                // set true if X axis has been specified
 	bool target_y = fp_NOT_ZERO(flags[AXIS_Y]);
 	bool target_z = fp_NOT_ZERO(flags[AXIS_Z]);
 
-    bool offset_i = fp_NOT_ZERO(i);	                            // set true if offset I has been specified
-    bool offset_j = fp_NOT_ZERO(j);
-    bool offset_k = fp_NOT_ZERO(k);
+    bool offset_i = fp_NOT_ZERO(cm.gf.arc_offset[0]);	        // set true if offset I has been specified
+    bool offset_j = fp_NOT_ZERO(cm.gf.arc_offset[1]);           // J
+    bool offset_k = fp_NOT_ZERO(cm.gf.arc_offset[2]);           // K
 
-	// Set the arc plane for the current G17/G18/G19 setting and test specification conditions
+	// Set the arc plane for the current G17/G18/G19 setting and test arc specification
 	// Plane axis 0 and 1 are the arc plane, the linear axis is normal to the arc plane.
 	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
         if (radius_f) {
-            if (!(target_x || target_y)) {      // must have at least one endpoint specified
+            if (!(target_x || target_y)) {                      // must have at least one endpoint specified
         	    return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
             }
         } else { // center format arc tests
@@ -134,32 +135,34 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
         }
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////
-
 	// set values in the Gcode model state & copy it (linenum was already captured)
 	cm_set_model_target(target, flags);
 
-    if(radius_f) {									// in radius mode it's an error for start == end
+    // in radius mode it's an error for start == end
+    if(radius_f) {
         if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
-        (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
-        (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
+            (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
+            (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
             return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
         }
     }
 
+    // now get down to the rest of the work setting up the arc for execution
 	cm.gm.motion_mode = motion_mode;
 	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
 
 	arc.radius = _to_millimeters(radius);			// set arc radius or zero
+
 	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
+	arc.rotations = floor(cm.gn.parameter);         // P must be an integer
+
 	// determine if this is a full circle arc. Evaluates true if no target is set
 	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
-	(fp_ZERO(cm.gn.parameter) ? (arc.rotations = 1) : (arc.rotations = floor(cm.gn.parameter)));
 
 	// compute arc runtime values and prep for execution by the callback
 	ritorno(_compute_arc());
@@ -243,21 +246,18 @@ static stat_t _compute_arc()
 	arc.theta = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
 	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
 
-	// calculate the theta (angle) of the target point
+    // compute the angular travel
+	// first calculate the theta (angle) of the target point
 	arc.theta_end = _get_theta(
 		arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
  		arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
 	if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
+	if (arc.theta_end < arc.theta) arc.theta_end += 2*M_PI; // make the difference positive so we have clockwise travel
+	arc.angular_travel = arc.theta_end - arc.theta; 	    // compute angular travel
 
-	// ensure that the difference is positive so we have clockwise travel
-	if (arc.theta_end < arc.theta)
-        arc.theta_end += 2*M_PI;
-
-	// compute angular travel
-	arc.angular_travel = arc.theta_end - arc.theta;
-
-	// adjust angular travel for full circle or CCW arc if arc segment only
+	// adjust angular travel for full circle
 	if (arc.full_circle) {
+        if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;
     	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
         	arc.angular_travel = -2*M_PI * arc.rotations;
         } else {
