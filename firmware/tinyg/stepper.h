@@ -340,7 +340,7 @@ enum cmMotorPowerMode {
 typedef struct cfgMotor {				// per-motor configs
 	// public
 	uint8_t	motor_map;					// map motor to axis
-	uint8_t microsteps;					// microsteps to apply for each axis (ex: 8)
+	uint32_t microsteps;				// microsteps to apply for each axis (ex: 8)
 	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
 	uint8_t power_mode;					// See cmMotorPowerMode for enum
 	float power_level;					// set 0.000 to 1.000 for PMW vref setting

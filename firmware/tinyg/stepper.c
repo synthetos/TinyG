@@ -808,7 +808,7 @@ static void _load_move()
 			}
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
-			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;			// energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -837,7 +837,7 @@ static void _load_move()
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_2].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_2_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_2].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -865,7 +865,7 @@ static void _load_move()
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_3].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_3_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_3].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -893,7 +893,7 @@ static void _load_move()
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		} else {
-			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_4].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_4_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_4].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -917,7 +917,7 @@ static void _load_move()
 			st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
 			SET_ENCODER_STEP_SIGN(MOTOR_5, st_pre.mot[MOTOR_5].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_5].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_5].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_5_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -941,7 +941,7 @@ static void _load_move()
 			st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
 			SET_ENCODER_STEP_SIGN(MOTOR_6, st_pre.mot[MOTOR_6].step_sign);
 		} else {
-			if (st_cfg.mot[MOTOR_6].power_mode == MOTOR_POWERED_ONLY_WHEN_MOVING) {
+			if (st_cfg.mot[MOTOR_6].power_mode == MOTOR_POWERED_IN_CYCLE) {
 				PORT_MOTOR_6_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
 				st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
@@ -951,21 +951,17 @@ static void _load_move()
 		//**** do this last ****
 
 		TIMER_DDA.PER = st_pre.dda_period;
-		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
+		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;			// enable the DDA timer
 
 	// handle dwells
 	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
-		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
-		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		TIMER_DWELL.PER = st_pre.dda_period;			// load dwell timer period
+		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;			// enable the dwell timer
 
 	// handle synchronous commands
 	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
-
-	// null
-//	} else {
-//		printf("prep_null encountered\n");
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
@@ -1204,10 +1200,11 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 
 stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
-	if (fp_NE(nv->value,1) && fp_NE(nv->value,2) && fp_NE(nv->value,4) && fp_NE(nv->value,8)) {
+    uint32_t mi = (uint32_t)nv->value;
+	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_ui8(nv);						// set it anyway, even if it's unsupported
+	set_int(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);
 	_set_hw_microsteps(_get_motor(nv->index), (uint8_t)nv->value);
 	return (STAT_OK);
@@ -1215,7 +1212,8 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 
 stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
-	if (nv->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
+	if ((uint8_t)nv->value >= MOTOR_POWER_MODE_MAX_VALUE)
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
 	set_ui8(nv);
 
 	if (fp_ZERO(nv->value)) {			// people asked this setting take effect immediately, hence:

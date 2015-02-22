@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.11	// testing
+#define TINYG_FIRMWARE_BUILD        440.12	// testing
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

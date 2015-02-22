@@ -266,20 +266,23 @@ stat_t set_ui8(nvObj_t *nv)
 
 stat_t set_01(nvObj_t *nv)
 {
-	if (nv->value > 1) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(nv));										// else
+	if ((uint8_t)nv->value > 1)
+        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(nv));						// else
 }
 
 stat_t set_012(nvObj_t *nv)
 {
-	if (nv->value > 2) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(nv));										// else
+	if ((uint8_t)nv->value > 2)
+        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(nv));						// else
 }
 
 stat_t set_0123(nvObj_t *nv)
 {
-	if (nv->value > 3) return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
-	return (set_ui8(nv));										// else
+	if ((uint8_t)nv->value > 3)
+        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+	return (set_ui8(nv));						// else
 }
 
 stat_t set_int(nvObj_t *nv)
