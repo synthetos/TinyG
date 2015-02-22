@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.12	// Rationalizing response codes between 100 and 113
+#define TINYG_FIRMWARE_BUILD        440.13	// Set profile to default profile
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
