@@ -783,7 +783,9 @@ void preprocess_float(nvObj_t *nv)
 static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < NV_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) { return (STAT_COMPLETE);}
+		if (list[i][0] == NUL)
+            return (STAT_COMPLETE);
+
 		nv_reset_nv_list();
 		nv = nv_body;
 		strncpy(nv->token, list[i], TOKEN_LEN);
@@ -850,7 +852,6 @@ static stat_t _do_all(nvObj_t *nv)	// print all parameters
  ***********************************************************************************/
 
 /**** COMMUNICATIONS FUNCTIONS ******************************************************
- * set_ic() - ignore CR or LF on RX
  * set_ec() - enable CRLF on TX
  * set_ee() - enable character echo
  * set_ex() - enable XON/XOFF or RTS/CTS flow control
@@ -870,40 +871,26 @@ static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 	return (STAT_OK);
 }
 
-/* REMOVED - too easy to make the board appear to be bricked
-static stat_t set_ic(nvObj_t *nv) 				// ignore CR or LF on RX
-{
-	if (nv->value > IGNORE_LF) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
-	cfg.ignore_crlf = (uint8_t)nv->value;
-	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORECR);	// clear them both
-	(void)xio_ctrl(XIO_DEV_USB, XIO_NOIGNORELF);
-
-	if (cfg.ignore_crlf == IGNORE_CR) {				// $ic=1
-		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORECR);
-	} else if (cfg.ignore_crlf == IGNORE_LF) {		// $ic=2
-		(void)xio_ctrl(XIO_DEV_USB, XIO_IGNORELF);
-	}
-	return (STAT_OK);
-}
-*/
-
 static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
 {
-	if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > true)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	cfg.enable_cr = (uint8_t)nv->value;
 	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
 static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 {
-	if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > true)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	cfg.enable_echo = (uint8_t)nv->value;
 	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
 static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 {
-	if (nv->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > FLOW_CONTROL_RTS)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	cfg.enable_flow_control = (uint8_t)nv->value;
 	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
@@ -955,7 +942,7 @@ static stat_t set_baud(nvObj_t *nv)
 	if ((baud < 1) || (baud > 6)) {
 		nv_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
 //		nv_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
-		return (STAT_INPUT_VALUE_UNSUPPORTED);
+		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
@@ -967,7 +954,8 @@ static stat_t set_baud(nvObj_t *nv)
 
 stat_t set_baud_callback(void)
 {
-	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
+	if (cfg.usb_baud_flag == false)
+        return(STAT_NOOP);
 	cfg.usb_baud_flag = false;
 	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
 	return (STAT_OK);

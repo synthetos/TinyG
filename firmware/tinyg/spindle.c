@@ -2,7 +2,7 @@
  * spindle.c - canonical machine spindle driver
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -40,7 +40,7 @@ extern "C"{
 static void _exec_spindle_control(float *value, float *flag);
 static void _exec_spindle_speed(float *value, float *flag);
 
-/* 
+/*
  * cm_spindle_init()
  */
 void cm_spindle_init()
@@ -69,7 +69,7 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 		phase_lo = pwm.c[PWM_1].ccw_phase_lo;
 		phase_hi = pwm.c[PWM_1].ccw_phase_hi;
 	}
-		
+
 	if (spindle_mode==SPINDLE_CW || spindle_mode==SPINDLE_CCW ) {
 		// clamp spindle speed to lo/hi range
 		if( cm.gm.spindle_speed < speed_lo ) cm.gm.spindle_speed = speed_lo;
@@ -135,7 +135,9 @@ static void _exec_spindle_control(float *value, float *flag)
  */
 stat_t cm_set_spindle_speed(float speed)
 {
-//	if (speed > cfg.max_spindle speed) { return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);}
+//	if (speed > cfg.max_spindle speed)
+//        return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);
+
 	float value[AXES] = { speed, 0,0,0,0,0 };
 	mp_queue_command(_exec_spindle_speed, value, value);
 	return (STAT_OK);

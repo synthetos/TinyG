@@ -1213,7 +1213,7 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
 	if ((uint8_t)nv->value >= MOTOR_POWER_MODE_MAX_VALUE)
-        return (STAT_INPUT_VALUE_UNSUPPORTED);
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	set_ui8(nv);
 
 	if (fp_ZERO(nv->value)) {			// people asked this setting take effect immediately, hence:

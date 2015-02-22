@@ -2,7 +2,7 @@
  * switch.c - switch handling functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -127,7 +127,7 @@ void switch_rtc_callback(void)
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
             continue;
-        
+
 		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
 			sw.debounce[i] = SW_IDLE;
             // check if the state has changed while we were in lockout...
@@ -237,12 +237,12 @@ stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 
 stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 {
-	if (nv->value > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > SW_MODE_MAX_VALUE)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	set_ui8(nv);
 	switch_init();
 	return (STAT_OK);
 }
-
 
 /***********************************************************************************
  * TEXT MODE SUPPORT

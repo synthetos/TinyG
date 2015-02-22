@@ -2,8 +2,7 @@
  * plan_arc.c - arc planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Portions copyright (c) 2009 Simen Svale Skogsrud
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,11 +27,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "util.h"
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 // Allocate arc planner singleton structure
 
 arc_t arc;
@@ -119,9 +114,11 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_Y;
         if (radius_f) {
-            if (!(target_x || target_z)) { return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);}
+            if (!(target_x || target_z))
+                return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
         } else {
-            if (offset_j) { return (STAT_ARC_SPECIFICATION_ERROR);}
+            if (offset_j)
+                return (STAT_ARC_SPECIFICATION_ERROR);
         }
 
     } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
@@ -129,9 +126,11 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_X;
         if (radius_f) {
-            if (!(target_y || target_z)) { return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);}
+            if (!(target_y || target_z))
+                return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
         } else {
-            if (offset_i) { return (STAT_ARC_SPECIFICATION_ERROR);}
+            if (offset_i)
+                return (STAT_ARC_SPECIFICATION_ERROR);
         }
 	}
 
@@ -192,8 +191,11 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 
 stat_t cm_arc_callback()
 {
-	if (arc.run_state == MOVE_OFF) { return (STAT_NOOP);}
-	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { return (STAT_EAGAIN);}
+	if (arc.run_state == MOVE_OFF)
+        return (STAT_NOOP);
+
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM)
+        return (STAT_EAGAIN);
 
 	arc.theta += arc.segment_theta;
 	arc.gm.target[arc.plane_axis_0] = arc.center_0 + sin(arc.theta) * arc.radius;
@@ -202,7 +204,8 @@ stat_t cm_arc_callback()
 	mp_aline(&arc.gm);								// run the line
 	copy_vector(arc.position, arc.gm.target);		// update arc current position
 
-	if (--arc.segment_count > 0) return (STAT_EAGAIN);
+	if (--arc.segment_count > 0)
+        return (STAT_EAGAIN);
 	arc.run_state = MOVE_OFF;
 	return (STAT_OK);
 }
@@ -244,7 +247,8 @@ static stat_t _compute_arc()
 	// Calculate the theta (angle) of the current point (position)
 	// arc.theta is starting point for theta (is also needed for calculating center point)
 	arc.theta = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
-	if(isnan(arc.theta) == true) return(STAT_ARC_SPECIFICATION_ERROR);
+	if(isnan(arc.theta) == true)
+        return(STAT_ARC_SPECIFICATION_ERROR);
 
     //// compute the angular travel ////
 	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
@@ -255,7 +259,9 @@ static stat_t _compute_arc()
 	    arc.theta_end = _get_theta(                         // calculate the theta (angle) of the target endpoint
 	        arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
 	        arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-	    if(isnan(arc.theta_end) == true) return (STAT_ARC_SPECIFICATION_ERROR);
+
+	    if(isnan(arc.theta_end) == true)
+            return (STAT_ARC_SPECIFICATION_ERROR);
 
 	    if (arc.theta_end < arc.theta)                      // make the difference positive so we have clockwise travel
             arc.theta_end += 2*M_PI;
@@ -280,7 +286,8 @@ static stat_t _compute_arc()
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
-	if (arc.length < cm.arc_segment_len) return (STAT_MINIMUM_LENGTH_MOVE); // arc is too short to draw
+	if (arc.length < cm.arc_segment_len)
+        return (STAT_MINIMUM_LENGTH_MOVE);                  // arc is too short to draw
 
 	arc.time = _get_arc_time(arc.linear_travel, arc.angular_travel, arc.radius);
 

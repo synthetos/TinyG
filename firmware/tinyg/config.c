@@ -2,7 +2,7 @@
  * config.c - application independent configuration handling
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -70,13 +70,15 @@ nvList_t nvl;
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
+	if (nv->index >= nv_index_max())
+        return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return(STAT_INTERNAL_RANGE_ERROR);
+	if (nv->index >= nv_index_max())
+        return(STAT_INTERNAL_RANGE_ERROR);
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
@@ -89,8 +91,10 @@ void nv_print(nvObj_t *nv)
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	if (nv_index_lt_groups(nv->index) == false) return(STAT_INTERNAL_RANGE_ERROR);
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) return(write_persistent_value(nv));
+	if (nv_index_lt_groups(nv->index) == false)
+        return(STAT_INTERNAL_RANGE_ERROR);
+	if (GET_TABLE_BYTE(flags) & F_PERSIST)
+        return(write_persistent_value(nv));
 #endif
 	return (STAT_OK);
 }
@@ -201,7 +205,7 @@ stat_t config_test_assertions()
 /***** Generic Internal Functions *********************************************/
 
 /* Generic gets()
- *	get_nul()  - get nothing (returns STAT_NOOP)
+ *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
  *	get_ui8()  - get value as 8 bit uint8_t
  *	get_int()  - get value as 32 bit integer
  *	get_data() - get value as 32 bit integer blind cast
@@ -211,7 +215,7 @@ stat_t config_test_assertions()
 stat_t get_nul(nvObj_t *nv)
 {
 	nv->valuetype = TYPE_NULL;
-	return (STAT_NOOP);
+	return (STAT_PARAMETER_CANNOT_BE_READ);
 }
 
 stat_t get_ui8(nvObj_t *nv)
@@ -246,7 +250,7 @@ stat_t get_flt(nvObj_t *nv)
 }
 
 /* Generic sets()
- *	set_nul()  - set nothing (returns STAT_NOOP)
+ *	set_nul()  - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
  *	set_ui8()  - set value as 8 bit uint8_t value
  *	set_01()   - set a 0 or 1 uint8_t value with validation
  *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
@@ -255,7 +259,7 @@ stat_t get_flt(nvObj_t *nv)
  *	set_data() - set value as 32 bit integer blind cast
  *	set_flt()  - set value as float
  */
-stat_t set_nul(nvObj_t *nv) { return (STAT_NOOP);}
+stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
 stat_t set_ui8(nvObj_t *nv)
 {
@@ -267,21 +271,21 @@ stat_t set_ui8(nvObj_t *nv)
 stat_t set_01(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 1)
-        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
 	return (set_ui8(nv));						// else
 }
 
 stat_t set_012(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 2)
-        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
 	return (set_ui8(nv));						// else
 }
 
 stat_t set_0123(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 3)
-        return (STAT_INPUT_VALUE_UNSUPPORTED);	// if
+        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
 	return (set_ui8(nv));						// else
 }
 
@@ -374,7 +378,9 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE) return (STAT_UNRECOGNIZED_NAME);
+	if (cfg.comm_mode == TEXT_MODE)
+        return (STAT_INVALID_OR_MALFORMED_COMMAND);
+
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
@@ -553,7 +559,9 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 
 stat_t nv_copy_string(nvObj_t *nv, const char_t *src)
 {
-	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN) { return (STAT_BUFFER_FULL);}
+	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
+        return (STAT_BUFFER_FULL);
+
 	char_t *dst = &nvStr.string[nvStr.wp];
 	strcpy(dst, src);						// copy string to current head position
 											// string has already been tested for overflow, above
@@ -646,7 +654,9 @@ nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a strin
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
-		if (nv_copy_string(nv, string) != STAT_OK) { return (NULL);}
+		if (nv_copy_string(nv, string) != STAT_OK)
+            return (NULL);
+
 		nv->index = nv_get_index((const char_t *)"", nv->token);
 		nv->valuetype = TYPE_STRING;
 		return (nv);
