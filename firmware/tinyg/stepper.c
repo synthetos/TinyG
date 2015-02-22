@@ -34,6 +34,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "planner.h"
+#include "report.h"
 #include "hardware.h"
 #include "text_parser.h"
 #include "util.h"
@@ -470,8 +471,8 @@ stat_t st_motor_power_callback() 	// called by controller
 			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 			st_run.mot[motor].power_systick = SysTickTimer_getValue() + time_value;
 		}
-	
-		// do not process countdown if in a feedhold 
+
+		// do not process countdown if in a feedhold
 		if (cm_get_combined_state() == COMBINED_HOLD) {
 			continue;
 		}
@@ -481,6 +482,7 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (SysTickTimer_getValue() > st_run.mot[motor].power_systick ) {
 				st_run.mot[motor].power_state = MOTOR_IDLE;
 				_deenergize_motor(motor);
+                sr_request_status_report(SR_TIMED_REQUEST);		// request a status report when motors shut down
 			}
 		}
 	}

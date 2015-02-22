@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.09	//updated shapeoko profile
+#define TINYG_FIRMWARE_BUILD        440.10	//added a status report request to the motor timeout event
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

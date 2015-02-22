@@ -51,6 +51,9 @@
 #undef JSON_VERBOSITY
 #define JSON_VERBOSITY 			JV_VERBOSE
 
+#undef STATUS_REPORT_DEFAULTS
+#define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","pwr1","pwr2","pwr3","pwr4","stat"
+
 #undef SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
