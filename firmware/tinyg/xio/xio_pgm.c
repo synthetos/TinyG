@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,7 +28,7 @@
 #define PGM ds[XIO_DEV_PGM]				// device struct accessor
 #define PGMf fs[XIO_DEV_PGM - XIO_DEV_FILE_OFFSET]	// file extended struct accessor
 
-/* 
+/*
  *	xio_gets_pgm() - main loop task for program memory device
  *
  *	Non-blocking, run-to-completion return a line from memory
@@ -57,10 +57,10 @@ int xio_gets_pgm(xioDev_t *d, char *buf, const int size)
  *  END OF FILE (EOF)
  *		- the first time you encounter NUL, return ETX
  *		- all subsequent times rreturn NUL
- *	    This allows the higherlevel stdio routines to return a line that 
- *	    terminates with a NUL, but reads from the end of file will return 
+ *	    This allows the higherlevel stdio routines to return a line that
+ *	    terminates with a NUL, but reads from the end of file will return
  *		errors.
- *	  	
+ *
  *		- return ETX (as returning NUL is indistinguishable from an error)
  *		- return NUL (this is NOT EOF, wich is -1 and signifies and error)
  *
@@ -104,7 +104,7 @@ int xio_getc_pgm(FILE *stream)
 	return (c);
 }
 
-/* 
+/*
  *	xio_putc_pgm() - write character to to program memory device
  *
  *  Always returns error. You cannot write to program memory

@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD   		439.06	// edge push; power management; arc behaviors
+#define TINYG_FIRMWARE_BUILD        440.12	// Rationalizing response codes between 100 and 113
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -391,21 +391,21 @@ char *get_status_message(stat_t status);
 // Application and data input errors
 
 // Generic data input errors
-#define	STAT_UNRECOGNIZED_NAME 100				// parser didn't recognize the name
-#define	STAT_MALFORMED_COMMAND_INPUT 101		// malformed line to parser
-#define	STAT_BAD_NUMBER_FORMAT 102				// number format error
-#define	STAT_INPUT_EXCEEDS_MAX_LENGTH 103		// input string is too long
-#define	STAT_INPUT_VALUE_TOO_SMALL 104			// input error: value is under minimum
-#define	STAT_INPUT_VALUE_TOO_LARGE 105			// input error: value is over maximum
-#define	STAT_INPUT_VALUE_RANGE_ERROR 106		// input error: value is out-of-range
-#define	STAT_INPUT_VALUE_UNSUPPORTED 107		// input error: value is not supported
-#define	STAT_JSON_SYNTAX_ERROR 108				// JSON input string is not well formed
-#define	STAT_JSON_TOO_MANY_PAIRS 109			// JSON input string has too many JSON pairs
+#define	STAT_UNRECOGNIZED_NAME 100              // parser didn't recognize the name
+#define	STAT_INVALID_OR_MALFORMED_COMMAND 101   // malformed line to parser
+#define	STAT_BAD_NUMBER_FORMAT 102              // number format error
+#define	STAT_UNSUPPORTED_TYPE 103               // An otherwise valid number or JSON type is not supported
+#define	STAT_PARAMETER_IS_READ_ONLY 104         // input error: parameter cannot be set
+#define	STAT_PARAMETER_CANNOT_BE_READ 105       // input error: parameter cannot be set
+#define	STAT_COMMAND_NOT_ACCEPTED 106			// command cannot be accepted at this time
+#define	STAT_INPUT_EXCEEDS_MAX_LENGTH 107       // input string is too long
+#define	STAT_INPUT_LESS_THAN_MIN_VALUE 108      // input error: value is under minimum
+#define	STAT_INPUT_EXCEEDS_MAX_VALUE 109        // input error: value is over maximum
 
-#define	STAT_JSON_TOO_LONG 110					// JSON output exceeds buffer size
-#define	STAT_CONFIG_NOT_TAKEN 111				// configuration value not taken while in machining cycle
-#define	STAT_COMMAND_NOT_ACCEPTED 112			// command cannot be accepted at this time
-#define	STAT_ERROR_113 113
+#define	STAT_INPUT_VALUE_RANGE_ERROR 110        // input error: value is out-of-range
+#define	STAT_JSON_SYNTAX_ERROR 111              // JSON input string is not well formed
+#define	STAT_JSON_TOO_MANY_PAIRS 112            // JSON input string has too many JSON pairs
+#define	STAT_JSON_TOO_LONG 113					// JSON input or output exceeds buffer size
 #define	STAT_ERROR_114 114
 #define	STAT_ERROR_115 115
 #define	STAT_ERROR_116 116

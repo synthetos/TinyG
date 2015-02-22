@@ -655,7 +655,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
 {
 	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
-		return (STAT_INTERNAL_RANGE_ERROR);
+		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
@@ -943,7 +943,6 @@ stat_t cm_straight_feed(float target[], float flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-//		return(rpt_exception(STAT_GCODE_FEEDRATE_NOT_SPECIFIED));
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
@@ -989,7 +988,6 @@ stat_t cm_select_tool(uint8_t tool_select)
 static void _exec_select_tool(float *value, float *flag)
 {
 	cm.gm.tool_select = (uint8_t)value[0];
-//	printf("{\"tool\":%i}\n", cm.gm.tool_select);
 }
 
 stat_t cm_change_tool(uint8_t tool_change)
@@ -1242,7 +1240,9 @@ stat_t cm_feedhold_sequencing_callback()
 
 stat_t cm_queue_flush()
 {
-	if (cm_get_runtime_busy() == true) { return (STAT_COMMAND_NOT_ACCEPTED);}
+	if (cm_get_runtime_busy() == true)
+        return (STAT_COMMAND_NOT_ACCEPTED);
+
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();				// flush serial queues
 #endif
@@ -1671,9 +1671,9 @@ stat_t cm_get_am(nvObj_t *nv)
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
-		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	} else {
-		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	}
 	set_ui8(nv);
 	return(STAT_OK);
@@ -1683,8 +1683,8 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
  * cm_get_axis_jerk() - returns jerk for an axis
  * cm_set_axis_jerk() - sets the jerk for an axis, including recirpcal and cached values
  *
- * cm_set_xjm()		  - set jerk max value - called from dispatch table
- * cm_set_xjh()		  - set jerk homing value - called from dispatch table
+ * cm_set_xjm()		  - set jerk max value
+ * cm_set_xjh()		  - set jerk halt value (used by homing and other stops)
  *
  *	Jerk values can be rather large, often in the billions. This makes for some pretty big
  *	numbers for people to deal with. Jerk values are stored in the system in truncated format;

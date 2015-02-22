@@ -54,6 +54,9 @@
 #undef JSON_VERBOSITY
 #define JSON_VERBOSITY 			JV_LINENUM
 
+#undef STATUS_REPORT_DEFAULTS
+#define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","pwr1","pwr2","pwr3","pwr4","stat"
+
 #undef SWITCH_TYPE
 #define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
@@ -64,14 +67,14 @@
 #define M1_TRAVEL_PER_REV		40.00				// 1tr
 #define M1_MICROSTEPS			8					// 1mi		1,2,4,8
 #define M1_POLARITY				0					// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		standard
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		2=standard
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL	// 1mp
 
 #define M2_MOTOR_MAP			AXIS_Y	// Y1
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.00
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				0
+#define M2_POLARITY				0		// Y1 is normal polarity
 #define M2_POWER_MODE			MOTOR_POWER_MODE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -79,19 +82,18 @@
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		40.00
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1		// Y2 is opposite polarity from Y1
+#define M3_POLARITY				1		// Y2 is reversed polarity
 #define M3_POWER_MODE			MOTOR_POWER_MODE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		2.1166
-#define M4_MICROSTEPS			8
+#define M4_MICROSTEPS			4
 #define M4_POLARITY				0
 #define M4_POWER_MODE			MOTOR_POWER_MODE
 #define M4_POWER_LEVEL			MOTOR_POWER_LEVEL
 
-// Not applicable for v8
 #define M5_MOTOR_MAP			AXIS_B
 #define M5_STEP_ANGLE			1.8
 #define M5_TRAVEL_PER_REV		360		// degrees per motor rev - 1:1 gearing
@@ -113,10 +115,10 @@
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
 #define X_VELOCITY_MAX			50000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MAX			285					// xtm		travel between switches or crashes
-#define X_TRAVEL_MIN			0					// xtn		minimum travel for soft limits
-#define X_JERK_MAX				10000				// xjm		in million mm/(min^3)
-#define X_JERK_HOMING			20000				// xjh		in million mm/(min^3)
+#define X_TRAVEL_MAX			420					// xtm		travel between switches or crashes
+#define X_TRAVEL_MIN			0					// xtn		monimum travel for soft limits
+#define X_JERK_MAX				10000				// xjm		yes, that's "5 billion" mm/(min^3)
+#define X_JERK_HOMING			20000				// xjh
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -128,7 +130,7 @@
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			50000
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
-#define Y_TRAVEL_MAX			320
+#define Y_TRAVEL_MAX			420
 #define Y_TRAVEL_MIN			0
 #define Y_JERK_MAX				10000				// in millions
 #define Y_JERK_HOMING			20000				// in millions
@@ -141,12 +143,12 @@
 #define Y_ZERO_BACKOFF			3
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			2400
+#define Z_VELOCITY_MAX			1200
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
-#define Z_TRAVEL_MAX			0
-#define Z_TRAVEL_MIN			-100
-#define Z_JERK_MAX				200					// in millions
-#define Z_JERK_HOMING			1000				// in millions
+#define Z_TRAVEL_MAX			100
+#define Z_TRAVEL_MIN			0
+#define Z_JERK_MAX				100
+#define Z_JERK_HOMING			500
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING

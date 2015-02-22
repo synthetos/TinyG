@@ -2,8 +2,8 @@
  * plan_line.c - acceleration managed line planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2014 Rob Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2015 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -34,10 +34,6 @@
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
-
-//#ifdef __cplusplus
-//extern "C"{
-//#endif
 
 // aline planner routines / feedhold planning
 //static void _calc_move_times(GCodeState_t *gms, const float position[]);
@@ -141,15 +137,13 @@ stat_t mp_aline(GCodeState_t *gm_in)
 			}
 		}
 		float move_time = (2 * length) / (2*entry_velocity + delta_velocity);// compute execution time for this move
-		if (move_time < MIN_BLOCK_TIME) {
+		if (move_time < MIN_BLOCK_TIME)
 			return (STAT_MINIMUM_TIME_MOVE);
-		}
 	}
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL) {
-		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));					// never supposed to fail
-	}
+	if ((bf = mp_get_write_buffer()) == NULL)
+        return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));                  // never supposed to fail
 	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
 	bf->length = length;
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
@@ -230,7 +224,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	// set up and pre-compute the jerk terms needed for this round of planning
 	bf->jerk = cm.a[bf->jerk_axis].jerk_max * JERK_MULTIPLIER / fabs(bf->unit[bf->jerk_axis]);	// scale the jerk
 
-	if (fabs(bf->jerk - mm.jerk) > JERK_MATCH_TOLERANCE) {	// specialized comparison for tolerance of delta
+	if (fabs(bf->jerk - mm.jerk) > JERK_MATCH_PRECISION) {	// specialized comparison for tolerance of delta
 		mm.jerk = bf->jerk;									// used before this point next time around
 		mm.recip_jerk = 1/bf->jerk;							// compute cached jerk terms used by planning
 		mm.cbrt_jerk = cbrt(bf->jerk);
@@ -646,15 +640,17 @@ static float _compute_next_segment_velocity()
 
 stat_t mp_plan_hold_callback()
 {
-	if (cm.hold_state != FEEDHOLD_PLAN) { return (STAT_NOOP);}	// not planning a feedhold
+	if (cm.hold_state != FEEDHOLD_PLAN)
+        return (STAT_NOOP);                     // not planning a feedhold
 
-	mpBuf_t *bp; 				// working buffer pointer
-	if ((bp = mp_get_run_buffer()) == NULL) { return (STAT_NOOP);}	// Oops! nothing's running
+	mpBuf_t *bp; 				                // working buffer pointer
+	if ((bp = mp_get_run_buffer()) == NULL)
+        return (STAT_NOOP);                     // Oops! nothing's running
 
-	uint8_t mr_flag = true;		// used to tell replan to account for mr buffer Vx
-	float mr_available_length;	// available length left in mr buffer for deceleration
-	float braking_velocity;		// velocity left to shed to brake to zero
-	float braking_length;		// distance required to brake to zero from braking_velocity
+	uint8_t mr_flag = true;                     // used to tell replan to account for mr buffer Vx
+	float mr_available_length;                  // available length left in mr buffer for deceleration
+	float braking_velocity;                     // velocity left to shed to brake to zero
+	float braking_length;                       // distance required to brake to zero from braking_velocity
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.target, mr.position);
@@ -767,8 +763,3 @@ stat_t mp_end_hold()
 	}
 	return (STAT_OK);
 }
-/*
-#ifdef __cplusplus
-}
-#endif
-*/

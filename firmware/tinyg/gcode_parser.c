@@ -170,10 +170,12 @@ static void _normalize_gcode_block(char_t *str, char_t **com, char_t **msg, uint
  */
 static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 {
-	if (**pstr == NUL) { return (STAT_COMPLETE); }	// no more words
+	if (**pstr == NUL)
+        return (STAT_COMPLETE);    // no more words to process
 
 	// get letter part
-	if(isupper(**pstr) == false) { return (STAT_MALFORMED_COMMAND_INPUT); }
+	if(isupper(**pstr) == false)
+        return (STAT_INVALID_OR_MALFORMED_COMMAND);
 	*letter = **pstr;
 	(*pstr)++;
 
@@ -187,7 +189,8 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	// get-value general case
 	char *end;
 	*value = strtof(*pstr, &end);
-	if(end == *pstr) { return(STAT_BAD_NUMBER_FORMAT); }	// more robust test then checking for value=0;
+	if(end == *pstr)
+        return(STAT_BAD_NUMBER_FORMAT); // more robust test then checking for value=0;
 	*pstr = end;
 	return (STAT_OK);			// pointer points to next character after the word
 }

@@ -2,7 +2,7 @@
  * json_parser.c - JSON parser for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -46,8 +46,7 @@ jsSingleton_t js;
 /**** local scope stuff ****/
 
 static stat_t _json_parser_kernal(char_t *str);
-//static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth);
-static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth);
+static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 /****************************************************************************
@@ -107,9 +106,12 @@ static stat_t _json_parser_kernal(char_t *str)
 
 	// parse the JSON command into the nv body
 	do {
-		if (--i == 0) { return (STAT_JSON_TOO_MANY_PAIRS); } // length error
-//		if ((status = _get_nv_pair_strict(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
-		if ((status = _get_nv_pair_relaxed(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
+		if (--i == 0)
+            return (STAT_JSON_TOO_MANY_PAIRS);      // length error
+
+        // Use relaxed parser. Will read eitehr strict or relaxed mode. To use strict-only parser refer
+        // to build earlier than 407.03. Substitute _get_nv_pair_strict() for _get_nv_pair()
+		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
@@ -123,7 +125,8 @@ static stat_t _json_parser_kernal(char_t *str)
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
 		}
-		if ((nv = nv->nx) == NULL) return (STAT_JSON_TOO_MANY_PAIRS);// Not supposed to encounter a NULL
+		if ((nv = nv->nx) == NULL)
+            return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
@@ -131,7 +134,8 @@ static stat_t _json_parser_kernal(char_t *str)
 	if (nv->valuetype == TYPE_NULL){				// means GET the value
 		ritorno(nv_get(nv));						// ritorno returns w/status on any errors
 	} else {
-		if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
+		if (cm.machine_state == MACHINE_ALARM)
+            return (STAT_MACHINE_ALARMED);
 		ritorno(nv_set(nv));						// set value or call a function (e.g. gcode)
 		nv_persist(nv);
 	}
@@ -150,7 +154,8 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 	char_t *wr;								// write pointer
 	uint8_t in_comment = false;
 
-	if (strlen(str) > size) return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
+	if (strlen(str) > size)
+        return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
 
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
@@ -167,7 +172,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 }
 
 /*
- * _get_nv_pair_relaxed() - get the next name-value pair w/relaxed JSON rules
+ * _get_nv_pair() - get the next name-value pair w/relaxed JSON rules. Also parses strict JSON.
  *
  *	Parse the next statement and populate the command object (nvObj).
  *
@@ -197,7 +202,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 #define MAX_PAD_CHARS 8
 #define MAX_NAME_CHARS 32
 
-static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
+static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 {
 	uint8_t i;
 	char_t *tmp;
@@ -216,7 +221,8 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 			name = (*pstr)++;
 			break;
 		}
-		if (i == MAX_PAD_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+		if (i == MAX_PAD_CHARS)
+            return (STAT_JSON_SYNTAX_ERROR);
 	}
 
 	// Find the end of name, NUL terminate and copy token
@@ -226,7 +232,8 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
 			break;
 		}
-		if (i == MAX_NAME_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+		if (i == MAX_NAME_CHARS)
+            return (STAT_JSON_SYNTAX_ERROR);
 	}
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
@@ -235,7 +242,8 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	for (i=0; true; i++, (*pstr)++) {
 		if (isalnum((int)**pstr)) break;
 		if (strchr(value, (int)**pstr) != NULL) break;
-		if (i == MAX_PAD_CHARS) return (STAT_JSON_SYNTAX_ERROR);
+		if (i == MAX_PAD_CHARS)
+            return (STAT_JSON_SYNTAX_ERROR);
 	}
 
 	// nulls (gets)
@@ -246,7 +254,8 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
-		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
+		if(tmp == *pstr)
+            return (STAT_BAD_NUMBER_FORMAT);
 		nv->valuetype = TYPE_FLOAT;
 
 	// object parent
@@ -260,7 +269,8 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
 		nv->valuetype = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
+		if ((tmp = strchr(*pstr, '\"')) == NULL)
+            return (STAT_JSON_SYNTAX_ERROR);    // find the end of the string
 		*tmp = NUL;
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
@@ -287,10 +297,12 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	} else if (**pstr == '[') {
 		nv->valuetype = TYPE_ARRAY;
 		ritorno(nv_copy_string(nv, *pstr));		// copy array into string for error displays
-		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
+		return (STAT_UNSUPPORTED_TYPE);	        // return error as the parser doesn't do input arrays yet
 
 	// general error condition
-	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
+	} else {
+        return (STAT_JSON_SYNTAX_ERROR);	    // ill-formed JSON
+    }
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
@@ -300,121 +312,12 @@ static stat_t _get_nv_pair_relaxed(nvObj_t *nv, char_t **pstr, int8_t *depth)
 		*depth -= 1;							// pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
+	if (**pstr == ',')
+        return (STAT_EAGAIN);                   // signal that there is more to parse
 
 	(*pstr)++;
 	return (STAT_OK);							// signal that parsing is complete
 }
-
-/*
- * _get_nv_pair_strict() - get the next name-value pair w/strict JSON rules
- *
- *	Parse the next statement and populate the command object (nvObj).
- *
- *	Leaves string pointer (str) on the first character following the object.
- *	Which is the character just past the ',' separator if it's a multi-valued
- *	object or the terminating NUL if single object or the last in a multi.
- *
- *	Keeps track of tree depth and closing braces as much as it has to.
- *	If this were to be extended to track multiple parents or more than two
- *	levels deep it would have to track closing curlies - which it does not.
- *
- *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string()
- *
- *	If a group prefix is passed in it will be pre-pended to any name parsed
- *	to form a token string. For example, if "x" is provided as a group and
- *	"fr" is found in the name string the parser will search for "xfr" in the
- *	cfgArray.
- */
- /*
-static stat_t _get_nv_pair_strict(nvObj_t *nv, char_t **pstr, int8_t *depth)
-{
-	char_t *tmp;
-	char_t terminators[] = {"},"};
-
-	nv_reset_nv(nv);							// wipes the object and sets the depth
-
-	// --- Process name part ---
-	// find leading and trailing name quotes and set pointers.
-	if ((*pstr = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
-	if ((tmp = strchr(++(*pstr), '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);}
-	*tmp = NUL;
-	strncpy(nv->token, *pstr, TOKEN_LEN);		// copy the string to the token
-
-	// --- Process value part ---  (organized from most to least frequently encountered)
-	*pstr = ++tmp;
-	if ((*pstr = strchr(*pstr, ':')) == NULL) return (STAT_JSON_SYNTAX_ERROR);
-	(*pstr)++;									// advance to start of value field
-
-	// nulls (gets)
-	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
-		nv->valuetype = TYPE_NULL;
-		nv->value = TYPE_NULL;
-
-	// numbers
-	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
-		if(tmp == *pstr) { return (STAT_BAD_NUMBER_FORMAT);}
-		nv->valuetype = TYPE_FLOAT;
-
-	// object parent
-	} else if (**pstr == '{') {
-		nv->valuetype = TYPE_PARENT;
-//		*depth += 1;							// nv_reset_nv() sets the next object's level so this is redundant
-		(*pstr)++;
-		return(STAT_EAGAIN);					// signal that there is more to parse
-
-	// strings
-	} else if (**pstr == '\"') { 				// value is a string
-		(*pstr)++;
-		nv->valuetype = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL) { return (STAT_JSON_SYNTAX_ERROR);} // find the end of the string
-		*tmp = NUL;
-
-//		ritorno(nv_copy_string(nv, *pstr));
-		// if string begins with 0x it might be data, needs to be at least 3 chars long
-		if( strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x')
-		{
-			uint32_t *v = (uint32_t*)&nv->value;
-			*v = strtoul(*pstr, 0L, 0);
-			nv->valuetype = TYPE_DATA;
-		} else {
-			ritorno(nv_copy_string(nv, *pstr));
-		}
-
-		*pstr = ++tmp;
-
-	// boolean true/false
-	} else if (**pstr == 't') {
-		nv->valuetype = TYPE_BOOL;
-		nv->value = true;
-	} else if (**pstr == 'f') {
-		nv->valuetype = TYPE_BOOL;
-		nv->value = false;
-
-	// arrays
-	} else if (**pstr == '[') {
-		nv->valuetype = TYPE_ARRAY;
-		ritorno(nv_copy_string(nv, *pstr));	// copy array into string for error displays
-		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
-
-	// general error condition
-	} else { return (STAT_JSON_SYNTAX_ERROR); }	// ill-formed JSON
-
-	// process comma separators and end curlies
-	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
-		return (STAT_JSON_SYNTAX_ERROR);
-	}
-	if (**pstr == '}') {
-		*depth -= 1;							// pop up a nesting level
-		(*pstr)++;								// advance to comma or whatever follows
-	}
-	if (**pstr == ',') { return (STAT_EAGAIN);}	// signal that there is more to parse
-
-	(*pstr)++;
-	return (STAT_OK);							// signal that parsing is complete
-}
-*/
 
 /****************************************************************************
  * json_serialize() - make a JSON object string from JSON object array
@@ -656,7 +559,8 @@ void json_print_response(uint8_t status)
 
 stat_t json_set_jv(nvObj_t *nv)
 {
-	if (nv->value > JV_VERBOSE) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > JV_VERBOSE)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	js.json_verbosity = nv->value;
 
 	js.echo_json_footer = false;

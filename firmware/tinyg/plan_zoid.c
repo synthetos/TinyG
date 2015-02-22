@@ -2,8 +2,8 @@
  * plan_zoid.c - acceleration managed line planning and motion execution - trapezoid planner
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2014 Rob Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2015 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -31,11 +31,7 @@
 #include "planner.h"
 #include "report.h"
 #include "util.h"
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 /*
  * mp_calculate_trapezoid() - calculate trapezoid parameters
  *
@@ -415,8 +411,3 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 #endif
     return estimate;
 }
-/*
-#ifdef __cplusplus
-}
-#endif
-*/

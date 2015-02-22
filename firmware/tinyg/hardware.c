@@ -2,7 +2,7 @@
  * hardware.c - general hardware support functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -166,7 +166,8 @@ void hw_hard_reset(void)			// software hard reset using the watchdog timer
 
 stat_t hw_hard_reset_handler(void)
 {
-	if (cs.hard_reset_requested == false) { return (STAT_NOOP);}
+	if (cs.hard_reset_requested == false)
+        return (STAT_NOOP);
 	hw_hard_reset();				// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }
@@ -183,7 +184,8 @@ void hw_request_bootloader() { cs.bootloader_requested = true;}
 stat_t hw_bootloader_handler(void)
 {
 #ifdef __AVR
-	if (cs.bootloader_requested == false) { return (STAT_NOOP);}
+	if (cs.bootloader_requested == false)
+        return (STAT_NOOP);
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 #endif
@@ -225,7 +227,8 @@ stat_t hw_run_boot(nvObj_t *nv)
  */
 stat_t hw_set_hv(nvObj_t *nv)
 {
-	if (nv->value > TINYG_HARDWARE_VERSION_MAX) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (nv->value > TINYG_HARDWARE_VERSION_MAX)
+        return (STAT_INPUT_EXCEEDS_MAX_VALUE);
 	set_flt(nv);					// record the hardware version
 	_port_bindings(nv->value);		// reset port bindings
 	switch_init();					// re-initialize the GPIO ports

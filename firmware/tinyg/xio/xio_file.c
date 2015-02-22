@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -52,7 +52,7 @@ static struct cfgFILE const cfgFile[] PROGMEM = {
  * FUNCTIONS
  ******************************************************************************/
 
-/* 
+/*
  *	xio_init_file() - initialize and set controls for file IO
  *
  *	Need to bind the open function or a subsequent opens will fail
@@ -71,7 +71,7 @@ void xio_init_file()
 	}
 }
 
-/*	
+/*
  *	xio_open_file() - open the program memory device to a specific string address
  *
  *	OK, so this is not really a UNIX open() except for its moral equivalent

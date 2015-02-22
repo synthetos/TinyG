@@ -2,8 +2,8 @@
  * planner.c - Cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2014 Rob Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2015 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -241,9 +241,9 @@ stat_t mp_dwell(float seconds)
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
+	if ((bf = mp_get_write_buffer()) == NULL)			// get write buffer or fail
 		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// not ever supposed to fail
-	}
+
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes
 	bf->move_state = MOVE_NEW;

@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -49,11 +49,11 @@ struct cfgUSART {
 		x_flow_t x_flow;
 		USART_t *usart;			// usart binding
 		PORT_t *port;			// port binding
-		uint8_t baud; 
-		uint8_t inbits; 
-		uint8_t outbits; 
+		uint8_t baud;
+		uint8_t inbits;
+		uint8_t outbits;
 		uint8_t outclr;
-		uint8_t outset; 
+		uint8_t outset;
 };
 
 static struct cfgUSART const cfgUsart[] PROGMEM = {
@@ -64,7 +64,7 @@ static struct cfgUSART const cfgUsart[] PROGMEM = {
 		xio_getc_usart,
 		xio_putc_usb,
 		xio_fc_usart,
-		&USB_USART,	
+		&USB_USART,
 		&USB_PORT,
 		USB_BAUD,
 		USB_INBITS_bm,
@@ -124,7 +124,7 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_reset_working_flags(d);
-	xio_ctrl_generic(d, flags);						// setup control flags	
+	xio_ctrl_generic(d, flags);						// setup control flags
 	if (d->flag_xoff) {								// initialize flow control settings
 		dx->fc_state_rx = FC_IN_XON;
 		dx->fc_state_tx = FC_IN_XON;
@@ -137,7 +137,7 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	dx->tx_buf_tail = 1;
 
 	// baud rate and USART setup (do this last)
-	dx->usart = (USART_t *)pgm_read_word(&cfgUsart[idx].usart); 
+	dx->usart = (USART_t *)pgm_read_word(&cfgUsart[idx].usart);
 	dx->port = (PORT_t *)pgm_read_word(&cfgUsart[idx].port);
 	uint8_t baud = (uint8_t)pgm_read_byte(&cfgUsart[idx].baud);
 	if (baud == XIO_BAUD_UNSPECIFIED) { baud = XIO_BAUD_DEFAULT; }
@@ -187,7 +187,7 @@ void xio_xoff_usart(xioUsart_t *dx)
 
 		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
-			dx->fc_char_rx = XOFF; 
+			dx->fc_char_rx = XOFF;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
@@ -206,7 +206,7 @@ void xio_xon_usart(xioUsart_t *dx)
 
 		// If using XON/XOFF flow control
 		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
-			dx->fc_char_rx = XON; 
+			dx->fc_char_rx = XON;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
@@ -245,7 +245,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 	}
 }
 
-/* 
+/*
  *	xio_gets_usart() - read a complete line from the usart device
  * _gets_helper() 	 - non-blocking character getter for gets
  *
@@ -324,7 +324,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
  *	This routine returns a single character from the RX buffer to the caller.
  *	It's typically called by fgets() and is useful for single-threaded IO cases.
  *	Cases with multiple concurrent IO streams may want to use the gets() function
- *	which is incompatible with the stdio system. 
+ *	which is incompatible with the stdio system.
  *
  *  Flags that affect behavior:
  *
@@ -341,7 +341,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 int xio_getc_usart(FILE *stream)
 {
 	// these convenience pointers optimize faster than resolving the references each time
-	xioDev_t *d = (xioDev_t *)stream->udata;		
+	xioDev_t *d = (xioDev_t *)stream->udata;
 	xioUsart_t *dx = d->x;
 	char c;
 
@@ -368,10 +368,10 @@ int xio_getc_usart(FILE *stream)
 	return(c);
 }
 
-/* 
+/*
  * xio_putc_usart() - stdio compatible char writer for usart devices
- *	This routine is not needed at the class level. 
- *	See xio_putc_usb() and xio_putc_rs485() 
+ *	This routine is not needed at the class level.
+ *	See xio_putc_usb() and xio_putc_rs485()
  */
 int xio_putc_usart(const char c, FILE *stream)
 {

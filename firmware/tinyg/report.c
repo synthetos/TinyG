@@ -2,7 +2,7 @@
  * report.c - TinyG status report and other reporting functions.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -113,7 +113,8 @@ void rpt_print_loading_configs_message(void)
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE) { text_response(STAT_OK, (char_t *)"");}// prompt
+	if (cfg.comm_mode == TEXT_MODE)
+        text_response(STAT_OK, (char_t *)"");   // prompt
 }
 
 /*****************************************************************************
@@ -223,10 +224,11 @@ stat_t sr_set_status_report(nvObj_t *nv)
 			nv_persist(nv);
 			elements++;
 		} else {
-			return (STAT_INPUT_VALUE_UNSUPPORTED);
+			return (STAT_UNRECOGNIZED_NAME);
 		}
 	}
-	if (elements == 0) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+	if (elements == 0)
+        return (STAT_INVALID_OR_MALFORMED_COMMAND);
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
 	return(_populate_unfiltered_status_report());			// return current values
 }
@@ -271,13 +273,19 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
 	return (STAT_NOOP);
 #endif
 
-	if (sr.status_report_verbosity == SR_OFF) return (STAT_NOOP);
-	if (sr.status_report_requested == false) return (STAT_NOOP);
+	if (sr.status_report_verbosity == SR_OFF)
+        return (STAT_NOOP);
+
+	if (sr.status_report_requested == false)
+        return (STAT_NOOP);
+
 #ifdef __ARM
-	if (SysTickTimer.getValue() < sr.status_report_systick) return (STAT_NOOP);
+	if (SysTickTimer.getValue() < sr.status_report_systick)
+        return (STAT_NOOP);
 #endif
 #ifdef __AVR
-	if (SysTickTimer_getValue() < sr.status_report_systick) return (STAT_NOOP);
+	if (SysTickTimer_getValue() < sr.status_report_systick)
+        return (STAT_NOOP);
 #endif
 
 	sr.status_report_requested = false;		// disable reports until requested again
@@ -486,8 +494,12 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 	return (STAT_NOOP);
 #endif
 
-	if (qr.queue_report_verbosity == QR_OFF) { return (STAT_NOOP);}
-	if (qr.queue_report_requested == false) { return (STAT_NOOP);}
+	if (qr.queue_report_verbosity == QR_OFF)
+        return (STAT_NOOP);
+
+	if (qr.queue_report_requested == false)
+        return (STAT_NOOP);
+
 	qr.queue_report_requested = false;
 
 	if (cfg.comm_mode == TEXT_MODE) {
@@ -527,9 +539,11 @@ void rx_request_rx_report(void) {
  * rx_report_callback() - send rx report if one has been requested
  */
 stat_t rx_report_callback(void) {
-    if (!rx.rx_report_requested) { return (STAT_NOOP); }
+    if (!rx.rx_report_requested)
+        return (STAT_NOOP);
+
     rx.rx_report_requested = false;
-    
+
     fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);
     return (STAT_OK);
 }
@@ -612,7 +626,8 @@ stat_t job_populate_job_report()
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);
 
-		if ((nv = nv->nx) == NULL) return (STAT_OK); // should never be NULL unless SR length exceeds available buffer array
+		if ((nv = nv->nx) == NULL)
+            return (STAT_OK);               // should never be NULL unless SR length exceeds available buffer array
 	}
 	return (STAT_OK);
 }
@@ -628,7 +643,7 @@ stat_t job_set_job_report(nvObj_t *nv)
 			nv->index = job_start + i;		// index of the SR persistence location
 			nv_persist(nv);
 		} else {
-			return (STAT_INPUT_VALUE_UNSUPPORTED);
+			return (STAT_UNSUPPORTED_TYPE);
 		}
 	}
 	job_populate_job_report();				// return current values

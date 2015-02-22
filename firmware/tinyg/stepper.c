@@ -34,6 +34,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "planner.h"
+#include "report.h"
 #include "hardware.h"
 #include "text_parser.h"
 #include "util.h"
@@ -454,7 +455,7 @@ stat_t st_motor_power_callback() 	// called by controller
 			continue;
 		}
 
-		// energize motor if it's set to MOTOR_ALWAYS_POWERED 
+		// energize motor if it's set to MOTOR_ALWAYS_POWERED
 		if (st_cfg.mot[m].power_mode == MOTOR_ALWAYS_POWERED) {
 			if (! _motor_is_enabled(m)) _energize_motor(m);
 			continue;
@@ -463,11 +464,16 @@ stat_t st_motor_power_callback() 	// called by controller
 		// start a countdown if MOTOR_POWERED_IN_CYCLE or MOTOR_POWERED_ONLY_WHEN_MOVING
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
 			st_run.mot[m].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			st_run.mot[m].power_systick = SysTickTimer_getValue() + 
+			st_run.mot[m].power_systick = SysTickTimer_getValue() +
 											(st_cfg.motor_power_timeout * 1000);
 		}
-	
-		// do not process countdown if in a feedhold 
+
+		// do not process countdown if in a feedhold
+		if (cm_get_combined_state() == COMBINED_HOLD) {
+			continue;
+		}
+
+		// do not process countdown if in a feedhold
 		if (cm_get_combined_state() == COMBINED_HOLD) {
 			continue;
 		}
@@ -477,6 +483,7 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {
 				st_run.mot[m].power_state = MOTOR_IDLE;
 				_deenergize_motor(m);
+                sr_request_status_report(SR_TIMED_REQUEST);		// request a status report when motors shut down
 			}
 		}
 	}
@@ -795,13 +802,13 @@ static void _load_move()
 
 			// Enable the stepper and start motor power management
 			if (st_cfg.mot[MOTOR_1].power_mode != MOTOR_DISABLED) {
-				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;             // energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;// set power management state
 			}
 
 		} else {  // Motor has 0 steps; might need to energize motor for power mode processing
 			if (st_cfg.mot[MOTOR_1].power_mode == MOTOR_POWERED_IN_CYCLE) {
-				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;				// energize motor
+				PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;             // energize motor
 				st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_START;
 			}
 		}
@@ -886,22 +893,68 @@ static void _load_move()
 		}
 		ACCUMULATE_ENCODER(MOTOR_4);
 #endif
+#if (MOTORS >= 5)	//**** MOTOR_5 LOAD ****
+		if ((st_run.mot[MOTOR_5].substep_increment = st_pre.mot[MOTOR_5].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_5].accumulator_correction_flag == true) {
+				st_pre.mot[MOTOR_5].accumulator_correction_flag = false;
+				st_run.mot[MOTOR_5].substep_accumulator *= st_pre.mot[MOTOR_5].accumulator_correction;
+			}
+			if (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction) {
+				st_pre.mot[MOTOR_5].prev_direction = st_pre.mot[MOTOR_5].direction;
+				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
+				if (st_pre.mot[MOTOR_5].direction == DIRECTION_CW)
+				PORT_MOTOR_5_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_5_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+			PORT_MOTOR_5_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
+			SET_ENCODER_STEP_SIGN(MOTOR_5, st_pre.mot[MOTOR_5].step_sign);
+		} else {
+			if (st_cfg.mot[MOTOR_5].power_mode == MOTOR_POWERED_IN_CYCLE) {
+				PORT_MOTOR_5_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.mot[MOTOR_5].power_state = MOTOR_POWER_TIMEOUT_START;
+			}
+		}
+		ACCUMULATE_ENCODER(MOTOR_5);
+#endif
+#if (MOTORS >= 6)	//**** MOTOR_6 LOAD ****
+		if ((st_run.mot[MOTOR_6].substep_increment = st_pre.mot[MOTOR_6].substep_increment) != 0) {
+			if (st_pre.mot[MOTOR_6].accumulator_correction_flag == true) {
+				st_pre.mot[MOTOR_6].accumulator_correction_flag = false;
+				st_run.mot[MOTOR_6].substep_accumulator *= st_pre.mot[MOTOR_6].accumulator_correction;
+			}
+			if (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction) {
+				st_pre.mot[MOTOR_6].prev_direction = st_pre.mot[MOTOR_6].direction;
+				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
+				if (st_pre.mot[MOTOR_6].direction == DIRECTION_CW)
+				PORT_MOTOR_6_VPORT.OUT &= ~DIRECTION_BIT_bm; else
+				PORT_MOTOR_6_VPORT.OUT |= DIRECTION_BIT_bm;
+			}
+			PORT_MOTOR_6_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+			st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
+			SET_ENCODER_STEP_SIGN(MOTOR_6, st_pre.mot[MOTOR_6].step_sign);
+		} else {
+			if (st_cfg.mot[MOTOR_6].power_mode == MOTOR_POWERED_IN_CYCLE) {
+				PORT_MOTOR_6_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
+				st_run.mot[MOTOR_6].power_state = MOTOR_POWER_TIMEOUT_START;
+			}
+		}
+		ACCUMULATE_ENCODER(MOTOR_6);
+#endif
 		//**** do this last ****
 
 		TIMER_DDA.PER = st_pre.dda_period;
-		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;				// enable the DDA timer
+		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;			// enable the DDA timer
 
 	// handle dwells
 	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
-		TIMER_DWELL.PER = st_pre.dda_period;				// load dwell timer period
-		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;				// enable the dwell timer
+		TIMER_DWELL.PER = st_pre.dda_period;			// load dwell timer period
+		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;			// enable the dwell timer
 
 	// handle synchronous commands
 	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
-
-	// else it's null - do nothing
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
@@ -1134,10 +1187,11 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 
 stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
-	if (fp_NE(nv->value,1) && fp_NE(nv->value,2) && fp_NE(nv->value,4) && fp_NE(nv->value,8)) {
+    uint32_t mi = (uint32_t)nv->value;
+	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_ui8(nv);						// set it anyway, even if it's unsupported
+	set_int(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);
 	_set_hw_microsteps(_get_motor(nv), (uint8_t)nv->value);
 	return (STAT_OK);
@@ -1145,7 +1199,8 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 
 stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
-	if (nv->value >= MOTOR_POWER_MODE_MAX_VALUE) return (STAT_INPUT_VALUE_UNSUPPORTED);
+	if ((uint8_t)nv->value >= MOTOR_POWER_MODE_MAX_VALUE)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
 	set_ui8(nv);
 	return (STAT_OK);
 	// NOTE: The motor power callback makes these setting take effect immediately
@@ -1181,7 +1236,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
  */
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	nv->value = _motor_is_enabled(_get_motor(nv));	
+	nv->value = _motor_is_enabled(_get_motor(nv));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
