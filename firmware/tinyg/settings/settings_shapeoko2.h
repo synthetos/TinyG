@@ -64,7 +64,7 @@
 #define M1_TRAVEL_PER_REV		40.00				// 1tr
 #define M1_MICROSTEPS			8					// 1mi		1,2,4,8
 #define M1_POLARITY				0					// 1po		0=normal, 1=reversed
-#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		standard
+#define M1_POWER_MODE			MOTOR_POWER_MODE	// 1pm		2=standard
 #define M1_POWER_LEVEL			MOTOR_POWER_LEVEL	// 1mp
 
 #define M2_MOTOR_MAP			AXIS_Y
