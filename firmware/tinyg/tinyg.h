@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.13	// Set profile to default profile
+#define TINYG_FIRMWARE_BUILD        440.14	// motor enable bounds checking
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -141,7 +141,7 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define PROGMEM					// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
-typedef uint8_t char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t
+typedef char char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t
 								// because in C++ uint8_t and char are distinct types and
 								// we want chars to behave as uint8's
 
