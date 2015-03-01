@@ -309,13 +309,8 @@ static stat_t _compute_arc()
 	arc.segment_count = (int32_t)arc.segments;
 	arc.segment_theta = arc.angular_travel / arc.segments;
 	arc.segment_linear_travel = arc.linear_travel / arc.segments;
-
-	// could calculate the center, but it's given to us by the offsets
-	// arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
-	// arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
-	arc.center_0 = arc.offset[arc.plane_axis_0];
-	arc.center_1 = arc.offset[arc.plane_axis_1];
-
+    arc.center_0 = arc.position[arc.plane_axis_0] - sin(arc.theta) * arc.radius;
+    arc.center_1 = arc.position[arc.plane_axis_1] - cos(arc.theta) * arc.radius;
 	arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
 	return (STAT_OK);
 }
