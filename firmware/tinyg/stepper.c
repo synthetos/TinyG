@@ -1263,7 +1263,11 @@ stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initiali
 	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_deenergize_motors();
 	} else {
-		_deenergize_motor((uint8_t)nv->value-1);
+        uint8_t motor = (uint8_t)nv->value;
+        if (motor > MOTORS) {
+            return (STAT_INPUT_VALUE_RANGE_ERROR);
+        }
+        _deenergize_motor(motor-1);     // adjust so that motor 1 is actually 0 (etc)
 	}
 	return (STAT_OK);
 }
@@ -1273,7 +1277,11 @@ stat_t st_set_me(nvObj_t *nv)	// Make sure this function is not part of initiali
 	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_energize_motors();
 	} else {
-		_energize_motor((uint8_t)nv->value-1);
+        uint8_t motor = (uint8_t)nv->value;
+        if (motor > MOTORS) {
+            return (STAT_INPUT_VALUE_RANGE_ERROR);
+        }
+		_energize_motor(motor-1);     // adjust so that motor 1 is actually 0 (etc)
 	}
 	return (STAT_OK);
 }
