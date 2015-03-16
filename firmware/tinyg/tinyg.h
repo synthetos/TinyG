@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.02	// installed g2-style controller changes
+#define TINYG_FIRMWARE_BUILD        441.03	// config work to support packet RX mode
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

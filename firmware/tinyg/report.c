@@ -113,7 +113,7 @@ void rpt_print_loading_configs_message(void)
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cfg.comm_mode == TEXT_MODE)
+	if (cs.comm_mode == TEXT_MODE)
         text_response(STAT_OK, (char_t *)"");   // prompt
 }
 
@@ -502,7 +502,7 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 
 	qr.queue_report_requested = false;
 
-	if (cfg.comm_mode == TEXT_MODE) {
+	if (cs.comm_mode == TEXT_MODE) {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
 			fprintf(stderr, "qr:%d\n", qr.buffers_available);
 		} else  {
@@ -652,7 +652,7 @@ stat_t job_set_job_report(nvObj_t *nv)
 
 uint8_t job_report_callback()
 {
-	if (cfg.comm_mode == TEXT_MODE) {
+	if (cs.comm_mode == TEXT_MODE) {
 		// no-op, job_ids are client app state
 	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
 		fprintf(stderr, "{job:[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );

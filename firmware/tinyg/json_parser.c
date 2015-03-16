@@ -485,7 +485,7 @@ void json_print_response(uint8_t status)
 	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		nv_reset_nv_list();
-		nv_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
+		nv_add_string((const char_t *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t nv_type;

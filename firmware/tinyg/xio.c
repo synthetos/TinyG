@@ -318,7 +318,7 @@ void xio_set_stderr(const uint8_t dev)
 
 char_t *readline(devflags_t *flags, uint16_t *size)
 {
-	if (xio.enable_packet_mode) {
+	if (xio.rx_mode == RX_MODE_PACKET) {
 		return (_readline_packet(flags, size));
 	}
 	return (_readline_stream(flags, size));

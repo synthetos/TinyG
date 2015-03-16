@@ -151,6 +151,11 @@ typedef uint16_t devflags_t;
 
 #define flags_t uint16_t
 
+typedef enum {
+    RX_MODE_STREAM = 0,
+    RX_MODE_PACKET
+} xioRXMode;
+
 typedef struct xioDEVICE {						// common device struct (one per dev)
 	// references and self references
 	uint16_t magic_start;						// memory integrity check
@@ -214,8 +219,8 @@ typedef struct xioSingleton {
     uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO cntrl bits)
     uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO cntrl bits)
     uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO cntrl bits)
-    uint8_t enable_packet_mode;			// set true to enable packetized protocol
-
+    xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
+    
     // streaming reader
     uint8_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known

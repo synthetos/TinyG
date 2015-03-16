@@ -59,10 +59,7 @@ typedef struct controllerSingleton {	// main TG controller struct
     uint8_t comm_mode;					// 0=text mode, 1=JSON mode
     uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
-//	uint8_t primary_src;				// primary input source device
-//	uint8_t secondary_src;				// secondary input source device
-//	uint8_t default_src;				// default source device
-	uint16_t read_index;				// length of line being read
+//	uint16_t read_index;				// length of line being read
 
 	// system state variables
 	cmControllerState controller_state;
@@ -81,7 +78,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	// controller serial buffers
 	char_t *bufp;						// pointer to primary or secondary in buffer
 	uint16_t linelen;					// length of currently processing line
-	char_t in_buf[MAXED_BUFFER_LEN];	// primary input buffer
+//	char_t in_buf[MAXED_BUFFER_LEN];	// primary input buffer
 	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer
 	char_t saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
 
