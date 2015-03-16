@@ -55,7 +55,6 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
-#define COMM_RX_MODE	            RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 //#define COMM_RX_MODE	            RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 #define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 #define NETWORK_MODE				NETWORK_STANDALONE
@@ -80,10 +79,11 @@
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-// Comm mode and echo levels
-#define COM_EXPAND_CR				false
-#define COM_ENABLE_ECHO				false
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+// Communications settings
+#define XIO_EXPAND_CR				false
+#define XIO_ENABLE_ECHO				false
+#define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+#define XIO_RX_MODE	                RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 
 //**** DEBUG SETTINGS ****
 

@@ -237,7 +237,6 @@ buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx)
 
 buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 {
-//	return (dx->rx_buf_count);
 	if (dx->rx_buf_head <= dx->rx_buf_tail) {
 		return (dx->rx_buf_tail - dx->rx_buf_head);
 	} else {

@@ -216,9 +216,9 @@ typedef struct xioSingleton {
     uint8_t usb_baud_rate;				// see xio_usart.h for XIO_BAUD values
     uint8_t usb_baud_flag;				// technically this belongs in the controller singleton
 
-    uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO cntrl bits)
-    uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO cntrl bits)
-    uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO cntrl bits)
+    uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO ctrl bits)
+    uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO ctrl bits)
+    uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
     
     // streaming reader
@@ -227,7 +227,6 @@ typedef struct xioSingleton {
     char in_buf[RX_STREAM_BUFFER_LEN];
 
     // packetized reader
-    //	uint8_t slots_free;
     uint32_t next_slot_seqnum;
     slot_t slot[RX_PACKET_SLOTS];
 

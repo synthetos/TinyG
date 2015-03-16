@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.04	// packet mode tests - appears to be working
+#define TINYG_FIRMWARE_BUILD        441.05	// updating footer handling and RX report for packet mode
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
