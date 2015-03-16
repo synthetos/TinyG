@@ -52,7 +52,7 @@ void network_init()
 	// re-point IO if in slave mode
 	if (cs.network_mode == NETWORK_SLAVE) {
 		controller_init(XIO_DEV_RS485, XIO_DEV_USB, XIO_DEV_USB);
-		tg_set_secondary_source(XIO_DEV_USB);
+		controller_set_secondary_source(XIO_DEV_USB);
 	}
 	xio_enable_rs485_rx();		// needed for clean start for RS-485;
 }

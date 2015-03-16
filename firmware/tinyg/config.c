@@ -107,7 +107,7 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  *	(2) if persistence is set up and at current config version use NVM data for config
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
- *	Do not clear it as the version and build numbers have already been set by tg_init()
+ *	Do not clear it as the version and build numbers have already been set by controller_init()
  *
  * NOTE: Config assertions are handled from the controller
  */

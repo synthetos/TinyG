@@ -29,12 +29,20 @@
 #define CONTROLLER_H_ONCE
 
 #define SAVED_BUFFER_LEN 80			    // saved buffer size (for reporting only)
-#define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
+#define MAXED_BUFFER_LEN 255			// text buffer size (255 max)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
 // see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
+
+typedef enum {				            // manages startup lines
+    CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
+    CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
+    CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
+    CONTROLLER_STARTUP,					// controller is running startup messages and lines
+    CONTROLLER_READY					// controller is active and ready for use
+} cmControllerState;
 
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
@@ -54,11 +62,10 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
-	uint16_t linelen;					// length of currently processing line
 	uint16_t read_index;				// length of line being read
 
 	// system state variables
-	uint8_t controller_state;
+	cmControllerState controller_state;
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
@@ -73,21 +80,15 @@ typedef struct controllerSingleton {	// main TG controller struct
 
 	// controller serial buffers
 	char_t *bufp;						// pointer to primary or secondary in buffer
-	char_t in_buf[INPUT_BUFFER_LEN];	// primary input buffer
+	uint16_t linelen;					// length of currently processing line
+	char_t in_buf[MAXED_BUFFER_LEN];	// primary input buffer
 	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer
 	char_t saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+
 	magic_t magic_end;
 } controller_t;
 
 extern controller_t cs;					// controller state structure
-
-enum cmControllerState {				// manages startup lines
-	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
-	CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
-	CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
-	CONTROLLER_STARTUP,					// controller is running startup messages and lines
-	CONTROLLER_READY					// controller is active and ready for use
-};
 
 /**** function prototypes ****/
 
@@ -97,8 +98,8 @@ stat_t controller_test_assertions(void);
 void controller_run(void);
 //void controller_reset(void);
 
-void tg_reset_source(void);
-void tg_set_primary_source(uint8_t dev);
-void tg_set_secondary_source(uint8_t dev);
+void controller_reset_source(void);
+void controller_set_primary_source(uint8_t dev);
+void controller_set_secondary_source(uint8_t dev);
 
 #endif // End of include guard: CONTROLLER_H_ONCE
