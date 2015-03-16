@@ -2,8 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,12 +28,8 @@
 #ifndef CONTROLLER_H_ONCE
 #define CONTROLLER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
+#define SAVED_BUFFER_LEN 80			    // saved buffer size (for reporting only)
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
-#define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
 // see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
 
@@ -42,22 +38,27 @@ extern "C"{
 
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-	uint8_t state;						// controller state
 	float null;							// dumping ground for items with no target
+
+	// system identification values
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
+	float config_version;				// tinyg configuration version for host / UI control
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility - platform revision
 
 	// communications state variables
+    uint8_t comm_mode;					// 0=text mode, 1=JSON mode
+    uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
+
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
-	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 	uint16_t linelen;					// length of currently processing line
 	uint16_t read_index;				// length of line being read
 
 	// system state variables
+	uint8_t controller_state;
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
@@ -99,9 +100,5 @@ void controller_run(void);
 void tg_reset_source(void);
 void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: CONTROLLER_H_ONCE
