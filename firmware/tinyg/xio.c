@@ -81,12 +81,18 @@
 #include "tinyg.h"					// needed by init() for default source
 #include "config.h"					// needed by init() for default source
 #include "controller.h"				// needed by init() for default source
+#include "report.h"
+#include "util.h"
 
-//
+/*
 typedef struct xioSingleton {
 	FILE * stderr_shadow;			// used for stack overflow / memory integrity checking
 } xioSingleton_t;
 xioSingleton_t xio;
+*/
+
+static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
+static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions

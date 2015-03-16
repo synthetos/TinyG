@@ -2,7 +2,7 @@
  * xio.h - Xmega IO devices - common header file
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -91,9 +91,49 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
+
+#define RX_PACKET_SLOTS	16					// number of readline() input buffers
+#define RX_PACKET_SLOT_SIZE 80				// input buffer length
+#define RX_STREAM_BUFFER_LEN 255			// input buffer for streaming serial mode
+
+typedef enum {						        // readline() buffer and slot states
+    BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
+    BUFFER_IS_FILLING,						// buffer is partially loaded
+    BUFFER_IS_CTRL,							// buffer contains a control line
+    BUFFER_IS_DATA,							// buffer contains a data line
+    BUFFER_IS_PROCESSING					// buffer is in use by the caller
+} cmBufferState;
+
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
 #define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
+
+//*** Device flags ***
+typedef uint16_t devflags_t;
+
+// device capabilities flags
+#define DEV_CAN_BE_CTRL		(0x0001)		// device can be a control channel
+#define DEV_CAN_BE_DATA		(0x0002)		// device can be a data channel
+#define DEV_CAN_READ		(0x0010)
+#define DEV_CAN_WRITE		(0x0020)
+
+// Device state flags
+// channel state
+#define DEV_IS_NONE			(0x0000)		// None of the following
+#define DEV_IS_CTRL			(0x0001)		// device is set as a control channel
+#define DEV_IS_DATA			(0x0002)		// device is set as a data channel
+#define DEV_IS_PRIMARY		(0x0004)		// device is the primary control channel
+#define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
+
+// device connection state
+#define DEV_IS_DISCONNECTED	(0x0010)		// device just disconnected (transient state)
+#define DEV_IS_CONNECTED	(0x0020)		// device is connected (e.g. USB)
+#define DEV_IS_READY		(0x0040)		// device is ready for use
+#define DEV_IS_ACTIVE		(0x0080)		// device is active
+
+// device exception flags
+#define DEV_THROW_EOF		(0x0100)		// end of file encountered
+
 
 /******************************************************************************
  * Device structures
@@ -153,6 +193,43 @@ typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
+typedef struct windowSlot {				// windowing buffer slots
+    cmBufferState state;				// state of slot
+    uint32_t seqnum;					// sequence number of slot
+    char buf[RX_PACKET_SLOT_SIZE];	// allocated buffer for slot
+} slot_t;
+
+typedef struct xioSingleton {
+    uint16_t magic_start;
+    FILE * stderr_shadow;				// used for stack overflow / memory integrity checking
+
+    // communications settings
+    uint8_t primary_src;				// primary input source device
+    uint8_t secondary_src;				// secondary input source device
+    uint8_t default_src;				// default source device
+
+    uint8_t usb_baud_rate;				// see xio_usart.h for XIO_BAUD values
+    uint8_t usb_baud_flag;				// technically this belongs in the controller singleton
+
+    uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO cntrl bits)
+    uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO cntrl bits)
+    uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO cntrl bits)
+    uint8_t enable_packet_mode;			// set true to enable packetized protocol
+
+    // streaming reader
+    uint8_t buf_size;					// persistent size variable
+    uint8_t buf_state;					// holds CTRL or DATA once this is known
+    char in_buf[RX_STREAM_BUFFER_LEN];
+
+    // packetized reader
+    //	uint8_t slots_free;
+    uint32_t next_slot_seqnum;
+    slot_t slot[RX_PACKET_SLOTS];
+
+    uint16_t magic_end;
+} xioSingleton_t;
+xioSingleton_t xio;
+
 /*************************************************************************
  *	Sub-Includes and static allocations
  *************************************************************************/
@@ -181,6 +258,9 @@ void xio_init(void);
 void xio_init_assertions(void);
 uint8_t xio_test_assertions(void);
 uint8_t xio_isbusy(void);
+
+uint8_t xio_get_packet_slots();
+char *readline(devflags_t *flags, uint16_t *size);	// Note: char_t aliases to char, but is not typedef'd yet
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);
@@ -271,7 +351,7 @@ enum xioSignals {
 #define SYN (char)0x16		// ^v - SYN - Used for queue flush
 #define CAN (char)0x18		// ^x - Cancel, abort
 #define ESC (char)0x1B		// ^[ - ESC(ape)
-//#define SP  (char)0x20		// ' '  Space character		// defined externally
+#define SPC  (char)0x20		// ' '  Space character	// NB: SP is defined externally
 #define DEL (char)0x7F		//  DEL(ete)
 
 #define Q_EMPTY (char)0xFF	// signal no character
