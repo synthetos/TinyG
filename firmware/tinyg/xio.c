@@ -571,8 +571,6 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
 		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
-//        stat_t status = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
-//		if (status == STAT_EAGAIN) {
 			return (_return_slot(flags));			// no more characters to read. Return an available slot
 		}
 		_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
