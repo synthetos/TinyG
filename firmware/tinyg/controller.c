@@ -66,7 +66,6 @@ static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
-static stat_t _command_dispatch(void);
 
 static stat_t _controller_state(void);
 static stat_t _dispatch_command(void);

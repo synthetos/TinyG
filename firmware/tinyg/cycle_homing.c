@@ -227,6 +227,7 @@ static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 	return (STAT_EAGAIN);
 }
 
+#ifdef __NEW_SWITCHES
 static void _trigger_feedhold(switch_t *s)
 {
 	cm_request_feedhold();
@@ -242,6 +243,7 @@ static void _restore_switch_settings(switch_t *s)
 {
 	s->on_trailing = hm.switch_saved_on_trailing;
 }
+#endif
 
 static stat_t _homing_axis_start(int8_t axis)
 {
