@@ -401,7 +401,6 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	if (xio.in_buf[0] == NUL) {							// look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
-//	if (strchr("{$?!~%Hh", xio.in_buf[0]) != NULL) {	// a match indicates control line
 	if (_parse_control(xio.in_buf)) {	                // true indicates control line
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
@@ -483,7 +482,9 @@ uint8_t xio_get_packet_slots()
     return (free);      
 }
 
-//********* readline() helpers *********
+//**************************
+//*** readline() helpers ***
+//**************************
 
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)  
@@ -504,7 +505,6 @@ static int8_t _get_lowest_seqnum_slot(cmBufferState state)
 	uint32_t seqnum = MAX_ULONG;
 
 	for (uint8_t s=0; s < RX_PACKET_SLOTS; s++) {
-//		if ((xio.slot[s].seqnum != 0) && (xio.slot[s].state == state) && (xio.slot[s].seqnum < seqnum)) {
 		if ((xio.slot[s].state == state) && (xio.slot[s].seqnum < seqnum)) {
 			seqnum = xio.slot[s].seqnum;
 			slot = s;
@@ -521,18 +521,14 @@ static void _mark_slot(int8_t s)
     // discard null buffers
 	if (*p == NUL) {
 		xio.slot[s].state = BUFFER_IS_FREE;
-//		xio.slot[s].seqnum = 0;                         // ++++ Is thie necessary?
 		return;											// return if no data present
 	}
     
     // skip leading whitespace & quotes
-    while ((*p == SPC) || (*p == TAB) || (*p == '"')) { 
-        p++;
-    }
+    while ((*p == SPC) || (*p == TAB) || (*p == '"')) { p++; }
     
 	// mark slot w/sequence number and command type
-	xio.slot[s].seqnum = ++xio.next_slot_seqnum;
-//	if (strchr("{$?!~%Hh", *p) != NULL) {		        // a match indicates control line
+	xio.slot[s].seqnum = xio.next_slot_seqnum++;
 	if (_parse_control(p)) {		                    // true indicates control line
 		xio.slot[s].state = BUFFER_IS_CTRL;
 	} else {
@@ -544,27 +540,23 @@ static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, th
 {
 	int8_t s;
 
-//	xio.slots_free = 0;											// update free slot count
-	for (s=0; s < RX_PACKET_SLOTS; s++) {
-		if (xio.slot[s].state == BUFFER_IS_FREE) {
-//			xio.slots_free++;
-		}
-	}
-	if ((s = _get_lowest_seqnum_slot(BUFFER_IS_CTRL)) != -1) {	// return CTRL slot
-		*flags = DEV_IS_CTRL;
-		xio.slot[s].state = BUFFER_IS_PROCESSING;
-		return (xio.slot[s].buf);
-	}
-	if ((s = _get_lowest_seqnum_slot(BUFFER_IS_DATA)) != -1) {	// return DATA slot
-		*flags = DEV_IS_DATA;
-		xio.slot[s].state = BUFFER_IS_PROCESSING;
-		return (xio.slot[s].buf);
-	}
+    if (*flags & DEV_IS_CTRL) {                                 // scan for CTRL slots
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_CTRL)) != -1) {
+		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+		    *flags = DEV_IS_CTRL;
+		    return (xio.slot[s].buf);                           // return CTRL slot
+	    }
+    }
+    if (*flags & DEV_IS_DATA) {                                 // scan for DATA slots
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_DATA)) != -1) {
+		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+		    *flags = DEV_IS_DATA;
+		    return (xio.slot[s].buf);                           // return DATA slot
+	    }
+    }    
 	*flags = DEV_IS_NONE;										// got no data
 	return ((char_t *)NULL);									// there was no slot to return
 }
-
-// actual readline_packet() function
 
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 {
@@ -573,13 +565,14 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Free a previously processing slot (assumes calling readline() means a free should occur)
 	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
 		xio.slot[s].state = BUFFER_IS_FREE;
-//		xio.slot[s].seqnum = 0;
 	}
 
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_SLOT_SIZE) == STAT_EAGAIN) {
+		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
+//        stat_t status = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
+//		if (status == STAT_EAGAIN) {
 			return (_return_slot(flags));			// no more characters to read. Return an available slot
 		}
 		_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
@@ -588,7 +581,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_SLOT_SIZE) == STAT_EAGAIN) {
+		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
 			xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
 			return (_return_slot(flags));			// no more characters to read. Return an available slot
 		}

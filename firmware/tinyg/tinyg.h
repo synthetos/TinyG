@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.03	// config work to support packet RX mode
+#define TINYG_FIRMWARE_BUILD        441.04	// packet mode tests - appears to be working
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

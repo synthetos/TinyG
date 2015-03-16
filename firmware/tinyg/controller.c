@@ -233,7 +233,6 @@ static stat_t _dispatch_command()
 	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
 	return (STAT_OK);
 #endif
-
 #ifdef __ARM
 	devflags_t flags = DEV_IS_BOTH;
 	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
@@ -248,7 +247,6 @@ static stat_t _dispatch_control()
 	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
 	return (STAT_OK);
 #endif
-
 #ifdef __ARM
 	devflags_t flags = DEV_IS_CTRL;
 	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
@@ -258,33 +256,34 @@ static stat_t _dispatch_control()
 
 static void _dispatch_kernel()
 {
-	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) { // skip leading whitespace & quotes
-		cs.bufp++;
-	}
+    // skip leading whitespace & quotes
+	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) { 
+        cs.bufp++; 
+    }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
 			text_response(STAT_OK, cs.saved_buf);
 		}
-
+    }    
 	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
-	} else if (*cs.bufp == '!') { cm_request_feedhold();
-	} else if (*cs.bufp == '%') { cm_request_queue_flush();
-	} else if (*cs.bufp == '~') { cm_request_cycle_start();
+	else if (*cs.bufp == '!') { cm_request_feedhold(); }
+	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
+	else if (*cs.bufp == '~') { cm_request_cycle_start(); }
 
-	} else if (*cs.bufp == '{') {							// process as JSON mode
+	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode
 		json_parser(cs.bufp);
-
-	} else if (strchr("$?Hh", *cs.bufp) != NULL) {			// process as text mode
+    }    
+	else if (strchr("$?Hh", *cs.bufp) != NULL) {			// process as text mode
 		cs.comm_mode = TEXT_MODE;							// switch to text mode
 		text_response(text_parser(cs.bufp), cs.saved_buf);
-
-	} else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
+    }    
+	else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
 		text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
-
-	} else {
+    }    
+	else {
 		strncpy(cs.out_buf, cs.bufp, (MAXED_BUFFER_LEN-8));	// use out_buf as temp; '-8' is buffer for JSON chars
 		sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
 		json_parser(cs.bufp);

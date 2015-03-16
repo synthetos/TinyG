@@ -171,8 +171,8 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 /*
  * USART flow control functions and helpers
  *
- * xio_xoff_usart() - send XOFF flow control for USART devices
- * xio_xon_usart()  - send XON flow control for USART devices
+ * xio_xoff_usart() - send XOFF or RTS-off flow control for USART devices
+ * xio_xon_usart() - send XON or RTS-on  flow control for USART devices
  * xio_fc_usart() - Usart device flow control callback
  * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
  * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer

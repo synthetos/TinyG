@@ -55,8 +55,8 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
-//#define COMM_RX_MODE	            RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
-#define COMM_RX_MODE	            RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
+#define COMM_RX_MODE	            RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
+//#define COMM_RX_MODE	            RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 #define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 #define NETWORK_MODE				NETWORK_STANDALONE
 

@@ -93,7 +93,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 
 
 #define RX_PACKET_SLOTS	16					// number of readline() input buffers
-#define RX_PACKET_SLOT_SIZE 80				// input buffer length
+#define RX_PACKET_LEN 80				    // input buffer length
 #define RX_STREAM_BUFFER_LEN 255			// input buffer for streaming serial mode
 
 typedef enum {						        // readline() buffer and slot states
@@ -201,7 +201,7 @@ typedef void (*x_flow_t)(xioDev_t *d);
 typedef struct windowSlot {				// windowing buffer slots
     cmBufferState state;				// state of slot
     uint32_t seqnum;					// sequence number of slot
-    char buf[RX_PACKET_SLOT_SIZE];	// allocated buffer for slot
+    char buf[RX_PACKET_LEN];	        // allocated buffer for slot
 } slot_t;
 
 typedef struct xioSingleton {
