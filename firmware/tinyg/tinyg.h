@@ -45,12 +45,13 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.01	// checkpoint
+#define TINYG_FIRMWARE_BUILD        441.01	// checkpoint 3
 
 #endif
-#define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
-#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
-#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		// see hardware.h
+#define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
+#define TINYG_CONFIG_VERSION		5							// CV values start at 5 for backwards compatibility
+#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	    // see hardware.h
+#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		    // see hardware.h
 #define TINYG_HARDWARE_VERSION_MAX	TINYG_HARDWARE_VERSION
 
 /****** COMPILE-TIME SETTINGS ******/

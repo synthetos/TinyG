@@ -68,6 +68,11 @@ static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _command_dispatch(void);
 
+static stat_t _controller_state(void);
+static stat_t _dispatch_command(void);
+static stat_t _dispatch_control(void);
+static void _dispatch_kernel(void);
+
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
 stat_t hardware_bootloader_handler(void);
@@ -86,6 +91,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
+	cs.config_version = TINYG_CONFIG_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
 
 #ifdef __AVR
@@ -93,8 +99,8 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
-	cs.default_src = std_in;
-	controller_set_primary_source(cs.default_src);
+	xio.default_src = std_in;
+	controller_set_primary_source(xio.default_src);
 #endif
 
 #ifdef __ARM
@@ -205,7 +211,7 @@ static stat_t _command_dispatch()
 	// read input line or return if not a completed line
 	// xio_gets() is a non-blocking workalike of fgets()
 	while (true) {
-		if ((status = xio_gets(cs.primary_src, cs.in_buf, sizeof(cs.in_buf))) == STAT_OK) {
+		if ((status = xio_gets(xio.primary_src, cs.in_buf, sizeof(cs.in_buf))) == STAT_OK) {
 			cs.bufp = cs.in_buf;
 			break;
 		}
@@ -367,9 +373,9 @@ static stat_t _normal_idler()
  * and other messages are sent to the active device.
  */
 
-void controller_reset_source() { controller_set_primary_source(cs.default_src);}
-void controller_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void controller_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+void controller_reset_source() { controller_set_primary_source(xio.default_src);}
+void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
+void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
