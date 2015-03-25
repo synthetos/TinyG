@@ -83,7 +83,7 @@
         <InterfaceName>PDI</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800004463</ToolNumber>
+      <ToolNumber>J41800004274</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <UseGdb>True</UseGdb>
@@ -279,6 +279,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_cnc3040_generic.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_default.h">
