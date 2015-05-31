@@ -21,16 +21,16 @@
 
 //#include <stdio.h>					// needed for FILE def'n
 
-uint8_t tg_test(cmdObj_t *cmd);
-void tg_canned_startup(void);
+uint8_t run_test(nvObj_t *nv);
+void run_canned_startup(void);
 
 /***** DEBUG support ******
  *
- *	DEBUGs are print statements you probably only want enabled during 
+ *	DEBUGs are print statements you probably only want enabled during
  *	debugging, and then probably only for one section of code or another.
  *
  *	DEBUG logging is enabled if __DEBUG is defined.
- *	__DEBUG enables a set of arbitrary __dbXXXXXX defines that control 
+ *	__DEBUG enables a set of arbitrary __dbXXXXXX defines that control
  *	various debug regions, e.g. __dbCONFIG to enable debugging in config.c.
  *	Each __dbXXXXXX pairs with a dbXXXXXX global variable used as a flag.
  *	Each dbXXXXXX is initialized to TRUE or FALSE at startup in main.c.
@@ -43,14 +43,14 @@ void tg_canned_startup(void);
  *		DEBUG1(dbCONFIG, PSTR("String with one variable: %f"), float_var);
  *		DEBUG2(dbCONFIG, PSTR("String with two variables: %4.2f, %d"), float_var, int_var);
  *
- *	DEBUG print statements are coded so they occupy no program space if 
+ *	DEBUG print statements are coded so they occupy no program space if
  *	they are not enabled. If you also use __dbXXXX defines to enable debug
  *	code these will - of course - be in the code regardless.
  *
- *	There are also a variety of module-specific diagnostic print statements 
+ *	There are also a variety of module-specific diagnostic print statements
  *	that are enabled or not depending on whether __DEBUG is defined
  */
- 
+
 #ifdef __DEBUG
 void dump_everything(void);
 void roll_over_and_die(void);
@@ -116,15 +116,15 @@ struct mpSegmentLog sl[SEGMENT_LOGGER_MAX];
 uint16_t sl_index;
 
 // function prototype and calling macro
-void segment_logger(uint8_t move_state, 
+void segment_logger(uint8_t move_state,
 					uint32_t linenum,
-					uint32_t segments, 
-					uint32_t segment_count, 
+					uint32_t segments,
+					uint32_t segment_count,
 					float velocity,
 					float microseconds
-//					float position_x, 
+//					float position_x,
 //					float target_x,
-//					float step_x, 
+//					float step_x,
 //					float move_time,
 //					float accel_time
 					);

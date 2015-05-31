@@ -17,8 +17,8 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef xmega_rtc_h
-#define xmga_rtc_h
+#ifndef XMEGA_RTC_H_ONCE
+#define XMEGA_RTC_H_ONCE
 
 #define RTC_MILLISECONDS 10							// interrupt on every 10 RTC ticks (~10 ms)
 
@@ -27,12 +27,15 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
+// Note: sys_ticks is in ms but is only accurate to 10 ms as it's derived from rtc_ticks
 typedef struct rtClock {
-	volatile uint32_t clock_ticks;					// RTC tick counter
-	uint16_t magic_end;
+	uint32_t rtc_ticks;								// RTC tick counter, 10 uSec each
+	uint32_t sys_ticks;								// system tick counter, 1 ms each
+	uint16_t magic_end;								// magic number is read directly
 } rtClock_t;
-rtClock_t rtc;
+
+extern rtClock_t rtc;
 
 void rtc_init(void);								// initialize and start general timer
 
-#endif
+#endif // End of include guard: XMEGA_RTC_H_ONCE

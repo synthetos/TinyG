@@ -6,13 +6,23 @@ canonical_machine.c
 
 config.c
 
+config_app.c
+
 controller.c
 
 cycle_homing.c
 
+cycle_jogging.c
+
+cycle_probing.c
+
+encoder.c
+
 gcode_parser.c
 
 gpio.c
+
+hardware.c
 
 help.c
 
@@ -24,11 +34,17 @@ main.c
 
 network.c
 
+persistence.c
+
 planner.c
 
 plan_arc.c
 
+plan_exec.c
+
 plan_line.c
+
+plan_zoid.c
 
 pwm.c
 
@@ -38,13 +54,15 @@ spindle.c
 
 stepper.c
 
-system.c
+switch.c
 
 test.c
 
+text_parser.c
+
 util.c
 
-xio\xio.c
+xio.c
 
 xio\xio_file.c
 

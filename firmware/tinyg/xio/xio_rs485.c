@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -24,7 +24,7 @@
  * are also in this file.
  *
  * The RS485 driver is a half duplex driver that works over a single A/B
- * differential pair. So the USART can only be in RX or TX mode at any 
+ * differential pair. So the USART can only be in RX or TX mode at any
  * given time, never both. Most of the specialized logic in the RS485
  * driver deals with this constraint.
  */
@@ -35,10 +35,11 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>					// needed for blocking character writes
 
-#include "xio.h"
+#include "../xio.h"
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for canonical machine
+#include "../hardware.h"				// needed for hardware reset
 #include "../controller.h"				// needed for trapping kill char
 #include "../canonical_machine.h"		// needed for fgeedhold and cycle start
 
@@ -55,7 +56,7 @@
  */
 void xio_enable_rs485_tx()
 {
-	// enable TX, related interrupts & set DE and RE lines (disabling RX) 
+	// enable TX, related interrupts & set DE and RE lines (disabling RX)
 	RSu.usart->CTRLB = USART_TXEN_bm;
 	RSu.usart->CTRLA = CTRLA_RXOFF_TXON_TXCON;
 	RSu.port->OUTSET = (RS485_DE_bm | RS485_RE_bm);
@@ -63,32 +64,32 @@ void xio_enable_rs485_tx()
 
 void xio_enable_rs485_rx()
 {
-	// enable RX, related interrupts & clr DE and RE lines (disabling TX) 
+	// enable RX, related interrupts & clr DE and RE lines (disabling TX)
 	RSu.usart->CTRLB = USART_RXEN_bm;
 	RSu.usart->CTRLA = CTRLA_RXON_TXOFF_TXCON;
 	RSu.port->OUTCLR = (RS485_DE_bm | RS485_RE_bm);
 }
 
-/* 
+/*
  * xio_putc_rs485() - stdio compatible char writer for rs485 devices
  *
- * 	The TX putc() / interrupt dilemma: TX interrupts occur when the 
- *	USART DATA register is empty (ready for TX data) - and will keep 
+ * 	The TX putc() / interrupt dilemma: TX interrupts occur when the
+ *	USART DATA register is empty (ready for TX data) - and will keep
  *	firing as long as the TX buffer is completely empty (ready for TX
- *	data). So putc() and its ISR henchmen must disable interrupts when 
+ *	data). So putc() and its ISR henchmen must disable interrupts when
  *	there's nothing left to write or they will just keep firing.
  *
  *	To make matters worse, for some reason if you enable the TX interrupts
- *	and TX DATA is ready, it won't actually generate an interrupt. Putc() 
- *	must "prime" the first write itself. This requires a mutual exclusion 
- *	region around the dequeue operation to make sure the ISR and main 
+ *	and TX DATA is ready, it won't actually generate an interrupt. Putc()
+ *	must "prime" the first write itself. This requires a mutual exclusion
+ *	region around the dequeue operation to make sure the ISR and main
  *	routines don't collide.
  *
  *	Lastly, the system must detect the end of transmission (TX complete)
- *	to know when to revert the RS485 driver to RX mode. So there are 2 TX 
+ *	to know when to revert the RS485 driver to RX mode. So there are 2 TX
  *	interrupt conditions and handlers, not 1 like other USART TXs.
  *
- *	NOTE: Finding a buffer empty condition on the first byte of a string 
+ *	NOTE: Finding a buffer empty condition on the first byte of a string
  *		  is common as the TX byte is often written by the task itself.
  */
 int xio_putc_rs485(const char c, FILE *stream)
@@ -119,14 +120,14 @@ int xio_putc_rs485(const char c, FILE *stream)
 	return (XIO_OK);
 }
 
-/* 
+/*
  * RS485_TX_ISR - RS485 transmitter interrupt (TX)
  * RS485_TXC_ISR - RS485 transmission complete (See notes in xio_putc_rs485)
  */
 
 ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 {
-	// NOTE: Assumes the USART is in TX mode before this interrupt is fired 
+	// NOTE: Assumes the USART is in TX mode before this interrupt is fired
 	if (RSu.tx_buf_head == RSu.tx_buf_tail) {		// buffer empty - disable ints (NOTE)
 		RSu.usart->CTRLA = CTRLA_RXON_TXOFF_TXCON;	// doesn't work if you just &= it
 		return;
@@ -137,16 +138,16 @@ ISR(RS485_TX_ISR_vect)		//ISR(USARTC1_DRE_vect)	// USARTC1 data register empty
 	RSu.usart->DATA = RSu.tx_buf[RSu.tx_buf_tail];	// write char to TX DATA reg
 }
 
-ISR(RS485_TXC_ISR_vect)	// ISR(USARTC1_TXC_vect) 
+ISR(RS485_TXC_ISR_vect)	// ISR(USARTC1_TXC_vect)
 {
 	xio_enable_rs485_rx();							// revert to RX mode
 }
 
-/* 
+/*
  * RS485_RX_ISR - RS485 receiver interrupt (RX)
  */
 
-ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr 
+ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 {
 	char c;
 
@@ -158,7 +159,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 
 	// trap async commands - do not insert into RX queue
 	if (c == CHAR_RESET) {	 						// trap Kill character
-		tg_request_reset();							// call app-specific sig handler
+		hw_request_hard_reset();
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {						// trap feedhold signal

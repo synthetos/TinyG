@@ -1,6 +1,7 @@
-TinyG Introduction
+TINYG EDGE BRANCH
 ========
 
+<<<<<<< HEAD
 ![TinyG v7 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
 
 TinyG is a 6 axis motion control system designed for high-performance on small to mid-sized machines. Some features:
@@ -45,3 +46,9 @@ BRANCHES
 * MASTER is the current production code. This is not updated very frequently.
 * EDGE branch is thought to be relatively stable, but has not received enough testing to be promoted to master.
 * DEV is work in process and generally not a good idea to use. Use code from dev only if specifically directed there.
+=======
+[![Build Status](https://travis-ci.org/synthetos/TinyG.svg)](https://travis-ci.org/synthetos/TinyG)
+
+The edge branch is the work-in-process for the next stable release. Depending on the velocity of changes it's somewhere between alpha and beta. 
+An attempt is made to keep everything working and usable, but there are no guarantees. Generally speaking, the edge branch should not be used for production uses - use the master branch instead.
+>>>>>>> refs/heads/edge

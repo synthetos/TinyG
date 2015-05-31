@@ -1,5 +1,5 @@
-/* 
- * test_014_coordinate_offsets.h 
+/*
+ * test_014_coordinate_offsets.h
  *
  * Tests movement in 4 axes with all microatep settings. All moves should be the same length and time
  *
@@ -7,7 +7,7 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
-const char PROGMEM test_microsteps[] = "\
+const char test_microsteps[] PROGMEM = "\
 (MSG**** Microstep Test [v1] ****)\n\
 G00 G17 G21 G40 G49 G80 G90\n\
 g0x0y0z0\n\

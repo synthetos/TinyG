@@ -2,7 +2,7 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectVersion>6.1</ProjectVersion>
+    <ProjectVersion>6.2</ProjectVersion>
     <ToolchainName>com.Atmel.AVRGCC8.C</ToolchainName>
     <ProjectGuid>{f287940c-eaf0-4385-8aed-fa1d6e3b5832}</ProjectGuid>
     <avrdevice>ATxmega192A3</avrdevice>
@@ -15,27 +15,21 @@
     <AssemblyName>tinyg</AssemblyName>
     <Name>tinyg</Name>
     <RootNamespace>tinyg</RootNamespace>
-    <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
-    <OverrideVtorValue>
-    </OverrideVtorValue>
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
     <eraseonlaunchrule>0</eraseonlaunchrule>
     <AsfVersion>2.11.1</AsfVersion>
-    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
-    <avrtoolinterface />
+    <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
+    <avrtoolinterface>PDI</avrtoolinterface>
     <com_atmel_avrdbg_tool_simulator>
       <ToolType>com.atmel.avrdbg.tool.simulator</ToolType>
-      <ToolName>AVR Simulator</ToolName>
+      <ToolName>Simulator</ToolName>
       <ToolNumber>
       </ToolNumber>
-      <KeepTimersRunning>true</KeepTimersRunning>
-      <OverrideVtor>false</OverrideVtor>
-      <OverrideVtorValue>
-      </OverrideVtorValue>
       <Channel>
         <host>127.0.0.1</host>
-        <port>1226</port>
+        <port>49159</port>
         <ssl>False</ssl>
       </Channel>
     </com_atmel_avrdbg_tool_simulator>
@@ -45,8 +39,9 @@
         <configurations />
         <files />
         <documentation help="" />
+        <offline-documentation help="" />
         <dependencies>
-          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.3.0" />
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.10.1" />
         </dependencies>
       </framework-data>
     </AsfFrameworkConfig>
@@ -55,23 +50,69 @@
     <RamSnippetAddress>0x20000000</RamSnippetAddress>
     <UncachedRange />
     <BootSegment>0</BootSegment>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <com_atmel_avrdbg_tool_ispmk2>
+      <ToolType>com.atmel.avrdbg.tool.ispmk2</ToolType>
+      <ToolName>AVRISP mkII</ToolName>
+      <ToolNumber>000200127887</ToolNumber>
+      <Channel>
+        <host>127.0.0.1</host>
+        <port>49453</port>
+        <ssl>False</ssl>
+      </Channel>
+      <ToolOptions>
+        <InterfaceName>PDI</InterfaceName>
+        <InterfaceProperties>
+          <JtagDbgClock>249000</JtagDbgClock>
+          <JtagProgClock>1000000</JtagProgClock>
+          <IspClock>150000</IspClock>
+          <JtagInChain>false</JtagInChain>
+          <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
+          <JtagDevicesBefore>0</JtagDevicesBefore>
+          <JtagDevicesAfter>0</JtagDevicesAfter>
+          <JtagInstrBitsBefore>0</JtagInstrBitsBefore>
+          <JtagInstrBitsAfter>0</JtagInstrBitsAfter>
+        </InterfaceProperties>
+      </ToolOptions>
+    </com_atmel_avrdbg_tool_ispmk2>
+    <com_atmel_avrdbg_tool_atmelice>
+      <ToolOptions>
+        <InterfaceProperties>
+          <PdiClock>4000000</PdiClock>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
+      <ToolNumber>J41800004274</ToolNumber>
+      <ToolName>Atmel-ICE</ToolName>
+    </com_atmel_avrdbg_tool_atmelice>
+    <UseGdb>True</UseGdb>
+    <preserveEEPROM>true</preserveEEPROM>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
-      <AvrGcc xmlns="">
+      <AvrGcc>
         <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
         <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
         <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
         <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
         <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
         <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
-        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>F_CPU=32000000UL</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.optimization.level>Optimize more (-O2)</avrgcc.compiler.optimization.level>
         <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
         <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
         <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.linker.general.UseVprintfLibrary>True</avrgcc.linker.general.UseVprintfLibrary>
         <avrgcc.linker.libraries.Libraries>
           <ListValues>
             <Value>libm</Value>
+            <Value>libprintf_flt</Value>
           </ListValues>
         </avrgcc.linker.libraries.Libraries>
       </AvrGcc>
@@ -80,32 +121,38 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
       <AvrGcc>
-  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
-  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
-  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
-  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
-  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
-  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
-  <avrgcc.compiler.symbols.DefSymbols>
-    <ListValues>
-      <Value>F_CPU=32000000UL</Value>
-    </ListValues>
-  </avrgcc.compiler.symbols.DefSymbols>
-  <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
-  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
-  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
-  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
-  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
-  <avrgcc.linker.general.UseVprintfLibrary>True</avrgcc.linker.general.UseVprintfLibrary>
-  <avrgcc.linker.libraries.Libraries>
-    <ListValues>
-      <Value>printf_flt</Value>
-      <Value>libm</Value>
-    </ListValues>
-  </avrgcc.linker.libraries.Libraries>
-  <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
-</AvrGcc>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>F_CPU=32000000UL</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.optimization.level>Optimize more (-O2)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.OtherFlags>-fno-align-functions  -fno-align-jumps  -fno-align-loops -fno-align-labels -fno-reorder-blocks -fno-reorder-blocks-and-partition -fno-prefetch-loop-arrays -fno-tree-vect-loop-version</avrgcc.compiler.optimization.OtherFlags>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.linker.general.UseVprintfLibrary>True</avrgcc.linker.general.UseVprintfLibrary>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>libm</Value>
+            <Value>libprintf_flt</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+        <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+      </AvrGcc>
     </ToolchainSettings>
+    <UsesExternalMakeFile>False</UsesExternalMakeFile>
+    <BuildTarget>all</BuildTarget>
+    <CleanTarget>clean</CleanTarget>
+    <ExternalMakeFilePath>\\vmware-host\Shared Folders\Alden\Projects\proj38_TinyG\TinyG\firmware\tinyg\Debug\Makefile</ExternalMakeFilePath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="canonical_machine.c">
@@ -120,6 +167,12 @@
     <Compile Include="config.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="config_app.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="config_app.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="controller.c">
       <SubType>compile</SubType>
     </Compile>
@@ -127,6 +180,18 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="cycle_homing.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cycle_jogging.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cycle_probing.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="encoder.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="encoder.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="gcode_parser.c">
@@ -139,6 +204,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="gpio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="help.c">
@@ -168,6 +239,12 @@
     <Compile Include="network.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="persistence.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="persistence.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="planner.c">
       <SubType>compile</SubType>
     </Compile>
@@ -180,10 +257,13 @@
     <Compile Include="plan_arc.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="plan_exec.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="plan_line.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="plan_line.h">
+    <Compile Include="plan_zoid.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="pwm.c">
@@ -201,31 +281,25 @@
     <Compile Include="settings.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_default.h">
+    <Compile Include="settings\settings_cnc3040.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_lumenlabMicRoV3.h">
+    <Compile Include="settings\settings_default.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_openpnp.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_othercutter.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="settings\settings_othermill.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings\settings_pocketcnc_linear.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings\settings_pocketcnc_rotary.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_probotixV90.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_shapeoko375.h">
+    <Compile Include="settings\settings_shapeoko2.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings\settings_test.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_Ultimaker.h">
@@ -246,10 +320,10 @@
     <Compile Include="stepper.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="system.c">
+    <Compile Include="switch.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="system.h">
+    <Compile Include="switch.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="test.c">
@@ -306,6 +380,15 @@
     <Compile Include="tests\test_051_braid.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="tests\test_099.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="text_parser.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="text_parser.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="tinyg.h">
       <SubType>compile</SubType>
     </Compile>
@@ -315,10 +398,10 @@
     <Compile Include="util.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.c">
+    <Compile Include="xio.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="xio\xio.h">
+    <Compile Include="xio.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="xio\xio_file.c">
@@ -378,11 +461,6 @@
     <Folder Include="tests\" />
     <Folder Include="xio\" />
     <Folder Include="xmega\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="tests\saicdu93_diagnostics.txt">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>

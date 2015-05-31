@@ -22,12 +22,12 @@
 
 #include "../tinyg.h"
 #include "../config.h"
-#include "../report.h"
-#include "../gpio.h"
-#include "../stepper.h"
+#include "../switch.h"
 #include "xmega_rtc.h"
 
-/* 
+rtClock_t rtc;		// allocate clock control struct
+
+/*
  * rtc_init() - initialize and start the clock
  *
  * This routine follows the code in app note AVR1314.
@@ -42,27 +42,24 @@ void rtc_init()
 	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc | CLK_RTCEN_bm;	// Set internal 32kHz osc as RTC clock source
 	do {} while (RTC.STATUS & RTC_SYNCBUSY_bm);			// Wait until RTC is not busy
 
-	RTC.PER = RTC_MILLISECONDS-1;						// overflow period
+	// the following must be in this order or it doesn;t work
+	RTC.PER = RTC_MILLISECONDS-1;						// set overflow period to 10ms - approximate
 	RTC.CNT = 0;
 	RTC.COMP = RTC_MILLISECONDS-1;
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
 	RTC.INTCTRL = RTC_COMPINTLVL;						// interrupt on compare
-
-	rtc.clock_ticks = 0;								//  default RTC clock counter
+	rtc.rtc_ticks = 0;									// reset tick counter
+	rtc.sys_ticks = 0;									// reset tick counter
 	rtc.magic_end = MAGICNUM;
 }
 
-/* 
- * rtc ISR 
- *
- * This used to have application-specific clocks and timers in it but that approach
- * was abandoned because I decided it was better to just provide callbacks to the 
- * relevant code modules to perform those functions.
+/*
+ * rtc ISR
  *
  * It is the responsibility of the callback code to ensure atomicity and volatiles
  * are observed correctly as the callback will be run at the interrupt level.
  *
- * Here's the code in case the main loop (non-interrupt) function needs to 
+ * Here's the code in case the main loop (non-interrupt) function needs to
  * create a critical region for variables set or used by the callback:
  *
  *		#include "gpio.h"
@@ -75,18 +72,8 @@ void rtc_init()
 
 ISR(RTC_COMP_vect)
 {
+	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
+
 	// callbacks to whatever you need to happen on each RTC tick go here:
-	gpio_rtc_callback();					// switch debouncing
-	rpt_status_report_rtc_callback();		// status report timing
-	st_disable_motors_rtc_callback();		// stepper disable timer
-
-	// here's the default RTC timer clock
-	++rtc.clock_ticks;						// increment real time clock (unused)
-}
-
-void rtc_reset_rtc_clock()
-{
-//	RTC.INTCTRL = RTC_OVFINTLVL_OFF_gc;		// disable interrupt
-	rtc.clock_ticks = 0;
-//	RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;		// enable interrupt
+	switch_rtc_callback();					// switch debouncing
 }

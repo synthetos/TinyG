@@ -1,6 +1,7 @@
 *.o
 *.d
 *.elf
+<<<<<<< HEAD
 *.map
 *.srec
 *.lss
@@ -8,5 +9,16 @@
 *.aws
 *.atsuo
 *.eep
+=======
+*.hex
+*.pyc
+*.map
+*.eep
+*.lss
+*.map
+*.srec
+*.aws
+*.atsuo
+>>>>>>> refs/heads/edge
 .DS_Store
 TcfTransactionLog.csv

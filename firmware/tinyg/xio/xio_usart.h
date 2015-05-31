@@ -1,5 +1,5 @@
 /*
- * xio_usart.h - Common USART definitions 
+ * xio_usart.h - Common USART definitions
  * Part of TinyG project
  *
  * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
@@ -17,8 +17,8 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /*
- * The usart.h and .c files can be considered the parent class for the 
- * USB and RS485 devices which are derived from them. The usart.h file acts 
+ * Rob: The usart.h and .c files can be considered the parent class for the
+ * USB and RS485 devices which are derived from them. The usart.h file acts
  * as the header file for all three classes: usart.c, usb.c and rs485.c
  */
 
@@ -30,29 +30,41 @@
  ******************************************************************************/
 
 // Serial IO Interrupt levels
-#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+// Maps both RX and TX to medium interrupt levels
+#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_MED_gc)
 #define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
-#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
-#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
-// alternate: map TX to MED interrupt levels
-//#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
-//#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_MED_gc | USART_TXCINTLVL_MED_gc)
+#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_MED_gc)
+
+// Maps RX to medium and TX to lo interrupt levels
+// But don't use this or exception reports and other prints from medium interrupts
+// can cause the system to lock up if the TX buffer is full. See xio.h for explanation.
+//#define CTRLA_RXON_TXON (USART_RXCINTLVL_MED_gc | USART_DREINTLVL_LO_gc)
+//#define CTRLA_RXON_TXOFF (USART_RXCINTLVL_MED_gc)
+//#define CTRLA_RXON_TXOFF_TXCON (USART_RXCINTLVL_MED_gc | USART_TXCINTLVL_LO_gc)
+//#define CTRLA_RXOFF_TXON_TXCON (USART_DREINTLVL_LO_gc | USART_TXCINTLVL_LO_gc)
+//#define CTRLA_RXOFF_TXOFF_TXCON (USART_TXCINTLVL_LO_gc)
 
 // Buffer sizing
 #define buffer_t uint_fast8_t					// fast, but limits buffer to 255 char max
-#define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
-#define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
+//#define buffer_t uint16_t						// larger buffers
+
+// Must reserve 2 bytes for buffer management
+#define RX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
+#define TX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
+//#define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
+//#define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
 //#define buffer_t uint16_t						// slower, but larger buffers
-//#define RX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
-//#define TX_BUFFER_SIZE (buffer_t)512			// buffer_t must be 16 bits if >255
-//#define RX_BUFFER_SIZE (buffer_t)1024			// 2048 is the practical upper limit
-//#define TX_BUFFER_SIZE (buffer_t)1024			// 2048 is practical upper limit given RAM
+//#define RX_BUFFER_SIZE (buffer_t)510			// buffer_t must be 16 bits if >255
+//#define TX_BUFFER_SIZE (buffer_t)510			// buffer_t must be 16 bits if >255
+//#define RX_BUFFER_SIZE (buffer_t)1022			// 2046 is the practical upper limit
+//#define TX_BUFFER_SIZE (buffer_t)1022			// 2046 is practical upper limit given RAM
 
-// XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char 
-// to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.  
+// XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char
+// to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.
 #define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.8)	// % to issue XOFF
 #define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.1)	// % to issue XON
 #define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
@@ -111,7 +123,7 @@
 #define RS485_OUTCLR_bm (RS485_RE_bm| RS485_DE_bm)	// outputs init'd to 0
 #define RS485_OUTSET_bm (RS485_TX_bm)				// outputs init'd to 1
 
-/* 
+/*
  * Serial Configuration Settings
  *
  * 	Serial config settings are here because various modules will be opening devices
@@ -137,18 +149,18 @@ enum xioBAUDRATES {         		// BSEL	  BSCALE
 		XIO_BAUD_1000000			//	1		0
 };
 
-enum xioFCState { 
-		FC_DISABLED = 0,			// flo control is disabled
+enum xioFCState {
+		FC_DISABLED = 0,			// flow control is disabled
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
 };
 
 /******************************************************************************
- * STRUCTURES 
+ * STRUCTURES
  ******************************************************************************/
-/* 
- * USART extended control structure 
- * Note: As defined this struct won't do buffers larger than 256 chars - 
+/*
+ * USART extended control structure
+ * Note: As defined this struct won't do buffers larger than 256 chars -
  *	     or a max of 254 characters usable
  */
 typedef struct xioUSART {

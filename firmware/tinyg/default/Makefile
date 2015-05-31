@@ -15,7 +15,11 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
+<<<<<<< HEAD:firmware/tinyg/default/Makefile
 CFLAGS += -gdwarf-2 -std=gnu99 -Wall                         -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+=======
+CFLAGS += -gdwarf-2 -std=gnu99 -Wall        -DF_CPU=32000000UL -Os -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+>>>>>>> refs/heads/edge:firmware/tinyg/default/Makefile
 CFLAGS += -MD -MP -MT $(*F).o -MF dep/$(@F).d 
 
 ## Assembly specific flags
@@ -40,13 +44,17 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 LIBS = -lm 
 
 ## Objects that must be built in order to link
+<<<<<<< HEAD:firmware/tinyg/default/Makefile
 OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o system.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o 
+=======
+OBJECTS = util.o canonical_machine.o config.o controller.o cycle_homing.o gcode_parser.o gpio.o help.o json_parser.o kinematics.o main.o planner.o report.o spindle.o stepper.o hardware.o test.o xmega_rtc.o xmega_eeprom.o xmega_init.o xmega_interrupts.o xio_usb.o xio_pgm.o xio_rs485.o xio_usart.o pwm.o plan_line.o plan_arc.o xio_spi.o xio_file.o network.o config_app.o text_parser.o switch.o cycle_probing.o xio.o cycle_jogging.o plan_exec.o encoder.o plan_zoid.o persistence.o 
+>>>>>>> refs/heads/edge:firmware/tinyg/default/Makefile
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
 
 ## Build
-all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss size
+all: $(TARGET) tinyg.hex tinyg.eep tinyg.lss
 
 ## Compile
 util.o: ../util.c
@@ -94,7 +102,7 @@ spindle.o: ../spindle.c
 stepper.o: ../stepper.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
-system.o: ../system.c
+hardware.o: ../hardware.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 test.o: ../test.c
@@ -113,9 +121,6 @@ xmega_interrupts.o: ../xmega/xmega_interrupts.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_usb.o: ../xio/xio_usb.c
-	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
-
-xio.o: ../xio/xio.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 xio_pgm.o: ../xio/xio_pgm.c
@@ -143,6 +148,39 @@ xio_file.o: ../xio/xio_file.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 network.o: ../network.c
+<<<<<<< HEAD:firmware/tinyg/default/Makefile
+=======
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+config_app.o: ../config_app.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+text_parser.o: ../text_parser.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+switch.o: ../switch.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+cycle_probing.o: ../cycle_probing.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+xio.o: ../xio.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+cycle_jogging.o: ../cycle_jogging.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+plan_exec.o: ../plan_exec.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+encoder.o: ../encoder.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+plan_zoid.o: ../plan_zoid.c
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+
+persistence.o: ../persistence.c
+>>>>>>> refs/heads/edge:firmware/tinyg/default/Makefile
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
