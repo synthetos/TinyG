@@ -96,23 +96,6 @@ static stat_t _homing_abort(int8_t axis);
 static stat_t _homing_error_exit(int8_t axis, stat_t status);
 static stat_t _homing_finalize_exit(int8_t axis);
 static int8_t _get_next_axis(int8_t axis);
-/*
-static void _homing_debug_print(int8_t axis)
-{
-	printf("axis:%d\n",axis);
-	printf("homing switch:%d\n", read_switch(hm.homing_switch));
-	printf("limit switch:%d\n", read_switch(hm.limit_switch));
-	printf("distance_mode:%d\n", cm_get_distance_mode(ACTIVE_MODEL));
-	printf("latch_backoff:%f\n", (double)hm.latch_backoff);
-	printf("search_travel:%f\n", (double)hm.search_travel);
-
-	printf("saved_units_mode:%d\n",hm.saved_units_mode);
-	printf("saved_coord_system:%d\n",hm.saved_coord_system);
-	printf("saved_distance_mode:%d\n",hm.saved_distance_mode);
-	printf("saved_feed_rate:%f\n",(double)hm.saved_feed_rate);
-	printf("saved_jerk:%f\n",(double)hm.saved_jerk);
-}
-*/
 
 /***********************************************************************************
  **** G28.2 Homing Cycle ***********************************************************
@@ -228,6 +211,8 @@ static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 	return (STAT_EAGAIN);
 }
 
+/* UNUSED
+
 static void _trigger_feedhold(switch_t *s)
 {
 	cm_request_feedhold();
@@ -243,7 +228,7 @@ static void _restore_switch_settings(switch_t *s)
 {
 	s->on_trailing = hm.switch_saved_on_trailing;
 }
-
+*/
 static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
