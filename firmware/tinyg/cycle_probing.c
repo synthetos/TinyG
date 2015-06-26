@@ -57,6 +57,7 @@ struct pbProbingSingleton {						// persistent probing runtime variables
 	// state saved from gcode model
 	uint8_t saved_distance_mode;				// G90,G91 global setting
 	uint8_t saved_coord_system;					// G54 - G59 setting
+	uint8_t saved_units_mode;		            // G20,G21 global setting	
 	float saved_jerk[AXES];						// saved and restored for each axis
 
 	// probe destination
@@ -200,8 +201,10 @@ static uint8_t _probing_init()
 	// probe in absolute machine coords
 	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
+	pb.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);         //cm.gm.units_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);
+	cm_set_units_mode(MILLIMETERS);
 
 	cm_spindle_control(SPINDLE_OFF);
 	return (_set_pb_func(_probing_start));							// start the move
@@ -245,6 +248,7 @@ static stat_t _probing_finish()
 
 		// store the probe results
 		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
+		printf("axis:%d results mm:%f\n",axis, cm.probe_results[axis]);
 	}
 
 	json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
@@ -284,9 +288,10 @@ static void _probe_restore_settings()
 	for( uint8_t axis=0; axis<AXES; axis++ )
 		cm_set_axis_jerk(axis, pb.saved_jerk[axis]);
 
-	// restore coordinate system and distance mode
+	// restore coordinate system, distance mode, and units mode.
 	cm_set_coord_system(pb.saved_coord_system);
 	cm_set_distance_mode(pb.saved_distance_mode);
+	cm_set_units_mode(pb.saved_units_mode);
 
 	// update the model with actual position
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
