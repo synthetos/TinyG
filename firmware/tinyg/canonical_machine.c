@@ -742,7 +742,7 @@ stat_t cm_set_absolute_origin(float origin[], float flag[])
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			value[axis] = cm.offset[cm.gm.coord_system][axis] + _to_millimeters(origin[axis]);
+			value[axis] = _to_millimeters(origin[axis]);
 			cm.gmx.position[axis] = value[axis];		// set model position
 			cm.gm.target[axis] = value[axis];			// reset model target
 			mp_set_planner_position(axis, value[axis]);	// set mm position
