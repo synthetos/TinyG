@@ -1144,13 +1144,11 @@ static void _set_hw_microsteps(const uint8_t motor, const uint8_t microsteps)
  * _get_motor() - helper to return motor number as an index
  */
 
-#define _get_motor(a) (a->token[0] - 0x31)
-/*
 static int8_t _get_motor(const nvObj_t *nv)
 {
-	return (nv->token[0] - 0x31);
+    return ((nv->group[0] ? nv->group[0] : nv->token[0]) - 0x31);
 }
-*/
+
 /*
  * _set_motor_steps_per_unit() - what it says
  * This function will need to be rethought if microstep morphing is implemented
@@ -1159,8 +1157,9 @@ static int8_t _get_motor(const nvObj_t *nv)
 static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
 	uint8_t m = _get_motor(nv);
-	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps);
-	st_cfg.mot[m].steps_per_unit = 1 / st_cfg.mot[m].units_per_step;
+//	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
+    st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
+	st_reset();
 }
 
 /* PER-MOTOR FUNCTIONS
@@ -1203,7 +1202,7 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
         return (STAT_INPUT_VALUE_RANGE_ERROR);
 	set_ui8(nv);
 	return (STAT_OK);
-	// NOTE: The motor power callback makes these setting take effect immediately
+	// NOTE: The motor power callback makes these settings take effect immediately
 }
 
 /*
