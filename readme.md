@@ -6,7 +6,7 @@ TINYG EDGE BRANCH
 
 TinyG is a 6 axis motion control system designed for high-performance on small to mid-sized machines. Some features:
 
-* 6 axis motion (XYXABC axes)
+* 6 axis motion (XYZABC axes)
 * jerk controlled motion for acceleration planning (3rd order motion planning)
 * status displays ('?' character)
 * XON/XOFF and RTS/CTS protocol over USB serial
