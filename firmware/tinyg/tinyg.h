@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.15	// master candidate
+#define TINYG_FIRMWARE_BUILD        440.17	// master candidate (3); fixed when $tr and $sr settings take effect
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
