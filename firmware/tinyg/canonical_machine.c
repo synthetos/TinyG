@@ -420,7 +420,7 @@ stat_t cm_deferred_write_callback()
 //        registers we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
 
-static float _calc_ABC(uint8_t axis, float target[], float flag[])
+static float _calc_ABC(const uint8_t axis, const float target[], const float flag[])
 {
 	if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 		return(target[axis]);	// no mm conversion - it's in degrees
