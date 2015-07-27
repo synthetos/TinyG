@@ -212,7 +212,38 @@ typedef uint16_t magic_t;		// magic number size
 #define PWMS		2			// number of supported PWM channels
 
 // Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
+typedef enum {
+    AXIS_X = 0,
+    AXIS_Y,
+    AXIS_Z,
+    AXIS_A,
+    AXIS_B,
+    AXIS_C,
+    AXIS_U,                     // reserved
+    AXIS_V,                     // reserved
+    AXIS_W                      // reserved
+} cmAxes;
 
+typedef enum {
+    OFS_I = 0,
+    OFS_J,
+    OFS_K
+} cmIJKOffsets;
+
+typedef enum {
+    MOTOR_1 = 0,
+    MOTOR_2,
+    MOTOR_3,
+    MOTOR_4,
+    MOTOR_5,
+    MOTOR_6
+} cmMotors;
+
+typedef enum {
+    PWM_1 = 0,
+    PWM_2
+} cmPWMs;
+/*
 #define AXIS_X		0
 #define AXIS_Y		1
 #define AXIS_Z		2
@@ -232,7 +263,7 @@ typedef uint16_t magic_t;		// magic number size
 
 #define PWM_1		0
 #define PWM_2		1
-
+*/
 /************************************************************************************
  * STATUS CODES
  *
@@ -450,10 +481,16 @@ char *get_status_message(stat_t status);
 #define	STAT_SPINDLE_SPEED_BELOW_MINIMUM 149
 
 #define	STAT_SPINDLE_SPEED_MAX_EXCEEDED 150
-#define	STAT_S_WORD_IS_MISSING 151
-#define	STAT_S_WORD_IS_INVALID 152
-#define	STAT_SPINDLE_MUST_BE_OFF 153
-#define	STAT_SPINDLE_MUST_BE_TURNING 154				// some canned cycles require spindle to be turning when called
+//#define	STAT_S_WORD_IS_MISSING 151
+//#define	STAT_S_WORD_IS_INVALID 152
+//#define	STAT_SPINDLE_MUST_BE_OFF 153
+//#define	STAT_SPINDLE_MUST_BE_TURNING 154				// some canned cycles require spindle to be turning when called
+
+#define	STAT_SPINDLE_MUST_BE_OFF 151
+#define	STAT_SPINDLE_MUST_BE_TURNING 152				// some canned cycles require spindle to be turning when called
+#define	STAT_ARC_ERROR_RESERVED 153                     // RESERVED
+#define	STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT 154        // trap (.05 inch/.5 mm) OR ((.0005 inch/.005mm) AND .1% of radius condition
+
 #define	STAT_ARC_SPECIFICATION_ERROR 155				// generic arc specification error
 #define STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE 156	// arc is missing axis (axes) required by selected plane
 #define STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE 157 // one or both offsets are not specified

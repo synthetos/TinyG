@@ -41,8 +41,8 @@ static stat_t _validate_gcode_block(void);
 static stat_t _parse_gcode_block(char_t *line);	// Parse the block into the GN/GF structs
 static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
-#define SET_MODAL(m,parm,val) ({cm.gn.parm=val; cm.gf.parm=1; gp.modals[m]+=1; break;})
-#define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=1; break;})
+#define SET_MODAL(m,parm,val) ({cm.gn.parm=val; cm.gf.parm=true; cm.gf.modals[m]=true; break;})
+#define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=true; break;})
 #define EXEC_FUNC(f,v) if((uint8_t)cm.gf.v != false) { status = f(cm.gn.v);}
 
 /*
@@ -477,10 +477,15 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
-				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
-					// gf.radius sets radius mode if radius was collected in gn
-					{ status = cm_arc_feed(cm.gn.target, cm.gf.target, cm.gn.arc_offset[0], cm.gn.arc_offset[1],
-										   cm.gn.arc_offset[2], cm.gn.arc_radius, cm.gn.motion_mode); break;}
+        		case MOTION_MODE_CW_ARC:                                                                            // G2
+        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     cm.gf.target,                    // G3
+            		                                             cm.gn.arc_offset, cm.gf.arc_offset,
+            		                                             cm.gn.arc_radius, cm.gf.arc_radius,
+            		                                             cm.gn.parameter,  cm.gf.parameter,
+            		                                             cm.gf.modals[MODAL_GROUP_G1],
+            		                                             cm.gn.motion_mode);
+            		                                             break;
+        		                          }
 			}
 		}
 	}

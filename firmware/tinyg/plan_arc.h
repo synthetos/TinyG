@@ -19,10 +19,21 @@
 
 #ifndef PLAN_ARC_H_ONCE
 #define PLAN_ARC_H_ONCE
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
+*/
+
+#define MIN_ARC_RADIUS          ((float)0.1)        // min radius that can be executed
+#define MIN_ARC_SEGMENT_LENGTH  ((float)0.05)       // Arc segment size (mm).(0.03)
+#define MIN_ARC_SEGMENT_USEC    ((float)10000)      // minimum arc segment time
+
+// Arc radius tests. See http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G2-G3-Arc
+//#define ARC_RADIUS_ERROR_MAX    ((float)0.5)        // max allowable mm between start and end radius
+#define ARC_RADIUS_ERROR_MAX    ((float)1.0)        // max allowable mm between start and end radius
+#define ARC_RADIUS_ERROR_MIN    ((float)0.005)      // min mm where 1% rule applies
+#define ARC_RADIUS_TOLERANCE    ((float)0.001)      // 0.1% radius variance test
 
 // See planner.h for MM_PER_ARC_SEGMENT and other arc setting #defines
 
@@ -34,19 +45,19 @@ typedef struct arArcSingleton {	// persistent planner and runtime variables
 	float offset[3]; 	 		// IJK offsets
 
 	float length;				// length of line or helix in mm
-	float time;					// total running time for arc (derived)
-	float theta;				// total angle specified by arc
-	float theta_end;
+//	float time;					// total running time for arc (derived)
 	float radius;				// Raw R value, or computed via offsets
-	float angular_travel;		// travel along the arc
-	float linear_travel;		// travel along linear axis of arc
-    float planar_travel;
-	uint8_t full_circle;		// set true if full circle arcs specified
-	uint32_t rotations;			// Number of full rotations for full circles (P value)
+	float theta;				// starting angle of arc
+//	float theta_end;
+    float angular_travel;       // travel along the arc in radians
+    float planar_travel;        // travel in arc plane in mm
+    float linear_travel;        // travel along linear axis of arc in mm
+	bool full_circle;		    // set true if full circle arcs specified
+	float rotations;			// number of full rotations to add (P value + sign)
 
-	uint8_t plane_axis_0;		// arc plane axis 0 - e.g. X for G17
-	uint8_t plane_axis_1;		// arc plane axis 1 - e.g. Y for G17
-	uint8_t linear_axis; 		// linear axis (normal to plane)
+    cmAxes plane_axis_0;        // arc plane axis 0 - e.g. X for G17
+    cmAxes plane_axis_1;        // arc plane axis 1 - e.g. Y for G17
+    cmAxes linear_axis;         // linear axis (normal to plane)
 
 	float segments;				// number of segments in arc or blend
 	int32_t segment_count;		// count of running segments

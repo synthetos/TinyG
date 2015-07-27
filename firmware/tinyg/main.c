@@ -343,10 +343,17 @@ static const char stat_148[] PROGMEM = "Programmed point same as current point";
 static const char stat_149[] PROGMEM = "Spindle speed below minimum";
 
 static const char stat_150[] PROGMEM = "Spindle speed exceeded maximum";
-static const char stat_151[] PROGMEM = "Spindle S word is missing";
-static const char stat_152[] PROGMEM = "Spindle S word is invalid";
-static const char stat_153[] PROGMEM = "Spindle must be off for this command";
-static const char stat_154[] PROGMEM = "Spindle must be turning for this command";
+
+//static const char stat_151[] PROGMEM = "Spindle S word is missing";
+//static const char stat_152[] PROGMEM = "Spindle S word is invalid";
+//static const char stat_153[] PROGMEM = "Spindle must be off for this command";
+//static const char stat_154[] PROGMEM = "Spindle must be turning for this command";
+
+static const char stat_151[] PROGMEM = "Spindle must be off for this command";
+static const char stat_152[] PROGMEM = "Spindle must be turning for this command";
+static const char stat_153[] PROGMEM = "153";
+static const char stat_154[] PROGMEM = "Arc specification error - impossible center point";
+
 static const char stat_155[] PROGMEM = "Arc specification error";
 static const char stat_156[] PROGMEM = "Arc specification error - missing axis(es)";
 static const char stat_157[] PROGMEM = "Arc specification error - missing offset(s)";

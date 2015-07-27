@@ -69,8 +69,8 @@ enum sectionState {
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
-#define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
-#define MIN_ARC_RADIUS          ((float)0.1)
+//#define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
+//#define MIN_ARC_RADIUS          ((float)0.1)
 
 #define JERK_MULTIPLIER         ((float)1000000)
 #define JERK_MATCH_PRECISION    ((float)1000)		// precision to which jerk must match to be considered effectively the same
@@ -280,6 +280,11 @@ stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
 
 stat_t mp_aline(GCodeState_t *gm_in);
+
+// planner functions and helpers
+uint8_t mp_get_planner_buffers(void);
+bool mp_planner_is_full(void);
+bool mp_has_runnable_buffer(void);
 
 stat_t mp_plan_hold_callback(void);
 stat_t mp_end_hold(void);
