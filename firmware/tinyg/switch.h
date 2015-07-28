@@ -56,16 +56,16 @@
 #define SW_MODE_HOMING_LIMIT   (SW_HOMING_BIT | SW_LIMIT_BIT)	// homing and limits
 #define SW_MODE_MAX_VALUE 		SW_MODE_HOMING_LIMIT
 
-enum swType {
+typedef enum {
 	SW_TYPE_NORMALLY_OPEN = 0,
 	SW_TYPE_NORMALLY_CLOSED
-};
+} swType;
 
-enum swState {
+typedef enum {
 	SW_DISABLED = -1,
 	SW_OPEN = 0,					// also read as 'false'
 	SW_CLOSED						// also read as 'true'
-};
+} swState;
 
 /*
  * Defines for old switch handling code
@@ -74,13 +74,13 @@ enum swState {
 #define MIN_SWITCH(axis) (axis*2)
 #define MAX_SWITCH(axis) (axis*2+1)
 
-enum swDebounce {							// state machine for managing debouncing and lockout
+typedef enum {					// state machine for managing debouncing and lockout
 	SW_IDLE = 0,
 	SW_DEGLITCHING,
 	SW_LOCKOUT
-};
+} swDebounce;
 
-enum swNums {	 			// indexes into switch arrays
+typedef enum {	 			    // indexes into switch arrays
 	SW_MIN_X = 0,
 	SW_MAX_X,
 	SW_MIN_Y,
@@ -90,7 +90,7 @@ enum swNums {	 			// indexes into switch arrays
 	SW_MIN_A,
 	SW_MAX_A,
 	NUM_SWITCHES 			// must be last one. Used for array sizing and for loops
-};
+} swNums;
 #define SW_OFFSET SW_MAX_X	// offset between MIN and MAX switches
 #define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
 
@@ -102,16 +102,16 @@ enum swNums {	 			// indexes into switch arrays
 #define SW_PAIRS				HOMING_AXES	// number of axes that can have switches
 #define SW_POSITIONS			2			// swPosition is either SW_MIN or SW)MAX
 
-enum swPosition {
+typedef enum {
 	SW_MIN = 0,
 	SW_MAX
-};
+} swPosition;
 
-enum swEdge {
+typedef enum {
 	SW_NO_EDGE = 0,
 	SW_LEADING,
 	SW_TRAILING,
-};
+} swEdge;
 
 /*
  * Interrupt levels and vectors - The vectors are hard-wired to xmega ports

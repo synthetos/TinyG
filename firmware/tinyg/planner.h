@@ -30,12 +30,8 @@
 #define PLANNER_H_ONCE
 
 #include "canonical_machine.h"	// used for GCodeState_t
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
-enum moveType {				// bf->move_type values
+
+typedef enum {				// bf->move_type values
 	MOVE_TYPE_NULL = 0,		// null move - does a no-op
 	MOVE_TYPE_ALINE,		// acceleration planned line
 	MOVE_TYPE_DWELL,		// delay with no movement
@@ -44,28 +40,28 @@ enum moveType {				// bf->move_type values
 	MOVE_TYPE_SPINDLE_SPEED,// S command
 	MOVE_TYPE_STOP,			// program stop
 	MOVE_TYPE_END			// program end
-};
+} moveType;
 
-enum moveState {
+typedef enum {
 	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
 	MOVE_NEW,				// general value if you need an initialization
 	MOVE_RUN,				// general run state (for non-acceleration moves)
 	MOVE_SKIP_BLOCK			// mark a skipped block
-};
+} moveState;
 
-enum moveSection {
+typedef enum {
 	SECTION_HEAD = 0,		// acceleration
 	SECTION_BODY,			// cruise
 	SECTION_TAIL			// deceleration
-};
+} moveSection;
 #define SECTIONS 3
 
-enum sectionState {
+typedef enum {
 	SECTION_OFF = 0,		// section inactive
 	SECTION_NEW,			// uninitialized section
 	SECTION_1st_HALF,		// first half of S curve
 	SECTION_2nd_HALF		// second half of S curve or running a BODY (cruise)
-};
+} sectionState;
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
@@ -124,15 +120,13 @@ typedef void (*cm_exec_t)(float[], float[]);	// callback to canonical_machine ex
  *	Planner structures
  */
 
-// All the enums that equal zero must be zero. Don't change this
-
-enum mpBufferState {				// bf->buffer_state values
+typedef enum {				// bf->buffer_state values
 	MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
 	MP_BUFFER_LOADING,				// being written ("checked out")
 	MP_BUFFER_QUEUED,				// in queue
 	MP_BUFFER_PENDING,				// marked as the next buffer to run
 	MP_BUFFER_RUNNING				// current running buffer
-};
+} mpBufferState;
 
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer

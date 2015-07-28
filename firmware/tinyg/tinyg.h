@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        442.02	// edge-442-g2sync - added error.h and aligned status codes
+#define TINYG_FIRMWARE_BUILD        442.03	// edge-442-g2sync - added typedef'd enums into structs in canonical machine
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

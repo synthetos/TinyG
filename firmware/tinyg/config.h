@@ -196,34 +196,20 @@ typedef uint16_t index_t;				// use this if there are > 255 indexed objects
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
 
-enum tgCommunicationsMode {
+typedef enum {
 	TEXT_MODE = 0,						// text command line mode
 	JSON_MODE,							// strict JSON construction
 	JSON_MODE_RELAXED					// relaxed JSON construction (future)
-};
+} tgCommunicationsMode;
 
-enum flowControl {
+typedef enum {
 	FLOW_CONTROL_OFF = 0,				// flow control disabled
 	FLOW_CONTROL_XON,					// flow control uses XON/XOFF
 	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
-};
+} flowControl;
 
-/*
-enum lineTermination {					// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
-	IGNORE_OFF = 0,						// accept either CR or LF as termination on RX text line
-	IGNORE_CR,							// ignore CR on RX
-	IGNORE_LF							// ignore LF on RX
-};
-*/
-/*
-enum tgCommunicationsSticky {
-	NOT_STICKY = 0,						// communications mode changes automatically
-	STICKY								// communications mode does not change
-};
-*/
-
-enum valueType {						// value typing for config and JSON
-	TYPE_EMPTY = -1,					// value struct is empty (which is not the same as "NULL")
+typedef enum {						    // value typing for config and JSON
+	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,						// value is a uint32_t
@@ -232,7 +218,7 @@ enum valueType {						// value typing for config and JSON
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT							// object is a parent to a sub-object
-};
+} valueType;
 
 /**** operations flags and shorthand ****/
 

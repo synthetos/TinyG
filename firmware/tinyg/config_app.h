@@ -29,14 +29,14 @@ extern "C"{
  **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
  ***********************************************************************************/
 
-enum nvType {						// classification of commands
+typedef enum {						// classification of commands
 	NV_TYPE_NULL = 0,
 	NV_TYPE_CONFIG,					// configuration commands
 	NV_TYPE_GCODE,					// gcode
 	NV_TYPE_REPORT,					// SR, QR and any other report
 	NV_TYPE_MESSAGE,				// nv object carries a message
 	NV_TYPE_LINENUM					// nv object carries a gcode line number
-};
+} nvType;
 
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************
@@ -50,7 +50,6 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
-//	uint8_t ignore_crlf;			// ignore CR or LF on RX --- these 4 are shadow settings for XIO cntrl bits
 
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
