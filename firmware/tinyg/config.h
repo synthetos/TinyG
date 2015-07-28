@@ -2,7 +2,7 @@
  * config.h - configuration sub-system generic part (see config_app for application part)
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -31,11 +31,11 @@
 /***** PLEASE NOTE *****
 #include "config_app.h"	// is present at the end of this file
 */
-
+/*
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+*/
 /**** Config System Overview and Usage ***
  *
  *	--- Config objects and the config list ---
@@ -182,13 +182,13 @@ typedef uint16_t index_t;				// use this if there are > 255 indexed objects
 
 										// pre-allocated defines (take RAM permanently)
 #define NV_SHARED_STRING_LEN 512		// shared string for string values
-#define NV_BODY_LEN 30					// body elements - allow for 1 parent + N children
+#define NV_BODY_LEN 40					// body elements - allow for 1 parent + N children
 										// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change
 
-#define GROUP_LEN 3						// max length of group prefix
-#define TOKEN_LEN 5						// mnemonic token string: group prefix + short token
+#define GROUP_LEN 4						// max length of group prefix
+#define TOKEN_LEN 6						// mnemonic token string: group prefix + short token
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
@@ -358,9 +358,9 @@ void nv_dump_nv(nvObj_t *nv);
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
  *********************************************************************************************/
 #include "config_app.h"
-
+/*
 #ifdef __cplusplus
 }
 #endif
-
+*/
 #endif // End of include guard: CONFIG_H_ONCE
