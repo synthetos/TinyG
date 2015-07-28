@@ -194,6 +194,9 @@
     <Compile Include="encoder.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="error.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="gcode_parser.c">
       <SubType>compile</SubType>
     </Compile>

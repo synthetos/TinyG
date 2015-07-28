@@ -135,7 +135,7 @@ static stat_t _json_parser_kernal(char_t *str)
 		ritorno(nv_get(nv));						// ritorno returns w/status on any errors
 	} else {
 		if (cm.machine_state == MACHINE_ALARM)
-            return (STAT_MACHINE_ALARMED);
+            return (STAT_COMMAND_REJECTED_BY_ALARM);
 		ritorno(nv_set(nv));						// set value or call a function (e.g. gcode)
 		nv_persist(nv);
 	}
@@ -297,7 +297,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	} else if (**pstr == '[') {
 		nv->valuetype = TYPE_ARRAY;
 		ritorno(nv_copy_string(nv, *pstr));		// copy array into string for error displays
-		return (STAT_UNSUPPORTED_TYPE);	        // return error as the parser doesn't do input arrays yet
+		return (STAT_INPUT_VALUE_UNSUPPORTED);	// return error as the parser doesn't do input arrays yet
 
 	// general error condition
 	} else {

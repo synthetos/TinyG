@@ -91,7 +91,7 @@ stat_t text_parser(char_t *str)
 		}
 	} else { 										// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM)
-            return (STAT_MACHINE_ALARMED);
+            return (STAT_COMMAND_REJECTED_BY_ALARM);
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array

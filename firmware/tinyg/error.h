@@ -50,10 +50,11 @@
 
 // **** Declarations, functions and macros. See main.cpp for implementation ****
 
-typedef uint8_t stat_t;
+typedef uint8_t stat_t;         // !!! Do not exceed 255 without changing stat_t typedef
 extern stat_t status_code;
 
-#define GLOBAL_STRING_LEN 256  // allow sufficient space for JSON responses and message strings
+#define GLOBAL_STRING_LEN 256   // allow sufficient space for JSON responses and message strings
+#define MESSAGE_LEN 80			// global message string storage allocation
 extern char global_string_buf[];
 
 char *get_status_message(stat_t status);
@@ -372,7 +373,9 @@ char *get_status_message(stat_t status);
 /********************************
  **** Status message strings ****
  ********************************/
-
+/* Reference for putting display strings and string arrays in AVR program memory:
+ * http://www.cs.mun.ca/~paul/cs4723/material/atmel/avr-libc-user-manual-1.6.5/pgmspace.html
+ */
 // NB: The ones that are never called are optimized out by the compiler (e.g. the placeholders)
 static const char stat_00[] PROGMEM = "OK";
 static const char stat_01[] PROGMEM = "Error";

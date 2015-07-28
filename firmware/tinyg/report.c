@@ -228,7 +228,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 		}
 	}
 	if (elements == 0)
-        return (STAT_INVALID_OR_MALFORMED_COMMAND);
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
 	return(_populate_unfiltered_status_report());			// return current values
 }
@@ -643,7 +643,7 @@ stat_t job_set_job_report(nvObj_t *nv)
 			nv->index = job_start + i;		// index of the SR persistence location
 			nv_persist(nv);
 		} else {
-			return (STAT_UNSUPPORTED_TYPE);
+			return (STAT_INPUT_VALUE_UNSUPPORTED);
 		}
 	}
 	job_populate_job_report();				// return current values

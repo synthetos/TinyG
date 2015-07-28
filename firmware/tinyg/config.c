@@ -215,7 +215,7 @@ stat_t config_test_assertions()
 stat_t get_nul(nvObj_t *nv)
 {
 	nv->valuetype = TYPE_NULL;
-	return (STAT_PARAMETER_CANNOT_BE_READ);
+	return (STAT_NOOP);
 }
 
 stat_t get_ui8(nvObj_t *nv)
@@ -259,7 +259,7 @@ stat_t get_flt(nvObj_t *nv)
  *	set_data() - set value as 32 bit integer blind cast
  *	set_flt()  - set value as float
  */
-stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
+stat_t set_nul(nvObj_t *nv) { return (STAT_NOOP); }
 
 stat_t set_ui8(nvObj_t *nv)
 {
@@ -378,9 +378,9 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE)
-        return (STAT_INVALID_OR_MALFORMED_COMMAND);
-
+	if (cfg.comm_mode == TEXT_MODE) {
+        return (STAT_UNRECOGNIZED_NAME);
+    }    
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
