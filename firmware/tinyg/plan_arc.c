@@ -114,13 +114,25 @@ stat_t cm_arc_callback()
  * approximated by generating a large number of tiny, linear segments.
  */
 
-stat_t cm_arc_feed(const float target[], const bool target_f[],     // target endpoint
-                   const float offset[], const bool offset_f[],     // IJK offsets
+stat_t cm_arc_feed(const float target[], const float f_target_f[],     // target endpoint
+                   const float offset[], const float f_offset_f[],     // IJK offsets
                    const float radius, const bool radius_f,         // radius if radius mode
                    const float P_word, const bool P_word_f,         // parameter
                    const bool modal_g1_f,                           // modal group flag for motion group
                    const uint8_t motion_mode)                       // defined motion mode
 {
+    // temporary fix for target and offset flags coming in as floats
+    bool target_f[AXES] = { fp_NOT_ZERO(f_target_f[AXIS_X]),
+                            fp_NOT_ZERO(f_target_f[AXIS_Y]),
+                            fp_NOT_ZERO(f_target_f[AXIS_Z]),
+                            fp_NOT_ZERO(f_target_f[AXIS_A]),
+                            fp_NOT_ZERO(f_target_f[AXIS_B]),
+                            fp_NOT_ZERO(f_target_f[AXIS_C]) };
+
+    bool offset_f[3] =    { fp_NOT_ZERO(f_offset_f[OFS_I]),
+                            fp_NOT_ZERO(f_offset_f[OFS_J]),
+                            fp_NOT_ZERO(f_offset_f[OFS_K]) };
+
 	// Start setting up the arc and trapping arc specification errors
 
     // Trap some precursor cases. Since motion mode (MODAL_GROUP_G1) persists from the
@@ -230,6 +242,10 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));  // copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);     // set initial arc position from gcode model
 
+    if (arc.gm.linenum == 163) {
+        cm.gm.motion_mode = MOTION_MODE_CW_ARC;
+    }
+
     arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
     arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
     arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
@@ -311,7 +327,8 @@ static stat_t _compute_arc(const bool radius_f)
 
         // correct for atan2 output quadrants
         if (arc.gm.motion_mode == MOTION_MODE_CW_ARC) {
-            if (arc.angular_travel <= 0) { arc.angular_travel += 2*M_PI; }
+//            if (arc.angular_travel <= 0) { arc.angular_travel += 2*M_PI; }
+            if (arc.angular_travel < 0) { arc.angular_travel += 2*M_PI; }
         } else {
             if (arc.angular_travel > 0)  { arc.angular_travel -= 2*M_PI; }
         }
@@ -331,14 +348,16 @@ static stat_t _compute_arc(const bool radius_f)
         arc.angular_travel = 2 * M_PI * arc.rotations;
     }
 
+    // Calculate the depth of the helix
+    arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
+
     // Trap zero movement arcs
-    if (fp_ZERO(arc.angular_travel)) {
+    if (fp_ZERO(arc.angular_travel) && fp_ZERO(arc.linear_travel)) {
         return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
     }
 
-    // Calculate travel in the plane and the depth axis of the helix
+    // Calculate travel in the plane
     // Length is the total mm of travel of the helix (or just the planar arc)
-    arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
     arc.planar_travel = arc.angular_travel * arc.radius;
     arc.length = hypotf(arc.planar_travel, fabs(arc.linear_travel));
 

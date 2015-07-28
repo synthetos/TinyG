@@ -382,6 +382,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
+    uint8_t arc_distance_mode;          // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
 
 	uint8_t tool;						// Tool after T and M6 (tool_select and tool_change)
 	uint8_t tool_select;				// T value - T sets this value
@@ -515,6 +516,7 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
 uint8_t cm_get_path_control(GCodeState_t *gcode_state);
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_arc_distance_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
@@ -558,6 +560,7 @@ stat_t cm_clear(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
+stat_t cm_set_arc_distance_mode(uint8_t mode);						// G90, G91
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
 
 void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
@@ -586,8 +589,8 @@ stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
 stat_t cm_straight_feed(float target[], float flags[]);		    // G1
 stat_t cm_dwell(float seconds);									// G4, P parameter
 
-stat_t cm_arc_feed(const float target[], const bool target_f[],             // G2/G3 - target endpoint
-                   const float offset[], const bool offset_f[],             // IJK offsets
+stat_t cm_arc_feed(const float target[], const float f_target_f[],             // G2/G3 - target endpoint
+                   const float offset[], const float f_offset_f[],             // IJK offsets
                    const float radius, const bool radius_f,                 // radius if radius mode                // non-zero radius implies radius mode
                    const float P_word, const bool P_word_f,                 // parameter
                    const bool modal_g1_f,                                   // modal group flag for motion group

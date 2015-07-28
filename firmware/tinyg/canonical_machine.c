@@ -195,6 +195,7 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
 uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
+uint8_t cm_get_arc_distance_mode(GCodeState_t *gcode_state) { return gcode_state->arc_distance_mode;}
 uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
@@ -523,6 +524,7 @@ void canonical_machine_init()
 	cm_select_plane(cm.select_plane);
 	cm_set_path_control(cm.path_control);
 	cm_set_distance_mode(cm.distance_mode);
+	cm_set_arc_distance_mode(INCREMENTAL_MODE);  // always the default
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
 
 	cm.gmx.block_delete_switch = true;
@@ -618,6 +620,7 @@ stat_t cm_hard_alarm(stat_t status)
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
+ *  cm_set_arc_distance_mode()  - G90.1, G91.1
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
  *
  *	These functions assume input validation occurred upstream.
@@ -639,6 +642,12 @@ stat_t cm_set_distance_mode(uint8_t mode)
 {
 	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
 	return (STAT_OK);
+}
+
+stat_t cm_set_arc_distance_mode(const uint8_t mode)
+{
+    cm.gm.arc_distance_mode = (cmDistanceMode)mode;	// 0 = absolute mode, 1 = incremental
+    return (STAT_OK);
 }
 
 /*

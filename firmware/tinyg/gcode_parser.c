@@ -313,8 +313,24 @@ static stat_t _parse_gcode_block(char_t *buf)
 				}
 				case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
 				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL_MOTION_MODE);
-				case 90: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
-				case 91: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
+//				case 90: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
+//				case 91: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
+				case 90: {
+    				switch (_point(value)) {
+        				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
+        				case 1: SET_MODAL (MODAL_GROUP_G3, arc_distance_mode, ABSOLUTE_MODE);
+        				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
+    				}
+    				break;
+				}
+				case 91: {
+    				switch (_point(value)) {
+        				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
+        				case 1: SET_MODAL (MODAL_GROUP_G3, arc_distance_mode, INCREMENTAL_MODE);
+        				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
+    				}
+    				break;
+				}
 				case 92: {
 					switch (_point(value)) {
 						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_ORIGIN_OFFSETS);
@@ -478,8 +494,8 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
         		case MOTION_MODE_CW_ARC:                                                                            // G2
-        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     (bool *)cm.gf.target,                    // G3
-            		                                             cm.gn.arc_offset, (bool *)cm.gf.arc_offset,
+        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     cm.gf.target,                    // G3
+            		                                             cm.gn.arc_offset, cm.gf.arc_offset,
             		                                             cm.gn.arc_radius, (bool)cm.gf.arc_radius,
             		                                             cm.gn.parameter,  (bool)cm.gf.parameter,
             		                                             (bool)cm.gf.modals[MODAL_GROUP_G1],
