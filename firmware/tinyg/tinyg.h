@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.01	// edge-441-arcs - initial
+#define TINYG_FIRMWARE_BUILD        442.01	// edge-442-g2sync - initial commit
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
