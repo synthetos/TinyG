@@ -175,7 +175,7 @@ uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
 }
 */
 
-uint8_t isnumber(char_t c)
+uint8_t isnumber(char c)
 {
 	if (c == '.') { return (true); }
 	if (c == '-') { return (true); }
@@ -183,10 +183,10 @@ uint8_t isnumber(char_t c)
 	return (isdigit(c));
 }
 
-char_t *escape_string(char_t *dst, char_t *src)
+char *escape_string(char *dst, char *src)
 {
-	char_t c;
-	char_t *start_dst = dst;
+	char c;
+	char *start_dst = dst;
 
 	while ((c = *(src++)) != 0) {	// NUL
 		if (c == '"') { *(dst++) = '\\'; }
@@ -206,14 +206,14 @@ char_t *escape_string(char_t *dst, char_t *src)
  *	allocation and max length. On the ARM it's a pass through that just returns the address
  *	of the input string
  */
-char_t *pstr2str(const char *pgm_string)
+char *pstr2str(const char *pgm_string)
 {
 #ifdef __AVR
 	strncpy_P(global_string_buf, pgm_string, MESSAGE_LEN);
 	return (global_string_buf);
 #endif
 #ifdef __ARM
-	return ((char_t *)pgm_string);
+	return ((char *)pgm_string);
 #endif
 }
 
@@ -222,7 +222,7 @@ char_t *pstr2str(const char *pgm_string)
  *
  *	Returns length of string, less the terminating NUL character
  */
-char_t fntoa(char_t *str, float n, uint8_t precision)
+char fntoa(char *str, float n, uint8_t precision)
 {
     // handle special cases
 	if (isnan(n)) {
@@ -233,15 +233,15 @@ char_t fntoa(char_t *str, float n, uint8_t precision)
 		strcpy(str, "inf");
 		return (3);
 
-	} else if (precision == 0 ) { return((char_t)sprintf((char *)str, "%0.0f", (double) n));
-	} else if (precision == 1 ) { return((char_t)sprintf((char *)str, "%0.1f", (double) n));
-	} else if (precision == 2 ) { return((char_t)sprintf((char *)str, "%0.2f", (double) n));
-	} else if (precision == 3 ) { return((char_t)sprintf((char *)str, "%0.3f", (double) n));
-	} else if (precision == 4 ) { return((char_t)sprintf((char *)str, "%0.4f", (double) n));
-	} else if (precision == 5 ) { return((char_t)sprintf((char *)str, "%0.5f", (double) n));
-	} else if (precision == 6 ) { return((char_t)sprintf((char *)str, "%0.6f", (double) n));
-	} else if (precision == 7 ) { return((char_t)sprintf((char *)str, "%0.7f", (double) n));
-	} else					    { return((char_t)sprintf((char *)str, "%f", (double) n)); }
+	} else if (precision == 0 ) { return((char)sprintf((char *)str, "%0.0f", (double) n));
+	} else if (precision == 1 ) { return((char)sprintf((char *)str, "%0.1f", (double) n));
+	} else if (precision == 2 ) { return((char)sprintf((char *)str, "%0.2f", (double) n));
+	} else if (precision == 3 ) { return((char)sprintf((char *)str, "%0.3f", (double) n));
+	} else if (precision == 4 ) { return((char)sprintf((char *)str, "%0.4f", (double) n));
+	} else if (precision == 5 ) { return((char)sprintf((char *)str, "%0.5f", (double) n));
+	} else if (precision == 6 ) { return((char)sprintf((char *)str, "%0.6f", (double) n));
+	} else if (precision == 7 ) { return((char)sprintf((char *)str, "%0.7f", (double) n));
+	} else					    { return((char)sprintf((char *)str, "%f", (double) n)); }
 }
 
 /*
@@ -254,7 +254,7 @@ char_t fntoa(char_t *str, float n, uint8_t precision)
  */
 #define HASHMASK 9999
 
-uint16_t compute_checksum(char_t const *string, const uint16_t length)
+uint16_t compute_checksum(char const *string, const uint16_t length)
 {
 	uint32_t h = 0;
 	uint16_t len = strlen(string);

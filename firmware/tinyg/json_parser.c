@@ -45,9 +45,9 @@ jsSingleton_t js;
 
 /**** local scope stuff ****/
 
-static stat_t _json_parser_kernal(char_t *str);
-static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
-static stat_t _normalize_json_string(char_t *str, uint16_t size);
+static stat_t _json_parser_kernal(char *str);
+static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
+static stat_t _normalize_json_string(char *str, uint16_t size);
 
 /****************************************************************************
  * json_parser() - exposed part of JSON parser
@@ -87,19 +87,19 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size);
  *		in an application agnostic way. It should work for other apps than TinyG
  */
 
-void json_parser(char_t *str)
+void json_parser(char *str)
 {
 	stat_t status = _json_parser_kernal(str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
-static stat_t _json_parser_kernal(char_t *str)
+static stat_t _json_parser_kernal(char *str)
 {
 	stat_t status;
 	int8_t depth;
 	nvObj_t *nv = nv_reset_nv_list();				// get a fresh nvObj list
-	char_t group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
+	char group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
@@ -149,9 +149,9 @@ static stat_t _json_parser_kernal(char_t *str)
  *	to lower case, with the exception of gcode comments
  */
 
-static stat_t _normalize_json_string(char_t *str, uint16_t size)
+static stat_t _normalize_json_string(char *str, uint16_t size)
 {
-	char_t *wr;								// write pointer
+	char *wr;								// write pointer
 	uint8_t in_comment = false;
 
 	if (strlen(str) > size)
@@ -202,20 +202,20 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 #define MAX_PAD_CHARS 8
 #define MAX_NAME_CHARS 32
 
-static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
+static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
 	uint8_t i;
-	char_t *tmp;
-	char_t leaders[] = {"{,\""};				// open curly, quote and leading comma
-	char_t separators[] = {":\""};				// colon and quote
-	char_t terminators[] = {"},\""};			// close curly, comma and quote
-	char_t value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
+	char *tmp;
+	char leaders[] = {"{,\""};				// open curly, quote and leading comma
+	char separators[] = {":\""};				// colon and quote
+	char terminators[] = {"},\""};			// close curly, comma and quote
+	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
 
 	nv_reset_nv(nv);							// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
-	char_t * name = *pstr;
+	char * name = *pstr;
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(leaders, (int)**pstr) == NULL) { 		// find leading character of name
 			name = (*pstr)++;
@@ -353,13 +353,13 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 
 #define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
-uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
+uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 {
 #ifdef __SILENCE_JSON_RESPONSES
 	return (0);
 #else
-	char_t *str = out_buf;
-	char_t *str_max = out_buf + size - BUFFER_MARGIN;
+	char *str = out_buf;
+	char *str_max = out_buf + size - BUFFER_MARGIN;
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -382,23 +382,23 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 
 			// serialize output value
-			if		(nv->valuetype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
+			if		(nv->valuetype == TYPE_NULL)		{ str += (char)sprintf((char *)str, "null");} // Note that that "" is NOT null.
 			else if (nv->valuetype == TYPE_INT)	{
-				str += (char_t)sprintf((char *)str, "%1.0f", (double)nv->value);
+				str += (char)sprintf((char *)str, "%1.0f", (double)nv->value);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{
 				uint32_t *v = (uint32_t*)&nv->value;
-				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
+				str += (char)sprintf((char *)str, "\"0x%lx\"", *v);
 			}
-			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
+			else if (nv->valuetype == TYPE_STRING)	{ str += (char)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
+			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
 			else if (nv->valuetype == TYPE_FLOAT)	{ preprocess_float(nv);
 //													  str += fntoa((char *)str, nv->value, nv->precision);
 													  str += fntoa(str, nv->value, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
 				if (fp_FALSE(nv->value)) { str += sprintf((char *)str, "false");}
-				else { str += (char_t)sprintf((char *)str, "true"); }
+				else { str += (char)sprintf((char *)str, "true"); }
 			}
 			if (nv->valuetype == TYPE_PARENT) {
 				*str++ = '{';
@@ -485,7 +485,7 @@ void json_print_response(uint8_t status)
 	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		nv_reset_nv_list();
-		nv_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
+		nv_add_string((const char *)"err", escape_string(cs.in_buf, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t nv_type;
@@ -522,7 +522,7 @@ void json_print_response(uint8_t status)
 			return;
 		}
 	}
-	char_t footer_string[NV_FOOTER_LEN];
+	char footer_string[NV_FOOTER_LEN];
 	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
 	cs.linelen = 0;											// reset linelen so it's only reported once
 

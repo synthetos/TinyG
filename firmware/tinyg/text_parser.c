@@ -39,14 +39,14 @@ txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
 #ifndef __TEXT_MODE
 
-stat_t text_parser_stub(char_t *str) {return (STAT_OK);}
-void text_response_stub(const stat_t status, char_t *buf) {}
+stat_t text_parser_stub(char *str) {return (STAT_OK);}
+void text_response_stub(const stat_t status, char *buf) {}
 void text_print_list_stub (stat_t status, uint8_t flags) {}
 void tx_print_stub(nvObj_t *nv) {}
 
 #else // __TEXT_MODE
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
 
 /******************************************************************************
  * text_parser() 		 - update a config setting from a text block (text mode)
@@ -59,7 +59,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
  *	- $x			display a group
  *	- ?				generate a status report (multiline format)
  */
-stat_t text_parser(char_t *str)
+stat_t text_parser(char *str)
 {
 	nvObj_t *nv = nv_reset_nv_list();				// returns first object in the body
 	stat_t status = STAT_OK;
@@ -97,11 +97,11 @@ stat_t text_parser(char_t *str)
 	return (status);
 }
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 {
-	char_t *rd, *wr;								// read and write pointers
-//	char_t separators[] = {"="};					// STRICT: only separator allowed is = sign
-	char_t separators[] = {" =:|\t"};				// RELAXED: any separator someone might use
+	char *rd, *wr;								    // read and write pointers
+//	char separators[] = {"="};					    // STRICT: only separator allowed is = sign
+	char separators[] = {" =:|\t"};				    // RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
 //	nv_reset_nv(nv);								// initialize config object
@@ -128,7 +128,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 	}
 
 	// validate and post-process the token
-	if ((nv->index = nv_get_index((const char_t *)"", nv->token)) == NO_MATCH) { // get index or fail it
+	if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_NAME);
 	}
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
@@ -149,7 +149,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 static const char prompt_ok[] PROGMEM = "tinyg [%s] ok> ";
 static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
-void text_response(const stat_t status, char_t *buf)
+void text_response(const stat_t status, char *buf)
 {
 	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
 

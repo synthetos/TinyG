@@ -241,7 +241,7 @@ typedef struct nvString {				// shared string object
   #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
   #endif
-	char_t string[NV_SHARED_STRING_LEN];
+	char string[NV_SHARED_STRING_LEN];
 	uint16_t magic_end;					// guard to detect string buffer underruns
 } nvStr_t;
 
@@ -253,9 +253,9 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t valuetype;					// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
-	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
-	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
-	char_t (*stringp)[];				// pointer to array of characters from shared character array
+	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
+	char token[TOKEN_LEN+1];			// full mnemonic token for lookup
+	char (*stringp)[];				    // pointer to array of characters from shared character array
 } nvObj_t; 								// OK, so it's not REALLY an object
 
 typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cfg table access
@@ -268,8 +268,8 @@ typedef struct nvList {
 } nvList_t;
 
 typedef struct cfgItem {
-	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
-	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
+	char group[GROUP_LEN+1];			// group prefix (with NUL termination)
+	char token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
@@ -304,12 +304,12 @@ stat_t nv_persist(nvObj_t *nv);				// main entry point for persistence
 
 // helpers
 uint8_t nv_get_type(nvObj_t *nv);
-index_t nv_get_index(const char_t *group, const char_t *token);
+index_t nv_get_index(const char *group, const char *token);
 index_t	nv_index_max(void);					// (see config_app.c)
 uint8_t nv_index_is_single(index_t index);	// (see config_app.c)
 uint8_t nv_index_is_group(index_t index);	// (see config_app.c)
 uint8_t nv_index_lt_groups(index_t index);	// (see config_app.c)
-uint8_t nv_group_is_prefixed(char_t *group);
+uint8_t nv_group_is_prefixed(char *group);
 
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);				// set nothing (no operation)
@@ -334,12 +334,12 @@ stat_t get_grp(nvObj_t *nv);				// get data for a group
 void nv_get_nvObj(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(void);
-stat_t nv_copy_string(nvObj_t *nv, const char_t *src);
-nvObj_t *nv_add_object(const char_t *token);
-nvObj_t *nv_add_integer(const char_t *token, const uint32_t value);
-nvObj_t *nv_add_float(const char_t *token, const float value);
-nvObj_t *nv_add_string(const char_t *token, const char_t *string);
-nvObj_t *nv_add_conditional_message(const char_t *string);
+stat_t nv_copy_string(nvObj_t *nv, const char *src);
+nvObj_t *nv_add_object(const char *token);
+nvObj_t *nv_add_integer(const char *token, const uint32_t value);
+nvObj_t *nv_add_float(const char *token, const float value);
+nvObj_t *nv_add_string(const char *token, const char *string);
+nvObj_t *nv_add_conditional_message(const char *string);
 void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 // application specific helpers and functions (config_app.c)

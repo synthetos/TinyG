@@ -124,7 +124,7 @@ enum {
 	COORDY1,    // Wafer Coordinate Y Byte 1
 };
 
-static void _get_id(char_t *id)
+static void _get_id(char *id)
 {
 #ifdef __AVR
 	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
@@ -206,7 +206,7 @@ stat_t hw_bootloader_handler(void)
 
 stat_t hw_get_id(nvObj_t *nv)
 {
-	char_t tmp[SYS_ID_LEN];
+	char tmp[SYS_ID_LEN];
 	_get_id(tmp);
 	nv->valuetype = TYPE_STRING;
 	ritorno(nv_copy_string(nv, tmp));
