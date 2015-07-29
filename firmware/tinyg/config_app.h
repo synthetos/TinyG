@@ -2,8 +2,8 @@
  * config_app.h - application-specific part of configuration sub-system
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -20,10 +20,6 @@
 
 #ifndef CONFIG_APP_H_ONCE
 #define CONFIG_APP_H_ONCE
-
-#ifdef __cplusplus
-extern "C"{
-#endif
 
 /***********************************************************************************
  **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
@@ -45,6 +41,9 @@ typedef enum {						// classification of commands
 typedef struct cfgParameters {		// mostly communications variables at this point
 	uint16_t magic_start;			// magic number to test memory integrity
 
+	// Job ID
+//	int32_t job_id[4];				// uuid to identify the job
+
 	// communications settings
 	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
@@ -54,11 +53,13 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
 	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
+//#ifdef __USER_DATA
 	// user-defined data groups
 	uint32_t user_data_a[4];
 	uint32_t user_data_b[4];
 	uint32_t user_data_c[4];
 	uint32_t user_data_d[4];
+//#endif
 
 	uint16_t magic_end;
 } cfgParameters_t;
@@ -87,6 +88,7 @@ uint8_t job_report_callback();
 	void cfg_print_ec(nvObj_t *nv);
 	void cfg_print_ee(nvObj_t *nv);
 	void cfg_print_ex(nvObj_t *nv);
+	void cfg_print_ew(nvObj_t *nv);
 	void cfg_print_baud(nvObj_t *nv);
 	void cfg_print_net(nvObj_t *nv);
 	void cfg_print_rx(nvObj_t *nv);
@@ -96,14 +98,11 @@ uint8_t job_report_callback();
 	#define cfg_print_ec tx_print_stub
 	#define cfg_print_ee tx_print_stub
 	#define cfg_print_ex tx_print_stub
+	#define cfg_print_ew tx_print_stub
 	#define cfg_print_baud tx_print_stub
 	#define cfg_print_net tx_print_stub
 	#define cfg_print_rx tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif //End of include guard: CONFIG_APP_H_ONCE

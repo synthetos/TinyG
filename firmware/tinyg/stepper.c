@@ -1236,7 +1236,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 stat_t st_get_pwr(nvObj_t *nv)
 {
 	nv->value = _motor_is_enabled(_get_motor(nv));
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 

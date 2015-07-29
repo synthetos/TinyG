@@ -1577,7 +1577,7 @@ static int8_t _get_axis_type(const index_t index)
 stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value)
 {
 	nv->value = (float)value;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return(nv_copy_string(nv, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
 }
 
@@ -1599,21 +1599,21 @@ stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_fe
 stat_t cm_get_toolv(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_mline(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_linenum(MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_line(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 

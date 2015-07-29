@@ -559,7 +559,7 @@ stat_t rx_report_callback(void) {
 	// make a qr object and print it
 	sprintf_P(nv->token, PSTR("qr"));
 	nv->value = qr.buffers_available;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
 	return (STAT_OK);
 */
@@ -574,14 +574,14 @@ stat_t rx_report_callback(void) {
 stat_t qr_get(nvObj_t *nv)
 {
 	nv->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
 stat_t qi_get(nvObj_t *nv)
 {
 	nv->value = (float)qr.buffers_added;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	qr.buffers_added = 0;				// reset it
 	return (STAT_OK);
 }
@@ -589,7 +589,7 @@ stat_t qi_get(nvObj_t *nv)
 stat_t qo_get(nvObj_t *nv)
 {
 	nv->value = (float)qr.buffers_removed;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
 }
@@ -638,7 +638,7 @@ stat_t job_set_job_report(nvObj_t *nv)
 
 	for (uint8_t i=0; i<4; i++) {
 		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
-		if (nv->valuetype == TYPE_INTEGER) {
+		if (nv->valuetype == TYPE_INT) {
 			cs.job_id[i] = nv->value;
 			nv->index = job_start + i;		// index of the SR persistence location
 			nv_persist(nv);

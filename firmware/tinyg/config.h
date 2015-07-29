@@ -31,11 +31,7 @@
 /***** PLEASE NOTE *****
 #include "config_app.h"	// is present at the end of this file
 */
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 /**** Config System Overview and Usage ***
  *
  *	--- Config objects and the config list ---
@@ -193,8 +189,6 @@ typedef uint16_t index_t;				// use this if there are > 255 indexed objects
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
-#define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
-											// **** must also line up in cfgArray, se00 - seXX ****
 
 typedef enum {
 	TEXT_MODE = 0,						// text command line mode
@@ -211,13 +205,13 @@ typedef enum {
 typedef enum {						    // value typing for config and JSON
 	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
-	TYPE_BOOL,							// value is "true" (1) or "false"(0)
-	TYPE_INTEGER,						// value is a uint32_t
-	TYPE_DATA,							// value is blind cast to uint32_t
+	TYPE_PARENT,						// object is a parent to a sub-object
 	TYPE_FLOAT,							// value is a floating point number
+	TYPE_INT,		    				// value is a uint32_t
 	TYPE_STRING,						// value is in string field
-	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT							// object is a parent to a sub-object
+	TYPE_BOOL,							// value is "true" (1) or "false"(0)
+	TYPE_DATA,							// value is blind cast to uint32_t
+	TYPE_ARRAY							// value is array element count, values are CSV ASCII in string field
 } valueType;
 
 /**** operations flags and shorthand ****/
@@ -232,6 +226,7 @@ typedef enum {						    // value typing for config and JSON
 #define _fp				(F_PERSIST)
 #define _fn				(F_NOSTRIP)
 #define _fc				(F_CONVERT)
+#define _fic			(F_INITIALIZE | F_CONVERT)
 #define _fip			(F_INITIALIZE | F_PERSIST)
 #define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
 #define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
@@ -358,9 +353,5 @@ void nv_dump_nv(nvObj_t *nv);
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
  *********************************************************************************************/
 #include "config_app.h"
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
+
 #endif // End of include guard: CONFIG_H_ONCE

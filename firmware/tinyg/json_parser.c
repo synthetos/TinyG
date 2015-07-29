@@ -383,7 +383,7 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 
 			// serialize output value
 			if		(nv->valuetype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
-			else if (nv->valuetype == TYPE_INTEGER)	{
+			else if (nv->valuetype == TYPE_INT)	{
 				str += (char_t)sprintf((char *)str, "%1.0f", (double)nv->value);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{

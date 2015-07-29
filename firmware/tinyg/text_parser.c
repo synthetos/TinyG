@@ -35,10 +35,6 @@
 #include "util.h"
 #include "xio.h"					// for ASCII char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
 #ifndef __TEXT_MODE
@@ -200,7 +196,7 @@ void text_print_inline_pairs(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
+			case TYPE_INT:	    { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
@@ -220,7 +216,7 @@ void text_print_inline_values(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
+			case TYPE_INT:	    { fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
@@ -280,9 +276,5 @@ static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbo
 
 void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
 
-
 #endif // __TEXT_MODE
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
