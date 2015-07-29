@@ -200,6 +200,7 @@ void text_print_inline_pairs(nvObj_t *nv)
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+            default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
 		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
@@ -220,6 +221,7 @@ void text_print_inline_values(nvObj_t *nv)
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+            default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
 		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}

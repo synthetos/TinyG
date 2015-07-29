@@ -66,31 +66,37 @@ nvList_t nvl;
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
 void nv_print(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return;
+	if (nv->index >= nv_index_max()) {
+        return;
+    }    
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	if (nv_index_lt_groups(nv->index) == false)
+	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
-	if (GET_TABLE_BYTE(flags) & F_PERSIST)
+    }    
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
+    }    
 #endif
 	return (STAT_OK);
 }
@@ -203,10 +209,10 @@ stat_t config_test_assertions()
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
  *	get_ui8()  - get value as 8 bit uint8_t
+ *  get_int8() - get value as 8 bit int8_t
  *	get_int()  - get value as 32 bit integer
  *	get_data() - get value as 32 bit integer blind cast
  *	get_flt()  - get value as float
- *	get_format() - internal accessor for printf() format string
  */
 stat_t get_nul(nvObj_t *nv)
 {
@@ -219,6 +225,13 @@ stat_t get_ui8(nvObj_t *nv)
 	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
+}
+
+stat_t get_int8(nvObj_t *nv)
+{
+    nv->value = (float)*((int8_t *)GET_TABLE_WORD(target));
+    nv->valuetype = TYPE_INT;
+    return (STAT_OK);
 }
 
 stat_t get_int(nvObj_t *nv)
@@ -248,6 +261,7 @@ stat_t get_flt(nvObj_t *nv)
 /* Generic sets()
  *	set_nul()  - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
  *	set_ui8()  - set value as 8 bit uint8_t value
+ *  set_int8() - set value as an 8 bit int8_t value
  *	set_01()   - set a 0 or 1 uint8_t value with validation
  *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
@@ -262,6 +276,13 @@ stat_t set_ui8(nvObj_t *nv)
 	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
 	nv->valuetype = TYPE_INT;
 	return(STAT_OK);
+}
+
+stat_t set_int8(nvObj_t *nv)
+{
+    *((int8_t *)GET_TABLE_WORD(target)) = (int8_t)nv->value;
+    nv->valuetype = TYPE_INT;
+    return(STAT_OK);
 }
 
 stat_t set_01(nvObj_t *nv)

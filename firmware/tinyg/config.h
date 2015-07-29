@@ -250,7 +250,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	struct nvObject *nx;				// pointer to next object or NULL if last object
 	index_t index;						// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
-	int8_t valuetype;					// see valueType enum
+	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
 	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
@@ -314,6 +314,7 @@ uint8_t nv_group_is_prefixed(char *group);
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);				// set nothing (no operation)
 stat_t set_ui8(nvObj_t *nv);				// set uint8_t value
+stat_t set_int8(nvObj_t *nv);               // set signed 8 bit integer
 stat_t set_01(nvObj_t *nv);					// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
@@ -322,7 +323,9 @@ stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);				// set floating point value
 
 stat_t get_nul(nvObj_t *nv);				// get null value type
+stat_t get_bool(nvObj_t *nv);				// get boolean value
 stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
+stat_t get_int8(nvObj_t *nv);               // get signed 8 bit integer
 stat_t get_int(nvObj_t *nv);				// get uint32_t integer value
 stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast
 stat_t get_flt(nvObj_t *nv);				// get floating point value
