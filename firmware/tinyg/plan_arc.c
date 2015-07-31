@@ -166,9 +166,9 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	// compute arc runtime values
 	ritorno(_compute_arc());
 
-	if (fp_ZERO(arc.length)) {
 //	if (arc.length < cm.arc_segment_len) {
-        return (STAT_MINIMUM_LENGTH_MOVE);          // arc is too short to draw
+	if (fp_ZERO(arc.length)) {
+        return (STAT_MINIMUM_LENGTH_MOVE);          // trap zero length arcs that _compute_arc can throw
     }
 
 /*	// test arc soft limits
@@ -250,21 +250,6 @@ static stat_t _compute_arc()
     if (cm.gm.linenum == 163) {
         cm_spindle_control(SPINDLE_CW);
     }
-    if (cm.gm.linenum == 163) {
-        cm_spindle_control(SPINDLE_CW);
-    }
-    if (cm.gm.linenum == 17958) {
-        cm_spindle_control(SPINDLE_CW);
-    }
-    if (cm.gm.linenum == 17959) {
-        cm_spindle_control(SPINDLE_CW);
-    }
-    if (cm.gm.linenum == 17960) {
-        cm_spindle_control(SPINDLE_CW);
-    }
-    if (cm.gm.linenum == 17944) {
-        cm_spindle_control(SPINDLE_CW);
-    }
 */
 
 	// Compute radius. A non-zero radius value indicates a radius arc
@@ -272,7 +257,6 @@ static stat_t _compute_arc()
         _compute_arc_offsets_from_radius();
     } else {                                        // compute start radius
         arc.radius = hypotf(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
-//	    arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
     }
 
     // Test arc specification for correctness according to:
@@ -293,29 +277,16 @@ static stat_t _compute_arc()
 
 	// Calculate the theta (angle) of the current point (position)
 	// arc.theta is starting point for theta (is also needed for calculating center point)
-//	arc.theta2 = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
     arc.theta = atan2(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
-//	if(isnan(arc.theta) == true) {
-//        return(STAT_ARC_SPECIFICATION_ERROR);
-//    }
+
     //// compute the angular travel ////
 	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
     	arc.angular_travel = 0;                             // angular travel always starts as zero for full circles
     	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;    // handle the valid case of a full circle arc w/P=0
 
     } else {                                                // ... it's not a full circle
-//	    arc.theta_end2 = _get_theta(                         // calculate the theta (angle) of the target endpoint
-//	        arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
-//	        arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
-
         arc.theta_end = atan2(end_0, end_1);
-//        arc.theta_end_ = arc.theta_end;
-
-//	    if(isnan(arc.theta_end) == true) {
-//            return (STAT_ARC_SPECIFICATION_ERROR);
-//        }
-
-	    if (arc.theta_end <= arc.theta) {                    // make the difference positive so we have clockwise travel
+	    if (arc.theta_end <= arc.theta) {                   // make the difference positive so we have clockwise travel
             arc.theta_end += 2*M_PI;
         }
 	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
