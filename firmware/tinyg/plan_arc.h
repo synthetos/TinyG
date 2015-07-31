@@ -40,11 +40,10 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	float offset[3]; 	 		    // IJK offsets
 
 	float length;				    // length of line or helix in mm
-	float time;					    // total running time for arc (derived)
-	float theta2;				    // total angle specified by arc
+//	float theta2;				    // total angle specified by arc
 	float theta;				    // total angle specified by arc
-	float theta_end2;
-	float theta_end_;
+//	float theta_end2;
+//	float theta_end_;
 	float theta_end;
 	float radius;				    // Raw R value, or computed via offsets
 	float angular_travel;		    // travel along the arc
@@ -57,6 +56,7 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	uint8_t plane_axis_1;		    // arc plane axis 1 - e.g. Y for G17
 	uint8_t linear_axis; 		    // linear axis (normal to plane)
 
+	float arc_time;					// total running time for arc (derived)
 	float arc_segments;				// number of segments in arc or blend
 	int32_t arc_segment_count;		// count of running segments
 	float arc_segment_theta;		// angular motion per segment

@@ -38,7 +38,7 @@ arc_t arc;
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static void _estimate_arc_time(void);
-static float _get_theta(const float x, const float y);
+//static float _get_theta(const float x, const float y);
 //static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
@@ -166,6 +166,11 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	// compute arc runtime values
 	ritorno(_compute_arc());
 
+	if (fp_ZERO(arc.length)) {
+//	if (arc.length < cm.arc_segment_len) {
+        return (STAT_MINIMUM_LENGTH_MOVE);          // arc is too short to draw
+    }
+
 /*	// test arc soft limits
 	stat_t status = _test_arc_soft_limits();
 	if (status != STAT_OK) {
@@ -241,10 +246,11 @@ void cm_abort_arc()
 
 static stat_t _compute_arc()
 {
-    if (cm.gm.linenum == 17956) {
+/*
+    if (cm.gm.linenum == 163) {
         cm_spindle_control(SPINDLE_CW);
     }
-    if (cm.gm.linenum == 17957) {
+    if (cm.gm.linenum == 163) {
         cm_spindle_control(SPINDLE_CW);
     }
     if (cm.gm.linenum == 17958) {
@@ -259,10 +265,9 @@ static stat_t _compute_arc()
     if (cm.gm.linenum == 17944) {
         cm_spindle_control(SPINDLE_CW);
     }
-
+*/
 
 	// Compute radius. A non-zero radius value indicates a radius arc
-//	if (fp_NOT_ZERO(arc.radius)) ritorno(_compute_arc_offsets_from_radius()); // returns if error
     if (fp_NOT_ZERO(arc.radius)) {                  // indicates a radius arc
         _compute_arc_offsets_from_radius();
     } else {                                        // compute start radius
@@ -288,29 +293,29 @@ static stat_t _compute_arc()
 
 	// Calculate the theta (angle) of the current point (position)
 	// arc.theta is starting point for theta (is also needed for calculating center point)
-	arc.theta2 = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
+//	arc.theta2 = _get_theta(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
     arc.theta = atan2(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
-	if(isnan(arc.theta) == true) {
-        return(STAT_ARC_SPECIFICATION_ERROR);
-    }
+//	if(isnan(arc.theta) == true) {
+//        return(STAT_ARC_SPECIFICATION_ERROR);
+//    }
     //// compute the angular travel ////
 	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
     	arc.angular_travel = 0;                             // angular travel always starts as zero for full circles
     	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;    // handle the valid case of a full circle arc w/P=0
 
     } else {                                                // ... it's not a full circle
-	    arc.theta_end2 = _get_theta(                         // calculate the theta (angle) of the target endpoint
-	        arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
-	        arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
+//	    arc.theta_end2 = _get_theta(                         // calculate the theta (angle) of the target endpoint
+//	        arc.gm.target[arc.plane_axis_0] - arc.offset[arc.plane_axis_0] - arc.position[arc.plane_axis_0],
+//	        arc.gm.target[arc.plane_axis_1] - arc.offset[arc.plane_axis_1] - arc.position[arc.plane_axis_1]);
 
         arc.theta_end = atan2(end_0, end_1);
-        arc.theta_end_ = arc.theta_end;
+//        arc.theta_end_ = arc.theta_end;
 
-	    if(isnan(arc.theta_end) == true) {
-            return (STAT_ARC_SPECIFICATION_ERROR);
-        }
+//	    if(isnan(arc.theta_end) == true) {
+//            return (STAT_ARC_SPECIFICATION_ERROR);
+//        }
 
-	    if (arc.theta_end < arc.theta) {                    // make the difference positive so we have clockwise travel
+	    if (arc.theta_end <= arc.theta) {                    // make the difference positive so we have clockwise travel
             arc.theta_end += 2*M_PI;
         }
 	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
@@ -334,30 +339,25 @@ static stat_t _compute_arc()
 	// Find the radius, calculate travel in the depth axis of the helix
 	// and compute the time it should take to perform the move
 	// Length is the total mm of travel of the helix (or just a planar arc)
-//	arc.radius = hypot(arc.offset[arc.plane_axis_0], arc.offset[arc.plane_axis_1]);
 	arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
 	arc.planar_travel = arc.angular_travel * arc.radius;
 	arc.length = hypot(arc.planar_travel, fabs(arc.linear_travel));
 
 	// length is the total mm of travel of the helix (or just a planar arc)
 	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
-//	if (arc.length < cm.arc_segment_len) {
-//        return (STAT_MINIMUM_LENGTH_MOVE);                  // arc is too short to draw
-//    }
-
-	// Find the minimum number of arc_segments that meets these constraints...
 	_estimate_arc_time();	// get an estimate of execution time to inform arc_segment calculation
 
+	// Find the minimum number of arc_segments that meets these constraints...
 	float arc_segments_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
 	float arc_segments_for_minimum_distance = arc.length / cm.arc_segment_len;
-	float arc_segments_for_minimum_time = arc.time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
+	float arc_segments_for_minimum_time = arc.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 
 	arc.arc_segments = floor(min3(arc_segments_for_chordal_accuracy,
 							      arc_segments_for_minimum_distance,
 							      arc_segments_for_minimum_time));
 
-	arc.arc_segments = max(arc.arc_segments, 1);        //...but is at least 1 arc_segment
- 	arc.gm.move_time = arc.time / arc.arc_segments;     // gcode state struct gets arc_segment_time, not arc time
+	arc.arc_segments = max(arc.arc_segments, 1);            //...but is at least 1 arc_segment
+ 	arc.gm.move_time = arc.arc_time / arc.arc_segments;     // gcode state struct gets arc_segment_time, not arc time
 	arc.arc_segment_count = (int32_t)arc.arc_segments;
 	arc.arc_segment_theta = arc.angular_travel / arc.arc_segments;
 	arc.arc_segment_linear_travel = arc.linear_travel / arc.arc_segments;
@@ -494,18 +494,18 @@ static void _estimate_arc_time ()
 {
 	// Determine move time at requested feed rate
 	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
-		arc.time = cm.gm.feed_rate;		// inverse feed rate has been normalized to minutes
-		cm.gm.feed_rate = 0;			// reset feed rate so next block requires an explicit feed rate setting
+		arc.arc_time = cm.gm.feed_rate;	                // inverse feed rate has been normalized to minutes
+		cm.gm.feed_rate = 0;                            // reset feed rate so next block requires an explicit feed rate setting
 		cm.gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
 	} else {
-		arc.time = arc.length / cm.gm.feed_rate;
+		arc.arc_time = arc.length / cm.gm.feed_rate;
 	}
 
 	// Downgrade the time if there is a rate-limiting axis
-	arc.time = max(arc.time, arc.planar_travel/cm.a[arc.plane_axis_0].feedrate_max);
-	arc.time = max(arc.time, arc.planar_travel/cm.a[arc.plane_axis_1].feedrate_max);
+	arc.arc_time = max(arc.arc_time, arc.planar_travel/cm.a[arc.plane_axis_0].feedrate_max);
+	arc.arc_time = max(arc.arc_time, arc.planar_travel/cm.a[arc.plane_axis_1].feedrate_max);
 	if (fabs(arc.linear_travel) > 0) {
-		arc.time = max(arc.time, fabs(arc.linear_travel/cm.a[arc.linear_axis].feedrate_max));
+		arc.arc_time = max(arc.arc_time, fabs(arc.linear_travel/cm.a[arc.linear_axis].feedrate_max));
 	}
 }
 
@@ -515,7 +515,7 @@ static void _estimate_arc_time ()
  *	Find the angle in radians of deviance from the positive y axis
  *	negative angles to the left of y-axis, positive to the right.
  */
-
+/*
 static float _get_theta(const float x, const float y)
 {
 	float theta = atan(x/fabs(y));
@@ -530,7 +530,7 @@ static float _get_theta(const float x, const float y)
 		}
 	}
 }
-
+*/
 /*
  * _test_arc_soft_limits() - return error status if soft limit is exceeded
  *
