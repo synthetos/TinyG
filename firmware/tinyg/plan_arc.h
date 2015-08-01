@@ -40,10 +40,7 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	float offset[3]; 	 		    // IJK offsets
 
 	float length;				    // length of line or helix in mm
-//	float theta2;				    // total angle specified by arc
 	float theta;				    // total angle specified by arc
-//	float theta_end2;
-//	float theta_end_;
 	float theta_end;
 	float radius;				    // Raw R value, or computed via offsets
 	float angular_travel;		    // travel along the arc

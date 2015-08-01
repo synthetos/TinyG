@@ -100,6 +100,7 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
+	uint8_t arc_distance_mode;			// G91.1   0=use absolute coords(G90), 1=incremental movement
 	uint8_t tool;						// M6 tool change - moves "tool_select" to "tool"
 	uint8_t tool_select;				// T value - T sets this value
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
@@ -163,6 +164,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
+	uint8_t arc_distance_mode;			// G91.1   0=use absolute coords(G90), 1=incremental movement
 
 	uint8_t tool;						// Tool after T and M6 (tool_select and tool_change)
 	uint8_t tool_select;				// T value - T sets this value

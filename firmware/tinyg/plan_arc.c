@@ -38,7 +38,6 @@ arc_t arc;
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static void _estimate_arc_time(void);
-//static float _get_theta(const float x, const float y);
 //static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
@@ -166,7 +165,6 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	// compute arc runtime values
 	ritorno(_compute_arc());
 
-//	if (arc.length < cm.arc_segment_len) {
 	if (fp_ZERO(arc.length)) {
         return (STAT_MINIMUM_LENGTH_MOVE);          // trap zero length arcs that _compute_arc can throw
     }
@@ -246,12 +244,6 @@ void cm_abort_arc()
 
 static stat_t _compute_arc()
 {
-/*
-    if (cm.gm.linenum == 163) {
-        cm_spindle_control(SPINDLE_CW);
-    }
-*/
-
 	// Compute radius. A non-zero radius value indicates a radius arc
     if (fp_NOT_ZERO(arc.radius)) {                  // indicates a radius arc
         _compute_arc_offsets_from_radius();
@@ -269,53 +261,47 @@ static stat_t _compute_arc()
     float end_0 = arc.gm.target[arc.plane_axis_0] - arc.position[arc.plane_axis_0] - arc.offset[arc.plane_axis_0];
     float end_1 = arc.gm.target[arc.plane_axis_1] - arc.position[arc.plane_axis_1] - arc.offset[arc.plane_axis_1];
     float err = fabs(hypotf(end_0, end_1) - arc.radius);   // end radius - start radius
-    if ((err > ARC_RADIUS_ERROR_MAX) || ((err > ARC_RADIUS_ERROR_MIN) &&
-        (err > arc.radius * ARC_RADIUS_TOLERANCE))) {
+    if ( (err > ARC_RADIUS_ERROR_MAX) ||
+        ((err > ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
 //        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
         return (STAT_ARC_SPECIFICATION_ERROR);
     }
 
 	// Calculate the theta (angle) of the current point (position)
-	// arc.theta is starting point for theta (is also needed for calculating center point)
+	// arc.theta is angular starting point for the arc (is also needed for calculating center point)
     arc.theta = atan2(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
 
-    //// compute the angular travel ////
+    // Compute the angular travel
+    float g18_correction = 1;
+    if (cm.gm.select_plane == CANON_PLANE_XZ) {             // used to invert G18 XZ plane arcs for proper CW orientation
+        g18_correction = -1;
+    }
 	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
     	arc.angular_travel = 0;                             // angular travel always starts as zero for full circles
-    	if (fp_ZERO(arc.rotations)) arc.rotations = 1.0;    // handle the valid case of a full circle arc w/P=0
-
+    	if (fp_ZERO(arc.rotations)) {                       // handle the valid case of a full circle arc w/P=0
+            arc.rotations = 1.0;
+        }
     } else {                                                // ... it's not a full circle
         arc.theta_end = atan2(end_0, end_1);
 	    if (arc.theta_end <= arc.theta) {                   // make the difference positive so we have clockwise travel
-            arc.theta_end += 2*M_PI;
+            arc.theta_end += 2*M_PI * g18_correction;       // NB: MUST be <= in (arc.theta_end <= arc.theta) or PartKam arcs will fail
         }
 	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
     	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {     // reverse travel direction if it's CCW arc
-            arc.angular_travel -= 2*M_PI;
+            arc.angular_travel -= 2*M_PI * g18_correction;
         }
 	}
-
     if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in travel for rotations
-        arc.angular_travel += 2*M_PI * arc.rotations;
+        arc.angular_travel += 2*M_PI * arc.rotations * g18_correction;
     } else {
-        arc.angular_travel -= 2*M_PI * arc.rotations;
+        arc.angular_travel -= 2*M_PI * arc.rotations * g18_correction;
     }
-    if (cm.gm.select_plane == CANON_PLANE_XZ) {             // invert G18 XZ plane arcs for proper CW orientation
-    	arc.angular_travel *= -1;
-	}
-	if (cm.gm.select_plane == CANON_PLANE_XZ) {				// Invert G18 XZ plane arcs for proper CW orientation
-		arc.angular_travel *= -1;
-	}
 
-	// Find the radius, calculate travel in the depth axis of the helix
-	// and compute the time it should take to perform the move
-	// Length is the total mm of travel of the helix (or just a planar arc)
+	// Calculate travel in the depth axis of the helix and compute the time it should take to perform the move
+	// arc.length is the total mm of travel of the helix (or just a planar arc)
 	arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
 	arc.planar_travel = arc.angular_travel * arc.radius;
-	arc.length = hypot(arc.planar_travel, fabs(arc.linear_travel));
-
-	// length is the total mm of travel of the helix (or just a planar arc)
-	arc.length = hypot(arc.angular_travel * arc.radius, fabs(arc.linear_travel));
+	arc.length = hypotf(arc.planar_travel, arc.linear_travel);  // NB: hypot is insensitive to +/- signs
 	_estimate_arc_time();	// get an estimate of execution time to inform arc_segment calculation
 
 	// Find the minimum number of arc_segments that meets these constraints...
@@ -432,7 +418,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	float disc = 4 * square(arc.radius) - (square(x) + square(y));
 
 	// h_x2_div_d == -(h * 2 / d)
-	float h_x2_div_d = (disc > 0) ? -sqrt(disc) / hypot(x,y) : 0;
+	float h_x2_div_d = (disc > 0) ? -sqrt(disc) / hypotf(x,y) : 0;
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
 	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d;}
@@ -480,28 +466,6 @@ static void _estimate_arc_time ()
 	}
 }
 
-/*
- * _get_theta(float x, float y)
- *
- *	Find the angle in radians of deviance from the positive y axis
- *	negative angles to the left of y-axis, positive to the right.
- */
-/*
-static float _get_theta(const float x, const float y)
-{
-	float theta = atan(x/fabs(y));
-
-	if (y>0) {
-		return (theta);
-	} else {
-		if (theta>0) {
-			return ( M_PI-theta);
-    	} else {
-			return (-M_PI-theta);
-		}
-	}
-}
-*/
 /*
  * _test_arc_soft_limits() - return error status if soft limit is exceeded
  *
