@@ -62,7 +62,7 @@ struct pbProbingSingleton {						// persistent probing runtime variables
 	// probe destination
 	float start_position[AXES];
 	float target[AXES];
-	float flags[AXES];
+	bool flags[AXES];
 };
 static struct pbProbingSingleton pb;
 
@@ -106,7 +106,7 @@ uint8_t _set_pb_func(uint8_t (*func)())
  *	to cm_get_runtime_busy() is about.
  */
 
-uint8_t cm_straight_probe(float target[], float flags[])
+uint8_t cm_straight_probe(float target[], bool flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
@@ -114,8 +114,12 @@ uint8_t cm_straight_probe(float target[], float flags[])
 	}
 
 	// trap no axes specified
-	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
-		return (STAT_GCODE_AXIS_IS_MISSING);
+//	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
+//		return (STAT_GCODE_AXIS_IS_MISSING);
+
+	if (!flags[AXIS_X] && !flags[AXIS_Y] && !flags[AXIS_Z]) {
+	    return (STAT_GCODE_AXIS_IS_MISSING);
+    }
 
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint

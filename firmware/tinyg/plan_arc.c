@@ -61,7 +61,7 @@ void cm_arc_init()
  * Generates an arc by queuing line segments to the move buffer. The arc is
  * approximated by generating a large number of tiny, linear arc_segments.
  */
-stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
+stat_t cm_arc_feed(float target[], bool flags[],        // arc endpoints
 				   float i, float j, float k,           // raw arc offsets
 				   float radius,                        // non-zero radius implies radius mode
 				   uint8_t motion_mode)                 // defined motion mode
@@ -75,12 +75,14 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	}
 
     // set radius mode flag and do simple test(s)
-	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			    // set true if radius arc
+//	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			    // set true if radius arc
+	bool radius_f = cm.gf.arc_radius;			                // set true if radius arc
     if ((radius_f) && (cm.gn.arc_radius < MIN_ARC_RADIUS)) {    // radius value must be + and > minimum radius
         return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
     }
 
     // setup some flags
+/*
 	bool target_x = fp_NOT_ZERO(flags[AXIS_X]);	                // set true if X axis has been specified
 	bool target_y = fp_NOT_ZERO(flags[AXIS_Y]);
 	bool target_z = fp_NOT_ZERO(flags[AXIS_Z]);
@@ -88,6 +90,14 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
     bool offset_i = fp_NOT_ZERO(cm.gf.arc_offset[0]);	        // set true if offset I has been specified
     bool offset_j = fp_NOT_ZERO(cm.gf.arc_offset[1]);           // J
     bool offset_k = fp_NOT_ZERO(cm.gf.arc_offset[2]);           // K
+*/
+	bool target_x = flags[AXIS_X];	                            // set true if X axis has been specified
+	bool target_y = flags[AXIS_Y];
+	bool target_z = flags[AXIS_Z];
+
+	bool offset_i = cm.gf.arc_offset[0];	                    // set true if offset I has been specified
+	bool offset_j = cm.gf.arc_offset[1];           // J
+	bool offset_k = cm.gf.arc_offset[2];           // K
 
 	// Set the arc plane for the current G17/G18/G19 setting and test arc specification
 	// Plane axis 0 and 1 are the arc plane, the linear axis is normal to the arc plane.
@@ -157,7 +167,8 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	arc.rotations = floor(fabs(cm.gn.parameter));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
-	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+//	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+	arc.full_circle = (!flags[arc.plane_axis_0] & !flags[arc.plane_axis_1]);
 
 	// compute arc runtime values
 	ritorno(_compute_arc());

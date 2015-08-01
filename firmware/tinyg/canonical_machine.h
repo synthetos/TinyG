@@ -431,6 +431,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 typedef struct GCodeFlags {             // Gcode model input flags
     bool next_action;
     bool motion_mode;
+
     bool modals[MODAL_GROUP_COUNT];
     bool program_flow;
     bool linenum;
@@ -439,6 +440,12 @@ typedef struct GCodeFlags {             // Gcode model input flags
     bool L_word;
     bool feed_rate;
     bool feed_rate_mode;
+
+	bool feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
+	bool traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
+	bool feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
+	bool traverse_override_enable;	// TRUE = traverse override enabled
+	bool override_enables;			// enables for feed and spoindle (GN/GF only)
 
     bool m48_enable;
     bool mfo_enable;
@@ -459,7 +466,8 @@ typedef struct GCodeFlags {             // Gcode model input flags
     bool mist_coolant;
     bool flood_coolant;
 
-    bool spindle_control;
+//    bool spindle_control;
+	bool spindle_mode;
     bool spindle_speed;
     bool spindle_override_factor;
     bool spindle_override_enable;
@@ -550,7 +558,8 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	GCodeState_t  gm;					// core gcode model state
 	GCodeStateX_t gmx;					// extended gcode model state
 	GCodeInput_t  gn;					// gcode input values - transient
-	GCodeInput_t  gf;					// gcode input flags - transient
+//	GCodeInput_t  gf;					// gcode input flags - transient
+	GCodeFlags_t  gf;					// gcode input flags - transient
 
 	magic_t magic_end;
 } cmSingleton_t;
@@ -612,7 +621,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
 stat_t cm_deferred_write_callback(void);
-void cm_set_model_target(const float target[], const float flag[]);
+void cm_set_model_target(const float target[], const bool flags[]);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
@@ -632,24 +641,24 @@ stat_t cm_select_plane(uint8_t plane);							                // G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							                // G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						                // G90, G91
 stat_t cm_set_arc_distance_mode(uint8_t mode);						            // G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]);// G10 L2
+stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], bool flags[]);// G10 L2
 
 void cm_set_position(uint8_t axis, float position);				                // set absolute position - single axis
-stat_t cm_set_absolute_origin(float origin[], float flag[]);	                // G28.3
+stat_t cm_set_absolute_origin(float origin[], bool flags[]);	                // G28.3
 void cm_set_axis_origin(uint8_t axis, const float position);	                // G28.3 planner callback
 
 stat_t cm_set_coord_system(uint8_t coord_system);				                // G54 - G59
-stat_t cm_set_origin_offsets(float offset[], float flag[]);		                // G92
+stat_t cm_set_origin_offsets(float offset[], bool flags[]);		                // G92
 stat_t cm_reset_origin_offsets(void); 							                // G92.1
 stat_t cm_suspend_origin_offsets(void); 						                // G92.2
 stat_t cm_resume_origin_offsets(void);				 			                // G92.3
 
 // Free Space Motion (4.3.4)
-stat_t cm_straight_traverse(float target[], float flags[]);		                // G0
+stat_t cm_straight_traverse(float target[], bool flags[]);		                // G0
 stat_t cm_set_g28_position(void);								                // G28.1
-stat_t cm_goto_g28_position(float target[], float flags[]); 	                // G28
+stat_t cm_goto_g28_position(float target[], bool flags[]); 	                    // G28
 stat_t cm_set_g30_position(void);								                // G30.1
-stat_t cm_goto_g30_position(float target[], float flags[]);		                // G30
+stat_t cm_goto_g30_position(float target[], bool flags[]);		                // G30
 
 // Machining Attributes (4.3.5)
 stat_t cm_set_feed_rate(float feed_rate);						                // F parameter
@@ -657,10 +666,10 @@ stat_t cm_set_feed_rate_mode(uint8_t mode);						                // G93, G94, (G
 stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);      // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(float target[], float flags[]);		                    // G1
+stat_t cm_straight_feed(float target[], bool flags[]);		                    // G1
 stat_t cm_dwell(float seconds);									                // G4, P parameter
 
-stat_t cm_arc_feed(float target[], float flags[],                               // arc endpoints
+stat_t cm_arc_feed(float target[], bool flags[],                                // arc endpoints
                    float i, float j, float k,                                   // raw arc offsets
                    float radius,                                                // non-zero radius implies radius mode
                    uint8_t motion_mode);                                        // defined motion mode
@@ -717,7 +726,7 @@ stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
 
 // Probe cycles
-stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
+stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
 
 // Jogging cycle

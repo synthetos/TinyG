@@ -37,8 +37,8 @@
 extern "C"{
 #endif
 
-static void _exec_spindle_control(float *value, float *flag);
-static void _exec_spindle_speed(float *value, float *flag);
+static void _exec_spindle_control(float *value, bool *flags);
+static void _exec_spindle_speed(float *value, bool *flags);
 
 /*
  * cm_spindle_init()
@@ -91,12 +91,13 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 stat_t cm_spindle_control(uint8_t spindle_mode)
 {
 	float value[AXES] = { (float)spindle_mode, 0,0,0,0,0 };
-	mp_queue_command(_exec_spindle_control, value, value);
+    bool flags[AXES] = { true, false, false, false, false, false };
+	mp_queue_command(_exec_spindle_control, value, flags);
 	return(STAT_OK);
 }
 
 //static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
-static void _exec_spindle_control(float *value, float *flag)
+static void _exec_spindle_control(float *value, bool *flags)
 {
 	uint8_t spindle_mode = (uint8_t)value[0];
 	cm_set_spindle_mode(MODEL, spindle_mode);
@@ -139,7 +140,8 @@ stat_t cm_set_spindle_speed(float speed)
 //        return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);
 
 	float value[AXES] = { speed, 0,0,0,0,0 };
-	mp_queue_command(_exec_spindle_speed, value, value);
+    bool flags[AXES] = { true, false, false, false, false, false };
+	mp_queue_command(_exec_spindle_speed, value, flags);
 	return (STAT_OK);
 }
 
@@ -148,7 +150,7 @@ void cm_exec_spindle_speed(float speed)
 	cm_set_spindle_speed(speed);
 }
 
-static void _exec_spindle_speed(float *value, float *flag)
+static void _exec_spindle_speed(float *value, bool *flags)
 {
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running

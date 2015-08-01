@@ -35,10 +35,6 @@
 #include "switch.h"
 #include "report.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Homing singleton structure ****/
 
 struct hmHomingSingleton {			// persistent homing runtime variables
@@ -244,13 +240,20 @@ static stat_t _homing_axis_start(int8_t axis)
 	cm.homed[axis] = false;
 
 	// trap axis mis-configurations
-	if (fp_ZERO(cm.a[axis].search_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
-	if (fp_ZERO(cm.a[axis].latch_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
-	if (cm.a[axis].latch_backoff < 0) return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
-
+	if (fp_ZERO(cm.a[axis].search_velocity)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
+    }
+	if (fp_ZERO(cm.a[axis].latch_velocity)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
+    }
+	if (cm.a[axis].latch_backoff < 0) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
+    }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
-	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+	if (fp_ZERO(travel_distance)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+    }
 
 	// determine the switch setup and that config is OK
 #ifndef __NEW_SWITCHES
@@ -399,7 +402,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
 	float vect[] = {0,0,0,0,0,0};
-	float flags[] = {false, false, false, false, false, false};
+	bool flags[] = {false, false, false, false, false, false};
 
 	vect[axis] = target;
 	flags[axis] = true;
@@ -483,134 +486,56 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 
 static int8_t _get_next_axis(int8_t axis)
 {
-#if (HOMING_AXES <= 4)
-//    uint8_t axis;
-//    for(axis = AXIS_X; axis < HOMING_AXES; axis++)
-//        if(fp_TRUE(cm.gf.target[axis])) break;
-//    if(axis >= HOMING_AXES) return -2;
-//    switch(axis) {
-//        case -1:        if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-//        case AXIS_Z:    if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-//        case AXIS_X:    if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-//        case AXIS_Y:    if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-//#if (HOMING_AXES > 4)
-//        case AXIS_A:    if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-//        case AXIS_B:    if (fp_True(cm.gf.target[AXIS_C])) return (AXIS_C);
-//#endif
-//        default:        return -1;
-//    }
-	if (axis == -1) {	// inelegant brute force solution
-		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		return (-2);	// error
-	} else if (axis == AXIS_Z) {
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-	} else if (axis == AXIS_X) {
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-	} else if (axis == AXIS_Y) {
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-	}
-	return (-1);	// done
+    #if (HOMING_AXES <= 4)
+    if (axis == -1) {	// inelegant brute force solution
+        if (cm.gf.target[AXIS_Z]) { return (AXIS_Z); }
+        if (cm.gf.target[AXIS_X]) { return (AXIS_X); }
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        return (-2);	// error
+        } else if (axis == AXIS_Z) {
+        if (cm.gf.target[AXIS_X]) { return (AXIS_X); }
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        } else if (axis == AXIS_X) {
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        } else if (axis == AXIS_Y) {
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+    }
+    return (-1);	// done
 
-#else
+    #else
+    if (axis == -1) {
+        if (cm.gf.target[AXIS_Z]) { return (AXIS_Z); }
+        if (cm.gf.target[AXIS_X]) { return (AXIS_X); }
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        if (cm.gf.target[AXIS_B]) { return (AXIS_B); }
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+        return (-2);	// error
+        } else if (axis == AXIS_Z) {
+        if (cm.gf.target[AXIS_X]) { return (AXIS_X); }
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        if (cm.gf.target[AXIS_B]) { return (AXIS_B); }
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+        } else if (axis == AXIS_X) {
+        if (cm.gf.target[AXIS_Y]) { return (AXIS_Y); }
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        if (cm.gf.target[AXIS_B]) { return (AXIS_B); }
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+        } else if (axis == AXIS_Y) {
+        if (cm.gf.target[AXIS_A]) { return (AXIS_A); }
+        if (cm.gf.target[AXIS_B]) { return (AXIS_B); }
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+        } else if (axis == AXIS_A) {
+        if (cm.gf.target[AXIS_B]) { return (AXIS_B); }
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+        } else if (axis == AXIS_B) {
+        if (cm.gf.target[AXIS_C]) { return (AXIS_C); }
+    }
+    return (-1);	// done
 
-	if (axis == -1) {
-		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-		return (-2);	// error
-	} else if (axis == AXIS_Z) {
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-	} else if (axis == AXIS_X) {
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-	} else if (axis == AXIS_Y) {
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-	} else if (axis == AXIS_A) {
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-	} else if (axis == AXIS_B) {
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
-	}
-	return (-1);	// done
-
-#endif
+    #endif //  (HOMING_AXES <= 4)
 }
-
-/*
- * _get_next_axes() - return next axis in sequence based on axis in arg
- *
- *	Accepts "axis" arg as the current axis; or -1 to retrieve the first axis
- *	Returns next axis based on "axis" argument
- *	Returns -1 when all axes have been processed
- *	Returns -2 if no axes are specified (Gcode calling error)
- *
- *	hm.axis2 is set to the secondary axis if axis is a dual axis
- *	hm.axis2 is set to -1 otherwise
- *
- *	Isolating this function facilitates implementing more complex and
- *	user-specified axis homing orders
- *
- *	Note: the logic to test for disabled or inhibited axes will allow the
- *	following condition to occur: A single axis is specified but it is
- *	disabled or inhibited - homing will say that it was successfully homed.
- */
-
-// _run_homing_dual_axis() - kernal routine for running homing on a dual axis
-//static stat_t _run_homing_dual_axis(int8_t axis) { return (STAT_OK);}
-
-/*
-int8_t _get_next_axes(int8_t axis)
-{
-	int8_t next_axis;
-	hm.axis2 = -1;
-
-	// Scan target vector for case where no valid axes are specified
-	for (next_axis = 0; next_axis < AXES; next_axis++) {
-		if ((fp_TRUE(cm.gf.target[next_axis])) &&
-			(cm.a[next_axis].axis_mode != AXIS_INHIBITED) &&
-			(cm.a[next_axis].axis_mode != AXIS_DISABLED)) {
-			break;
-		}
-	}
-	if (next_axis == AXES) {
-//		fprintf_P(stderr, PSTR("***** Homing failed: none or disabled/inhibited axes specified\n"));
-		return (-2);	// didn't find any axes to process
-	}
-
-	// Scan target vector from the current axis to find next axis or the end
-	for (next_axis = ++axis; next_axis < AXES; next_axis++) {
-		if (fp_TRUE(cm.gf.target[next_axis])) {
-			if ((cm.a[next_axis].axis_mode == AXIS_INHIBITED) ||
-				(cm.a[next_axis].axis_mode == AXIS_DISABLED)) {	// Skip if axis disabled or inhibited
-				continue;
-			}
-			break;		// got a good one
-		}
-		return (-1);	// you are done
-	}
-
-	// Got a valid axis. Find out if it's a dual
-	return (STAT_OK);
-}
-*/
-
-#ifdef __cplusplus
-}
-#endif

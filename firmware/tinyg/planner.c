@@ -68,17 +68,17 @@ extern "C"{
 */
 // Allocate planner structures
 
-mpBufferPool_t mb;				// move buffer queue
-mpMoveMasterSingleton_t mm;		// context for line planning
-mpMoveRuntimeSingleton_t mr;	// context for line runtime
+mpBufferPool_t mb;				    // move buffer queue
+mpMoveMasterSingleton_t mm;		    // context for line planning
+mpMoveRuntimeSingleton_t mr;	    // context for line runtime
 
 /*
  * Local Scope Data and Functions
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
-#define spindle_speed move_time	// local alias for spindle_speed to the time variable
-#define value_vector gm.target	// alias for vector of values
-#define flag_vector unit		// alias for vector of flags
+#define spindle_speed move_time	    // local alias for spindle_speed to the time variable
+#define value_vector gm.target	    // alias for vector of values
+#define flag_vector axis_flags	    // alias for vector of flags
 
 // execution routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_dwell(mpBuf_t *bf);
@@ -90,8 +90,8 @@ static stat_t _exec_command(mpBuf_t *bf);
 void planner_init()
 {
 // If you know all memory has been zeroed by a hard reset you don't need these next 2 lines
-	memset(&mr, 0, sizeof(mr));	// clear all values, pointers and status
-	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
+	memset(&mr, 0, sizeof(mr));	    // clear all values, pointers and status
+	memset(&mm, 0, sizeof(mm));	    // clear all values, pointers and status
 	planner_init_assertions();
 	mp_init_buffers();
 }
@@ -194,7 +194,7 @@ void mp_set_steps_to_runtime_position()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag)
+void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flag)
 {
 	mpBuf_t *bf;
 
