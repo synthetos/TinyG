@@ -61,84 +61,72 @@ void cm_arc_init()
  * Generates an arc by queuing line segments to the move buffer. The arc is
  * approximated by generating a large number of tiny, linear arc_segments.
  */
-stat_t cm_arc_feed(float target[], bool target_f[],         // arc endpoint (target) and flags
-                   float offset[], bool offset_f[],         // offsets and flags
-				   float radius,   bool radius_f,             // non-zero radius implies radius mode
-                   float P_word,   bool P_word_f,                     // parameter
-                   const bool modal_g1_f,                   // modal group flag for motion group
-                   const uint8_t motion_mode)               // defined motion mode
+stat_t cm_arc_feed(float target[], bool target_f[],     // arc endpoint (target) and flags
+                   float offset[], bool offset_f[],     // offsets and flags
+				   float radius,   bool radius_f,       // non-zero radius implies radius mode
+                   float P_word,   bool P_word_f,       // parameter
+                   const bool modal_g1_f,               // modal group flag for motion group
+                   const uint8_t motion_mode)           // defined motion mode
 {
-	////////////////////////////////////////////////////
-	// Set axis plane and trap arc specification errors
+	// Start setting up the arc and trapping arc specification errors
 
-	// trap missing feed rate
-	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-    	return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	// Trap some precursor cases. Since motion mode (MODAL_GROUP_G1) persists from the
+	// previous move it's possible for non-modal commands such as F or P to arrive here
+	// when no motion has actually been specified. It's also possible to run an arc as
+	// simple as "I25" if CW or CCW motion mode was already set by a previous block.
+	// Here are 2 cases to handle if CW or CCW motion mode was set by a previous block:
+	//
+	// Case 1: F, P or other non modal is specified but no movement is specified
+	//         (no offsets or radius). This is OK: return STAT_OK
+	//
+	// Case 2: Movement is specified w/o a new G2 or G3 word in the (new) block.
+	//         This is OK: continue the move
+	//
+	if ((!modal_g1_f) &&                                                // G2 or G3 not present
+	    (!(offset_f[AXIS_X] | offset_f[AXIS_Y] | offset_f[AXIS_Z])) &&  // no offsets are present
+	    (!radius_f)) {                                                  // radius not present
+    	return (STAT_OK);
 	}
 
-    // set radius mode flag and do simple test(s)
-//	bool radius_f = cm.gf.arc_radius;			                // set true if radius arc
-    if ((radius_f) && (cm.gn.arc_radius < MIN_ARC_RADIUS)) {    // radius value must be + and > minimum radius
-        return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
-    }
+	// Some things you might think are errors but are not:
+	//  - offset specified for linear axis (i.e. not one of the plane axes). Ignored
+	//  - rotary axes are present. Ignored
 
-    // setup some flags
-//	bool target_x = flags[AXIS_X];	                            // set true if X axis has been specified
-//	bool target_y = flags[AXIS_Y];
-//	bool target_z = flags[AXIS_Z];
-//	bool offset_i = cm.gf.arc_offset[OFS_I];	       // set true if offset I has been specified
-//	bool offset_j = cm.gf.arc_offset[OFS_J];           // J
-//	bool offset_k = cm.gf.arc_offset[OFS_K];           // K
+	// trap missing feed rate
+	if (fp_ZERO(cm.gm.feed_rate)) {
+    	return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	}
+//	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
+//    	return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+//	}
 
 	// Set the arc plane for the current G17/G18/G19 setting and test arc specification
 	// Plane axis 0 and 1 are the arc plane, the linear axis is normal to the arc plane.
-	if (cm.gm.select_plane == CANON_PLANE_XY) {	// G17 - the vast majority of arcs are in the G17 (XY) plane
+	if (cm.gm.select_plane == CANON_PLANE_XY) {	        // G17 - most arcs are in the G17 (XY) plane
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
-/*
-        if (radius_f) {
-            if (!(target_x || target_y)) {                      // must have at least one endpoint specified
-        	    return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
-            }
-        } else { // center format arc tests
-            if (offset_k) { // it's OK to be missing either or both i and j, but error if k is present
-        	    return (STAT_ARC_SPECIFICATION_ERROR);
-            }
-        }
-*/
-    } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
+	} else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_Y;
-/*
-        if (radius_f) {
-            if (!(target_x || target_z))
-                return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
-        } else {
-            if (offset_j)
-                return (STAT_ARC_SPECIFICATION_ERROR);
-        }
-*/
-    } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
+	} else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
     	arc.plane_axis_0 = AXIS_Y;
     	arc.plane_axis_1 = AXIS_Z;
     	arc.linear_axis  = AXIS_X;
-/*
-        if (radius_f) {
-            if (!(target_y || target_z))
-                return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
-        } else {
-            if (offset_i)
-                return (STAT_ARC_SPECIFICATION_ERROR);
-        }
-*/
 	}
 
-    // If radius mode must have at least one endpoint specified
-    if ((radius_f) && !(target[arc.plane_axis_0] || target[arc.plane_axis_0])) {
-        return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
-    } else {    // if center format arc cannot have offset into linear axis
+    // radius mode tests (first tests)
+    if (radius_f) {
+        if (radius < MIN_ARC_RADIUS) {    // radius value must be + and > minimum radius
+            return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
+        }
+        if (!(target[arc.plane_axis_0] || target[arc.plane_axis_0])) { // radius mode must have at least one endpoint specified
+            return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
+        }
+
+    // center format arc test
+    } else {    // center format arc cannot have offset into linear axis
         if (offset_f[arc.linear_axis]) {  // in this case x, y, z correspond to i, j, k
             return (STAT_ARC_SPECIFICATION_ERROR);
         }
@@ -164,10 +152,6 @@ stat_t cm_arc_feed(float target[], bool target_f[],         // arc endpoint (tar
 
 	arc.radius = _to_millimeters(radius);			// set arc radius or zero
 
-//	arc.offset[0] = _to_millimeters(i);				// copy offsets with conversion to canonical form (mm)
-//	arc.offset[1] = _to_millimeters(j);
-//	arc.offset[2] = _to_millimeters(k);
-
     arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
     arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
     arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
@@ -181,7 +165,6 @@ stat_t cm_arc_feed(float target[], bool target_f[],         // arc endpoint (tar
 	arc.rotations = floor(fabs(cm.gn.parameter));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
-//	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
 	arc.full_circle = (!target_f[arc.plane_axis_0] & !target_f[arc.plane_axis_1]);
 
 	// compute arc runtime values

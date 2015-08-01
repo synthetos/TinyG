@@ -503,10 +503,6 @@ static stat_t _execute_gcode_block()
             		                                             cm.gn.motion_mode);
             		                                             break;
         		                          }
-//        		case MOTION_MODE_CW_ARC:                                                                            // G2
-//				case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target, cm.gf.target,                        // G3
-//                                                                 cm.gn.arc_offset[0], cm.gn.arc_offset[1], cm.gn.arc_offset[2],
-//                                                                 cm.gn.arc_radius, cm.gn.motion_mode); break;}
 			}
 		}
 	}
