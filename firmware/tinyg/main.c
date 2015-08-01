@@ -117,38 +117,50 @@ void _system_init(void)
  * _application_init()
  */
 
-static void _application_init(void)
+void application_init_services(void)
 {
-	// There are a lot of dependencies in the order of these inits.
-	// Don't change the ordering unless you understand this.
-
-	cli();
-
-	// do these first
-	hardware_init();				// system hardware setup 			- must be first
-	persistence_init();				// set up EEPROM or other NVM		- must be second
+    hardware_init();				// system hardware setup 			- must be first
+    persistence_init();				// set up EEPROM or other NVM		- must be second
+    xio_init();						// xtended io subsystem				- must be third
+#ifdef __AVR
 	rtc_init();						// real time counter
-	xio_init();						// eXtended IO subsystem
+#endif
+}
 
-	// do these next
-	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
-	encoder_init();					// virtual encoders
+void application_init_machine(void)
+{
+    cm.machine_state = MACHINE_INITIALIZING;
+
+    stepper_init();                 // stepper subsystem (must precede gpio_init() on AVR)
+    encoder_init();                 // virtual encoders
 	switch_init();					// switches
-//	gpio_init();					// parallel IO
-	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
+//    gpio_init();                    // inputs and outputs
+    pwm_init();                     // pulse width modulation drivers
+    planner_init();                 // motion planning subsystem
+    canonical_machine_init();       // canonical machine
+}
 
-	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
-	config_init();					// config records from eeprom 		- must be next app init
-	network_init();					// reset std devices if required	- must follow config_init()
-	planner_init();					// motion planning subsystem
-	canonical_machine_init();		// canonical machine				- must follow config_init()
+void application_init_startup(void)
+{
+    // start the application
+    controller_init(STD_IN, STD_OUT, STD_ERR);  // should be first startup init (requires xio_init())
+    config_init();					            // apply the config settings from persistence
+    canonical_machine_reset();
+	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
+	planner_init();	//++++ REMOVE				// motion planning subsystem
+//    spindle_init();                   // should be after PWM and canonical machine inits and config_init()
+//    spindle_reset();
 
-	// now bring up the interrupts and get started
-	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
-	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
-	PMIC_EnableMediumLevel();
-	PMIC_EnableLowLevel();
-	sei();							// enable global interrupts
+#ifdef __AVR
+    // now bring up the interrupts and get started
+    PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
+    PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
+    PMIC_EnableMediumLevel();
+    PMIC_EnableLowLevel();
+    sei();							// enable global interrupts
+#endif
+
+    // MOVED: report the system is ready is now in xio
 	rpt_print_system_ready_message();// (LAST) announce system is ready
 }
 
@@ -162,7 +174,9 @@ int main(void)
 	_system_init();
 
 	// TinyG application setup
-	_application_init();
+	application_init_services();
+	application_init_machine();
+	application_init_startup();
 	run_canned_startup();			// run any pre-loaded commands
 
 	// main loop

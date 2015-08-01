@@ -512,11 +512,11 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	float estd_segment_usec;			// approximate segment time in microseconds
 
 	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t coord_system;				// G10 active coordinate system default
-	uint8_t select_plane;				// G17,G18,G19 reset default
-	uint8_t units_mode;					// G20,G21 reset default
-	uint8_t path_control;				// G61,G61.1,G64 reset default
-	uint8_t distance_mode;				// G90,G91 reset default
+	uint8_t default_coord_system;				// G10 active coordinate system default
+	uint8_t default_select_plane;				// G17,G18,G19 reset default
+	uint8_t default_units_mode;					// G20,G21 reset default
+	uint8_t default_path_control;				// G61,G61.1,G64 reset default
+	uint8_t default_distance_mode;				// G90,G91 reset default
 
 	// coordinate systems and offsets
 	float offset[COORDS+1][AXES];		// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
@@ -619,58 +619,59 @@ stat_t cm_test_soft_limits(float target[]);
 
 // Initialization and termination (4.3.2)
 void canonical_machine_init(void);
+void canonical_machine_reset(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
-stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
+stat_t cm_hard_alarm(stat_t status);			// enter hard alarm state. returns same status code
+stat_t cm_soft_alarm(stat_t status);			// enter soft alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
 
 // Representation (4.3.3)
-stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
-stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
-stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_arc_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+stat_t cm_select_plane(uint8_t plane);							                // G17, G18, G19
+stat_t cm_set_units_mode(uint8_t mode);							                // G20, G21
+stat_t cm_set_distance_mode(uint8_t mode);						                // G90, G91
+stat_t cm_set_arc_distance_mode(uint8_t mode);						            // G90, G91
+stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]);// G10 L2
 
-void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
-stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
-void cm_set_axis_origin(uint8_t axis, const float position);	// G28.3 planner callback
+void cm_set_position(uint8_t axis, float position);				                // set absolute position - single axis
+stat_t cm_set_absolute_origin(float origin[], float flag[]);	                // G28.3
+void cm_set_axis_origin(uint8_t axis, const float position);	                // G28.3 planner callback
 
-stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
-stat_t cm_reset_origin_offsets(void); 							// G92.1
-stat_t cm_suspend_origin_offsets(void); 						// G92.2
-stat_t cm_resume_origin_offsets(void);				 			// G92.3
+stat_t cm_set_coord_system(uint8_t coord_system);				                // G54 - G59
+stat_t cm_set_origin_offsets(float offset[], float flag[]);		                // G92
+stat_t cm_reset_origin_offsets(void); 							                // G92.1
+stat_t cm_suspend_origin_offsets(void); 						                // G92.2
+stat_t cm_resume_origin_offsets(void);				 			                // G92.3
 
 // Free Space Motion (4.3.4)
-stat_t cm_straight_traverse(float target[], float flags[]);		// G0
-stat_t cm_set_g28_position(void);								// G28.1
-stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
-stat_t cm_set_g30_position(void);								// G30.1
-stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
+stat_t cm_straight_traverse(float target[], float flags[]);		                // G0
+stat_t cm_set_g28_position(void);								                // G28.1
+stat_t cm_goto_g28_position(float target[], float flags[]); 	                // G28
+stat_t cm_set_g30_position(void);								                // G30.1
+stat_t cm_goto_g30_position(float target[], float flags[]);		                // G30
 
 // Machining Attributes (4.3.5)
-stat_t cm_set_feed_rate(float feed_rate);						// F parameter
-stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented)
-stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
+stat_t cm_set_feed_rate(float feed_rate);						                // F parameter
+stat_t cm_set_feed_rate_mode(uint8_t mode);						                // G93, G94, (G95 unimplemented)
+stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);      // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(float target[], float flags[]);		    // G1
-stat_t cm_dwell(float seconds);									// G4, P parameter
+stat_t cm_straight_feed(float target[], float flags[]);		                    // G1
+stat_t cm_dwell(float seconds);									                // G4, P parameter
 
-stat_t cm_arc_feed(float target[], float flags[],               // arc endpoints
-                   float i, float j, float k,                   // raw arc offsets
-                   float radius,                                // non-zero radius implies radius mode
-                   uint8_t motion_mode);                        // defined motion mode
+stat_t cm_arc_feed(float target[], float flags[],                               // arc endpoints
+                   float i, float j, float k,                                   // raw arc offsets
+                   float radius,                                                // non-zero radius implies radius mode
+                   uint8_t motion_mode);                                        // defined motion mode
 
 /*
-stat_t cm_arc_feed(const float target[], const float f_target_f[],             // G2/G3 - target endpoint
-                   const float offset[], const float f_offset_f[],             // IJK offsets
-                   const float radius, const bool radius_f,                 // radius if radius mode                // non-zero radius implies radius mode
-                   const float P_word, const bool P_word_f,                 // parameter
-                   const bool modal_g1_f,                                   // modal group flag for motion group
-                   const uint8_t motion_mode);                              // defined motion mode
+stat_t cm_arc_feed(const float target[], const bool target_f[],                 // G2/G3 - target endpoint
+                   const float offset[], const bool offset_f[],                 // IJK offsets
+                   const float radius, const bool radius_f,                     // radius if radius mode
+                   const float P_word, const bool P_word_f,                     // parameter
+                   const bool modal_g1_f,                                       // modal group flag for motion group
+                   const uint8_t motion_mode);                                  // defined motion mode
 */
 // Spindle Functions (4.3.7)
 // see spindle.h for spindle definitions - which would go right here

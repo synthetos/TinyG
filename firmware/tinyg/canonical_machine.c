@@ -536,46 +536,55 @@ stat_t cm_test_soft_limits(float target[])
  * Initialization and Termination (4.3.2) *
  ******************************************/
 /*
- * canonical_machine_init() - Config init cfg_init() must have been run beforehand
+ * canonical_machine_init()  - initialize cm struct
+ * canonical_machine_reset() - apply startup settings or reset to startup
+ *                             run profile initialization beforehand
  */
 
 void canonical_machine_init()
 {
-// If you can assume all memory has been zeroed by a hard reset you don't need this code:
-//	memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
-	memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
-	memset(&cm.gn, 0, sizeof(GCodeInput_t));
-	memset(&cm.gf, 0, sizeof(GCodeInput_t));
+    // If you can assume all memory has been zeroed by a hard reset you don't need this code:
+    memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
+    memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
+    memset(&cm.gn, 0, sizeof(GCodeInput_t));
+//    memset(&cm.gf, 0, sizeof(GCodeFlags_t));  //+++++ CHANGE
+    memset(&cm.gf, 0, sizeof(GCodeInput_t));    //+++++ CHANGE
 
-	canonical_machine_init_assertions();		// establish assertions
-	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
+    canonical_machine_init_assertions();		// establish assertions
+    ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
+    cm_arc_init();                              // Note: spindle and coolant inits are independent
+}
 
-	// set gcode defaults
-	cm_set_units_mode(cm.units_mode);
-	cm_set_coord_system(cm.coord_system);
-	cm_select_plane(cm.select_plane);
-	cm_set_path_control(cm.path_control);
-	cm_set_distance_mode(cm.distance_mode);
-	cm_set_arc_distance_mode(INCREMENTAL_MODE);  // always the default
-	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
+void canonical_machine_reset()
+{
+    // set gcode defaults
+    cm_set_units_mode(cm.default_units_mode);
+    cm_set_coord_system(cm.default_coord_system);
+    cm_select_plane(cm.default_select_plane);
+    cm_set_path_control(MODEL, cm.default_path_control);
+    cm_set_distance_mode(cm.default_distance_mode);
+    cm_set_arc_distance_mode(INCREMENTAL_MODE);     // always the default
+    cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);   // always the default
+//    cm_reset_overrides();                           // set overrides to initial conditions
 
-	cm.gmx.block_delete_switch = true;
+    // NOTE: Should unhome axes here
 
-	// never start a machine in a motion mode
-	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+    // reset request flags
+//    cm.queue_flush_state = FLUSH_OFF;
+//    cm.end_hold_requested = false;
+//    cm.limit_requested = 0;                 // resets switch closures that occurred during initialization
+//    cm.safety_interlock_disengaged = 0;     // ditto
+//    cm.safety_interlock_reengaged = 0;      // ditto
+//    cm.shutdown_requested = 0;              // ditto
 
-	// reset request flags
-	cm.feedhold_requested = false;
-	cm.queue_flush_requested = false;
-	cm.cycle_start_requested = false;
-
-	// signal that the machine is ready for action
-	cm.machine_state = MACHINE_READY;
-//	cm.combined_state = COMBINED_READY;
-
-	// sub-system inits
-	cm_spindle_init();
-	cm_arc_init();
+    // set initial state and signal that the machine is ready for action
+    cm.cycle_state = CYCLE_OFF;
+    cm.motion_state = MOTION_STOP;
+    cm.hold_state = FEEDHOLD_OFF;
+//    cm.esc_boot_timer = SysTickTimer_getValue();
+    cm.gmx.block_delete_switch = true;
+    cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE; // never start in a motion mode
+    cm.machine_state = MACHINE_READY;
 }
 
 /*
@@ -953,11 +962,17 @@ stat_t cm_set_feed_rate_mode(uint8_t mode)
 /*
  * cm_set_path_control() - G61, G61.1, G64 (affects MODEL only)
  */
-
+/*
 stat_t cm_set_path_control(uint8_t mode)
 {
 	cm.gm.path_control = mode;
 	return (STAT_OK);
+}
+*/
+stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
+{
+    gcode_state->path_control = (cmPathControl)mode;
+    return (STAT_OK);
 }
 
 /*******************************
@@ -1352,10 +1367,10 @@ static void _exec_program_finalize(float *value, float *flag)
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
-		cm_select_plane(cm.select_plane);				// reset to default arc plane
-		cm_set_distance_mode(cm.distance_mode);
-//++++	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
+		cm_set_coord_system(cm.default_coord_system);	// reset to default coordinate system
+		cm_select_plane(cm.default_select_plane);		// reset to default arc plane
+		cm_set_distance_mode(cm.default_distance_mode);
+//++++	cm_set_units_mode(cm.default_units_mode);		// reset to default units mode +++ REMOVED +++
 		cm_spindle_control(SPINDLE_OFF);				// M5
 		cm_flood_coolant_control(false);				// M9
 		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94

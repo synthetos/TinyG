@@ -466,7 +466,11 @@ static stat_t _execute_gcode_block()
 	//--> cutter radius compensation goes here
 	//--> cutter length compensation goes here
 	EXEC_FUNC(cm_set_coord_system, coord_system);
-	EXEC_FUNC(cm_set_path_control, path_control);
+
+    if(cm.gf.path_control) {
+        status = cm_set_path_control(MODEL, cm.gn.path_control);
+    }
+
 	EXEC_FUNC(cm_set_distance_mode, distance_mode);
 	//--> set retract mode goes here
 
