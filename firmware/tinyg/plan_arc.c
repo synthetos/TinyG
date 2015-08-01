@@ -116,31 +116,30 @@ stat_t cm_arc_feed(float target[], bool target_f[],     // arc endpoint (target)
     	arc.linear_axis  = AXIS_X;
 	}
 
-    // radius mode tests (first tests)
+	// set target
+	cm_set_model_target(target, target_f);
+
+    // radius mode tests
     if (radius_f) {
-        if (radius < MIN_ARC_RADIUS) {    // radius value must be + and > minimum radius
+        // radius value must be + and > minimum radius
+        if (radius < MIN_ARC_RADIUS) {
             return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
         }
-        if (!(target[arc.plane_axis_0] || target[arc.plane_axis_0])) { // radius mode must have at least one endpoint specified
+        // radius mode must have at least one endpoint specified
+        if (!(target[arc.plane_axis_0] || target[arc.plane_axis_0])) {
             return (STAT_ARC_AXIS_MISSING_FOR_SELECTED_PLANE);
+        }
+        // in radius mode it's an error for start == end
+        if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
+            (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
+            (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
+            return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
         }
 
     // center format arc test
     } else {    // center format arc cannot have offset into linear axis
         if (offset_f[arc.linear_axis]) {  // in this case x, y, z correspond to i, j, k
             return (STAT_ARC_SPECIFICATION_ERROR);
-        }
-    }
-
-	// set values in the Gcode model state & copy it (linenum was already captured)
-	cm_set_model_target(target, target_f);
-
-    // in radius mode it's an error for start == end
-    if(radius_f) {
-        if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
-            (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
-            (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
-            return (STAT_ARC_ENDPOINT_IS_STARTING_POINT);
         }
     }
 
