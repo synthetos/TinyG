@@ -43,11 +43,11 @@ using Motate::delay;
 using Motate::SysTickTimer;
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /****** Global Scope Variables and Functions ******/
+
+extern bool FLAGS_NONE[];    // canned flag vector for convenience
+extern bool FLAGS_ONE[];     // canned flag vector for convenience
+extern bool FLAGS_ALL[];     // canned flag vector for convenience
 
 //*** vector utilities ***
 
@@ -147,10 +147,6 @@ uint32_t SysTickTimer_getValue(void);
 //		M_SQRT2 is radical2 as defined in math.h
 #ifndef M_SQRT3
 #define M_SQRT3 (1.73205080756888)
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif	// End of include guard: UTIL_H_ONCE

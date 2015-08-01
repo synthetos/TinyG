@@ -58,7 +58,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        443.02	// g2sync - re-organized inits in main and split canonical machine init & reset
+#define TINYG_FIRMWARE_BUILD        443.03	// g2sync - changed GcodeFlags struct over to booleans
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

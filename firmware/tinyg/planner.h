@@ -37,7 +37,6 @@
  * All the enums that equal zero must be zero. Don't change them
  */
 
-//typedef void (*cm_exec_t)(float[], float[]);	// callback to canonical_machine execution function
 typedef void (*cm_exec_t)(float[], bool[]);	// callback to canonical_machine execution function
 
 typedef enum {				        // bf->buffer_state values
@@ -282,8 +281,7 @@ void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 void mp_set_steps_to_runtime_position(void);
 
-//void mp_queue_command(void(*cm_exec_t)(float[], float[]), float *value, float *flag);
-void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flag);
+void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags);
 stat_t mp_runtime_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);

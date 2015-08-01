@@ -113,9 +113,6 @@
 
 cmSingleton_t cm;		// canonical machine controller singleton
 
-bool flag_none[] = { false, false, false, false, false, false };
-bool flag_one[] = { true, false, false, false, false, false };
-
 /***********************************************************************************
  **** GENERIC STATIC FUNCTIONS AND VARIABLES ***************************************
  ***********************************************************************************/
@@ -461,7 +458,6 @@ stat_t cm_deferred_write_callback()
 //        registers we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
 
-//static float _calc_ABC(const uint8_t axis, const float target[], const float flag[])
 static float _calc_ABC(const uint8_t axis, const float target[])
 {
 	if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
@@ -477,7 +473,6 @@ void cm_set_model_target(const float target[], const bool flags[])
 
 	// process XYZABC for lower modes
 	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
-//		if ((fp_FALSE(flag[axis])) || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 		if (!flags[axis] || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
@@ -490,11 +485,9 @@ void cm_set_model_target(const float target[], const bool flags[])
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
-//		if ((fp_FALSE(flag[axis])) || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 		if (!flags[axis] || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else {
-//			tmp = _calc_ABC(axis, target, flag);
 			tmp = _calc_ABC(axis, target);
 		}
 		if (cm.gm.distance_mode == ABSOLUTE_MODE) {
@@ -559,8 +552,7 @@ void canonical_machine_init()
     memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
     memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
     memset(&cm.gn, 0, sizeof(GCodeInput_t));
-    memset(&cm.gf, 0, sizeof(GCodeFlags_t));  //+++++ CHANGE
-//    memset(&cm.gf, 0, sizeof(GCodeInput_t));    //+++++ CHANGE
+    memset(&cm.gf, 0, sizeof(GCodeFlags_t));
 
     canonical_machine_init_assertions();		// establish assertions
     ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
@@ -729,7 +721,6 @@ stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], bool flags[])
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if (fp_TRUE(flag[axis])) {
 		if (flags[axis]) {
 			cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
 			cm.deferred_write_flag = true;								// persist offsets once machining cycle is over
@@ -749,9 +740,8 @@ stat_t cm_set_coord_system(uint8_t coord_system)
 {
 	cm.gm.coord_system = coord_system;
 
-	float value[AXES] = { (float)coord_system,0,0,0,0,0 };	// pass coordinate system in value[0] element
-    bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_offset, value, flags);			// NB: flags vector is not actually used
+	float value[] = { (float)coord_system };	            // pass coordinate system in value[0] element
+	mp_queue_command(_exec_offset, value, FLAGS_ONE);	    // NB: flags vector is not actually used
 	return (STAT_OK);
 }
 
@@ -814,7 +804,6 @@ stat_t cm_set_absolute_origin(float origin[], bool flags[])
 	float value[AXES];
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if (fp_TRUE(flag[axis])) {
 		if (flags[axis]) {
 			value[axis] = _to_millimeters(origin[axis]);
 			cm.gmx.position[axis] = value[axis];		// set model position
@@ -829,7 +818,6 @@ stat_t cm_set_absolute_origin(float origin[], bool flags[])
 static void _exec_absolute_origin(float *value, bool *flags)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if (fp_TRUE(flag[axis])) {
 		if (flags[axis]) {
 			mp_set_runtime_position(axis, value[axis]);
 			cm.homed[axis] = true;	// G28.3 is not considered homed until you get here
@@ -852,14 +840,13 @@ stat_t cm_set_origin_offsets(float offset[], bool flags[])
 	// set offsets in the Gcode model extended context
 	cm.gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		if (fp_TRUE(flag[axis])) {
 		if (flags[axis]) {
 			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] -
 									     cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
-	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 }; // pass coordinate system in value[0] element
+	float value[] = { (float)cm.gm.coord_system }; // pass coordinate system in value[0] element
 	mp_queue_command(_exec_offset, value, flags);
 	return (STAT_OK);
 }
@@ -870,27 +857,24 @@ stat_t cm_reset_origin_offsets()
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm.gmx.origin_offset[axis] = 0;
 	}
-	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
-	bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_offset, value, flags);
+	float value[] = { (float)cm.gm.coord_system };
+	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
 
 stat_t cm_suspend_origin_offsets()
 {
 	cm.gmx.origin_offset_enable = 0;
-	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
-	bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_offset, value, flags);
+	float value[] = { (float)cm.gm.coord_system };
+	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
 
 stat_t cm_resume_origin_offsets()
 {
 	cm.gmx.origin_offset_enable = 1;
-	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
-	bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_offset, value, flags);
+	float value[] = { (float)cm.gm.coord_system };
+	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
 
@@ -936,8 +920,7 @@ stat_t cm_goto_g28_position(float target[], bool flags[])
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
-	bool f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(cm.gmx.g28_position, f));// execute actual stored move
+	return(cm_straight_traverse(cm.gmx.g28_position, FLAGS_ALL));// execute actual stored move
 }
 
 stat_t cm_set_g30_position(void)
@@ -951,8 +934,7 @@ stat_t cm_goto_g30_position(float target[], bool flags[])
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
-	bool f[] = {1,1,1,1,1,1};
-	return(cm_straight_traverse(cm.gmx.g30_position, f));// execute actual stored move
+	return(cm_straight_traverse(cm.gmx.g30_position, FLAGS_ALL));// execute actual stored move
 }
 
 /********************************
@@ -1065,9 +1047,8 @@ stat_t cm_straight_feed(float target[], bool flags[])
  */
 stat_t cm_select_tool(uint8_t tool_select)
 {
-	float value[AXES] = { (float)tool_select,0,0,0,0,0 };
-    bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_select_tool, value, flags);			// NB: flags vector is not actually used
+	float value[] = { (float)tool_select };
+	mp_queue_command(_exec_select_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
 	return (STAT_OK);
 }
 
@@ -1078,9 +1059,8 @@ static void _exec_select_tool(float *value, bool *flags)
 
 stat_t cm_change_tool(uint8_t tool_change)
 {
-	float value[AXES] = { (float)cm.gm.tool_select,0,0,0,0,0 };
-    bool flags[AXES] = { true, false, false, false, false, false };
-    mp_queue_command(_exec_change_tool, value, flags);			// NB: flags vector is not actually used
+	float value[] = { (float)cm.gm.tool_select };
+    mp_queue_command(_exec_change_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
 	return (STAT_OK);
 }
 
@@ -1099,9 +1079,8 @@ static void _exec_change_tool(float *value, bool *flags)
 
 stat_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
-	float value[AXES] = { (float)mist_coolant,0,0,0,0,0 };
-    bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_mist_coolant_control, value, flags);
+	float value[] = { (float)mist_coolant };
+	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }
 static void _exec_mist_coolant_control(float *value, bool *flags)
@@ -1127,9 +1106,8 @@ static void _exec_mist_coolant_control(float *value, bool *flags)
 
 stat_t cm_flood_coolant_control(uint8_t flood_coolant)
 {
-	float value[AXES] = { (float)flood_coolant,0,0,0,0,0 };
-    bool flags[AXES] = { true, false, false, false, false, false };
-	mp_queue_command(_exec_flood_coolant_control, value, flags);
+	float value[AXES] = { (float)flood_coolant };
+	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }
 static void _exec_flood_coolant_control(float *value, bool *flags)
@@ -1141,9 +1119,8 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
 		gpio_set_bit_on(FLOOD_COOLANT_BIT);
 	} else {
 		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-		float vect[] = { 0,0,0,0,0,0 };				// turn off mist coolant
-		bool flags[] = { true, false, false, false, false, false };
-		_exec_mist_coolant_control(vect, flags);	// M9 special function
+		float vect[] = { 0 };				         // turn off mist coolant
+		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
 	}
 #endif // __AVR
 
@@ -1152,9 +1129,8 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
 		coolant_enable_pin.set();
 	} else {
 		coolant_enable_pin.clear();
-		float vect[] = { 0,0,0,0,0,0 };				// turn off mist coolant
-		bool flags[] = { true, false, false, false, false, false };
-		_exec_mist_coolant_control(vect, flags);	// M9 special function
+		float vect[] = { 0 };				         // turn off mist coolant
+		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
 	}
 #endif // __ARM
 }
@@ -1182,7 +1158,6 @@ stat_t cm_override_enables(uint8_t flag)			// M48, M49
 
 stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-//	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
 	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.feed_rate_override_enable = false;
 	} else {
@@ -1201,7 +1176,6 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 
 stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 {
-//	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
 	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.traverse_override_enable = false;
 	} else {
@@ -1220,7 +1194,6 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 
 stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 {
-//	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
 	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.spindle_override_enable = false;
 	} else {
@@ -1354,7 +1327,7 @@ stat_t cm_queue_flush()
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	_exec_program_finalize(value, flag_one);	// finalize now, not later
+	_exec_program_finalize(value, FLAGS_ONE);	// finalize now, not later
 	return (STAT_OK);
 }
 
@@ -1434,27 +1407,27 @@ void cm_cycle_start()
 void cm_cycle_end()
 {
 	if (cm.cycle_state != CYCLE_OFF) {
-		float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-		_exec_program_finalize(value, flag_one);
+		float value[] = { MACHINE_PROGRAM_STOP };
+		_exec_program_finalize(value, FLAGS_ONE);
 	}
 }
 
 void cm_program_stop()
 {
-	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	mp_queue_command(_exec_program_finalize, value, flag_one);
+	float value[] = { MACHINE_PROGRAM_STOP };
+	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
 }
 
 void cm_optional_program_stop()
 {
-	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	mp_queue_command(_exec_program_finalize, value, flag_one);
+	float value[] = { MACHINE_PROGRAM_STOP };
+	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
 }
 
 void cm_program_end()
 {
-	float value[AXES] = { (float)MACHINE_PROGRAM_END, 0,0,0,0,0 };
-	mp_queue_command(_exec_program_finalize, value, flag_one);
+	float value[] = { MACHINE_PROGRAM_END };
+	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
 }
 
 /**************************************

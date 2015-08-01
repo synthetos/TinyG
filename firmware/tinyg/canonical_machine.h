@@ -668,11 +668,18 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);      
 // Machining Functions (4.3.6)
 stat_t cm_straight_feed(float target[], bool flags[]);		                    // G1
 stat_t cm_dwell(float seconds);									                // G4, P parameter
-
+/*
 stat_t cm_arc_feed(float target[], bool flags[],                                // arc endpoints
                    float i, float j, float k,                                   // raw arc offsets
                    float radius,                                                // non-zero radius implies radius mode
                    uint8_t motion_mode);                                        // defined motion mode
+*/
+stat_t cm_arc_feed( float target[],  bool target_f[],                 // G2/G3 - target endpoint
+                    float offset[],  bool offset_f[],                 // IJK offsets
+                    float radius,  bool radius_f,                     // radius if radius mode                // non-zero radius implies radius mode
+                    float P_word,  bool P_word_f,                     // parameter
+                   const bool modal_g1_f,                                       // modal group flag for motion group
+                   const uint8_t motion_mode);                                  // defined motion mode
 
 /*
 stat_t cm_arc_feed(const float target[], const bool target_f[],                 // G2/G3 - target endpoint

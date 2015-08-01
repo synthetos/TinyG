@@ -37,9 +37,9 @@
 #include "xmega/xmega_rtc.h"
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+bool FLAGS_NONE[AXES] = { false, false, false, false, false, false };
+bool FLAGS_ONE[AXES]  = { true, false, false, false, false, false };
+bool FLAGS_ALL[AXES]  = { true, true, true, true, true, true };
 
 /**** Vector utilities ****
  * copy_vector()			- copy vector of arbitrary length
@@ -283,6 +283,3 @@ uint32_t SysTickTimer_getValue()
 }
 #endif // __ARM
 
-#ifdef __cplusplus
-}
-#endif
