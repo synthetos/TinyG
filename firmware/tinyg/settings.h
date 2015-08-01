@@ -107,7 +107,7 @@
 
 #include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_cnc3040.h"
-//#include "settings/settings_test.h"					// Settings for testing - not for release
+//#include "settings/settings_test.h"					// Settings for testing - not forg0 x10
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix Fireball V90

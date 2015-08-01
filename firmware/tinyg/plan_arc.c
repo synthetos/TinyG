@@ -28,7 +28,7 @@
 #include "planner.h"
 #include "util.h"
 
-#include "spindle.h" //++++++ DIAGNOSTICS ONLY
+//#include "spindle.h" //++++++ DIAGNOSTICS ONLY
 
 // Allocate arc planner singleton structure
 
@@ -36,8 +36,8 @@ arc_t arc;
 
 // Local functions
 static stat_t _compute_arc(void);
-static stat_t _compute_arc_offsets_from_radius(void);
-static void _estimate_arc_time(void);
+static void _compute_arc_offsets_from_radius(void);
+static void _estimate_arc_time (void);
 //static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
@@ -263,8 +263,8 @@ static stat_t _compute_arc()
     float err = fabs(hypotf(end_0, end_1) - arc.radius);   // end radius - start radius
     if ( (err > ARC_RADIUS_ERROR_MAX) ||
         ((err > ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
-//        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
-        return (STAT_ARC_SPECIFICATION_ERROR);
+        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
+//        return (STAT_ARC_SPECIFICATION_ERROR);
     }
 
 	// Calculate the theta (angle) of the current point (position)
@@ -399,7 +399,7 @@ static stat_t _compute_arc()
  *	Assumes arc singleton has been pre-loaded with target and position.
  *	Parts of this routine were originally sourced from the grbl project.
  */
-static stat_t _compute_arc_offsets_from_radius()
+static void _compute_arc_offsets_from_radius()
 {
 	// Calculate the change in position along each selected axis
 	float x = cm.gm.target[arc.plane_axis_0] - cm.gmx.position[arc.plane_axis_0];
@@ -434,7 +434,6 @@ static stat_t _compute_arc_offsets_from_radius()
 	arc.offset[arc.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	arc.offset[arc.plane_axis_1] = (y+(x*h_x2_div_d))/2;
 	arc.offset[arc.linear_axis] = 0;
-	return (STAT_OK);
 }
 
 /*

@@ -41,10 +41,6 @@
 #include "util.h"
 #include "xio.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 static void _set_defa(nvObj_t *nv);
 
 /***********************************************************************************
@@ -70,31 +66,37 @@ nvList_t nvl;
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
 void nv_print(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return;
+	if (nv->index >= nv_index_max()) {
+        return;
+    }    
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	if (nv_index_lt_groups(nv->index) == false)
+	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
-	if (GET_TABLE_BYTE(flags) & F_PERSIST)
+    }    
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
+    }    
 #endif
 	return (STAT_OK);
 }
@@ -173,7 +175,7 @@ stat_t set_defaults(nvObj_t *nv)
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
 //	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
 //	nv->index = nv_get_index("", nv->token);	// correct, but not required
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	nv->value = 1;
 	return (STAT_OK);
 }
@@ -207,29 +209,36 @@ stat_t config_test_assertions()
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
  *	get_ui8()  - get value as 8 bit uint8_t
+ *  get_int8() - get value as 8 bit int8_t
  *	get_int()  - get value as 32 bit integer
  *	get_data() - get value as 32 bit integer blind cast
  *	get_flt()  - get value as float
- *	get_format() - internal accessor for printf() format string
  */
 stat_t get_nul(nvObj_t *nv)
 {
 	nv->valuetype = TYPE_NULL;
-	return (STAT_PARAMETER_CANNOT_BE_READ);
+	return (STAT_NOOP);
 }
 
 stat_t get_ui8(nvObj_t *nv)
 {
 	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
+}
+
+stat_t get_int8(nvObj_t *nv)
+{
+    nv->value = (float)*((int8_t *)GET_TABLE_WORD(target));
+    nv->valuetype = TYPE_INT;
+    return (STAT_OK);
 }
 
 stat_t get_int(nvObj_t *nv)
 {
 //	nv->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
 	nv->value = *((uint32_t *)GET_TABLE_WORD(target));
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
@@ -252,6 +261,7 @@ stat_t get_flt(nvObj_t *nv)
 /* Generic sets()
  *	set_nul()  - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
  *	set_ui8()  - set value as 8 bit uint8_t value
+ *  set_int8() - set value as an 8 bit int8_t value
  *	set_01()   - set a 0 or 1 uint8_t value with validation
  *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
@@ -259,13 +269,20 @@ stat_t get_flt(nvObj_t *nv)
  *	set_data() - set value as 32 bit integer blind cast
  *	set_flt()  - set value as float
  */
-stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
+stat_t set_nul(nvObj_t *nv) { return (STAT_NOOP); }
 
 stat_t set_ui8(nvObj_t *nv)
 {
 	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return(STAT_OK);
+}
+
+stat_t set_int8(nvObj_t *nv)
+{
+    *((int8_t *)GET_TABLE_WORD(target)) = (int8_t)nv->value;
+    nv->valuetype = TYPE_INT;
+    return(STAT_OK);
 }
 
 stat_t set_01(nvObj_t *nv)
@@ -292,7 +309,7 @@ stat_t set_0123(nvObj_t *nv)
 stat_t set_int(nvObj_t *nv)
 {
 	*((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return(STAT_OK);
 }
 
@@ -354,8 +371,8 @@ stat_t set_flt(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
-	char_t *parent_group = nv->token;				// token in the parent nv object is the group
-	char_t group[GROUP_LEN+1];						// group string retrieved from cfgArray child
+	char *parent_group = nv->token;				// token in the parent nv object is the group
+	char group[GROUP_LEN+1];						// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;					// make first object the parent
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
@@ -378,9 +395,9 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE)
-        return (STAT_INVALID_OR_MALFORMED_COMMAND);
-
+	if (cfg.comm_mode == TEXT_MODE) {
+        return (STAT_UNRECOGNIZED_NAME);
+    }    
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
@@ -400,7 +417,7 @@ stat_t set_grp(nvObj_t *nv)
  *	This little function deals with the exception cases that some groups don't use
  *	the parent token as a prefix to the child elements; SR being a good example.
  */
-uint8_t nv_group_is_prefixed(char_t *group)
+uint8_t nv_group_is_prefixed(char *group)
 {
 	if (strcmp("sr",group) == 0) return (false);
 	if (strcmp("sys",group) == 0) return (false);
@@ -421,10 +438,10 @@ uint8_t nv_group_is_prefixed(char_t *group)
  * linear table scan of the PROGMEM strings, which of course could be further
  * optimized with indexes or hashing.
  */
-index_t nv_get_index(const char_t *group, const char_t *token)
+index_t nv_get_index(const char *group, const char *token)
 {
-	char_t c;
-	char_t str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
+	char c;
+	char str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
 	strncpy(str, group, GROUP_LEN+1);
 	strncat(str, token, TOKEN_LEN+1);
 
@@ -482,9 +499,9 @@ uint8_t nv_get_type(nvObj_t *nv)
  *	all you want to do is display it.
  *
  *	Note: A trick is to cast all string constants for nv_copy_string(), nv_add_object(),
- *	nv_add_string() and nv_add_conditional_message() to (const char_t *). Examples:
+ *	nv_add_string() and nv_add_conditional_message() to (const char *). Examples:
  *
- *		nv_add_string((const char_t *)"msg", string);
+ *		nv_add_string((const char *)"msg", string);
  *
  *	On the AVR this will save a little static RAM. The "msg" string will occupy flash
  *	as an initializer and be instantiated in stack RAM when the function executes.
@@ -557,29 +574,29 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 	return (nv_body);						// this is a convenience for calling routines
 }
 
-stat_t nv_copy_string(nvObj_t *nv, const char_t *src)
+stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
 	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
         return (STAT_BUFFER_FULL);
 
-	char_t *dst = &nvStr.string[nvStr.wp];
+	char *dst = &nvStr.string[nvStr.wp];
 	strcpy(dst, src);						// copy string to current head position
 											// string has already been tested for overflow, above
 	nvStr.wp += strlen(src)+1;				// advance head for next string
-	nv->stringp = (char_t (*)[])dst;
+	nv->stringp = (char (*)[])dst;
 	return (STAT_OK);
 }
 
 /* UNUSED
-stat_t nv_copy_string_P(nvObj_t *nv, const char_t *src_P)
+stat_t nv_copy_string_P(nvObj_t *nv, const char *src_P)
 {
-	char_t buf[NV_SHARED_STRING_LEN];
+	char buf[NV_SHARED_STRING_LEN];
 	strncpy_P(buf, src_P, NV_SHARED_STRING_LEN);
 	return (nv_copy_string(nv, buf));
 }
 */
 
-nvObj_t *nv_add_object(const char_t *token)  // add an object to the body using a token
+nvObj_t *nv_add_object(const char *token)  // add an object to the body using a token
 {
 	nvObj_t *nv = nv_body;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
@@ -588,14 +605,14 @@ nvObj_t *nv_add_object(const char_t *token)  // add an object to the body using 
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((nv->index = nv_get_index((const char_t *)"",token)) == NO_MATCH) { return (NULL);}
+		if ((nv->index = nv_get_index((const char *)"",token)) == NO_MATCH) { return (NULL);}
 		nv_get_nvObj(nv);				// populate the object from the index
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_integer(const char_t *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an integer object to the body
 {
 	nvObj_t *nv = nv_body;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
@@ -605,13 +622,13 @@ nvObj_t *nv_add_integer(const char_t *token, const uint32_t value)// add an inte
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
 		nv->value = (float) value;
-		nv->valuetype = TYPE_INTEGER;
+		nv->valuetype = TYPE_INT;
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_data(const char_t *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer object to the body
 {
 	nvObj_t *nv = nv_body;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
@@ -628,7 +645,7 @@ nvObj_t *nv_add_data(const char_t *token, const uint32_t value)// add an integer
 	return (NULL);
 }
 
-nvObj_t *nv_add_float(const char_t *token, const float value)	// add a float object to the body
+nvObj_t *nv_add_float(const char *token, const float value)	// add a float object to the body
 {
 	nvObj_t *nv = nv_body;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
@@ -645,7 +662,7 @@ nvObj_t *nv_add_float(const char_t *token, const float value)	// add a float obj
 }
 
 // ASSUMES A RAM STRING. If you need to post a FLASH string use pstr2str to convert it to a RAM string
-nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a string object to the body
+nvObj_t *nv_add_string(const char *token, const char *string) // add a string object to the body
 {
 	nvObj_t *nv = nv_body;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
@@ -657,7 +674,7 @@ nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a strin
 		if (nv_copy_string(nv, string) != STAT_OK)
             return (NULL);
 
-		nv->index = nv_get_index((const char_t *)"", nv->token);
+		nv->index = nv_get_index((const char *)"", nv->token);
 		nv->valuetype = TYPE_STRING;
 		return (nv);
 	}
@@ -670,10 +687,10 @@ nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a strin
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-nvObj_t *nv_add_conditional_message(const char_t *string)	// conditionally add a message object to the body
+nvObj_t *nv_add_conditional_message(const char *string)	// conditionally add a message object to the body
 {
 	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-	return(nv_add_string((const char_t *)"msg", string));
+	return(nv_add_string((const char *)"msg", string));
 }
 
 /**** nv_print_list() - print nv_array as JSON or text **********************
@@ -716,7 +733,3 @@ void nv_dump_nv(nvObj_t *nv)
 			 nv->token,
 			 (char *)nv->stringp);
 }
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus

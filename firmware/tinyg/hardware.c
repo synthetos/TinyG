@@ -124,7 +124,7 @@ enum {
 	COORDY1,    // Wafer Coordinate Y Byte 1
 };
 
-static void _get_id(char_t *id)
+static void _get_id(char *id)
 {
 #ifdef __AVR
 	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
@@ -206,7 +206,7 @@ stat_t hw_bootloader_handler(void)
 
 stat_t hw_get_id(nvObj_t *nv)
 {
-	char_t tmp[SYS_ID_LEN];
+	char tmp[SYS_ID_LEN];
 	_get_id(tmp);
 	nv->valuetype = TYPE_STRING;
 	ritorno(nv_copy_string(nv, tmp));
@@ -228,7 +228,7 @@ stat_t hw_run_boot(nvObj_t *nv)
 stat_t hw_set_hv(nvObj_t *nv)
 {
 	if (nv->value > TINYG_HARDWARE_VERSION_MAX)
-        return (STAT_INPUT_EXCEEDS_MAX_VALUE);
+        return (STAT_INPUT_VALUE_TOO_LARGE);
 	set_flt(nv);					// record the hardware version
 	_port_bindings(nv->value);		// reset port bindings
 	switch_init();					// re-initialize the GPIO ports

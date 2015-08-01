@@ -22,10 +22,6 @@
 #include "report.h"
 #include "help.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 // help helper functions (snicker)
 
 stat_t help_stub(nvObj_t *nv) {return (STAT_OK);}
@@ -166,7 +162,3 @@ return(STAT_OK);
 }
 
 #endif // __HELP_SCREENS
-
-#ifdef __cplusplus
-}
-#endif

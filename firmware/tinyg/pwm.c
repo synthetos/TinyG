@@ -145,8 +145,8 @@ ISR(PWM2_ISR_vect)
 stat_t pwm_set_freq(uint8_t chan, float freq)
 {
 	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}
+	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_VALUE_TOO_LARGE);}
+	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_VALUE_TOO_SMALL);}
 
 #ifdef __AVR
 	// set the period and the prescaler
@@ -195,8 +195,8 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 
 stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-	if (duty < 0.0) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}
-	if (duty > 1.0) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+	if (duty < 0.0) { return (STAT_INPUT_VALUE_TOO_SMALL);}
+	if (duty > 1.0) { return (STAT_INPUT_VALUE_TOO_LARGE);}
 
 	#ifdef __AVR
 //  Ffrq = Fper/(2N(CCA+1))

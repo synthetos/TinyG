@@ -135,7 +135,7 @@
 // Baud rate configuration
 #define	XIO_BAUD_DEFAULT XIO_BAUD_115200
 
-enum xioBAUDRATES {         		// BSEL	  BSCALE
+typedef enum {         		        // BSEL	  BSCALE
 		XIO_BAUD_UNSPECIFIED = 0,	//	0		0	  // use default value
 		XIO_BAUD_9600,				//	207		0
 		XIO_BAUD_19200,				//	103		0
@@ -147,13 +147,13 @@ enum xioBAUDRATES {         		// BSEL	  BSCALE
 		XIO_BAUD_921600,			//	19		(-4<<4)
 		XIO_BAUD_500000,			//	1		(1<<4)
 		XIO_BAUD_1000000			//	1		0
-};
+} xioBAUDRATES;
 
-enum xioFCState {
+typedef enum {
 		FC_DISABLED = 0,			// flow control is disabled
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
-};
+} xioFCState;
 
 /******************************************************************************
  * STRUCTURES

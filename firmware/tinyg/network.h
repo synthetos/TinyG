@@ -31,11 +31,11 @@
  * Global Scope Functions
  */
 
-enum networkMode {
+typedef enum {
 	NETWORK_STANDALONE = 0,
 	NETWORK_MASTER,
 	NETWORK_SLAVE
-};
+} networkMode;
 
 void network_init();
 void net_forward(unsigned char c);

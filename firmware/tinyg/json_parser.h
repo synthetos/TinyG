@@ -28,10 +28,6 @@
 #ifndef _JSON_PARSER_H_ONCE
 #define _JSON_PARSER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Configs, Definitions and Structures ****/
 
 /* JSON array definitions / revisions */
@@ -39,36 +35,38 @@ extern "C"{
 // if you add these make sure there are no collisions w/present or past numbers
 
 #define FOOTER_REVISION 1
-
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
-enum jsonVerbosity {
-	JV_SILENT = 0,					// no response is provided for any command
-	JV_FOOTER,						// returns footer only (no command echo, gcode blocks or messages)
-	JV_MESSAGES,					// returns footer, messages (exception and gcode messages)
-	JV_CONFIGS,						// returns footer, messages, config commands
-	JV_LINENUM,						// returns footer, messages, config commands, gcode line numbers if present
-	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
-};
+typedef enum {
+    JV_SILENT = 0,					// [0] no response is provided for any command
+    JV_FOOTER,						// [1] returns footer only (no command echo, gcode blocks or messages)
+    JV_MESSAGES,					// [2] returns footer, messages (exception and gcode messages)
+    JV_CONFIGS,						// [3] returns footer, messages, config commands
+    JV_LINENUM,						// [4] returns footer, messages, config commands, gcode line numbers if present
+    JV_VERBOSE,						// [5] returns footer, messages, config commands, gcode blocks
+    JV_EXCEPTIONS,					// [6] returns only on messages, configs, and non-zero status
+    JV_STATUS,					    // [7] returns status and any messages in abbreviated format
+    JV_STATUS_COUNT,				// [8] returns status, count and messages in abbreviated format
+    JV_MAX_VALUE
+} jsonVerbosity;
 
-enum jsonFormats {					// json output print modes
+typedef enum {					    // json output print modes
 	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
 	JSON_OBJECT_FORMAT,				// print just the body as a json object
 	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
-};
+} jsonFormats;
 
-enum jsonSyntaxMode {
+typedef enum {
 	JSON_SYNTAX_RELAXED = 0,		// Does not require quotes on names
 	JSON_SYNTAX_STRICT				// requires quotes on names
-};
+} jsonSyntaxMode;
 
 typedef struct jsSingleton {
 
 	/*** config values (PUBLIC) ***/
 	uint8_t json_verbosity;			// see enum in this file for settings
-	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
-//	uint8_t json_footer_style;		// select footer style
 	uint8_t json_syntax;			// 0=relaxed syntax, 1=strict syntax
+	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
 
 	uint8_t echo_json_footer;		// flags for JSON responses serialization
 	uint8_t echo_json_messages;
@@ -86,8 +84,8 @@ extern jsSingleton_t js;
 
 /**** Function Prototypes ****/
 
-void json_parser(char_t *str);
-uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size);
+void json_parser(char *str);
+uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size);
 void json_print_object(nvObj_t *nv);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
@@ -109,9 +107,5 @@ stat_t json_set_jv(nvObj_t *nv);
 	#define js_print_fs tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: JSON_PARSER_H_ONCE

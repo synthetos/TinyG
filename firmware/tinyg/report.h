@@ -2,7 +2,7 @@
  * report.h - TinyG status report and other reporting functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,34 +28,33 @@
 #ifndef REPORT_H_ONCE
 #define REPORT_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Configs, Definitions and Structures ****/
 //
 // Notes:
 //		- The NV_STATUS_REPORT_LEN define is in config.h
 //		- The status report defaults can be found in settings.h
 
-#define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
+#define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
+                                            // **** must also line up in cfgArray, se00 - seXX ****
 
-enum srVerbosity {								// status report enable and verbosity
-	SR_OFF = 0,									// no reports
-	SR_FILTERED,								// reports only values that have changed from the last report
-	SR_VERBOSE									// reports all values specified
-};
+#define MIN_ARC_QR_INTERVAL 200     // minimum interval between QRs during arc generation (in system ticks)
 
-enum cmStatusReportRequest {
-	SR_TIMED_REQUEST = 0,						// request a status report at next timer interval
-	SR_IMMEDIATE_REQUEST						// request a status report ASAP
-};
+typedef enum {                      // status report enable and verbosity
+	SR_OFF = 0,                     // no reports
+	SR_FILTERED,                    // reports only values that have changed from the last report
+	SR_VERBOSE                      // reports all values specified
+} srVerbosity;
 
-enum qrVerbosity {								// planner queue enable and verbosity
-	QR_OFF = 0,									// no response is provided
-	QR_SINGLE,									// queue depth reported
-	QR_TRIPLE									// queue depth reported for buffers, buffers added, buffered removed
-};
+typedef enum {
+	SR_TIMED_REQUEST = 0,           // request a status report at next timer interval
+	SR_IMMEDIATE_REQUEST            // request a status report ASAP
+} cmStatusReportRequest;
+
+typedef enum {                      // planner queue enable and verbosity
+	QR_OFF = 0,                     // no response is provided
+	QR_SINGLE,                      // queue depth reported
+	QR_TRIPLE                       // queue depth reported for buffers, buffers added, buffered removed
+} qrVerbosity;
 
 typedef struct srSingleton {
 
@@ -152,9 +151,5 @@ stat_t qo_get(nvObj_t *nv);
 	#define qr_print_qo tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: REPORT_H_ONCE

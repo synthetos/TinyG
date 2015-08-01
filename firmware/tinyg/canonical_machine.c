@@ -195,6 +195,7 @@ uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
 uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
+uint8_t cm_get_arc_distance_mode(GCodeState_t *gcode_state) { return gcode_state->arc_distance_mode;}
 uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
@@ -217,7 +218,7 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 void cm_set_model_linenum(uint32_t linenum)
 {
 	cm.gm.linenum = linenum;				// you must first set the model line number,
-	nv_add_object((const char_t *)"n");	// then add the line number to the nv list
+	nv_add_object((const char *)"n");	// then add the line number to the nv list
 }
 
 /***********************************************************************************
@@ -387,7 +388,7 @@ stat_t cm_deferred_write_callback()
 		for (uint8_t i=1; i<=COORDS; i++) {
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
-				nv.index = nv_get_index((const char_t *)"", nv.token);
+				nv.index = nv_get_index((const char *)"", nv.token);
 				nv.value = cm.offset[i][j];
 				nv_persist(&nv);				// Note: only writes values that have changed
 			}
@@ -420,7 +421,7 @@ stat_t cm_deferred_write_callback()
 //        registers we moved this block into its own function so that we get a fresh stack push
 // ALDEN: This shows up in avr-gcc 4.7.0 and avr-libc 1.8.0
 
-static float _calc_ABC(uint8_t axis, float target[], float flag[])
+static float _calc_ABC(const uint8_t axis, const float target[], const float flag[])
 {
 	if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 		return(target[axis]);	// no mm conversion - it's in degrees
@@ -428,7 +429,7 @@ static float _calc_ABC(uint8_t axis, float target[], float flag[])
 	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cm.a[axis].radius));
 }
 
-void cm_set_model_target(float target[], float flag[])
+void cm_set_model_target(const float target[], const float flag[])
 {
 	uint8_t axis;
 	float tmp = 0;
@@ -523,6 +524,7 @@ void canonical_machine_init()
 	cm_select_plane(cm.select_plane);
 	cm_set_path_control(cm.path_control);
 	cm_set_distance_mode(cm.distance_mode);
+	cm_set_arc_distance_mode(INCREMENTAL_MODE);  // always the default
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
 
 	cm.gmx.block_delete_switch = true;
@@ -618,6 +620,7 @@ stat_t cm_hard_alarm(stat_t status)
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
+ *  cm_set_arc_distance_mode()  - G90.1, G91.1
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
  *
  *	These functions assume input validation occurred upstream.
@@ -639,6 +642,12 @@ stat_t cm_set_distance_mode(uint8_t mode)
 {
 	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
 	return (STAT_OK);
+}
+
+stat_t cm_set_arc_distance_mode(const uint8_t mode)
+{
+    cm.gm.arc_distance_mode = (cmDistanceMode)mode;	// 0 = absolute mode, 1 = incremental
+    return (STAT_OK);
 }
 
 /*
@@ -1145,9 +1154,9 @@ stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-void cm_message(char_t *message)
+void cm_message(char *message)
 {
-	nv_add_string((const char_t *)"msg", message);	// add message to the response object
+	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
 
 /******************************
@@ -1503,18 +1512,18 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
  * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
  */
 
-char_t cm_get_axis_char(const int8_t axis)
+char cm_get_axis_char(const int8_t axis)
 {
-	char_t axis_char[] = "XYZABC";
+	char axis_char[] = "XYZABC";
 	if ((axis < 0) || (axis > AXES)) return (' ');
 	return (axis_char[axis]);
 }
 
 static int8_t _get_axis(const index_t index)
 {
-	char_t *ptr;
-	char_t tmp[TOKEN_LEN+1];
-	char_t axes[] = {"xyzabc"};
+	char *ptr;
+	char tmp[TOKEN_LEN+1];
+	char axes[] = {"xyzabc"};
 
 	strncpy_P(tmp, cfgArray[index].token, TOKEN_LEN);	// kind of a hack. Looks for an axis
 	if ((ptr = strchr(axes, tmp[0])) == NULL) {			// character in the 0 and 3 positions
@@ -1568,8 +1577,8 @@ static int8_t _get_axis_type(const index_t index)
 stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value)
 {
 	nv->value = (float)value;
-	nv->valuetype = TYPE_INTEGER;
-	return(nv_copy_string(nv, (const char_t *)GET_TEXT_ITEM(msg_array, value)));
+	nv->valuetype = TYPE_INT;
+	return(nv_copy_string(nv, (const char *)GET_TEXT_ITEM(msg_array, value)));
 }
 
 stat_t cm_get_stat(nvObj_t *nv) { return(_get_msg_helper(nv, msg_stat, cm_get_combined_state()));}
@@ -1590,21 +1599,21 @@ stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_fe
 stat_t cm_get_toolv(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_mline(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_linenum(MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
 stat_t cm_get_line(nvObj_t *nv)
 {
 	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
-	nv->valuetype = TYPE_INTEGER;
+	nv->valuetype = TYPE_INT;
 	return (STAT_OK);
 }
 
@@ -1671,9 +1680,9 @@ stat_t cm_get_am(nvObj_t *nv)
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
-		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	} else {
-		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
 	}
 	set_ui8(nv);
 	return(STAT_OK);

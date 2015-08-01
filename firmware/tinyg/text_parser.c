@@ -35,22 +35,18 @@
 #include "util.h"
 #include "xio.h"					// for ASCII char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
 #ifndef __TEXT_MODE
 
-stat_t text_parser_stub(char_t *str) {return (STAT_OK);}
-void text_response_stub(const stat_t status, char_t *buf) {}
+stat_t text_parser_stub(char *str) {return (STAT_OK);}
+void text_response_stub(const stat_t status, char *buf) {}
 void text_print_list_stub (stat_t status, uint8_t flags) {}
 void tx_print_stub(nvObj_t *nv) {}
 
 #else // __TEXT_MODE
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
 
 /******************************************************************************
  * text_parser() 		 - update a config setting from a text block (text mode)
@@ -63,7 +59,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
  *	- $x			display a group
  *	- ?				generate a status report (multiline format)
  */
-stat_t text_parser(char_t *str)
+stat_t text_parser(char *str)
 {
 	nvObj_t *nv = nv_reset_nv_list();				// returns first object in the body
 	stat_t status = STAT_OK;
@@ -91,7 +87,7 @@ stat_t text_parser(char_t *str)
 		}
 	} else { 										// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM)
-            return (STAT_MACHINE_ALARMED);
+            return (STAT_COMMAND_REJECTED_BY_ALARM);
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array
@@ -101,11 +97,11 @@ stat_t text_parser(char_t *str)
 	return (status);
 }
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 {
-	char_t *rd, *wr;								// read and write pointers
-//	char_t separators[] = {"="};					// STRICT: only separator allowed is = sign
-	char_t separators[] = {" =:|\t"};				// RELAXED: any separator someone might use
+	char *rd, *wr;								    // read and write pointers
+//	char separators[] = {"="};					    // STRICT: only separator allowed is = sign
+	char separators[] = {" =:|\t"};				    // RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
 //	nv_reset_nv(nv);								// initialize config object
@@ -132,7 +128,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 	}
 
 	// validate and post-process the token
-	if ((nv->index = nv_get_index((const char_t *)"", nv->token)) == NO_MATCH) { // get index or fail it
+	if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
 		return (STAT_UNRECOGNIZED_NAME);
 	}
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
@@ -153,7 +149,7 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 static const char prompt_ok[] PROGMEM = "tinyg [%s] ok> ";
 static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
-void text_response(const stat_t status, char_t *buf)
+void text_response(const stat_t status, char *buf)
 {
 	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
 
@@ -200,10 +196,11 @@ void text_print_inline_pairs(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
+			case TYPE_INT:	    { fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+            default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
 		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
@@ -220,10 +217,11 @@ void text_print_inline_values(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
+			case TYPE_INT:	    { fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+            default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
 		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
@@ -280,9 +278,5 @@ static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbo
 
 void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
 
-
 #endif // __TEXT_MODE
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus

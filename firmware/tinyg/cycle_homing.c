@@ -262,7 +262,7 @@ static stat_t _homing_axis_start(int8_t axis)
 #endif
 
 	if ( ((hm.min_mode & SW_HOMING_BIT) ^ (hm.max_mode & SW_HOMING_BIT)) == 0) {	  // one or the other must be homing
-		return (_homing_error_exit(axis, STAT_HOMING_ERROR_SWITCH_MISCONFIGURATION)); // axis cannot be homed
+		return (_homing_error_exit(axis, STAT_HOMING_ERROR_HOMING_INPUT_MISCONFIGURED)); // axis cannot be homed
 	}
 	hm.axis = axis;											// persist the axis
 	hm.search_velocity = fabs(cm.a[axis].search_velocity);	// search velocity is always positive
@@ -436,11 +436,11 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 	nv_reset_nv_list();
 
 	if (axis == -2) {
-		nv_add_conditional_message((const char_t *)"Homing error - Bad or no axis(es) specified");;
+		nv_add_conditional_message((const char *)"Homing error - Bad or no axis(es) specified");;
 	} else {
 		char message[NV_MESSAGE_LEN];
 		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
-		nv_add_conditional_message((char_t *)message);
+		nv_add_conditional_message((char *)message);
 	}
 	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 

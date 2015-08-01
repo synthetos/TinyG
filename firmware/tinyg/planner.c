@@ -258,6 +258,37 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	return (STAT_OK);
 }
 
+/**********************************************************************************
+ * Planner helpers
+ *
+ * mp_get_planner_buffers()   - return # of available planner buffers
+ * mp_planner_is_full()       - true if planner has no room for a new block
+ * mp_has_runnable_buffer()   - true if next buffer is runnable, indicating motion has not stopped.
+ * mp_is_it_phat_city_time() - test if there is time for non-essential processes
+ */
+uint8_t mp_get_planner_buffers()
+{
+    return (mb.buffers_available);
+}
+
+bool mp_planner_is_full()
+{
+    return (mb.buffers_available < PLANNER_BUFFER_HEADROOM);
+}
+
+bool mp_has_runnable_buffer()
+{
+    return (mb.r->buffer_state);    // anything other than MP_BUFFER_EMPTY returns true
+}
+/*
+bool mp_is_phat_city_time()
+{
+	if(cm.hold_state == FEEDHOLD_HOLD) {
+    	return true;
+	}
+    return ((mb.time_in_plan <= 0) || (PHAT_CITY_TIME < mb.time_in_plan));
+}
+*/
 /**** PLANNER BUFFERS *****************************************************
  *
  * Planner buffers are used to queue and operate on Gcode blocks. Each buffer
