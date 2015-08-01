@@ -211,6 +211,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	uint8_t section_state;			// state within a move section
 
 	float unit[AXES];				// unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move
 	float target[AXES];				// final target for bf (used to correct rounding errors)
 	float position[AXES];			// current move position
 	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()

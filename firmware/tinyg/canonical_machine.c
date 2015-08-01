@@ -559,8 +559,8 @@ void canonical_machine_init()
     memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
     memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
     memset(&cm.gn, 0, sizeof(GCodeInput_t));
-//    memset(&cm.gf, 0, sizeof(GCodeFlags_t));  //+++++ CHANGE
-    memset(&cm.gf, 0, sizeof(GCodeInput_t));    //+++++ CHANGE
+    memset(&cm.gf, 0, sizeof(GCodeFlags_t));  //+++++ CHANGE
+//    memset(&cm.gf, 0, sizeof(GCodeInput_t));    //+++++ CHANGE
 
     canonical_machine_init_assertions();		// establish assertions
     ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
@@ -616,9 +616,18 @@ void canonical_machine_init_assertions(void)
 
 stat_t canonical_machine_test_assertions(void)
 {
-	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+	if ((cm.magic_start != MAGICNUM) || (cm.magic_end != MAGICNUM)) {
+        printf("cm corrupt\n");
+        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+    }
+	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) {
+        printf("gmx corrupt\n");
+        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+    }
+	if ((arc.magic_start != MAGICNUM) || (arc.magic_end != MAGICNUM)) {
+        printf("arc corrupt\n");
+        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+    }
 	return (STAT_OK);
 }
 
