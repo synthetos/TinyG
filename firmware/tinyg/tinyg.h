@@ -27,6 +27,18 @@
  * then set the top one to \winavr\bin\avr-gcc.exe  (C:\WinAVR-20100110\bin\avr-gcc.exe)
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
+/*
+ *  g2sync notes (in rough order to do them):
+ *    - change out combined state for the dynamic routine
+ *    - split canonical machine init into init and reset parts
+ *    - add state management for alarm, shutdown and panic
+ *      - go back through files and change to new alarm, shutdown and panic
+ *    - install digital input system as gpio file
+ *      - change release to 0.98
+ *      - refactor limits and homing for new inputs
+ *    - move spindle and coolant to separate files
+ *    - remove Kahan references
+ */
 
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -45,7 +57,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        443.01	// g2sync - updated machine state enums and added dynamic get_combined_state()
+#define TINYG_FIRMWARE_BUILD        443.02	// g2sync - updated machine state enums and added dynamic get_combined_state()
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

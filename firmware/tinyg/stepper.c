@@ -473,11 +473,6 @@ stat_t st_motor_power_callback() 	// called by controller
 			continue;
 		}
 
-		// do not process countdown if in a feedhold
-//		if (cm_get_combined_state() == COMBINED_HOLD) {
-//			continue;
-//		}
-
 		// run the countdown if you are in a countdown
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
 			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {

@@ -128,13 +128,25 @@ static int8_t _get_axis_type(const index_t index);
  **** CODE *************************************************************************
  ***********************************************************************************/
 
-/********************************
- * Internal getters and setters *
- ********************************/
+/*************************************
+ * Internal getters and setters      *
+ * Canonical Machine State functions *
+ *************************************/
 /*
- * Canonical Machine State functions
- *
- * cm_get_combined_state() - combines raw states into something a user might want to see
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+void cm_set_motion_state(uint8_t motion_state)
+{
+    cm.motion_state = motion_state;
+
+    switch (motion_state) {
+        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
+        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
+    }
+}
+
+/*
  * cm_get_machine_state()
  * cm_get_motion_state()
  * cm_get_cycle_state()
@@ -142,22 +154,23 @@ static int8_t _get_axis_type(const index_t index);
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
-/*
-uint8_t cm_get_combined_state()
-{
-	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
-	else if (cm.cycle_state == CYCLE_PROBE) { cm.combined_state = COMBINED_PROBE;}
-	else if (cm.cycle_state == CYCLE_HOMING) { cm.combined_state = COMBINED_HOMING;}
-	else if (cm.cycle_state == CYCLE_JOG) { cm.combined_state = COMBINED_JOG;}
-	else {
-		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
-		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
-	}
-	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
+uint8_t cm_get_machine_state() { return cm.machine_state;}
+uint8_t cm_get_cycle_state() { return cm.cycle_state;}
+uint8_t cm_get_motion_state() { return cm.motion_state;}
+uint8_t cm_get_hold_state() { return cm.hold_state;}
+uint8_t cm_get_homing_state() { return cm.homing_state;}
 
-	return cm.combined_state;
-}
-*/
+/*
+ * cm_get_combined_state() - combines raw states into something a user might want to see
+ *
+ *  Note:
+ *  On issuing a gcode command we call cm_cycle_start() before the motion gets queued. We don't go
+ *  to MOTION_RUN until the command is executed by mp_exec_aline(), planned, queued, and started.
+ *  So MOTION_STOP must actually return COMBINED_RUN to address this case, even though under some
+ *  circumstances it might actually ne an exception case. Therefore this assertion isn't valid:
+ *      cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "mots2"));//"mots is stop but machine is in cycle"
+ *      return (COMBINED_PANIC);
+ */
 cmCombinedState cm_get_combined_state()
 {
     if (cm.machine_state <= MACHINE_PROGRAM_END) {  // replaces first 5 cm.machine_state cases
@@ -195,23 +208,6 @@ cmCombinedState cm_get_combined_state()
             return (COMBINED_PANIC);
         }
     }
-}
-
-uint8_t cm_get_machine_state() { return cm.machine_state;}
-uint8_t cm_get_cycle_state() { return cm.cycle_state;}
-uint8_t cm_get_motion_state() { return cm.motion_state;}
-uint8_t cm_get_hold_state() { return cm.hold_state;}
-uint8_t cm_get_homing_state() { return cm.homing_state;}
-
-void cm_set_motion_state(uint8_t motion_state)
-{
-	cm.motion_state = motion_state;
-
-	switch (motion_state) {
-		case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
-		case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
-		case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
-	}
 }
 
 /***********************************
