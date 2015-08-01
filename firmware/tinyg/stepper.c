@@ -1005,7 +1005,9 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	for (uint8_t motor=0; motor<MOTORS; motor++) {	// I want to remind myself that this is motors, not axes
 
 		// Skip this motor if there are no new steps. Leave all other values intact.
-		if (fp_ZERO(travel_steps[motor])) { st_pre.mot[motor].substep_increment = 0; continue;}
+		if (fp_ZERO(travel_steps[motor])) { 
+            st_pre.mot[motor].substep_increment = 0; continue;
+        }
 
 		// Setup the direction, compensating for polarity.
 		// Set the step_sign which is used by the stepper ISR to accumulate step position

@@ -88,13 +88,18 @@
 
 #include "tinyg.h"			// #1
 #include "config.h"			// #2
-#include "text_parser.h"
 #include "canonical_machine.h"
+//#include "controller.h"
+//#include "json_parser.h"
+#include "text_parser.h"
+
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
+//#include "coolant.h"
+//#include "pwm.h"
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
