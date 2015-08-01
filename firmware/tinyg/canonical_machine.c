@@ -142,6 +142,7 @@ static int8_t _get_axis_type(const index_t index);
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
+/*
 uint8_t cm_get_combined_state()
 {
 	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
@@ -155,6 +156,45 @@ uint8_t cm_get_combined_state()
 	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
 
 	return cm.combined_state;
+}
+*/
+cmCombinedState cm_get_combined_state()
+{
+    if (cm.machine_state <= MACHINE_PROGRAM_END) {  // replaces first 5 cm.machine_state cases
+        return ((cmCombinedState)cm.machine_state); //...where MACHINE_xxx == COMBINED_xxx
+    }
+    switch(cm.machine_state) {
+        case MACHINE_INTERLOCK:     { return (COMBINED_INTERLOCK); }
+        case MACHINE_SHUTDOWN:      { return (COMBINED_SHUTDOWN); }
+        case MACHINE_PANIC:         { return (COMBINED_PANIC); }
+        case MACHINE_CYCLE: {
+            switch(cm.cycle_state) {
+                case CYCLE_HOMING:  { return (COMBINED_HOMING); }
+                case CYCLE_PROBE:   { return (COMBINED_PROBE); }
+                case CYCLE_JOG:     { return (COMBINED_JOG); }
+                case CYCLE_MACHINING: case CYCLE_OFF: {
+                    switch(cm.motion_state) {
+                        case MOTION_STOP:     { return (COMBINED_RUN); }    // See NOTE_1, above
+                        case MOTION_PLANNING: { return (COMBINED_RUN); }
+                        case MOTION_RUN:      { return (COMBINED_RUN); }
+                        case MOTION_HOLD:     { return (COMBINED_HOLD); }
+                        default: {
+                            // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() mots bad");    // "mots has impossible value"
+                            return (COMBINED_PANIC);
+                        }
+                    }
+                }
+                default: {
+                    // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() cycs bad");    // "cycs has impossible value"
+                    return (COMBINED_PANIC);
+                }
+            }
+        }
+        default: {
+            // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
+            return (COMBINED_PANIC);
+        }
+    }
 }
 
 uint8_t cm_get_machine_state() { return cm.machine_state;}
@@ -535,7 +575,7 @@ void canonical_machine_init()
 
 	// signal that the machine is ready for action
 	cm.machine_state = MACHINE_READY;
-	cm.combined_state = COMBINED_READY;
+//	cm.combined_state = COMBINED_READY;
 
 	// sub-system inits
 	cm_spindle_init();

@@ -58,30 +58,34 @@
 
 // ### LAYER 8 CRITICAL REGION ###
 // ### DO NOT CHANGE THESE ENUMERATIONS WITHOUT COMMUNITY INPUT ###
-typedef enum {				            // check alignment with messages in config.c / msg_stat strings
-	COMBINED_INITIALIZING = 0,		// [0] machine is initializing
-	COMBINED_READY,					// [1] machine is ready for use. Also used to force STOP state for null moves
-	COMBINED_ALARM,					// [2] machine in soft alarm state
-	COMBINED_PROGRAM_STOP,			// [3] program stop or no more blocks
-	COMBINED_PROGRAM_END,			// [4] program end
-	COMBINED_RUN,					// [5] motion is running
-	COMBINED_HOLD,					// [6] motion is holding
-	COMBINED_PROBE,					// [7] probe cycle active
-	COMBINED_CYCLE,					// [8] machine is running (cycling)
-	COMBINED_HOMING,				// [9] homing is treated as a cycle
-	COMBINED_JOG,					// [10] jogging is treated as a cycle
-	COMBINED_SHUTDOWN,				// [11] machine in hard alarm state (shutdown)
+typedef enum {				        // check alignment with messages in config.c / msg_stat strings
+    COMBINED_INITIALIZING = 0,		// [0] machine is initializing          //iff macs == MACHINE_INITIALIZING
+    COMBINED_READY,					// [1] machine is ready for use         //iff macs == MACHINE_READY
+    COMBINED_ALARM,					// [2] machine in alarm state           //iff macs == MACHINE_ALARM
+    COMBINED_PROGRAM_STOP,			// [3] program stop/no more blocks      //iff macs == MACHINE_PROGRAM_STOP
+    COMBINED_PROGRAM_END,			// [4] program end                      //iff macs == MACHINE_PROGRAM_END
+    COMBINED_RUN,					// [5] machine is running               //iff macs == MACHINE_CYCLE, cycs == CYCLE_OFF, mots != MOTION_HOLD
+    COMBINED_HOLD,					// [6] machine is holding               //iff macs == MACHINE_CYCLE, cycs == CYCLE_OFF, mots == MOTION_HOLD
+    COMBINED_PROBE,					// [7] probe cycle active               //iff macs == MACHINE_CYCLE, cycs == CYCLE_PROBE
+    COMBINED_CYCLE,					// [8] reserved for canned cycles       < not used >
+    COMBINED_HOMING,				// [9] homing cycle active              //iff macs == MACHINE_CYCLE, cycs = CYCLE_HOMING
+    COMBINED_JOG,					// [10] jogging cycle active            //iff macs == MACHINE_CYCLE, cycs = CYCLE_JOG
+    COMBINED_INTERLOCK,             // [11] machine in safety interlock hold//iff macs == MACHINE_INTERLOCK
+    COMBINED_SHUTDOWN,				// [12] machine in shutdown state       //iff macs == MACHINE_SHUTDOWN
+    COMBINED_PANIC				    // [13] machine in panic state          //iff macs == MACHINE_PANIC
 } cmCombinedState;
 //### END CRITICAL REGION ###
 
 typedef enum {
-	MACHINE_INITIALIZING = 0,		// machine is initializing
-	MACHINE_READY,					// machine is ready for use
-	MACHINE_ALARM,					// machine in soft alarm state
-	MACHINE_PROGRAM_STOP,			// program stop or no more blocks
-	MACHINE_PROGRAM_END,			// program end
-	MACHINE_CYCLE,					// machine is running (cycling)
-	MACHINE_SHUTDOWN,				// machine in hard alarm state (shutdown)
+    MACHINE_INITIALIZING = 0,		// machine is initializing
+    MACHINE_READY,					// machine is ready for use
+    MACHINE_ALARM,					// machine in alarm state
+    MACHINE_PROGRAM_STOP,			// no blocks to run; like PROGRAM_END but without the M2 to reset gcode state
+    MACHINE_PROGRAM_END,			// program end (same as MACHINE_READY, really...)
+    MACHINE_CYCLE,					// machine is running; blocks still to run, or steppers are busy
+    MACHINE_INTERLOCK,              // machine in interlock state
+    MACHINE_SHUTDOWN,				// machine in shutdown state
+    MACHINE_PANIC				    // machine in panic state
 } cmMachineState;
 
 typedef enum {
@@ -93,9 +97,10 @@ typedef enum {
 } cmCycleState;
 
 typedef enum {
-	MOTION_STOP = 0,				// motion has stopped
-	MOTION_RUN,						// machine is in motion
-	MOTION_HOLD						// feedhold in progress
+    MOTION_STOP = 0,				// motion has stopped: set when the steppers reach the end of the planner queue
+    MOTION_PLANNING,				// machine has planned an ALINE segment, but not yet started to execute them
+    MOTION_RUN,						// machine is in motion: set when the steppers execute an ALINE segment
+    MOTION_HOLD						// feedhold in progress: set whenever we leave FEEDHOLD_OFF, unset whenever we enter FEEDHOLD_OFF
 } cmMotionState;
 
 typedef enum {				        // feedhold_state machine
@@ -521,7 +526,7 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 
 	/**** Runtime variables (PRIVATE) ****/
 
-	uint8_t combined_state;				// stat: combination of states for display purposes
+//	uint8_t combined_state;				// stat: combination of states for display purposes
 	uint8_t machine_state;				// macs: machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;				// cycs
 	uint8_t motion_state;				// momo

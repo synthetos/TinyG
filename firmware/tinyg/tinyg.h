@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        442.04	// edge- aligned structs in other files
+#define TINYG_FIRMWARE_BUILD        443.01	// g2sync - updated machine state enums and added dynamic get_combined_state()
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
