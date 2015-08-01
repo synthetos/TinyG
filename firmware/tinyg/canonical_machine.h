@@ -611,11 +611,11 @@ void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_overri
 void cm_set_model_linenum(uint32_t linenum);
 
 // Coordinate systems and offsets
-float cm_get_active_coord_offset(uint8_t axis);
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_active_coord_offset(const uint8_t axis);
+float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis);
 void cm_set_work_offsets(GCodeState_t *gcode_state);
-float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis);
+float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis);
 
 // Critical helpers
 void cm_update_model_position_from_runtime(void);

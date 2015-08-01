@@ -249,6 +249,14 @@ static stat_t _parse_gcode_block(char *buf)
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));		// clear all next-state values
 	cm.gn.motion_mode = cm_get_motion_mode(MODEL);	// get motion mode from previous block
 
+    // Causes a later exception if
+    //  (1) INVERSE_TIME_MODE is active and a feed rate is not provided or
+    //  (2) INVERSE_TIME_MODE is changed to UNITS_PER_MINUTE and a new feed rate is missing
+    if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {// new feed rate req'd when in INV_TIME_MODE
+        cm.gn.feed_rate = 0;
+        cm.gf.feed_rate = true;
+    }
+
 	// extract commands and parameters
 	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
 		switch(letter) {

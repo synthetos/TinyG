@@ -268,20 +268,6 @@ void cm_set_model_linenum(const uint32_t linenum)
     nv_add_object((const char *)"n");	// then add the line number to the nv list
 }
 
-/*
-void cm_set_absolute_override(const GCodeState_t *gcode_state, uint8_t absolute_override)
-{
-	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
-}
-
-void cm_set_model_linenum(uint32_t linenum)
-{
-	cm.gm.linenum = linenum;				// you must first set the model line number,
-	nv_add_object((const char *)"n");	// then add the line number to the nv list
-}
-*/
-
 /***********************************************************************************
  * COORDINATE SYSTEMS AND OFFSETS
  * Functions to get, set and report coordinate systems and work offsets
@@ -317,12 +303,15 @@ void cm_set_model_linenum(uint32_t linenum)
  *	which merely returns what's in the work_offset[] array.
  */
 
-float cm_get_active_coord_offset(uint8_t axis)
+float cm_get_active_coord_offset(const uint8_t axis)
 {
-	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
+    if (cm.gm.absolute_override == ABSOLUTE_OVERRIDE_ON) {  // no offset if in absolute override mode
+        return (0.0);
+    }
 	float offset = cm.offset[cm.gm.coord_system][axis];
-	if (cm.gmx.origin_offset_enable == true)
+	if (cm.gmx.origin_offset_enable == true) {
 		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
+    }
 	return (offset);
 }
 
@@ -336,7 +325,7 @@ float cm_get_active_coord_offset(uint8_t axis)
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis)
 {
 	return (gcode_state->work_offset[axis]);
 }
@@ -369,9 +358,11 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
  *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
 
-float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
-	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
+	if (gcode_state == MODEL) {
+        return (cm.gmx.position[axis]);
+    }
 	return (mp_get_runtime_absolute_position(axis));
 }
 
@@ -390,16 +381,20 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
 	float position;
 
 	if (gcode_state == MODEL) {
-		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
-	} else {
-		position = mp_get_runtime_work_position(axis);
+    	position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
+    	} else {
+    	position = mp_get_runtime_work_position(axis);
 	}
-	if (gcode_state->units_mode == INCHES) { position /= MM_PER_INCH; }
+	if (axis <= AXIS_Z) {
+    	if (gcode_state->units_mode == INCHES) {
+        	position /= MM_PER_INCH;
+    	}
+	}
 	return (position);
 }
 
@@ -420,16 +415,21 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
  *	execution, and the real tool position is still close to the starting point.
  */
 
-void cm_finalize_move() {
+void cm_finalize_move()
+{
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
-	// if in ivnerse time mode reset feed rate so next block requires an explicit feed rate setting
-	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
-		cm.gm.feed_rate = 0;
-	}
+	// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
+// SUPERSEDED by gcode_parsser INVERSE_TIME_MODE test ~line 252
+//	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+//		cm.gm.feed_rate = 0;
+//	}
 }
 
-void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
+void cm_update_model_position_from_runtime()
+{
+    copy_vector(cm.gmx.position, mr.gm.target);
+}
 
 /*
  * cm_deferred_write_callback() - write any changed G10 values back to persistence
@@ -495,9 +495,12 @@ void cm_set_model_target(const float target[], const bool flags[])
 	uint8_t axis;
 	float tmp = 0;
 
+    // copy position to target so it always starts correctly
+    copy_vector(cm.gm.target, cm.gmx.position);
+
 	// process XYZABC for lower modes
 	for (axis=AXIS_X; axis<=AXIS_Z; axis++) {
-		if (!flags[axis] || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
+		if (!flags[axis] || cm.a[axis].axis_mode == AXIS_DISABLED) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 			if (cm.gm.distance_mode == ABSOLUTE_MODE) {
@@ -509,7 +512,7 @@ void cm_set_model_target(const float target[], const bool flags[])
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
-		if (!flags[axis] || (cm.a[axis].axis_mode == AXIS_DISABLED)) {
+		if (!flags[axis] || cm.a[axis].axis_mode == AXIS_DISABLED) {
 			continue;		// skip axis if not flagged for update or its disabled
 		} else {
 			tmp = _calc_ABC(axis, target);
@@ -525,7 +528,7 @@ void cm_set_model_target(const float target[], const bool flags[])
 /*
  * cm_test_soft_limits() - return error code if soft limit is exceeded
  *
- *	Must be called with target properly set in GM struct. Best done after cm_set_model_target().
+ *	The target[] arg must be in absolute machine coordinates. Best done after cm_set_model_target().
  *
  *	Tests for soft limit for any homed axis if min and max are different values. You can set min
  *	and max to 0,0 to disable soft limits for an axis. Also will not test a min or a max if the

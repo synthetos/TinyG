@@ -35,6 +35,7 @@
  *    - install constants
  *    - add state management for alarm, shutdown and panic
  *      - go back through files and change to new alarm, shutdown and panic
+ *      - change out soft limts for new alarms
  *    - install digital input system as gpio file
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
@@ -59,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        443.03	// g2sync - changed GcodeFlags struct over to booleans
+#define TINYG_FIRMWARE_BUILD        443.04	// g2sync - functional changes to canonical_machine - moved inverse time mode clear to gcode parser; do not convert work position units for ABC axes; copy position to target in set target;
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
