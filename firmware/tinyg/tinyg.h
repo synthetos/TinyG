@@ -32,6 +32,7 @@
  *    - change out combined state for the dynamic routine
  *    - split canonical machine init into init and reset parts
  *    - install gcode_input struct with booleans
+ *    - install constants
  *    - add state management for alarm, shutdown and panic
  *      - go back through files and change to new alarm, shutdown and panic
  *    - install digital input system as gpio file

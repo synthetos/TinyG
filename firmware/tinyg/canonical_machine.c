@@ -225,28 +225,51 @@ cmCombinedState cm_get_combined_state()
  *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
-uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
-uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
-uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
-uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units_mode;}
-uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
-uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
-uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
-uint8_t cm_get_arc_distance_mode(GCodeState_t *gcode_state) { return gcode_state->arc_distance_mode;}
-uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
-uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
-uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
+uint32_t cm_get_linenum(const GCodeState_t *gcode_state) { return gcode_state->linenum;}
+uint8_t cm_get_motion_mode(const GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
+uint8_t cm_get_coord_system(const GCodeState_t *gcode_state) { return gcode_state->coord_system;}
+uint8_t cm_get_units_mode(const GCodeState_t *gcode_state) { return gcode_state->units_mode;}
+uint8_t cm_get_select_plane(const GCodeState_t *gcode_state) { return gcode_state->select_plane;}
+uint8_t cm_get_path_control(const GCodeState_t *gcode_state) { return gcode_state->path_control;}
+uint8_t cm_get_distance_mode(const GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
+uint8_t cm_get_arc_distance_mode(const GCodeState_t *gcode_state) { return gcode_state->arc_distance_mode;}
+uint8_t cm_get_feed_rate_mode(const GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
+uint8_t cm_get_tool(const GCodeState_t *gcode_state) { return gcode_state->tool;}
+uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
+float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
 
-float cm_get_feed_rate(GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
-
-void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
-void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
 
-void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
+//void cm_set_motion_mode(const GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
+//void cm_set_tool_number(const GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
+
+void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode)
+{
+    gcode_state->motion_mode = (cmMotionMode)motion_mode;
+}
+
+void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool)
+{
+    gcode_state->tool = tool;
+}
+
+void cm_set_absolute_override(GCodeState_t *gcode_state, const uint8_t absolute_override)
+{
+    gcode_state->absolute_override = (cmAbsoluteOverride)absolute_override;
+    cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
+}
+
+void cm_set_model_linenum(const uint32_t linenum)
+{
+    cm.gm.linenum = linenum;				// you must first set the model line number,
+    nv_add_object((const char *)"n");	// then add the line number to the nv list
+}
+
+/*
+void cm_set_absolute_override(const GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
 	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
@@ -257,6 +280,7 @@ void cm_set_model_linenum(uint32_t linenum)
 	cm.gm.linenum = linenum;				// you must first set the model line number,
 	nv_add_object((const char *)"n");	// then add the line number to the nv list
 }
+*/
 
 /***********************************************************************************
  * COORDINATE SYSTEMS AND OFFSETS
