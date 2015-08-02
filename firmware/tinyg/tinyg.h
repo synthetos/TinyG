@@ -60,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.04	// started in on re-arranging the big table
+#define TINYG_FIRMWARE_BUILD        444.05	// re-arranged the config_app table to agree with g2
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

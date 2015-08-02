@@ -93,7 +93,14 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
  *	  rules are followed and do not check lengths or perform other validation.
  *
  *	NOTE: If the count of lines in cfgArray exceeds 255 you need to change index_t
- *	uint16_t in the config.h file.
+ *	      uint16_t in the config.h file.
+ *
+ *	!!! NOTE: !!! If you are developing around this table be aware that if you do not
+ *                change the firmware build number the EEPROM persistence from your
+ *                previous load may write erroneous values into the initialization variables
+ *                - making you think that there is something wrong with your code or this
+ *                table. It's best to always do a fresh load using {defa:1} after you flash,
+ *                each time you change this table (or change the firmware build number).
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -177,32 +184,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #if (MOTORS >= 6)
 	{ "pwr","pwr6",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (float *)&cs.null, 0},
-#endif
-
-	// Reports, tests, help, and messages
-	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,    sr_set,    (float *)&cs.null, 0 },	// status report object
-	{ "", "qr",  _f0, 0, qr_print_qr,  qr_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - planner buffers available
-	{ "", "qi",  _f0, 0, qr_print_qi,  qi_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers added to queue
-	{ "", "qo",  _f0, 0, qr_print_qo,  qo_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers removed from queue
-	{ "", "er",  _f0, 0, tx_print_nul, rpt_er,    set_nul,   (float *)&cs.null, 0 },	// invoke bogus exception report for testing
-	{ "", "qf",  _f0, 0, tx_print_nul, get_nul,   cm_run_qf, (float *)&cs.null, 0 },	// queue flush
-	{ "", "rx",  _f0, 0, tx_print_int, get_rx,    set_nul,   (float *)&cs.null, 0 },	// space in RX buffer
-	{ "", "msg", _f0, 0, tx_print_str, get_nul,   set_nul,   (float *)&cs.null, 0 },	// string for generic messages
-    { "", "alarm",_f0,0, tx_print_nul, cm_alrm,   cm_alrm,   (float *)&cs.null, 0 },	// trigger alarm
-    { "", "panic",_f0,0, tx_print_nul, cm_pnic,   cm_pnic,   (float *)&cs.null, 0 },	// trigger panic
-    { "", "shutd",_f0,0, tx_print_nul, cm_shutd,  cm_shutd,  (float *)&cs.null, 0 },	// trigger shutdown
-    { "", "clear",_f0,0, tx_print_nul, cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// GET "clear" to clear alarm state
-    { "", "clr",  _f0, 0, tx_print_nul,cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// synonym for "clear"
-//	{ "", "clc", _f0, 0, tx_print_nul, st_clc,    st_clc,    (float *)&cs.null, 0 },	// clear diagnostic step counters
-//	{ "", "sx",  _f0, 0, tx_print_nul, run_sx,    run_sx ,   (float *)&cs.null, 0 },	// send XOFF, XON test
-
-	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
-	{ "", "defa",_f0, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
-	{ "", "boot",_f0, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
-
-#ifdef __HELP_SCREENS
-	{ "", "help",_f0, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // prints config help screen
-	{ "", "h",   _f0, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // alias for "help"
 #endif
 
 	// Motor parameters
@@ -465,8 +446,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","sl",  _fipn, 0, cm_print_sl,  get_ui8,   set_ui8,    (float *)&cm.soft_limit_enable,	SOFT_LIMIT_ENABLE },
 	{ "sys","st",  _fipn, 0, sw_print_st,  get_ui8,   sw_set_st,  (float *)&sw.switch_type,			SWITCH_TYPE },
 	{ "sys","mt",  _fipn, 2, st_print_mt,  get_flt,   st_set_mt,  (float *)&st_cfg.motor_power_timeout,MOTOR_IDLE_TIMEOUT},
-	{ "",   "me",  _f0,   0, tx_print_str, st_set_me, st_set_me,  (float *)&cs.null, 0 },
-	{ "",   "md",  _f0,   0, tx_print_str, st_set_md, st_set_md,  (float *)&cs.null, 0 },
 /*
     // Spindle functions
     { "sys","spep",_fipn,0, cm_print_spep,get_ui8, set_01,   (float *)&spindle.enable_polarity,     SPINDLE_ENABLE_POLARITY },
@@ -516,12 +495,37 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "gc",  _f0,   0, tx_print_nul, gc_get_gc, gc_run_gc,(float *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)
-//	{ "",   "ms",  _fip, 0, cm_print_ms,  get_flt, set_flt, (float *)&cm.estd_segment_usec,	NOM_SEGMENT_USEC },
-//	{ "",   "ml",  _fipc,4, cm_print_ml,  get_flt, set_flu, (float *)&cm.min_segment_len,	MIN_LINE_LENGTH },
-//	{ "",   "ma",  _fipc,4, cm_print_ma,  get_flt, set_flu, (float *)&cm.arc_segment_len,	ARC_SEGMENT_LENGTH },
 	{ "",   "fd",  _fip, 0, tx_print_ui8, get_ui8, set_01,  (float *)&js.json_footer_depth,	JSON_FOOTER_DEPTH },
 
     // Actions and Reports
+    { "", "sr",  _f0, 0, sr_print_sr,  sr_get,    sr_set,    (float *)&cs.null, 0 },	// status report object
+    { "", "qr",  _f0, 0, qr_print_qr,  qr_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - planner buffers available
+    { "", "qi",  _f0, 0, qr_print_qi,  qi_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers added to queue
+    { "", "qo",  _f0, 0, qr_print_qo,  qo_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers removed from queue
+    { "", "er",  _f0, 0, tx_print_nul, rpt_er,    set_nul,   (float *)&cs.null, 0 },	// invoke bogus exception report for testing
+    { "", "qf",  _f0, 0, tx_print_nul, get_nul,   cm_run_qf, (float *)&cs.null, 0 },	// queue flush
+    { "", "rx",  _f0, 0, tx_print_int, get_rx,    set_nul,   (float *)&cs.null, 0 },	// space in RX buffer
+    { "", "msg", _f0, 0, tx_print_str, get_nul,   set_nul,   (float *)&cs.null, 0 },	// string for generic messages
+    { "", "alarm",_f0,0, tx_print_nul, cm_alrm,   cm_alrm,   (float *)&cs.null, 0 },	// trigger alarm
+    { "", "panic",_f0,0, tx_print_nul, cm_pnic,   cm_pnic,   (float *)&cs.null, 0 },	// trigger panic
+    { "", "shutd",_f0,0, tx_print_nul, cm_shutd,  cm_shutd,  (float *)&cs.null, 0 },	// trigger shutdown
+    { "", "clear",_f0,0, tx_print_nul, cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// GET "clear" to clear alarm state
+    { "", "clr",  _f0,0, tx_print_nul, cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// synonym for "clear"
+//	{ "", "clc", _f0, 0, tx_print_nul, st_clc,    st_clc,    (float *)&cs.null, 0 },	// clear diagnostic step counters
+//	{ "", "sx",  _f0, 0, tx_print_nul, run_sx,    run_sx ,   (float *)&cs.null, 0 },	// send XOFF, XON test
+	{ "", "me",  _f0, 0, tx_print_str, st_set_me, st_set_me, (float *)&cs.null, 0 },
+	{ "", "md",  _f0, 0, tx_print_str, st_set_md, st_set_md, (float *)&cs.null, 0 },
+
+#ifdef __ARM
+    { "", "flash",_f0,0, tx_print_nul, help_flash,hw_flash,  (float *)&cs.null,0 },
+#else
+    { "", "boot",_f0, 0, tx_print_nul, help_boot_loader,hw_run_boot, (float *)&cs.null,0 },
+#endif
+
+#ifdef __HELP_SCREENS
+    { "", "help",_f0, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // prints config help screen
+    { "", "h",   _f0, 0, tx_print_nul, help_config, set_nul, (float *)&cs.null,0 },  // alias for "help"
+#endif
 
 	// User defined data groups
 	{ "uda","uda0", _fip, 0, tx_print_int, get_data, set_data,(float *)&cfg.user_data_a[0], USER_DATA_A0 },

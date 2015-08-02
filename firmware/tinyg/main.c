@@ -30,6 +30,7 @@
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
+#include "spindle.h"
 #include "network.h"
 #include "switch.h"
 #include "test.h"
@@ -131,20 +132,20 @@ void application_init_machine(void)
 {
     cm.machine_state = MACHINE_INITIALIZING;
 
-    stepper_init();                 // stepper subsystem (must precede gpio_init() on AVR)
-    encoder_init();                 // virtual encoders
-	switch_init();					// switches
-//    gpio_init();                    // inputs and outputs
-    pwm_init();                     // pulse width modulation drivers
-    planner_init();                 // motion planning subsystem
-    canonical_machine_init();       // canonical machine
+    stepper_init();                     // stepper subsystem (must precede gpio_init() on AVR)
+    encoder_init();                     // virtual encoders
+	switch_init();					    // switches
+//    gpio_init();                      // inputs and outputs
+    pwm_init();                         // pulse width modulation drivers
+    planner_init();                     // motion planning subsystem
+    canonical_machine_init();           // canonical machine
 }
 
 void application_init_startup(void)
 {
     // start the application
     controller_init(STD_IN, STD_OUT, STD_ERR);  // should be first startup init (requires xio_init())
-	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
+	network_init();	//++++ REMOVE LATER	 		// reset std devices if required	- must follow config_init()
     config_init();					            // apply the config settings from persistence
     canonical_machine_reset();
     spindle_init();                   // should be after PWM and canonical machine inits and config_init()
