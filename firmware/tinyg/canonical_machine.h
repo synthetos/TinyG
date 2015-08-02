@@ -112,6 +112,17 @@ typedef enum {				        // feedhold_state machine
 	FEEDHOLD_END_HOLD				// end hold (transient state to OFF)
 } cmFeedholdState;
 
+typedef enum {				        // feed override state machine
+    MFO_OFF = 0,
+    MFO_REQUESTED,
+    MFO_SYNC
+} cmOverrideState;
+
+typedef enum {				        // master queue flush state machine
+    FLUSH_OFF = 0,				    // no queue flush in effect
+    FLUSH_REQUESTED,                // flush has been requested but not started yet
+} cmQueueFlushState;
+
 typedef enum {				        // applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1,				// machine is homed (1=true)
@@ -123,6 +134,11 @@ typedef enum {					    // applies to cm.probe_state
 	PROBE_SUCCEEDED = 1,			// probe was triggered, cm.probe_results has position
 	PROBE_WAITING					// probe is waiting to be started
 } cmProbeState;
+
+typedef enum {
+    SAFETY_INTERLOCK_ENGAGED = 0,   // meaning the interlock input is CLOSED (low)
+    SAFETY_INTERLOCK_DISENGAGED
+} cmSafetyState;
 
 /* The difference between NextAction and MotionMode is that NextAction is
  * used by the current block, and may carry non-modal commands, whereas
@@ -511,20 +527,23 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 
 	// system group settings
 	float junction_acceleration;		// centripetal acceleration max for cornering
+//    float junction_aggression;		    // how aggressively will the machine corner? 1.0 or so is about the upper limit
 	float chordal_tolerance;			// arc chordal accuracy setting in mm
-	uint8_t soft_limit_enable;
+    uint8_t soft_limit_enable;
+//    bool limit_enable;                  // true to enable limit switches (disabled is same as override)
+//    bool safety_interlock_enable;       // true to enable safety interlock system
 
 	// hidden system settings
-	float min_segment_len;				// line drawing resolution in mm
+//	float min_segment_len;				// line drawing resolution in mm
+//	float estd_segment_usec;			// approximate segment time in microseconds
 	float arc_segment_len;				// arc drawing resolution in mm
-	float estd_segment_usec;			// approximate segment time in microseconds
 
 	// gcode power-on default settings - defaults are not the same as the gm state
-	uint8_t default_coord_system;				// G10 active coordinate system default
-	uint8_t default_select_plane;				// G17,G18,G19 reset default
-	uint8_t default_units_mode;					// G20,G21 reset default
-	uint8_t default_path_control;				// G61,G61.1,G64 reset default
-	uint8_t default_distance_mode;				// G90,G91 reset default
+	cmCoordSystem default_coord_system;     // G10 active coordinate system default
+	cmCanonicalPlane default_select_plane;  // G17,G18,G19 reset default
+	cmUnitsMode default_units_mode;         // G20,G21 reset default
+	cmPathControl default_path_control;     // G61,G61.1,G64 reset default
+	cmDistanceMode default_distance_mode;   // G90,G91 reset default
 
 	// coordinate systems and offsets
 	float offset[COORDS+1][AXES];		// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
@@ -533,14 +552,30 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	cfgAxis_t a[AXES];
 
 	/**** Runtime variables (PRIVATE) ****/
-
-//	uint8_t combined_state;				// stat: combination of states for display purposes
+/*
 	uint8_t machine_state;				// macs: machine/cycle/motion is the actual machine state
 	uint8_t cycle_state;				// cycs
 	uint8_t motion_state;				// momo
 	uint8_t hold_state;					// hold: feedhold sub-state machine
 	uint8_t homing_state;				// home: homing cycle sub-state machine
 	uint8_t homed[AXES];				// individual axis homing flags
+*/
+    // global state variables and requestors
+
+    cmMachineState machine_state;	    // macs: machine/cycle/motion is the actual machine state
+    cmCycleState cycle_state;           // cycs
+    cmMotionState motion_state;         // momo
+    cmFeedholdState hold_state;         // hold: feedhold state machine
+    cmOverrideState mfo_state;          // feed override state machine
+    cmQueueFlushState queue_flush_state;// master queue flush state machine
+
+    uint8_t safety_interlock_disengaged;// set non-zero to start interlock processing (value is input number)
+    uint8_t safety_interlock_reengaged; // set non-zero to end interlock processing (value is input number)
+    cmSafetyState safety_interlock_state;// safety interlock state
+    uint32_t esc_boot_timer;            // timer for Electronic Speed Control (Spindle electronics) to boot
+
+    cmHomingState homing_state;			// home: homing cycle sub-state machine
+    uint8_t homed[AXES];				// individual axis homing flags
 
 	uint8_t probe_state;				// 1==success, 0==failed
 	float probe_results[AXES];			// probing results
@@ -548,17 +583,21 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	uint8_t	g28_flag;					// true = complete a G28 move
 	uint8_t	g30_flag;					// true = complete a G30 move
 	uint8_t deferred_write_flag;		// G10 data has changed (e.g. offsets) - flag to persist them
+
 	uint8_t feedhold_requested;			// feedhold character has been received
 	uint8_t queue_flush_requested;		// queue flush character has been received
 	uint8_t cycle_start_requested;		// cycle start character has been received (flag to end feedhold)
 	float jogging_dest;					// jogging direction as a relative move from current position
-	struct GCodeState *am;				// active Gcode model is maintained by state management
+
+//	bool end_hold_requested;			//
+//	uint8_t limit_requested;            // set non-zero to request limit switch processing (value is input number)
+//	uint8_t shutdown_requested;         // set non-zero to request shutdown in support of external estop (value is input number)
 
 	/**** Model states ****/
+	GCodeState_t *am;                   // active Gcode model is maintained by state management
 	GCodeState_t  gm;					// core gcode model state
 	GCodeStateX_t gmx;					// extended gcode model state
 	GCodeInput_t  gn;					// gcode input values - transient
-//	GCodeInput_t  gf;					// gcode input flags - transient
 	GCodeFlags_t  gf;					// gcode input flags - transient
 
 	magic_t magic_end;
@@ -577,13 +616,14 @@ extern cmSingleton_t cm;				// canonical machine controller singleton
 /*--- Internal functions and helpers ---*/
 
 // Model state getters and setters
-uint8_t cm_get_combined_state(void);
-uint8_t cm_get_machine_state(void);
-uint8_t cm_get_cycle_state(void);
-uint8_t cm_get_motion_state(void);
-uint8_t cm_get_hold_state(void);
-uint8_t cm_get_homing_state(void);
+cmCombinedState cm_get_combined_state(void);
+cmMachineState cm_get_machine_state(void);
+cmCycleState cm_get_cycle_state(void);
+cmMotionState cm_get_motion_state(void);
+cmFeedholdState cm_get_hold_state(void);
+cmHomingState cm_get_homing_state(void);
 uint8_t cm_get_jogging_state(void);
+
 void cm_set_motion_state(uint8_t motion_state);
 float cm_get_axis_jerk(uint8_t axis);
 void cm_set_axis_jerk(uint8_t axis, float jerk);

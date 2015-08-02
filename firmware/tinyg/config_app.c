@@ -180,22 +180,21 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 
 	// Reports, tests, help, and messages
-	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,  sr_set,   (float *)&cs.null, 0 },	// status report object
-	{ "", "qr",  _f0, 0, qr_print_qr,  qr_get,  set_nul,  (float *)&cs.null, 0 },	// queue report - planner buffers available
-	{ "", "qi",  _f0, 0, qr_print_qi,  qi_get,  set_nul,  (float *)&cs.null, 0 },	// queue report - buffers added to queue
-	{ "", "qo",  _f0, 0, qr_print_qo,  qo_get,  set_nul,  (float *)&cs.null, 0 },	// queue report - buffers removed from queue
-	{ "", "er",  _f0, 0, tx_print_nul, rpt_er,  set_nul,  (float *)&cs.null, 0 },	// invoke bogus exception report for testing
-	{ "", "qf",  _f0, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
-	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
-	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
+	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,    sr_set,    (float *)&cs.null, 0 },	// status report object
+	{ "", "qr",  _f0, 0, qr_print_qr,  qr_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - planner buffers available
+	{ "", "qi",  _f0, 0, qr_print_qi,  qi_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers added to queue
+	{ "", "qo",  _f0, 0, qr_print_qo,  qo_get,    set_nul,   (float *)&cs.null, 0 },	// queue report - buffers removed from queue
+	{ "", "er",  _f0, 0, tx_print_nul, rpt_er,    set_nul,   (float *)&cs.null, 0 },	// invoke bogus exception report for testing
+	{ "", "qf",  _f0, 0, tx_print_nul, get_nul,   cm_run_qf, (float *)&cs.null, 0 },	// queue flush
+	{ "", "rx",  _f0, 0, tx_print_int, get_rx,    set_nul,   (float *)&cs.null, 0 },	// space in RX buffer
+	{ "", "msg", _f0, 0, tx_print_str, get_nul,   set_nul,   (float *)&cs.null, 0 },	// string for generic messages
     { "", "alarm",_f0,0, tx_print_nul, cm_alrm,   cm_alrm,   (float *)&cs.null, 0 },	// trigger alarm
     { "", "panic",_f0,0, tx_print_nul, cm_pnic,   cm_pnic,   (float *)&cs.null, 0 },	// trigger panic
     { "", "shutd",_f0,0, tx_print_nul, cm_shutd,  cm_shutd,  (float *)&cs.null, 0 },	// trigger shutdown
     { "", "clear",_f0,0, tx_print_nul, cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// GET "clear" to clear alarm state
     { "", "clr",  _f0, 0, tx_print_nul,cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// synonym for "clear"
-//	{ "", "clc", _f0, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
-//	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
-//	{ "", "sx",  _f0, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
+//	{ "", "clc", _f0, 0, tx_print_nul, st_clc,    st_clc,    (float *)&cs.null, 0 },	// clear diagnostic step counters
+//	{ "", "sx",  _f0, 0, tx_print_nul, run_sx,    run_sx ,   (float *)&cs.null, 0 },	// send XOFF, XON test
 
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_f0, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen

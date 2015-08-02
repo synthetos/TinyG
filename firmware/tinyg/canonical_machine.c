@@ -159,11 +159,11 @@ void cm_set_motion_state(uint8_t motion_state)
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
-uint8_t cm_get_machine_state() { return cm.machine_state;}
-uint8_t cm_get_cycle_state() { return cm.cycle_state;}
-uint8_t cm_get_motion_state() { return cm.motion_state;}
-uint8_t cm_get_hold_state() { return cm.hold_state;}
-uint8_t cm_get_homing_state() { return cm.homing_state;}
+cmMachineState  cm_get_machine_state() { return cm.machine_state;}
+cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
+cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
+cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
+cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -197,19 +197,19 @@ cmCombinedState cm_get_combined_state()
                         case MOTION_RUN:      { return (COMBINED_RUN); }
                         case MOTION_HOLD:     { return (COMBINED_HOLD); }
                         default: {
-                            // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() mots bad");    // "mots has impossible value"
+                            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() mots bad");    // "mots has impossible value"
                             return (COMBINED_PANIC);
                         }
                     }
                 }
                 default: {
-                    // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() cycs bad");    // "cycs has impossible value"
+                    cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() cycs bad");    // "cycs has impossible value"
                     return (COMBINED_PANIC);
                 }
             }
         }
         default: {
-            // cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
+            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
             return (COMBINED_PANIC);
         }
     }
