@@ -147,9 +147,7 @@ void application_init_startup(void)
 	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
     config_init();					            // apply the config settings from persistence
     canonical_machine_reset();
-//	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
-//	planner_init();	//++++ REMOVE				// motion planning subsystem
-//    spindle_init();                   // should be after PWM and canonical machine inits and config_init()
+    spindle_init();                   // should be after PWM and canonical machine inits and config_init()
 //    spindle_reset();
 
 #ifdef __AVR

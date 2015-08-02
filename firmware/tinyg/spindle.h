@@ -28,24 +28,17 @@
 #ifndef SPINDLE_H_ONCE
 #define SPINDLE_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*
  * Global Scope Functions
  */
 
-void cm_spindle_init();
+void spindle_init(void);
+void spindle_reset(void);
 
 stat_t cm_set_spindle_speed(float speed);			// S parameter
 void cm_exec_spindle_speed(float speed);			// callback for above
 
 stat_t cm_spindle_control(uint8_t spindle_mode);	// M3, M4, M5 integrated spindle control
 void cm_exec_spindle_control(uint8_t spindle_mode);	// callback for above
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	// End of include guard: SPINDLE_H_ONCE

@@ -33,23 +33,30 @@
 #include "hardware.h"
 #include "pwm.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 static void _exec_spindle_control(float *value, bool *flags);
 static void _exec_spindle_speed(float *value, bool *flags);
 
 /*
- * cm_spindle_init()
+ * spindle_init()
+ * spindle_reset() - stop spindle, set speed to zero, and reset values
  */
-void cm_spindle_init()
+void spindle_init()
 {
 	if( pwm.c[PWM_1].frequency < 0 )
 		pwm.c[PWM_1].frequency = 0;
 
     pwm_set_freq(PWM_1, pwm.c[PWM_1].frequency);
     pwm_set_duty(PWM_1, pwm.c[PWM_1].phase_off);
+}
+
+void spindle_reset()
+{
+/*
+    float value[AXES] = { 0,0,0,0,0,0 };        // set spindle speed to zero
+    bool flags[] = { 1,0,0,0,0,0 };
+    _exec_spindle_speed(value, flags);
+    cm_spindle_off_immediate();                 // turn spindle off
+*/
 }
 
 /*
@@ -155,7 +162,3 @@ static void _exec_spindle_speed(float *value, bool *flags)
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running
 }
-
-#ifdef __cplusplus
-}
-#endif
