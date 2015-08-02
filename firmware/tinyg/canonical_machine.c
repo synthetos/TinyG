@@ -536,6 +536,7 @@ void cm_set_model_target(const float target[], const bool flags[])
  *	value is < -1000000 (negative one million). This allows a single end to be tested w/the other
  *	disabled, should that requirement ever arise.
  */
+/*
 stat_t cm_test_soft_limits(float target[])
 {
 	if (cm.soft_limit_enable == true) {
@@ -555,7 +556,7 @@ stat_t cm_test_soft_limits(float target[])
 	}
 	return (STAT_OK);
 }
-/*
+*/
 static stat_t _finalize_soft_limits(const stat_t status)
 {
     cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;     // cancel motion
@@ -567,10 +568,10 @@ stat_t cm_test_soft_limits(const float target[])
 {
     if (cm.soft_limit_enable == true) {
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-            if (cm.homed[axis] != true) continue;								// skip axis if not homed
-            if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;	// skip axis if identical
-            if (fabs(cm.a[axis].travel_min) > DISABLE_SOFT_LIMIT) continue;		// skip min test if disabled
-            if (fabs(cm.a[axis].travel_max) > DISABLE_SOFT_LIMIT) continue;		// skip max test if disabled
+            if (cm.homed[axis] != true) { continue; }                               // skip axis if not homed
+            if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) { continue; }  // skip axis if identical
+            if (fabs(cm.a[axis].travel_min) > DISABLE_SOFT_LIMIT) { continue; }     // skip min test if disabled
+            if (fabs(cm.a[axis].travel_max) > DISABLE_SOFT_LIMIT) { continue; }     // skip max test if disabled
 
             if (target[axis] < cm.a[axis].travel_min) {
                 return (_finalize_soft_limits(STAT_SOFT_LIMIT_EXCEEDED_XMIN + 2*axis));
@@ -582,7 +583,6 @@ stat_t cm_test_soft_limits(const float target[])
     }
     return (STAT_OK);
 }
-*/
 
 /*************************************************************************
  * CANONICAL MACHINING FUNCTIONS

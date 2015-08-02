@@ -653,7 +653,7 @@ void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
 stat_t cm_deferred_write_callback(void);
 void cm_set_model_target(const float target[], const bool flags[]);
-stat_t cm_test_soft_limits(float target[]);
+stat_t cm_test_soft_limits(const float target[]);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
 
