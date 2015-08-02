@@ -177,6 +177,7 @@ Stepper<kSocket6_StepPinNumber,
  ************************************************************************************/
 /*
  * stepper_init() - initialize stepper motor subsystem
+ * stepper_reset() - reset stepper motor subsystem
  *
  *	Notes:
  *	  - This init requires sys_init() to be run beforehand
@@ -199,6 +200,7 @@ Stepper<kSocket6_StepPinNumber,
 void stepper_init()
 {
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
+	memset(&st_pre, 0, sizeof(st_pre));			// clear all values, pointers and status
 	stepper_init_assertions();
 
 #ifdef __AVR
@@ -232,15 +234,19 @@ void stepper_init()
 	TIMER_EXEC.CTRLB = EXEC_TIMER_WGMODE;		// waveform mode
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
-
-	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;
-	st_reset();									// reset steppers to known state
 #endif // __AVR
 
 #ifdef __ARM
-	// setup DDA timer (see FOOTNOTE)
-	dda_timer.setInterrupts(kInterruptOnOverflow | kInterruptOnMatchA | kInterruptPriorityHighest);
-	dda_timer.setDutyCycleA(0.25);
+    // setup DDA timer
+    // Longer duty cycles stretch ON pulses but 75% is about the upper limit and about
+    // optimal for 200 KHz DDA clock before the time in the OFF cycle is too short.
+    // If you need more pulse width you need to drop the DDA clock rate
+#ifdef __NEW_DDA_ISR
+    dda_timer.setInterrupts(kInterruptOnOverflow | kInterruptPriorityHighest);
+#else
+    dda_timer.setInterrupts(kInterruptOnOverflow | kInterruptOnMatchA | kInterruptPriorityHighest);
+    dda_timer.setDutyCycleA(1.0 - 0.75);		// This is a 75% duty cycle on the ON step part
+#endif
 
 	// setup DWELL timer
 	dwell_timer.setInterrupts(kInterruptOnOverflow | kInterruptPriorityHighest);
@@ -257,8 +263,31 @@ void stepper_init()
 		_set_motor_power_level(motor, st_cfg.mot[motor].power_level_scaled);
 		st_run.mot[motor].power_level_dynamic = st_cfg.mot[motor].power_level_scaled;
 	}
-//	motor_1.vref = 0.25; // example of how to set vref duty cycle directly. Freq already set to 500000 Hz.
 #endif // __ARM
+}
+
+/*
+ * stepper_reset() - reset stepper internals
+ *
+ * Used to initialize stepper and also to halt movement
+ */
+
+void stepper_reset()
+{
+#ifdef __ARM
+    dda_timer.stop();                                   // stop all movement
+    dwell_timer.stop();
+#endif
+    st_run.dda_ticks_downcount = 0;                     // signal the runtime is not busy
+    st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;    // set to EXEC or it won't restart
+
+	for (uint8_t motor=0; motor<MOTORS; motor++) {
+		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
+        st_pre.mot[motor].direction = STEP_INITIAL_DIRECTION;
+		st_run.mot[motor].substep_accumulator = 0;      // will become max negative during per-motor setup;
+		st_pre.mot[motor].corrected_steps = 0;          // diagnostic only - no action effect
+	}
+ 	mp_set_steps_to_runtime_position();                 // reset encoder to agree with the above
 }
 
 /*
@@ -300,26 +329,12 @@ uint8_t st_runtime_isbusy()
 }
 
 /*
- * st_reset() - reset stepper internals
- */
-
-void st_reset()
-{
-	for (uint8_t motor=0; motor<MOTORS; motor++) {
-		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
-		st_run.mot[motor].substep_accumulator = 0;	// will become max negative during per-motor setup;
-		st_pre.mot[motor].corrected_steps = 0;		// diagnostic only - no action effect
-	}
-	mp_set_steps_to_runtime_position();
-}
-
-/*
  * st_clc() - clear counters
  */
 
 stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
 {
-	st_reset();
+	stepper_reset();
 	return(STAT_OK);
 }
 
@@ -985,12 +1000,23 @@ static void _load_move()
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
+/*
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_EXEC) {
 		return (cm_hard_alarm(STAT_INTERNAL_ERROR));
 	} else if (isinf(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE));	// never supposed to happen
 	} else if (isnan(segment_time)) { return (cm_hard_alarm(STAT_PREP_LINE_MOVE_TIME_IS_NAN));		// never supposed to happen
 	} else if (segment_time < EPSILON) { return (STAT_MINIMUM_TIME_MOVE);
 	}
+*/
+    if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_EXEC) {     // never supposed to happen
+        return (cm_panic(STAT_INTERNAL_ERROR, "st_prep_line() prep sync error"));
+    } else if (isinf(segment_time)) {                           // never supposed to happen
+        return (cm_panic(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE, "st_prep_line()"));
+    } else if (isnan(segment_time)) {                           // never supposed to happen
+        return (cm_panic(STAT_PREP_LINE_MOVE_TIME_IS_NAN, "st_prep_line()"));
+    } else if (segment_time < EPSILON) {
+        return (STAT_MINIMUM_TIME_MOVE);
+    }
 	// setup segment parameters
 	// - dda_ticks is the integer number of DDA clock ticks needed to play out the segment
 	// - ticks_X_substeps is the maximum depth of the DDA accumulator (as a negative number)
@@ -1005,7 +1031,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	for (uint8_t motor=0; motor<MOTORS; motor++) {	// I want to remind myself that this is motors, not axes
 
 		// Skip this motor if there are no new steps. Leave all other values intact.
-		if (fp_ZERO(travel_steps[motor])) { 
+		if (fp_ZERO(travel_steps[motor])) {
             st_pre.mot[motor].substep_increment = 0; continue;
         }
 
@@ -1156,7 +1182,7 @@ static void _set_motor_steps_per_unit(nvObj_t *nv)
 	uint8_t m = _get_motor(nv);
 //	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
     st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
-	st_reset();
+	stepper_reset();
 }
 
 /* PER-MOTOR FUNCTIONS

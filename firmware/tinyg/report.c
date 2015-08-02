@@ -54,8 +54,9 @@ rxSingleton_t rx;
  * WARNING: Do not call this function from MED or HI interrupts (LO is OK)
  *			or there is a potential for deadlock in the TX buffer.
  */
-stat_t rpt_exception(uint8_t status)
+stat_t rpt_exception(stat_t status, const char *msg)
 {
+/*
 	if (status != STAT_OK) {	// makes it possible to call exception reports w/o checking status value
 		if (js.json_syntax == JSON_SYNTAX_RELAXED) {
 			printf_P(PSTR("{er:{fb:%0.2f,st:%d,msg:\"%s\"}}\n"),
@@ -66,6 +67,19 @@ stat_t rpt_exception(uint8_t status)
 		}
 	}
 	return (status);			// makes it possible to inline, e.g: return(rpt_exception(status));
+*/
+	if (status != STAT_OK) { // makes it possible to call exception reports w/o checking status value
+    	if (js.json_syntax == JSON_SYNTAX_RELAXED) {
+        	sprintf(global_string_buf, "{er:{fb:%0.2f,st:%d,msg:\"%s - %s\"}}\n",
+        	TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+        } else {
+        	sprintf(global_string_buf, "{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s - %s\"}}\n",
+        	TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+    	}
+//    	xio_writeline(global_string_buf);
+    	printf("%s", global_string_buf);
+	}
+	return (status);			// makes it possible to inline, e.g: return(rpt_exception(status));
 }
 
 /*
@@ -73,7 +87,7 @@ stat_t rpt_exception(uint8_t status)
  */
 stat_t rpt_er(nvObj_t *nv)
 {
-	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT)); // bogus exception report for testing
+	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT, "bogus exception report")); // bogus exception report for testing
 }
 
 /**** Application Messages *********************************************************
@@ -190,7 +204,8 @@ void sr_init_status_report()
 		sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
 		nv->value = nv_get_index((const char *)"", sr_defaults[i]);// load the index for the SR element
 		if (nv->value == NO_MATCH) {
-			rpt_exception(STAT_BAD_STATUS_REPORT_SETTING);	// trap mis-configured profile settings
+            // trap mis-configured profile settings
+            rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, "sr_init_status_report() encountered bad SR setting");
 			return;
 		}
 		if (_is_stat(nv) == true)
@@ -335,8 +350,10 @@ static stat_t _populate_unfiltered_status_report()
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);			//...or here.
 
-		if ((nv = nv->nx) == NULL)
-			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
+		if ((nv = nv->nx) == NULL) {
+    		// should never be NULL unless SR length exceeds available buffer array
+    		return (cm_panic(STAT_BUFFER_FULL_FATAL, "_populate_unfiltered_status_report() sr link NULL"));
+		}
 	}
 	return (STAT_OK);
 }

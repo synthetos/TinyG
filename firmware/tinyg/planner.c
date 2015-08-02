@@ -81,6 +81,7 @@ static stat_t _exec_command(mpBuf_t *bf);
 
 /*
  * planner_init()
+ * planner_reset()
  */
 void planner_init()
 {
@@ -89,6 +90,14 @@ void planner_init()
 	memset(&mm, 0, sizeof(mm));	    // clear all values, pointers and status
 	planner_init_assertions();
 	mp_init_buffers();
+
+    // reasonable starting values
+//    mb.mfo_factor = 1.00;
+}
+
+void planner_reset()
+{
+    planner_init();
 }
 
 /*
@@ -109,6 +118,15 @@ stat_t planner_test_assertions()
 	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
 	return (STAT_OK);
+}
+
+/*
+ * mp_halt_runtime() - stop runtime movement immediately
+ */
+void mp_halt_runtime()
+{
+    stepper_reset();                // stop the steppers and dwells
+    planner_reset();                // reset the planner queues
 }
 
 /*
@@ -194,10 +212,10 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 	mpBuf_t *bf;
 
 	// Never supposed to fail as buffer availability was checked upstream in the controller
-	if ((bf = mp_get_write_buffer()) == NULL) {
-		cm_hard_alarm(STAT_BUFFER_FULL_FATAL);
-		return;
-	}
+    if ((bf = mp_get_write_buffer()) == NULL) {
+        cm_panic(STAT_FAILED_GET_PLANNER_BUFFER, "mp_queue_command()");
+        return;
+    }
 
 	bf->move_type = MOVE_TYPE_COMMAND;
 	bf->bf_func = _exec_command;						// callback to planner queue exec function
@@ -236,9 +254,9 @@ stat_t mp_dwell(float seconds)
 {
 	mpBuf_t *bf;
 
-	if ((bf = mp_get_write_buffer()) == NULL)			// get write buffer or fail
-		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// not ever supposed to fail
-
+    if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
+        return(cm_panic(STAT_FAILED_GET_PLANNER_BUFFER, "mp_dwell()")); // not ever supposed to fail
+    }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes
 	bf->move_state = MOVE_NEW;
@@ -375,7 +393,8 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 		mb.w = w->nx;
 		return (w);
 	}
-	rpt_exception(STAT_FAILED_TO_GET_PLANNER_BUFFER);
+    // The no buffer condition always causes a panic - invoked by the caller
+    rpt_exception(STAT_FAILED_TO_GET_PLANNER_BUFFER, "mp_get_write_buffer()");
 	return (NULL);
 }
 

@@ -34,11 +34,7 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 // execute routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
@@ -68,9 +64,9 @@ stat_t mp_exec_move()
 	if (bf->move_type == MOVE_TYPE_ALINE) { 			// cycle auto-start for lines only
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
-	if (bf->bf_func == NULL)
-        return(cm_hard_alarm(STAT_INTERNAL_ERROR));     // never supposed to get here
-
+    if (bf->bf_func == NULL) {
+        return(cm_panic(STAT_INTERNAL_ERROR, "mp_exec_move()")); // never supposed to get here
+    }
 	return (bf->bf_func(bf)); 							// run the move callback in the planner buffer
 }
 
@@ -206,8 +202,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if (mr.section == SECTION_HEAD) { status = _exec_aline_head();} else
 	if (mr.section == SECTION_BODY) { status = _exec_aline_body();} else
 	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else
-	if (mr.move_state == MOVE_SKIP_BLOCK) { status = STAT_OK;}
-	else { return(cm_hard_alarm(STAT_INTERNAL_ERROR));}	// never supposed to get here
+	if (mr.move_state == MOVE_SKIP_BLOCK) { status = STAT_OK;} else
+	{ return(cm_panic(STAT_INTERNAL_ERROR, "exec_aline()"));}	// never supposed to get here
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine
 	// Catch the feedhold request and start the planning the hold

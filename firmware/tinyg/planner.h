@@ -273,9 +273,11 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
  */
 
 void planner_init(void);
+void planner_reset(void);
 void planner_init_assertions(void);
 stat_t planner_test_assertions(void);
 
+void mp_halt_runtime(void);
 void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);

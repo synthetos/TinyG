@@ -60,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.01	// g2sync - initial commit
+#define TINYG_FIRMWARE_BUILD        444.02	// g2sync - ported in g2 Alarm, Shutdown and Panic
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

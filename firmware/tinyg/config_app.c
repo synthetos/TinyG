@@ -45,10 +45,6 @@
 #include "network.h"
 #include "xio.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*** structures ***/
 
 cfgParameters_t cfg; 				// application specific configuration parameters
@@ -192,8 +188,13 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f0, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// space in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
+    { "", "alarm",_f0,0, tx_print_nul, cm_alrm,   cm_alrm,   (float *)&cs.null, 0 },	// trigger alarm
+    { "", "panic",_f0,0, tx_print_nul, cm_pnic,   cm_pnic,   (float *)&cs.null, 0 },	// trigger panic
+    { "", "shutd",_f0,0, tx_print_nul, cm_shutd,  cm_shutd,  (float *)&cs.null, 0 },	// trigger shutdown
+    { "", "clear",_f0,0, tx_print_nul, cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// GET "clear" to clear alarm state
+    { "", "clr",  _f0, 0, tx_print_nul,cm_clr,    cm_clr,    (float *)&cs.null, 0 },	// synonym for "clear"
 //	{ "", "clc", _f0, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
-	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
+//	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 //	{ "", "sx",  _f0, 0, tx_print_nul, run_sx,  run_sx ,  (float *)&cs.null, 0 },	// send XOFF, XON test
 
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
@@ -998,7 +999,3 @@ void cfg_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
 void cfg_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

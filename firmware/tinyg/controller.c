@@ -215,7 +215,7 @@ static stat_t _command_dispatch()
 			if (cfg.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
 			} else {
-				rpt_exception(STAT_EOF);				// not really an exception
+				rpt_exception(STAT_EOF, "EOF");			// not really an exception
 			}
 			tg_reset_source();							// reset to default source
 		}
@@ -395,34 +395,25 @@ static stat_t _sync_to_planner()
 }
 
 /*
-static stat_t _sync_to_time()
-{
-	if (cs.sync_to_time_time == 0) {		// initial pass
-		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
-		return (STAT_OK);
-	}
-	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
-		return (STAT_EAGAIN);
-	}
-	return (STAT_OK);
-}
-*/
-/*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
 static stat_t _limit_switch_handler(void)
 {
-	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
-
-	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
-	return (STAT_OK);
+    if (cm_get_machine_state() == MACHINE_ALARM) {
+        return (STAT_NOOP);
+    }
+    if (get_limit_switch_thrown()) {
+        cm_alarm(STAT_LIMIT_SWITCH_HIT, "limit hit");
+        //      return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
+    }
+    return (STAT_OK);
 }
 
 /*
  * _system_assertions() - check memory integrity and other assertions
  */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
+//#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, "assertion failed"));
 
 stat_t _system_assertions()
 {

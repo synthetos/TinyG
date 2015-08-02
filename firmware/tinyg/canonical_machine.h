@@ -632,9 +632,24 @@ void canonical_machine_reset(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-stat_t cm_hard_alarm(stat_t status);			// enter hard alarm state. returns same status code
-stat_t cm_soft_alarm(stat_t status);			// enter soft alarm state. returns same status code
-stat_t cm_clear(nvObj_t *nv);
+// Alarms and state management
+
+//stat_t cm_hard_alarm(stat_t status);			// enter hard alarm state. returns same status code
+//stat_t cm_soft_alarm(stat_t status);			// enter soft alarm state. returns same status code
+//stat_t cm_clear(nvObj_t *nv);
+
+stat_t cm_alrm(nvObj_t *nv);                                    // trigger alarm from command input
+stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutdown from command input
+stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
+stat_t cm_clr(nvObj_t *nv);                                     // clear alarm and shutdown from command input
+void cm_clear(void);                                            // raw clear command
+void cm_parse_clear(const char *s);                             // parse gcode for M30 or M2 clear condition
+stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
+void cm_halt_all(void);                                         // halt motion, spindle and coolant
+void cm_halt_motion(void);                                      // halt motion (immediate stop) but not spindle & other IO
+stat_t cm_alarm(const stat_t status, const char *msg);          // enter alarm state - preserve Gcode state
+stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdown state - dump all state
+stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
 // Representation (4.3.3)
 stat_t cm_select_plane(uint8_t plane);							                // G17, G18, G19
@@ -642,6 +657,9 @@ stat_t cm_set_units_mode(uint8_t mode);							                // G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						                // G90, G91
 stat_t cm_set_arc_distance_mode(uint8_t mode);						            // G90, G91
 stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], bool flags[]);// G10 L2
+//stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
+//                            const uint8_t L_word,
+//                            const float offset[], const bool flag[]);
 
 void cm_set_position(uint8_t axis, float position);				                // set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], bool flags[]);	                // G28.3
