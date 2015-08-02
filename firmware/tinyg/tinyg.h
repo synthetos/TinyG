@@ -60,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        443.04	// g2sync - functional changes to canonical_machine - moved inverse time mode clear to gcode parser; do not convert work position units for ABC axes; copy position to target in set target;
+#define TINYG_FIRMWARE_BUILD        444.01	// g2sync - initial commit
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
