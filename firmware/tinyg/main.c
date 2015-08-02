@@ -144,10 +144,11 @@ void application_init_startup(void)
 {
     // start the application
     controller_init(STD_IN, STD_OUT, STD_ERR);  // should be first startup init (requires xio_init())
+	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
     config_init();					            // apply the config settings from persistence
     canonical_machine_reset();
-	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
-	planner_init();	//++++ REMOVE				// motion planning subsystem
+//	network_init();	//++++ REMOVE				// reset std devices if required	- must follow config_init()
+//	planner_init();	//++++ REMOVE				// motion planning subsystem
 //    spindle_init();                   // should be after PWM and canonical machine inits and config_init()
 //    spindle_reset();
 

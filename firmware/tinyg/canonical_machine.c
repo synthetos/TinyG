@@ -137,33 +137,6 @@ static int8_t _get_axis_type(const index_t index);
  * Internal getters and setters      *
  * Canonical Machine State functions *
  *************************************/
-/*
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-void cm_set_motion_state(uint8_t motion_state)
-{
-    cm.motion_state = motion_state;
-
-    switch (motion_state) {
-        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
-        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
-        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
-    }
-}
-
-/*
- * cm_get_machine_state()
- * cm_get_motion_state()
- * cm_get_cycle_state()
- * cm_get_hold_state()
- * cm_get_homing_state()
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-cmMachineState  cm_get_machine_state() { return cm.machine_state;}
-cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
-cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
-cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
-cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -212,6 +185,34 @@ cmCombinedState cm_get_combined_state()
             cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
             return (COMBINED_PANIC);
         }
+    }
+}
+
+/*
+ * cm_get_machine_state()
+ * cm_get_motion_state()
+ * cm_get_cycle_state()
+ * cm_get_hold_state()
+ * cm_get_homing_state()
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+cmMachineState  cm_get_machine_state() { return cm.machine_state;}
+cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
+cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
+cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
+cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
+
+/*
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+void cm_set_motion_state(uint8_t motion_state)
+{
+    cm.motion_state = motion_state;
+
+    switch (motion_state) {
+        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
+        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
     }
 }
 
@@ -629,18 +630,18 @@ void canonical_machine_reset()
     // NOTE: Should unhome axes here
 
     // reset request flags
-//    cm.queue_flush_state = FLUSH_OFF;
-//    cm.end_hold_requested = false;
-//    cm.limit_requested = 0;                 // resets switch closures that occurred during initialization
-//    cm.safety_interlock_disengaged = 0;     // ditto
-//    cm.safety_interlock_reengaged = 0;      // ditto
-//    cm.shutdown_requested = 0;              // ditto
+    cm.queue_flush_state = FLUSH_OFF;
+    cm.end_hold_requested = false;
+    cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
+    cm.safety_interlock_disengaged = 0;         // ditto
+    cm.safety_interlock_reengaged = 0;          // ditto
+    cm.shutdown_requested = 0;                  // ditto
 
     // set initial state and signal that the machine is ready for action
     cm.cycle_state = CYCLE_OFF;
     cm.motion_state = MOTION_STOP;
     cm.hold_state = FEEDHOLD_OFF;
-//    cm.esc_boot_timer = SysTickTimer_getValue();
+    cm.esc_boot_timer = SysTickTimer_getValue();
     cm.gmx.block_delete_switch = true;
     cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE; // never start in a motion mode
     cm.machine_state = MACHINE_READY;

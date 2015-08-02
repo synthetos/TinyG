@@ -35,7 +35,7 @@
  *    - install constants
  *    - add state management for alarm, shutdown and panic
  *      - go back through files and change to new alarm, shutdown and panic
- *      - change out soft limts for new alarms
+ *      - change out soft limits for new alarms
  *    - install digital input system as gpio file
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
@@ -60,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.03	// changes to canonical machine singleton struct; added some enumerated types
+#define TINYG_FIRMWARE_BUILD        444.04	// why does re-arranging the big table cause it to crash?
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
