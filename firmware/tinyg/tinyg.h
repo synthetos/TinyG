@@ -60,7 +60,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.04	// why does re-arranging the big table cause it to crash?
+#define TINYG_FIRMWARE_BUILD        444.04	// started in on re-arranging the big table
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
