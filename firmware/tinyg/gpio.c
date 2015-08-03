@@ -77,8 +77,10 @@ static bool _read_input_pin(const uint8_t input_num_ext);
 
 //**** NEW_GPIO **********************************************************************************
 
-// Motate pin assignments
 #ifdef __ARM
+
+// Motate pin setup
+//
 // WARNING: These return raw pin values, NOT corrected for NO/NC Active high/low
 //          Also, these take EXTERNAL pin numbers -- 1-based
 static InputPin<kInput1_PinNumber> input_1_pin(kPullUp);
@@ -139,14 +141,14 @@ void gpio_init(void)
         	hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
         	hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
         	hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
-        	} else {
+        } else {
         	hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
     	}
     	if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
         	hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
         	hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
         	hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
-        	} else {
+        } else {
         	hw.sw_port[i]->INT1MASK = 0;
     	}
     	// set interrupt levels. Interrupts must be enabled in main()
@@ -184,8 +186,9 @@ void gpio_reset(void)
 /*
  * _read_input_pin() - primitive to read an input pin
  */
-static bool _read_input_pin(const uint8_t input_num_ext) {
-    #ifdef __ARM
+static bool _read_input_pin(const uint8_t input_num_ext) 
+{
+#ifdef __ARM
     switch(input_num_ext) {
         case 1: { return (input_1_pin.get() != 0); }
         case 2: { return (input_2_pin.get() != 0); }
@@ -201,10 +204,80 @@ static bool _read_input_pin(const uint8_t input_num_ext) {
         case 12: { return (input_12_pin.get() != 0); }
         default: { return false; } // ERROR?
     }
-    #else //__AVR
-    return (false);     // +++++ TEMPORARY
-    #endif
+#endif //__ARM
+
+#ifdef __AVR
+    switch (input_num_ext-1) {
+        case 1: { return (hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm); }
+        case 2: { return (hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm); }
+        case 3: { return (hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm); }
+        case 4: { return (hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm); }
+        case 5: { return (hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm); }
+        case 6: { return (hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm); }
+        case 7: { return (hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm); }
+        case 8: { return (hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm); }
+    }
+#endif //__AVR
 }
+
+/*
+ * pin change ISRs - ISR entry point for input pin changes
+ *
+ * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
+ * The actual values will be the pin's port mask or 0, so you must check for non-zero.
+ */
+#ifdef __ARM
+MOTATE_PIN_INTERRUPT(kInput1_PinNumber) { _handle_pin_changed(1, (input_1_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput2_PinNumber) { _handle_pin_changed(2, (input_2_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput3_PinNumber) { _handle_pin_changed(3, (input_3_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput4_PinNumber) { _handle_pin_changed(4, (input_4_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput5_PinNumber) { _handle_pin_changed(5, (input_5_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput6_PinNumber) { _handle_pin_changed(6, (input_6_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput7_PinNumber) { _handle_pin_changed(7, (input_7_pin.get() != 0)); }
+MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.get() != 0)); }
+//MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _handle_pin_changed(9, (input_9_pin.get() != 0)); }
+//MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _handle_pin_changed(9, (input_10_pin.get() != 0)); }
+//MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _handle_pin_changed(10, (input_11_pin.get() != 0)); }
+//MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _handle_pin_changed(11, (input_12_pin.get() != 0)); }
+#endif
+
+/*
+ * Switch closure processing routines
+ *
+ * ISRs 				 - switch interrupt handler vectors
+ * _isr_helper()		 - common code for all switch ISRs
+ * switch_rtc_callback() - called from RTC for each RTC tick.
+ *
+ *	These functions interact with each other to process switch closures and firing.
+ *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
+ *	When a switch closure is DETECTED the count increments for each RTC tick.
+ *	When the count reaches zero the switch is tripped and action occurs.
+ *	The counter continues to increment positive until the lockout is exceeded.
+ */
+
+#ifdef __AVR
+static void _switch_isr_helper(uint8_t sw_num)
+{
+    if (sw.mode[sw_num] == SW_MODE_DISABLED) {      // this is never supposed to happen
+        return;	
+    }    
+    if (sw.debounce[sw_num] == SW_LOCKOUT) {		// exit if switch is in lockout
+        return;
+    }    
+    sw.debounce[sw_num] = SW_DEGLITCHING;			// either transitions state from IDLE or overwrites it
+    sw.count[sw_num] = -SW_DEGLITCH_TICKS;			// reset deglitch count regardless of entry state
+    read_switch(sw_num);							// sets the state value in the struct
+}
+
+ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
+ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
+ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
+ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
+ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
+ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
+ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
+ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
+#endif //__AVR
 
 /*
  * gpio_set_homing_mode()   - set/clear input to homing mode
@@ -237,26 +310,6 @@ bool gpio_read_input(const uint8_t input_num_ext)
     return (io.in[input_num_ext-1].state);
 }
 
-/*
- * pin change ISRs - ISR entry point for input pin changes
- *
- * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
- * The actual values will be the pin's port mask or 0, so you must check for non-zero.
- */
-#ifdef __ARM
-MOTATE_PIN_INTERRUPT(kInput1_PinNumber) { _handle_pin_changed(1, (input_1_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput2_PinNumber) { _handle_pin_changed(2, (input_2_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput3_PinNumber) { _handle_pin_changed(3, (input_3_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput4_PinNumber) { _handle_pin_changed(4, (input_4_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput5_PinNumber) { _handle_pin_changed(5, (input_5_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput6_PinNumber) { _handle_pin_changed(6, (input_6_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput7_PinNumber) { _handle_pin_changed(7, (input_7_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _handle_pin_changed(9, (input_9_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _handle_pin_changed(9, (input_10_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _handle_pin_changed(10, (input_11_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _handle_pin_changed(11, (input_12_pin.get() != 0)); }
-#endif
 
 /*
  * _handle_pin_changed() - ISR helper
@@ -374,38 +427,8 @@ static void _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_va
 //********************* v8 Switch code ************************************************************
 
 /*
- * Switch closure processing routines
- *
- * ISRs 				 - switch interrupt handler vectors
- * _isr_helper()		 - common code for all switch ISRs
  * switch_rtc_callback() - called from RTC for each RTC tick.
- *
- *	These functions interact with each other to process switch closures and firing.
- *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
- *	When a switch closure is DETECTED the count increments for each RTC tick.
- *	When the count reaches zero the switch is tripped and action occurs.
- *	The counter continues to increment positive until the lockout is exceeded.
  */
-
-#ifdef __AVR
-static void _switch_isr_helper(uint8_t sw_num)
-{
-    if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
-    if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
-    sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
-    sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-    read_switch(sw_num);							// sets the state value in the struct
-}
-
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
-#endif //__AVR
 
 #ifdef __AVR
 void switch_rtc_callback(void)
@@ -427,8 +450,6 @@ void switch_rtc_callback(void)
 		if (sw.count[i] == 0) {							// trigger point
 			sw.sw_num_thrown = i;						// record number of thrown switch
 			sw.debounce[i] = SW_LOCKOUT;
-//			sw_show_switch();							// only called if __DEBUG enabled
-
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
