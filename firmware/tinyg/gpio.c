@@ -199,7 +199,7 @@ void gpio_reset(void)
 /*
  * _read_raw_pin() - primitive to read an input pin without any conditioning
  */
-static bool _read_raw_pin(const uint8_t input_num_ext) 
+static bool _read_raw_pin(const uint8_t input_num_ext)
 {
 #ifdef __ARM
     switch(input_num_ext) {
@@ -327,7 +327,7 @@ static uint8_t _xmega_isr_helper(const uint8_t input_num_ext)
 /*
  * _condition_pin() - debounce and condition raw pin state
  *
- *  Input numbers are external, meaning they start at 1. 
+ *  Input numbers are external, meaning they start at 1.
  *  Return pin number 0 if no further action is required (no dispatch)
  */
 static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_value)
@@ -365,7 +365,7 @@ static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_valu
         in->edge = INPUT_EDGE_TRAILING;
     }
     return (input_num_ext);
-}    
+}
 
 /*
  * _dispatch_pin() - execute pin changes
@@ -863,7 +863,7 @@ stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 {
 	if (nv->value > SW_MODE_MAX_VALUE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
+    }
 	set_ui8(nv);
 	gpio_init();
 	return (STAT_OK);
