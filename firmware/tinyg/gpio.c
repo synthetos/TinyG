@@ -222,10 +222,14 @@ static bool _read_input_pin(const uint8_t input_num_ext)
 
 /*
  * pin change ISRs - ISR entry point for input pin changes
+ */
+/*
+ * ARM pin change interrupts
  *
  * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
  * The actual values will be the pin's port mask or 0, so you must check for non-zero.
  */
+
 #ifdef __ARM
 MOTATE_PIN_INTERRUPT(kInput1_PinNumber) { _handle_pin_changed(1, (input_1_pin.get() != 0)); }
 MOTATE_PIN_INTERRUPT(kInput2_PinNumber) { _handle_pin_changed(2, (input_2_pin.get() != 0)); }
@@ -240,20 +244,6 @@ MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.ge
 //MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _handle_pin_changed(10, (input_11_pin.get() != 0)); }
 //MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _handle_pin_changed(11, (input_12_pin.get() != 0)); }
 #endif
-
-/*
- * Switch closure processing routines
- *
- * ISRs 				 - switch interrupt handler vectors
- * _isr_helper()		 - common code for all switch ISRs
- * switch_rtc_callback() - called from RTC for each RTC tick.
- *
- *	These functions interact with each other to process switch closures and firing.
- *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
- *	When a switch closure is DETECTED the count increments for each RTC tick.
- *	When the count reaches zero the switch is tripped and action occurs.
- *	The counter continues to increment positive until the lockout is exceeded.
- */
 
 #ifdef __AVR
 static void _switch_isr_helper(uint8_t sw_num)
@@ -280,35 +270,43 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 #endif //__AVR
 
 /*
- * gpio_set_homing_mode()   - set/clear input to homing mode
- * gpio_set_probing_mode()  - set/clear input to probing mode
- * gpio_read_input()        - read conditioned input
+ * switch_rtc_callback() - called from RTC for each RTC tick.
  *
- (* Note: input_num_ext means EXTERNAL input number -- 1-based
+ *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
+ *	When a switch closure is DETECTED the count increments for each RTC tick.
+ *	When the count reaches zero the switch is tripped and action occurs.
+ *	The counter continues to increment positive until the lockout is exceeded.
  */
-void  gpio_set_homing_mode(const uint8_t input_num_ext, const bool is_homing)
-{
-    if (input_num_ext == 0) {
-        return;
-    }
-    io.in[input_num_ext-1].homing_mode = is_homing;
-}
 
-void  gpio_set_probing_mode(const uint8_t input_num_ext, const bool is_probing)
+#ifdef __AVR
+void switch_rtc_callback(void)
 {
-    if (input_num_ext == 0) {
-        return;
-    }
-    io.in[input_num_ext-1].probing_mode = is_probing;
-}
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
+            continue;
 
-bool gpio_read_input(const uint8_t input_num_ext)
-{
-    if (input_num_ext == 0) {
-        return false;
-    }
-    return (io.in[input_num_ext-1].state);
+		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
+			sw.debounce[i] = SW_IDLE;
+            // check if the state has changed while we were in lockout...
+            uint8_t old_state = sw.state[i];
+            if(old_state != read_switch(i)) {
+                sw.debounce[i] = SW_DEGLITCHING;
+                sw.count[i] = -SW_DEGLITCH_TICKS;
+            }
+            continue;
+		}
+		if (sw.count[i] == 0) {							// trigger point
+			sw.sw_num_thrown = i;						// record number of thrown switch
+			sw.debounce[i] = SW_LOCKOUT;
+			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
+				cm_request_feedhold();
+			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
+				sw.limit_flag = true;					// triggers an emergency shutdown
+			}
+		}
+	}
 }
+#endif //__AVR
 
 
 /*
@@ -424,43 +422,42 @@ static void _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_va
 //    sr_request_status_report(SR_REQUEST_TIMED);   //+++++ Put this one back in.
 }
 
-//********************* v8 Switch code ************************************************************
-
+/********************************************
+ **** Digital Input Supporting Functions ****
+ ********************************************/
 /*
- * switch_rtc_callback() - called from RTC for each RTC tick.
+ * gpio_set_homing_mode()   - set/clear input to homing mode
+ * gpio_set_probing_mode()  - set/clear input to probing mode
+ * gpio_read_input()        - read conditioned input
+ *
+ (* Note: input_num_ext means EXTERNAL input number -- 1-based
  */
-
-#ifdef __AVR
-void switch_rtc_callback(void)
+void  gpio_set_homing_mode(const uint8_t input_num_ext, const bool is_homing)
 {
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
-            continue;
-
-		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
-			sw.debounce[i] = SW_IDLE;
-            // check if the state has changed while we were in lockout...
-            uint8_t old_state = sw.state[i];
-            if(old_state != read_switch(i)) {
-                sw.debounce[i] = SW_DEGLITCHING;
-                sw.count[i] = -SW_DEGLITCH_TICKS;
-            }
-            continue;
-		}
-		if (sw.count[i] == 0) {							// trigger point
-			sw.sw_num_thrown = i;						// record number of thrown switch
-			sw.debounce[i] = SW_LOCKOUT;
-			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
-				cm_request_feedhold();
-			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
-				sw.limit_flag = true;					// triggers an emergency shutdown
-			}
-		}
-	}
+    if (input_num_ext == 0) {
+        return;
+    }
+    io.in[input_num_ext-1].homing_mode = is_homing;
 }
-#endif //__AVR
 
-/*
+void  gpio_set_probing_mode(const uint8_t input_num_ext, const bool is_probing)
+{
+    if (input_num_ext == 0) {
+        return;
+    }
+    io.in[input_num_ext-1].probing_mode = is_probing;
+}
+
+bool gpio_read_input(const uint8_t input_num_ext)
+{
+    if (input_num_ext == 0) {
+        return false;
+    }
+    return (io.in[input_num_ext-1].state);
+}
+
+//********************* v8 Switch code ************************************************************
+/* Xmega Functions (retire these as possible)
  * get_switch_mode()  - return switch mode setting
  * get_limit_thrown() - return true if a limit was tripped
  * get_switch_num()   - return switch number most recently thrown
