@@ -180,7 +180,7 @@ static uint8_t _probing_init()
 	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
 	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
 	sw.switch_type = SW_TYPE_NORMALLY_OPEN;							// contact probes are NO switches... usually
-	switch_init();													// re-init to pick up new switch settings
+	gpio_init();													// re-init to pick up new switch settings
 
 	// probe in absolute machine coords
 	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
@@ -249,7 +249,7 @@ static void _probe_restore_settings()
 
 	sw.switch_type = pb.saved_switch_type;
 	sw.mode[pb.probe_switch] = pb.saved_switch_mode;
-	switch_init();								// re-init to pick up changes
+	gpio_init();								// re-init to pick up changes
 
 	// restore axis jerk
 	for( uint8_t axis=0; axis<AXES; axis++ )

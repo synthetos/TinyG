@@ -231,7 +231,7 @@ stat_t hw_set_hv(nvObj_t *nv)
         return (STAT_INPUT_VALUE_TOO_LARGE);
 	set_flt(nv);					// record the hardware version
 	_port_bindings(nv->value);		// reset port bindings
-	switch_init();					// re-initialize the GPIO ports
+	gpio_init();					// re-initialize the GPIO ports
 //++++	gpio_init();				// re-initialize the GPIO ports
 	return (STAT_OK);
 }

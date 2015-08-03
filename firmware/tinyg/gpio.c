@@ -64,6 +64,13 @@
 // Allocate IO array structures
 io_t io;
 
+/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
+ *	v6 and earlier use internal pullups only. Internal pullups are set
+ *	regardless of board type but are extraneous for v7 boards.
+ */
+#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
+//#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
+
 static void _switch_isr_helper(uint8_t sw_num);
 static void _handle_pin_changed(const uint8_t input_num, const int8_t pin_value);
 static bool _read_input_pin(const uint8_t input_num_ext);
@@ -143,12 +150,35 @@ void gpio_init(void)
 #endif
 
 #ifdef __AVR
+	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
+    	// old code from when switches fired on one edge or the other:
+    	//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
+
+    	// setup input bits and interrupts (previously set to inputs by st_init())
+    	if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
+        	hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
+        	hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+        	hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
+        	} else {
+        	hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
+    	}
+    	if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
+        	hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
+        	hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
+        	hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
+        	} else {
+        	hw.sw_port[i]->INT1MASK = 0;
+    	}
+    	// set interrupt levels. Interrupts must be enabled in main()
+    	hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
+	}
 	return(gpio_reset());
 #endif
 }
 
 void gpio_reset(void)
 {
+#ifdef __ARM
 	for (uint8_t i=0; i<DI_CHANNELS; i++) {
         if (io.in[i].mode == INPUT_MODE_DISABLED) {
             io.in[i].state = INPUT_DISABLED;
@@ -160,6 +190,15 @@ void gpio_reset(void)
 //		io.in[i].lockout_timer = SysTickTimer.getValue();
 		io.in[i].lockout_timer = SysTickTimer_getValue();
 	}
+#endif
+
+#ifdef __AVR
+    for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+        sw.debounce[i] = SW_IDLE;
+        read_switch(i);
+    }
+    sw.limit_flag = false;
+#endif
 }
 
 /*
@@ -339,9 +378,9 @@ static void _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_va
  *	v6 and earlier use internal pullups only. Internal pullups are set
  *	regardless of board type but are extraneous for v7 boards.
  */
-#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
+//#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
-
+/*
 void switch_init(void)
 {
 #ifdef __AVR
@@ -370,7 +409,9 @@ void switch_init(void)
 	reset_switches();
 #endif //__AVR
 }
-
+*/
+/*
+#ifdef __AVR
 void reset_switches()
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
@@ -379,7 +420,8 @@ void reset_switches()
 	}
 	sw.limit_flag = false;
 }
-
+#endif
+*/
 /*
  * Switch closure processing routines
  *
@@ -668,7 +710,7 @@ stat_t io_get_input(nvObj_t *nv)
 stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 {
 	set_01(nv);
-	switch_init();
+	gpio_init();
 	return (STAT_OK);
 }
 
@@ -677,7 +719,7 @@ stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 	if (nv->value > SW_MODE_MAX_VALUE)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
 	set_ui8(nv);
-	switch_init();
+	gpio_init();
 	return (STAT_OK);
 }
 
