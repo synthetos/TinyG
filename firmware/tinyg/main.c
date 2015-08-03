@@ -134,7 +134,6 @@ void application_init_machine(void)
 
     stepper_init();                     // stepper subsystem (must precede gpio_init() on AVR)
     encoder_init();                     // virtual encoders
-//	switch_init();					    // switches
     gpio_init();                        // inputs and outputs
     pwm_init();                         // pulse width modulation drivers
     planner_init();                     // motion planning subsystem

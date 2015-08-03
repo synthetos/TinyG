@@ -77,6 +77,7 @@ static bool _read_input_pin(const uint8_t input_num_ext);
 
 //**** NEW_GPIO **********************************************************************************
 
+// Motate pin assignments
 #ifdef __ARM
 // WARNING: These return raw pin values, NOT corrected for NO/NC Active high/low
 //          Also, these take EXTERNAL pin numbers -- 1-based
@@ -94,31 +95,12 @@ static InputPin<kInput11_PinNumber> input_11_pin(kPullUp);
 static InputPin<kInput12_PinNumber> input_12_pin(kPullUp);
 #endif //__ARM
 
-static bool _read_input_pin(const uint8_t input_num_ext) {
-#ifdef __ARM
-    switch(input_num_ext) {
-        case 1: { return (input_1_pin.get() != 0); }
-        case 2: { return (input_2_pin.get() != 0); }
-        case 3: { return (input_3_pin.get() != 0); }
-        case 4: { return (input_4_pin.get() != 0); }
-        case 5: { return (input_5_pin.get() != 0); }
-        case 6: { return (input_6_pin.get() != 0); }
-        case 7: { return (input_7_pin.get() != 0); }
-        case 8: { return (input_8_pin.get() != 0); }
-        case 9: { return (input_9_pin.get() != 0); }
-        case 10: { return (input_10_pin.get() != 0); }
-        case 11: { return (input_11_pin.get() != 0); }
-        case 12: { return (input_12_pin.get() != 0); }
-        default: { return false; } // ERROR?
-    }
-#else //__AVR
-    return (false);     // +++++ TEMPORARY
-#endif
-}
-
 /*
  * gpio_init() - initialize inputs and outputs
  * gpio_reset() - reset inputs and outputs (no initialization)
+ *
+ *	AVR code assumes sys_init() and st_init() have been run previously to
+ *	bind the ports and set bit IO directions, respectively. See hardware.h for details
  */
 
 void gpio_init(void)
@@ -129,9 +111,7 @@ void gpio_init(void)
      *  kPinInterruptOnFallingEdge
      *
      * To change the trigger, just call pin.setInterrupts(value) at any point.
-     *
      * Note that it may cause an interrupt to fire *immediately*!
-     *
      */
 #ifdef __ARM
     input_1_pin.setInterrupts(kPinInterruptOnChange|kPinInterruptPriorityMedium);
@@ -199,6 +179,31 @@ void gpio_reset(void)
     }
     sw.limit_flag = false;
 #endif
+}
+
+/*
+ * _read_input_pin() - primitive to read an input pin
+ */
+static bool _read_input_pin(const uint8_t input_num_ext) {
+    #ifdef __ARM
+    switch(input_num_ext) {
+        case 1: { return (input_1_pin.get() != 0); }
+        case 2: { return (input_2_pin.get() != 0); }
+        case 3: { return (input_3_pin.get() != 0); }
+        case 4: { return (input_4_pin.get() != 0); }
+        case 5: { return (input_5_pin.get() != 0); }
+        case 6: { return (input_6_pin.get() != 0); }
+        case 7: { return (input_7_pin.get() != 0); }
+        case 8: { return (input_8_pin.get() != 0); }
+        case 9: { return (input_9_pin.get() != 0); }
+        case 10: { return (input_10_pin.get() != 0); }
+        case 11: { return (input_11_pin.get() != 0); }
+        case 12: { return (input_12_pin.get() != 0); }
+        default: { return false; } // ERROR?
+    }
+    #else //__AVR
+    return (false);     // +++++ TEMPORARY
+    #endif
 }
 
 /*
@@ -367,61 +372,7 @@ static void _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_va
 }
 
 //********************* v8 Switch code ************************************************************
-/*
- * switch_init() - initialize homing/limit switches
- * reset_switches() - reset all switches and reset limit flag
- *
- *	This function assumes sys_init() and st_init() have been run previously to
- *	bind the ports and set bit IO directions, repsectively. See system.h for details
- */
-/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
- *	v6 and earlier use internal pullups only. Internal pullups are set
- *	regardless of board type but are extraneous for v7 boards.
- */
-//#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
-//#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
-/*
-void switch_init(void)
-{
-#ifdef __AVR
-	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
-		// old code from when switches fired on one edge or the other:
-		//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
 
-		// setup input bits and interrupts (previously set to inputs by st_init())
-		if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
-			hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
-			hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-			hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
-		} else {
-			hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
-		}
-		if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
-			hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
-			hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-			hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
-		} else {
-			hw.sw_port[i]->INT1MASK = 0;
-		}
-		// set interrupt levels. Interrupts must be enabled in main()
-		hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
-	}
-	reset_switches();
-#endif //__AVR
-}
-*/
-/*
-#ifdef __AVR
-void reset_switches()
-{
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.debounce[i] = SW_IDLE;
-        read_switch(i);
-	}
-	sw.limit_flag = false;
-}
-#endif
-*/
 /*
  * Switch closure processing routines
  *
