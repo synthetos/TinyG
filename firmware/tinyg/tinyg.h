@@ -43,6 +43,7 @@
  *      - refactor limits and homing for new inputs
  *    - move spindle and coolant to separate files
  *    - remove Kahan references
+ *    - Add const qualifiers to bool flags in arglists
  */
 
 #ifndef TINYG_H_ONCE
@@ -62,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.08	// gpio - interrupts and low-level input readers
+#define TINYG_FIRMWARE_BUILD        444.08	// gpio - interrupts and low-level input readers; cm_set_coordinate_offsets; 
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

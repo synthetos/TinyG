@@ -327,7 +327,6 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
 
 	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
-
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
 	float move_time;					// optimal time for move given axis constraints
@@ -370,7 +369,6 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
-//	uint8_t l_word;						// L word - used by G10s
 
 	bool origin_offset_enable;          // G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	bool block_delete_switch;           // set true to enable block deletes (true is default)
@@ -398,7 +396,6 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	float target[AXES]; 				// XYZABC where the move should go
 
 	uint8_t L_word;						// L word - used by G10s
-
 	float feed_rate; 					// F - normalized to millimeters/minute
 	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 
@@ -407,7 +404,6 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
-//	uint8_t l_word;						// L word - used by G10s
 
 //	bool m48_enable;			        // M48/M49 input (enables for feed and spindle)
 //	bool mfo_enable;                    // M50 feedrate override enable
@@ -678,21 +674,20 @@ stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdow
 stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
 // Representation (4.3.3)
-stat_t cm_select_plane(uint8_t plane);							                // G17, G18, G19
-stat_t cm_set_units_mode(uint8_t mode);							                // G20, G21
-stat_t cm_set_distance_mode(uint8_t mode);						                // G90, G91
-stat_t cm_set_arc_distance_mode(uint8_t mode);						            // G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], bool flags[]);// G10 L2
-//stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
-//                            const uint8_t L_word,
-//                            const float offset[], const bool flag[]);
+stat_t cm_select_plane(const uint8_t plane);							        // G17, G18, G19
+stat_t cm_set_units_mode(const uint8_t mode);							        // G20, G21
+stat_t cm_set_distance_mode(const uint8_t mode);						        // G90, G91
+stat_t cm_set_arc_distance_mode(const uint8_t mode);						    // G90, G91
+stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
+                            const uint8_t L_word,
+                            const float offset[], const bool flag[]);
 
-void cm_set_position(uint8_t axis, float position);				                // set absolute position - single axis
-stat_t cm_set_absolute_origin(float origin[], bool flags[]);	                // G28.3
+void cm_set_position(const uint8_t axis, const float position);				    // set absolute position - single axis
+stat_t cm_set_absolute_origin(const float origin[], bool flags[]);	            // G28.3
 void cm_set_axis_origin(uint8_t axis, const float position);	                // G28.3 planner callback
 
-stat_t cm_set_coord_system(uint8_t coord_system);				                // G54 - G59
-stat_t cm_set_origin_offsets(float offset[], bool flags[]);		                // G92
+stat_t cm_set_coord_system(const uint8_t coord_system);				            // G54 - G59
+stat_t cm_set_origin_offsets(const float offset[], bool flags[]);		        // G92
 stat_t cm_reset_origin_offsets(void); 							                // G92.1
 stat_t cm_suspend_origin_offsets(void); 						                // G92.2
 stat_t cm_resume_origin_offsets(void);				 			                // G92.3

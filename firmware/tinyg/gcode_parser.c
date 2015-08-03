@@ -490,7 +490,8 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+//		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}

@@ -303,7 +303,6 @@ static uint8_t _xmega_isr_helper(const uint8_t input_num_ext)
     }
     sw.debounce[sw_num] = SW_DEGLITCHING;			// either transitions state from IDLE or overwrites it
     sw.count[sw_num] = -SW_DEGLITCH_TICKS;			// reset deglitch count regardless of entry state
-//    read_switch(sw_num);							// sets the state value in the struct
 
 	uint8_t read = 0;
 	switch (input_num_ext) {
