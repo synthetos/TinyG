@@ -31,7 +31,8 @@
 #include "canonical_machine.h"
 #include "spindle.h"
 #include "report.h"
-#include "switch.h"
+//#include "switch.h"
+#include "gpio.h"
 #include "util.h"
 #include "planner.h"
 

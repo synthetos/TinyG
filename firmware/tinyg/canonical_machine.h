@@ -512,8 +512,8 @@ typedef struct cmAxis {
 	float junction_dev;                     // aka cornering delta
 	float radius;                           // radius in mm for rotary axis modes
 
-//    uint8_t homing_input;               // set 1-N for homing input. 0 will disable homing
-//    uint8_t homing_dir;                 // 0=search to negative, 1=search to positive
+    uint8_t homing_input;               // set 1-N for homing input. 0 will disable homing
+    uint8_t homing_dir;                 // 0=search to negative, 1=search to positive
 	float search_velocity;                  // homing search velocity
 	float latch_velocity;                   // homing latch velocity
 	float latch_backoff;                    // backoff from switches prior to homing latch movement

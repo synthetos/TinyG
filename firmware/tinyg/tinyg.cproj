@@ -323,12 +323,6 @@
     <Compile Include="stepper.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="switch.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="switch.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="test.c">
       <SubType>compile</SubType>
     </Compile>

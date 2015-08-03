@@ -32,7 +32,8 @@
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
-#include "switch.h"
+//#include "switch.h"
+#include "gpio.h"
 #include "report.h"
 
 /**** Homing singleton structure ****/

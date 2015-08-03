@@ -29,9 +29,9 @@
 #include "../xmega/xmega_interrupts.h"
 
 #include "../tinyg.h"					// needed for AXES definition
+#include "../config.h"					// needed to write back usb baud rate
 #include "../gpio.h"					// needed for XON/XOFF LED indicator
 #include "../util.h"					// needed to pick up __debug defines
-#include "../config.h"					// needed to write back usb baud rate
 
 /******************************************************************************
  * USART CONFIGURATION RECORDS

@@ -67,7 +67,6 @@ C_SRCS +=  \
 ../report.c \
 ../spindle.c \
 ../stepper.c \
-../switch.c \
 ../test.c \
 ../text_parser.c \
 ../util.c \
@@ -117,7 +116,6 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
-switch.o \
 test.o \
 text_parser.o \
 util.o \
@@ -160,7 +158,6 @@ pwm.o \
 report.o \
 spindle.o \
 stepper.o \
-switch.o \
 test.o \
 text_parser.o \
 util.o \
@@ -203,7 +200,6 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
-switch.d \
 test.d \
 text_parser.d \
 util.d \
@@ -246,7 +242,6 @@ pwm.d \
 report.d \
 spindle.d \
 stepper.d \
-switch.d \
 test.d \
 text_parser.d \
 util.d \
@@ -276,8 +271,6 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
-
-
 
 
 

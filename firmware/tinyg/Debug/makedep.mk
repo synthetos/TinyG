@@ -54,8 +54,6 @@ spindle.c
 
 stepper.c
 
-switch.c
-
 test.c
 
 text_parser.c

@@ -34,9 +34,10 @@
 #include <util/delay.h>				// for tests
 
 #include "tinyg.h"
+#include "config.h"
+#include "gpio.h"
 #include "network.h"
 #include "controller.h"
-#include "gpio.h"
 #include "hardware.h"
 #include "xio.h"
 

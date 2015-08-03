@@ -108,6 +108,7 @@ typedef struct enEncoder { 			// one real or virtual encoder per controlled moto
 typedef struct enEncoders {
 	magic_t magic_start;
 	enEncoder_t en[MOTORS];			// runtime encoder structures
+    float snapshot[MOTORS];         // snapshot vector
 	magic_t magic_end;
 } enEncoders_t;
 
@@ -117,10 +118,15 @@ extern enEncoders_t en;
 /**** FUNCTION PROTOTYPES ****/
 
 void encoder_init(void);
+void encoder_reset(void);
 void encoder_init_assertions(void);
 stat_t encoder_test_assertions(void);
 
 void en_set_encoder_steps(uint8_t motor, float steps);
 float en_read_encoder(uint8_t motor);
+
+void en_take_encoder_snapshot(void);
+float en_get_encoder_snapshot_steps(uint8_t motor);
+float *en_get_encoder_snapshot_vector(void);
 
 #endif	// End of include guard: ENCODER_H_ONCE

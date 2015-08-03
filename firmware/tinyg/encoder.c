@@ -43,12 +43,18 @@ enEncoders_t en;
 
 /*
  * encoder_init() - initialize encoders
+ * encoder_reset() - reset encoders
  */
 
 void encoder_init()
 {
 	memset(&en, 0, sizeof(en));		// clear all values, pointers and status
 	encoder_init_assertions();
+}
+
+void encoder_reset()
+{
+    encoder_init();
 }
 
 /*
@@ -64,9 +70,12 @@ void encoder_init_assertions()
 
 stat_t encoder_test_assertions()
 {
-	if (en.magic_end   != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	if (en.magic_start != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	return (STAT_OK);
+/*
+    if ((BAD_MAGIC(en.magic_start)) || (BAD_MAGIC(en.magic_end))) {
+        return(cm_panic(STAT_ENCODER_ASSERTION_FAILURE, "encoder_test_assertions()"));
+    }
+*/
+    return (STAT_OK);
 }
 
 /*
@@ -95,6 +104,45 @@ void en_set_encoder_steps(uint8_t motor, float steps)
 float en_read_encoder(uint8_t motor)
 {
 	return((float)en.en[motor].encoder_steps);
+}
+
+/*
+ * en_take_encoder_snapshot()
+ * en_get_encoder_snapshot_position()
+ * en_get_encoder_snapshot_vector()
+ *
+ *  Take a snapshot of the encoder position at an exact point in time. This provides
+ *  a very accurate view of step position at the time of the snapshot,  which is
+ *  presumably in the middle of a switch closure interrupt. Taking the snapshot
+ *  does not affect the normal accumulation run by the stepper DDA.
+ *
+ *  The results are in STEPS, which may need to be converted back to position using
+ *  forward kinematics, depending on your use. See probe cycle for example.
+ */
+void en_take_encoder_snapshot()
+{
+    for (uint8_t m=0; m<MOTORS; m++) {
+        en.snapshot[m] = en.en[m].encoder_steps + en.en[m].steps_run;
+    }
+
+/* loop unrolled version for faster execution
+    en.snapshot[MOTOR_1] = en.en[MOTOR_1].encoder_steps + en.en[MOTOR_1].steps_run;
+    en.snapshot[MOTOR_2] = en.en[MOTOR_2].encoder_steps + en.en[MOTOR_2].steps_run;
+    en.snapshot[MOTOR_3] = en.en[MOTOR_3].encoder_steps + en.en[MOTOR_3].steps_run;
+    en.snapshot[MOTOR_4] = en.en[MOTOR_4].encoder_steps + en.en[MOTOR_4].steps_run;
+    en.snapshot[MOTOR_5] = en.en[MOTOR_5].encoder_steps + en.en[MOTOR_5].steps_run;
+    en.snapshot[MOTOR_6] = en.en[MOTOR_6].encoder_steps + en.en[MOTOR_6].steps_run;
+*/
+}
+
+float en_get_encoder_snapshot_steps(uint8_t motor)
+{
+    return (en.snapshot[motor]);
+}
+
+float *en_get_encoder_snapshot_vector()
+{
+    return (en.snapshot);
 }
 
 /***********************************************************************************

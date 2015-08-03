@@ -22,7 +22,8 @@
 
 #include "../tinyg.h"
 #include "../config.h"
-#include "../switch.h"
+//#include "../switch.h"
+#include "../gpio.h"
 #include "xmega_rtc.h"
 
 rtClock_t rtc;		// allocate clock control struct

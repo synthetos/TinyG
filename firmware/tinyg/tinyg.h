@@ -36,6 +36,8 @@
  *    - add state management for alarm, shutdown and panic
  *      - go back through files and change to new alarm, shutdown and panic
  *      - change out soft limits for new alarms
+ *    - update assertions to use new style w/panic's
+ *    - add new hold logic
  *    - install digital input system as gpio file
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
@@ -60,7 +62,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.06	// replaced soft limits with newer code; somehow FLASH dropped from ~116K to ~100K. Watch this.
+#define TINYG_FIRMWARE_BUILD        444.07	// gpio checking #1 - removed switch.c/.h; verified operation
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -71,7 +73,7 @@
 /****** COMPILE-TIME SETTINGS ******/
 
 #define __STEP_CORRECTION
-//#define __NEW_SWITCHES					// Using v9 style switch code
+//#define __NEW_SWITCHES					        // Using v9 style switch code (digital inputs)
 //#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
 //#define __KAHAN							// Use Kahan summation in aline exec functions
 
@@ -85,22 +87,6 @@
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
-
-//#define __SIMULATION						// for software-only simulations
-#ifdef __SIMULATION
-  #undef  __TEXT_MODE
-  #undef  __HELP_SCREENS
-  #undef  __CANNED_TESTS
-#ifndef __CANNED_STARTUP
-  #define __CANNED_STARTUP					// run any canned startup moves
-#endif
-  #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-  #define __SUPPRESS_STARTUP_MESSAGES
-  #define __SUPPRESS_STATUS_REPORTS
-  #define __SUPPRESS_QUEUE_REPORTS
-  #define __SUPRESS_DIAGNOSTIC_DISPLAYS
-  #define __SILENCE_JSON_RESPONSES
-#endif
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
