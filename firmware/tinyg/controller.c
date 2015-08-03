@@ -39,7 +39,6 @@
 
 #include "encoder.h"
 #include "hardware.h"
-//#include "switch.h"
 #include "gpio.h"
 #include "report.h"
 #include "help.h"

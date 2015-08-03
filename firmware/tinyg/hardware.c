@@ -32,7 +32,6 @@
 #include "tinyg.h"		// #1
 #include "config.h"		// #2
 #include "hardware.h"
-//#include "switch.h"
 #include "gpio.h"
 #include "controller.h"
 #include "text_parser.h"

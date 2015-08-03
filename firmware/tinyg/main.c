@@ -32,7 +32,6 @@
 #include "encoder.h"
 #include "spindle.h"
 #include "network.h"
-//#include "switch.h"
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"

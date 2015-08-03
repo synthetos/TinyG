@@ -62,7 +62,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.07	// gpio checking #1 - removed switch.c/.h; verified operation
+#define TINYG_FIRMWARE_BUILD        444.08	// gpio commit #3 - remove __NEW_SWITCHES references (not going to use them)
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -73,7 +73,6 @@
 /****** COMPILE-TIME SETTINGS ******/
 
 #define __STEP_CORRECTION
-//#define __NEW_SWITCHES					        // Using v9 style switch code (digital inputs)
 //#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
 //#define __KAHAN							// Use Kahan summation in aline exec functions
 

@@ -35,7 +35,6 @@
 #include "settings.h"
 #include "planner.h"
 #include "stepper.h"
-//#include "switch.h"
 #include "gpio.h"
 #include "pwm.h"
 #include "report.h"
