@@ -62,7 +62,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.08	// gpio commit #3 - remove __NEW_SWITCHES references (not going to use them)
+#define TINYG_FIRMWARE_BUILD        444.08	// gpio commit #4 - interrupts and low-level input readers
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

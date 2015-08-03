@@ -63,138 +63,9 @@
 
 static void _switch_isr_helper(uint8_t sw_num);
 
-//======================== Parallel IO Functions ===============================
-// OLD GPIO
-/*
- * IndicatorLed_set() 	- fake out for IndicatorLed.set() until we get Motate running
- * IndicatorLed_clear() - fake out for IndicatorLed.clear() until we get Motate running
- * IndicatorLed_toggle()- fake out for IndicatorLed.toggle() until we get Motate running
- */
-
-void IndicatorLed_set()
-{
-	gpio_led_on(INDICATOR_LED);
-	cs.led_state = 1;
-}
-
-void IndicatorLed_clear()
-{
-	gpio_led_off(INDICATOR_LED);
-	cs.led_state = 0;
-}
-
-void IndicatorLed_toggle()
-{
-	if (cs.led_state == 0) {
-		gpio_led_on(INDICATOR_LED);
-		cs.led_state = 1;
-	} else {
-		gpio_led_off(INDICATOR_LED);
-		cs.led_state = 0;
-	}
-}
-
-/*
- * gpio_led_on() - turn led on - assumes TinyG LED mapping
- * gpio_led_off() - turn led on - assumes TinyG LED mapping
- * gpio_led_toggle()
- */
-
-void gpio_led_on(uint8_t led)
-{
-//	if (led == 0) return (gpio_set_bit_on(0x08));
-//	if (led == 1) return (gpio_set_bit_on(0x04));
-//	if (led == 2) return (gpio_set_bit_on(0x02));
-//	if (led == 3) return (gpio_set_bit_on(0x01));
-
-	if (led == 0) gpio_set_bit_on(0x08); else
-	if (led == 1) gpio_set_bit_on(0x04); else
-	if (led == 2) gpio_set_bit_on(0x02); else
-	if (led == 3) gpio_set_bit_on(0x01);
-}
-
-void gpio_led_off(uint8_t led)
-{
-//	if (led == 0) return (gpio_set_bit_off(0x08));
-//	if (led == 1) return (gpio_set_bit_off(0x04));
-//	if (led == 2) return (gpio_set_bit_off(0x02));
-//	if (led == 3) return (gpio_set_bit_off(0x01));
-
-	if (led == 0) gpio_set_bit_off(0x08); else
-	if (led == 1) gpio_set_bit_off(0x04); else
-	if (led == 2) gpio_set_bit_off(0x02); else
-	if (led == 3) gpio_set_bit_off(0x01);
-}
-
-void gpio_led_toggle(uint8_t led)
-{
-	if (led == 0) {
-		if (gpio_read_bit(0x08)) {
-			gpio_set_bit_off(0x08);
-		} else {
-			gpio_set_bit_on(0x08);
-		}
-	} else if (led == 1) {
-		if (gpio_read_bit(0x04)) {
-			gpio_set_bit_off(0x04);
-		} else {
-			gpio_set_bit_on(0x04);
-		}
-	} else if (led == 2) {
-		if (gpio_read_bit(0x02)) {
-			gpio_set_bit_off(0x02);
-		} else {
-			gpio_set_bit_on(0x02);
-		}
-	} else if (led == 3) {
-		if (gpio_read_bit(0x08)) {
-			gpio_set_bit_off(0x08);
-		} else {
-			gpio_set_bit_on(0x08);
-		}
-	}
-}
-
-/*
- * gpio_read_bit() - return true if bit is on, false if off
- * gpio_set_bit_on() - turn bit on
- * gpio_set_bit_off() - turn bit on
- *
- *	These functions have an inner remap depending on what hardware is running
- */
-
-uint8_t gpio_read_bit(uint8_t b)
-{
-	if (b & 0x08) { return (hw.out_port[0]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x04) { return (hw.out_port[1]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x02) { return (hw.out_port[2]->IN & GPIO1_OUT_BIT_bm); }
-	if (b & 0x01) { return (hw.out_port[3]->IN & GPIO1_OUT_BIT_bm); }
-	return (0);
-}
-
-void gpio_set_bit_on(uint8_t b)
-{
-	if (b & 0x08) { hw.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x04) { hw.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x02) { hw.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm; }
-	if (b & 0x01) { hw.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm; }
-}
-
-void gpio_set_bit_off(uint8_t b)
-{
-	if (b & 0x08) { hw.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x04) { hw.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x02) { hw.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm; }
-	if (b & 0x01) { hw.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm; }
-}
-
-
-
-
-static void _switch_isr_helper(uint8_t sw_num);
-
 /*
  * switch_init() - initialize homing/limit switches
+ * reset_switches() - reset all switches and reset limit flag
  *
  *	This function assumes sys_init() and st_init() have been run previously to
  *	bind the ports and set bit IO directions, repsectively. See system.h for details
@@ -208,6 +79,7 @@ static void _switch_isr_helper(uint8_t sw_num);
 
 void switch_init(void)
 {
+#ifdef __AVR
 	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
 		// old code from when switches fired on one edge or the other:
 		//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
@@ -231,6 +103,16 @@ void switch_init(void)
 		hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see gpio.h for setting
 	}
 	reset_switches();
+#endif //__AVR
+}
+
+void reset_switches()
+{
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+		sw.debounce[i] = SW_IDLE;
+        read_switch(i);
+	}
+	sw.limit_flag = false;
 }
 
 /*
@@ -247,6 +129,16 @@ void switch_init(void)
  *	The counter continues to increment positive until the lockout is exceeded.
  */
 
+#ifdef __AVR
+static void _switch_isr_helper(uint8_t sw_num)
+{
+    if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
+    if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
+    sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
+    sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
+    read_switch(sw_num);							// sets the state value in the struct
+}
+
 ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
 ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
 ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
@@ -255,16 +147,9 @@ ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
 ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
 ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
 ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
+#endif //__AVR
 
-static void _switch_isr_helper(uint8_t sw_num)
-{
-	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
-	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
-	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
-	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-	read_switch(sw_num);							// sets the state value in the struct
-}
-
+#ifdef __AVR
 void switch_rtc_callback(void)
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
@@ -294,38 +179,28 @@ void switch_rtc_callback(void)
 		}
 	}
 }
+#endif //__AVR
 
 /*
  * get_switch_mode()  - return switch mode setting
  * get_limit_thrown() - return true if a limit was tripped
  * get_switch_num()   - return switch number most recently thrown
+ * set_switch_type()
+ * get_switch_type()
  */
 
+#ifdef __AVR
 uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
 uint8_t get_limit_switch_thrown(void) { return(sw.limit_flag);}
 uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
-
-
-// global switch type
 void set_switch_type( uint8_t switch_type ) { sw.switch_type = switch_type; }
 uint8_t get_switch_type() { return sw.switch_type; }
-
-/*
- * reset_switches() - reset all switches and reset limit flag
- */
-
-void reset_switches()
-{
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.debounce[i] = SW_IDLE;
-        read_switch(i);
-	}
-	sw.limit_flag = false;
-}
+#endif
 
 /*
  * read_switch() - read a switch directly with no interrupts or deglitching
  */
+#ifdef __AVR
 uint8_t read_switch(uint8_t sw_num)
 {
 	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
@@ -349,68 +224,8 @@ uint8_t read_switch(uint8_t sw_num)
 		return (sw.state[sw_num]);
 	}
 }
+#endif //__AVR
 
-/*
- * _show_switch() - simple display routine
- */
-/*
-void sw_show_switch(void)
-{
-	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
-		Zmin %d Zmax %d Amin %d Amax %d\n"),
-		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
-		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
-		sw.state[SW_MIN_Z], sw.state[SW_MAX_Z],
-		sw.state[SW_MIN_A], sw.state[SW_MAX_A]);
-}
-*/
-
-/***********************************************************************************
- * CONFIGURATION AND INTERFACE FUNCTIONS
- * Functions to get and set variables from the cfgArray table
- * These functions are not part of the NIST defined functions
- ***********************************************************************************/
-
-stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
-{
-	set_01(nv);
-	switch_init();
-	return (STAT_OK);
-}
-
-stat_t sw_set_sw(nvObj_t *nv)			// switch setting
-{
-	if (nv->value > SW_MODE_MAX_VALUE)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);
-	set_ui8(nv);
-	switch_init();
-	return (STAT_OK);
-}
-
-/***********************************************************************************
- * TEXT MODE SUPPORT
- * Functions to print variables from the cfgArray table
- ***********************************************************************************/
-
-#ifdef __TEXT_MODE
-
-static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
-void sw_print_st(nvObj_t *nv) { text_print_ui8(nv, fmt_st);}
-
-//static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
-//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, (uint8_t)nv->value);}
-
-/*
-static const char msg_sw0[] PROGMEM = "Disabled";
-static const char msg_sw1[] PROGMEM = "NO homing";
-static const char msg_sw2[] PROGMEM = "NO homing & limit";
-static const char msg_sw3[] PROGMEM = "NC homing";
-static const char msg_sw4[] PROGMEM = "NC homing & limit";
-static const char *const msg_sw[] PROGMEM = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
-*/
-
-
-#endif
 //**** NEW_GPIO **********************************************************************************
 
 // Allocate IO array structures
@@ -670,6 +485,133 @@ void static _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_va
 //    sr_request_status_report(SR_REQUEST_TIMED);
 }
 
+//======================== Parallel IO Functions ===============================
+// OLD GPIO
+/*
+ * IndicatorLed_set() 	- fake out for IndicatorLed.set() until we get Motate running
+ * IndicatorLed_clear() - fake out for IndicatorLed.clear() until we get Motate running
+ * IndicatorLed_toggle()- fake out for IndicatorLed.toggle() until we get Motate running
+ */
+
+void IndicatorLed_set()
+{
+	gpio_led_on(INDICATOR_LED);
+	cs.led_state = 1;
+}
+
+void IndicatorLed_clear()
+{
+	gpio_led_off(INDICATOR_LED);
+	cs.led_state = 0;
+}
+
+void IndicatorLed_toggle()
+{
+	if (cs.led_state == 0) {
+		gpio_led_on(INDICATOR_LED);
+		cs.led_state = 1;
+	} else {
+		gpio_led_off(INDICATOR_LED);
+		cs.led_state = 0;
+	}
+}
+
+/*
+ * gpio_led_on() - turn led on - assumes TinyG LED mapping
+ * gpio_led_off() - turn led on - assumes TinyG LED mapping
+ * gpio_led_toggle()
+ */
+
+void gpio_led_on(uint8_t led)
+{
+//	if (led == 0) return (gpio_set_bit_on(0x08));
+//	if (led == 1) return (gpio_set_bit_on(0x04));
+//	if (led == 2) return (gpio_set_bit_on(0x02));
+//	if (led == 3) return (gpio_set_bit_on(0x01));
+
+	if (led == 0) gpio_set_bit_on(0x08); else
+	if (led == 1) gpio_set_bit_on(0x04); else
+	if (led == 2) gpio_set_bit_on(0x02); else
+	if (led == 3) gpio_set_bit_on(0x01);
+}
+
+void gpio_led_off(uint8_t led)
+{
+//	if (led == 0) return (gpio_set_bit_off(0x08));
+//	if (led == 1) return (gpio_set_bit_off(0x04));
+//	if (led == 2) return (gpio_set_bit_off(0x02));
+//	if (led == 3) return (gpio_set_bit_off(0x01));
+
+	if (led == 0) gpio_set_bit_off(0x08); else
+	if (led == 1) gpio_set_bit_off(0x04); else
+	if (led == 2) gpio_set_bit_off(0x02); else
+	if (led == 3) gpio_set_bit_off(0x01);
+}
+
+void gpio_led_toggle(uint8_t led)
+{
+	if (led == 0) {
+		if (gpio_read_bit(0x08)) {
+			gpio_set_bit_off(0x08);
+		} else {
+			gpio_set_bit_on(0x08);
+		}
+	} else if (led == 1) {
+		if (gpio_read_bit(0x04)) {
+			gpio_set_bit_off(0x04);
+		} else {
+			gpio_set_bit_on(0x04);
+		}
+	} else if (led == 2) {
+		if (gpio_read_bit(0x02)) {
+			gpio_set_bit_off(0x02);
+		} else {
+			gpio_set_bit_on(0x02);
+		}
+	} else if (led == 3) {
+		if (gpio_read_bit(0x08)) {
+			gpio_set_bit_off(0x08);
+		} else {
+			gpio_set_bit_on(0x08);
+		}
+	}
+}
+
+/*
+ * gpio_read_bit() - return true if bit is on, false if off
+ * gpio_set_bit_on() - turn bit on
+ * gpio_set_bit_off() - turn bit on
+ *
+ *	These functions have an inner remap depending on what hardware is running
+ */
+
+uint8_t gpio_read_bit(uint8_t b)
+{
+	if (b & 0x08) { return (hw.out_port[0]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x04) { return (hw.out_port[1]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x02) { return (hw.out_port[2]->IN & GPIO1_OUT_BIT_bm); }
+	if (b & 0x01) { return (hw.out_port[3]->IN & GPIO1_OUT_BIT_bm); }
+	return (0);
+}
+
+void gpio_set_bit_on(uint8_t b)
+{
+	if (b & 0x08) { hw.out_port[0]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x04) { hw.out_port[1]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x02) { hw.out_port[2]->OUTSET = GPIO1_OUT_BIT_bm; }
+	if (b & 0x01) { hw.out_port[3]->OUTSET = GPIO1_OUT_BIT_bm; }
+}
+
+void gpio_set_bit_off(uint8_t b)
+{
+	if (b & 0x08) { hw.out_port[0]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x04) { hw.out_port[1]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x02) { hw.out_port[2]->OUTCLR = GPIO1_OUT_BIT_bm; }
+	if (b & 0x01) { hw.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm; }
+}
+
+
+
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
  * Functions to get and set variables from the cfgArray table
@@ -717,6 +659,22 @@ stat_t io_get_input(nvObj_t *nv)
     return (STAT_OK);
 }
 
+stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
+{
+	set_01(nv);
+	switch_init();
+	return (STAT_OK);
+}
+
+stat_t sw_set_sw(nvObj_t *nv)			// switch setting
+{
+	if (nv->value > SW_MODE_MAX_VALUE)
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+	set_ui8(nv);
+	switch_init();
+	return (STAT_OK);
+}
+
 /***********************************************************************************
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
@@ -724,19 +682,33 @@ stat_t io_get_input(nvObj_t *nv)
 
 #ifdef __TEXT_MODE
 
-	static const char fmt_gpio_mo[] PROGMEM = "[%smo] input mode%15d [-1=disabled, 0=NO,1=NC]\n";
-	static const char fmt_gpio_ac[] PROGMEM = "[%sac] input action%13d [0=none,1=stop,2=halt,3=stop_steps,4=panic,5=reset]\n";
-	static const char fmt_gpio_fn[] PROGMEM = "[%sfn] input function%11d [0=none,1=limit,2=interlock,3=shutdown]\n";
-	static const char fmt_gpio_in[] PROGMEM = "Input %s state: %5d\n";
+static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
+void sw_print_st(nvObj_t *nv) { text_print_ui8(nv, fmt_st);}
 
-    static void _print_di(nvObj_t *nv, const char *format)
-    {
-        printf_P(format, nv->group, (int)nv->value);
-    }
-	void io_print_mo(nvObj_t *nv) {_print_di(nv, fmt_gpio_mo);}
-	void io_print_ac(nvObj_t *nv) {_print_di(nv, fmt_gpio_ac);}
-	void io_print_fn(nvObj_t *nv) {_print_di(nv, fmt_gpio_fn);}
-	void io_print_in(nvObj_t *nv) {
-        printf_P(fmt_gpio_in, nv->token, (int)nv->value);
-    }
+//static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
+//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, (uint8_t)nv->value);}
+
+/*
+static const char msg_sw0[] PROGMEM = "Disabled";
+static const char msg_sw1[] PROGMEM = "NO homing";
+static const char msg_sw2[] PROGMEM = "NO homing & limit";
+static const char msg_sw3[] PROGMEM = "NC homing";
+static const char msg_sw4[] PROGMEM = "NC homing & limit";
+static const char *const msg_sw[] PROGMEM = { msg_sw0, msg_sw1, msg_sw2, msg_sw3, msg_sw4 };
+*/
+
+static const char fmt_gpio_mo[] PROGMEM = "[%smo] input mode%15d [-1=disabled, 0=NO,1=NC]\n";
+static const char fmt_gpio_ac[] PROGMEM = "[%sac] input action%13d [0=none,1=stop,2=halt,3=stop_steps,4=panic,5=reset]\n";
+static const char fmt_gpio_fn[] PROGMEM = "[%sfn] input function%11d [0=none,1=limit,2=interlock,3=shutdown]\n";
+static const char fmt_gpio_in[] PROGMEM = "Input %s state: %5d\n";
+
+static void _print_di(nvObj_t *nv, const char *format)
+{
+    printf_P(format, nv->group, (int)nv->value);
+}
+
+void io_print_mo(nvObj_t *nv) {_print_di(nv, fmt_gpio_mo);}
+void io_print_ac(nvObj_t *nv) {_print_di(nv, fmt_gpio_ac);}
+void io_print_fn(nvObj_t *nv) {_print_di(nv, fmt_gpio_fn);}
+void io_print_in(nvObj_t *nv) { printf_P(fmt_gpio_in, nv->token, (int)nv->value); }
 #endif
