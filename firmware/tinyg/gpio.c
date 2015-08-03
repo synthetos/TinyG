@@ -74,11 +74,12 @@ io_t io;
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
 
-static void _switch_isr_helper(uint8_t sw_num);
-static void _handle_pin_changed(const uint8_t input_num, const int8_t pin_value);
 static bool _read_raw_pin(const uint8_t input_num_ext);
+static uint8_t _condition_avr(const uint8_t input_num_ext);
 static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_value);
 static void _dispatch_pin(const uint8_t input_num_ext);
+
+//static void _handle_pin_changed(const uint8_t input_num, const int8_t pin_value);
 
 /**** Setup motate ****/
 
@@ -268,27 +269,53 @@ MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.ge
 #endif
 
 #ifdef __AVR
-static void _switch_isr_helper(uint8_t sw_num)
+ISR(X_MIN_ISR_vect)	{ _condition_avr(1);}
+ISR(Y_MIN_ISR_vect)	{ _condition_avr(2);}
+ISR(Z_MIN_ISR_vect)	{ _condition_avr(3);}
+ISR(A_MIN_ISR_vect)	{ _condition_avr(4);}
+ISR(X_MAX_ISR_vect)	{ _condition_avr(5);}
+ISR(Y_MAX_ISR_vect)	{ _condition_avr(6);}
+ISR(Z_MAX_ISR_vect)	{ _condition_avr(7);}
+ISR(A_MAX_ISR_vect)	{ _condition_avr(8);}
+
+
+static uint8_t _condition_avr(const uint8_t input_num_ext)
 {
+    uint8_t sw_num = input_num_ext-1;
+
     if (sw.mode[sw_num] == SW_MODE_DISABLED) {      // this is never supposed to happen
-        return;
+        return (0);
     }
     if (sw.debounce[sw_num] == SW_LOCKOUT) {		// exit if switch is in lockout
-        return;
+        return (0);
     }
     sw.debounce[sw_num] = SW_DEGLITCHING;			// either transitions state from IDLE or overwrites it
     sw.count[sw_num] = -SW_DEGLITCH_TICKS;			// reset deglitch count regardless of entry state
-    read_switch(sw_num);							// sets the state value in the struct
+//    read_switch(sw_num);							// sets the state value in the struct
+
+//    if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
+
+    uint8_t read = 0;
+    switch (input_num_ext) {
+        case 1: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+        case 2: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+        case 3: { read = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+        case 4: { read = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+        case 5: { read = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+        case 6: { read = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+        case 7: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+        case 8: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+    }
+    if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
+        sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
+//        return (sw.state[sw_num]);
+    } else {
+        sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);
+ //       return (sw.state[sw_num]);
+    }
+    return (input_num_ext);
 }
 
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 #endif //__AVR
 
 /*

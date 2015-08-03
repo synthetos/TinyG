@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.08	// gpio - interrupts and low-level input readers; cm_set_coordinate_offsets; 
+#define TINYG_FIRMWARE_BUILD        444.09	// gpio - interrupts and low-level input readers; cm_set_coordinate_offsets;
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
