@@ -27,16 +27,11 @@
 /* Note: The values in this file are the default settings that are loaded
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
- *
- *		 System and hardware settings that you shouldn't need to change
- *		 are in system.h  Application settings that also shouldn't need
- *		 to be changed are in tinyg.h
  */
 
 /***********************************************************************/
 /**** Shapeoko2 500mm profile ********************************************/
 /***********************************************************************/
-
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Shapeoko2 500mm profile"
 
@@ -44,7 +39,6 @@
 //**** GLOBAL / GENERAL SETTINGS ******************************************************
 
 #define JUNCTION_ACCELERATION	    2000000	// 2 million - centripetal acceleration around corners
-//#define JUNCTION_DEVIATION		    0.01	// default value, in mm - smaller is faster
 #define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 #define JUNCTION_AGGRESSION         0.75					// cornering - between 0.05 and 1.00 (max)
