@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.10	// gpio - converted Shapeoko2 profile to g2 format; JSON footer depth is always peer level (0);
+#define TINYG_FIRMWARE_BUILD        444.11	// gpio - switched digital inputs over to g2 style
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

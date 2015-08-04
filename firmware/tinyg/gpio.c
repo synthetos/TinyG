@@ -101,6 +101,26 @@ static InputPin<kInput11_PinNumber> input_11_pin(kPullUp);
 static InputPin<kInput12_PinNumber> input_12_pin(kPullUp);
 #endif //__ARM
 
+#ifdef __AVR
+/*
+ * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
+ * If you change axis port assignments you need to change these, too.
+ * Interrupt level should not be PORT_INT1LVL_HI_gc or PORT_INT1LVL_LO_gc
+ */
+#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+
+// port assignments for vectors
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
+#define Y_MIN_ISR_vect PORTD_INT0_vect
+#define Z_MIN_ISR_vect PORTE_INT0_vect
+#define A_MIN_ISR_vect PORTF_INT0_vect
+#define X_MAX_ISR_vect PORTA_INT1_vect
+#define Y_MAX_ISR_vect PORTD_INT1_vect
+#define Z_MAX_ISR_vect PORTE_INT1_vect
+#define A_MAX_ISR_vect PORTF_INT1_vect
+
+#endif
+
 /************************************************************************************
  **** CODE **************************************************************************
  ************************************************************************************/

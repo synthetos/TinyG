@@ -45,7 +45,6 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 
 	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;			// limit switch for current axis, or -1 if none
-	void (*switch_saved_on_trailing)(struct swSwitch *s);
 
 	uint8_t homing_closed;			// 0=open, 1=closed
 	uint8_t limit_closed;			// 0=open, 1=closed
