@@ -1788,6 +1788,10 @@ static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
 static const char *const msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
+static const char msg_g901[] PROGMEM = "G90.1 - absolute distance mode";
+static const char msg_g911[] PROGMEM = "G91.1 - incremental distance mode (default mode)";
+static const char *const msg_admo[] PROGMEM = { msg_g901, msg_g911 };
+
 static const char msg_g93[] PROGMEM = "G93 - inverse time mode";
 static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
 static const char msg_g95[] PROGMEM = "G95 - units-per-revolution mode";
@@ -1808,6 +1812,7 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 #define msg_plan NULL
 #define msg_path NULL
 #define msg_dist NULL
+#define msg_admo NULL
 #define msg_frmo NULL
 #define msg_am NULL
 
@@ -1865,6 +1870,7 @@ static int8_t _get_axis_type(const index_t index)
  * cm_get_plan() - get model gcode plane select
  * cm_get_path() - get model gcode path control mode
  * cm_get_dist() - get model gcode distance mode
+ * cm_get_admo() - get model arc distance mode
  * cm_get_frmo() - get model gcode feed rate mode
  * cm_get_tool() - get tool
  * cm_get_feed() - get feed rate
@@ -1901,6 +1907,7 @@ stat_t cm_get_momo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_momo, cm_get_mo
 stat_t cm_get_plan(nvObj_t *nv) { return(_get_msg_helper(nv, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
 stat_t cm_get_path(nvObj_t *nv) { return(_get_msg_helper(nv, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
 stat_t cm_get_dist(nvObj_t *nv) { return(_get_msg_helper(nv, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+stat_t cm_get_admo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_admo, cm_get_arc_distance_mode(ACTIVE_MODEL)));}
 stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_feed_rate_mode(ACTIVE_MODEL)));}
 
 stat_t cm_get_toolv(nvObj_t *nv)
@@ -2148,6 +2155,7 @@ const char fmt_momo[] PROGMEM = "Motion mode:         %s\n";
 const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
+const char fmt_admo[] PROGMEM = "Arc Distance mode:   %s\n";
 const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
 const char fmt_tool[] PROGMEM = "Tool number          %d\n";
 
@@ -2177,6 +2185,7 @@ void cm_print_momo(nvObj_t *nv) { text_print_str(nv, fmt_momo);}
 void cm_print_plan(nvObj_t *nv) { text_print_str(nv, fmt_plan);}
 void cm_print_path(nvObj_t *nv) { text_print_str(nv, fmt_path);}
 void cm_print_dist(nvObj_t *nv) { text_print_str(nv, fmt_dist);}
+void cm_print_admo(nvObj_t *nv) { text_print_str(nv, fmt_admo);}
 void cm_print_frmo(nvObj_t *nv) { text_print_str(nv, fmt_frmo);}
 void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
 

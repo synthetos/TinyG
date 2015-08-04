@@ -270,14 +270,13 @@ MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.ge
 
 #ifdef __AVR
 ISR(X_MIN_ISR_vect)	{ _condition_avr(1);}
-ISR(Y_MIN_ISR_vect)	{ _condition_avr(2);}
-ISR(Z_MIN_ISR_vect)	{ _condition_avr(3);}
-ISR(A_MIN_ISR_vect)	{ _condition_avr(4);}
-ISR(X_MAX_ISR_vect)	{ _condition_avr(5);}
-ISR(Y_MAX_ISR_vect)	{ _condition_avr(6);}
-ISR(Z_MAX_ISR_vect)	{ _condition_avr(7);}
+ISR(X_MAX_ISR_vect)	{ _condition_avr(2);}
+ISR(Y_MIN_ISR_vect)	{ _condition_avr(3);}
+ISR(Y_MAX_ISR_vect)	{ _condition_avr(4);}
+ISR(Z_MIN_ISR_vect)	{ _condition_avr(5);}
+ISR(Z_MAX_ISR_vect)	{ _condition_avr(6);}
+ISR(A_MIN_ISR_vect)	{ _condition_avr(7);}
 ISR(A_MAX_ISR_vect)	{ _condition_avr(8);}
-
 
 static uint8_t _condition_avr(const uint8_t input_num_ext)
 {
@@ -291,28 +290,25 @@ static uint8_t _condition_avr(const uint8_t input_num_ext)
     }
     sw.debounce[sw_num] = SW_DEGLITCHING;			// either transitions state from IDLE or overwrites it
     sw.count[sw_num] = -SW_DEGLITCH_TICKS;			// reset deglitch count regardless of entry state
-//    read_switch(sw_num);							// sets the state value in the struct
 
-//    if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
-
-    uint8_t read = 0;
+    uint8_t raw_pin = 0;
     switch (input_num_ext) {
-        case 1: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
-        case 2: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
-        case 3: { read = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
-        case 4: { read = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
-        case 5: { read = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
-        case 6: { read = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
-        case 7: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
-        case 8: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+        case 1: { raw_pin = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+        case 2: { raw_pin = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+        case 3: { raw_pin = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+        case 4: { raw_pin = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+        case 5: { raw_pin = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+        case 6: { raw_pin = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+        case 7: { raw_pin = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+        case 8: { raw_pin = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+        default: { return (0); } // ERROR
     }
     if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-        sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
-//        return (sw.state[sw_num]);
+        sw.state[sw_num] = ((raw_pin == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
     } else {
-        sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);
- //       return (sw.state[sw_num]);
+        sw.state[sw_num] = ((raw_pin != 0) ? SW_CLOSED : SW_OPEN);
     }
+//    sw.state[sw_num] = (raw_pin == 0) ^ (sw.switch_type == SW_TYPE_NORMALLY_CLOSED); // correct for NO/NC setting
     return (input_num_ext);
 }
 

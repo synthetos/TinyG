@@ -56,18 +56,6 @@ rxSingleton_t rx;
  */
 stat_t rpt_exception(stat_t status, const char *msg)
 {
-/*
-	if (status != STAT_OK) {	// makes it possible to call exception reports w/o checking status value
-		if (js.json_syntax == JSON_SYNTAX_RELAXED) {
-			printf_P(PSTR("{er:{fb:%0.2f,st:%d,msg:\"%s\"}}\n"),
-				TINYG_FIRMWARE_BUILD, status, get_status_message(status));
-		} else {
-			printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s\"}}\n"),
-				TINYG_FIRMWARE_BUILD, status, get_status_message(status));
-		}
-	}
-	return (status);			// makes it possible to inline, e.g: return(rpt_exception(status));
-*/
 	if (status != STAT_OK) { // makes it possible to call exception reports w/o checking status value
     	if (js.json_syntax == JSON_SYNTAX_RELAXED) {
         	sprintf(global_string_buf, "{er:{fb:%0.2f,st:%d,msg:\"%s - %s\"}}\n",
@@ -101,8 +89,6 @@ stat_t rpt_er(nvObj_t *nv)
 //void _startup_helper(stat_t status, const char *msg)
 void _startup_helper(stat_t status, const char *msg)
 {
-#ifndef __SUPPRESS_STARTUP_MESSAGES
-	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	nv_reset_nv_list();
 	nv_add_object((const char *)"fv");		// firmware version
 	nv_add_object((const char *)"fb");		// firmware build
@@ -111,7 +97,6 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char *)"id");		// hardware ID
 	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
 	json_print_response(status);
-#endif
 }
 
 void rpt_print_initializing_message(void)

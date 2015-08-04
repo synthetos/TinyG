@@ -527,8 +527,8 @@ void json_print_response(uint8_t status)
 	cs.linelen = 0;											// reset linelen so it's only reported once
 
 	nv_copy_string(nv, footer_string);						// link string to nv object
-//	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
-	nv->depth = js.json_footer_depth;						// 0=footer is peer to response 'r', 1=child of response 'r'
+	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
+//	nv->depth = js.json_footer_depth;						// 0=footer is peer to response 'r', 1=child of response 'r'
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");									// terminate the list
 	nv->nx = NULL;
