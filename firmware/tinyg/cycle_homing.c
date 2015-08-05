@@ -32,6 +32,8 @@
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "encoder.h"
+#include "kinematics.h"
 #include "gpio.h"
 #include "report.h"
 

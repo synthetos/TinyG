@@ -59,16 +59,32 @@ void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset,
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
 /*
- * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
+ * mp_get_runtime_busy() - returns TRUE if motion control busy (i.e. robot is moving)
+ * mp_runtime_is_idle() - returns TRUE is steppers are not actively moving
  *
- *	Use this function to sync to the queue. If you wait until it returns
+ *	Use mp_get_runtime_busy() to sync to the queue. If you wait until it returns
  *	FALSE you know the queue is empty and the motors have stopped.
  */
 
-uint8_t mp_get_runtime_busy()
+bool mp_get_runtime_busy()
 {
-	if ((st_runtime_isbusy() == true) || (mr.move_state == MOVE_RUN)) return (true);
-	return (false);
+//	if ((st_runtime_isbusy() == true) || (mr.move_state == MOVE_RUN)) return (true);
+//	return (false);
+
+    if (cm.cycle_state == CYCLE_OFF) {
+        return (false);
+    }
+    if ((st_runtime_isbusy() == true) ||
+//        (mb.planner_state == PLANNER_STARTUP) ||
+        (mr.move_state == MOVE_RUN)) {
+        return (true);
+    }
+    return (false);
+}
+
+bool mp_runtime_is_idle()
+{
+    return (!st_runtime_isbusy());
 }
 
 /****************************************************************************************

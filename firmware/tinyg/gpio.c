@@ -286,7 +286,18 @@ MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.ge
 #endif
 
 #ifdef __AVR
+/*
 ISR(X_MIN_ISR_vect)	{ _condition_avr(1);}
+ISR(X_MAX_ISR_vect)	{ _condition_avr(2);}
+ISR(Y_MIN_ISR_vect)	{ _condition_avr(3);}
+ISR(Y_MAX_ISR_vect)	{ _condition_avr(4);}
+ISR(Z_MIN_ISR_vect)	{ _condition_avr(5);}
+ISR(Z_MAX_ISR_vect)	{ _condition_avr(6);}
+ISR(A_MIN_ISR_vect)	{ _condition_avr(7);}
+ISR(A_MAX_ISR_vect)	{ _condition_avr(8);}
+*/
+//ISR(X_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(1, (hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm) != 0)); }
+ISR(X_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(1, (hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm) == 0)); }
 ISR(X_MAX_ISR_vect)	{ _condition_avr(2);}
 ISR(Y_MIN_ISR_vect)	{ _condition_avr(3);}
 ISR(Y_MAX_ISR_vect)	{ _condition_avr(4);}
@@ -394,6 +405,7 @@ static void _dispatch_pin(const uint8_t input_num_ext)
         if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
             en_take_encoder_snapshot();
 //            cm_start_hold();
+            cm_request_feedhold();
         }
         return;
     }
@@ -403,6 +415,7 @@ static void _dispatch_pin(const uint8_t input_num_ext)
         if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
             en_take_encoder_snapshot();
 //            cm_start_hold();
+            cm_request_feedhold();
         }
         return;
     }
@@ -414,9 +427,11 @@ static void _dispatch_pin(const uint8_t input_num_ext)
     if (in->edge == INPUT_EDGE_LEADING) {
         if (in->action == INPUT_ACTION_STOP) {
 //			cm_start_hold();
+            cm_request_feedhold();
         }
         if (in->action == INPUT_ACTION_FAST_STOP) {
 //			cm_start_hold();                        // for now is same as STOP
+            cm_request_feedhold();
         }
         if (in->action == INPUT_ACTION_HALT) {
             cm_halt_all();					        // hard stop, including spindle and coolant
@@ -450,8 +465,8 @@ static void _dispatch_pin(const uint8_t input_num_ext)
             cm.safety_interlock_reengaged = input_num_ext;
         }
     }
-    sr_request_status_report(SR_TIMED_REQUEST);
-//    sr_request_status_report(SR_REQUEST_TIMED);
+    sr_request_status_report(SR_TIMED_REQUEST);     // v8 style
+//    sr_request_status_report(SR_REQUEST_TIMED);   // g2 style
 }
 
 /*

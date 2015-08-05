@@ -30,12 +30,9 @@
 #include "canonical_machine.h"
 #include "stepper.h"
 #include "kinematics.h"
+#include "util.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
-//static void _inverse_kinematics(float travel[], float joint[]);
+static void _inverse_kinematics(const float travel[], float joint[]);
 
 /*
  * ik_kinematics() - wrapper routine for inverse kinematics
@@ -49,10 +46,41 @@ extern "C"{
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(const float travel[], float steps[])
+void kn_inverse_kinematics(const float travel[], float steps[])
 {
 	float joint[AXES];
 
+    _inverse_kinematics(travel, joint);				// insert inverse kinematics transformations here
+
+	// Map motors to axes and convert length units to steps
+	// Most of the conversion math has already been done in during config in steps_per_unit()
+	// which takes axis travel, step angle and microsteps into account.
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		if (cm.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
+		if (st_cfg.mot[MOTOR_1].motor_map == axis) {
+            steps[MOTOR_1] = joint[axis] * st_cfg.mot[MOTOR_1].steps_per_unit;
+        }
+        if (st_cfg.mot[MOTOR_2].motor_map == axis) {
+            steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;
+        }
+        if (st_cfg.mot[MOTOR_3].motor_map == axis) {
+            steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;
+        }
+		if (st_cfg.mot[MOTOR_4].motor_map == axis) {
+            steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;
+        }
+#if (MOTORS >= 5)
+		if (st_cfg.mot[MOTOR_5].motor_map == axis) {
+            steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;
+        }
+#endif
+#if (MOTORS >= 6)
+		if (st_cfg.mot[MOTOR_6].motor_map == axis) {
+            steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;
+        }
+#endif
+	}
+/*
 //	_inverse_kinematics(travel, joint);				// you can insert inverse kinematics transformations here
 	memcpy(joint, travel, sizeof(float)*AXES);		//...or just do a memcpy for Cartesian machines
 
@@ -72,7 +100,7 @@ void ik_kinematics(const float travel[], float steps[])
 		if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
 #endif
 	}
-
+*/
 /* The above is a loop unrolled version of this:
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		for (uint8_t motor=0; motor<MOTORS; motor++) {
@@ -81,29 +109,43 @@ void ik_kinematics(const float travel[], float steps[])
 			}
 		}
 	}
-*/
+    I'm really not sure it it's worth manually loop unrolling this sort of thing */
 }
 
 /*
  * _inverse_kinematics() - inverse kinematics - example is for a cartesian machine
  *
- *	You can glue in inverse kinematics here, but be aware of time budget constrants.
+ *	You can glue in inverse kinematics here, but be aware of time budget constraints.
  *	This function is run during the _exec() portion of the cycle and will therefore
  *	be run once per interpolation segment. The total time for the segment load,
  *	including the inverse kinematics transformation cannot exceed the segment time,
  *	and ideally should be no more than 25-50% of the segment time. Currently segments
- *	run avery 5 ms, but this might be lowered. To profile this time look at the
+ *	run every 1.5 ms, but this might be lowered. To profile this time look at the
  *	time it takes to complete the mp_exec_move() function.
+ *
+ *	Note: the compiler will  inline trivial functions (like memcpy) so there is no
+ *	size or performance penalty for breaking this out
  */
-/*
-static void _inverse_kinematics(float travel[], float joint[])
+static void _inverse_kinematics(const float travel[], float joint[])
 {
-	for (uint8_t i=0; i<AXES; i++) {
-		joint[i] = travel[i];
-	}
-}
-*/
+	memcpy(joint, travel, sizeof(float)*AXES);		// just do a memcpy for Cartesian machines
 
-#ifdef __cplusplus
+//	for (uint8_t i=0; i<AXES; i++) {
+//		joint[i] = travel[i];
+//	}
 }
-#endif
+
+/*
+ * kn_forward_kinematics() - forward kinematics for a cartesian machine
+ */
+
+void kn_forward_kinematics(const float steps[], float travel[])
+{
+    travel[AXIS_X] = steps[MOTOR_1] * st_cfg.mot[MOTOR_1].units_per_step;
+    travel[AXIS_Y] = steps[MOTOR_2] * st_cfg.mot[MOTOR_2].units_per_step;
+    travel[AXIS_Z] = steps[MOTOR_3] * st_cfg.mot[MOTOR_3].units_per_step;
+    travel[AXIS_A] = steps[MOTOR_4] * st_cfg.mot[MOTOR_4].units_per_step;
+    travel[AXIS_B] = steps[MOTOR_5] * st_cfg.mot[MOTOR_5].units_per_step;
+    travel[AXIS_C] = steps[MOTOR_6] * st_cfg.mot[MOTOR_6].units_per_step;
+}
+

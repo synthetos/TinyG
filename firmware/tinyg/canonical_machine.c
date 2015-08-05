@@ -1130,20 +1130,24 @@ stat_t cm_resume_origin_offsets()
 stat_t cm_straight_traverse(float target[], bool flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
-	cm_set_model_target(target, flags);
 
-	// test soft limits
-//	stat_t status = cm_test_soft_limits(cm.gm.target);
-//	if (status != STAT_OK) {
-//        return (cm_soft_alarm(status));
-//    }
-	// prep and plan the move
-	ritorno (cm_test_soft_limits(cm.gm.target)); 	// test soft limits; exit if thrown
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
-	cm_cycle_start();							// required for homing & other cycles
-	mp_aline(&cm.gm);							// send the move to the planner
+    // it's legal for a G0 to have no axis words but we don't want to process it
+    if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z] ||
+          flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
+          return(STAT_OK);
+    }
+
+	cm_set_model_target(target, flags);
+	ritorno (cm_test_soft_limits(cm.gm.target));    // test soft limits; exit if thrown
+	cm_set_work_offsets(&cm.gm);                    // capture the fully resolved offsets to the state
+	cm_cycle_start();                               // required for homing & other cycles
+	stat_t status = mp_aline(&cm.gm);               // send the move to the planner
 	cm_finalize_move();
-	return (STAT_OK);
+	if (status == STAT_MINIMUM_LENGTH_MOVE && !mp_has_runnable_buffer()) {
+    	cm_cycle_end();
+    	return (STAT_OK);
+	}
+	return (status);
 }
 
 /*
@@ -1257,18 +1261,25 @@ stat_t cm_straight_feed(float target[], bool flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
+    
+    // it's legal for a G1 to have no axis words but we don't want to process it
+    if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z] ||
+          flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
+          return(STAT_OK);
+    }
+    
 	cm_set_model_target(target, flags);
-
-	// test soft limits
-//	stat_t status = cm_test_soft_limits(cm.gm.target);
-//	if (status != STAT_OK) return (cm_soft_alarm(status));
 	ritorno (cm_test_soft_limits(cm.gm.target)); 	// test soft limits; exit if thrown
-
-	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	stat_t status = mp_aline(&cm.gm);			// send the move to the planner
-	cm_finalize_move();
+
+    cm_finalize_move(); // <-- ONLY safe because we don't care about status...
+
+	if (status == STAT_MINIMUM_LENGTH_MOVE && !mp_has_runnable_buffer()) {
+    	cm_cycle_end();
+    	return (STAT_OK);
+	}
 	return (status);
 }
 
