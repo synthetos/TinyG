@@ -29,10 +29,6 @@
 #include "config.h"
 #include "encoder.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocate Structures ****/
 
 enEncoders_t en;
@@ -158,7 +154,3 @@ float *en_get_encoder_snapshot_vector()
 #ifdef __TEXT_MODE
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

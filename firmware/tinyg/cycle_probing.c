@@ -51,8 +51,6 @@ struct pbProbingSingleton {                 // persistent probing runtime variab
 	bool flags[AXES];
 
 	// state saved from gcode model
-//	uint8_t saved_coord_system;             // G54 - G59 setting
-//	uint8_t saved_distance_mode;            // G90,G91 global setting
 	cmCoordSystem saved_coord_system;       // G54 - G59 setting
 	cmDistanceMode saved_distance_mode;     // G90, G91 global setting
 	float saved_jerk[AXES];					// saved and restored for each axis
@@ -180,10 +178,8 @@ static uint8_t _probing_init()
     }
 
 	// error if the probe target requires a move along the A/B/C axes
-	for ( uint8_t axis=AXIS_A; axis<AXES; axis++ ) {
-//		if (fp_NE(start_position[axis], pb.target[axis])) { // old style
-		if (fp_TRUE(pb.flags[axis])) {
-//		if (pb.flags[axis]) {           // will reduce to this once flags are booleans
+	for (uint8_t axis=AXIS_A; axis<AXES; axis++) {
+		if (pb.flags[axis]) {
    			_probing_error_exit(axis);
         }
 	}
@@ -239,7 +235,6 @@ static stat_t _probing_backoff()
         // snapshot was taken by switch interrupt at the time of closure
         float contact_position[AXES];
         kn_forward_kinematics(en_get_encoder_snapshot_vector(), contact_position);
-
         cm_queue_flush();                               // flush queue & end feedhold
         cm_straight_feed(contact_position, pb.flags);   // NB: feed rate is the same as the probe move
     }

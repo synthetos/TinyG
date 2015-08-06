@@ -80,36 +80,16 @@ void kn_inverse_kinematics(const float travel[], float steps[])
         }
 #endif
 	}
-/*
-//	_inverse_kinematics(travel, joint);				// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(float)*AXES);		//...or just do a memcpy for Cartesian machines
 
-	// Map motors to axes and convert length units to steps
-	// Most of the conversion math has already been done in during config in steps_per_unit()
-	// which takes axis travel, step angle and microsteps into account.
-	for (uint8_t axis=0; axis<AXES; axis++) {
-		if (cm.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
-		if (st_cfg.mot[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st_cfg.mot[MOTOR_1].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;}
-#if (MOTORS >= 5)
-		if (st_cfg.mot[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;}
-#endif
-#if (MOTORS >= 6)
-		if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
-#endif
-	}
-*/
-/* The above is a loop unrolled version of this:
-	for (uint8_t axis=0; axis<AXES; axis++) {
-		for (uint8_t motor=0; motor<MOTORS; motor++) {
-			if (st_cfg.mot[motor].motor_map == axis) {
-				steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
-			}
-		}
-	}
-    I'm really not sure it it's worth manually loop unrolling this sort of thing */
+    /* The above is a loop unrolled version of this:
+	    for (uint8_t axis=0; axis<AXES; axis++) {
+		    for (uint8_t motor=0; motor<MOTORS; motor++) {
+			    if (st_cfg.mot[motor].motor_map == axis) {
+				    steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
+			    }
+		    }
+	    }
+        I'm really not sure it it's worth manually loop unrolling this sort of thing */
 }
 
 /*
@@ -141,15 +121,11 @@ static void _inverse_kinematics(const float travel[], float joint[])
 
 void kn_forward_kinematics(const float steps[], float travel[])
 {
-    travel[AXIS_X] = steps[MOTOR_1] * st_cfg.mot[MOTOR_1].units_per_step;
-    travel[AXIS_Y] = steps[MOTOR_2] * st_cfg.mot[MOTOR_2].units_per_step;
-    travel[AXIS_Z] = steps[MOTOR_3] * st_cfg.mot[MOTOR_3].units_per_step;
-    travel[AXIS_A] = steps[MOTOR_4] * st_cfg.mot[MOTOR_4].units_per_step;
- #if (MOTORS >= 5)
-    travel[AXIS_B] = steps[MOTOR_5] * st_cfg.mot[MOTOR_5].units_per_step;
- #endif
- #if (MOTORS >= 6)
-    travel[AXIS_C] = steps[MOTOR_6] * st_cfg.mot[MOTOR_6].units_per_step;
-#endif
+	for (uint8_t i=0; i<AXES; i++) {
+		travel[i] = 0;
+	}
+    for (uint8_t motor=0; motor<MOTORS; motor++) {
+        travel[st_cfg.mot[motor].motor_map] = steps[motor] * st_cfg.mot[motor].units_per_step;
+    }
 }
 

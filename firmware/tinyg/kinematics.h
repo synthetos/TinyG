@@ -32,7 +32,6 @@
  * Global Scope Functions
  */
 
-//void ik_kinematics(const float travel[], float steps[]);
 void kn_inverse_kinematics(const float travel[], float steps[]);
 void kn_forward_kinematics(const float steps[], float travel[]);
 
