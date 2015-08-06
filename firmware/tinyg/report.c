@@ -36,10 +36,6 @@
 #include "util.h"
 #include "xio.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocation ****/
 
 srSingleton_t sr;
@@ -59,10 +55,10 @@ stat_t rpt_exception(stat_t status, const char *msg)
 	if (status != STAT_OK) { // makes it possible to call exception reports w/o checking status value
     	if (js.json_syntax == JSON_SYNTAX_RELAXED) {
         	sprintf(global_string_buf, "{er:{fb:%0.2f,st:%d,msg:\"%s - %s\"}}\n",
-        	TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+        	    TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
         } else {
         	sprintf(global_string_buf, "{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s - %s\"}}\n",
-        	TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+        	    TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
     	}
 //    	xio_writeline(global_string_buf);
     	printf("%s", global_string_buf);
@@ -685,7 +681,3 @@ void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
 void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

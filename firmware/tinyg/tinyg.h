@@ -36,17 +36,17 @@
  *    - add state management for alarm, shutdown and panic
  *      - go back through files and change to new alarm, shutdown and panic
  *      - change out soft limits for new alarms
- *    - update assertions to use new style w/panic's
- *    - add new hold logic
  *    - install digital input system as gpio file
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
+ *
+ *    - update assertions to use new style w/panic's
+ *    - add new hold logic
  *    - move spindle and coolant to separate files
  *    - remove Kahan references
  *    - Add const qualifiers to bool flags in arglists
  *    - install test_print() methods instead of local conversions
  */
-
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
 
@@ -59,7 +59,9 @@
 #include <string.h>
 #include <math.h>
 
-//#include "MotatePins.h"
+#ifdef __ARM
+#include "MotatePins.h"
+#endif
 
 /****** DEFINITIONS THAT MAY ULTIMATELY BE PROVIDED BY THE MAKEFILE ******/
 

@@ -58,6 +58,7 @@ extern stat_t status_code;
 #define GLOBAL_STRING_LEN 256
 extern char global_string_buf[];
 
+#define STATUS_MESSAGE_LEN 64   // must be shorter than longest status message in stat_msg[] (below)
 char *get_status_message(stat_t status);
 
 // ritorno is a handy way to provide exception returns

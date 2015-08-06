@@ -68,6 +68,7 @@ void* __dso_handle = nullptr;
 
 stat_t status_code;						    // allocate a variable for the ritorno macro
 char global_string_buf[GLOBAL_STRING_LEN];	// allocate a string for global message use
+static char _status_message[STATUS_MESSAGE_LEN];
 
 /******************** Application Code ************************/
 
@@ -188,8 +189,13 @@ int main(void)
 /*
  * get_status_message() - support for status messages.
  */
-
 char *get_status_message(stat_t status)
 {
-    return ((char *)GET_TEXT_ITEM(stat_msg, status));
+#ifdef __ARM
+    return (&stat_msg[status]); // simple
+#endif
+#ifdef __AVR    // not so simple
+    strncpy_P(_status_message, (char *)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
+    return (_status_message);
+#endif
 }
