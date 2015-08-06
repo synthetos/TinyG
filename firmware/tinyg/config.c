@@ -207,8 +207,8 @@ stat_t config_test_assertions()
 /***** Generic Internal Functions *********************************************/
 
 /* Generic gets()
- *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
- *	get_ui8()  - get value as 8 bit uint8_t
+ *	get_nul()  - get nothing (returns STAT_NOOP)
+ *	get_ui8()  - get value as 8 bit uint8_t (use uint8 for booleans)
  *  get_int8() - get value as 8 bit int8_t
  *	get_int()  - get value as 32 bit integer
  *	get_data() - get value as 32 bit integer blind cast
@@ -236,10 +236,9 @@ stat_t get_int8(nvObj_t *nv)
 
 stat_t get_int(nvObj_t *nv)
 {
-//	nv->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
-	nv->value = *((uint32_t *)GET_TABLE_WORD(target));
-	nv->valuetype = TYPE_INT;
-	return (STAT_OK);
+    nv->value = *((uint32_t *)GET_TABLE_WORD(target));
+    nv->valuetype = TYPE_INT;
+    return (STAT_OK);
 }
 
 stat_t get_data(nvObj_t *nv)
@@ -259,13 +258,13 @@ stat_t get_flt(nvObj_t *nv)
 }
 
 /* Generic sets()
- *	set_nul()  - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
+ *	set_nul()  - set nothing (returns STAT_NOOP)
  *	set_ui8()  - set value as 8 bit uint8_t value
  *  set_int8() - set value as an 8 bit int8_t value
  *	set_01()   - set a 0 or 1 uint8_t value with validation
  *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
- *	set_int()  - set value as 32 bit integer
+ *	set_uint() - set value as 32 bit unsigned integer
  *	set_data() - set value as 32 bit integer blind cast
  *	set_flt()  - set value as float
  */
@@ -287,23 +286,26 @@ stat_t set_int8(nvObj_t *nv)
 
 stat_t set_01(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 1)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if (nv->value > 1) {
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
+    }    
+	return (set_ui8(nv));
 }
 
 stat_t set_012(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 2)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if (nv->value > 2) {
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
+    }    
+	return (set_ui8(nv));
 }
 
 stat_t set_0123(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 3)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if (nv->value > 3) {
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
+    }    
+	return (set_ui8(nv));
 }
 
 stat_t set_int(nvObj_t *nv)
@@ -359,8 +361,8 @@ stat_t set_flt(nvObj_t *nv)
  *	get_grp() is a group expansion function that expands the parent group and returns
  *	the values of all the children in that group. It expects the first nvObj in the
  *	nvBody to have a valid group name in the token field. This first object will be set
- *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent
- *	group, which this group has none.
+ *	to a TYPE_PARENT. The group field of the first nvOBJ is left nul - as the group
+ *  field refers to a parent group, which this group has none.
  *
  *	All subsequent nvObjs in the body will be populated with their values.
  *	The token field will be populated as will the parent name in the group field.
@@ -452,18 +454,20 @@ index_t nv_get_index(const char *group, const char *token)
 
 /*
  * nv_get_type() - returns command type as a NV_TYPE enum
+ *
+ *  Note: Exception reports (er) do not go through this mechanism so they are
+ *        not in the list below
  */
-
 uint8_t nv_get_type(nvObj_t *nv)
 {
-	if (nv->token[0] == NUL) return (NV_TYPE_NULL);
-	if (strcmp("gc", nv->token) == 0) return (NV_TYPE_GCODE);
-	if (strcmp("sr", nv->token) == 0) return (NV_TYPE_REPORT);
-	if (strcmp("qr", nv->token) == 0) return (NV_TYPE_REPORT);
-	if (strcmp("msg",nv->token) == 0) return (NV_TYPE_MESSAGE);
-	if (strcmp("err",nv->token) == 0) return (NV_TYPE_MESSAGE); 	// errors are reported as messages
-	if (strcmp("n",  nv->token) == 0) return (NV_TYPE_LINENUM);
-	return (NV_TYPE_CONFIG);
+    if (nv->token[0] == NUL) return (NV_TYPE_NULL);
+    if (strcmp("gc", nv->token) == 0) { return (NV_TYPE_GCODE); }
+    if (strcmp("n",  nv->token) == 0) { return (NV_TYPE_LINENUM); }
+    if (strcmp("sr", nv->token) == 0) { return (NV_TYPE_REPORT); }
+    if (strcmp("qr", nv->token) == 0) { return (NV_TYPE_REPORT); }
+    if (strcmp("msg",nv->token) == 0) { return (NV_TYPE_MESSAGE); }
+    if (strcmp("err",nv->token) == 0) { return (NV_TYPE_MESSAGE); } // errors are reported as messages
+    return (NV_TYPE_CONFIG);
 }
 
 /******************************************************************************
@@ -563,9 +567,9 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
-	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
+    if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN) {
         return (STAT_BUFFER_FULL);
-
+    }
 	char *dst = &nvStr.string[nvStr.wp];
 	strcpy(dst, src);						// copy string to current head position
 											// string has already been tested for overflow, above
@@ -658,9 +662,9 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
-		if (nv_copy_string(nv, string) != STAT_OK)
+        if (nv_copy_string(nv, string) != STAT_OK) {
             return (NULL);
-
+        }
 		nv->index = nv_get_index((const char *)"", nv->token);
 		nv->valuetype = TYPE_STRING;
 		return (nv);

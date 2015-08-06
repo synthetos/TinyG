@@ -207,7 +207,7 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_PARENT,						// object is a parent to a sub-object
 	TYPE_FLOAT,							// value is a floating point number
-	TYPE_INT,		    				// value is a uint32_t
+	TYPE_INT,						    // value is a signed or unsigned integer or any size
 	TYPE_STRING,						// value is in string field
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
 	TYPE_DATA,							// value is blind cast to uint32_t
@@ -250,7 +250,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	struct nvObject *nx;				// pointer to next object or NULL if last object
 	index_t index;						// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
-	valueType valuetype;				// see valueType enum
+	valueType valuetype;                // see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
 	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group

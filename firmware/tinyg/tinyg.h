@@ -49,7 +49,7 @@
  *    - update firmware build number for FBS values (not sure how this will work)
  *    - move job IDs to config (from controller)
  *    - move $ej from cfg to controller (cs)
- *    - move USB parameters from cfg to xio (see set_baud())
+ *    - move USB parameters from cfg to xio (see set_baud()), including comm_mode
  *    - remove network.c/.h
  *
  *  Back-back-port to g2
