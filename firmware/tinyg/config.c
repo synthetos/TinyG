@@ -411,19 +411,6 @@ stat_t set_grp(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-/*
- * nv_group_is_prefixed() - hack
- *
- *	This little function deals with the exception cases that some groups don't use
- *	the parent token as a prefix to the child elements; SR being a good example.
- */
-uint8_t nv_group_is_prefixed(char *group)
-{
-	if (strcmp("sr",group) == 0) return (false);
-	if (strcmp("sys",group) == 0) return (false);
-	return (true);
-}
-
 /***********************************************************************************
  ***** nvObj functions ************************************************************
  ***********************************************************************************/

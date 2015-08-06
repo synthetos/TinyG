@@ -47,6 +47,14 @@
  *    - Add const qualifiers to bool flags in arglists
  *    - install test_print() methods instead of local conversions
  *    - update firmware build number for FBS values (not sure how this will work)
+ *    - move job IDs to config (from controller)
+ *    - move $ej from cfg to controller (cs)
+ *    - remove network.c/.h
+ *
+ *  Back-back-port to g2
+ *    - changes in digital IO system
+ *    - pwr indicator lights (pwr settings)
+ *    - 
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
