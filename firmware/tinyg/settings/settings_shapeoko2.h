@@ -165,7 +165,7 @@
 #define X_HOMING_DIR                0                       // xhd  0=search moves negative, 1= search moves positive
 #define X_SEARCH_VELOCITY           3000                    // xsv  minus means move to minimum switch
 #define X_LATCH_VELOCITY            100                     // xlv  mm/min
-#define X_LATCH_BACKOFF             20                      // xlb  mm
+#define X_LATCH_BACKOFF             6                       // xlb  mm
 #define X_ZERO_BACKOFF              3                       // xzb  mm
 
 #define Y_AXIS_MODE                 AXIS_STANDARD
@@ -182,7 +182,7 @@
 #define Y_HOMING_DIR                0
 #define Y_SEARCH_VELOCITY           3000
 #define Y_LATCH_VELOCITY            100
-#define Y_LATCH_BACKOFF             20
+#define Y_LATCH_BACKOFF             6
 #define Y_ZERO_BACKOFF              3
 
 #define Z_AXIS_MODE                 AXIS_STANDARD
@@ -199,7 +199,7 @@
 #define Z_HOMING_DIR                1
 #define Z_SEARCH_VELOCITY           (Z_VELOCITY_MAX * 0.66666)
 #define Z_LATCH_VELOCITY            100
-#define Z_LATCH_BACKOFF             10
+#define Z_LATCH_BACKOFF             6
 #define Z_ZERO_BACKOFF              2
 
 #define A_AXIS_MODE                 AXIS_STANDARD

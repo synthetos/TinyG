@@ -361,44 +361,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","clb",_fip,  3, cm_print_lb, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].latch_backoff,	C_LATCH_BACKOFF },
 	{ "c","czb",_fip,  3, cm_print_zb, get_flt,   set_flt,   (float *)&cm.a[AXIS_C].zero_backoff,	C_ZERO_BACKOFF },
 #endif
-/*
-	// Digital input configs
-	{ "di1","di1mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[0].mode,     DI1_MODE },
-	{ "di1","di1ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[0].action,   DI1_ACTION },
-	{ "di1","di1fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[0].function, DI1_FUNCTION },
 
-	{ "di2","di2mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[1].mode,     DI2_MODE },
-	{ "di2","di2ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[1].action,   DI2_ACTION },
-	{ "di2","di2fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[1].function, DI2_FUNCTION },
-
-	{ "di3","di3mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[2].mode,     DI3_MODE },
-	{ "di3","di3ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[2].action,   DI3_ACTION },
-	{ "di3","di3fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[2].function, DI3_FUNCTION },
-
-	{ "di4","di4mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[3].mode,     DI4_MODE },
-	{ "di4","di4ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[3].action,   DI4_ACTION },
-	{ "di4","di4fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[3].function, DI4_FUNCTION },
-
-	{ "di5","di5mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[4].mode,     DI5_MODE },
-	{ "di5","di5ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[4].action,   DI5_ACTION },
-	{ "di5","di5fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[4].function, DI5_FUNCTION },
-
-	{ "di6","di6mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[5].mode,     DI6_MODE },
-	{ "di6","di6ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[5].action,   DI6_ACTION },
-	{ "di6","di6fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[5].function, DI6_FUNCTION },
-
-	{ "di7","di7mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[6].mode,     DI7_MODE },
-	{ "di7","di7ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[6].action,   DI7_ACTION },
-	{ "di7","di7fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[6].function, DI7_FUNCTION },
-
-	{ "di8","di8mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[7].mode,     DI8_MODE },
-	{ "di8","di8ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[7].action,   DI8_ACTION },
-	{ "di8","di8fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[7].function, DI8_FUNCTION },
-
-	{ "di9","di9mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&io.in[8].mode,     DI9_MODE },
-	{ "di9","di9ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&io.in[8].action,   DI9_ACTION },
-	{ "di9","di9fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&io.in[8].function, DI9_FUNCTION },
-*/
 	// Digital input configs
 	{ "di1","di1mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&d_in[0].mode,     DI1_MODE },
 	{ "di1","di1ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&d_in[0].action,   DI1_ACTION },
@@ -431,11 +394,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "di8","di8mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&d_in[7].mode,     DI8_MODE },
 	{ "di8","di8ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&d_in[7].action,   DI8_ACTION },
 	{ "di8","di8fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&d_in[7].function, DI8_FUNCTION },
-/*
+#if (DI_CHANNELS >= 9)
 	{ "di9","di9mo",_fip, 0, io_print_mo, get_int8,io_set_mo, (float *)&d_in[8].mode,     DI9_MODE },
 	{ "di9","di9ac",_fip, 0, io_print_ac, get_ui8, io_set_ac, (float *)&d_in[8].action,   DI9_ACTION },
 	{ "di9","di9fn",_fip, 0, io_print_fn, get_ui8, io_set_fn, (float *)&d_in[8].function, DI9_FUNCTION },
-*/
+#endif
+
 	// Digital input state readers
 	{ "in","in1", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
 	{ "in","in2", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
@@ -445,7 +409,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "in","in6", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
 	{ "in","in7", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
 	{ "in","in8", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
+#if (DI_CHANNELS >= 9)
 	{ "in","in9", _f0, 0, io_print_in, io_get_input, set_nul, (float *)&cs.null, 0 },
+#endif
 
 	// PWM settings
 	{ "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, pwm_set_pwm,(float *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
@@ -649,6 +615,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Diagnostic parameters
 #ifdef __DIAGNOSTIC_PARAMETERS
+	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
+
 	{ "_te","_tex",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },			// X target endpoint
 	{ "_te","_tey",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
 	{ "_te","_tez",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
@@ -711,7 +679,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "_xs","_xs5",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&st_pre.mot[MOTOR_5].corrected_steps, 0 },
 	{ "_fe","_fe6",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.following_error[MOTOR_6], 0 },
 #endif
-	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
 #endif	//  __DIAGNOSTIC_PARAMETERS
 
 	// Persistence for status report - must be in sequence
@@ -976,7 +943,11 @@ static stat_t _do_offsets(nvObj_t *nv)	// print offset parameters for G54-G59,G9
 
 static stat_t _do_inputs(nvObj_t *nv)	// print parameters for all input groups
 {
+#if (DI_CHANNELS < 9)
+    char list[][TOKEN_LEN+1] = {"di1","di2","di3","di4","di5","di6","di7","di8",""}; // must have a terminating element
+#else
     char list[][TOKEN_LEN+1] = {"di1","di2","di3","di4","di5","di6","di7","di8","di9",""}; // must have a terminating element
+#endif
     return (_do_group_list(nv, list));
     return (STAT_OK);
 }

@@ -2035,7 +2035,7 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 
 stat_t cm_set_hi(nvObj_t *nv)
 {
-    if ((nv->value < 0) || (nv->value > DI_CHANNELS)) {
+    if ((nv->value < 0) || (nv->value > D_IN_CHANNELS)) {
         return (STAT_INPUT_VALUE_UNSUPPORTED);
     }
     set_ui8(nv);
@@ -2128,6 +2128,7 @@ stat_t cm_dam(nvObj_t *nv)
 	cm_print_plan(nv);
 	cm_print_path(nv);
 	cm_print_dist(nv);
+	cm_print_admo(nv);
 	cm_print_frmo(nv);
 	cm_print_tool(nv);
 

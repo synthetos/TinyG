@@ -63,13 +63,10 @@
 
 /**** Allocate structures ****/
 
-//io_di_t din[DI_CHANNELS];
-io_di_t d_in[DI_CHANNELS];
-io_do_t d_out[DO_CHANNELS];
-io_ai_t a_in[AI_CHANNELS];
-io_ao_t a_out[AO_CHANNELS];
-
-//io_t io;
+d_in_t   d_in[D_IN_CHANNELS];
+d_out_t  d_out[D_OUT_CHANNELS];
+a_in_t   a_in[A_IN_CHANNELS];
+a_out_t  a_out[A_OUT_CHANNELS];
 
 /**** Defines and static functions ****/
 
@@ -166,7 +163,7 @@ void gpio_init(void)
 #ifdef __AVR
 void gpio_init(void)
 {
-    for (uint8_t i=0; i<DI_INPUT_PAIRS; i++) {
+    for (uint8_t i=0; i<D_IN_PAIRS; i++) {
 
         // Setup input bits and interrupts
         // Must have been previously set to inputs by stepper_init()
@@ -224,17 +221,17 @@ void gpio_reset(void)
     sw.limit_flag = false;
 #endif
 
-    io_di_t *in;
+    d_in_t *in;
 
-    for (uint8_t i=0; i<DI_CHANNELS; i++) {
+    for (uint8_t i=0; i<D_IN_CHANNELS; i++) {
         in = &d_in[i];
         if (in->mode == INPUT_MODE_DISABLED) {
             in->state = INPUT_DISABLED;
             continue;
         }
-        int8_t pin_value_corrected = (_read_raw_pin(i+1) ^ (in->mode ^ 1));	// correct for NO or NC mode
-		in->state = pin_value_corrected;
-//        in->state = (_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
+//        int8_t pin_value_corrected = (_read_raw_pin(i+1) ^ (in->mode ^ 1));	// correct for NO or NC mode
+//		in->state = pin_value_corrected;
+        in->state = (_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
         in->lockout_ms = INPUT_LOCKOUT_MS;
 #ifdef __ARM
         in->lockout_timer = SysTickTimer.getValue();
@@ -408,8 +405,7 @@ static uint8_t _condition_avr(const uint8_t input_num_ext)
  */
 static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_value)
 {
-//    io_di_t *in = &io.in[input_num_ext-1];  // array index is one less than input number
-    io_di_t *in = &d_in[input_num_ext-1];  // array index is one less than input number
+    d_in_t *in = &d_in[input_num_ext-1];  // array index is one less than input number
 
     // return if input is disabled (not supposed to happen)
     if (in->mode == INPUT_MODE_DISABLED) {
@@ -457,8 +453,7 @@ static void _dispatch_pin(const uint8_t input_num_ext)
         return;
     }
 
-//    io_di_t *in = &io.in[input_num_ext-1];  // array index is one less than input number
-    io_di_t *in = &d_in[input_num_ext-1];  // array index is one less than input number
+    d_in_t *in = &d_in[input_num_ext-1];  // array index is one less than input number
 
     // perform homing operations if in homing mode
     if (in->homing_mode) {
