@@ -74,9 +74,8 @@ static bool _read_raw_pin(const uint8_t input_num_ext);
 static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_value);
 static void _dispatch_pin(const uint8_t input_num_ext);
 
-//static uint8_t _condition_avr(const uint8_t input_num_ext);
-
-/**** Setup Low Level Stuff ****/
+/**** Setup Motate Pins ****/
+// See hardware.h for AVR setup
 
 #ifdef __ARM
 
@@ -95,32 +94,6 @@ static InputPin<kInput10_PinNumber> input_10_pin(kPullUp);
 static InputPin<kInput11_PinNumber> input_11_pin(kPullUp);
 static InputPin<kInput12_PinNumber> input_12_pin(kPullUp);
 #endif //__ARM
-
-//#ifdef __AVR
-/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
- *	v6 and earlier use internal pullups only. Internal pullups are set
- *	regardless of board type but are extraneous for v7 boards.
- */
-//#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
-//#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
-
-/* Digital Input (switch) interrupt levels and vectors
- * The vectors are hard-wired to xmega ports. If you change axis port assignments
- * above you need to change these, too.
- * Interrupt level should not be PORT_INT1LVL_HI_gc or PORT_INT1LVL_LO_gc
- */
-/*
-#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
-#define X_MIN_ISR_vect PORTA_INT0_vect
-#define X_MAX_ISR_vect PORTA_INT1_vect
-#define Y_MIN_ISR_vect PORTD_INT0_vect
-#define Y_MAX_ISR_vect PORTD_INT1_vect
-#define Z_MIN_ISR_vect PORTE_INT0_vect
-#define Z_MAX_ISR_vect PORTE_INT1_vect
-#define A_MIN_ISR_vect PORTF_INT0_vect
-#define A_MAX_ISR_vect PORTF_INT1_vect
-*/
-//#endif
 
 /************************************************************************************
  **** CODE **************************************************************************
@@ -186,33 +159,11 @@ void gpio_init(void)
     }
     return(gpio_reset());
 }
-/*
-    for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
-        // setup input bits and interrupts (previously set to inputs by st_init())
-        if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
-            hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
-            hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-            hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
-        } else {
-            hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
-        }
-        if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
-            hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
-            hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
-            hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
-        } else {
-            hw.sw_port[i]->INT1MASK = 0;
-        }
-        // set interrupt levels. Interrupts must be enabled in main()
-        hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;				// see hardware.h for setting
-    }
-    return(gpio_reset());
-}
-*/
 #endif
 
 void gpio_reset(void)
 {
+/*
 #ifdef __AVR
     for (uint8_t i=0; i < NUM_SWITCHES; i++) {
         sw.debounce[i] = SW_IDLE;
@@ -220,7 +171,7 @@ void gpio_reset(void)
     }
     sw.limit_flag = false;
 #endif
-
+*/
     d_in_t *in;
 
     for (uint8_t i=0; i<D_IN_CHANNELS; i++) {
@@ -229,8 +180,6 @@ void gpio_reset(void)
             in->state = INPUT_DISABLED;
             continue;
         }
-//        int8_t pin_value_corrected = (_read_raw_pin(i+1) ^ (in->mode ^ 1));	// correct for NO or NC mode
-//		in->state = pin_value_corrected;
         in->state = (_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
         in->lockout_ms = INPUT_LOCKOUT_MS;
 #ifdef __ARM
@@ -239,27 +188,6 @@ void gpio_reset(void)
         in->lockout_timer = SysTickTimer_getValue();
 #endif
     }
-
-
-/*
-//#ifdef __ARM
-	for (uint8_t i=0; i<DI_CHANNELS; i++) {
-        if (io.in[i].mode == INPUT_MODE_DISABLED) {
-            io.in[i].state = INPUT_DISABLED;
-            continue;
-        }
-//        int8_t pin_value_corrected = (_read_raw_pin(i+1) ^ (io.in[i].mode ^ 1));	// correct for NO or NC mode
-//		io.in[i].state = pin_value_corrected;
-        io.in[i].state = (_read_raw_pin(i+1) ^ (io.in[i].mode ^ 1));    // correct for NO or NC mode
-        io.in[i].lockout_ms = INPUT_LOCKOUT_MS;
-#ifdef __ARM
-		io.in[i].lockout_timer = SysTickTimer.getValue();
-#else
-		io.in[i].lockout_timer = SysTickTimer_getValue();
-#endif
-	}
-//#endif
-*/
 }
 
 /*
@@ -319,82 +247,21 @@ MOTATE_PIN_INTERRUPT(kInput5_PinNumber) { _dispatch_pin(_condition_pin(5, (input
 MOTATE_PIN_INTERRUPT(kInput6_PinNumber) { _dispatch_pin(_condition_pin(6, (input_6_pin.get() != 0))); }
 MOTATE_PIN_INTERRUPT(kInput7_PinNumber) { _dispatch_pin(_condition_pin(7, (input_7_pin.get() != 0))); }
 MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _dispatch_pin(_condition_pin(8, (input_8_pin.get() != 0))); }
-//MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _dispatch_pin(_condition_pin(9, (input_9_pin.get() != 0))); }
+MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _dispatch_pin(_condition_pin(9, (input_9_pin.get() != 0))); }
 //MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _dispatch_pin(_condition_pin(9, (input_10_pin.get() != 0))); }
 //MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _dispatch_pin(_condition_pin(10, (input_11_pin.get() != 0))); }
 //MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _dispatch_pin(_condition_pin(11, (input_12_pin.get() != 0))); }
-/*
-MOTATE_PIN_INTERRUPT(kInput1_PinNumber) { _handle_pin_changed(1, (input_1_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput2_PinNumber) { _handle_pin_changed(2, (input_2_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput3_PinNumber) { _handle_pin_changed(3, (input_3_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput4_PinNumber) { _handle_pin_changed(4, (input_4_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput5_PinNumber) { _handle_pin_changed(5, (input_5_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput6_PinNumber) { _handle_pin_changed(6, (input_6_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput7_PinNumber) { _handle_pin_changed(7, (input_7_pin.get() != 0)); }
-MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _handle_pin_changed(8, (input_8_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _handle_pin_changed(9, (input_9_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _handle_pin_changed(9, (input_10_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _handle_pin_changed(10, (input_11_pin.get() != 0)); }
-//MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _handle_pin_changed(11, (input_12_pin.get() != 0)); }
-*/
 #endif
 
 #ifdef __AVR
 ISR(X_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(1, (hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm) != 0)); }
 ISR(X_MAX_ISR_vect)	{ _dispatch_pin(_condition_pin(2, (hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm) != 0)); }
-ISR(Y_MIN_ISR_vect)	{
-    _dispatch_pin(_condition_pin(3, (hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm) != 0));
-}
+ISR(Y_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(3, (hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm) != 0)); }
 ISR(Y_MAX_ISR_vect)	{ _dispatch_pin(_condition_pin(4, (hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm) != 0)); }
 ISR(Z_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(5, (hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm) != 0)); }
 ISR(Z_MAX_ISR_vect)	{ _dispatch_pin(_condition_pin(6, (hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm) != 0)); }
 ISR(A_MIN_ISR_vect)	{ _dispatch_pin(_condition_pin(7, (hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm) != 0)); }
 ISR(A_MAX_ISR_vect)	{ _dispatch_pin(_condition_pin(8, (hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm) != 0)); }
-
-/*
-ISR(X_MIN_ISR_vect)	{ _condition_avr(1);}
-ISR(X_MAX_ISR_vect)	{ _condition_avr(2);}
-ISR(Y_MIN_ISR_vect)	{ _condition_avr(3);}
-ISR(Y_MAX_ISR_vect)	{ _condition_avr(4);}
-ISR(Z_MIN_ISR_vect)	{ _condition_avr(5);}
-ISR(Z_MAX_ISR_vect)	{ _condition_avr(6);}
-ISR(A_MIN_ISR_vect)	{ _condition_avr(7);}
-ISR(A_MAX_ISR_vect)	{ _condition_avr(8);}
-
-static uint8_t _condition_avr(const uint8_t input_num_ext)
-{
-    uint8_t sw_num = input_num_ext-1;
-
-    if (sw.mode[sw_num] == SW_MODE_DISABLED) {      // this is never supposed to happen
-        return (0);
-    }
-    if (sw.debounce[sw_num] == SW_LOCKOUT) {		// exit if switch is in lockout
-        return (0);
-    }
-    sw.debounce[sw_num] = SW_DEGLITCHING;			// either transitions state from IDLE or overwrites it
-    sw.count[sw_num] = -SW_DEGLITCH_TICKS;			// reset deglitch count regardless of entry state
-
-    uint8_t raw_pin = 0;
-    switch (input_num_ext) {
-        case 1: { raw_pin = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
-        case 2: { raw_pin = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
-        case 3: { raw_pin = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
-        case 4: { raw_pin = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
-        case 5: { raw_pin = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
-        case 6: { raw_pin = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
-        case 7: { raw_pin = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
-        case 8: { raw_pin = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
-        default: { return (0); } // ERROR
-    }
-    if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-        sw.state[sw_num] = ((raw_pin == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
-    } else {
-        sw.state[sw_num] = ((raw_pin != 0) ? SW_CLOSED : SW_OPEN);
-    }
-//    sw.state[sw_num] = (raw_pin == 0) ^ (sw.switch_type == SW_TYPE_NORMALLY_CLOSED); // correct for NO/NC setting
-    return (input_num_ext);
-}
-*/
 #endif //__AVR
 
 /*
@@ -520,123 +387,9 @@ static void _dispatch_pin(const uint8_t input_num_ext)
             cm.safety_interlock_reengaged = input_num_ext;
         }
     }
-    sr_request_status_report(SR_TIMED_REQUEST);     // v8 style
-//    sr_request_status_report(SR_REQUEST_TIMED);   // g2 style
+    sr_request_status_report(SR_TIMED_REQUEST);     //+++++ v8 style - change this to g2 style
+//    sr_request_status_report(SR_REQUEST_TIMED);   //+++++ g2 style
 }
-
-/*
- * _handle_pin_changed() - ISR helper
- *
- * Since we set the interrupt to kPinInterruptOnChange _handle_pin_changed() should
- * only be called when the pin *changes* values, so we can assume that the current
- * pin value is not the same as the previous value. Note that the value may have
- * changed rapidly, and may even have changed again since the interrupt was triggered.
- * In this case a second interrupt will likely follow this one immediately after exiting.
- *
- *  input_num is the input channel, 1 - N
- *  pin_value = 1 if pin is set, 0 otherwise
- */
-/*
-static void _handle_pin_changed(const uint8_t input_num_ext, const int8_t pin_value)
-{
-    io_di_t *in = &io.in[input_num_ext-1];  // array index is one less than input number
-
-    // return if input is disabled (not supposed to happen)
-	if (in->mode == INPUT_MODE_DISABLED) {
-    	in->state = INPUT_DISABLED;
-        return;
-    }
-
-    // return if the input is in lockout period (take no action)
-#ifdef __ARM
-    if (SysTickTimer.getValue() < in->lockout_timer) { return; }
-#else
-    if (SysTickTimer_getValue() < in->lockout_timer) { return; }
-#endif
-	// return if no change in state
-	int8_t pin_value_corrected = (pin_value ^ ((int)in->mode ^ 1));	// correct for NO or NC mode
-	if ( in->state == pin_value_corrected ) {
-//    	in->edge = INPUT_EDGE_NONE;        // edge should only be reset by function or opposite edge
-    	return;
-	}
-
-	// record the changed state
-    in->state = pin_value_corrected;
-#ifdef __ARM
-	in->lockout_timer = SysTickTimer.getValue() + in->lockout_ms;
-#else
-	in->lockout_timer = SysTickTimer_getValue() + in->lockout_ms;
-#endif
-    if (pin_value_corrected == INPUT_ACTIVE) {
-        in->edge = INPUT_EDGE_LEADING;
-    } else {
-        in->edge = INPUT_EDGE_TRAILING;
-    }
-
-    // perform homing operations if in homing mode
-    if (in->homing_mode) {
-        if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
-            en_take_encoder_snapshot();
-//            cm_start_hold();
-        }
-        return;
-    }
-
-    // perform probing operations if in probing mode
-    if (in->probing_mode) {
-        if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
-            en_take_encoder_snapshot();
-//            cm_start_hold();
-        }
-        return;
-    }
-
-	// *** NOTE: From this point on all conditionals assume we are NOT in homing or probe mode ***
-
-    // trigger the action on leading edges
-
-    if (in->edge == INPUT_EDGE_LEADING) {
-        if (in->action == INPUT_ACTION_STOP) {
-//			cm_start_hold();
-        }
-        if (in->action == INPUT_ACTION_FAST_STOP) {
-//			cm_start_hold();                        // for now is same as STOP
-        }
-        if (in->action == INPUT_ACTION_HALT) {
-	        cm_halt_all();					        // hard stop, including spindle and coolant
-        }
-        if (in->action == INPUT_ACTION_PANIC) {
-	        char msg[10];
-	        sprintf_P(msg, PSTR("input %d"), input_num_ext);
-	        cm_panic(STAT_PANIC, msg);
-        }
-        if (in->action == INPUT_ACTION_RESET) {
-            hw_hard_reset();
-        }
-    }
-
-	// these functions trigger on the leading edge
-    if (in->edge == INPUT_EDGE_LEADING) {
-		if (in->function == INPUT_FUNCTION_LIMIT) {
-			cm.limit_requested = input_num_ext;
-
-		} else if (in->function == INPUT_FUNCTION_SHUTDOWN) {
-			cm.shutdown_requested = input_num_ext;
-
-		} else if (in->function == INPUT_FUNCTION_INTERLOCK) {
-		    cm.safety_interlock_disengaged = input_num_ext;
-		}
-    }
-
-    // trigger interlock release on trailing edge
-    if (in->edge == INPUT_EDGE_TRAILING) {
-        if (in->function == INPUT_FUNCTION_INTERLOCK) {
-		    cm.safety_interlock_reengaged = input_num_ext;
-        }
-    }
-//    sr_request_status_report(SR_TIMED_REQUEST);   //+++++ Put this one back in.
-}
-*/
 
 /********************************************
  **** Digital Input Supporting Functions ****
@@ -692,7 +445,6 @@ void  gpio_set_homing_mode(const uint8_t input_num_ext, const bool is_homing)
     if (input_num_ext == 0) {
         return;
     }
-//    io.in[input_num_ext-1].homing_mode = is_homing;
     d_in[input_num_ext-1].homing_mode = is_homing;
 }
 
@@ -701,7 +453,6 @@ void  gpio_set_probing_mode(const uint8_t input_num_ext, const bool is_probing)
     if (input_num_ext == 0) {
         return;
     }
-//    io.in[input_num_ext-1].probing_mode = is_probing;
     d_in[input_num_ext-1].probing_mode = is_probing;
 }
 
@@ -710,7 +461,6 @@ bool gpio_read_input(const uint8_t input_num_ext)
     if (input_num_ext == 0) {
         return false;
     }
-//    return (io.in[input_num_ext-1].state);
     return (d_in[input_num_ext-1].state);
 }
 
