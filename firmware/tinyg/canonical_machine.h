@@ -838,6 +838,7 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	void cm_print_admo(nvObj_t *nv);
 	void cm_print_frmo(nvObj_t *nv);
 	void cm_print_tool(nvObj_t *nv);
+	void cm_print_g92e(nvObj_t *nv);
 
 	void cm_print_gpl(nvObj_t *nv);		// Gcode defaults
 	void cm_print_gun(nvObj_t *nv);
@@ -902,6 +903,7 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	#define cm_print_admo tx_print_stub
 	#define cm_print_frmo tx_print_stub
 	#define cm_print_tool tx_print_stub
+	#define cm_print_g92e tx_print_stub
 
 	#define cm_print_gpl tx_print_stub		// Gcode defaults
 	#define cm_print_gun tx_print_stub

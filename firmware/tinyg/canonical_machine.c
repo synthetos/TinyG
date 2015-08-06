@@ -2199,6 +2199,7 @@ const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
 const char fmt_admo[] PROGMEM = "Arc Distance mode:   %s\n";
 const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
 const char fmt_tool[] PROGMEM = "Tool number          %d\n";
+const char fmt_g92e[] PROGMEM = "G92 enabled          %d\n";
 
 const char fmt_pos[] PROGMEM = "%c position:%15.3f%s\n";
 const char fmt_mpo[] PROGMEM = "%c machine posn:%11.3f%s\n";
@@ -2213,9 +2214,13 @@ const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G90,1=G9
 
 void cm_print_vel(nvObj_t *nv) { text_print_flt_units(nv, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(nvObj_t *nv) { text_print_flt_units(nv, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
+
 void cm_print_line(nvObj_t *nv) { text_print_int(nv, fmt_line);}
-void cm_print_stat(nvObj_t *nv) { text_print_str(nv, fmt_stat);}
-void cm_print_macs(nvObj_t *nv) { text_print_str(nv, fmt_macs);}
+void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
+void cm_print_g92e(nvObj_t *nv) { text_print(nv, fmt_g92e);}     // TYPE_INT
+    
+void cm_print_stat(nvObj_t *nv) { text_print_str(nv, fmt_stat);} // print all these as TYPE_STRING
+void cm_print_macs(nvObj_t *nv) { text_print_str(nv, fmt_macs);} // See _get_msg_helper() for details
 void cm_print_cycs(nvObj_t *nv) { text_print_str(nv, fmt_cycs);}
 void cm_print_mots(nvObj_t *nv) { text_print_str(nv, fmt_mots);}
 void cm_print_hold(nvObj_t *nv) { text_print_str(nv, fmt_hold);}
@@ -2228,7 +2233,6 @@ void cm_print_path(nvObj_t *nv) { text_print_str(nv, fmt_path);}
 void cm_print_dist(nvObj_t *nv) { text_print_str(nv, fmt_dist);}
 void cm_print_admo(nvObj_t *nv) { text_print_str(nv, fmt_admo);}
 void cm_print_frmo(nvObj_t *nv) { text_print_str(nv, fmt_frmo);}
-void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
 
 void cm_print_gpl(nvObj_t *nv) { text_print_int(nv, fmt_gpl);}
 void cm_print_gun(nvObj_t *nv) { text_print_int(nv, fmt_gun);}

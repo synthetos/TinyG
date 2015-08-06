@@ -46,6 +46,7 @@
  *    - remove Kahan references
  *    - Add const qualifiers to bool flags in arglists
  *    - install test_print() methods instead of local conversions
+ *    - update firmware build number for FBS values (not sure how this will work)
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE

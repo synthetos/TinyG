@@ -36,7 +36,7 @@
 //**** GLOBAL / GENERAL SETTINGS ******************************************************
 
 #define JUNCTION_ACCELERATION		100000		// centripetal acceleration around corners
-#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+//#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
 
 #define JUNCTION_AGGRESSION         0.75					// cornering - between 0.05 and 1.00 (max)
 #define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
@@ -72,11 +72,8 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   500                     // milliseconds - set $SV=0 to disable
 
-#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
-//#define STATUS_REPORT_DEFAULTS "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
+#define STATUS_REPORT_DEFAULTS "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
 //#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","admo","frmo","momo","stat"
-// Alternate SRs that report in drawable units
-//#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 
 // Gcode startup defaults
 #define GCODE_DEFAULT_UNITS         MILLIMETERS             // MILLIMETERS or INCHES
@@ -274,7 +271,7 @@
 #define DI1_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Xmax
-#define DI2_MODE                    NORMALLY_CLOSED
+#define DI2_MODE                    INPUT_MODE_DISABLED
 #define DI2_ACTION                  INPUT_ACTION_STOP
 #define DI2_FUNCTION                INPUT_FUNCTION_LIMIT
 
@@ -284,7 +281,7 @@
 #define DI3_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Ymax
-#define DI4_MODE                    NORMALLY_CLOSED
+#define DI4_MODE                    INPUT_MODE_DISABLED
 #define DI4_ACTION                  INPUT_ACTION_STOP
 #define DI4_FUNCTION                INPUT_FUNCTION_LIMIT
 

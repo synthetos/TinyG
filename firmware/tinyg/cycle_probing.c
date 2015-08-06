@@ -2,7 +2,8 @@
  * cycle_probing.c - probing cycle extension to canonical_machine.c
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S Hart, Jr., Sarah Tappon, Tom Cauchois, Robert Giseburt
+ * With contributions from Other Machine Company.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -201,7 +202,7 @@ static stat_t _probing_start()
 	// initial probe state, don't probe if we're already contacted!
 	int8_t probe = sw.state[pb.probe_switch];
 
-    if( probe==SW_OPEN ) {
+    if( probe == SW_OPEN ) {
         ritorno(cm_straight_feed(pb.target, pb.flags));
     }
 	return (_set_pb_func(_probing_finish));

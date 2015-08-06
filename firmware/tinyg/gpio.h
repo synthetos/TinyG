@@ -49,24 +49,6 @@
 //--- do not change from here down ---//
 
 typedef enum {
-    DIGITAL_INPUT_1 = 0,
-    DIGITAL_INPUT_2,
-    DIGITAL_INPUT_3,
-    DIGITAL_INPUT_4,
-    DIGITAL_INPUT_5,
-    DIGITAL_INPUT_6,
-    DIGITAL_INPUT_7,
-    DIGITAL_INPUT_8,
-#ifdef __ARM
-    DIGITAL_INPUT_9,
-    DIGITAL_INPUT_10,
-    DIGITAL_INPUT_11,
-    DIGITAL_INPUT_12,
-#endif
-    DIGITAL_INPUT_MAX                   // max digital input +1, Just for range checking
-} digitalInputChannel;
-
-typedef enum {
     INPUT_MODE_DISABLED = -1,           // input is disabled
     INPUT_ACTIVE_LOW = 0,               // input is active low (aka normally open)
     INPUT_ACTIVE_HIGH = 1,		        // input is active high (aka normally closed)
@@ -113,12 +95,10 @@ typedef struct ioDigitalInput {		    // one struct per digital input
 	inputMode mode;					    // -1=disabled, 0=active low (NO), 1= active high (NC)
 	inputAction action;                 // 0=none, 1=stop, 2=halt, 3=stop_steps, 4=reset
 	inputFunc function;                 // function to perform when activated / deactivated
-
-    int8_t state;                       // input state 0=inactive, 1=active, -1=disabled
+    inputState state;                   // input state 0=inactive, 1=active, -1=disabled
     inputEdgeFlag edge;                 // keeps a transient record of edges for immediate inquiry
     bool homing_mode;                   // set true when input is in homing mode.
     bool probing_mode;                  // set true when input is in probing mode.
-
 	uint16_t lockout_ms;                // number of milliseconds for debounce lockout
 	uint32_t lockout_timer;             // time to expire current debounce lockout, or 0 if no lockout
 } d_in_t;
@@ -224,6 +204,7 @@ typedef enum {	 			    // indexes into switch arrays
  * Note: The term "thrown" is used because switches could be normally-open
  *       or normally-closed. "Thrown" means activated or hit.
  */
+
 struct swStruct {								// switch state
 	uint8_t switch_type;						// 0=NO, 1=NC - applies to all switches
 	uint8_t limit_flag;							// 1=limit switch thrown - do a lockout

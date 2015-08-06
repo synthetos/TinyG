@@ -105,19 +105,21 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
  *  - The precision value 'p' only affects JSON responses. You need to also set
  *    the %f in the corresponding format string to set text mode display precision
  */
-/*	!!! NOTE: !!! If you are developing around this table be aware that if you do not
- *                change the firmware build number the EEPROM persistence from your
- *                previous load may write erroneous values into the initialization variables
- *                - making you think that there is something wrong with your code or this
- *                table. It's best to always do a fresh load using {defa:1} after you flash,
- *                each time you change this table (or change the firmware build number).
+/* !!! WARNING !!! 
+ *
+ *  If you are developing in this table and your board has persistence for configuration 
+ *  settings (like TinyGv8 does) you must either change the firmware build number or
+ *  run $defa=1 (or {defa:1} ) after you load new firmware or the items in persistence 
+ *  from your previous load may write erroneous values into the initialization variables.
+ *  This usually causes all hell to break loose during testing - making you think that 
+ *  there is something wrong with your code or this table. 
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
 	// group token flags p, print_func,	 get_func,  set_func, target for get/set,       default value
 	{ "sys", "fb", _fipn,2, hw_print_fb, get_flt,   set_nul,  (float *)&cs.fw_build,    TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
 //    { "sys", "fbs",_fn,  2, hw_print_fbs,hw_get_fbs,set_nul,  (float *)&cs.null,            0 },
-	{ "sys", "fv", _fipn,3, hw_print_fv, get_flt,   set_nul,  (float *)&cs.fw_version,  TINYG_FIRMWARE_VERSION },
+	{ "sys", "fv", _fipn,2, hw_print_fv, get_flt,   set_nul,  (float *)&cs.fw_version,  TINYG_FIRMWARE_VERSION },
 	{ "sys", "hp", _fipn,0, hw_print_hp, get_flt,   set_flt,  (float *)&cs.hw_platform, TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn,0, hw_print_hv, get_flt,   hw_set_hv,(float *)&cs.hw_version,  TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },   // device ID (ASCII signature)
@@ -141,7 +143,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "admo",_f0, 0, cm_print_admo, cm_get_admo, set_nul,(float *)&cs.null, 0 },			// arc distance mode
 	{ "",   "frmo",_f0, 0, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },			// feed rate mode
 	{ "",   "tool",_f0, 0, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },			// active tool
-//	{ "",   "g92e",_f0, 0, cm_print_g92e, get_ui8,     set_nul,(float *)&cm.gmx.origin_offset_enable, 0 }, // G92 enabled
+	{ "",   "g92e",_f0, 0, cm_print_g92e, get_ui8,     set_nul,(float *)&cm.gmx.origin_offset_enable, 0 }, // G92 enabled
 //	{ "",   "tick",_f0, 0, tx_print_int,  get_int,     set_int,(float *)&rtc.sys_ticks, 0 },	// tick count
 
 	{ "mpo","mpox",_f0, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },			// X machine position
@@ -500,7 +502,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ja",  _fipnc,0, cm_print_ja, get_flt, set_flu,   (float *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
 	{ "sys","ct",  _fipnc,4, cm_print_ct, get_flt, set_flu,   (float *)&cm.chordal_tolerance,       CHORDAL_TOLERANCE },
 	{ "sys","sl",  _fipn, 0, cm_print_sl, get_ui8, set_ui8,   (float *)&cm.soft_limit_enable,       SOFT_LIMIT_ENABLE },
-	{ "sys","st",  _fipn, 0, sw_print_st, get_ui8, sw_set_st, (float *)&sw.switch_type,             SWITCH_TYPE },
 	{ "sys","mt",  _fipn, 2, st_print_mt, get_flt, st_set_mt, (float *)&st_cfg.motor_power_timeout, MOTOR_POWER_TIMEOUT},
 	{ "sys","lim", _fipn, 0, cm_print_lim, get_ui8, set_01,   (float *)&cm.limit_enable,	            HARD_LIMIT_ENABLE },
 	{ "sys","saf", _fipn, 0, cm_print_saf, get_ui8, set_01,   (float *)&cm.safety_interlock_enable,	SAFETY_INTERLOCK_ENABLE },
