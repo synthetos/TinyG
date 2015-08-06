@@ -236,8 +236,10 @@ static bool _read_raw_pin(const uint8_t input_num_ext)
  *
  * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
  * The actual values will be the pin's port mask or 0, so you must check for non-zero.
+ *
+ * NOTE: The MOTATE_PIN_INTERRUPT will null out any pins that rae not defined, so no 
+ * need to ifdef them out for different board configurations
  */
-
 #ifdef __ARM
 MOTATE_PIN_INTERRUPT(kInput1_PinNumber) { _dispatch_pin(_condition_pin(1, (input_1_pin.get() != 0))); }
 MOTATE_PIN_INTERRUPT(kInput2_PinNumber) { _dispatch_pin(_condition_pin(2, (input_2_pin.get() != 0))); }
@@ -248,9 +250,9 @@ MOTATE_PIN_INTERRUPT(kInput6_PinNumber) { _dispatch_pin(_condition_pin(6, (input
 MOTATE_PIN_INTERRUPT(kInput7_PinNumber) { _dispatch_pin(_condition_pin(7, (input_7_pin.get() != 0))); }
 MOTATE_PIN_INTERRUPT(kInput8_PinNumber) { _dispatch_pin(_condition_pin(8, (input_8_pin.get() != 0))); }
 MOTATE_PIN_INTERRUPT(kInput9_PinNumber) { _dispatch_pin(_condition_pin(9, (input_9_pin.get() != 0))); }
-//MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _dispatch_pin(_condition_pin(9, (input_10_pin.get() != 0))); }
-//MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _dispatch_pin(_condition_pin(10, (input_11_pin.get() != 0))); }
-//MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _dispatch_pin(_condition_pin(11, (input_12_pin.get() != 0))); }
+MOTATE_PIN_INTERRUPT(kInput10_PinNumber) { _dispatch_pin(_condition_pin(9, (input_10_pin.get() != 0))); }
+MOTATE_PIN_INTERRUPT(kInput11_PinNumber) { _dispatch_pin(_condition_pin(10, (input_11_pin.get() != 0))); }
+MOTATE_PIN_INTERRUPT(kInput12_PinNumber) { _dispatch_pin(_condition_pin(11, (input_12_pin.get() != 0))); }
 #endif
 
 #ifdef __AVR

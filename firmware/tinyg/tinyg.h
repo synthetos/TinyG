@@ -44,6 +44,7 @@
  *    - move spindle and coolant to separate files
  *    - remove Kahan references
  *    - Add const qualifiers to bool flags in arglists
+ *    - install test_print() methods instead of local conversions
  */
 
 #ifndef TINYG_H_ONCE
@@ -59,6 +60,13 @@
 #include <math.h>
 
 //#include "MotatePins.h"
+
+/****** DEFINITIONS THAT MAY ULTIMATELY BE PROVIDED BY THE MAKEFILE ******/
+
+#define __ARCHITECTURE  __AVR
+#define __PLATFORM      __ATMEL_XMEGA
+#define __PROCESSOR     __XMEGA192A
+#define __BOARD         __TINYG_V8
 
 /****** REVISIONS ******/
 

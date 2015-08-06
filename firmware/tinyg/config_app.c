@@ -497,19 +497,19 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
 
 	// General system parameters
-	{ "sys","ja",  _fipnc,0, cm_print_ja, get_flt, set_flu,  (float *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
-	{ "sys","ct",  _fipnc,4, cm_print_ct, get_flt, set_flu,  (float *)&cm.chordal_tolerance,       CHORDAL_TOLERANCE },
-	{ "sys","sl",  _fipn, 0, cm_print_sl, get_ui8, set_ui8,  (float *)&cm.soft_limit_enable,       SOFT_LIMIT_ENABLE },
-	{ "sys","st",  _fipn, 0, sw_print_st, get_ui8, sw_set_st,(float *)&sw.switch_type,             SWITCH_TYPE },
-	{ "sys","mt",  _fipn, 2, st_print_mt, get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout, MOTOR_POWER_TIMEOUT},
-//	{ "sys","lim",_fipn, 0, cm_print_lim, get_ui8, set_01,   (float *)&cm.limit_enable,	            HARD_LIMIT_ENABLE },
-//	{ "sys","saf",_fipn, 0, cm_print_saf, get_ui8, set_01,   (float *)&cm.safety_interlock_enable,	SAFETY_INTERLOCK_ENABLE },
-//	{ "sys","mt", _fipn, 2, st_print_mt,  get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout,  MOTOR_POWER_TIMEOUT},
-//	{ "sys","m48e",_fipn,0, cm_print_m48e,get_ui8, set_01,   (float *)&cm.gmx.m48_enable, 0 },      // M48/M49 feedrate & spindle override enable
-//	{ "sys","mfoe",_fipn,0, cm_print_mfoe,get_ui8, set_01,   (float *)&cm.gmx.mfo_enable,           FEED_OVERRIDE_ENABLE},
-//	{ "sys","mfo", _fipn,3, cm_print_mfo, get_flt,cm_set_mfo,(float *)&cm.gmx.mfo_factor,           FEED_OVERRIDE_FACTOR},
-//	{ "sys","mtoe",_fipn,0, cm_print_mtoe,get_ui8, set_01,   (float *)&cm.gmx.mto_enable,           TRAVERSE_OVERRIDE_ENABLE},
-//	{ "sys","mto", _fipn,3, cm_print_mto, get_flt,cm_set_mto,(float *)&cm.gmx.mto_factor,           TRAVERSE_OVERRIDE_FACTOR},
+	{ "sys","ja",  _fipnc,0, cm_print_ja, get_flt, set_flu,   (float *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
+	{ "sys","ct",  _fipnc,4, cm_print_ct, get_flt, set_flu,   (float *)&cm.chordal_tolerance,       CHORDAL_TOLERANCE },
+	{ "sys","sl",  _fipn, 0, cm_print_sl, get_ui8, set_ui8,   (float *)&cm.soft_limit_enable,       SOFT_LIMIT_ENABLE },
+	{ "sys","st",  _fipn, 0, sw_print_st, get_ui8, sw_set_st, (float *)&sw.switch_type,             SWITCH_TYPE },
+	{ "sys","mt",  _fipn, 2, st_print_mt, get_flt, st_set_mt, (float *)&st_cfg.motor_power_timeout, MOTOR_POWER_TIMEOUT},
+	{ "sys","lim", _fipn, 0, cm_print_lim, get_ui8, set_01,   (float *)&cm.limit_enable,	            HARD_LIMIT_ENABLE },
+	{ "sys","saf", _fipn, 0, cm_print_saf, get_ui8, set_01,   (float *)&cm.safety_interlock_enable,	SAFETY_INTERLOCK_ENABLE },
+	{ "sys","mt",  _fipn, 2, st_print_mt,  get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout,  MOTOR_POWER_TIMEOUT},
+//	{ "sys","m48e",_fipn, 0, cm_print_m48e,get_ui8, set_01,   (float *)&cm.gmx.m48_enable, 0 },      // M48/M49 feedrate & spindle override enable
+//	{ "sys","mfoe",_fipn, 0, cm_print_mfoe,get_ui8, set_01,   (float *)&cm.gmx.mfo_enable,           FEED_OVERRIDE_ENABLE},
+//	{ "sys","mfo", _fipn, 3, cm_print_mfo, get_flt,cm_set_mfo,(float *)&cm.gmx.mfo_factor,           FEED_OVERRIDE_FACTOR},
+//	{ "sys","mtoe",_fipn, 0, cm_print_mtoe,get_ui8, set_01,   (float *)&cm.gmx.mto_enable,           TRAVERSE_OVERRIDE_ENABLE},
+//	{ "sys","mto", _fipn, 3, cm_print_mto, get_flt,cm_set_mto,(float *)&cm.gmx.mto_factor,           TRAVERSE_OVERRIDE_FACTOR},
 
 /*
     // Spindle functions

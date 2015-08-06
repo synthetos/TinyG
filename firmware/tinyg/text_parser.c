@@ -170,7 +170,7 @@ void text_response(const stat_t status, char *buf)
 }
 
 /***** PRINT FUNCTIONS ********************************************************
- * json_print_list() - command to select and produce a JSON formatted output
+ * text_print_list() - command to select and produce a JSON formatted output
  * text_print_inline_pairs()
  * text_print_inline_values()
  * text_print_multiline_formatted()
@@ -254,6 +254,15 @@ void tx_print_ui8(nvObj_t *nv) { text_print_ui8(nv, fmt_ui8);}
 void tx_print_int(nvObj_t *nv) { text_print_int(nv, fmt_int);}
 void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
 
+void tx_print(nvObj_t *nv) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_FLOAT: { text_print_flt(nv, fmt_flt); break;}
+        case TYPE_INT:   { text_print_int(nv, fmt_int); break;}
+        case TYPE_STRING:{ text_print_str(nv, fmt_str); break;}
+        //   TYPE_NULL is not needed in this list as it does nothing
+    }
+}
+
 /*
  * Text print primitives using external formats
  *
@@ -269,6 +278,15 @@ void text_print_flt(nvObj_t *nv, const char *format) { fprintf_P(stderr, format,
 void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
 {
 	fprintf_P(stderr, format, nv->value, units);
+}
+
+void text_print(nvObj_t *nv, const char *format) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_NULL:  { text_print_nul(nv, format); break;}
+        case TYPE_FLOAT: { text_print_flt(nv, format); break;}
+        case TYPE_INT:   { text_print_int(nv, format); break;}
+        case TYPE_STRING:{ text_print_str(nv, format); break;}
+    }
 }
 
 /*

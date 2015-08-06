@@ -62,7 +62,6 @@ void rtc_init()
  * Here's the code in case the main loop (non-interrupt) function needs to
  * create a critical region for variables set or used by the callback:
  *
- *		#include "gpio.h"
  *		#include "xmega_rtc.h"
  *
  *		RTC.INTCTRL = RTC_OVFINTLVL_OFF_gc;	// disable interrupt
@@ -75,5 +74,5 @@ ISR(RTC_COMP_vect)
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
 
 	// callbacks to whatever you need to happen on each RTC tick go here:
-	switch_rtc_callback();					// switch debouncing
+//	switch_rtc_callback();					// switch debouncing
 }

@@ -36,7 +36,6 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
-
 #include "encoder.h"
 #include "hardware.h"
 #include "gpio.h"
@@ -44,6 +43,7 @@
 #include "help.h"
 #include "util.h"
 #include "xio.h"
+//#include "settings.h"
 
 #ifdef __ARM
 #include "Reset.h"
@@ -60,13 +60,26 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-static stat_t _shutdown_idler(void);
+//static stat_t _led_indicator(void);             // twiddle the LED indicator
+//static stat_t _shutdown_idler(void);
+static stat_t _shutdown_handler(void);          // new (replaces _interlock_estop_handler)
+static stat_t _interlock_handler(void);         // new (replaces _interlock_estop_handler)
+static stat_t _limit_switch_handler(void);      // revised for new GPIO code
+
+//static void _init_assertions(void);
+//static stat_t _test_assertions(void);
+//static stat_t _test_system_assertions(void);
+
 static stat_t _normal_idler(void);
-static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
+
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 static stat_t _command_dispatch(void);
+//static stat_t _dispatch_command(void);
+//static stat_t _dispatch_control(void);
+//static void _dispatch_kernel(void);
+//static stat_t _controller_state(void);          // manage controller state transitions
 
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
@@ -154,20 +167,23 @@ static void _controller_HSM()
 //
 //----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
-	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
-	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// 3. idle in shutdown state
-//	DISPATCH( poll_switches());					// 4. run a switch polling cycle
-	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
+	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
+	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
 
-	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// 6b. plan a feedhold from line runtime
-	DISPATCH(_system_assertions());				// 7. system integrity assertions
+//	DISPATCH(_led_indicator());				    // blink LEDs at the current rate
+//	DISPATCH(_shutdown_idler());				// idle in shutdown state
+//	DISPATCH(_limit_switch_handler());			// limit switch has been thrown
+    DISPATCH(_shutdown_handler());              // invoke shutdown
+    DISPATCH(_interlock_handler());             // invoke / remove safety interlock
+    DISPATCH(_limit_switch_handler());          // invoke limit switch
+
+	DISPATCH(cm_feedhold_sequencing_callback());// 5a. feedhold state machine runner
+	DISPATCH(mp_plan_hold_callback());			// 5b. plan a feedhold from line runtime
+	DISPATCH(_system_assertions());				// 6. system integrity assertions
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
 	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
-//	DISPATCH(switch_debounce_callback());		// debounce switches
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
@@ -297,7 +313,7 @@ static stat_t _command_dispatch()
  *	this point. It's important that the reset handler is still called so a SW reset
  *	(ctrl-x) or bootloader request can be processed.
  */
-
+/*
 static stat_t _shutdown_idler()
 {
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
@@ -308,7 +324,7 @@ static stat_t _shutdown_idler()
 	}
 	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
 }
-
+*/
 static stat_t _normal_idler()
 {
 #ifdef __ARM
@@ -396,6 +412,7 @@ static stat_t _sync_to_planner()
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
+/*
 static stat_t _limit_switch_handler(void)
 {
     if (cm_get_machine_state() == MACHINE_ALARM) {
@@ -407,11 +424,70 @@ static stat_t _limit_switch_handler(void)
     }
     return (STAT_OK);
 }
+*/
+/* ALARM STATE HANDLERS
+ *
+ * _shutdown_handler() - put system into shutdown state
+ * _limit_switch_handler() - shut down system if limit switch fired
+ * _interlock_handler() - feedhold and resume depending on edge
+ *
+ *	Some handlers return EAGAIN causing the control loop to never advance beyond that point.
+ *
+ * _interlock_handler() reacts the follwing ways:
+ *   - safety_interlock_requested == INPUT_EDGE_NONE is normal operation (no interlock)
+ *   - safety_interlock_requested == INPUT_EDGE_LEADING is interlock onset
+ *   - safety_interlock_requested == INPUT_EDGE_TRAILING is interlock offset
+ */
+static stat_t _shutdown_handler(void)
+{
+    if (cm.shutdown_requested != 0) {  // request may contain the (non-zero) input number
+	    char msg[10];
+	    sprintf_P(msg, PSTR("input %d"), (int)cm.shutdown_requested);
+	    cm.shutdown_requested = false; // clear limit request used here ^
+        cm_shutdown(STAT_SHUTDOWN, msg);
+    }
+    return(STAT_OK);
+}
+
+static stat_t _limit_switch_handler(void)
+{
+    if ((cm.limit_enable == true) && (cm.limit_requested != 0)) {
+	    char msg[10];
+	    sprintf_P(msg, PSTR("input %d"), (int)cm.limit_requested);
+        cm.limit_requested = false; // clear limit request used here ^
+        cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+    }
+    return (STAT_OK);
+}
+
+static stat_t _interlock_handler(void)
+{
+    if (cm.safety_interlock_enable) {
+    // interlock broken
+        if (cm.safety_interlock_disengaged != 0) {
+            cm.safety_interlock_disengaged = 0;
+            cm.safety_interlock_state = SAFETY_INTERLOCK_DISENGAGED;
+            cm_request_feedhold();                                  // may have already requested STOP as INPUT_ACTION
+            // feedhold was initiated by input action in gpio
+            // pause spindle
+            // pause coolant
+        }
+
+        // interlock restored
+        if ((cm.safety_interlock_reengaged != 0) && (mp_runtime_is_idle())) {
+            cm.safety_interlock_reengaged = 0;
+            cm.safety_interlock_state = SAFETY_INTERLOCK_ENGAGED;   // interlock restored
+            // restart spindle with dwell
+//            cm_request_end_hold();                                // use cm_request_end_hold() instead of just ending
+            // restart coolant
+        }
+    }
+    return(STAT_OK);
+}
 
 /*
  * _system_assertions() - check memory integrity and other assertions
  */
-//#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
 #define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, "assertion failed"));
 
 stat_t _system_assertions()
