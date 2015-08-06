@@ -451,7 +451,7 @@ static stat_t _shutdown_handler(void)
 
 static stat_t _limit_switch_handler(void)
 {
-    if ((cm.limit_enable == true) && (cm.limit_requested != 0)) {
+    if (cm.limit_enable && (cm.limit_requested != 0)) {
 	    char msg[10];
 	    sprintf_P(msg, PSTR("input %d"), (int)cm.limit_requested);
         cm.limit_requested = false; // clear limit request used here ^

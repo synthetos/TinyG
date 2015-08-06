@@ -173,10 +173,10 @@ typedef enum {
 #define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), MESSAGE_LEN-1)
+#define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), GLOBAL_STRING_LEN-1)
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), MESSAGE_LEN-1)
+#define GET_UNITS(a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), GLOBAL_STRING_LEN-1)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings

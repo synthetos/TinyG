@@ -53,8 +53,9 @@
 typedef uint8_t stat_t;         // !!! Do not exceed 255 without changing stat_t typedef
 extern stat_t status_code;
 
-#define GLOBAL_STRING_LEN 256   // allow sufficient space for JSON responses and message strings
-#define MESSAGE_LEN 80			// global message string storage allocation
+// GLOBAL_STRING_LEN should allow sufficient space for JSON responses and message strings
+// Note that the last byte must always be zero or an assertion failure will occur
+#define GLOBAL_STRING_LEN 256
 extern char global_string_buf[];
 
 char *get_status_message(stat_t status);

@@ -200,7 +200,7 @@ stat_t config_test_assertions()
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
 	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
 	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if (global_string_buf[GLOBAL_STRING_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
