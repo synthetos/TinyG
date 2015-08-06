@@ -754,15 +754,15 @@ void cm_program_end(void);										// M2
 // Homing cycles
 stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
-//stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
 stat_t cm_homing_cycle_callback(void);                          // G28.2/.4 main loop callback
 
 // Probe cycles
 stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
-stat_t cm_probe_callback(void);									// G38.2 main loop callback
+stat_t cm_probing_cycle_callback(void);							// G38.2 main loop callback
 
 // Jogging cycle
 stat_t cm_jogging_callback(void);								// jogging cycle main loop
+stat_t cm_jogging_cycle_callback(void);							// jogging cycle main loop
 stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
 float cm_get_jogging_dest(void);
 

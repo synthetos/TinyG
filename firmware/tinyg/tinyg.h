@@ -83,7 +83,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.12	// gpio - switched digital inputs over to g2 style
+#define TINYG_FIRMWARE_BUILD        444.13	// gpio - updated probing for new digital inputs
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version

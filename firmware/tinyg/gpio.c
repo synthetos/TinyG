@@ -635,8 +635,6 @@ void gpio_set_bit_off(uint8_t b)
 	if (b & 0x01) { hw.out_port[3]->OUTCLR = GPIO1_OUT_BIT_bm; }
 }
 
-
-
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
  * Functions to get and set variables from the cfgArray table

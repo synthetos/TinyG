@@ -286,7 +286,7 @@
 #define DI4_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Zmin
-#define DI5_MODE                    INPUT_ACTIVE_HIGH   // used for Z probe
+#define DI5_MODE                    INPUT_ACTIVE_LOW   // used for Z probe
 #define DI5_ACTION                  INPUT_ACTION_NONE
 #define DI5_FUNCTION                INPUT_FUNCTION_NONE
 
