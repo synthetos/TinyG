@@ -36,10 +36,6 @@
 #include <avr/interrupt.h>
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /***** PWM defines, structures and memory allocation *****/
 
 pwmSingleton_t pwm;
@@ -222,8 +218,15 @@ stat_t pwm_set_duty(uint8_t chan, float duty)
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-// none
-
+/*
+ * pwm_set_pwm() - set PWM parameter and reset PWM channels
+ */
+stat_t pwm_set_pwm(nvObj_t *nv)
+{
+    set_flt(nv);
+    spindle_init();
+    return(STAT_OK);
+}
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
@@ -255,7 +258,3 @@ void pwm_print_p1wph(nvObj_t *nv) { text_print_flt(nv, fmt_p1wph);}
 void pwm_print_p1pof(nvObj_t *nv) { text_print_flt(nv, fmt_p1pof);}
 
 #endif //__TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

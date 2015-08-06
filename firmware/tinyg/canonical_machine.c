@@ -1668,6 +1668,14 @@ void cm_cycle_end()
 	}
 }
 
+void cm_canned_cycle_end()
+{
+    cm.cycle_state = CYCLE_OFF;
+    float value[] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+    bool flags[]  = { 1,0,0,0,0,0 };
+    _exec_program_finalize(value, flags);
+}
+
 void cm_program_stop()
 {
 	float value[] = { MACHINE_PROGRAM_STOP };
@@ -1728,10 +1736,13 @@ static const char msg_stat7[] PROGMEM = "Probe";
 static const char msg_stat8[] PROGMEM = "Cycle";
 static const char msg_stat9[] PROGMEM = "Homing";
 static const char msg_stat10[] PROGMEM = "Jog";
-static const char msg_stat11[] PROGMEM = "Shutdown";
+static const char msg_stat11[] PROGMEM = "Interlock";
+static const char msg_stat12[] PROGMEM = "Shutdown";
+static const char msg_stat13[] PROGMEM = "Panic";
 static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3,
-												msg_stat4, msg_stat5, msg_stat6, msg_stat7,
-												msg_stat8, msg_stat9, msg_stat10, msg_stat11 };
+                                                msg_stat4, msg_stat5, msg_stat6, msg_stat7,
+                                                msg_stat8, msg_stat9, msg_stat10, msg_stat11,
+                                                msg_stat12, msg_stat13 };
 
 static const char msg_macs0[] PROGMEM = "Initializing";
 static const char msg_macs1[] PROGMEM = "Ready";
@@ -1739,10 +1750,13 @@ static const char msg_macs2[] PROGMEM = "Alarm";
 static const char msg_macs3[] PROGMEM = "Stop";
 static const char msg_macs4[] PROGMEM = "End";
 static const char msg_macs5[] PROGMEM = "Cycle";
-static const char msg_macs6[] PROGMEM = "Shutdown";
+static const char msg_macs6[] PROGMEM = "Interlock";
+static const char msg_macs7[] PROGMEM = "SHUTDOWN";
+static const char msg_macs8[] PROGMEM = "PANIC";
 static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3,
-												msg_macs4, msg_macs5, msg_macs6 };
-
+                                                msg_macs4, msg_macs5, msg_macs6, msg_macs7,
+                                                msg_macs8 };
+                                                
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Machining";
 static const char msg_cycs2[] PROGMEM = "Probe";
@@ -1754,6 +1768,12 @@ static const char msg_mots0[] PROGMEM = "Stop";
 static const char msg_mots1[] PROGMEM = "Run";
 static const char msg_mots2[] PROGMEM = "Hold";
 static const char *const msg_mots[] PROGMEM = { msg_mots0, msg_mots1, msg_mots2 };
+
+//static const char msg_mots0[] PROGMEM = "Stop";
+//static const char msg_mots1[] PROGMEM = "Planning";
+//static const char msg_mots2[] PROGMEM = "Run";
+//static const char msg_mots3[] PROGMEM = "Hold";
+//static const char *const msg_mots[] PROGMEM = { msg_mots0, msg_mots1, msg_mots2, msg_mots3 };
 
 static const char msg_hold0[] PROGMEM = "Off";
 static const char msg_hold1[] PROGMEM = "Sync";
@@ -1778,7 +1798,7 @@ static const char msg_g58[] PROGMEM = "G58 - coordinate system 5";
 static const char msg_g59[] PROGMEM = "G59 - coordinate system 6";
 static const char *const msg_coor[] PROGMEM = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
 
-static const char msg_g00[] PROGMEM = "G0  - linear traverse (seek)";
+static const char msg_g00[] PROGMEM = "G0  - linear traverse";
 static const char msg_g01[] PROGMEM = "G1  - linear feed";
 static const char msg_g02[] PROGMEM = "G2  - clockwise arc feed";
 static const char msg_g03[] PROGMEM = "G3  - counter clockwise arc feed";
@@ -1991,9 +2011,9 @@ stat_t cm_get_ofs(nvObj_t *nv)
 /*
  * AXIS GET AND SET FUNCTIONS
  *
- * cm_get_am()	- get axis mode w/enumeration string
- * cm_set_am()	- set axis mode w/exception handling for axis type
- * cm_set_sw()	- run this any time you change a switch setting
+ * cm_get_am() - get axis mode w/enumeration string
+ * cm_set_am() - set axis mode w/exception handling for axis type
+ * cm_set_hi() - set homing input
  */
 
 stat_t cm_get_am(nvObj_t *nv)
@@ -2011,6 +2031,15 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
 	}
 	set_ui8(nv);
 	return(STAT_OK);
+}
+
+stat_t cm_set_hi(nvObj_t *nv)
+{
+    if ((nv->value < 0) || (nv->value > DI_CHANNELS)) {
+        return (STAT_INPUT_VALUE_UNSUPPORTED);
+    }
+    set_ui8(nv);
+    return (STAT_OK);
 }
 
 /**** Jerk functions
@@ -2041,7 +2070,7 @@ void cm_set_axis_jerk(uint8_t axis, float jerk)
 	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
 }
 
-stat_t cm_set_xjm(nvObj_t *nv)
+stat_t cm_set_jm(nvObj_t *nv)
 {
 	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
 	set_flu(nv);
@@ -2049,7 +2078,7 @@ stat_t cm_set_xjm(nvObj_t *nv)
 	return(STAT_OK);
 }
 
-stat_t cm_set_xjh(nvObj_t *nv)
+stat_t cm_set_jh(nvObj_t *nv)
 {
 	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
 	set_flu(nv);
@@ -2257,8 +2286,8 @@ static const char fmt_Xjm[] PROGMEM = "[%s%s] %s jerk maximum%15.0f%s/min^3 * 1 
 static const char fmt_Xjh[] PROGMEM = "[%s%s] %s jerk homing%16.0f%s/min^3 * 1 million\n";
 static const char fmt_Xjd[] PROGMEM = "[%s%s] %s junction deviation%14.4f%s (larger is faster)\n";
 static const char fmt_Xra[] PROGMEM = "[%s%s] %s radius value%20.4f%s\n";
-static const char fmt_Xsn[] PROGMEM = "[%s%s] %s switch min%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
-static const char fmt_Xsx[] PROGMEM = "[%s%s] %s switch max%17d [0=off,1=homing,2=limit,3=limit+homing]\n";
+static const char fmt_Xhi[] PROGMEM = "[%s%s] %s homing input%15d [input 1-N or 0 to disable homing this axis]\n";
+static const char fmt_Xhd[] PROGMEM = "[%s%s] %s homing direction%11d [0=search-to-negative, 1=search-to-positive]\n";
 static const char fmt_Xsv[] PROGMEM = "[%s%s] %s search velocity%12.0f%s/min\n";
 static const char fmt_Xlv[] PROGMEM = "[%s%s] %s latch velocity%13.0f%s/min\n";
 static const char fmt_Xlb[] PROGMEM = "[%s%s] %s latch backoff%18.3f%s\n";
@@ -2301,6 +2330,13 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
 }
 
+static void _print_hom(nvObj_t *nv, const char *format)
+{
+    char axes[] = {"XYZABC"};
+    uint8_t axis = _get_axis(nv->index);
+    printf_P(format, axes[axis], nv->value);
+}
+
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
 	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
@@ -2315,8 +2351,9 @@ void cm_print_jm(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjm);}
 void cm_print_jh(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjh);}
 void cm_print_jd(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xjd);}
 void cm_print_ra(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xra);}
-void cm_print_sn(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsn);}
-void cm_print_sx(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xsx);}
+
+void cm_print_hi(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xhi);}
+void cm_print_hd(nvObj_t *nv) { _print_axis_ui8(nv, fmt_Xhd);}
 void cm_print_sv(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xsv);}
 void cm_print_lv(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xlv);}
 void cm_print_lb(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xlb);}
@@ -2328,5 +2365,6 @@ void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cpos);}
 void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
+void cm_print_hom(nvObj_t *nv) { _print_hom(nv, fmt_hom);}
 
 #endif // __TEXT_MODE

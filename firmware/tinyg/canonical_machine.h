@@ -496,14 +496,11 @@ typedef struct GCodeFlags {             // Gcode model input flags
 typedef struct cmAxis {
 	cmAxisMode axis_mode;				    // see tgAxisMode in gcode.h
 	float velocity_max;                     // max velocity in mm/min or deg/min
-//	float recip_velocity_max;
 	float feedrate_max;                     // max velocity in mm/min or deg/min
-//	float recip_feedrate_max;
 	float travel_max;                       // max work envelope for soft limits
 	float travel_min;                       // min work envelope for soft limits
 	float jerk_max;                         // max jerk (Jm) in mm/min^3 divided by 1 million
-	float jerk_homing;                      // homing jerk (Jh) in mm/min^3 divided by 1 million
-//	float jerk_high;				        // high speed deceleration jerk (Jh) in mm/min^3 divided by 1 million
+	float jerk_high;				    // high speed deceleration jerk (Jh) in mm/min^3 divided by 1 million
 	float recip_jerk;                       // stored reciprocal of current jerk value - has the million in it
 	float junction_dev;                     // aka cornering delta
 	float radius;                           // radius in mm for rotary axis modes
@@ -746,6 +743,7 @@ stat_t cm_queue_flush(void);									// flush serial and planner queues with coo
 
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
+void cm_canned_cycle_end(void);                                 // end of canned cycle
 void cm_feedhold(void);											// (no Gcode)
 void cm_program_stop(void);										// M0
 void cm_optional_program_stop(void);							// M1
@@ -756,7 +754,8 @@ void cm_program_end(void);										// M2
 // Homing cycles
 stat_t cm_homing_cycle_start(void);								// G28.2
 stat_t cm_homing_cycle_start_no_set(void);						// G28.4
-stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
+//stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
+stat_t cm_homing_cycle_callback(void);                          // G28.2/.4 main loop callback
 
 // Probe cycles
 stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
@@ -808,8 +807,13 @@ stat_t cm_run_joga(nvObj_t *nv);		// start jogging cycle for a
 
 stat_t cm_get_am(nvObj_t *nv);			// get axis mode
 stat_t cm_set_am(nvObj_t *nv);			// set axis mode
-stat_t cm_set_xjm(nvObj_t *nv);			// set jerk max with 1,000,000 correction
-stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
+stat_t cm_set_hi(nvObj_t *nv);          // set homing input
+
+//stat_t cm_set_ja(nvObj_t *nv);			// set junction aggression with 1,000,000 correction
+//stat_t cm_set_vm(nvObj_t *nv);			// set velocity max and reciprocal
+//stat_t cm_set_fr(nvObj_t *nv);			// set feedrate max and reciprocal
+stat_t cm_set_jm(nvObj_t *nv);			// set jerk max with 1,000,000 correction
+stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 
 /*--- text_mode support functions ---*/
 
@@ -824,6 +828,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	void cm_print_mots(nvObj_t *nv);
 	void cm_print_hold(nvObj_t *nv);
 	void cm_print_home(nvObj_t *nv);
+	void cm_print_hom(nvObj_t *nv);
 	void cm_print_unit(nvObj_t *nv);
 	void cm_print_coor(nvObj_t *nv);
 	void cm_print_momo(nvObj_t *nv);
@@ -862,6 +867,9 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	void cm_print_jh(nvObj_t *nv);
 	void cm_print_jd(nvObj_t *nv);
 	void cm_print_ra(nvObj_t *nv);
+    
+	void cm_print_hi(nvObj_t *nv);
+	void cm_print_hd(nvObj_t *nv);
 	void cm_print_sn(nvObj_t *nv);
 	void cm_print_sx(nvObj_t *nv);
 	void cm_print_sv(nvObj_t *nv);
@@ -882,6 +890,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	#define cm_print_mots tx_print_stub
 	#define cm_print_hold tx_print_stub
 	#define cm_print_home tx_print_stub
+	#define cm_print_hom tx_print_stub
 	#define cm_print_unit tx_print_stub
 	#define cm_print_coor tx_print_stub
 	#define cm_print_momo tx_print_stub
@@ -920,6 +929,9 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	#define cm_print_jh tx_print_stub
 	#define cm_print_jd tx_print_stub
 	#define cm_print_ra tx_print_stub
+    
+	#define cm_print_hi tx_print_stub
+	#define cm_print_hd tx_print_stub
 	#define cm_print_sn tx_print_stub
 	#define cm_print_sx tx_print_stub
 	#define cm_print_sv tx_print_stub
