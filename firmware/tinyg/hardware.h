@@ -116,7 +116,7 @@ typedef enum {
 #define PORT_MOTOR_3	PORTE
 #define PORT_MOTOR_4	PORTD
 
-#define PORT_SWITCH_X 	PORTA			// Switch axes mapped to ports
+#define PORT_SWITCH_X 	PORTA			// GPIO Input Assignments (switches) axes mapped to ports
 #define PORT_SWITCH_Y 	PORTD
 #define PORT_SWITCH_Z 	PORTE
 #define PORT_SWITCH_A 	PORTF
@@ -141,6 +141,30 @@ typedef enum {
 #define PORT_MOTOR_2_VPORT	VPORT1
 #define PORT_MOTOR_3_VPORT	VPORT2
 #define PORT_MOTOR_4_VPORT	VPORT3
+
+/* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
+ *	v6 and earlier use internal pullups only. Internal pullups are set
+ *	regardless of board type but are extraneous for v7 boards.
+ */
+#define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
+//#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
+
+/*
+ * Digital Input (switch) interrupt levels and vectors - The vectors are hard-wired to xmega ports
+ * If you change axis port assignments you need to change these, too.
+ * Interrupt level should not be PORT_INT1LVL_HI_gc or PORT_INT1LVL_LO_gc
+ */
+#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+
+// these must line up with the PORT_SWITCH_x GPIO Input Assignments (switches) above
+#define X_MIN_ISR_vect PORTA_INT0_vect
+#define X_MAX_ISR_vect PORTA_INT1_vect
+#define Y_MIN_ISR_vect PORTD_INT0_vect
+#define Y_MAX_ISR_vect PORTD_INT1_vect
+#define Z_MIN_ISR_vect PORTE_INT0_vect
+#define Z_MAX_ISR_vect PORTE_INT1_vect
+#define A_MIN_ISR_vect PORTF_INT0_vect
+#define A_MAX_ISR_vect PORTF_INT1_vect
 
 /*
  * Port setup - Stepper / Switch Ports:

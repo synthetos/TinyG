@@ -63,10 +63,10 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.11	// gpio - switched digital inputs over to g2 style
+#define TINYG_FIRMWARE_BUILD        444.12	// gpio - switched digital inputs over to g2 style
 
 #endif
-#define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
+#define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
 #define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		// see hardware.h
 #define TINYG_HARDWARE_VERSION_MAX	TINYG_HARDWARE_VERSION
@@ -91,6 +91,55 @@
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
 //#endif
+
+/******************************************************************************
+ ***** TINYG APPLICATION DEFINITIONS ******************************************
+ ******************************************************************************/
+
+typedef uint16_t magic_t;		// magic number size
+#define MAGICNUM 0x12EF			// used for memory integrity assertions
+
+/***** Axes, motors & PWM channels used by the application *****/
+// Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
+
+#define AXES		6			// number of axes supported in this version
+#define HOMING_AXES	4			// number of axes that can be homed (assumes Zxyabc sequence)
+#define MOTORS		4			// number of motors on the board
+#define COORDS		6			// number of supported coordinate systems (1-6)
+#define PWMS		2			// number of supported PWM channels
+
+// Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
+typedef enum {
+    AXIS_X = 0,
+    AXIS_Y,
+    AXIS_Z,
+    AXIS_A,
+    AXIS_B,
+    AXIS_C,
+    AXIS_U,                     // reserved
+    AXIS_V,                     // reserved
+    AXIS_W                      // reserved
+} cmAxes;
+
+typedef enum {
+    OFS_I = 0,
+    OFS_J,
+    OFS_K
+} cmIJKOffsets;
+
+typedef enum {
+    MOTOR_1 = 0,
+    MOTOR_2,
+    MOTOR_3,
+    MOTOR_4,
+    MOTOR_5,
+    MOTOR_6
+} cmMotors;
+
+typedef enum {
+    PWM_1 = 0,
+    PWM_2
+} cmPWMs;
 
 /************************************************************************************
  ***** PLATFORM COMPATIBILITY *******************************************************
@@ -179,55 +228,6 @@ inline char* strncpy_P(char* d, const char* s, size_t l) { return (char *)strncp
 #define sprintf_P sprintf
 
 #endif // __ARM
-
-/******************************************************************************
- ***** TINYG APPLICATION DEFINITIONS ******************************************
- ******************************************************************************/
-
-typedef uint16_t magic_t;		// magic number size
-#define MAGICNUM 0x12EF			// used for memory integrity assertions
-
-/***** Axes, motors & PWM channels used by the application *****/
-// Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
-
-#define AXES		6			// number of axes supported in this version
-#define HOMING_AXES	4			// number of axes that can be homed (assumes Zxyabc sequence)
-#define MOTORS		4			// number of motors on the board
-#define COORDS		6			// number of supported coordinate systems (1-6)
-#define PWMS		2			// number of supported PWM channels
-
-// Note: If you change COORDS you must adjust the entries in cfgArray table in config.c
-typedef enum {
-    AXIS_X = 0,
-    AXIS_Y,
-    AXIS_Z,
-    AXIS_A,
-    AXIS_B,
-    AXIS_C,
-    AXIS_U,                     // reserved
-    AXIS_V,                     // reserved
-    AXIS_W                      // reserved
-} cmAxes;
-
-typedef enum {
-    OFS_I = 0,
-    OFS_J,
-    OFS_K
-} cmIJKOffsets;
-
-typedef enum {
-    MOTOR_1 = 0,
-    MOTOR_2,
-    MOTOR_3,
-    MOTOR_4,
-    MOTOR_5,
-    MOTOR_6
-} cmMotors;
-
-typedef enum {
-    PWM_1 = 0,
-    PWM_2
-} cmPWMs;
 
 /******************************************************************************
  ***** STATUS CODE DEFINITIONS ************************************************

@@ -31,6 +31,7 @@
 #include "text_parser.h"
 #include "gpio.h"
 #include "pwm.h"
+#include "spindle.h"
 
 #ifdef __AVR
 #include <avr/interrupt.h>

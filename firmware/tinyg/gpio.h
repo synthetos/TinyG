@@ -33,8 +33,13 @@
  */
 //--- change as required for board and switch hardware ---//
 
-//#define DI_CHANNELS       9  // v9      // number of digital inputs supported
+#ifdef __ARM
+#define DI_CHANNELS         9  // v9    // number of digital inputs supported
+#else
 #define DI_CHANNELS	        8  // v8    // number of digital inputs supported
+#define DI_INPUT_PAIRS (DI_CHANNELS/2)
+#endif
+
 #define DO_CHANNELS	        4           // number of digital outputs supported
 #define AI_CHANNELS	        0           // number of analog inputs supported
 #define AO_CHANNELS	        0           // number of analog outputs supported
@@ -42,6 +47,21 @@
 #define INPUT_LOCKOUT_MS    50          // milliseconds to go dead after input firing
 
 //--- do not change from here down ---//
+
+typedef enum {
+    DIGITAL_INPUT_1 = 0,
+    DIGITAL_INPUT_2,
+    DIGITAL_INPUT_3,
+    DIGITAL_INPUT_4,
+    DIGITAL_INPUT_5,
+    DIGITAL_INPUT_6,
+    DIGITAL_INPUT_7,
+    DIGITAL_INPUT_8,
+    DIGITAL_INPUT_9,
+    DIGITAL_INPUT_10,
+    DIGITAL_INPUT_11,
+    DIGITAL_INPUT_12
+} digitalInputChannel;
 
 typedef enum {
     INPUT_MODE_DISABLED = -1,       // input is disabled
@@ -111,14 +131,20 @@ typedef struct gpioAnalogInput {    // one struct per analog input
 typedef struct gpioAnalogOutput {   // one struct per analog output
     inputMode mode;
 } io_ao_t;
-
+/*
 typedef struct gpioSingleton {      // collected gpio
 	io_di_t in[DI_CHANNELS];
-    io_do_t out[DO_CHANNELS];     // Note: 'do' is a reserved word
+    io_do_t out[DO_CHANNELS];       // Note: 'do' is a reserved word
     io_ai_t analog_in[AI_CHANNELS];
     io_ao_t analog_out[AO_CHANNELS];
 } io_t;
-extern io_t io;
+*/
+extern io_di_t d_in[DI_CHANNELS];
+extern io_do_t d_out[DO_CHANNELS];
+extern io_ai_t a_in[AI_CHANNELS];
+extern io_ao_t a_out[AO_CHANNELS];
+
+//extern io_t io;
 
 /*
  * GPIO function prototypes
