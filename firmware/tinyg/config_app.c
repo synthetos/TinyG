@@ -45,7 +45,6 @@
 #include "test.h"
 #include "util.h"
 #include "help.h"
-//#include "network.h"
 #include "xio.h"
 
 /*** structures ***/
@@ -73,7 +72,6 @@ static stat_t set_ec(nvObj_t *nv);			// expand CRLF on TX output
 static stat_t set_ee(nvObj_t *nv);			// enable character echo
 static stat_t set_ex(nvObj_t *nv);			// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
-//static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 #endif
 static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 static stat_t get_tick(nvObj_t *nv);		// get system tick count
@@ -118,7 +116,7 @@ static stat_t get_tick(nvObj_t *nv);		// get system tick count
 const cfgItem_t cfgArray[] PROGMEM = {
 	// group token flags p, print_func,	 get_func,  set_func, target for get/set,       default value
 	{ "sys", "fb", _fipn,2, hw_print_fb, get_flt,   set_nul,  (float *)&cs.fw_build,    TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
-//    { "sys", "fbs",_fn,  2, hw_print_fbs,hw_get_fbs,set_nul,  (float *)&cs.null,            0 },
+//    { "sys", "fbs",_fn,  2, hw_print_fbs,hw_get_fbs,set_nul,  (float *)&cs.null, 0 },
 	{ "sys", "fv", _fipn,2, hw_print_fv, get_flt,   set_nul,  (float *)&cs.fw_version,  TINYG_FIRMWARE_VERSION },
 	{ "sys", "hp", _fipn,0, hw_print_hp, get_flt,   set_flt,  (float *)&cs.hw_platform, TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn,0, hw_print_hv, get_flt,   hw_set_hv,(float *)&cs.hw_version,  TINYG_HARDWARE_VERSION },
@@ -129,7 +127,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },		// Model line number
 	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },		// Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
-	{ "",   "feed",_f0, 2, cm_print_feed, cm_get_feed, set_nul,(float *)&cs.null, 0 },			// feed rate
+	{ "",   "feed",_f0, 2, cm_print_feed, cm_get_feed, set_nul,(float *)&cs.null, 0 },          // feed rate
 	{ "",   "macs",_f0, 0, cm_print_macs, cm_get_macs, set_nul,(float *)&cs.null, 0 },			// raw machine state
 	{ "",   "cycs",_f0, 0, cm_print_cycs, cm_get_cycs, set_nul,(float *)&cs.null, 0 },			// cycle state
 	{ "",   "mots",_f0, 0, cm_print_mots, cm_get_mots, set_nul,(float *)&cs.null, 0 },			// motion state
@@ -166,7 +164,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "ofs","ofsb",_f0, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },			// B work offset
 	{ "ofs","ofsc",_f0, 3, cm_print_ofs, cm_get_ofs, set_nul,(float *)&cs.null, 0 },			// C work offset
 
-	{ "hom","home",_f0, 0, cm_print_home,cm_get_home,set_01,(float *)&cm.homing_state, 0 },   // homing state, invoke homing cycle
+	{ "hom","home",_f0, 0, cm_print_home,cm_get_home,set_01,(float *)&cm.homing_state, 0 },     // homing state, invoke homing cycle
 	{ "hom","homx",_f0, 0, cm_print_hom, get_ui8, set_01, (float *)&cm.homed[AXIS_X], false },	// X homed - Homing status group
 	{ "hom","homy",_f0, 0, cm_print_hom, get_ui8, set_01, (float *)&cm.homed[AXIS_Y], false },	// Y homed
 	{ "hom","homz",_f0, 0, cm_print_hom, get_ui8, set_01, (float *)&cm.homed[AXIS_Z], false },	// Z homed
@@ -498,11 +496,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
 
 	// General system parameters
-	{ "sys","ja",_fipnc,0, cm_print_ja,  get_flt, set_flu,  (float *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
-	{ "sys","ct",_fipnc,4, cm_print_ct,  get_flt, set_flu,  (float *)&cm.chordal_tolerance,       CHORDAL_TOLERANCE },
-	{ "sys","sl",_fipn, 0, cm_print_sl,  get_ui8, set_01,   (float *)&cm.soft_limit_enable,       SOFT_LIMIT_ENABLE },
+	{ "sys","ja",_fipnc,0, cm_print_ja,   get_flt, set_flu,  (float *)&cm.junction_acceleration,    JUNCTION_ACCELERATION },
+	{ "sys","ct", _fipnc,4, cm_print_ct,  get_flt, set_flu,  (float *)&cm.chordal_tolerance,        CHORDAL_TOLERANCE },
+	{ "sys","sl", _fipn, 0, cm_print_sl,  get_ui8, set_01,   (float *)&cm.soft_limit_enable,        SOFT_LIMIT_ENABLE },
 
-	{ "sys","mt", _fipn, 2, st_print_mt,  get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout, MOTOR_POWER_TIMEOUT},
 	{ "sys","lim",_fipn, 0, cm_print_lim, get_ui8, set_01,   (float *)&cm.limit_enable,	            HARD_LIMIT_ENABLE },
 	{ "sys","saf",_fipn, 0, cm_print_saf, get_ui8, set_01,   (float *)&cm.safety_interlock_enable,	SAFETY_INTERLOCK_ENABLE },
 	{ "sys","mt", _fipn, 2, st_print_mt,  get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout,  MOTOR_POWER_TIMEOUT},
@@ -548,7 +545,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","ee",  _fipn, 0, cfg_print_ee,  get_ui8,  set_ee,  (float *)&cfg.enable_echo,           XIO_ENABLE_ECHO },
 	{ "sys","ex",  _fipn, 0, cfg_print_ex,  get_ui8,  set_ex,  (float *)&cfg.enable_flow_control,   XIO_ENABLE_FLOW_CONTROL },
 	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,  set_baud,(float *)&cfg.usb_baud_rate,         XIO_BAUD_115200 },
-//	{ "sys","net", _fipn, 0, cfg_print_net, get_ui8,  set_ui8,    (float *)&cs.network_mode,		NETWORK_MODE },
 #endif
 
     // Gcode defaults
@@ -620,14 +616,14 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",    "clc",_f0, 0, tx_print_nul, st_clc,  st_clc, (float *)&cs.null, 0 },	// clear diagnostic step counters
 	{ "",   "_dam",_f0, 0, tx_print_nul, cm_dam,  cm_dam, (float *)&cs.null, 0 },	// dump active model
 
-	{ "_te","_tex",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 },			// X target endpoint
+	{ "_te","_tex",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_X], 0 }, // X target endpoint
 	{ "_te","_tey",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Y], 0 },
 	{ "_te","_tez",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_Z], 0 },
 	{ "_te","_tea",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_A], 0 },
 	{ "_te","_teb",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_B], 0 },
 	{ "_te","_tec",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.target[AXIS_C], 0 },
 
-	{ "_tr","_trx",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },			// X target runtime
+	{ "_tr","_trx",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_X], 0 },  // X target runtime
 	{ "_tr","_try",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Y], 0 },
 	{ "_tr","_trz",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_Z], 0 },
 	{ "_tr","_tra",_f0, 2, tx_print_flt, get_flt, set_nul,(float *)&mr.gm.target[AXIS_A], 0 },
@@ -1041,36 +1037,33 @@ static stat_t get_tick(nvObj_t *nv)
 #ifdef __AVR
 static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 {
-	if (fp_NOT_ZERO(nv->value)) {
-		(void)xio_ctrl(XIO_DEV_USB, yes);
-	} else {
-		(void)xio_ctrl(XIO_DEV_USB, no);
-	}
-	return (STAT_OK);
+    if (fp_NOT_ZERO(nv->value)) {
+        (void)xio_ctrl(XIO_DEV_USB, yes);
+    } else {
+        (void)xio_ctrl(XIO_DEV_USB, no);
+    }
+    return (STAT_OK);
 }
 
 static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
 {
-	if (nv->value > true)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);
-	cfg.enable_cr = (uint8_t)nv->value;
-	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
+    if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+    cfg.enable_cr = (uint8_t)nv->value;
+    return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
 static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 {
-	if (nv->value > true)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);
-	cfg.enable_echo = (uint8_t)nv->value;
-	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
+    if (nv->value > true) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+    cfg.enable_echo = (uint8_t)nv->value;
+    return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
 static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 {
-	if (nv->value > FLOW_CONTROL_RTS)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);
-	cfg.enable_flow_control = (uint8_t)nv->value;
-	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+    if (nv->value > FLOW_CONTROL_RTS) { return (STAT_INPUT_VALUE_UNSUPPORTED);}
+    cfg.enable_flow_control = (uint8_t)nv->value;
+    return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
 
 /* run_sx()	- send XOFF, XON --- test only
@@ -1104,8 +1097,7 @@ static stat_t set_baud(nvObj_t *nv)
 	uint8_t baud = (uint8_t)nv->value;
 	if ((baud < 1) || (baud > 6)) {
 		nv_add_conditional_message((const char *)"*** WARNING *** Unsupported baud rate specified");
-//		nv_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
-		return (STAT_INPUT_VALUE_RANGE_ERROR);
+		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
 	cfg.usb_baud_flag = true;
@@ -1117,8 +1109,7 @@ static stat_t set_baud(nvObj_t *nv)
 
 stat_t set_baud_callback(void)
 {
-	if (cfg.usb_baud_flag == false)
-        return(STAT_NOOP);
+	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
 	cfg.usb_baud_flag = false;
 	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
 	return (STAT_OK);
@@ -1132,19 +1123,16 @@ stat_t set_baud_callback(void)
 
 #ifdef __TEXT_MODE
 
-//static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
+static const char fmt_rx[] PROGMEM = "rx:%d\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
-static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
-static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
+void cfg_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
 void cfg_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
 void cfg_print_ee(nvObj_t *nv) { text_print_ui8(nv, fmt_ee);}
 void cfg_print_ex(nvObj_t *nv) { text_print_ui8(nv, fmt_ex);}
 void cfg_print_baud(nvObj_t *nv) { text_print_ui8(nv, fmt_baud);}
-void cfg_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
-void cfg_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
 
 #endif // __TEXT_MODE
