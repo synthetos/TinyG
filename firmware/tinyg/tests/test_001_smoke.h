@@ -23,46 +23,6 @@
  *	  -	The character array should be derived from the filename (by convention)
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
-/*
-const char test_smoke[] PROGMEM = "\
-(MSG**** Smoke Test [v1] ****)\n\
-G00 G17 G21 G40 G49 G80 G90\n\
-m3g4p1\n\
-m5g4p1\n\
-m4g4p1\n\
-m3g4p1\n\
-m5g4p1\n\
-m7g4p1\n\
-m9g4p1\n\
-m8g4p1\n\
-m9\n\
-g0x0y0z0\n\
-g00 x20\n\
-x0\n\
-y20\n\
-y0\n\
-z20\n\
-z0\n\
-a20\n\
-a0\n\
-G00 x20 y20 z20 a20\n\
-G00 x0 y0 z0 a0\n\
-G01 f30 x2 y2 z2 a2\n\
-x0 y0 z0 a0\n\
-g0x1\n\
-g0x0\n\
-m2";
-*/
-/*
-G01 f200 x10 y10 z10 a10\n\
-x0 y0 z0 a0\n\
-*/
-/*
-G02 f10000 x0 y0 z40 i27 j27\n\
-G03 f10000 x0 y0 z0 i27 j27\n\
-g0x0y0z0\n\
-*/
-
 const char test_smoke[] PROGMEM = "\
 (MSG**** Smoke Test - Allow at least 1 inch clearance in all directions ****)\n\
 n10 g00 g17 g21 g40 g49 g80 g90 g91.1\n\

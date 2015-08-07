@@ -84,7 +84,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.15	// removed canned tests except an updated smoke test {test:1}
+#define TINYG_FIRMWARE_BUILD        444.16	// edge candidate. Testing for errors and stability
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
@@ -100,14 +100,11 @@
 
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
-//#define __CANNED_TESTS 						// enables $tests 		(~12Kb)
-//#define __TEST_99 							// enables diagnostic test 99 (independent of other tests)
 
 /****** DEVELOPMENT SETTINGS ******/
 
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
-//#define __CANNED_STARTUP					// run any canned startup moves
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
