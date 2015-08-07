@@ -158,8 +158,8 @@ static uint8_t _probing_init()
     cm.cycle_state = CYCLE_PROBE;
 
     // save relevant non-axis parameters from Gcode model
-    pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
-    pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
+    pb.saved_coord_system = (cmCoordSystem)cm_get_coord_system(ACTIVE_MODEL);
+    pb.saved_distance_mode = (cmDistanceMode)cm_get_distance_mode(ACTIVE_MODEL);
 
     // set working values
     cm_set_distance_mode(ABSOLUTE_MODE);

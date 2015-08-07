@@ -39,6 +39,7 @@
  *    - install digital input system as gpio file
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
+ *      - update probing
  *
  *    - update assertions to use new style w/panic's
  *    - add new hold logic
@@ -55,7 +56,7 @@
  *  Back-back-port to g2
  *    - changes in digital IO system
  *    - pwr indicator lights (pwr settings)
- *    - 
+ *    -
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE

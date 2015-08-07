@@ -64,13 +64,6 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	cmFeedRateMode saved_feed_rate_mode;// G93, G94 global setting
 	float saved_feed_rate;              // F setting
 	float saved_jerk;                   // saved and restored for each axis homed
-
-//	uint8_t saved_units_mode;		// G20,G21 global setting
-//	uint8_t saved_coord_system;		// G54 - G59 setting
-//	uint8_t saved_distance_mode;	// G90,G91 global setting
-//	uint8_t saved_feed_rate_mode;   // G93,G94 global setting
-//	float saved_feed_rate;			// F setting
-//	float saved_jerk;				// saved and restored for each axis homed
 };
 static struct hmHomingSingleton hm;
 

@@ -32,29 +32,34 @@
 #include "planner.h"
 #include "util.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Jogging singleton structure ****/
 
-struct jmJoggingSingleton {			// persistent jogging runtime variables
+struct jmJoggingSingleton {             // persistent jogging runtime variables
 	// controls for jogging cycle
-	int8_t axis;					// axis currently being jogged
-	float dest_pos;					// distance relative to start position to travel
+	int8_t axis;                        // axis currently being jogged
+	float dest_pos;                     // distance relative to start position to travel
 	float start_pos;
-	float velocity_start;			// initial jog feed
+	float velocity_start;               // initial jog feed
 	float velocity_max;
 
-	uint8_t (*func)(int8_t axis);	// binding for callback function state machine
+	uint8_t (*func)(int8_t axis);       // binding for callback function state machine
 
 	// state saved from gcode model
-	float saved_feed_rate;			// F setting
-	uint8_t saved_units_mode;		// G20,G21 global setting
-	uint8_t saved_coord_system;		// G54 - G59 setting
-	uint8_t saved_distance_mode;	// G90,G91 global setting
-	uint8_t saved_feed_rate_mode;   // G93,G94 global setting
-	float saved_jerk;				// saved and restored for each axis homed
+//	float saved_feed_rate;              // F setting
+//	uint8_t saved_units_mode;           // G20,G21 global setting
+//	uint8_t saved_coord_system;         // G54 - G59 setting
+//	uint8_t saved_distance_mode;        // G90,G91 global setting
+//	uint8_t saved_feed_rate_mode;       // G93,G94 global setting
+//	float saved_jerk;                   // saved and restored for each axis homed
+
+	// state saved from gcode model
+	cmUnitsMode saved_units_mode;       // G20,G21 global setting
+	cmCoordSystem saved_coord_system;   // G54 - G59 setting
+	cmDistanceMode saved_distance_mode; // G90, G91 global setting
+	cmFeedRateMode saved_feed_rate_mode;// G93, G94 global setting
+	float saved_feed_rate;              // F setting
+	float saved_jerk;                   // saved and restored for each axis homed
+
 };
 static struct jmJoggingSingleton jog;
 
@@ -91,12 +96,20 @@ static stat_t _jogging_finalize_exit(int8_t axis);
 stat_t cm_jogging_cycle_start(uint8_t axis)
 {
 	// save relevant non-axis parameters from Gcode model
-	jog.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);
-	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
-	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
-	jog.saved_feed_rate_mode = cm_get_feed_rate_mode(ACTIVE_MODEL);
+	jog.saved_units_mode = (cmUnitsMode)cm_get_units_mode(ACTIVE_MODEL);
+	jog.saved_coord_system = (cmCoordSystem)cm_get_coord_system(ACTIVE_MODEL);
+	jog.saved_distance_mode = (cmDistanceMode)cm_get_distance_mode(ACTIVE_MODEL);
+	jog.saved_feed_rate_mode = (cmFeedRateMode)cm_get_feed_rate_mode(ACTIVE_MODEL);
 	jog.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
 	jog.saved_jerk = cm_get_axis_jerk(axis);
+
+	// save relevant non-axis parameters from Gcode model
+//	jog.saved_units_mode = cm_get_units_mode(ACTIVE_MODEL);
+//	jog.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);
+//	jog.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);
+//	jog.saved_feed_rate_mode = cm_get_feed_rate_mode(ACTIVE_MODEL);
+//	jog.saved_feed_rate = cm_get_feed_rate(ACTIVE_MODEL);
+//	jog.saved_jerk = cm_get_axis_jerk(axis);
 
 	// set working values
 	cm_set_units_mode(MILLIMETERS);
@@ -219,7 +232,3 @@ static stat_t _jogging_error_exit(int8_t axis)
 	return (STAT_JOGGING_CYCLE_FAILED);				// jogging state
 }
 */
-
-#ifdef __cplusplus
-}
-#endif
