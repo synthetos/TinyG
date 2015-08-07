@@ -761,7 +761,7 @@ stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
 stat_t cm_probing_cycle_callback(void);							// G38.2 main loop callback
 
 // Jogging cycle
-stat_t cm_jogging_callback(void);								// jogging cycle main loop
+//stat_t cm_jogging_callback(void);								// jogging cycle main loop
 stat_t cm_jogging_cycle_callback(void);							// jogging cycle main loop
 stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
 float cm_get_jogging_dest(void);
@@ -870,7 +870,7 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	void cm_print_jh(nvObj_t *nv);
 	void cm_print_jd(nvObj_t *nv);
 	void cm_print_ra(nvObj_t *nv);
-    
+
 	void cm_print_hi(nvObj_t *nv);
 	void cm_print_hd(nvObj_t *nv);
 	void cm_print_sn(nvObj_t *nv);
@@ -935,7 +935,7 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	#define cm_print_jh tx_print_stub
 	#define cm_print_jd tx_print_stub
 	#define cm_print_ra tx_print_stub
-    
+
 	#define cm_print_hi tx_print_stub
 	#define cm_print_hd tx_print_stub
 	#define cm_print_sn tx_print_stub

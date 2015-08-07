@@ -114,10 +114,12 @@ void planner_init_assertions()
 
 stat_t planner_test_assertions()
 {
-	if ((mm.magic_start  != MAGICNUM) || (mm.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
-	if ((mb.magic_start  != MAGICNUM) || (mb.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
-	if ((mr.magic_start  != MAGICNUM) || (mr.magic_end 	 != MAGICNUM)) return (STAT_PLANNER_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(mm.magic_start)) || (BAD_MAGIC(mm.magic_end)) ||
+        (BAD_MAGIC(mb.magic_start)) || (BAD_MAGIC(mb.magic_end)) ||
+        (BAD_MAGIC(mr.magic_start)) || (BAD_MAGIC(mr.magic_end))) {
+        return(cm_panic(STAT_PLANNER_ASSERTION_FAILURE, "planner_test_assertions()"));
+    }
+    return (STAT_OK);
 }
 
 /*

@@ -660,16 +660,12 @@ void canonical_machine_init_assertions(void)
 
 stat_t canonical_machine_test_assertions(void)
 {
-	if ((cm.magic_start != MAGICNUM) || (cm.magic_end != MAGICNUM)) {
-        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
+    if ((BAD_MAGIC(cm.magic_start)) || (BAD_MAGIC(cm.magic_end)) ||
+        (BAD_MAGIC(cm.gmx.magic_start)) || (BAD_MAGIC(cm.gmx.magic_end)) ||
+        (BAD_MAGIC(arc.magic_start)) || (BAD_MAGIC(arc.magic_end))) {
+        return(cm_panic(STAT_CANONICAL_MACHINE_ASSERTION_FAILURE, "canonical_machine_test_assertions()"));
     }
-	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) {
-        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-    }
-	if ((arc.magic_start != MAGICNUM) || (arc.magic_end != MAGICNUM)) {
-        return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-    }
-	return (STAT_OK);
+    return (STAT_OK);
 }
 
 /**************************
@@ -1261,13 +1257,13 @@ stat_t cm_straight_feed(float target[], bool flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
-    
+
     // it's legal for a G1 to have no axis words but we don't want to process it
     if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z] ||
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
           return(STAT_OK);
     }
-    
+
 	cm_set_model_target(target, flags);
 	ritorno (cm_test_soft_limits(cm.gm.target)); 	// test soft limits; exit if thrown
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
@@ -1756,7 +1752,7 @@ static const char msg_macs8[] PROGMEM = "PANIC";
 static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3,
                                                 msg_macs4, msg_macs5, msg_macs6, msg_macs7,
                                                 msg_macs8 };
-                                                
+
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Machining";
 static const char msg_cycs2[] PROGMEM = "Probe";
@@ -2218,7 +2214,7 @@ void cm_print_feed(nvObj_t *nv) { text_print_flt_units(nv, fmt_feed, GET_UNITS(A
 void cm_print_line(nvObj_t *nv) { text_print_int(nv, fmt_line);}
 void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
 void cm_print_g92e(nvObj_t *nv) { text_print(nv, fmt_g92e);}     // TYPE_INT
-    
+
 void cm_print_stat(nvObj_t *nv) { text_print_str(nv, fmt_stat);} // print all these as TYPE_STRING
 void cm_print_macs(nvObj_t *nv) { text_print_str(nv, fmt_macs);} // See _get_msg_helper() for details
 void cm_print_cycs(nvObj_t *nv) { text_print_str(nv, fmt_cycs);}

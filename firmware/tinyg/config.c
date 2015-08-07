@@ -68,7 +68,7 @@ stat_t nv_set(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
@@ -76,7 +76,7 @@ stat_t nv_get(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
@@ -84,7 +84,7 @@ void nv_print(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return;
-    }    
+    }
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
@@ -93,10 +93,10 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
-    }    
+    }
 #endif
 	return (STAT_OK);
 }
@@ -110,8 +110,6 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by tg_init()
- *
- * NOTE: Config assertions are handled from the controller
  */
 void config_init()
 {
@@ -197,11 +195,16 @@ void config_init_assertions()
 
 stat_t config_test_assertions()
 {
-	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if (global_string_buf[GLOBAL_STRING_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(cfg.magic_start)) ||
+    (BAD_MAGIC(cfg.magic_end)) ||
+    (BAD_MAGIC(nvl.magic_start)) ||
+    (BAD_MAGIC(nvl.magic_end)) ||
+    (BAD_MAGIC(nvStr.magic_start)) ||
+    (BAD_MAGIC(nvStr.magic_end)) ||
+    (global_string_buf[GLOBAL_STRING_LEN-1] != NUL)) {
+        return(cm_panic(STAT_CONFIG_ASSERTION_FAILURE, "config_test_assertions()"));
+    }
+    return (STAT_OK);
 }
 
 /***** Generic Internal Functions *********************************************/
@@ -288,7 +291,7 @@ stat_t set_01(nvObj_t *nv)
 {
 	if (nv->value > 1) {
         return (STAT_INPUT_VALUE_UNSUPPORTED);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
@@ -296,7 +299,7 @@ stat_t set_012(nvObj_t *nv)
 {
 	if (nv->value > 2) {
         return (STAT_INPUT_VALUE_UNSUPPORTED);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
@@ -304,7 +307,7 @@ stat_t set_0123(nvObj_t *nv)
 {
 	if (nv->value > 3) {
         return (STAT_INPUT_VALUE_UNSUPPORTED);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
@@ -399,7 +402,7 @@ stat_t set_grp(nvObj_t *nv)
 {
 	if (cfg.comm_mode == TEXT_MODE) {
         return (STAT_UNRECOGNIZED_NAME);
-    }    
+    }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;

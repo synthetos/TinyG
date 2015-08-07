@@ -81,8 +81,8 @@
 #include "tinyg.h"					// needed by init() for default source
 #include "config.h"					// needed by init() for default source
 #include "controller.h"				// needed by init() for default source
+#include "canonical_machine.h"
 
-//
 typedef struct xioSingleton {
 	FILE * stderr_shadow;			// used for stack overflow / memory integrity checking
 } xioSingleton_t;
@@ -122,21 +122,19 @@ void xio_init()
  *		 not set up then it will fail in the assertions test. Need to fix this.
  */
 
-void xio_init_assertions() {}
+void xio_init_assertions() { return; }
 
 uint8_t xio_test_assertions()
 {
-	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-//	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-//	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
+	if ((BAD_MAGIC(ds[XIO_DEV_USB].magic_start)) ||   (BAD_MAGIC(ds[XIO_DEV_USB].magic_end)) ||
+	    (BAD_MAGIC(ds[XIO_DEV_RS485].magic_start)) || (BAD_MAGIC(ds[XIO_DEV_RS485].magic_end)) ||
+	    (BAD_MAGIC(ds[XIO_DEV_SPI1].magic_start)) ||  (BAD_MAGIC(ds[XIO_DEV_SPI1].magic_end)) ||
+	    (BAD_MAGIC(ds[XIO_DEV_SPI2].magic_start)) ||  (BAD_MAGIC(ds[XIO_DEV_SPI2].magic_end))) {
+        return(cm_panic(STAT_XIO_ASSERTION_FAILURE, "xio_test_assertions()"));
+    }
+	if (stderr != xio.stderr_shadow) {
+        return(cm_panic(STAT_XIO_ASSERTION_FAILURE, "xio_test_assertions()"));
+    }
 	return (STAT_OK);
 }
 
@@ -155,8 +153,8 @@ uint8_t xio_test_assertions()
 
 uint8_t xio_isbusy()
 {
-	if (xio_get_rx_bufcount_usart(&USBu) != 0) return (false);
-	if (xio_get_tx_bufcount_usart(&USBu) != 0) return (false);
+	if (xio_get_rx_bufcount_usart(&USBu) != 0) { return (false); }
+	if (xio_get_tx_bufcount_usart(&USBu) != 0) { return (false); }
 	return (true);
 }
 

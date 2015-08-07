@@ -61,17 +61,13 @@ controller_t cs;		// controller state structure
 
 static void _controller_HSM(void);
 //static stat_t _led_indicator(void);             // twiddle the LED indicator
-//static stat_t _shutdown_idler(void);
 static stat_t _shutdown_handler(void);          // new (replaces _interlock_estop_handler)
 static stat_t _interlock_handler(void);         // new (replaces _interlock_estop_handler)
 static stat_t _limit_switch_handler(void);      // revised for new GPIO code
 
-//static void _init_assertions(void);
-//static stat_t _test_assertions(void);
-//static stat_t _test_system_assertions(void);
+static stat_t _test_system_assertions(void);
 
 static stat_t _normal_idler(void);
-static stat_t _system_assertions(void);
 
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
@@ -94,6 +90,9 @@ stat_t hardware_bootloader_handler(void);
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
+    // preserve settable parameters that may have already been set up
+ //   uint8_t comm_mode = cs.comm_mode;
+
 	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
 	controller_init_assertions();
 
@@ -129,7 +128,9 @@ void controller_init_assertions()
 
 stat_t controller_test_assertions()
 {
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
+        return(cm_panic(STAT_CONTROLLER_ASSERTION_FAILURE, "controller_test_assertions()"));
+    }
 	return (STAT_OK);
 }
 
@@ -177,9 +178,9 @@ static void _controller_HSM()
     DISPATCH(_interlock_handler());             // invoke / remove safety interlock
     DISPATCH(_limit_switch_handler());          // invoke limit switch
 
-	DISPATCH(cm_feedhold_sequencing_callback());// 5a. feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// 5b. plan a feedhold from line runtime
-	DISPATCH(_system_assertions());				// 6. system integrity assertions
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
+	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+	DISPATCH(_test_system_assertions());		// system integrity assertions
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
@@ -190,8 +191,7 @@ static void _controller_HSM()
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
     DISPATCH(cm_homing_cycle_callback());       // homing cycle operation (G28.2)
     DISPATCH(cm_probing_cycle_callback());      // probing cycle operation (G38.2)
-//    DISPATCH(cm_jogging_cycle_callback());      // jog cycle operation
-	DISPATCH(cm_jogging_callback());			// jog function
+    DISPATCH(cm_jogging_cycle_callback());      // jog cycle operation
 	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
@@ -487,18 +487,21 @@ static stat_t _interlock_handler(void)
 }
 
 /*
- * _system_assertions() - check memory integrity and other assertions
  */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, "assertion failed"));
 
-stat_t _system_assertions()
+/*
+ * _test_system_assertions() - check assertions for entire system
+ */
+//#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, "assertion failed"));
+
+stat_t _test_system_assertions()
 {
-	emergency___everybody_to_get_from_street(config_test_assertions());
-	emergency___everybody_to_get_from_street(controller_test_assertions());
-	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
-	emergency___everybody_to_get_from_street(planner_test_assertions());
-	emergency___everybody_to_get_from_street(stepper_test_assertions());
-	emergency___everybody_to_get_from_street(encoder_test_assertions());
-	emergency___everybody_to_get_from_street(xio_test_assertions());
+	controller_test_assertions();         // these functions will panic if an assertion fails
+	config_test_assertions();
+	canonical_machine_test_assertions();
+	planner_test_assertions();
+	stepper_test_assertions();
+	encoder_test_assertions();
+	xio_test_assertions();
 	return (STAT_OK);
 }

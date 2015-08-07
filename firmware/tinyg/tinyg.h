@@ -56,7 +56,7 @@
  *  Back-back-port to g2
  *    - changes in digital IO system
  *    - pwr indicator lights (pwr settings)
- *    -
+ *    - controller assertions in controller.cpp should be same style as .c file
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -84,7 +84,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.13	// gpio - updated probing for new digital inputs
+#define TINYG_FIRMWARE_BUILD        444.14	// gpio - updated assertions to new style; updated jogging
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
@@ -117,8 +117,9 @@
  ***** TINYG APPLICATION DEFINITIONS ******************************************
  ******************************************************************************/
 
-typedef uint16_t magic_t;		// magic number size
-#define MAGICNUM 0x12EF			// used for memory integrity assertions
+typedef uint16_t magic_t;               // magic number size
+#define MAGICNUM 0x12EF                 // used for memory integrity assertions
+#define BAD_MAGIC(a) (a != MAGICNUM)    // simple assertion test
 
 /***** Axes, motors & PWM channels used by the application *****/
 // Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used

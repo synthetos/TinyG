@@ -140,7 +140,7 @@ stat_t cm_jogging_cycle_start(uint8_t axis)
  *	_jogging_finalize_exit()	- back off the cleared limit switch
  */
 
-stat_t cm_jogging_callback(void)
+stat_t cm_jogging_cycle_callback(void)
 {
 	if (cm.cycle_state != CYCLE_JOG) { return (STAT_NOOP); } 		// exit if not in a jogging cycle
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN); }	// sync to planner move ends
