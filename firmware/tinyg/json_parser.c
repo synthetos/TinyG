@@ -35,10 +35,6 @@
 #include "util.h"
 #include "xio.h"					// for char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocation ****/
 
 jsSingleton_t js;
@@ -46,8 +42,8 @@ jsSingleton_t js;
 /**** local scope stuff ****/
 
 static stat_t _json_parser_kernal(char *str);
-static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char *str, uint16_t size);
+static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 
 /****************************************************************************
  * json_parser() - exposed part of JSON parser
@@ -90,8 +86,12 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 void json_parser(char *str)
 {
 	stat_t status = _json_parser_kernal(str);
+	if (status == STAT_COMPLETE) {            // skip the print if returning from something that already did it.
+    	return;
+	}
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
+//	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
+	sr_request_status_report(SR_REQUEST_TIMED); // generate incremental status report to show any changes
 }
 
 static stat_t _json_parser_kernal(char *str)
@@ -604,7 +604,3 @@ void js_print_js(nvObj_t *nv) { text_print_ui8(nv, fmt_js);}
 void js_print_fs(nvObj_t *nv) { text_print_ui8(nv, fmt_fs);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus

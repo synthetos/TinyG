@@ -389,8 +389,7 @@ static void _dispatch_pin(const uint8_t input_num_ext)
             cm.safety_interlock_reengaged = input_num_ext;
         }
     }
-    sr_request_status_report(SR_TIMED_REQUEST);     //+++++ v8 style - change this to g2 style
-//    sr_request_status_report(SR_REQUEST_TIMED);   //+++++ g2 style
+    sr_request_status_report(SR_REQUEST_TIMED);
 }
 
 /********************************************

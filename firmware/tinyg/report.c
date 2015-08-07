@@ -244,18 +244,18 @@ stat_t sr_set_status_report(nvObj_t *nv)
 stat_t sr_request_status_report(uint8_t request_type)
 {
 #ifdef __ARM
-	if (request_type == SR_IMMEDIATE_REQUEST) {
+	if (request_type == SR_REQUEST_IMMEDIATE) {
 		sr.status_report_systick = SysTickTimer.getValue();
 	}
-	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+	if ((request_type == SR_REQUEST_TIMED) && (sr.status_report_requested == false)) {
 		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
 	}
 #endif
 #ifdef __AVR
-	if (request_type == SR_IMMEDIATE_REQUEST) {
+	if (request_type == SR_REQUEST_IMMEDIATE) {
 		sr.status_report_systick = SysTickTimer_getValue();
 	}
-	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
+	if ((request_type == SR_REQUEST_TIMED) && (sr.status_report_requested == false)) {
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 	}
 #endif
@@ -265,10 +265,6 @@ stat_t sr_request_status_report(uint8_t request_type)
 
 stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
-#ifdef __SUPPRESS_STATUS_REPORTS
-	return (STAT_NOOP);
-#endif
-
 	if (sr.status_report_verbosity == SR_OFF)
         return (STAT_NOOP);
 

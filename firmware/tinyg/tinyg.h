@@ -40,9 +40,12 @@
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
  *      - update probing
- *
  *    - update assertions to use new style w/panic's
- *    - add new hold logic
+ *    - update JSON parser and footers
+ *
+ *    - add new hold logic (dev-445-g2sync)
+ *
+ *    - extend status report requeis for FULL option
  *    - move spindle and coolant to separate files
  *    - remove Kahan references
  *    - Add const qualifiers to bool flags in arglists
@@ -84,7 +87,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.15	// removed canned tests except an updated smoke test {test:1}
+#define TINYG_FIRMWARE_BUILD        444.16	// updated status report enums
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version

@@ -44,10 +44,17 @@ typedef enum {                      // status report enable and verbosity
 	SR_FILTERED,                    // reports only values that have changed from the last report
 	SR_VERBOSE                      // reports all values specified
 } srVerbosity;
-
+/*
 typedef enum {
 	SR_TIMED_REQUEST = 0,           // request a status report at next timer interval
 	SR_IMMEDIATE_REQUEST            // request a status report ASAP
+} cmStatusReportRequest;
+*/
+typedef enum {
+    SR_REQUEST_IMMEDIATE = 0,		// request a full or filtered status report ASAP (depending on SR_VERBOSITY setting)
+    SR_REQUEST_IMMEDIATE_FULL,		// request a full status report ASAP (regardless of SR_VERBOSITY setting)
+    SR_REQUEST_TIMED,				// request a full or filtered status report at next timer interval (as above)
+    SR_REQUEST_TIMED_FULL			// request a full status report at next timer interval (as above)
 } cmStatusReportRequest;
 
 typedef enum {                      // planner queue enable and verbosity
