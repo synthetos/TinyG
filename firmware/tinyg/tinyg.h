@@ -87,7 +87,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.17	// installed g2 flavored feedhold revisions
+#define TINYG_FIRMWARE_BUILD        444.18	// new spindle code
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version

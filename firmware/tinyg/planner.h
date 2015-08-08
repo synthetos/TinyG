@@ -271,6 +271,8 @@ extern mpMoveRuntimeSingleton_t mr;     // context for line runtime
  * Global Scope Functions
  */
 
+//planner.cpp functions
+
 void planner_init(void);
 void planner_reset(void);
 void planner_init_assertions(void);
@@ -287,35 +289,34 @@ stat_t mp_runtime_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
-
-stat_t mp_aline(GCodeState_t *gm_in);
+void mp_request_out_of_band_dwell(float seconds);
+stat_t mp_exec_out_of_band_dwell(void);
 
 // planner functions and helpers
-uint8_t mp_get_planner_buffers(void);
+//uint8_t mp_get_planner_buffers(void);
+uint8_t mp_get_planner_buffers_available(void);
 bool mp_planner_is_full(void);
 bool mp_has_runnable_buffer(void);
+//bool mp_is_phat_city_time(void);
 
-stat_t mp_plan_hold_callback(void);
-stat_t mp_end_hold(void);
-stat_t mp_feed_rate_override(uint8_t flag, float parameter);
+//void mp_replan_queue(mpBuf_t *bf);
+//void mp_start_feed_override(const float ramp_time, const float override_factor);
+//void mp_end_feed_override(const float ramp_time);
 
-// planner buffer handlers
-uint8_t mp_get_planner_buffers_available(void);
+// planner buffer primitives
 void mp_init_buffers(void);
-mpBuf_t * mp_get_write_buffer(void);
-void mp_unget_write_buffer(void);
-void mp_commit_write_buffer(const uint8_t move_type);
-
-mpBuf_t * mp_get_run_buffer(void);
-uint8_t mp_free_run_buffer(void);
-mpBuf_t * mp_get_first_buffer(void);
-mpBuf_t * mp_get_last_buffer(void);
 
 //mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf);
 //mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf);
 #define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	// use the macro instead
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
+mpBuf_t * mp_get_write_buffer(void);
+void mp_commit_write_buffer(const uint8_t move_type);
+mpBuf_t * mp_get_run_buffer(void);
+uint8_t mp_free_run_buffer(void);
+
+//void mp_unget_write_buffer(void);
 void mp_clear_buffer(mpBuf_t *bf);
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
@@ -328,7 +329,11 @@ void mp_set_runtime_work_offset(float offset[]);
 bool mp_get_runtime_busy(void);
 bool mp_runtime_is_idle(void);
 
-float* mp_get_planner_position_vector(void);
+stat_t mp_aline(GCodeState_t *gm_in);
+void mp_plan_block_list(void);
+
+//stat_t mp_feed_rate_override(uint8_t flag, float parameter);
+//float* mp_get_planner_position_vector(void);
 
 // plan_zoid.c functions
 void mp_calculate_trapezoid(mpBuf_t *bf);

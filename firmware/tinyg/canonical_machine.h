@@ -270,13 +270,13 @@ typedef enum {
 	PROGRAM_STOP = 0,
 	PROGRAM_END
 } cmProgramFlow;
-
+/*
 typedef enum {				        // spindle state settings (See hardware.h for bit settings)
 	SPINDLE_OFF = 0,
 	SPINDLE_CW,
 	SPINDLE_CCW
 } cmSpindleState;
-
+*/
 typedef enum {				        // mist and flood coolant states
 	COOLANT_OFF = 0,				// all coolant off
 	COOLANT_ON,						// request coolant on or indicates both coolants are on

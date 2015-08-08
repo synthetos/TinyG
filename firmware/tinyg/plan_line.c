@@ -506,6 +506,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
  */
+/*
 static void _reset_replannable_list()
 {
 	mpBuf_t *bf = mp_get_first_buffer();
@@ -515,7 +516,7 @@ static void _reset_replannable_list()
 		bp->replannable = true;
 	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_OFF));
 }
-
+*/
 /*
  * _get_junction_vmax() - Sonny's algorithm - simple
  *

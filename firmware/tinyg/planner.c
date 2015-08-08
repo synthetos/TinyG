@@ -274,6 +274,18 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	return (STAT_OK);
 }
 
+//++++ stubbed ++++
+void mp_request_out_of_band_dwell(float seconds)
+{
+    //    mr.out_of_band_dwell_time = seconds;
+}
+//++++ stubbed ++++
+stat_t mp_exec_out_of_band_dwell(void)
+{
+    //    return _advance_dwell(mr.out_of_band_dwell_time);
+    return 0;
+}
+
 /**********************************************************************************
  * Planner helpers
  *
