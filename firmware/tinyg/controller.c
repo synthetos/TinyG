@@ -263,6 +263,7 @@ static stat_t _command_dispatch()
 #endif // __ARM
 
 	// set up the buffers
+
 	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
 

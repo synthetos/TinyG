@@ -575,18 +575,16 @@ typedef struct cmSingleton {                // struct to manage cm globals and c
 	uint8_t probe_state;                    // 1==success, 0==failed
 	float probe_results[AXES];              // probing results
 
-	uint8_t	g28_flag;                       // true = complete a G28 move
-	uint8_t	g30_flag;                       // true = complete a G30 move
-	uint8_t deferred_write_flag;            // G10 data has changed (e.g. offsets) - flag to persist them
-
-	bool feedhold_requested;             // feedhold character has been received
+	bool g28_flag;                          // true = complete a G28 move
+	bool g30_flag;                          // true = complete a G30 move
+	bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
+	bool feedhold_requested;                // feedhold character has been received
 	bool end_hold_requested;                // request restart after feedhold
-	bool queue_flush_requested;          // queue flush character has been received
-//	uint8_t cycle_start_requested;          // cycle start character has been received (flag to end feedhold)
-	float jogging_dest;                     // jogging direction as a relative move from current position
-
+	bool queue_flush_requested;             // queue flush character has been received
 	uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
 	uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
+
+	float jogging_dest;                     // jogging direction as a relative move from current position
 
 	/**** Model states ****/
 	GCodeState_t *am;                       // active Gcode model is maintained by state management
@@ -755,7 +753,8 @@ bool cm_has_hold(void);
 void cm_start_hold(void);
 void cm_end_hold(void);
 
-stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
+//stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
+void cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 void cm_end_queue_flush(void);
 
 //void cm_request_cycle_start(void);

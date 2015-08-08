@@ -1550,7 +1550,11 @@ void cm_request_queue_flush()
 {
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
-//        xio_flush_read();                           // flush the input buffers - you can do that now
+#ifdef __ARM
+        xio_flush_read();                           // flush the input buffers - you can do that now
+#else //__AVR
+        xio_reset_usb_rx_buffers();				    // flush serial queues - you can do that now
+#endif
         cm.queue_flush_state = FLUSH_REQUESTED;     // request planner flush once motion has stopped
     }
 }
@@ -1573,38 +1577,6 @@ stat_t cm_feedhold_sequencing_callback()
 	}
 	return (STAT_OK);
 }
-
-/*
-stat_t cm_feedhold_sequencing_callback()
-{
-	if (cm.feedhold_requested == true) {
-		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-			cm_set_motion_state(MOTION_HOLD);
-			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
-		}
-		cm.feedhold_requested = false;
-	}
-	if (cm.queue_flush_requested == true) {
-		if (((cm.motion_state == MOTION_STOP) ||
-			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) &&
-			!cm_get_runtime_busy()) {
-			cm.queue_flush_requested = false;
-			cm_queue_flush();
-		}
-	}
-//	bool feedhold_processing =				// added feedhold processing lockout from omco fork
-//		cm.hold_state == FEEDHOLD_SYNC ||
-//		cm.hold_state == FEEDHOLD_PLAN ||
-//		cm.hold_state == FEEDHOLD_DECEL;
-//	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
-//		cm.cycle_start_requested = false;
-//		cm.hold_state = FEEDHOLD_END_HOLD;
-//		cm_cycle_start();
-//		mp_end_hold();
-//	}
-	return (STAT_OK);
-}
-*/
 
 /*
  * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
@@ -1652,7 +1624,7 @@ void cm_end_hold()
     }
 }
 
-/* g2 version
+/* g2 version */
 void cm_queue_flush()
 {
     if (mp_runtime_is_idle()) {                     // can't flush planner during movement
@@ -1668,9 +1640,9 @@ void cm_queue_flush()
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }
-*/
-
-stat_t cm_queue_flush()
+/* */
+/*
+void cm_queue_flush()
 {
 	if (cm_get_runtime_busy() == true)
         return (STAT_COMMAND_NOT_ACCEPTED);
@@ -1680,7 +1652,7 @@ stat_t cm_queue_flush()
 #endif
 	mp_flush_planner();						// flush planner queue
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-	rx_request_rx_report();
+//	rx_request_rx_report();
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
@@ -1689,8 +1661,8 @@ stat_t cm_queue_flush()
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, FLAGS_ONE);	// finalize now, not later
-	return (STAT_OK);
 }
+*/
 
 /******************************
  * Program Functions (4.3.10) *
@@ -1751,7 +1723,6 @@ static void _exec_program_finalize(float *value, bool *flags)
 	}
 	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
     cm.end_hold_requested = false;					    // cancel any pending end hold request
-//	cm.cycle_start_requested = false;					// cancel any pending cycle start request
 	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END

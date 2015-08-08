@@ -88,14 +88,7 @@ typedef enum {                      // code blocks for planning and trapezoid ge
     MIXED_DECEL,                    // kinked deceleration starts with a cruise region (BT)
     COMMAND_BLOCK                   // this block is a command
 } blockHint;
-/*
-typedef enum {                      // planner operating state
-    PLANNER_IDLE = 0,               // planner and movement are idle
-    PLANNER_STARTUP,                // ingesting blocks before movement is started
-    PLANNER_OPTIMISTIC,             // plan by leaving last block unplanned
-    PLANNER_PESSIMISTIC             // plan by planning all blocks, including the tail
-} plannerState;
-*/
+
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 #define PLANNER_BUFFER_POOL_SIZE 32                     // Suggest 12 min. Limit is 255
@@ -140,67 +133,81 @@ typedef enum {                      // planner operating state
  *	Planner structures
  */
 
-typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
-	struct mpBuffer *pv;			// static pointer to previous buffer
-	struct mpBuffer *nx;			// static pointer to next buffer
+typedef struct mpBuffer {               // See Planning Velocity Notes for variable usage
+	struct mpBuffer *pv;                // static pointer to previous buffer
+	struct mpBuffer *nx;                // static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
-	cm_exec_t cm_func;				// callback to canonical machine execution function
+	cm_exec_t cm_func;                  // callback to canonical machine execution function
 
 	float naiive_move_time;
 
-	uint8_t buffer_state;			// used to manage queuing/dequeuing
-	uint8_t move_type;				// used to dispatch to run routine
-	uint8_t move_code;				// byte that can be used by used exec functions
-	uint8_t move_state;				// move state machine sequence
-	uint8_t replannable;			// TRUE if move can be re-planned
+	mpBufferState buffer_state;	        // used to manage queuing/dequeuing
+	moveType move_type;                 // used to dispatch to run routine
+	moveState move_state;               // move state machine sequence
+	uint8_t move_code;                  // byte that can be used by used exec functions
 
-	float unit[AXES];				// unit vector for axis scaling & planning
-    bool axis_flags[AXES];          // set true for axes participating in the move & for command parameters
+	uint8_t replannable;                // TRUE if move can be re-planned
 
-	float length;					// total length of line or helix in mm
+	float unit[AXES];                   // unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move & for command parameters
+
+	float length;                       // total length of line or helix in mm
 	float head_length;
 	float body_length;
 	float tail_length;
 
-    float head_time;                // computed move time for head
-    float body_time;                // ...body
-    float tail_time;                // ...tail
-    float move_time;                // ...entire move
+    float head_time;                    // computed move time for head
+    float body_time;                    // ...body
+    float tail_time;                    // ...tail
+    float move_time;                    // ...entire move
 
-	float entry_velocity;			// entry velocity requested for the move
-	float cruise_velocity;			// cruise velocity requested & achieved
-	float exit_velocity;			// exit velocity requested for the move
+	float entry_velocity;               // entry velocity requested for the move
+	float cruise_velocity;              // cruise velocity requested & achieved
+	float exit_velocity;                // exit velocity requested for the move
 
-	float entry_vmax;				// max junction velocity at entry of this move
-	float cruise_vmax;				// max cruise velocity requested for move
-	float exit_vmax;				// max exit velocity possible (redundant)
-	float delta_vmax;				// max velocity difference for this move
-	float braking_velocity;			// current value for braking velocity
+	float entry_vmax;                   // max junction velocity at entry of this move
+	float cruise_vmax;                  // max cruise velocity requested for move
+	float exit_vmax;                    // max exit velocity possible (redundant)
+	float delta_vmax;                   // max velocity difference for this move
+	float braking_velocity;             // current value for braking velocity
 
-	uint8_t jerk_axis;				// rate limiting axis used to compute jerk for the move
-	float jerk;						// maximum linear jerk term for this move
-	float recip_jerk;				// 1/Jm used for planning (computed and cached)
-	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
+	uint8_t jerk_axis;                  // rate limiting axis used to compute jerk for the move
+	float jerk;                         // maximum linear jerk term for this move
+	float recip_jerk;                   // 1/Jm used for planning (computed and cached)
+	float cbrt_jerk;                    // cube root of Jm used for planning (computed and cached)
 
-	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
+	GCodeState_t gm;                    // Gode model state - passed from model, used by planner and runtime
 
 } mpBuf_t;
 
-typedef struct mpBufferPool {		// ring buffer for sub-moves
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t buffers_available;		// running count of available buffers
-	mpBuf_t *w;						// get_write_buffer pointer
-	mpBuf_t *q;						// queue_write_buffer pointer
-	mpBuf_t *r;						// get/end_run_buffer pointer
+typedef struct mpBufferPool {           // ring buffer for sub-moves
+	magic_t magic_start;                // magic number to test memory integrity
+
+    // planner state variables
+//    plannerState planner_state;       // current state of planner
+    float time_in_run;		            // time left in the buffer executed by the runtime
+    float time_in_plan;	                // total time planned in the run and planner
+    bool request_planning;              // a process has requested unconditional planning (used by feedhold)
+    bool new_block;                     // marks the arrival of a new block for planning
+    bool new_block_timeout;             // block arrival rate is timing out (no new blocks arriving)
+    uint32_t new_block_timer;           // timeout if no new block received N ms after last block committed
+    bool backplanning;                  // true if planner is in a back-planning pass
+    mpBuf_t *backplan_return;           // buffer to return to once back-planning is complete
+
+	uint8_t buffers_available;          // running count of available buffers
+	mpBuf_t *w;                         // get_write_buffer pointer
+	mpBuf_t *q;                         // queue_write_buffer pointer
+	mpBuf_t *r;                         // get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
+
 	magic_t magic_end;
 } mpBufferPool_t;
 
-typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
-	magic_t magic_start;			// magic number to test memory integrity
-	float position[AXES];			// final move position for planning purposes
+typedef struct mpMoveMasterSingleton {  // common variables for planning (move master)
+	magic_t magic_start;                // magic number to test memory integrity
+	float position[AXES];               // final move position for planning purposes
 
-	float jerk;						// jerk values cached from previous block
+	float jerk;                         // jerk values cached from previous block
 	float recip_jerk;
 	float cbrt_jerk;
 
@@ -210,15 +217,14 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	magic_t magic_start;                // magic number to test memory integrity
-	uint8_t move_state;                 // state of the overall move
-	uint8_t section;                    // what section is the move in?
-	uint8_t section_state;              // state within a move section
+	moveState move_state;               // state of the overall move
+	moveSection section;                // what section is the move in?
+	sectionState section_state;         // state within a move section
 
 	float unit[AXES];                   // unit vector for axis scaling & planning
     bool axis_flags[AXES];              // set true for axes participating in the move
 	float target[AXES];                 // final target for bf (used to correct rounding errors)
 	float position[AXES];               // current move position
-//	float position_c[AXES];             // for Kahan summation in _exec_aline_segment()
 	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
 
 	float target_steps[MOTORS];         // current MR target (absolute target as steps)

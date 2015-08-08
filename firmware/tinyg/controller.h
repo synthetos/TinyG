@@ -2,8 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,10 +28,6 @@
 #ifndef CONTROLLER_H_ONCE
 #define CONTROLLER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
@@ -40,6 +36,28 @@ extern "C"{
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
 
+#define LED_NORMAL_BLINK_RATE 3000      // blink rate for normal operation (in ms)
+#define LED_ALARM_BLINK_RATE 750        // blink rate for alarm state (in ms)
+#define LED_SHUTDOWN_BLINK_RATE 300     // blink rate for shutdown state (in ms)
+#define LED_PANIC_BLINK_RATE 100        // blink rate for panic state (in ms)
+
+typedef enum {                          // manages startup lines
+    CONTROLLER_INITIALIZING = 0,        // controller is initializing - not ready for use
+    CONTROLLER_NOT_CONNECTED,           // has not yet detected connection to USB (or other comm channel)
+    CONTROLLER_CONNECTED,               // has connected to USB (or other comm channel)
+    CONTROLLER_STARTUP,                 // is running startup messages and lines
+    CONTROLLER_READY,                   // is active and ready for use
+    CONTROLLER_PAUSED                   // is paused - presumably in preparation for queue flush
+} csControllerState;
+/*
+typedef enum {				            // manages startup lines
+    CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
+    CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
+    CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
+    CONTROLLER_STARTUP,					// controller is running startup messages and lines
+    CONTROLLER_READY					// controller is active and ready for use
+} cmControllerState;
+*/
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
 	uint8_t state;						// controller state
@@ -66,6 +84,13 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t bootloader_requested;		// flag to enter the bootloader
 	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
 
+	csControllerState controller_state;
+//	uint8_t state_usb0;
+//	uint8_t state_usb1;
+//	uint32_t led_timer;                 // used to flash indicator LED
+//	uint32_t led_blink_rate;            // used to flash indicator LED
+//	bool shared_buf_overrun;            // flag for shared string buffer overrun condition
+
 //	uint8_t sync_to_time_state;
 //	uint32_t sync_to_time_time;
 
@@ -81,14 +106,6 @@ typedef struct controllerSingleton {	// main TG controller struct
 
 extern controller_t cs;					// controller state structure
 
-typedef enum {				            // manages startup lines
-	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
-	CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
-	CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
-	CONTROLLER_STARTUP,					// controller is running startup messages and lines
-	CONTROLLER_READY					// controller is active and ready for use
-} cmControllerState;
-
 /**** function prototypes ****/
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
@@ -100,9 +117,5 @@ void controller_run(void);
 void tg_reset_source(void);
 void tg_set_primary_source(uint8_t dev);
 void tg_set_secondary_source(uint8_t dev);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: CONTROLLER_H_ONCE

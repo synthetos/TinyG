@@ -403,9 +403,9 @@ stat_t sr_set_si(nvObj_t *nv)
 	return(STAT_OK);
 }
 
-/*********************
- * TEXT MODE SUPPORT *
- *********************/
+/***********************************
+ * STATUS REPORT TEXT MODE SUPPORT *
+ ***********************************/
 #ifdef __TEXT_MODE
 
 static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
