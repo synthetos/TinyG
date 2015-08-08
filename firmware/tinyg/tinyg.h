@@ -46,7 +46,6 @@
  *      - new JSON JV settings
  *      - packet mode
  *      - JSON serialization optimization
- *
  *    - plan_exec updates  (dev-445-g2sync)
  *      - add new hold logic
  *      - remove old JERK code
@@ -88,7 +87,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.17	//
+#define TINYG_FIRMWARE_BUILD        444.17	// installed g2 flavored feedhold revisions
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
