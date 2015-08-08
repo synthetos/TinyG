@@ -48,17 +48,26 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
  */
 stat_t gc_gcode_parser(char *block)
 {
-	char *str = block;					// gcode command or NUL string
-	char none = NUL;
-	char *com = &none;					// gcode comment or NUL string
-	char *msg = &none;					// gcode message or NUL string
-	uint8_t block_delete_flag;
+    char *str = block;                      // gcode command or NUL string
+    char none = NUL;
+    char *com = &none;                      // gcode comment or NUL string
+    char *msg = &none;                      // gcode message or NUL string
+    uint8_t block_delete_flag;
 
-	// don't process Gcode blocks if in alarmed state
-	if (cm.machine_state == MACHINE_ALARM) {
-        return (STAT_COMMAND_REJECTED_BY_ALARM);
-    }
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
+
+	// queue a "(MSG" response
+	if (*msg != NUL) {
+    	(void)cm_message(msg);				// queue the message
+	}
+
+    if (str[0] == NUL) {                    // normalization returned null string
+        return (STAT_OK);                   // most likely a comment line
+    }
+
+    // Trap M30 and M2 as $clear conditions. This has no effect it not in ALARM or SHUTDOWN
+    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
+    ritorno(cm_is_alarmed());               // return error status if in alarm, shutdown or panic
 
 	// Block delete omits the line if a / char is present in the first space
 	// For now this is unconditional and will always delete
@@ -66,12 +75,6 @@ stat_t gc_gcode_parser(char *block)
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
-
-	// queue a "(MSG" response
-	if (*msg != NUL) {
-		(void)cm_message(msg);				// queue the message
-	}
-
 	return(_parse_gcode_block(block));
 }
 

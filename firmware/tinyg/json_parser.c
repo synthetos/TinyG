@@ -86,11 +86,10 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 void json_parser(char *str)
 {
 	stat_t status = _json_parser_kernal(str);
-	if (status == STAT_COMPLETE) {            // skip the print if returning from something that already did it.
-    	return;
-	}
+    if (status == STAT_COMPLETE) {  // skip the print if returning from something that already did it.
+        return;
+    }
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-//	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 	sr_request_status_report(SR_REQUEST_TIMED); // generate incremental status report to show any changes
 }
 
@@ -98,18 +97,18 @@ static stat_t _json_parser_kernal(char *str)
 {
 	stat_t status;
 	int8_t depth;
-	nvObj_t *nv = nv_reset_nv_list();				// get a fresh nvObj list
-	char group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
+	nvObj_t *nv = nv_reset_nv_list();               // get a fresh nvObj list
+	char group[GROUP_LEN+1] = {""};                 // group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN;
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
 	// parse the JSON command into the nv body
 	do {
-		if (--i == 0)
+		if (--i == 0) {
             return (STAT_JSON_TOO_MANY_PAIRS);      // length error
-
-        // Use relaxed parser. Will read eitehr strict or relaxed mode. To use strict-only parser refer
+        }
+        // Use relaxed parser. Will read either strict or relaxed mode. To use strict-only parser refer
         // to build earlier than 407.03. Substitute _get_nv_pair_strict() for _get_nv_pair()
 		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
@@ -120,22 +119,24 @@ static stat_t _json_parser_kernal(char *str)
 		}
 		// validate the token and get the index
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
+			nv->valuetype = TYPE_NULL;
 			return (STAT_UNRECOGNIZED_NAME);
 		}
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
 		}
-		if ((nv = nv->nx) == NULL)
+		if ((nv = nv->nx) == NULL) {
             return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
+        }
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
 	nv = nv_body;
-	if (nv->valuetype == TYPE_NULL){				// means GET the value
+	if (nv->valuetype == TYPE_NULL) {				// means GET the value
 		ritorno(nv_get(nv));						// ritorno returns w/status on any errors
 	} else {
-		if (cm.machine_state == MACHINE_ALARM)
-            return (STAT_COMMAND_REJECTED_BY_ALARM);
+        cm_parse_clear(*nv->stringp);               // parse Gcode and clear alarms if M30 or M2 is found
+        ritorno(cm_is_alarmed());                   // return error status if in alarm, shutdown or panic
 		ritorno(nv_set(nv));						// set value or call a function (e.g. gcode)
 		nv_persist(nv);
 	}
@@ -154,9 +155,9 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
 	char *wr;								// write pointer
 	uint8_t in_comment = false;
 
-	if (strlen(str) > size)
+    if (strlen(str) > size) {
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
-
+    }
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
 			if (*str == '(') in_comment = true;
@@ -204,14 +205,22 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
 
 static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
+/*
 	uint8_t i;
 	char *tmp;
 	char leaders[] = {"{,\""};				// open curly, quote and leading comma
 	char separators[] = {":\""};				// colon and quote
 	char terminators[] = {"},\""};			// close curly, comma and quote
 	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
+*/
+	uint8_t i;
+	char *tmp;
+	char leaders[] = {"{,\""};      // open curly, quote and leading comma
+	char separators[] = {":\""};    // colon and quote
+	char terminators[] = {"},\""};  // close curly, comma and quote
+	char value[] = {"{\".-+"};      // open curly, quote, period, minus and plus
 
-	nv_reset_nv(nv);							// wipes the object and sets the depth
+	nv_reset_nv(nv);                // wipes the object and sets the depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
@@ -221,8 +230,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 			name = (*pstr)++;
 			break;
 		}
-		if (i == MAX_PAD_CHARS)
+		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// Find the end of name, NUL terminate and copy token
@@ -232,8 +242,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
 			break;
 		}
-		if (i == MAX_NAME_CHARS)
+		if (i == MAX_NAME_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
@@ -242,8 +253,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	for (i=0; true; i++, (*pstr)++) {
 		if (isalnum((int)**pstr)) break;
 		if (strchr(value, (int)**pstr) != NULL) break;
-		if (i == MAX_PAD_CHARS)
+		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// nulls (gets)
@@ -254,8 +266,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
-		if(tmp == *pstr)
+		if(tmp == *pstr) {
             return (STAT_BAD_NUMBER_FORMAT);
+        }
 		nv->valuetype = TYPE_FLOAT;
 
 	// object parent
@@ -269,8 +282,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
 		nv->valuetype = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL)
+		if ((tmp = strchr(*pstr, '\"')) == NULL) {
             return (STAT_JSON_SYNTAX_ERROR);    // find the end of the string
+        }
 		*tmp = NUL;
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
@@ -282,7 +296,6 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		} else {
 			ritorno(nv_copy_string(nv, *pstr));
 		}
-
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -301,7 +314,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 	// general error condition
 	} else {
-        return (STAT_JSON_SYNTAX_ERROR);	    // ill-formed JSON
+        return (STAT_JSON_SYNTAX_ERROR);        // ill-formed JSON
     }
 
 	// process comma separators and end curlies
@@ -309,12 +322,12 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		return (STAT_JSON_SYNTAX_ERROR);
 	}
 	if (**pstr == '}') {
-		*depth -= 1;							// pop up a nesting level
+		*depth -= 1;							    // pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',')
+	if (**pstr == ',') {
         return (STAT_EAGAIN);                   // signal that there is more to parse
-
+    }
 	(*pstr)++;
 	return (STAT_OK);							// signal that parsing is complete
 }
@@ -341,7 +354,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
  *		The terminating object may or may not have data (empty or not empty).
  *
  *	Returns:
- *		Returns length of string
+ *		Returns length of string, or -1 if there's been an error
  *
  *	Desired behaviors:
  *	  - Allow self-referential elements that would otherwise cause a recursive loop
@@ -351,15 +364,13 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
+//#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
 uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return (0);
-#else
 	char *str = out_buf;
-	char *str_max = out_buf + size - BUFFER_MARGIN;
+//	char *str_max = out_buf + size - BUFFER_MARGIN;
+	char *str_max = out_buf + size;
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -382,7 +393,7 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 			}
 
 			// serialize output value
-			if		(nv->valuetype == TYPE_NULL)		{ str += (char)sprintf((char *)str, "null");} // Note that that "" is NOT null.
+			if		(nv->valuetype == TYPE_NULL) { str += (char)sprintf((char *)str, "null");} // Note that that "" is NOT null.
 			else if (nv->valuetype == TYPE_INT)	{
 				str += (char)sprintf((char *)str, "%1.0f", (double)nv->value);
 			}
@@ -420,7 +431,6 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 	str += sprintf((char *)str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
-#endif
 }
 
 /*
@@ -432,10 +442,6 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
  */
 void json_print_object(nvObj_t *nv)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return;
-#endif
-
 	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
 	fprintf(stderr, "%s", (char *)cs.out_buf);
 }
@@ -475,11 +481,16 @@ void json_print_list(stat_t status, uint8_t flags)
 
 void json_print_response(uint8_t status)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return;
-#endif
-
-	if (js.json_verbosity == JV_SILENT) return;			// silent responses
+    if (js.json_verbosity == JV_SILENT) {				    // silent means no responses
+        return;
+    }
+    if (js.json_verbosity == JV_EXCEPTIONS)	{				// cutout for JV_EXCEPTIONS mode
+        if (status == STAT_OK) {
+            if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
+                return;
+            }
+        }
+    }
 
 	// Body processing
 	nvObj_t *nv = nv_body;
@@ -517,11 +528,48 @@ void json_print_response(uint8_t status)
 
 	// Footer processing
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
-		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
-			json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
-			return;
-		}
+    	if ((nv = nv->nx) == NULL) {						// oops! No free nvObj!
+        	rpt_exception(STAT_JSON_TOO_LONG, "json_print_response() json too long"); // report this as an exception
+        	return;
+    	}
 	}
+
+    // COMMENT APPLIES TO ARM ONLY - for now
+    // in xio.cpp:xio.readline the CR || LF read from the host is not appended to the string.
+    // to ensure that the correct number of bytes are reported back to the host we add a +1 to
+    // cs.linelen so that the number of bytes received matches the number of bytes reported
+
+	char footer_string[NV_FOOTER_LEN];
+	char *str = footer_string;
+
+//    sprintf((char *)footer_string, "%d,%d,%d", 1, status, cs.linelen + 1);
+	strcpy(str, "2,"); str += 2;                            // '2' is the footer revision hard coded
+	str += inttoa(str, status);                             // nb: inttoa() works differently than itoa(). See util.cpp
+	strcpy(str++, ",");
+	str += inttoa(str, cs.linelen+1);
+	cs.linelen = 0;										    // reset linelen so it's only reported once
+
+//	if (xio.enable_window_mode) {							// 2 footer styles are supported...
+//		sprintf((char *)footer_string, "%d,%d,%d", 2, status, xio_get_window_slots());	//...windowing
+//	} else {
+//		sprintf((char *)footer_string, "%d,%d,%d", 1, status, cs.linelen);				//...streaming
+//		cs.linelen = 0;										// reset linelen so it's only reported once
+//	}
+
+	nv_copy_string(nv, footer_string);                      // link string to nv object
+	nv->depth = 0;                                          // footer 'f' is a peer to response 'r' (hard wired to 0)
+	nv->valuetype = TYPE_ARRAY;                             // declare it as an array
+	strcpy(nv->token, "f");                                 // set it to Footer
+	nv->nx = NULL;                                          // terminate the list
+
+	// serialize the JSON response and print it if there were no errors
+	if (json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
+//    	xio_writeline(cs.out_buf);
+//	    printf("%s", cs.out_buf);
+	    printf("%s", cs.out_buf);
+	}
+
+/*
 	char footer_string[NV_FOOTER_LEN];
 	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
 	cs.linelen = 0;											// reset linelen so it's only reported once
@@ -546,6 +594,7 @@ void json_print_response(uint8_t status)
 	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
 	sprintf((char *)cs.out_buf + strcount2 + 1, "%d%s", compute_checksum(cs.out_buf, strcount2), tail);
 	fprintf(stderr, "%s", cs.out_buf);
+*/
 }
 
 /***********************************************************************************

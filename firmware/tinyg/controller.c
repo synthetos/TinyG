@@ -173,7 +173,6 @@ static void _controller_HSM()
 
 //	DISPATCH(_led_indicator());				    // blink LEDs at the current rate
 //	DISPATCH(_shutdown_idler());				// idle in shutdown state
-//	DISPATCH(_limit_switch_handler());			// limit switch has been thrown
     DISPATCH(_shutdown_handler());              // invoke shutdown
     DISPATCH(_interlock_handler());             // invoke / remove safety interlock
     DISPATCH(_limit_switch_handler());          // invoke limit switch
