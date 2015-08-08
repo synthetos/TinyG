@@ -41,9 +41,7 @@ static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
 
-#ifndef __JERK_EXEC
 static void _init_forward_diffs(float Vi, float Vt);
-#endif
 
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
@@ -175,7 +173,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.section_state = SECTION_NEW;
 		mr.jerk = bf->jerk;
 #ifdef __JERK_EXEC
-		mr.jerk_div2 = bf->jerk/2;						// only needed by __JERK_EXEC
+//		mr.jerk_div2 = bf->jerk/2;						// only needed by __JERK_EXEC
 #endif
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
@@ -337,7 +335,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *
  *  Note that with our current control points, D and E are actually 0.
  */
-#ifndef __JERK_EXEC
 
 static void _init_forward_diffs(float Vi, float Vt)
 {
@@ -364,11 +361,11 @@ static void _init_forward_diffs(float Vi, float Vt)
 	mr.forward_diff_1 = 120.0*Ah_5;
 
 #ifdef __KAHAN
-	mr.forward_diff_5_c = 0;
-	mr.forward_diff_4_c = 0;
-	mr.forward_diff_3_c = 0;
-	mr.forward_diff_2_c = 0;
-	mr.forward_diff_1_c = 0;
+//	mr.forward_diff_5_c = 0;
+//	mr.forward_diff_4_c = 0;
+//	mr.forward_diff_3_c = 0;
+//	mr.forward_diff_2_c = 0;
+//	mr.forward_diff_1_c = 0;
 #endif
 
 	// Calculate the initial velocity by calculating V(h/2)
@@ -378,7 +375,6 @@ static void _init_forward_diffs(float Vi, float Vt)
 	float half_Ah_5 = C * half_h * half_h * half_h * half_h * half_h;
 	mr.segment_velocity = half_Ah_5 + half_Bh_4 + half_Ch_3 + Vi;
 }
-#endif
 
 /*********************************************************************************************
  * _exec_aline_head()

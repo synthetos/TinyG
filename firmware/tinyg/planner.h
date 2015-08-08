@@ -236,27 +236,27 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float segment_time;				// actual time increment per aline segment
 	float jerk;						// max linear jerk
 
-#ifdef __JERK_EXEC					// values used exclusively by computed jerk acceleration
-	float jerk_div2;				// cached value for efficiency
-	float midpoint_velocity;		// velocity at accel/decel midpoint
-	float midpoint_acceleration;	//
-	float accel_time;				//
-	float segment_accel_time;		//
-	float elapsed_accel_time;		//
-#else								// values used exclusively by forward differencing acceleration
+//#ifdef __JERK_EXEC					// values used exclusively by computed jerk acceleration
+//	float jerk_div2;				// cached value for efficiency
+//	float midpoint_velocity;		// velocity at accel/decel midpoint
+//	float midpoint_acceleration;	//
+//	float accel_time;				//
+//	float segment_accel_time;		//
+//	float elapsed_accel_time;		//
+//#else								// values used exclusively by forward differencing acceleration
 	float forward_diff_1;			// forward difference level 1
 	float forward_diff_2;			// forward difference level 2
 	float forward_diff_3;			// forward difference level 3
 	float forward_diff_4;			// forward difference level 4
 	float forward_diff_5;			// forward difference level 5
-#ifdef __KAHAN
-	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
-	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
-	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
-	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
-	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
-#endif
-#endif
+//#ifdef __KAHAN
+//	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
+//	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
+//	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
+//	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
+//	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
+//#endif
+//#endif
 
 	GCodeState_t gm;				// gcode model state currently executing
 
