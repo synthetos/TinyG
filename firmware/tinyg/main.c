@@ -31,6 +31,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
+//#include "coolant.h"
 #include "network.h"
 #include "gpio.h"
 #include "test.h"
@@ -149,7 +150,7 @@ void application_init_startup(void)
     config_init();					            // apply the config settings from persistence
     canonical_machine_reset();
     spindle_init();                   // should be after PWM and canonical machine inits and config_init()
-//    spindle_reset();
+    spindle_reset();
 
 #ifdef __AVR
     // now bring up the interrupts and get started

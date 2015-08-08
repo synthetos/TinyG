@@ -338,11 +338,6 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
 
-//	float spindle_speed;				// in RPM
-//	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
-//	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
-//	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-
     cmFeedRateMode feed_rate_mode;      // See cmFeedRateMode for settings
     cmCanonicalPlane select_plane;      // G17,G18,G19 - values to set plane to
     cmUnitsMode units_mode;             // G20,G21 - 0=inches (G20), 1 = mm (G21)
@@ -431,7 +426,6 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
     uint8_t spindle_control;            // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-//	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	float spindle_speed;				// in RPM
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
@@ -485,7 +479,6 @@ typedef struct GCodeFlags {             // Gcode model input flags
     bool flood_coolant;
 
     bool spindle_control;
-//	bool spindle_mode;
     bool spindle_speed;
     bool spindle_override_factor;
     bool spindle_override_enable;
@@ -626,14 +619,11 @@ uint8_t cm_get_distance_mode(const GCodeState_t *gcode_state);
 uint8_t cm_get_arc_distance_mode(const GCodeState_t *gcode_state);
 uint8_t cm_get_feed_rate_mode(const GCodeState_t *gcode_state);
 uint8_t cm_get_tool(const GCodeState_t *gcode_state);
-uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 float cm_get_feed_rate(const GCodeState_t *gcode_state);
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
-void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
-void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
 void cm_set_model_linenum(uint32_t linenum);

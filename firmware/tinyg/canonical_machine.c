@@ -238,11 +238,7 @@ uint8_t cm_get_tool(const GCodeState_t *gcode_state) { return gcode_state->tool;
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
-/*
-uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
-void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
-void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
-*/
+
 void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode)
 {
     gcode_state->motion_mode = (cmMotionMode)motion_mode;
@@ -608,7 +604,8 @@ void canonical_machine_init()
 
     canonical_machine_init_assertions();		// establish assertions
     ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
-    cm_arc_init();                              // Note: spindle and coolant inits are independent
+    cm_arc_init();
+    // Note: spindle and coolant inits are independent
 }
 
 void canonical_machine_reset()
@@ -758,8 +755,8 @@ stat_t cm_is_alarmed()
 void cm_halt_all(void)
 {
     cm_halt_motion();
-//	cm_spindle_off_immediate();
-//	cm_coolant_off_immediate();
+	cm_spindle_off_immediate();
+	cm_coolant_off_immediate();
 }
 
 void cm_halt_motion(void)
@@ -835,8 +832,8 @@ stat_t cm_shutdown(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+    coolant_reset();                            // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
     for (uint8_t i = 0; i < HOMING_AXES; i++) { // unhome axes and the machine
@@ -865,8 +862,8 @@ stat_t cm_panic(const stat_t status, const char *msg)
         return (STAT_OK);
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+    coolant_reset();                            // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
 	cm.machine_state = MACHINE_PANIC;           // don't reset anything. Panics are not recoverable
@@ -1324,69 +1321,19 @@ static void _exec_change_tool(float *value, bool *flags)
 /***********************************
  * Miscellaneous Functions (4.3.9) *
  ***********************************/
+// see coolant.c/.h
+
 /*
- * cm_mist_coolant_control() - M7
- * cm_flood_coolant_control() - M8, M9
+ * cm_message() - queue a RAM string as a message in the response (unconditionally)
+ *
+ *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
-/*
-stat_t cm_mist_coolant_control(uint8_t mist_coolant)
-{
-	float value[] = { (float)mist_coolant };
-	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
-	return (STAT_OK);
-}
-static void _exec_mist_coolant_control(float *value, bool *flags)
-{
-	cm.gm.mist_coolant = (uint8_t)value[0];
 
-#ifdef __AVR
-	if (cm.gm.mist_coolant == true) {
-		gpio_set_bit_on(MIST_COOLANT_BIT);
-    } else {
-	    gpio_set_bit_off(MIST_COOLANT_BIT);
-    }
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.mist_coolant == true) {
-		coolant_enable_pin.set();
-    } else {
-    	coolant_enable_pin.clear();
-    }
-#endif // __ARM
+void cm_message(char *message)
+{
+	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
 
-stat_t cm_flood_coolant_control(uint8_t flood_coolant)
-{
-	float value[AXES] = { (float)flood_coolant };
-	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
-	return (STAT_OK);
-}
-static void _exec_flood_coolant_control(float *value, bool *flags)
-{
-	cm.gm.flood_coolant = (uint8_t)value[0];
-
-#ifdef __AVR
-	if (cm.gm.flood_coolant == true) {
-		gpio_set_bit_on(FLOOD_COOLANT_BIT);
-	} else {
-		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-		float vect[] = { 0 };				         // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
-	}
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.flood_coolant == true) {
-		coolant_enable_pin.set();
-	} else {
-		coolant_enable_pin.clear();
-		float vect[] = { 0 };				         // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
-	}
-#endif // __ARM
-}
-*/
 /*
  * cm_override_enables() - M48, M49
  * cm_feed_rate_override_enable() - M50
@@ -1460,17 +1407,6 @@ stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 	cm.gmx.spindle_override_factor = cm.gn.parameter;
 //	change spindle speed
 	return (STAT_OK);
-}
-
-/*
- * cm_message() - queue a RAM string as a message in the response (unconditionally)
- *
- *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
- */
-
-void cm_message(char *message)
-{
-	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
 
 /******************************
@@ -1592,8 +1528,8 @@ bool cm_has_hold()
 void cm_start_hold()
 {
     if (mp_has_runnable_buffer()) {                         // meaning there's something running
-//        cm_spindle_optional_pause(spindle.pause_on_hold);   // pause if this option is selected
-//        cm_coolant_optional_pause(coolant.pause_on_hold);   // pause if this option is selected
+        cm_spindle_optional_pause(spindle.pause_on_hold);   // pause if this option is selected
+        cm_coolant_optional_pause(coolant.pause_on_hold);   // pause if this option is selected
         cm_set_motion_state(MOTION_HOLD);
         cm.hold_state = FEEDHOLD_SYNC;	                    // invokes hold from aline execution
     }
@@ -1607,18 +1543,18 @@ void cm_end_hold()
 
         // State machine cases:
         if (cm.machine_state == MACHINE_ALARM) {
-//            cm_spindle_off_immediate();
-//		    cm_coolant_off_immediate();
+            cm_spindle_off_immediate();
+            cm_coolant_off_immediate();
 
         } else if (cm.motion_state == MOTION_STOP) { // && (! MACHINE_ALARM)
-//            cm_spindle_off_immediate();
-//		    cm_coolant_off_immediate();
+            cm_spindle_off_immediate();
+            cm_coolant_off_immediate();
 		    cm_cycle_end();
 
         } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM)
 		    cm_cycle_start();
-//            cm_spindle_resume(spindle.dwell_seconds);
-//            cm_coolant_resume();
+            cm_spindle_resume(spindle.dwell_seconds);
+            cm_coolant_resume();
             st_request_exec_move();
         }
     }
@@ -1733,7 +1669,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 		cm_select_plane(cm.default_select_plane);		// reset to default arc plane
 		cm_set_distance_mode(cm.default_distance_mode);
 //++++	cm_set_units_mode(cm.default_units_mode);		// reset to default units mode +++ REMOVED +++
-		cm_spindle_control(SPINDLE_OFF);				// M5
+		cm_spindle_control(SPINDLE_OFF);                // M5
 		cm_flood_coolant_control(false);				// M9
 		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
