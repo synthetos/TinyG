@@ -10,6 +10,8 @@ config_app.c
 
 controller.c
 
+coolant.c
+
 cycle_homing.c
 
 cycle_jogging.c

@@ -207,6 +207,7 @@ typedef enum {			// motor control port bit positions
 #define SPINDLE_PWM			0x02		// spindle PWMs output bit
 #define MIST_COOLANT_BIT	0x01		// coolant on/off - these are the same due to limited ports
 #define FLOOD_COOLANT_BIT	0x01		// coolant on/off
+#define COOLANT_BIT         0x01        // coolant on/off
 
 #define SPINDLE_LED			0
 #define SPINDLE_DIR_LED		1

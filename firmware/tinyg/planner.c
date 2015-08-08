@@ -261,7 +261,7 @@ stat_t mp_dwell(float seconds)
         return(cm_panic(STAT_FAILED_GET_PLANNER_BUFFER, "mp_dwell()")); // not ever supposed to fail
     }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
-	bf->gm.move_time = seconds;							// in seconds, not minutes
+	bf->move_time = seconds;							// in seconds, not minutes
 	bf->move_state = MOVE_NEW;
 	mp_commit_write_buffer(MOVE_TYPE_DWELL);			// must be final operation before exit
 	return (STAT_OK);
@@ -269,7 +269,7 @@ stat_t mp_dwell(float seconds)
 
 static stat_t _exec_dwell(mpBuf_t *bf)
 {
-	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
+	st_prep_dwell((uint32_t)(bf->move_time * 1000000)); // convert seconds to uSec
 	if (mp_free_run_buffer()) cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
 	return (STAT_OK);
 }

@@ -179,6 +179,12 @@
     <Compile Include="controller.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="coolant.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="coolant.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cycle_homing.c">
       <SubType>compile</SubType>
     </Compile>

@@ -34,11 +34,10 @@
 #include "text_parser.h"
 #include "settings.h"
 #include "planner.h"
-//#include "plan_arc.h"
 #include "stepper.h"
 #include "gpio.h"
-//#include "spindle.h"
-//#include "coolant.h"
+#include "spindle.h"
+#include "coolant.h"
 #include "pwm.h"
 #include "report.h"
 #include "hardware.h"
@@ -103,14 +102,14 @@ static stat_t get_tick(nvObj_t *nv);		// get system tick count
  *  - The precision value 'p' only affects JSON responses. You need to also set
  *    the %f in the corresponding format string to set text mode display precision
  */
-/* !!! WARNING !!! 
+/* !!! WARNING !!!
  *
- *  If you are developing in this table and your board has persistence for configuration 
+ *  If you are developing in this table and your board has persistence for configuration
  *  settings (like TinyGv8 does) you must either change the firmware build number or
- *  run $defa=1 (or {defa:1} ) after you load new firmware or the items in persistence 
+ *  run $defa=1 (or {defa:1} ) after you load new firmware or the items in persistence
  *  from your previous load may write erroneous values into the initialization variables.
- *  This usually causes all hell to break loose during testing - making you think that 
- *  there is something wrong with your code or this table. 
+ *  This usually causes all hell to break loose during testing - making you think that
+ *  there is something wrong with your code or this table.
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -509,7 +508,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "sys","mtoe",_fipn,0, cm_print_mtoe,get_ui8, set_01,   (float *)&cm.gmx.mto_enable,           TRAVERSE_OVERRIDE_ENABLE},
 //	{ "sys","mto", _fipn,3, cm_print_mto, get_flt,cm_set_mto,(float *)&cm.gmx.mto_factor,           TRAVERSE_OVERRIDE_FACTOR},
 
-/*
     // Spindle functions
     { "sys","spep",_fipn,0, cm_print_spep,get_ui8, set_01,   (float *)&spindle.enable_polarity,     SPINDLE_ENABLE_POLARITY },
     { "sys","spdp",_fipn,0, cm_print_spdp,get_ui8, set_01,   (float *)&spindle.dir_polarity,        SPINDLE_DIR_POLARITY },
@@ -527,7 +525,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "sys","coph",_fipn,0, cm_print_coph,get_ui8, set_01,   (float *)&coolant.pause_on_hold,       COOLANT_PAUSE_ON_HOLD },
     { "",   "com", _f0,  0, cm_print_com, get_ui8, set_nul,  (float *)&coolant.mist_enable, 0 },    // get mist coolant enable
     { "",   "cof", _f0,  0, cm_print_cof, get_ui8, set_nul,  (float *)&coolant.flood_enable, 0 },   // get flood coolant enable
-*/
+
     // Communications and reporting parameters
 #ifdef __TEXT_MODE
     { "sys","tv", _fipn, 0, tx_print_tv,  get_ui8, set_01,     (float *)&txt.text_verbosity,        TEXT_VERBOSITY },

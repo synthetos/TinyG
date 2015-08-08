@@ -34,8 +34,8 @@
 #include "planner.h"
 #include "hardware.h"
 #include "pwm.h"
+#include "gpio.h"               // needed for AVR only
 #include "util.h"
-#include "gpio.h"
 
 /**** Allocate structures ****/
 

@@ -271,19 +271,13 @@ typedef enum {
 	PROGRAM_END
 } cmProgramFlow;
 /*
-typedef enum {				        // spindle state settings (See hardware.h for bit settings)
-	SPINDLE_OFF = 0,
-	SPINDLE_CW,
-	SPINDLE_CCW
-} cmSpindleState;
-*/
 typedef enum {				        // mist and flood coolant states
 	COOLANT_OFF = 0,				// all coolant off
 	COOLANT_ON,						// request coolant on or indicates both coolants are on
 	COOLANT_MIST,					// indicates mist coolant on
 	COOLANT_FLOOD					// indicates flood coolant on
 } cmCoolantState;
-
+*/
 typedef enum {					    // used for spindle and arc dir
 	DIRECTION_CW = 0,
 	DIRECTION_CCW
@@ -340,13 +334,14 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
+    //+++ These 2 should get (re)moved
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
-	float spindle_speed;				// in RPM
 
-	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
-	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
-	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
+//	float spindle_speed;				// in RPM
+//	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
+//	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
+//	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 
     cmFeedRateMode feed_rate_mode;      // See cmFeedRateMode for settings
     cmCanonicalPlane select_plane;      // G17,G18,G19 - values to set plane to
@@ -435,8 +430,8 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
-//    uint8_t spindle_control;            // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
+    uint8_t spindle_control;            // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
+//	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	float spindle_speed;				// in RPM
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
@@ -489,8 +484,8 @@ typedef struct GCodeFlags {             // Gcode model input flags
     bool mist_coolant;
     bool flood_coolant;
 
-//    bool spindle_control;
-	bool spindle_mode;
+    bool spindle_control;
+//	bool spindle_mode;
     bool spindle_speed;
     bool spindle_override_factor;
     bool spindle_override_enable;
@@ -729,8 +724,8 @@ stat_t cm_select_tool(uint8_t tool);							// T parameter
 stat_t cm_change_tool(uint8_t tool);							// M6
 
 // Miscellaneous Functions (4.3.9)
-stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
-stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
+//stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
+//stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
 
 stat_t cm_override_enables(uint8_t flag); 						// M48, M49
 stat_t cm_feed_rate_override_enable(uint8_t flag); 				// M50

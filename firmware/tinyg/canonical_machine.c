@@ -98,7 +98,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
-//#include "coolant.h"
+#include "coolant.h"
 //#include "pwm.h"
 #include "report.h"
 #include "gpio.h"
@@ -120,8 +120,8 @@ cmSingleton_t cm;		// canonical machine controller singleton
 static void _exec_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_select_tool(float *value, bool *flags);
-static void _exec_mist_coolant_control(float *value, bool *flags);
-static void _exec_flood_coolant_control(float *value, bool *flags);
+//static void _exec_mist_coolant_control(float *value, bool *flags);
+//static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 
@@ -238,11 +238,11 @@ uint8_t cm_get_tool(const GCodeState_t *gcode_state) { return gcode_state->tool;
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
-
+/*
 uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
-
+*/
 void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode)
 {
     gcode_state->motion_mode = (cmMotionMode)motion_mode;
@@ -1328,7 +1328,7 @@ static void _exec_change_tool(float *value, bool *flags)
  * cm_mist_coolant_control() - M7
  * cm_flood_coolant_control() - M8, M9
  */
-
+/*
 stat_t cm_mist_coolant_control(uint8_t mist_coolant)
 {
 	float value[] = { (float)mist_coolant };
@@ -1386,7 +1386,7 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
 	}
 #endif // __ARM
 }
-
+*/
 /*
  * cm_override_enables() - M48, M49
  * cm_feed_rate_override_enable() - M50
