@@ -1527,10 +1527,54 @@ void cm_message(char *message)
  *		should start to run anything in the planner queue
  */
 
-void cm_request_feedhold(void) { cm.feedhold_requested = true; }
-void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
-void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
+/*
+ * cm_request_feedhold()
+ * cm_request_end_hold() - cycle restart
+ * cm_request_queue_flush()
+ */
+void cm_request_feedhold(void) {
+    // honor request if not already in a feedhold and you are moving
+    if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
+        cm.hold_state = FEEDHOLD_REQUESTED;
+    }
+}
 
+void cm_request_end_hold(void)
+{
+    if (cm.hold_state != FEEDHOLD_OFF) {
+        cm.end_hold_requested = true;
+    }
+}
+
+void cm_request_queue_flush()
+{
+    if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
+        (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
+//        xio_flush_read();                           // flush the input buffers - you can do that now
+        cm.queue_flush_state = FLUSH_REQUESTED;     // request planner flush once motion has stopped
+    }
+}
+
+/*
+ * cm_feedhold_sequencing_callback() - sequence feedhold, queue_flush, and end_hold requests
+ */
+stat_t cm_feedhold_sequencing_callback()
+{
+	if (cm.hold_state == FEEDHOLD_REQUESTED) {
+		cm_start_hold();                            // feed won't run unless the machine is moving
+	}
+	if (cm.queue_flush_state == FLUSH_REQUESTED) {
+        cm_queue_flush();                           // queue flush won't run until runtime is idle
+	}
+	if (cm.end_hold_requested) {
+        if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
+			cm_end_hold();
+		}
+	}
+	return (STAT_OK);
+}
+
+/*
 stat_t cm_feedhold_sequencing_callback()
 {
 	if (cm.feedhold_requested == true) {
@@ -1548,18 +1592,83 @@ stat_t cm_feedhold_sequencing_callback()
 			cm_queue_flush();
 		}
 	}
-	bool feedhold_processing =				// added feedhold processing lockout from omco fork
-		cm.hold_state == FEEDHOLD_SYNC ||
-		cm.hold_state == FEEDHOLD_PLAN ||
-		cm.hold_state == FEEDHOLD_DECEL;
-	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
-		cm.cycle_start_requested = false;
-		cm.hold_state = FEEDHOLD_END_HOLD;
-		cm_cycle_start();
-		mp_end_hold();
-	}
+//	bool feedhold_processing =				// added feedhold processing lockout from omco fork
+//		cm.hold_state == FEEDHOLD_SYNC ||
+//		cm.hold_state == FEEDHOLD_PLAN ||
+//		cm.hold_state == FEEDHOLD_DECEL;
+//	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
+//		cm.cycle_start_requested = false;
+//		cm.hold_state = FEEDHOLD_END_HOLD;
+//		cm_cycle_start();
+//		mp_end_hold();
+//	}
 	return (STAT_OK);
 }
+*/
+
+/*
+ * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
+ * cm_start_hold() - start a feedhhold by signalling the exec
+ * cm_end_hold()   - end a feedhold by returning the system to normal operation
+ * cm_queue_flush() - Flush planner queue and correct model positions
+ */
+bool cm_has_hold()
+{
+    return (cm.hold_state != FEEDHOLD_OFF);
+}
+
+void cm_start_hold()
+{
+    if (mp_has_runnable_buffer()) {                         // meaning there's something running
+//        cm_spindle_optional_pause(spindle.pause_on_hold);   // pause if this option is selected
+//        cm_coolant_optional_pause(coolant.pause_on_hold);   // pause if this option is selected
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_SYNC;	                    // invokes hold from aline execution
+    }
+}
+
+void cm_end_hold()
+{
+	if (cm.hold_state == FEEDHOLD_HOLD) {
+        cm.end_hold_requested = false;
+	    mp_exit_hold_state();
+
+        // State machine cases:
+        if (cm.machine_state == MACHINE_ALARM) {
+//            cm_spindle_off_immediate();
+//		    cm_coolant_off_immediate();
+
+        } else if (cm.motion_state == MOTION_STOP) { // && (! MACHINE_ALARM)
+//            cm_spindle_off_immediate();
+//		    cm_coolant_off_immediate();
+		    cm_cycle_end();
+
+        } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM)
+		    cm_cycle_start();
+//            cm_spindle_resume(spindle.dwell_seconds);
+//            cm_coolant_resume();
+            st_request_exec_move();
+        }
+    }
+}
+
+/* g2 version
+void cm_queue_flush()
+{
+    if (mp_runtime_is_idle()) {                     // can't flush planner during movement
+        mp_flush_planner();
+
+        for (uint8_t axis = AXIS_X; axis < AXES; axis++) { // set all positions
+            cm_set_position(axis, mp_get_runtime_absolute_position(axis));
+        }
+        if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
+            cm_end_hold();
+        }
+        cm.queue_flush_state = FLUSH_OFF;
+        qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
+    }
+}
+*/
 
 stat_t cm_queue_flush()
 {
@@ -1583,8 +1692,11 @@ stat_t cm_queue_flush()
 	return (STAT_OK);
 }
 
-/*
- * Program and cycle state functions
+/******************************
+ * Program Functions (4.3.10) *
+ ******************************/
+/* This group implements stop, start, and end functions.
+ * It is extended beyond the NIST spec to handle various situations.
  *
  * _exec_program_finalize() 	- helper
  * cm_cycle_start()
@@ -1592,7 +1704,18 @@ stat_t cm_queue_flush()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1
  * cm_program_end()				- M2, M30
+ */
+ /*
+ * Program and cycle state functions
  *
+ * cm_program_stop and cm_optional_program_stop are synchronous Gcode commands
+ * that are received through the interpreter. They cause all motion to stop
+ * at the end of the current command, including spindle motion.
+ *
+ * Note that the stop occurs at the end of the immediately preceding command
+ * (i.e. the stop is queued behind the last command).
+ *
+ * cm_program_end is a stop that also resets the machine to initial state
  * cm_program_end() implements M2 and M30
  * The END behaviors are defined by NIST 3.6.1 are:
  *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
@@ -1627,7 +1750,8 @@ static void _exec_program_finalize(float *value, bool *flags)
 		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
 	}
 	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
-	cm.cycle_start_requested = false;					// cancel any pending cycle start request
+    cm.end_hold_requested = false;					    // cancel any pending end hold request
+//	cm.cycle_start_requested = false;					// cancel any pending cycle start request
 	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END

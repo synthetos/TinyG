@@ -441,6 +441,24 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
  *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
  *		mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
+static void _set_move_times(mpBuf_t *bf)
+{
+    bf->head_time = 0;
+    bf->body_time = 0;
+    bf->tail_time = 0;
+
+    if (fp_NOT_ZERO(bf->head_length)) {
+        bf->head_time = bf->head_length*2 / (bf->entry_velocity + bf->cruise_velocity);
+    }
+    if (fp_NOT_ZERO(bf->body_length)) {
+        bf->body_time = bf->body_length / bf->cruise_velocity;
+    }
+    if (fp_NOT_ZERO(bf->tail_length)) {
+        bf->tail_time = bf->tail_length*2 / (bf->exit_velocity + bf->cruise_velocity);
+    }
+    bf->move_time = bf->head_time + bf->body_time + bf->tail_time;
+}
+
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
 	mpBuf_t *bp = bf;
@@ -467,6 +485,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 								 (bp->entry_velocity + bp->delta_vmax) );
 
 		mp_calculate_trapezoid(bp);
+        _set_move_times(bp);
 
 		// test for optimally planned trapezoids - only need to check various exit conditions
 		if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
@@ -481,6 +500,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 	bp->cruise_velocity = bp->cruise_vmax;
 	bp->exit_velocity = 0;
 	mp_calculate_trapezoid(bp);
+    _set_move_times(bp);
 }
 
 /*
@@ -654,7 +674,7 @@ static float _compute_next_segment_velocity()
 	return (mr.segment_velocity + mr.forward_diff_5);
 #endif
 }
-
+/*
 stat_t mp_plan_hold_callback()
 {
 	if (cm.hold_state != FEEDHOLD_PLAN)
@@ -671,16 +691,6 @@ stat_t mp_plan_hold_callback()
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.target, mr.position);
-
-/*	mr_available_length =
-		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
-			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
-			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
-			  square(mr.endpoint[AXIS_A] - mr.position[AXIS_A]) +
-			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
-			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
-
-*/
 
 	// compute next_segment velocity
 //	braking_velocity = mr.segment_velocity;
@@ -763,10 +773,11 @@ stat_t mp_plan_hold_callback()
 	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
 	return (STAT_OK);
 }
-
+*/
 /*
  * mp_end_hold() - end a feedhold
  */
+/*
 stat_t mp_end_hold()
 {
 	if (cm.hold_state == FEEDHOLD_END_HOLD) {
@@ -781,3 +792,4 @@ stat_t mp_end_hold()
 	}
 	return (STAT_OK);
 }
+*/

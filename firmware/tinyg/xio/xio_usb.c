@@ -156,7 +156,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		cm_request_cycle_start();
+		cm_request_end_hold();
 		return;
 	}
 	if (USB.flag_xoff) {

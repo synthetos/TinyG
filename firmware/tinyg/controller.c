@@ -178,7 +178,7 @@ static void _controller_HSM()
     DISPATCH(_limit_switch_handler());          // invoke limit switch
 
 	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+//	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
 	DISPATCH(_test_system_assertions());		// system integrity assertions
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
@@ -271,7 +271,7 @@ static stat_t _command_dispatch()
 
 		case '!': { cm_request_feedhold(); break; }		// include for AVR diagnostics and ARM serial
 		case '%': { cm_request_queue_flush(); break; }
-		case '~': { cm_request_cycle_start(); break; }
+		case '~': { cm_request_end_hold(); break; }
 
 		case NUL: { 									// blank line (just a CR)
 			if (cfg.comm_mode != JSON_MODE) {

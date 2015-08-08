@@ -88,14 +88,14 @@ typedef enum {                      // code blocks for planning and trapezoid ge
     MIXED_DECEL,                    // kinked deceleration starts with a cruise region (BT)
     COMMAND_BLOCK                   // this block is a command
 } blockHint;
-
+/*
 typedef enum {                      // planner operating state
     PLANNER_IDLE = 0,               // planner and movement are idle
     PLANNER_STARTUP,                // ingesting blocks before movement is started
     PLANNER_OPTIMISTIC,             // plan by leaving last block unplanned
     PLANNER_PESSIMISTIC             // plan by planning all blocks, including the tail
 } plannerState;
-
+*/
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 #define PLANNER_BUFFER_POOL_SIZE 32                     // Suggest 12 min. Limit is 255
@@ -161,7 +161,12 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float head_length;
 	float body_length;
 	float tail_length;
-									// *** SEE NOTES ON THESE VARIABLES, in aline() ***
+
+    float head_time;                // computed move time for head
+    float body_time;                // ...body
+    float tail_time;                // ...tail
+    float move_time;                // ...entire move
+
 	float entry_velocity;			// entry velocity requested for the move
 	float cruise_velocity;			// cruise velocity requested & achieved
 	float exit_velocity;			// exit velocity requested for the move
@@ -204,53 +209,57 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t move_state;				// state of the overall move
-	uint8_t section;				// what section is the move in?
-	uint8_t section_state;			// state within a move section
+	magic_t magic_start;                // magic number to test memory integrity
+	uint8_t move_state;                 // state of the overall move
+	uint8_t section;                    // what section is the move in?
+	uint8_t section_state;              // state within a move section
 
-	float unit[AXES];				// unit vector for axis scaling & planning
+	float unit[AXES];                   // unit vector for axis scaling & planning
     bool axis_flags[AXES];              // set true for axes participating in the move
-	float target[AXES];				// final target for bf (used to correct rounding errors)
-	float position[AXES];			// current move position
-	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
-	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
+	float target[AXES];                 // final target for bf (used to correct rounding errors)
+	float position[AXES];               // current move position
+//	float position_c[AXES];             // for Kahan summation in _exec_aline_segment()
+	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
 
-	float target_steps[MOTORS];		// current MR target (absolute target as steps)
-	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
-	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
+	float target_steps[MOTORS];         // current MR target (absolute target as steps)
+	float position_steps[MOTORS];       // current MR position (target from previous segment)
+	float commanded_steps[MOTORS];      // will align with next encoder sample (target from 2nd previous segment)
+	float encoder_steps[MOTORS];        // encoder position in steps - ideally the same as commanded_steps
+	float following_error[MOTORS];      // difference between encoder_steps and commanded steps
 
-	float head_length;				// copies of bf variables of same name
+	float head_length;                  // copies of bf variables of same name
 	float body_length;
 	float tail_length;
 
-	float entry_velocity;
+	float head_time;                    // copies of bf variables of same name
+	float body_time;
+	float tail_time;
+
+	float entry_velocity;               // actual velocities for the move
 	float cruise_velocity;
 	float exit_velocity;
 
-	float segments;					// number of segments in line (also used by arc generation)
-	uint32_t segment_count;			// count of running segments
-	float segment_velocity;			// computed velocity for aline segment
-	float segment_time;				// actual time increment per aline segment
-	float jerk;						// max linear jerk
+	float segments;                     // number of segments in line (also used by arc generation)
+	uint32_t segment_count;             // count of running segments
+	float segment_velocity;             // computed velocity for aline segment
+	float segment_time;                 // actual time increment per aline segment
+	float jerk;                         // max linear jerk
 
-	float forward_diff_1;			// forward difference level 1
-	float forward_diff_2;			// forward difference level 2
-	float forward_diff_3;			// forward difference level 3
-	float forward_diff_4;			// forward difference level 4
-	float forward_diff_5;			// forward difference level 5
+	float forward_diff_1;               // forward difference level 1
+	float forward_diff_2;               // forward difference level 2
+	float forward_diff_3;               // forward difference level 3
+	float forward_diff_4;               // forward difference level 4
+	float forward_diff_5;               // forward difference level 5
 
-	GCodeState_t gm;				// gcode model state currently executing
+	GCodeState_t gm;                    // gcode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
 // Reference global scope structures
-extern mpBufferPool_t mb;				// move buffer queue
-extern mpMoveMasterSingleton_t mm;		// context for line planning
-extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
+extern mpBufferPool_t mb;               // move buffer queue
+extern mpMoveMasterSingleton_t mm;      // context for line planning
+extern mpMoveRuntimeSingleton_t mr;     // context for line runtime
 
 /*
  * Global Scope Functions
@@ -323,5 +332,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_exit_hold_state(void);
 
 #endif	// End of include Guard: PLANNER_H_ONCE

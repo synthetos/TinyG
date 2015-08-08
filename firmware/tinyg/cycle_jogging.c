@@ -170,7 +170,7 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 
 	cm.gm.feed_rate = velocity;
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
+	cm_request_end_hold();
 
 #if 1
 	float ramp_dist = 2.0;

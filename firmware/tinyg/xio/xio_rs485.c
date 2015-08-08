@@ -167,7 +167,7 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
-		cm_request_cycle_start();
+		cm_request_end_hold();
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored

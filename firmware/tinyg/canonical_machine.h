@@ -102,7 +102,7 @@ typedef enum {
     MOTION_RUN,						// machine is in motion: set when the steppers execute an ALINE segment
     MOTION_HOLD						// feedhold in progress: set whenever we leave FEEDHOLD_OFF, unset whenever we enter FEEDHOLD_OFF
 } cmMotionState;
-
+/*
 typedef enum {				        // feedhold_state machine
 	FEEDHOLD_OFF = 0,				// no feedhold in effect
 	FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
@@ -110,6 +110,17 @@ typedef enum {				        // feedhold_state machine
 	FEEDHOLD_DECEL,					// decelerate to hold point
 	FEEDHOLD_HOLD,					// holding
 	FEEDHOLD_END_HOLD				// end hold (transient state to OFF)
+} cmFeedholdState;
+*/
+typedef enum {				        // feedhold state machine
+    FEEDHOLD_OFF = 0,				// no feedhold in effect
+    FEEDHOLD_REQUESTED,             // feedhold has been requested but not started yet
+    FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
+    FEEDHOLD_DECEL_CONTINUE,        // in deceleration that will not end at zero
+    FEEDHOLD_DECEL_TO_ZERO,         // in deceleration that will go to zero
+    FEEDHOLD_DECEL_END,             // end the deceleration
+    FEEDHOLD_PENDING,               // waiting to finalize the deceleration once motion stops
+    FEEDHOLD_HOLD					// holding
 } cmFeedholdState;
 
 typedef enum {				        // feed override state machine
@@ -568,12 +579,12 @@ typedef struct cmSingleton {                // struct to manage cm globals and c
 	uint8_t	g30_flag;                       // true = complete a G30 move
 	uint8_t deferred_write_flag;            // G10 data has changed (e.g. offsets) - flag to persist them
 
-	uint8_t feedhold_requested;             // feedhold character has been received
-	uint8_t queue_flush_requested;          // queue flush character has been received
-	uint8_t cycle_start_requested;          // cycle start character has been received (flag to end feedhold)
+	bool feedhold_requested;             // feedhold character has been received
+	bool end_hold_requested;                // request restart after feedhold
+	bool queue_flush_requested;          // queue flush character has been received
+//	uint8_t cycle_start_requested;          // cycle start character has been received (flag to end feedhold)
 	float jogging_dest;                     // jogging direction as a relative move from current position
 
-	bool end_hold_requested;                //
 	uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
 	uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
 
@@ -735,12 +746,19 @@ void cm_message(char *message);								// msg to console (e.g. Gcode comments)
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
+void cm_request_end_hold(void);
 void cm_request_queue_flush(void);
-void cm_request_cycle_start(void);
-
+void cm_request_end_queue_flush(void);
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
-stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
 
+bool cm_has_hold(void);
+void cm_start_hold(void);
+void cm_end_hold(void);
+
+stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
+void cm_end_queue_flush(void);
+
+//void cm_request_cycle_start(void);
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
 void cm_canned_cycle_end(void);                                 // end of canned cycle
