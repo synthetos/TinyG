@@ -182,11 +182,7 @@ void gpio_reset(void)
         }
         in->state = (_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
         in->lockout_ms = INPUT_LOCKOUT_MS;
-#ifdef __ARM
-        in->lockout_timer = SysTickTimer.getValue();
-#else
         in->lockout_timer = SysTickTimer_getValue();
-#endif
     }
 }
 
@@ -283,11 +279,7 @@ static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_valu
     }
 
     // return if the input is in lockout period (take no action)
-#ifdef __ARM
-    if (SysTickTimer.getValue() < in->lockout_timer) { return (0); }
-#else
     if (SysTickTimer_getValue() < in->lockout_timer) { return (0); }
-#endif
     // return if no change in state
     int8_t pin_value_corrected = (pin_value ^ ((int)in->mode ^ 1));	// correct for NO or NC mode
     if (in->state == pin_value_corrected) {
@@ -296,11 +288,7 @@ static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_valu
 
     // record the changed state
     in->state = pin_value_corrected;
-#ifdef __ARM
-    in->lockout_timer = SysTickTimer.getValue() + in->lockout_ms;
-#else
     in->lockout_timer = SysTickTimer_getValue() + in->lockout_ms;
-#endif
     if (pin_value_corrected == INPUT_ACTIVE) {
         in->edge = INPUT_EDGE_LEADING;
     } else {

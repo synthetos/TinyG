@@ -50,9 +50,9 @@
  *      - add new hold logic
  *      - remove old JERK code
  *      - remove Kahan references
- *
- *    - extend status report requests for FULL option
  *    - install spindle and coolant separate files
+ *    - extend status report requests for FULL option
+ *
  *    - small stuff
  *      - Add const qualifiers to bool flags in arglists
  *      - install test_print() methods instead of local conversions
@@ -87,7 +87,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.18	// new spindle code - first commit
+#define TINYG_FIRMWARE_BUILD        444.19	// updated status reports
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
