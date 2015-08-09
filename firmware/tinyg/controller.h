@@ -49,28 +49,28 @@ typedef enum {                          // manages startup lines
     CONTROLLER_READY,                   // is active and ready for use
     CONTROLLER_PAUSED                   // is paused - presumably in preparation for queue flush
 } csControllerState;
-/*
-typedef enum {				            // manages startup lines
-    CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
-    CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
-    CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
-    CONTROLLER_STARTUP,					// controller is running startup messages and lines
-    CONTROLLER_READY					// controller is active and ready for use
-} cmControllerState;
-*/
+
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-	uint8_t state;						// controller state
 	float null;							// dumping ground for items with no target
+
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility - platform revision
 
 	// communications state variables
+	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
+
+//	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
+//	uint8_t enable_echo;			// enable text-mode echo
+//	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
+//	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
+	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
+
 	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
 	uint16_t linelen;					// length of currently processing line
@@ -84,6 +84,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t bootloader_requested;		// flag to enter the bootloader
 	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
 
+	uint8_t state;						// controller state
 	csControllerState controller_state;
 //	uint8_t state_usb0;
 //	uint8_t state_usb1;
@@ -94,7 +95,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 //	uint8_t sync_to_time_state;
 //	uint32_t sync_to_time_time;
 
-	int32_t job_id[4];					// uuid to identify the job
+//	int32_t job_id[4];					// uuid to identify the job
 
 	// controller serial buffers
 	char *bufp;						// pointer to primary or secondary in buffer

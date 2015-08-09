@@ -52,8 +52,9 @@
  *      - remove Kahan references
  *    - install spindle and coolant separate files
  *    - extend status report requests for FULL option
- *
  *    - small stuff
+
+
  *      - Add const qualifiers to bool flags in arglists
  *      - install test_print() methods instead of local conversions
  *      - move job IDs to config (from controller)
@@ -87,7 +88,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.19	// updated status reports
+#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - moved comm mode, job ID
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
