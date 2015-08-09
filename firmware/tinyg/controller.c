@@ -66,22 +66,15 @@ static stat_t _interlock_handler(void);         // new (replaces _interlock_esto
 static stat_t _limit_switch_handler(void);      // revised for new GPIO code
 
 static void _init_assertions(void);
-static stat_t _test_assertions(void);
 static stat_t _test_system_assertions(void);
-
-//static stat_t _normal_idler(void);
 
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
-static stat_t _command_dispatch(void);
-//static stat_t _dispatch_command(void);
+static stat_t _dispatch_command(void);
 //static stat_t _dispatch_control(void);
 //static void _dispatch_kernel(void);
 static stat_t _controller_state(void);          // manage controller state transitions
 
-// prep for export to other modules:
-stat_t hardware_hard_reset_handler(void);
-stat_t hardware_bootloader_handler(void);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -93,47 +86,27 @@ stat_t hardware_bootloader_handler(void);
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
     // preserve settable parameters that may have already been set up
- //   uint8_t comm_mode = cs.comm_mode;
+//    uint8_t comm_mode = cs.comm_mode;
 
-	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
+	memset(&cs, 0, sizeof(controller_t));           // clear all values, job_id's, pointers and status
 	_init_assertions();
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
-	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
+	cs.hw_platform = TINYG_HARDWARE_PLATFORM;       // NB: HW version is set from EEPROM
+	cs.controller_state = CONTROLLER_STARTUP;       // ready to run startup lines
 
 #ifdef __AVR
-	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
 	cs.default_src = std_in;
-	tg_set_primary_source(cs.default_src);
+	cs_set_primary_source(cs.default_src);
 #endif
 
 #ifdef __ARM
-	cs.state = CONTROLLER_NOT_CONNECTED;			// find USB next
 	IndicatorLed.setFrequency(100000);
 #endif
-}
-
-/*
- * controller_init_assertions()
- * controller_test_assertions() - check memory integrity of controller
- */
-
-static void _init_assertions()
-{
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
-}
-
-static stat_t _test_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
-        return(cm_panic(STAT_CONTROLLER_ASSERTION_FAILURE, "controller_test_assertions()"));
-    }
-	return (STAT_OK);
 }
 
 /*
@@ -170,43 +143,44 @@ static void _controller_HSM()
 //
 //----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
-	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
-	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
+    DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
+    DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
 
-	DISPATCH(_led_indicator());				    // blink LEDs at the current rate
+    DISPATCH(_led_indicator());				    // blink LEDs at the current rate
     DISPATCH(_shutdown_handler());              // invoke shutdown
     DISPATCH(_interlock_handler());             // invoke / remove safety interlock
     DISPATCH(_limit_switch_handler());          // invoke limit switch
     DISPATCH(_controller_state());              // controller state management
-	DISPATCH(_test_system_assertions());		// system integrity assertions
+    DISPATCH(_test_system_assertions());        // system integrity assertions
+//    DISPATCH(_dispatch_control());              // read any control messages prior to executing cycles
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
-	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
-	DISPATCH(sr_status_report_callback());		// conditionally send status report
-	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
-	DISPATCH(rx_report_callback());             // conditionally send rx report
+    DISPATCH(st_motor_power_callback());        // stepper motor power sequencing
+    DISPATCH(sr_status_report_callback());      // conditionally send status report
+    DISPATCH(qr_queue_report_callback());       // conditionally send queue report
+    DISPATCH(rx_report_callback());             // conditionally send rx report
 
-	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
+    DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 //    DISPATCH(mp_planner_callback());		    // motion planner
-	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
+    DISPATCH(cm_arc_callback());                // arc generation runs as a cycle above lines
     DISPATCH(cm_homing_cycle_callback());       // homing cycle operation (G28.2)
     DISPATCH(cm_probing_cycle_callback());      // probing cycle operation (G38.2)
     DISPATCH(cm_jogging_cycle_callback());      // jog cycle operation
-	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
+    DISPATCH(cm_deferred_write_callback());     // persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
-	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
-	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
+    DISPATCH(_sync_to_planner());               // ensure there is at least one free buffer in planning queue
+    DISPATCH(_sync_to_tx_buffer());             // sync with TX buffer (pseudo-blocking)
 #ifdef __AVR
-	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
+    DISPATCH(set_baud_callback());              // perform baud rate update (must be after TX sync)
 #endif
-	DISPATCH(_command_dispatch());				// read and execute next command
+    DISPATCH(_dispatch_command());              // MUST BE LAST - read and execute next command
 }
 
 /*****************************************************************************
- * _command_dispatch() - dispatch line received from active input device
+ * _dispatch_command() - dispatch line received from active input device
  *
  *	Reads next command line and dispatches to relevant parser or action
  *	Accepts commands if the move queue has room - EAGAINS if it doesn't
@@ -214,7 +188,7 @@ static void _controller_HSM()
  *	Also responsible for prompts and for flow control
  */
 
-static stat_t _command_dispatch()
+static stat_t _dispatch_command()
 {
 #ifdef __AVR
 	stat_t status;
@@ -233,7 +207,7 @@ static stat_t _command_dispatch()
 			} else {
 				rpt_exception(STAT_EOF, "EOF");			// not really an exception
 			}
-			tg_reset_source();							// reset to default source
+			cs_reset_source();							// reset to default source
 		}
 		return (status);								// Note: STAT_EAGAIN, errors, etc. will drop through
 	}
@@ -305,7 +279,7 @@ static stat_t _command_dispatch()
 }
 
 /**** Local Functions ********************************************************/
-/*
+/* CONTROLLER STATE MANAGEMENT
  * _controller_state() - manage controller connection, startup, and other state changes
  */
 
@@ -320,8 +294,35 @@ static stat_t _controller_state()
 }
 
 /*
+ * controller_set_connected(bool) - hook for xio to tell the controller that we
+ * have/don't have a connection.
+ */
+/*
+void controller_set_connected(bool is_connected) {
+    if (is_connected) {
+        cs.controller_state = CONTROLLER_CONNECTED; // we JUST connected
+    } else {  // we just disconnected from the last device, we'll expect a banner again
+        cs.controller_state = CONTROLLER_NOT_CONNECTED;
+    }
+}
+*/
+/*
+ * controller_parse_control() - return true if command is a control (versus data)
+ * Note: parsing for control is somewhat naiive. This will need to get better
+ */
+/*
+bool controller_parse_control(char *p) {
+    if (strchr("{$?!~%Hh", *p) != NULL) {		    // a match indicates control line
+        return (true);
+    }
+    return (false);
+}
+*/
+
+/*
  * _led_indicator() - blink an LED to show it we are normal, alarmed, or shut down
  */
+
 static stat_t _led_indicator()
 {
     uint32_t blink_rate;
@@ -368,18 +369,18 @@ static stat_t _sync_to_planner()
 }
 
 /*
- * tg_reset_source() 		 - reset source to default input device (see note)
- * tg_set_primary_source() 	 - set current primary input source
- * tg_set_secondary_source() - set current primary input source
+ * cs_reset_source() 		 - reset source to default input device (see note)
+ * cs_set_primary_source() 	 - set current primary input source
+ * cs_set_secondary_source() - set current primary input source
  *
  * Note: Once multiple serial devices are supported reset_source() should
  * be expanded to also set the stdout/stderr console device so the prompt
  * and other messages are sent to the active device.
  */
 
-void tg_reset_source() { tg_set_primary_source(cs.default_src);}
-void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+void cs_reset_source() { cs_set_primary_source(cs.default_src);}
+void cs_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
+void cs_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
 
 /* ALARM STATE HANDLERS
  *
@@ -442,8 +443,25 @@ static stat_t _interlock_handler(void)
 }
 
 /*
+ * _init_assertions() - initialize controller memory integrity assertions
+ * _test_assertions() - check controller memory integrity assertions
  * _test_system_assertions() - check assertions for entire system
  */
+
+static void _init_assertions()
+{
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+}
+
+static stat_t _test_assertions()
+{
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
+        return(cm_panic(STAT_CONTROLLER_ASSERTION_FAILURE, "controller_test_assertions()"));
+    }
+	return (STAT_OK);
+}
+
 stat_t _test_system_assertions()
 {
     // these functions will panic if an assertion fails

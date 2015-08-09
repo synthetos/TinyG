@@ -59,15 +59,17 @@ typedef struct controllerSingleton {	// main TG controller struct
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility - platform revision
 
+	// system state variables
+	csControllerState controller_state;
 	uint32_t led_timer;                 // used to flash indicator LED
 	uint32_t led_blink_rate;            // used to flash indicator LED
 
-	// communications state variables
-	uint8_t comm_mode;                  // TG_TEXT_MODE or TG_JSON_MODE
+	// communications (and other) state variables
+	uint8_t comm_mode;                  // TEXT_MODE or JSON_MODE
+
 #ifdef __ARM
 	uint8_t state_usb0;
 	uint8_t state_usb1;
-//	bool shared_buf_overrun;            // flag for shared string buffer overrun condition
 #endif
 
 #ifdef __AVR
@@ -75,30 +77,19 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t secondary_src;              // secondary input source device
 	uint8_t default_src;                // default source device
 
-	uint8_t usb_baud_flag;              // running a USB baudrate update sequence
-	uint16_t linelen;					// length of currently processing line
 	uint16_t read_index;				// length of line being read
-
 	uint8_t led_state;		            // used by AVR IndicatorLed_toggle() in gpio.c
-#endif
-
-	// system state variables
-	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
+	uint8_t usb_baud_flag;              // running a USB baudrate update sequence
 	uint8_t hard_reset_requested;       // flag to perform a hard reset
 	uint8_t bootloader_requested;       // flag to enter the bootloader
-	bool shared_buf_overrun;            // flag for shared string buffer overrun condition
-
-	uint8_t state;						// controller state
-	csControllerState controller_state;
-
-//	uint8_t sync_to_time_state;
-//	uint32_t sync_to_time_time;
+#endif
 
 	// controller serial buffers
-	char *bufp;						// pointer to primary or secondary in buffer
-	char in_buf[INPUT_BUFFER_LEN];	// primary input buffer
-	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
-	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+	char *bufp;                         // pointer to primary or secondary in buffer
+	uint16_t linelen;                   // length of currently processing line
+	char in_buf[INPUT_BUFFER_LEN];      // primary input buffer
+	char out_buf[OUTPUT_BUFFER_LEN];    // output buffer
+	char saved_buf[SAVED_BUFFER_LEN];   // save the input buffer
 	magic_t magic_end;
 } controller_t;
 
@@ -110,10 +101,9 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
 void controller_run(void);
-//void controller_reset(void);
 
-void tg_reset_source(void);
-void tg_set_primary_source(uint8_t dev);
-void tg_set_secondary_source(uint8_t dev);
+void cs_reset_source(void);
+void cs_set_primary_source(uint8_t dev);
+//void cs_set_secondary_source(uint8_t dev);
 
 #endif // End of include guard: CONTROLLER_H_ONCE

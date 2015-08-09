@@ -55,12 +55,10 @@
  *    - small stuff
  *      - move job IDs to config (from controller)
  *      - remove network.c/.h
+ *      - move $ej from cfg to controller (cs.comm_mode)
 
-
- *      - Add const qualifiers to bool flags in arglists
  *      - install test_print() methods instead of local conversions
- *      - move $ej from cfg to controller (cs)
- *      - move USB parameters from cfg to xio (see set_baud()), including comm_mode
+ *      - Add const qualifiers to bool flags in arglists
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -74,16 +72,12 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef __ARM
-#include "MotatePins.h"
-#endif
-
 /****** DEFINITIONS THAT MAY ULTIMATELY BE PROVIDED BY THE MAKEFILE ******/
 
-#define __ARCHITECTURE  __AVR
-#define __PLATFORM      __ATMEL_XMEGA
-#define __PROCESSOR     __XMEGA192A
-#define __BOARD         __TINYG_V8
+#define __ARCHITECTURE  __AVR               // or __ARM
+#define __PLATFORM      __ATMEL_XMEGA       // unused for now
+#define __PROCESSOR     __XMEGA192A         // unused for now
+#define __BOARD         __TINYG_V8          // unused for now
 
 /****** REVISIONS ******/
 
@@ -91,9 +85,9 @@
 #define TINYG_FIRMWARE_BUILD        444.20	// small stuff - removed network modes; reorganized controller somewhat
 
 #endif
-#define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
-#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
-#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		// see hardware.h
+#define TINYG_FIRMWARE_VERSION		0.98                        // firmware major version
+#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA     // see hardware.h
+#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8          // see hardware.h
 #define TINYG_HARDWARE_VERSION_MAX	TINYG_HARDWARE_VERSION
 
 /****** COMPILE-TIME SETTINGS ******/
@@ -101,7 +95,7 @@
 #define __STEP_CORRECTION
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
-//#define __CANNED_TESTS 						// enables $tests 		(~12Kb)
+//#define __CANNED_TESTS 					// enables $tests 		(~12Kb)
 
 /****** DEVELOPMENT SETTINGS ******/
 
@@ -111,6 +105,10 @@
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
 //#endif
+
+#ifdef __ARM
+#include "MotatePins.h"
+#endif
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************
@@ -165,10 +163,6 @@ typedef enum {
 /************************************************************************************
  ***** PLATFORM COMPATIBILITY *******************************************************
  ************************************************************************************/
-#undef __AVR
-#define __AVR
-//#undef __ARM
-//#define __ARM
 
 /*********************
  * AVR Compatibility *
