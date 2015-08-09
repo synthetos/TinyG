@@ -309,7 +309,7 @@ static stat_t _compute_arc()
 
 	// Find the minimum number of arc_segments that meets these constraints...
 	float arc_segments_for_chordal_accuracy = arc.length / sqrt(4*cm.chordal_tolerance * (2 * arc.radius - cm.chordal_tolerance));
-	float arc_segments_for_minimum_distance = arc.length / cm.arc_segment_len;
+	float arc_segments_for_minimum_distance = arc.length / MIN_ARC_SEGMENT_LENGTH;
 	float arc_segments_for_minimum_time = arc.arc_time * MICROSECONDS_PER_MINUTE / MIN_ARC_SEGMENT_USEC;
 
 	arc.arc_segments = floor(min3(arc_segments_for_chordal_accuracy,

@@ -1786,8 +1786,8 @@ static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2,
 
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Machining";
-static const char msg_cycs2[] PROGMEM = "Probe";
-static const char msg_cycs3[] PROGMEM = "Homing";
+static const char msg_cycs2[] PROGMEM = "Homing";
+static const char msg_cycs3[] PROGMEM = "Probe";
 static const char msg_cycs4[] PROGMEM = "Jog";
 static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3,  msg_cycs4 };
 
