@@ -53,11 +53,11 @@
  *    - install spindle and coolant separate files
  *    - extend status report requests for FULL option
  *    - small stuff
+ *      - move job IDs to config (from controller)
 
 
  *      - Add const qualifiers to bool flags in arglists
  *      - install test_print() methods instead of local conversions
- *      - move job IDs to config (from controller)
  *      - move $ej from cfg to controller (cs)
  *      - move USB parameters from cfg to xio (see set_baud()), including comm_mode
  *      - remove network.c/.h
@@ -88,7 +88,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - moved comm mode, job ID
+#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - commented out network modes
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
