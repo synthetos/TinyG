@@ -120,8 +120,6 @@ cmSingleton_t cm;		// canonical machine controller singleton
 static void _exec_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_select_tool(float *value, bool *flags);
-//static void _exec_mist_coolant_control(float *value, bool *flags);
-//static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 
@@ -136,6 +134,34 @@ static int8_t _get_axis_type(const index_t index);
  * Internal getters and setters      *
  * Canonical Machine State functions *
  *************************************/
+/*
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+void cm_set_motion_state(const cmMotionState motion_state)
+{
+    cm.motion_state = motion_state;
+
+    switch (motion_state) {
+        case (MOTION_STOP):     { ACTIVE_MODEL = MODEL; break; }
+        case (MOTION_PLANNING): { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_RUN):      { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_HOLD):     { ACTIVE_MODEL = RUNTIME; break; }
+    }
+}
+
+/*
+ * cm_get_machine_state()
+ * cm_get_motion_state()
+ * cm_get_cycle_state()
+ * cm_get_hold_state()
+ * cm_get_homing_state()
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+cmMachineState  cm_get_machine_state() { return cm.machine_state;}
+cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
+cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
+cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
+cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -184,34 +210,6 @@ cmCombinedState cm_get_combined_state()
             cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
             return (COMBINED_PANIC);
         }
-    }
-}
-
-/*
- * cm_get_machine_state()
- * cm_get_motion_state()
- * cm_get_cycle_state()
- * cm_get_hold_state()
- * cm_get_homing_state()
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-cmMachineState  cm_get_machine_state() { return cm.machine_state;}
-cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
-cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
-cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
-cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
-
-/*
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-void cm_set_motion_state(uint8_t motion_state)
-{
-    cm.motion_state = motion_state;
-
-    switch (motion_state) {
-        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
-        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
-        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
     }
 }
 
@@ -1070,7 +1068,7 @@ static void _exec_absolute_origin(float *value, bool *flags)
  * G92's behave according to NIST 3.5.18 & LinuxCNC G92
  * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
-stat_t cm_set_origin_offsets(const float offset[], bool flags[])
+stat_t cm_set_origin_offsets(const float offset[],  bool flags[])
 {
 	// set offsets in the Gcode model extended context
 	cm.gmx.origin_offset_enable = true;
@@ -1120,7 +1118,7 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
-stat_t cm_straight_traverse(float target[], bool flags[])
+stat_t cm_straight_traverse(float target[], const bool flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 
@@ -1156,7 +1154,7 @@ stat_t cm_set_g28_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g28_position(float target[], bool flags[])
+stat_t cm_goto_g28_position(float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
@@ -1170,7 +1168,7 @@ stat_t cm_set_g30_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g30_position(float target[], bool flags[])
+stat_t cm_goto_g30_position(float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip

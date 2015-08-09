@@ -378,7 +378,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 
     uint8_t modals[MODAL_GROUP_COUNT];
     uint8_t program_flow;				// used only by the gcode_parser
-    uint32_t linenum;					// N word or autoincrement in the model
+    uint32_t linenum;					// N word
     float target[AXES]; 				// XYZABC where the move should go
 
 	uint8_t L_word;						// L word - used by G10s
@@ -478,42 +478,39 @@ typedef struct GCodeFlags {             // Gcode model input flags
  */
 
 typedef struct cmAxis {
-    cmAxisMode axis_mode;               // see cmAxisMode above
-    float velocity_max;                 // max velocity in mm/min or deg/min
+    cmAxisMode axis_mode;                   // see cmAxisMode above
+    float velocity_max;                     // max velocity in mm/min or deg/min
     float recip_velocity_max;
-    float feedrate_max;                 // max velocity in mm/min or deg/min
+    float feedrate_max;                     // max velocity in mm/min or deg/min
     float recip_feedrate_max;
-    float travel_max;                   // max work envelope for soft limits
-    float travel_min;                   // min work envelope for soft limits
-    float jerk_max;                     // max jerk (Jm) in mm/min^3 divided by 1 million
-    float jerk_high;				    // high speed deceleration jerk (Jh) in mm/min^3 divided by 1 million
-    float recip_jerk;                   // stored reciprocal of current jerk value - has the million in it
-    float junction_dev;                 // aka cornering delta
-    float radius;                       // radius in mm for rotary axis modes
+    float travel_max;                       // max work envelope for soft limits
+    float travel_min;                       // min work envelope for soft limits
+    float jerk_max;                         // max jerk (Jm) in mm/min^3 divided by 1 million
+    float jerk_high;                        // high speed deceleration jerk (Jh) in mm/min^3 divided by 1 million
+    float recip_jerk;                       // stored reciprocal of current jerk value - has the million in it
+    float junction_dev;                     // aka cornering delta
+    float radius;                           // radius in mm for rotary axis modes
 
-    uint8_t homing_input;               // set 1-N for homing input. 0 will disable homing
-    uint8_t homing_dir;                 // 0=search to negative, 1=search to positive
-    float search_velocity;              // homing search velocity
-    float latch_velocity;               // homing latch velocity
-    float latch_backoff;                // backoff sufficient to clear a switch
-    float zero_backoff;                 // backoff from switches for machine zero
+    uint8_t homing_input;                   // set 1-N for homing input. 0 will disable homing
+    uint8_t homing_dir;                     // 0=search to negative, 1=search to positive
+    float search_velocity;                  // homing search velocity
+    float latch_velocity;                   // homing latch velocity
+    float latch_backoff;                    // backoff sufficient to clear a switch
+    float zero_backoff;                     // backoff from switches for machine zero
 } cfgAxis_t;
 
-typedef struct cmSingleton {            // struct to manage cm globals and cycles
-	magic_t magic_start;                // magic number to test memory integrity
+typedef struct cmSingleton {                // struct to manage cm globals and cycles
+    magic_t magic_start;                    // magic number to test memory integrity
 
-	/**** Config variables (PUBLIC) ****/
+    /**** Config variables (PUBLIC) ****/
 
-	// system group settings
-    float junction_acceleration;        // centripetal acceleration max for cornering
-    float junction_aggression;		    // how aggressively will the machine corner? 1.0 or so is about the upper limit
-    float chordal_tolerance;			// arc chordal accuracy setting in mm
-    bool soft_limit_enable;             // true to enable soft limit testing on Gcode inputs
-    bool limit_enable;                  // true to enable limit switches (disabled is same as override)
-    bool safety_interlock_enable;       // true to enable safety interlock system
-
-	// hidden system settings
-	float arc_segment_len;              // arc drawing resolution in mm
+    // system group settings
+    float junction_acceleration;            // centripetal acceleration max for cornering
+    float junction_aggression;		        // how aggressively will the machine corner? 1.0 or so is about the upper limit
+    float chordal_tolerance;			    // arc chordal accuracy setting in mm
+    bool soft_limit_enable;                 // true to enable soft limit testing on Gcode inputs
+    bool limit_enable;                      // true to enable limit switches (disabled is same as override)
+    bool safety_interlock_enable;           // true to enable safety interlock system
 
 	// gcode power-on default settings - defaults are not the same as the gm state
 	cmCoordSystem default_coord_system;     // G10 active coordinate system default
@@ -523,7 +520,7 @@ typedef struct cmSingleton {            // struct to manage cm globals and cycle
 	cmDistanceMode default_distance_mode;   // G90,G91 reset default
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];           // persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+    float offset[COORDS+1][AXES];           // persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
 
 	// settings for axes X,Y,Z,A B,C
 	cfgAxis_t a[AXES];
@@ -547,34 +544,31 @@ typedef struct cmSingleton {            // struct to manage cm globals and cycle
     cmHomingState homing_state;             // home: homing cycle sub-state machine
     uint8_t homed[AXES];                    // individual axis homing flags
 
-	uint8_t probe_state;                    // 1==success, 0==failed
-	float probe_results[AXES];              // probing results
+    cmProbeState probe_state;               // probing state machine (simple)
+    float probe_results[AXES];              // probing results
 
-	bool g28_flag;                          // true = complete a G28 move
-	bool g30_flag;                          // true = complete a G30 move
-	bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
-	bool feedhold_requested;                // feedhold character has been received
-	bool end_hold_requested;                // request restart after feedhold
-	bool queue_flush_requested;             // queue flush character has been received
-	uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
-	uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
+    float jogging_dest;                     // jogging direction as a relative move from current position
 
-	float jogging_dest;                     // jogging direction as a relative move from current position
+    bool g28_flag;                          // true = complete a G28 move
+    bool g30_flag;                          // true = complete a G30 move
+    bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
+    bool end_hold_requested;                // request restart after feedhold
+    uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
+    uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
 
 	/**** Model states ****/
-	GCodeState_t *am;                       // active Gcode model is maintained by state management
-	GCodeState_t  gm;                       // core gcode model state
-	GCodeStateX_t gmx;                      // extended gcode model state
-	GCodeInput_t  gn;                       // gcode input values - transient
-	GCodeFlags_t  gf;                       // gcode input flags - transient
+    GCodeState_t *am;                       // active Gcode model is maintained by state management
+    GCodeState_t  gm;                       // core gcode model state
+    GCodeStateX_t gmx;                      // extended gcode model state
+    GCodeInput_t  gn;                       // gcode input values - transient
+    GCodeFlags_t  gf;                       // gcode input flags - transient
 
-	magic_t magic_end;
+    magic_t magic_end;
 } cmSingleton_t;
 
 /**** Externs - See canonical_machine.c for allocation ****/
 
 extern cmSingleton_t cm;				// canonical machine controller singleton
-
 
 /*****************************************************************************
  * FUNCTION PROTOTYPES
@@ -591,10 +585,10 @@ cmMotionState cm_get_motion_state(void);
 cmFeedholdState cm_get_hold_state(void);
 cmHomingState cm_get_homing_state(void);
 uint8_t cm_get_jogging_state(void);
-void cm_set_motion_state(uint8_t motion_state);
 
-float cm_get_axis_jerk(uint8_t axis);
-void cm_set_axis_jerk(uint8_t axis, float jerk);
+void cm_set_motion_state(const cmMotionState motion_state);
+float cm_get_axis_jerk(const uint8_t axis);
+void cm_set_axis_jerk(const uint8_t axis, const float jerk);
 
 uint32_t cm_get_linenum(const GCodeState_t *gcode_state);
 uint8_t cm_get_motion_mode(const GCodeState_t *gcode_state);
@@ -610,10 +604,10 @@ uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
 float cm_get_feed_rate(const GCodeState_t *gcode_state);
 
-void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
-void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
-void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
-void cm_set_model_linenum(uint32_t linenum);
+void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode);
+void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool);
+void cm_set_absolute_override(GCodeState_t *gcode_state, const uint8_t absolute_override);
+void cm_set_model_linenum(const uint32_t linenum);
 
 // Coordinate systems and offsets
 float cm_get_active_coord_offset(const uint8_t axis);
@@ -652,30 +646,30 @@ stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdow
 stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
 // Representation (4.3.3)
-stat_t cm_select_plane(const uint8_t plane);							        // G17, G18, G19
-stat_t cm_set_units_mode(const uint8_t mode);							        // G20, G21
-stat_t cm_set_distance_mode(const uint8_t mode);						        // G90, G91
-stat_t cm_set_arc_distance_mode(const uint8_t mode);						    // G90, G91
-stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
+stat_t cm_select_plane(const uint8_t plane);                                // G17, G18, G19
+stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
+stat_t cm_set_distance_mode(const uint8_t mode);                            // G90, G91
+stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
+stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
                             const uint8_t L_word,
                             const float offset[], const bool flag[]);
 
-void cm_set_position(const uint8_t axis, const float position);				    // set absolute position - single axis
-stat_t cm_set_absolute_origin(const float origin[], bool flags[]);	            // G28.3
-void cm_set_axis_origin(uint8_t axis, const float position);	                // G28.3 planner callback
+void cm_set_position(const uint8_t axis, const float position);             // set absolute position - single axis
+stat_t cm_set_absolute_origin(const float origin[], bool flags[]);          // G28.3
+void cm_set_axis_origin(uint8_t axis, const float position);                // G28.3 planner callback
 
-stat_t cm_set_coord_system(const uint8_t coord_system);				            // G54 - G59
-stat_t cm_set_origin_offsets(const float offset[], bool flags[]);		        // G92
-stat_t cm_reset_origin_offsets(void); 							                // G92.1
-stat_t cm_suspend_origin_offsets(void); 						                // G92.2
-stat_t cm_resume_origin_offsets(void);				 			                // G92.3
+stat_t cm_set_coord_system(const uint8_t coord_system);                     // G54 - G59
+stat_t cm_set_origin_offsets(const float offset[], bool flags[]);           // G92
+stat_t cm_reset_origin_offsets(void);                                       // G92.1
+stat_t cm_suspend_origin_offsets(void);                                     // G92.2
+stat_t cm_resume_origin_offsets(void);                                      // G92.3
 
 // Free Space Motion (4.3.4)
-stat_t cm_straight_traverse(float target[], bool flags[]);		                // G0
-stat_t cm_set_g28_position(void);								                // G28.1
-stat_t cm_goto_g28_position(float target[], bool flags[]); 	                    // G28
-stat_t cm_set_g30_position(void);								                // G30.1
-stat_t cm_goto_g30_position(float target[], bool flags[]);		                // G30
+stat_t cm_straight_traverse(float target[], const bool flags[]);            // G0
+stat_t cm_set_g28_position(void);                                           // G28.1
+stat_t cm_goto_g28_position(float target[], const bool flags[]);            // G28
+stat_t cm_set_g30_position(void);                                           // G30.1
+stat_t cm_goto_g30_position(float target[], const bool flags[]);            // G30
 
 // Machining Attributes (4.3.5)
 stat_t cm_set_feed_rate(float feed_rate);						                // F parameter
