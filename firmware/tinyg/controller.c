@@ -60,14 +60,16 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-//static stat_t _led_indicator(void);             // twiddle the LED indicator
+static stat_t _led_indicator(void);             // twiddle the LED indicator
 static stat_t _shutdown_handler(void);          // new (replaces _interlock_estop_handler)
 static stat_t _interlock_handler(void);         // new (replaces _interlock_estop_handler)
 static stat_t _limit_switch_handler(void);      // revised for new GPIO code
 
+static void _init_assertions(void);
+static stat_t _test_assertions(void);
 static stat_t _test_system_assertions(void);
 
-static stat_t _normal_idler(void);
+//static stat_t _normal_idler(void);
 
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
@@ -75,7 +77,7 @@ static stat_t _command_dispatch(void);
 //static stat_t _dispatch_command(void);
 //static stat_t _dispatch_control(void);
 //static void _dispatch_kernel(void);
-//static stat_t _controller_state(void);          // manage controller state transitions
+static stat_t _controller_state(void);          // manage controller state transitions
 
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
@@ -94,7 +96,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
  //   uint8_t comm_mode = cs.comm_mode;
 
 	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
-	controller_init_assertions();
+	_init_assertions();
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
@@ -120,13 +122,13 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
  * controller_test_assertions() - check memory integrity of controller
  */
 
-void controller_init_assertions()
+static void _init_assertions()
 {
 	cs.magic_start = MAGICNUM;
 	cs.magic_end = MAGICNUM;
 }
 
-stat_t controller_test_assertions()
+static stat_t _test_assertions()
 {
 	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
         return(cm_panic(STAT_CONTROLLER_ASSERTION_FAILURE, "controller_test_assertions()"));
@@ -171,14 +173,11 @@ static void _controller_HSM()
 	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
 
-//	DISPATCH(_led_indicator());				    // blink LEDs at the current rate
-//	DISPATCH(_shutdown_idler());				// idle in shutdown state
+	DISPATCH(_led_indicator());				    // blink LEDs at the current rate
     DISPATCH(_shutdown_handler());              // invoke shutdown
     DISPATCH(_interlock_handler());             // invoke / remove safety interlock
     DISPATCH(_limit_switch_handler());          // invoke limit switch
-
-	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
-//	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+    DISPATCH(_controller_state());              // controller state management
 	DISPATCH(_test_system_assertions());		// system integrity assertions
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
@@ -187,6 +186,9 @@ static void _controller_HSM()
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
+
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
+//    DISPATCH(mp_planner_callback());		    // motion planner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
     DISPATCH(cm_homing_cycle_callback());       // homing cycle operation (G28.2)
     DISPATCH(cm_probing_cycle_callback());      // probing cycle operation (G38.2)
@@ -201,7 +203,6 @@ static void _controller_HSM()
 	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
 #endif
 	DISPATCH(_command_dispatch());				// read and execute next command
-	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
 /*****************************************************************************
@@ -227,7 +228,7 @@ static stat_t _command_dispatch()
 		}
 		// handle end-of-file from file devices
 		if (status == STAT_EOF) {						// EOF can come from file devices only
-			if (cfg.comm_mode == TEXT_MODE) {
+			if (cs.comm_mode == TEXT_MODE) {
 				fprintf_P(stderr, PSTR("End of command file\n"));
 			} else {
 				rpt_exception(STAT_EOF, "EOF");			// not really an exception
@@ -275,23 +276,23 @@ static stat_t _command_dispatch()
 		case '~': { cm_request_end_hold(); break; }
 
 		case NUL: { 									// blank line (just a CR)
-			if (cfg.comm_mode != JSON_MODE) {
+			if (cs.comm_mode != JSON_MODE) {
 				text_response(STAT_OK, cs.saved_buf);
 			}
 			break;
 		}
 		case '$': case '?': case 'H': { 				// text mode input
-			cfg.comm_mode = TEXT_MODE;
+			cs.comm_mode = TEXT_MODE;
 			text_response(text_parser(cs.bufp), cs.saved_buf);
 			break;
 		}
 		case '{': { 									// JSON input
-			cfg.comm_mode = JSON_MODE;
+			cs.comm_mode = JSON_MODE;
 			json_parser(cs.bufp);
 			break;
 		}
 		default: {										// anything else must be Gcode
-			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
+			if (cs.comm_mode == JSON_MODE) {			// run it as JSON...
 				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
 				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
 				json_parser(cs.bufp);
@@ -303,91 +304,47 @@ static stat_t _command_dispatch()
 	return (STAT_OK);
 }
 
-
-/**** Local Utilities ********************************************************/
+/**** Local Functions ********************************************************/
 /*
- * _shutdown_idler() - blink rapidly and prevent further activity from occurring
- * _normal_idler() - blink Indicator LED slowly to show everything is OK
- *
- *	Shutdown idler flashes indicator LED rapidly to show everything is not OK.
- *	Shutdown idler returns EAGAIN causing the control loop to never advance beyond
- *	this point. It's important that the reset handler is still called so a SW reset
- *	(ctrl-x) or bootloader request can be processed.
+ * _controller_state() - manage controller connection, startup, and other state changes
  */
-/*
-static stat_t _shutdown_idler()
+
+static stat_t _controller_state()
 {
-	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
-
-	if (SysTickTimer_getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer_getValue() + LED_ALARM_TIMER;
-		IndicatorLed_toggle();
+	if (cs.controller_state == CONTROLLER_CONNECTED) {		// first time through after reset
+		cs.controller_state = CONTROLLER_READY;
+        // Oops, we just skipped CONTROLLER_STARTUP. Do we still need it? -r
+		rpt_print_system_ready_message();
 	}
-	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
-}
-*/
-static stat_t _normal_idler()
-{
-#ifdef __ARM
-	/*
-	 * S-curve heartbeat code. Uses forward-differencing math from the stepper code.
-	 * See plan_line.cpp for explanations.
-	 * Here, the "velocity" goes from 0.0 to 1.0, then back.
-	 * t0 = 0, t1 = 0, t2 = 0.5, and we'll complete the S in 100 segments.
-	 */
-
-	// These are statics, and the assignments will only evaluate once.
-	static float indicator_led_value = 0.0;
-	static float indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-	static float indicator_led_forward_diff_2 = indicator_led_forward_diff_1 * 2.0;
-
-
-	if (SysTickTimer.getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer.getValue() + LED_NORMAL_TIMER / 100;
-
-		indicator_led_value += indicator_led_forward_diff_1;
-		if (indicator_led_value > 100.0)
-			indicator_led_value = 100.0;
-
-		if ((indicator_led_forward_diff_2 > 0.0 && indicator_led_value >= 50.0) || (indicator_led_forward_diff_2 < 0.0 && indicator_led_value <= 50.0)) {
-			indicator_led_forward_diff_2 = -indicator_led_forward_diff_2;
-		}
-		else if (indicator_led_value <= 0.0) {
-			indicator_led_value = 0.0;
-
-			// Reset to account for rounding errors
-			indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-		} else {
-			indicator_led_forward_diff_1 += indicator_led_forward_diff_2;
-		}
-
-		IndicatorLed = indicator_led_value/100.0;
-	}
-#endif
-#ifdef __AVR
-/*
-	if (SysTickTimer_getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
-//		IndicatorLed_toggle();
-	}
-*/
-#endif
 	return (STAT_OK);
 }
 
 /*
- * tg_reset_source() 		 - reset source to default input device (see note)
- * tg_set_primary_source() 	 - set current primary input source
- * tg_set_secondary_source() - set current primary input source
- *
- * Note: Once multiple serial devices are supported reset_source() should
- * be expanded to also set the stdout/stderr console device so the prompt
- * and other messages are sent to the active device.
+ * _led_indicator() - blink an LED to show it we are normal, alarmed, or shut down
  */
+static stat_t _led_indicator()
+{
+    uint32_t blink_rate;
+    if (cm_get_machine_state() == MACHINE_ALARM) {
+        blink_rate = LED_ALARM_BLINK_RATE;
+    } else if (cm_get_machine_state() == MACHINE_SHUTDOWN) {
+        blink_rate = LED_SHUTDOWN_BLINK_RATE;
+    } else if (cm_get_machine_state() == MACHINE_PANIC) {
+        blink_rate = LED_PANIC_BLINK_RATE;
+    } else {
+        blink_rate = LED_NORMAL_BLINK_RATE;
+    }
 
-void tg_reset_source() { tg_set_primary_source(cs.default_src);}
-void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+    if (blink_rate != cs.led_blink_rate) {
+        cs.led_blink_rate =  blink_rate;
+        cs.led_timer = 0;
+    }
+	if (SysTickTimer_getValue() > cs.led_timer) {
+		cs.led_timer = SysTickTimer_getValue() + cs.led_blink_rate;
+		IndicatorLed_toggle();
+	}
+	return (STAT_OK);
+}
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
@@ -411,21 +368,19 @@ static stat_t _sync_to_planner()
 }
 
 /*
- * _limit_switch_handler() - shut down system if limit switch fired
+ * tg_reset_source() 		 - reset source to default input device (see note)
+ * tg_set_primary_source() 	 - set current primary input source
+ * tg_set_secondary_source() - set current primary input source
+ *
+ * Note: Once multiple serial devices are supported reset_source() should
+ * be expanded to also set the stdout/stderr console device so the prompt
+ * and other messages are sent to the active device.
  */
-/*
-static stat_t _limit_switch_handler(void)
-{
-    if (cm_get_machine_state() == MACHINE_ALARM) {
-        return (STAT_NOOP);
-    }
-    if (get_limit_switch_thrown()) {
-        cm_alarm(STAT_LIMIT_SWITCH_HIT, "limit hit");
-        //      return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
-    }
-    return (STAT_OK);
-}
-*/
+
+void tg_reset_source() { tg_set_primary_source(cs.default_src);}
+void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
+void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+
 /* ALARM STATE HANDLERS
  *
  * _shutdown_handler() - put system into shutdown state
@@ -479,7 +434,7 @@ static stat_t _interlock_handler(void)
             cm.safety_interlock_reengaged = 0;
             cm.safety_interlock_state = SAFETY_INTERLOCK_ENGAGED;   // interlock restored
             // restart spindle with dwell
-//            cm_request_end_hold();                                // use cm_request_end_hold() instead of just ending
+            cm_request_end_hold();                                // use cm_request_end_hold() instead of just ending
             // restart coolant
         }
     }
@@ -487,16 +442,12 @@ static stat_t _interlock_handler(void)
 }
 
 /*
- */
-
-/*
  * _test_system_assertions() - check assertions for entire system
  */
-//#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, "assertion failed"));
-
 stat_t _test_system_assertions()
 {
-	controller_test_assertions();         // these functions will panic if an assertion fails
+    // these functions will panic if an assertion fails
+	_test_assertions();                     // controller assertions (local)
 	config_test_assertions();
 	canonical_machine_test_assertions();
 	planner_test_assertions();

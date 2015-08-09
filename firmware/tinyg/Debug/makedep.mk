@@ -34,8 +34,6 @@ kinematics.c
 
 main.c
 
-network.c
-
 persistence.c
 
 planner.c

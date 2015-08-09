@@ -233,7 +233,7 @@ static bool _read_raw_pin(const uint8_t input_num_ext)
  * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
  * The actual values will be the pin's port mask or 0, so you must check for non-zero.
  *
- * NOTE: The MOTATE_PIN_INTERRUPT will null out any pins that rae not defined, so no 
+ * NOTE: The MOTATE_PIN_INTERRUPT will null out any pins that rae not defined, so no
  * need to ifdef them out for different board configurations
  */
 #ifdef __ARM
@@ -519,6 +519,9 @@ void IndicatorLed_clear()
 
 void IndicatorLed_toggle()
 {
+#ifdef __ARM
+    IndicatorLed.toggle();
+#else
 	if (cs.led_state == 0) {
 		gpio_led_on(INDICATOR_LED);
 		cs.led_state = 1;
@@ -526,6 +529,7 @@ void IndicatorLed_toggle()
 		gpio_led_off(INDICATOR_LED);
 		cs.led_state = 0;
 	}
+#endif
 }
 
 /*

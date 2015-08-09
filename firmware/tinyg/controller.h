@@ -59,13 +59,14 @@ typedef struct controllerSingleton {	// main TG controller struct
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility - platform revision
 
+	uint32_t led_timer;                 // used to flash indicator LED
+	uint32_t led_blink_rate;            // used to flash indicator LED
+
 	// communications state variables
 	uint8_t comm_mode;                  // TG_TEXT_MODE or TG_JSON_MODE
 #ifdef __ARM
 	uint8_t state_usb0;
 	uint8_t state_usb1;
-	uint32_t led_timer;                 // used to flash indicator LED
-	uint32_t led_blink_rate;            // used to flash indicator LED
 //	bool shared_buf_overrun;            // flag for shared string buffer overrun condition
 #endif
 
@@ -77,13 +78,12 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t usb_baud_flag;              // running a USB baudrate update sequence
 	uint16_t linelen;					// length of currently processing line
 	uint16_t read_index;				// length of line being read
+
+	uint8_t led_state;		            // used by AVR IndicatorLed_toggle() in gpio.c
 #endif
-//	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
 	// system state variables
-	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
-	uint32_t led_timer;                 // used by idlers to flash indicator LED
 	uint8_t hard_reset_requested;       // flag to perform a hard reset
 	uint8_t bootloader_requested;       // flag to enter the bootloader
 	bool shared_buf_overrun;            // flag for shared string buffer overrun condition

@@ -45,7 +45,6 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 	int32_t job_id[4];				// uuid to identify the job
 
 	// communications settings
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control

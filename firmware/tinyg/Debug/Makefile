@@ -57,7 +57,6 @@ C_SRCS +=  \
 ../json_parser.c \
 ../kinematics.c \
 ../main.c \
-../network.c \
 ../persistence.c \
 ../planner.c \
 ../plan_arc.c \
@@ -107,7 +106,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 persistence.o \
 planner.o \
 plan_arc.o \
@@ -150,7 +148,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 persistence.o \
 planner.o \
 plan_arc.o \
@@ -193,7 +190,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 persistence.d \
 planner.d \
 plan_arc.d \
@@ -236,7 +232,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 persistence.d \
 planner.d \
 plan_arc.d \
@@ -276,8 +271,6 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
-
-
 
 
 

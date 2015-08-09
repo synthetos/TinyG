@@ -54,13 +54,13 @@
  *    - extend status report requests for FULL option
  *    - small stuff
  *      - move job IDs to config (from controller)
+ *      - remove network.c/.h
 
 
  *      - Add const qualifiers to bool flags in arglists
  *      - install test_print() methods instead of local conversions
  *      - move $ej from cfg to controller (cs)
  *      - move USB parameters from cfg to xio (see set_baud()), including comm_mode
- *      - remove network.c/.h
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -88,7 +88,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - commented out network modes
+#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - removed network modes; reorganized controller somewhat
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
