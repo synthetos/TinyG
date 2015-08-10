@@ -409,12 +409,6 @@ float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 void cm_finalize_move()
 {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
-
-// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
-// SUPERSEDED by gcode_parsser INVERSE_TIME_MODE test ~line 252
-//	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
-//		cm.gm.feed_rate = 0;
-//	}
 }
 
 void cm_update_model_position_from_runtime()
@@ -526,27 +520,7 @@ void cm_set_model_target(const float target[], const bool flags[])
  *	a min or a max if the value is more than +/- 1000000 (plus or minus 1 million ).
  *	This allows a single end to be tested w/the other disabled, should that requirement ever arise.
  */
-/*
-stat_t cm_test_soft_limits(float target[])
-{
-	if (cm.soft_limit_enable == true) {
-		for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-			if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
 
-			if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
-
-			if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
-				return (STAT_SOFT_LIMIT_EXCEEDED);
-			}
-
-			if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
-				return (STAT_SOFT_LIMIT_EXCEEDED);
-			}
-		}
-	}
-	return (STAT_OK);
-}
-*/
 static stat_t _finalize_soft_limits(const stat_t status)
 {
     cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;     // cancel motion
@@ -573,6 +547,28 @@ stat_t cm_test_soft_limits(const float target[])
     }
     return (STAT_OK);
 }
+
+/*
+stat_t cm_test_soft_limits(float target[])
+{
+	if (cm.soft_limit_enable == true) {
+		for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+			if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
+
+			if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
+
+			if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
+
+			if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
+				return (STAT_SOFT_LIMIT_EXCEEDED);
+			}
+		}
+	}
+	return (STAT_OK);
+}
+*/
 
 /*************************************************************************
  * CANONICAL MACHINING FUNCTIONS
@@ -2269,10 +2265,7 @@ void cm_print_gdi(nvObj_t *nv) { text_print_int(nv, fmt_gdi);}
 
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
 const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%17.4f%s\n";
-const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
-//const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
-//const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
-//const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
+const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d [0=disable,1=enable]\n";
 const char fmt_lim[] PROGMEM ="[lim] limit switch enable%10d [0=disable,1=enable]\n";
 const char fmt_saf[] PROGMEM ="[saf] safety interlock enable%6d [0=disable,1=enable]\n";
 
@@ -2284,12 +2277,16 @@ const char fmt_mto[] PROGMEM ="[mto]  manual traverse override%8.3f [0.05 < mto 
 
 void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+//void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+void cm_print_sl(nvObj_t *nv) { text_print(nv, fmt_sl);}        // TYPE_INT
 void cm_print_lim(nvObj_t *nv){ text_print(nv, fmt_lim);}       // TYPE_INT
 void cm_print_saf(nvObj_t *nv){ text_print(nv, fmt_saf);}       // TYPE_INT
-//void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
-//void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
-//void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
+
+void cm_print_m48e(nvObj_t *nv) { text_print(nv, fmt_m48e);}    // TYPE_INT
+void cm_print_mfoe(nvObj_t *nv){ text_print(nv, fmt_mfoe);}     // TYPE INT
+void cm_print_mfo(nvObj_t *nv) { text_print(nv, fmt_mfo);}      // TYPE FLOAT
+void cm_print_mtoe(nvObj_t *nv){ text_print(nv, fmt_mtoe);}     // TYPE INT
+void cm_print_mto(nvObj_t *nv) { text_print(nv, fmt_mto);}      // TYPE FLOAT
 
 /*
  * axis print functions

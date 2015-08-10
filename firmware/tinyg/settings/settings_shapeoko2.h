@@ -44,7 +44,7 @@
 #define JUNCTION_AGGRESSION         0.75					// cornering - between 0.05 and 1.00 (max)
 #define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
 
-#define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
+#define SOFT_LIMIT_ENABLE           1						// 0=off, 1=on
 #define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
 
@@ -155,7 +155,7 @@
 #define X_VELOCITY_MAX              16000                   // xvm  G0 max velocity in mm/min
 #define X_FEEDRATE_MAX              X_VELOCITY_MAX          // xfr  G1 max feed rate in mm/min
 #define X_TRAVEL_MIN                0                       // xtn  minimum travel for soft limits
-#define X_TRAVEL_MAX                420                     // xtm  travel between switches or crashes
+#define X_TRAVEL_MAX                300                     // xtm  travel between switches or crashes
 #define X_JERK_MAX                  5000                    // xjm  yes, that's "5 billion" mm/(min^3)
 #define X_JERK_HIGH                 10000                   // xjh
 #define X_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY   // xjd
@@ -165,14 +165,14 @@
 #define X_HOMING_DIR                0                       // xhd  0=search moves negative, 1= search moves positive
 #define X_SEARCH_VELOCITY           3000                    // xsv  minus means move to minimum switch
 #define X_LATCH_VELOCITY            100                     // xlv  mm/min
-#define X_LATCH_BACKOFF             6                       // xlb  mm
-#define X_ZERO_BACKOFF              3                       // xzb  mm
+#define X_LATCH_BACKOFF             3                       // xlb  mm
+#define X_ZERO_BACKOFF              2                       // xzb  mm
 
 #define Y_AXIS_MODE                 AXIS_STANDARD
 #define Y_VELOCITY_MAX              16000
 #define Y_FEEDRATE_MAX              Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN                0
-#define Y_TRAVEL_MAX                420
+#define Y_TRAVEL_MAX                330
 #define Y_JERK_MAX                  5000
 #define Y_JERK_HIGH                 10000
 #define Y_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY
@@ -182,14 +182,14 @@
 #define Y_HOMING_DIR                0
 #define Y_SEARCH_VELOCITY           3000
 #define Y_LATCH_VELOCITY            100
-#define Y_LATCH_BACKOFF             6
-#define Y_ZERO_BACKOFF              3
+#define Y_LATCH_BACKOFF             3
+#define Y_ZERO_BACKOFF              2
 
 #define Z_AXIS_MODE                 AXIS_STANDARD
 #define Z_VELOCITY_MAX              1000
 #define Z_FEEDRATE_MAX              Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX                0
-#define Z_TRAVEL_MIN                100
+#define Z_TRAVEL_MIN                -80
 #define Z_JERK_MAX                  500                 // was 100
 #define Z_JERK_HIGH                 500
 #define Z_JUNCTION_DEVIATION        JUNCTION_DEVIATION_Z
@@ -199,7 +199,7 @@
 #define Z_HOMING_DIR                1
 #define Z_SEARCH_VELOCITY           (Z_VELOCITY_MAX * 0.66666)
 #define Z_LATCH_VELOCITY            100
-#define Z_LATCH_BACKOFF             6
+#define Z_LATCH_BACKOFF             3
 #define Z_ZERO_BACKOFF              2
 
 #define A_AXIS_MODE                 AXIS_STANDARD
