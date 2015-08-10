@@ -76,7 +76,7 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-#define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
+#define STATUS_REPORT_DEFAULTS "line", "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
 //#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","admo","frmo","momo","stat"
 // Alternate SRs that report in drawable units
 //#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
@@ -152,12 +152,15 @@
 #define JUNCTION_DEVIATION_Z        0.01                    // larger is faster
 #define JUNCTION_DEVIATION_ABC      0.5                     // larger is faster
 
+#define VELOCITY_MAX                16000    // 16000
+#define JERK_MAX                    5000    // 5000
+
 #define X_AXIS_MODE                 AXIS_STANDARD           // xam  see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX              16000                   // xvm  G0 max velocity in mm/min
+#define X_VELOCITY_MAX              VELOCITY_MAX            // xvm  G0 max velocity in mm/min
 #define X_FEEDRATE_MAX              X_VELOCITY_MAX          // xfr  G1 max feed rate in mm/min
 #define X_TRAVEL_MIN                0                       // xtn  minimum travel for soft limits
 #define X_TRAVEL_MAX                300                     // xtm  travel between switches or crashes
-#define X_JERK_MAX                  5000                    // xjm  yes, that's "5 billion" mm/(min^3)
+#define X_JERK_MAX                  JERK_MAX                // xjm  yes, that's "5 billion" mm/(min^3)
 #define X_JERK_HIGH                 10000                   // xjh
 #define X_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY   // xjd
 #define X_SWITCH_MODE_MIN           SW_MODE_HOMING          // xsn  SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -170,11 +173,11 @@
 #define X_ZERO_BACKOFF              2                       // xzb  mm
 
 #define Y_AXIS_MODE                 AXIS_STANDARD
-#define Y_VELOCITY_MAX              16000
+#define Y_VELOCITY_MAX              VELOCITY_MAX
 #define Y_FEEDRATE_MAX              Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN                0
 #define Y_TRAVEL_MAX                330
-#define Y_JERK_MAX                  5000
+#define Y_JERK_MAX                  JERK_MAX
 #define Y_JERK_HIGH                 10000
 #define Y_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY
 #define Y_SWITCH_MODE_MIN           SW_MODE_HOMING

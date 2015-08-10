@@ -275,10 +275,10 @@ static stat_t _compute_arc()
     arc.theta = atan2(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
 
     // Compute the angular travel
-    float g18_correction = 1;
-    if (cm.gm.select_plane == CANON_PLANE_XZ) {             // used to invert G18 XZ plane arcs for proper CW orientation
-        g18_correction = -1;
-    }
+
+    // g18_correction is used to invert G18 XZ plane arcs for proper CW orientation
+    float g18_correction = (cm.gm.select_plane == CANON_PLANE_XZ) ? -1 : 1;
+
 	if (arc.full_circle) {                                  // if full circle you can skip the stuff in the else clause
     	arc.angular_travel = 0;                             // angular travel always starts as zero for full circles
     	if (fp_ZERO(arc.rotations)) {                       // handle the valid case of a full circle arc w/P=0
@@ -287,24 +287,23 @@ static stat_t _compute_arc()
     } else {                                                // ... it's not a full circle
         arc.theta_end = atan2(end_0, end_1);
 	    if (arc.theta_end <= arc.theta) {                   // make the difference positive so we have clockwise travel
-            arc.theta_end += 2*M_PI * g18_correction;       // NB: MUST be <= in (arc.theta_end <= arc.theta) or PartKam arcs will fail
+            arc.theta_end += (2*M_PI * g18_correction);     // NB: MUST be <= in (arc.theta_end <= arc.theta) or PartKam arcs will fail
         }
 	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
     	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {     // reverse travel direction if it's CCW arc
-            arc.angular_travel -= 2*M_PI * g18_correction;
+            arc.angular_travel -= (2*M_PI * g18_correction);
         }
 	}
     if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in travel for rotations
-        arc.angular_travel += 2*M_PI * arc.rotations * g18_correction;
+        arc.angular_travel += (2*M_PI * arc.rotations * g18_correction);
     } else {
-        arc.angular_travel -= 2*M_PI * arc.rotations * g18_correction;
+        arc.angular_travel -= (2*M_PI * arc.rotations * g18_correction);
     }
 
 	// Calculate travel in the depth axis of the helix and compute the time it should take to perform the move
 	// arc.length is the total mm of travel of the helix (or just a planar arc)
 	arc.linear_travel = arc.gm.target[arc.linear_axis] - arc.position[arc.linear_axis];
 	arc.planar_travel = arc.angular_travel * arc.radius;
-	arc.length = hypotf(arc.planar_travel, arc.linear_travel);  // NB: hypot is insensitive to +/- signs
 	_estimate_arc_time();	// get an estimate of execution time to inform arc_segment calculation
 
 	// Find the minimum number of arc_segments that meets these constraints...
