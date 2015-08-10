@@ -49,9 +49,9 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	uint8_t full_circle;		    // set true if full circle arcs specified
 	uint32_t rotations;			    // Number of full rotations for full circles (P value)
 
-	uint8_t plane_axis_0;		    // arc plane axis 0 - e.g. X for G17
-	uint8_t plane_axis_1;		    // arc plane axis 1 - e.g. Y for G17
-	uint8_t linear_axis; 		    // linear axis (normal to plane)
+	uint8_t plane_axis_0;           // arc plane axis 0 - e.g. X for G17
+	uint8_t plane_axis_1;           // arc plane axis 1 - e.g. Y for G17
+	uint8_t linear_axis;            // linear axis (normal to plane)
 
 	float arc_time;					// total running time for arc (derived)
 	float arc_segments;				// number of segments in arc or blend

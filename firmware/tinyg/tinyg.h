@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.18	// fixed arc specification bug
+#define TINYG_FIRMWARE_BUILD        440.19	// arc fix
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
