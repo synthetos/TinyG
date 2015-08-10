@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.19	// arc fix
+#define TINYG_FIRMWARE_BUILD        440.19	// fix for Makercam / PartKam giant arcs
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
@@ -70,22 +70,6 @@
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
-
-//#define __SIMULATION						// for software-only simulations
-#ifdef __SIMULATION
-  #undef  __TEXT_MODE
-  #undef  __HELP_SCREENS
-  #undef  __CANNED_TESTS
-#ifndef __CANNED_STARTUP
-  #define __CANNED_STARTUP					// run any canned startup moves
-#endif
-  #define __DISABLE_PERSISTENCE				// disable EEPROM writes for faster simulation
-  #define __SUPPRESS_STARTUP_MESSAGES
-  #define __SUPPRESS_STATUS_REPORTS
-  #define __SUPPRESS_QUEUE_REPORTS
-  #define __SUPRESS_DIAGNOSTIC_DISPLAYS
-  #define __SILENCE_JSON_RESPONSES
-#endif
 
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))

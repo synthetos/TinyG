@@ -266,10 +266,8 @@ static stat_t _compute_arc()
     }
 
 	// Calculate the theta (angle) of the current point (position)
-	// arc.theta is angular starting point for the arc (is also needed for calculating center point)
+	// arc.theta is angular starting point for the arc (also needed later for calculating center point)
     arc.theta = atan2(-arc.offset[arc.plane_axis_0], -arc.offset[arc.plane_axis_1]);
-
-    // Compute the angular travel
 
     // g18_correction is used to invert G18 XZ plane arcs for proper CW orientation
     float g18_correction = (cm.gm.select_plane == CANON_PLANE_XZ) ? -1 : 1;
@@ -281,15 +279,23 @@ static stat_t _compute_arc()
         }
     } else {                                                // ... it's not a full circle
         arc.theta_end = atan2(end_0, end_1);
-	    if (arc.theta_end <= arc.theta) {                   // make the difference positive so we have clockwise travel
-            arc.theta_end += (2*M_PI * g18_correction);     // NB: MUST be <= in (arc.theta_end <= arc.theta) or PartKam arcs will fail
-        }
-	    arc.angular_travel = arc.theta_end - arc.theta;     // compute positive angular travel
-    	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {     // reverse travel direction if it's CCW arc
-            arc.angular_travel -= (2*M_PI * g18_correction);
+
+        // Compute the angular travel
+        if (fp_EQ(arc.theta_end, arc.theta)) {
+	        arc.angular_travel = 0;                         // very large radii arcs can have zero angular travel (thanks PartKam)
+        } else {
+	        if (arc.theta_end < arc.theta) {                // make the difference positive so we have clockwise travel
+                arc.theta_end += (2*M_PI * g18_correction);
+            }
+	        arc.angular_travel = arc.theta_end - arc.theta; // compute positive angular travel
+    	    if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { // reverse travel direction if it's CCW arc
+                arc.angular_travel -= (2*M_PI * g18_correction);
+            }
         }
 	}
-    if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {          // add in travel for rotations
+
+    // Add in travel for rotations
+    if (cm.gm.motion_mode == MOTION_MODE_CW_ARC) {
         arc.angular_travel += (2*M_PI * arc.rotations * g18_correction);
     } else {
         arc.angular_travel -= (2*M_PI * arc.rotations * g18_correction);
