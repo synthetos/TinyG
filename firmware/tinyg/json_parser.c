@@ -205,14 +205,6 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
 
 static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
-/*
-	uint8_t i;
-	char *tmp;
-	char leaders[] = {"{,\""};				// open curly, quote and leading comma
-	char separators[] = {":\""};				// colon and quote
-	char terminators[] = {"},\""};			// close curly, comma and quote
-	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
-*/
 	uint8_t i;
 	char *tmp;
 	char leaders[] = {"{,\""};      // open curly, quote and leading comma
@@ -232,7 +224,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		}
 		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
-        }        
+        }
 	}
 
 	// Find the end of name, NUL terminate and copy token
@@ -244,7 +236,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		}
 		if (i == MAX_NAME_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
-        }        
+        }
 	}
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
@@ -255,7 +247,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		if (strchr(value, (int)**pstr) != NULL) break;
 		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
-        }        
+        }
 	}
 
 	// nulls (gets)
