@@ -1118,7 +1118,7 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
-stat_t cm_straight_traverse(float target[], const bool flags[])
+stat_t cm_straight_traverse(const float target[], const bool flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 
@@ -1154,7 +1154,7 @@ stat_t cm_set_g28_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g28_position(float target[], const bool flags[])
+stat_t cm_goto_g28_position(const float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
@@ -1168,7 +1168,7 @@ stat_t cm_set_g30_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g30_position(float target[], const bool flags[])
+stat_t cm_goto_g30_position(const float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
@@ -1235,7 +1235,7 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
 /*
  * cm_dwell() - G4, P parameter (seconds)
  */
-stat_t cm_dwell(float seconds)
+stat_t cm_dwell(const float seconds)
 {
 	cm.gm.parameter = seconds;
 	mp_dwell(seconds);
@@ -1245,7 +1245,7 @@ stat_t cm_dwell(float seconds)
 /*
  * cm_straight_feed() - G1
  */
-stat_t cm_straight_feed(float target[], bool flags[])
+stat_t cm_straight_feed(const float target[], const bool flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
@@ -1292,7 +1292,7 @@ stat_t cm_straight_feed(float target[], bool flags[])
  * Note: These functions don't actually do anything for now, and there's a bug
  *		 where T and M in different blocks don;t work correctly
  */
-stat_t cm_select_tool(uint8_t tool_select)
+stat_t cm_select_tool(const uint8_t tool_select)
 {
 	float value[] = { (float)tool_select };
 	mp_queue_command(_exec_select_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
@@ -1304,7 +1304,7 @@ static void _exec_select_tool(float *value, bool *flags)
 	cm.gm.tool_select = (uint8_t)value[0];
 }
 
-stat_t cm_change_tool(uint8_t tool_change)
+stat_t cm_change_tool(const uint8_t tool_change)
 {
 	float value[] = { (float)cm.gm.tool_select };
     mp_queue_command(_exec_change_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
@@ -1327,7 +1327,7 @@ static void _exec_change_tool(float *value, bool *flags)
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-void cm_message(char *message)
+void cm_message(const char *message)
 {
 	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
@@ -2307,8 +2307,8 @@ void cm_print_saf(nvObj_t *nv){ text_print(nv, fmt_saf);}       // TYPE_INT
  *	cm_print_jh()
  *	cm_print_jd()
  *	cm_print_ra()
- *	cm_print_sn()
- *	cm_print_sx()
+ *	cm_print_hi()
+ *	cm_print_hd()
  *	cm_print_lv()
  *	cm_print_lb()
  *	cm_print_zb()

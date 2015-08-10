@@ -665,38 +665,39 @@ stat_t cm_suspend_origin_offsets(void);                                     // G
 stat_t cm_resume_origin_offsets(void);                                      // G92.3
 
 // Free Space Motion (4.3.4)
-stat_t cm_straight_traverse(float target[], const bool flags[]);            // G0
+stat_t cm_straight_traverse(const float target[], const bool flags[]);      // G0
 stat_t cm_set_g28_position(void);                                           // G28.1
-stat_t cm_goto_g28_position(float target[], const bool flags[]);            // G28
+stat_t cm_goto_g28_position(const float target[], const bool flags[]);      // G28
 stat_t cm_set_g30_position(void);                                           // G30.1
-stat_t cm_goto_g30_position(float target[], const bool flags[]);            // G30
+stat_t cm_goto_g30_position(const float target[], const bool flags[]);      // G30
 
 // Machining Attributes (4.3.5)
-stat_t cm_set_feed_rate(float feed_rate);						                // F parameter
-stat_t cm_set_feed_rate_mode(uint8_t mode);						                // G93, G94, (G95 unimplemented)
-stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);      // G61, G61.1, G64
+stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
+stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
+stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);  // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(float target[], bool flags[]);		                    // G1
-stat_t cm_dwell(float seconds);									                // G4, P parameter
+stat_t cm_straight_feed(const float target[], const bool flags[]);          // G1
+stat_t cm_dwell(const float seconds);                                       // G4, P parameter
 
-stat_t cm_arc_feed(float target[], bool target_f[],                             // G2/G3 - target endpoint
-                   float offset[], bool offset_f[],                             // IJK offsets
-                   float radius,   bool radius_f,                               // radius if radius mode
-                   float P_word,   bool P_word_f,                               // parameter
-                   const bool modal_g1_f,                                       // modal group flag for motion group
-                   const uint8_t motion_mode);                                  // defined motion mode
+stat_t cm_arc_feed(const float target[], const bool target_f[],             // G2/G3 - target endpoint
+                   const float offset[], const bool offset_f[],             // IJK offsets
+                   const float radius, const bool radius_f,                 // radius if radius mode
+                   const float P_word, const bool P_word_f,                 // parameter
+                   const bool modal_g1_f,                                   // modal group flag for motion group
+                   const uint8_t motion_mode);                              // defined motion mode
 
 // Spindle Functions (4.3.7)
-// see spindle.h for spindle definitions - which would go right here
+// see spindle.h for spindle functions - which would go right here
 
 // Tool Functions (4.3.8)
-stat_t cm_select_tool(uint8_t tool);							// T parameter
-stat_t cm_change_tool(uint8_t tool);							// M6
+stat_t cm_select_tool(const uint8_t tool);                      // T parameter
+stat_t cm_change_tool(const uint8_t tool);                      // M6
 
 // Miscellaneous Functions (4.3.9)
-//stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
-//stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
+// see coolant.h for coolant functions - which would go right here
+
+void cm_message(const char *message);                           // msg to console (e.g. Gcode comments)
 
 stat_t cm_override_enables(uint8_t flag); 						// M48, M49
 stat_t cm_feed_rate_override_enable(uint8_t flag); 				// M50
@@ -705,8 +706,6 @@ stat_t cm_traverse_override_enable(uint8_t flag); 				// M50.2
 stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
 stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
 stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
-
-void cm_message(char *message);								// msg to console (e.g. Gcode comments)
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
@@ -719,15 +718,12 @@ bool cm_has_hold(void);
 void cm_start_hold(void);
 void cm_end_hold(void);
 
-//stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
-void cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
+void cm_queue_flush(void);									    // flush serial and planner queues with coordinate resets
 void cm_end_queue_flush(void);
 
-//void cm_request_cycle_start(void);
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
 void cm_canned_cycle_end(void);                                 // end of canned cycle
-void cm_feedhold(void);											// (no Gcode)
 void cm_program_stop(void);										// M0
 void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
@@ -740,13 +736,12 @@ stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_cycle_callback(void);                          // G28.2/.4 main loop callback
 
 // Probe cycles
-stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
+stat_t cm_straight_probe(float target[], bool flags[]);         // G38.2
 stat_t cm_probing_cycle_callback(void);							// G38.2 main loop callback
 
 // Jogging cycle
-//stat_t cm_jogging_callback(void);								// jogging cycle main loop
-stat_t cm_jogging_cycle_callback(void);							// jogging cycle main loop
-stat_t cm_jogging_cycle_start(uint8_t axis);					// {"jogx":-100.3}
+stat_t cm_jogging_cycle_callback(void);                         // jogging cycle main loop
+stat_t cm_jogging_cycle_start(uint8_t axis);                    // {"jogx":-100.3}
 float cm_get_jogging_dest(void);
 
 /*--- cfgArray interface functions ---*/
@@ -773,7 +768,7 @@ stat_t cm_get_toolv(nvObj_t *nv);		// get tool (value)
 stat_t cm_get_pwr(nvObj_t *nv);			// get motor power enable state
 
 stat_t cm_get_vel(nvObj_t *nv);			// get runtime velocity...
-stat_t cm_get_feed(nvObj_t *nv);
+stat_t cm_get_feed(nvObj_t *nv);		// get feed rate, converted to units
 stat_t cm_get_pos(nvObj_t *nv);			// get runtime work position...
 stat_t cm_get_mpo(nvObj_t *nv);			// get runtime machine position...
 stat_t cm_get_ofs(nvObj_t *nv);			// get runtime work offset...
@@ -797,6 +792,9 @@ stat_t cm_set_hi(nvObj_t *nv);          // set homing input
 //stat_t cm_set_fr(nvObj_t *nv);			// set feedrate max and reciprocal
 stat_t cm_set_jm(nvObj_t *nv);			// set jerk max with 1,000,000 correction
 stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
+
+//stat_t cm_set_mfo(nvObj_t *nv);         // set manual feedrate override factor
+//stat_t cm_set_mto(nvObj_t *nv);         // set manual traverse override factor
 
 /*--- text_mode support functions ---*/
 
@@ -837,12 +835,14 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	void cm_print_ja(nvObj_t *nv);		// global CM settings
 	void cm_print_ct(nvObj_t *nv);
 	void cm_print_sl(nvObj_t *nv);
-//	void cm_print_ml(nvObj_t *nv);
-//	void cm_print_ma(nvObj_t *nv);
-//	void cm_print_ms(nvObj_t *nv);
-//	void cm_print_st(nvObj_t *nv);
 	void cm_print_lim(nvObj_t *nv);
 	void cm_print_saf(nvObj_t *nv);
+
+	void cm_print_m48e(nvObj_t *nv);
+	void cm_print_mfoe(nvObj_t *nv);
+	void cm_print_mfo(nvObj_t *nv);
+	void cm_print_mtoe(nvObj_t *nv);
+	void cm_print_mto(nvObj_t *nv);
 
 	void cm_print_am(nvObj_t *nv);		// axis print functions
 	void cm_print_fr(nvObj_t *nv);
@@ -856,8 +856,6 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 
 	void cm_print_hi(nvObj_t *nv);
 	void cm_print_hd(nvObj_t *nv);
-	void cm_print_sn(nvObj_t *nv);
-	void cm_print_sx(nvObj_t *nv);
 	void cm_print_sv(nvObj_t *nv);
 	void cm_print_lv(nvObj_t *nv);
 	void cm_print_lb(nvObj_t *nv);
@@ -902,12 +900,14 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 	#define cm_print_ja tx_print_stub		// global CM settings
 	#define cm_print_ct tx_print_stub
 	#define cm_print_sl tx_print_stub
-//	#define cm_print_ml tx_print_stub
-//	#define cm_print_ma tx_print_stub
-//	#define cm_print_ms tx_print_stub
-//	#define cm_print_st tx_print_stub
 	#define cm_print_lim tx_print_stub
 	#define cm_print_saf tx_print_stub
+
+	#define cm_print_m48e tx_print_stub
+	#define cm_print_mfoe tx_print_stub
+	#define cm_print_mfo tx_print_stub
+	#define cm_print_mtoe tx_print_stub
+	#define cm_print_mto tx_print_stub
 
 	#define cm_print_am tx_print_stub		// axis print functions
 	#define cm_print_fr tx_print_stub
@@ -921,8 +921,6 @@ stat_t cm_set_jh(nvObj_t *nv);			// set jerk high with 1,000,000 correction
 
 	#define cm_print_hi tx_print_stub
 	#define cm_print_hd tx_print_stub
-	#define cm_print_sn tx_print_stub
-	#define cm_print_sx tx_print_stub
 	#define cm_print_sv tx_print_stub
 	#define cm_print_lv tx_print_stub
 	#define cm_print_lb tx_print_stub
