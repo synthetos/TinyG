@@ -119,7 +119,7 @@
 #define X_LATCH_VELOCITY 		200					// xlv		mm/min
 #define X_LATCH_BACKOFF 		10					// xlb		mm
 #define X_ZERO_BACKOFF 			3					// xzb		mm
-#define X_JERK_HOMING			X_JERK_MAX			// xjh
+#define X_JERK_HIGH			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
 #define Y_VELOCITY_MAX 			20000
@@ -134,7 +134,7 @@
 #define Y_LATCH_VELOCITY		200
 #define Y_LATCH_BACKOFF			10
 #define Y_ZERO_BACKOFF			3
-#define Y_JERK_HOMING			Y_JERK_MAX
+#define Y_JERK_HIGH			Y_JERK_MAX
 
 #define Z_AXIS_MODE				AXIS_STANDARD
 #define Z_VELOCITY_MAX			1000
@@ -149,7 +149,7 @@
 #define Z_LATCH_VELOCITY		200
 #define Z_LATCH_BACKOFF			3
 #define Z_ZERO_BACKOFF			0.04
-#define Z_JERK_HOMING			Z_JERK_MAX
+#define Z_JERK_HIGH			Z_JERK_MAX
 
 #define A_AXIS_MODE 			AXIS_RADIUS
 #define A_RADIUS 				0.609
@@ -165,7 +165,7 @@
 #define A_LATCH_VELOCITY 		2000
 #define A_LATCH_BACKOFF 		5
 #define A_ZERO_BACKOFF 			2
-#define A_JERK_HOMING			A_JERK_MAX
+#define A_JERK_HIGH			A_JERK_MAX
 
 #define B_AXIS_MODE				AXIS_RADIUS
 #define B_RADIUS				0.609
@@ -181,7 +181,7 @@
 #define B_LATCH_VELOCITY 		2000
 #define B_LATCH_BACKOFF			5
 #define B_ZERO_BACKOFF			2
-#define B_JERK_HOMING			B_JERK_MAX
+#define B_JERK_HIGH			B_JERK_MAX
 
 #define C_AXIS_MODE				AXIS_DISABLED
 #define C_VELOCITY_MAX			3600
@@ -198,7 +198,7 @@
 #define C_LATCH_VELOCITY 		100
 #define C_LATCH_BACKOFF			10
 #define C_ZERO_BACKOFF			2
-#define C_JERK_HOMING			C_JERK_MAX
+#define C_JERK_HIGH			C_JERK_MAX
 
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 

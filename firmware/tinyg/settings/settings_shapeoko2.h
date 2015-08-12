@@ -349,7 +349,7 @@
 //	- set G55 to be a zero in the middle of the table
 //	- no action for the others
 
-#define G54_X_OFFSET 0			// G54 is traditionally set to all zeros
+#define G54_X_OFFSET 0
 #define G54_Y_OFFSET 0
 #define G54_Z_OFFSET 0
 #define G54_A_OFFSET 0

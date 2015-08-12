@@ -82,7 +82,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.20	// small stuff - removed network modes; reorganized controller somewhat
+#define TINYG_FIRMWARE_BUILD        444.21	// updated Probotix settings profile
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98                        // firmware major version
