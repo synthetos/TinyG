@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.07	// probotix profile updated
+#define TINYG_FIRMWARE_BUILD        441.08	// increased packet buffer size; shapeoko2 profile
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

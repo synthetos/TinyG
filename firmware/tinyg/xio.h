@@ -92,8 +92,8 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
 
-#define RX_PACKET_SLOTS	16					// number of readline() input buffers
-#define RX_PACKET_LEN 80				    // input buffer length
+#define RX_PACKET_SLOTS	8					// number of readline() input buffers
+#define RX_PACKET_LEN 200				    // input buffer length
 #define RX_STREAM_BUFFER_LEN 255			// input buffer for streaming serial mode
 
 typedef enum {						        // readline() buffer and slot states
@@ -220,7 +220,7 @@ typedef struct xioSingleton {
     uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO ctrl bits)
     uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
-    
+
     // streaming reader
     uint8_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
