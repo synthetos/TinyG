@@ -200,9 +200,10 @@ void sr_init_status_report(bool use_defaults)
  * sr_set_status_report() - interpret an SR setup string and return current report
  *
  * Behaviors:
- *    {sr:{<key1>:t},...{<keyN>:t}} adds <key1> through <keyN> to the status report list
- *    {sr:{<key1>:f},...{<keyN>:t}} removes <key1> through <keyN> from the status report list
  *    {sr:f} removes all status reports (clears)
+ *    {sr:t} restores status reports to default
+ *    {sr:{<key1>:t,...<keyN>:t}} adds <key1> through <keyN> to the status report list
+ *    {sr:{<key1>:f,...<keyN>:t}} removes <key1> through <keyN> from the status report list
  *
  *    - Lines may have a mix of t and f pairs
  *    - On entry nv points to the parent "sr" element on entry 
@@ -234,26 +235,35 @@ stat_t sr_set_status_report(nvObj_t *nv)
 {
     int8_t i;
     int8_t j;
-    index_t item;                       // status report item being worked on
-    nvObj_t *nv_first = nv;             // save for later
+    nvObj_t *nv_first = nv;                         // save for later
 
 	index_t working_list[SR_WORKING_LIST_LEN];      // init working list from the current SR list
 	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
     	working_list[i] = NO_MATCH;
 	}
-    if ((nv->valuetype == TYPE_BOOL) && (fp_FALSE(nv->value))) { // do a total wipe (clear)
+    
+    // process {sr:f}    clear all SR settings
+    if ((nv->valuetype == TYPE_BOOL) && (fp_FALSE(nv->value))) {
 	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
             sr.status_report_list[i] = NO_MATCH;
         }
         _persist_status_report_list(nv);
         return (STAT_OK);
     }
-    
+
+    // process {sr:t}    restore SR settings to defaults
+    if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
+        sr_init_status_report(true);
+        return (STAT_OK);
+    }    
+
+    // process {sr:{.... process one or more SR drop/adds     
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {        // read in the current SR list
         working_list[i] = sr.status_report_list[i];
     }    
 
     // iterate the items in the nvlist
+    index_t item;                                   // status report item being worked on
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if ((nv = nv->nx) == NULL) {                // advance to next element (past the "sr" parent)
             return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
