@@ -66,31 +66,37 @@ nvList_t nvl;
  */
 stat_t nv_set(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
 stat_t nv_get(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max())
+	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
+    }    
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
 void nv_print(nvObj_t *nv)
 {
-	if (nv->index >= nv_index_max()) return;
+	if (nv->index >= nv_index_max()) {
+        return;
+    }    
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
-	if (nv_index_lt_groups(nv->index) == false)
+	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
-	if (GET_TABLE_BYTE(flags) & F_PERSIST)
+    }    
+	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
+    }    
 #endif
 	return (STAT_OK);
 }
@@ -246,14 +252,15 @@ stat_t get_flt(nvObj_t *nv)
 }
 
 /* Generic sets()
- *	set_nul()  - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
- *	set_ui8()  - set value as 8 bit uint8_t value
- *	set_01()   - set a 0 or 1 uint8_t value with validation
- *	set_012()  - set a 0, 1 or 2 uint8_t value with validation
- *	set_0123() - set a 0, 1, 2 or 3 uint8_t value with validation
- *	set_int()  - set value as 32 bit integer
- *	set_data() - set value as 32 bit integer blind cast
- *	set_flt()  - set value as float
+ *	set_nul()   - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
+ *	set_ui8()   - set value as 8 bit uint8_t value
+ *	set_01()    - set a 0 or 1 uint8_t value with validation
+ *	set_012()   - set a 0, 1 or 2 uint8_t value with validation
+ *	set_0123()  - set a 0, 1, 2 or 3 uint8_t value with validation
+ *	set_int16() - set value as 16 bit integer
+ *	set_int32() - set value as 32 bit integer
+ *	set_data()  - set value as 32 bit integer blind cast
+ *	set_flt()   - set value as float
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
@@ -266,30 +273,41 @@ stat_t set_ui8(nvObj_t *nv)
 
 stat_t set_01(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 1)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if ((uint8_t)nv->value > 1) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }    
+	return (set_ui8(nv));
 }
 
 stat_t set_012(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 2)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if ((uint8_t)nv->value > 2) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }    
+	return (set_ui8(nv));
 }
 
 stat_t set_0123(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 3)
-        return (STAT_INPUT_VALUE_RANGE_ERROR);	// if
-	return (set_ui8(nv));						// else
+	if ((uint8_t)nv->value > 3) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }    
+	return (set_ui8(nv));
 }
 
-stat_t set_int(nvObj_t *nv)
+stat_t set_int16(nvObj_t *nv)
 {
-	*((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
+//	nv->value = 0;  // clears the entire value as next line only fills 
+	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
+}
+
+stat_t set_int32(nvObj_t *nv)
+{
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
+    nv->valuetype = TYPE_INTEGER;
+    return(STAT_OK);
 }
 
 stat_t set_data(nvObj_t *nv)

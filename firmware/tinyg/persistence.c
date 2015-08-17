@@ -86,8 +86,9 @@ stat_t read_persistent_value(nvObj_t *nv)
 #ifdef __AVR
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF)
+	if (cm.cycle_state != CYCLE_OFF) {
         return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
+    }    
 
 /* not needed
 	if (nv->valuetype == TYPE_FLOAT) {
@@ -110,8 +111,9 @@ stat_t write_persistent_value(nvObj_t *nv)
 #ifdef __ARM
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF)
+	if (cm.cycle_state != CYCLE_OFF) {
         return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
+    }    
 
 /* not needed
 	if (nv->valuetype == TYPE_FLOAT) {

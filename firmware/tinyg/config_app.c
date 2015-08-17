@@ -107,8 +107,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int,(float *)&cm.gm.linenum,0 },		// Model line number
-	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int,(float *)&cm.gm.linenum,0 },		// Active line number - model or runtime line number
+	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum,0 },		// Model line number
+	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(float *)&cm.gm.linenum,0 },		// Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
 	{ "",   "feed",_f0, 2, cm_print_feed, cm_get_feed, set_nul,(float *)&cs.null, 0 },			// feed rate
 	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },			// combined machine state
@@ -124,7 +124,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "dist",_f0, 0, cm_print_dist, cm_get_dist, set_nul,(float *)&cs.null, 0 },			// distance mode
 	{ "",   "frmo",_f0, 0, cm_print_frmo, cm_get_frmo, set_nul,(float *)&cs.null, 0 },			// feed rate mode
 	{ "",   "tool",_f0, 0, cm_print_tool, cm_get_toolv,set_nul,(float *)&cs.null, 0 },			// active tool
-//	{ "",   "tick",_f0, 0, tx_print_int,  get_int,     set_int,(float *)&rtc.sys_ticks, 0 },	// tick count
+//	{ "",   "tick",_f0, 0, tx_print_int,  get_int,     set_int32,(float *)&rtc.sys_ticks, 0 },	// tick count
 
 	{ "mpo","mpox",_f0, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },			// X machine position
 	{ "mpo","mpoy",_f0, 3, cm_print_mpo, cm_get_mpo, set_nul,(float *)&cs.null, 0 },			// Y machine position
@@ -580,37 +580,37 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with NV_STATUS_REPORT_LEN in config.h ***
-	{ "","se00",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[0],0 },
-	{ "","se01",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[1],0 },
-	{ "","se02",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[2],0 },
-	{ "","se03",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[3],0 },
-	{ "","se04",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[4],0 },
-	{ "","se05",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[5],0 },
-	{ "","se06",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[6],0 },
-	{ "","se07",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[7],0 },
-	{ "","se08",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[8],0 },
-	{ "","se09",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[9],0 },
-	{ "","se10",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[10],0 },
-	{ "","se11",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[11],0 },
-	{ "","se12",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[12],0 },
-	{ "","se13",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[13],0 },
-	{ "","se14",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[14],0 },
-	{ "","se15",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[15],0 },
-	{ "","se16",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[16],0 },
-	{ "","se17",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[17],0 },
-	{ "","se18",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[18],0 },
-	{ "","se19",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[19],0 },
-	{ "","se20",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[20],0 },
-	{ "","se21",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[21],0 },
-	{ "","se22",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[22],0 },
-	{ "","se23",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[23],0 },
-	{ "","se24",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[24],0 },
-	{ "","se25",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[25],0 },
-	{ "","se26",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[26],0 },
-	{ "","se27",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[27],0 },
-	{ "","se28",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[28],0 },
-	{ "","se29",_fp, 0, tx_print_nul, get_int, set_int,(float *)&sr.status_report_list[29],0 },
-// Count is 30, since se00 counts as one.
+	{ "","se00",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[0],0 },
+	{ "","se01",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[1],0 },
+	{ "","se02",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[2],0 },
+	{ "","se03",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[3],0 },
+	{ "","se04",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[4],0 },
+	{ "","se05",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[5],0 },
+	{ "","se06",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[6],0 },
+	{ "","se07",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[7],0 },
+	{ "","se08",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[8],0 },
+	{ "","se09",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[9],0 },
+	{ "","se10",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[10],0 },
+	{ "","se11",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[11],0 },
+	{ "","se12",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[12],0 },
+	{ "","se13",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[13],0 },
+	{ "","se14",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[14],0 },
+	{ "","se15",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[15],0 },
+	{ "","se16",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[16],0 },
+	{ "","se17",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[17],0 },
+	{ "","se18",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[18],0 },
+	{ "","se19",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[19],0 },
+	{ "","se20",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[20],0 },
+	{ "","se21",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[21],0 },
+	{ "","se22",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[22],0 },
+	{ "","se23",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[23],0 },
+	{ "","se24",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[24],0 },
+	{ "","se25",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[25],0 },
+	{ "","se26",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[26],0 },
+	{ "","se27",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[27],0 },
+	{ "","se28",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[28],0 },
+	{ "","se29",_fp, 0, tx_print_nul, get_int, set_int16, (float *)&sr.status_report_list[29],0 },
+    // Count is 30, since se00 counts as one.
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***

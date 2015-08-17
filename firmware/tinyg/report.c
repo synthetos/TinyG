@@ -408,7 +408,7 @@ static stat_t _populate_unfiltered_status_report()
 	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if ((nv->index = sr.status_report_list[i]) == 0) { break;}
+		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
 		nv_get_nvObj(nv);
 
 		strcpy(tmp, nv->group);			// flatten out groups - WARNING - you cannot use strncpy here...
@@ -447,7 +447,7 @@ static uint8_t _populate_filtered_status_report()
 	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if ((nv->index = sr.status_report_list[i]) == 0) { break;}
+		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
 
 		nv_get_nvObj(nv);
 		// do not report values that have not changed...

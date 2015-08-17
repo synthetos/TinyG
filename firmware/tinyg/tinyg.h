@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.21	// disabled streaming mode RX reports from queue flush
+#define TINYG_FIRMWARE_BUILD        440.21	// status report work
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
