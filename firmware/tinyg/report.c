@@ -175,13 +175,18 @@ uint8_t _is_stat(nvObj_t *nv)
  */
 void sr_init_status_report()
 {
+    uint8_t i;
+    
 	nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
 	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
 	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
-	for (uint8_t i=0; i < NV_STATUS_REPORT_LEN ; i++) {
+	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+    	sr.status_report_list[i] = NO_MATCH;
+	}
+	for (i=0; i < NV_STATUS_REPORT_LEN ; i++) {
 		if (sr_defaults[i][0] == NUL) break;				// quit on first blank array entry
 		sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
 		nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
@@ -200,11 +205,89 @@ void sr_init_status_report()
 /*
  * sr_set_status_report() - interpret an SR setup string and return current report
  *
- *	Note: By the time this function is called any unrecognized tokens have been detected and
- *	rejected by the JSON or text parser. In other words, it should never get to here if
- *	there is an unrecognized token in the SR string.
+ * Version 2 behaviors:
+ *
+ *    {sr:{<key1>:t},...{<keyN>:t}} adds <key1> through <keyN> to the status report list
+ *    {sr:{<key1>:f},...{<keyN>:t}} removes <key1> through <keyN> from the status report list
+ *    {sr:{<key1>:n},...{<keyN>:t}} returns the value of <key1> through <keyN>
+ *    {sr:n} requests an unfiltered status report. This is handed by sr_set(), not here
+ *
+ *    - Lines may have a mix of t, f and n commands
+ *    - nv points to the parent "sr" element on entry 
+ *
+ *  Error conditions:
+ *    - unless otherwise noted all failures leave original SR list untouched
+ *    - attempt to add element would overflow list max. Fail w/STAT_INPUT_EXCEEDS_MAX_LENGTH
+ *    - token not recognized. Fail w/STAT_UNRECOGNIZED_NAME
+ *    - value other than 't', 'f' or 'n' encountered. Fail w/STAT_UNSUPPORTED_TYPE
+ *    - malformed JSON fails as usual before this point
  */
+/*  Implementation notes:
+ *    - Need to pack the list in order to remove 0'd elements. Otherwise need to change populate functions to skip over 0'd elements
+ *    - Changing SR config wipes the values list. Start fresh. Do this by calling _populate_unfiltered_status_report() at end
+ *    - Persistence should be moved to the end of the function
+ *
+ */
+static stat_t _setsr_error_exit(nvObj_t *nv, stat_t status)
+{
+    return (status);
+}
+
+static index_t _setsr_scan_list(index_t *list, index_t item)
+{
+    return (item);
+}
+
 stat_t sr_set_status_report(nvObj_t *nv)
+/* Version 2 */
+{
+    uint8_t i;
+	uint8_t items = 0;                              // count of active SR items in the list
+    index_t working_item;
+
+    // initialize the working list from the current status report list
+	index_t working_list[2*(NV_STATUS_REPORT_LEN+1)]; // 2x allows for total replacement
+	for (i=0; i<(2*(NV_STATUS_REPORT_LEN+1)); i++) {
+    	working_list[i] = NO_MATCH;
+	}
+	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        working_list[i] = sr.status_report_list[i];
+    }    
+
+    // iterate the items in the nvlist
+    nv = nv->nx;                                    // advance to first element past the "sr"
+	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+		if (nv->valuetype == TYPE_EMPTY) { break; }
+
+        if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
+	        working_item = nv_get_index(nv->group,nv->token);
+            if (working_item == NO_MATCH) {
+                _setsr_error_exit(nv, STAT_UNRECOGNIZED_NAME);
+            }
+            items++;
+            // scan the list to see if it's already there
+            
+		}
+	}
+    
+    // finalize the list
+	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
+    
+    // persist the new / updated list    
+//	index_t sr_start = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
+//	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+//			nv->value = nv->index;							// persist the index as the value
+//			nv->index = sr_start + i;						// index of the SR persistence location
+//			nv_persist(nv);
+//    }
+	return(_populate_unfiltered_status_report());			// return current values
+}
+    
+/* Version 1    
+//  OUTDATED - from version 1
+//  Note: By the time this function is called any unrecognized tokens have been detected and
+//  rejected by the JSON or text parser. In other words, it should never get to here if
+//  there is an unrecognized token in the SR string.
 {
 	uint8_t elements = 0;
 	index_t status_report_list[NV_STATUS_REPORT_LEN];
@@ -228,6 +311,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	memcpy(sr.status_report_list, status_report_list, sizeof(status_report_list));
 	return(_populate_unfiltered_status_report());			// return current values
 }
+*/
 
 /*
  * sr_request_status_report()	- request a status report to run after minimum interval
@@ -395,8 +479,13 @@ static uint8_t _populate_filtered_status_report()
  * sr_set()		- set status report elements
  * sr_set_si()	- set status report interval
  */
-stat_t sr_get(nvObj_t *nv) { return (_populate_unfiltered_status_report());}
-stat_t sr_set(nvObj_t *nv) { return (sr_set_status_report(nv));}
+stat_t sr_get(nvObj_t *nv) { 
+    return (_populate_unfiltered_status_report());
+}
+
+stat_t sr_set(nvObj_t *nv) { 
+    return (sr_set_status_report(nv));
+}
 
 stat_t sr_set_si(nvObj_t *nv)
 {

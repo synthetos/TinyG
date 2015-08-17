@@ -41,10 +41,6 @@
 #include "util.h"
 #include "xio.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 static void _set_defa(nvObj_t *nv);
 
 /***********************************************************************************
@@ -716,7 +712,3 @@ void nv_dump_nv(nvObj_t *nv)
 			 nv->token,
 			 (char *)nv->stringp);
 }
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus

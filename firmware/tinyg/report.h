@@ -114,7 +114,6 @@ stat_t sr_run_text_status_report(void);
 stat_t sr_get(nvObj_t *nv);
 stat_t sr_set(nvObj_t *nv);
 stat_t sr_set_si(nvObj_t *nv);
-//void sr_print_sr(nvObj_t *nv);
 
 void qr_init_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
@@ -136,9 +135,7 @@ stat_t qo_get(nvObj_t *nv);
 	void qr_print_qr(nvObj_t *nv);
 	void qr_print_qi(nvObj_t *nv);
 	void qr_print_qo(nvObj_t *nv);
-
 #else
-
 	#define sr_print_sr tx_print_stub
 	#define sr_print_si tx_print_stub
 	#define sr_print_sv tx_print_stub

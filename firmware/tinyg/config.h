@@ -32,10 +32,6 @@
 #include "config_app.h"	// is present at the end of this file
 */
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Config System Overview and Usage ***
  *
  *	--- Config objects and the config list ---
@@ -173,8 +169,7 @@ extern "C"{
  ***********************************************************************************/
 
 // Sizing and footprints				// chose one based on # of elements in cfgArray
-//typedef uint8_t index_t;				// use this if there are < 256 indexed objects
-typedef uint16_t index_t;				// use this if there are > 255 indexed objects
+typedef int16_t index_t;				// -1 is reserved for no find
 
 										// defines allocated from stack (not-pre-allocated)
 #define NV_FORMAT_LEN 128				// print formatting string max length
@@ -192,7 +187,8 @@ typedef uint16_t index_t;				// use this if there are > 255 indexed objects
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
-#define NO_MATCH (index_t)0xFFFF
+//#define NO_MATCH (index_t)0xFFFF
+#define NO_MATCH (index_t)-1
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
 
@@ -207,20 +203,6 @@ enum flowControl {
 	FLOW_CONTROL_XON,					// flow control uses XON/XOFF
 	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
 };
-
-/*
-enum lineTermination {					// REMOVED. Too easy to make the board non-responsive (not a total brick, but close)
-	IGNORE_OFF = 0,						// accept either CR or LF as termination on RX text line
-	IGNORE_CR,							// ignore CR on RX
-	IGNORE_LF							// ignore LF on RX
-};
-*/
-/*
-enum tgCommunicationsSticky {
-	NOT_STICKY = 0,						// communications mode changes automatically
-	STICKY								// communications mode does not change
-};
-*/
 
 enum valueType {						// value typing for config and JSON
 	TYPE_EMPTY = -1,					// value struct is empty (which is not the same as "NULL")
@@ -372,9 +354,5 @@ void nv_dump_nv(nvObj_t *nv);
  **** PLEASE NOTICE THAT CONFIG_APP.H IS HERE ************************************************
  *********************************************************************************************/
 #include "config_app.h"
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: CONFIG_H_ONCE
