@@ -159,122 +159,64 @@ void rpt_print_system_ready_message(void)
 static stat_t _populate_unfiltered_status_report(void);
 static uint8_t _populate_filtered_status_report(void);
 
-static bool _is_stat(nvObj_t *nv)
-{
-	char_t tok[TOKEN_LEN+1];
-	GET_TOKEN_STRING(nv->value, tok);
-	if (strcmp(tok, "stat") == 0) { return (true);}
-	return (false);
-}
-
 /*
  * sr_init_status_report()
  *
- *  SR settings are not initialized by reading NVram during the system load process. Instead they are set by running 
- *  this function according to the following rules:
- *
- *    - If 'use_defaults' is true SR and persistence will be set from the profile
- *    - Otherwise the SR keys will be read from NVram
+ *  SR settings are not initialized by reading NVram during the system load process. Instead they are 
+ *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true 
+ *  then SR settings will be reset from the profile and persisted back to NVram.
  */
 void sr_init_status_report(bool use_defaults)
 {
-    uint8_t i;
     nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
     char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    index_t index_start = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
-
-    sr.stat_index = nv_get_index((const char_t *)"", (const char_t *)"stat");	// set index of stat element 
-    sr.status_report_requested = false;
-
-    nv->index = index_start;
+    sr.stat_index = nv_get_index((const char_t *)"", (const char_t *)"stat"); // set index of stat element 
+    nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00"); // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
-	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        read_persistent_value(nv);
-    	sr.status_report_list[i] = (index_t)nv->value;      // pre-load the entire list
-		sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
-        nv->index++;
-	}
-    if (use_defaults) {
-        nv->index = index_start;
-	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		    if (sr_defaults[i][0] != NUL) {                 // load the index for the SR element
-                nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);
-                if (nv->value == NO_MATCH) {
+
+    for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        if (!use_defaults) {
+            read_persistent_value(nv);                      // read NVram into nv->value element
+            sr.status_report_list[i] = (index_t)nv->value;  // pre-load the stored SR list
+        } else {
+            if (sr_defaults[i][0] == NUL) {                 // load the index for the SR element
+                nv->value = NO_MATCH;                       // label as a blank spot
+            } else {                                        // set and persist the default value
+                if ((nv->value = nv_get_index((const char_t *)"", sr_defaults[i])) == NO_MATCH) {
                     rpt_exception(STAT_BAD_STATUS_REPORT_SETTING); // trap mis-configured profile settings
                     return;
                 }
-            } else {
-                nv->value = NO_MATCH;                       // label as a blank spot
             }
             nv_set(nv);
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
-            nv->index++;                                    // increment SR NVM index
-	    }
-    }    
-}
-
-/* Version 1
-{
-    uint8_t i;
-    
-    nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
+        }                
+        sr.status_report_value[i] = 8675309;			    // pre-load SR values with an unlikely number
+        nv->index++;                                        // increment SR NVM index
+    }
     sr.status_report_requested = false;
-    char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
-    sr.stat_index = 0;
-
-    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        sr.status_report_list[i] = NO_MATCH;
-    }
-    for (i=0; i < NV_STATUS_REPORT_LEN ; i++) {
-        if (sr_defaults[i][0] == NUL) break;				// quit on first blank array entry
-        sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
-        nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
-        if (nv->value == NO_MATCH) {
-            rpt_exception(STAT_BAD_STATUS_REPORT_SETTING);	// trap mis-configured profile settings
-            return;
-        }
-        if (_is_stat(nv) == true)
-        sr.stat_index = nv->value;						// identify index for 'stat' if status is in the report
-        nv_set(nv);
-        nv_persist(nv);										// conditionally persist - automatic by nv_persist()
-        nv->index++;										// increment SR NVM index
-    }
 }
-
-*/
-
 
 /*
  * sr_set_status_report() - interpret an SR setup string and return current report
  *
- * Version 2 behaviors:
- *
+ * Behaviors:
  *    {sr:{<key1>:t},...{<keyN>:t}} adds <key1> through <keyN> to the status report list
  *    {sr:{<key1>:f},...{<keyN>:t}} removes <key1> through <keyN> from the status report list
  *    {sr:f} removes all status reports (clears)
- *    {sr:n} requests an unfiltered status report. This is handed by sr_set(), not here
  *
- *    - Lines may have a mix of t and f commands
+ *    - Lines may have a mix of t and f pairs
  *    - On entry nv points to the parent "sr" element on entry 
  *    - List ordering is not guaranteed in the case of mixed removes and adds in the same command
  *
  *  Error conditions:
- *    - unless otherwise noted all failures leave original SR list untouched
- *    - attempt to add element would overflow list max. Fail w/STAT_INPUT_EXCEEDS_MAX_LENGTH
- *    - token not recognized. Fail w/STAT_UNRECOGNIZED_NAME
- *    - value other than 't', or 'f' encountered. Fail w/STAT_UNSUPPORTED_TYPE
- *    - malformed JSON fails as usual before this point
- */
-/*  Implementation notes:
- *    - Need to pack the list in order to remove 0'd elements. Otherwise need to change populate functions to skip over 0'd elements
- *    - Changing SR config wipes the values list. Start fresh. Do this by calling _populate_unfiltered_status_report() at end
- *    - Persistence should be moved to the end of the function
- *    - Allow -1's in the list as skips. Pack the list at the end
- *
+ *    - All failures leave original SR list untouched
+ *    - An attempt to add an element that exceeds list max fails with STAT_INPUT_EXCEEDS_MAX_LENGTH
+ *    - A token that is not recognized fails with STAT_UNRECOGNIZED_NAME
+ *    - A value other than 't', or 'f' fails with STAT_UNSUPPORTED_TYPE
+ *    - Malformed JSON fails as usual before this point
  */
 
-#pragma GCC optimize ("O0")
+//#pragma GCC optimize ("O0")
 
 static void _persist_status_report_list(nvObj_t *nv)
 {
@@ -365,7 +307,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
     return (STAT_OK);
 }
 
-#pragma GCC reset_options
+//#pragma GCC reset_options
 
 /*
  * sr_request_status_report()	- request a status report to run after minimum interval
