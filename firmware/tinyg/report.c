@@ -172,14 +172,21 @@ uint8_t _is_stat(nvObj_t *nv)
  *
  *	Call this function to completely re-initialize the status report
  *	Sets SR list to hard-coded defaults and re-initializes SR values in NVM
+ *
+ * How should status report initialization, settings, and persistence work?
+ *    - In a first-time init (new fb) the profile defaults are loaded
+ *    - If the user changes SRs
+ *
  */
 void sr_init_status_report()
+/* version 2 */
 {
     uint8_t i;
     
 	nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
 	sr.status_report_requested = false;
 	char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
+
 	nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
 	sr.stat_index = 0;
 
@@ -202,6 +209,38 @@ void sr_init_status_report()
 	}
 }
 
+/* VErsion 1
+{
+    uint8_t i;
+    
+    nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
+    sr.status_report_requested = false;
+    char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
+    nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00");	// set first SR persistence index
+    sr.stat_index = 0;
+
+    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        sr.status_report_list[i] = NO_MATCH;
+    }
+    for (i=0; i < NV_STATUS_REPORT_LEN ; i++) {
+        if (sr_defaults[i][0] == NUL) break;				// quit on first blank array entry
+        sr.status_report_value[i] = -1234567;				// pre-load values with an unlikely number
+        nv->value = nv_get_index((const char_t *)"", sr_defaults[i]);// load the index for the SR element
+        if (nv->value == NO_MATCH) {
+            rpt_exception(STAT_BAD_STATUS_REPORT_SETTING);	// trap mis-configured profile settings
+            return;
+        }
+        if (_is_stat(nv) == true)
+        sr.stat_index = nv->value;						// identify index for 'stat' if status is in the report
+        nv_set(nv);
+        nv_persist(nv);										// conditionally persist - automatic by nv_persist()
+        nv->index++;										// increment SR NVM index
+    }
+}
+
+*/
+
+
 /*
  * sr_set_status_report() - interpret an SR setup string and return current report
  *
@@ -209,6 +248,7 @@ void sr_init_status_report()
  *
  *    {sr:{<key1>:t},...{<keyN>:t}} adds <key1> through <keyN> to the status report list
  *    {sr:{<key1>:f},...{<keyN>:t}} removes <key1> through <keyN> from the status report list
+ *    {sr:f} removes all status reports (clears)
  *    {sr:n} requests an unfiltered status report. This is handed by sr_set(), not here
  *
  *    - Lines may have a mix of t and f commands
@@ -232,20 +272,38 @@ void sr_init_status_report()
 
 #pragma GCC optimize ("O0")
 
+static void _persist_status_report_list(nvObj_t *nv)
+{
+    nv->index = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
+    nv->valuetype = TYPE_INTEGER;
+    for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        nv->value = sr.status_report_list[i];
+        nv_persist(nv);
+        nv->index++;                                // index of the next SR persistence location
+    }
+    nv->valuetype = TYPE_BOOL;
+}
+
 stat_t sr_set_status_report(nvObj_t *nv)
-/* Version 2 */
 {
     int8_t i;
     int8_t j;
     index_t item;                       // status report item being worked on
-    nvObj_t *nv_first = nv->nx;         // save for later
+    nvObj_t *nv_first = nv;             // save for later
 
-    // initialize the working list from the current status report list
-	index_t working_list[SR_WORKING_LIST_LEN]; // 2x allows for total replacement
-	for (i=0; i<SR_WORKING_LIST_LEN; i++) {
+	index_t working_list[SR_WORKING_LIST_LEN];      // init working list from the current SR list
+	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
     	working_list[i] = NO_MATCH;
 	}
-	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+    if ((nv->valuetype == TYPE_BOOL) && (fp_FALSE(nv->value))) { // do a total wipe (clear)
+	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+            sr.status_report_list[i] = NO_MATCH;
+        }
+        _persist_status_report_list(nv);
+        return (STAT_OK);
+    }
+    
+	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {        // read in the current SR list
         working_list[i] = sr.status_report_list[i];
     }    
 
@@ -299,18 +357,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
     }
 	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
-    
-    // persist the new / updated list    
-    nv = nv_first;
-	nv->index = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
-    nv->valuetype = TYPE_INTEGER;
-	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        nv->value = sr.status_report_list[i];
-		nv_persist(nv);
-		nv->index++;                                // index of the next SR persistence location
-    }
-	_populate_unfiltered_status_report();           // return current values
-	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+    _persist_status_report_list(nv_first);
     return (STAT_OK);
 }
 
