@@ -192,19 +192,19 @@ typedef int16_t index_t;				// -1 is reserved for no find
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
 
-enum tgCommunicationsMode {
+typedef enum {
 	TEXT_MODE = 0,						// text command line mode
 	JSON_MODE,							// strict JSON construction
 	JSON_MODE_RELAXED					// relaxed JSON construction (future)
-};
+} tgCommunicationsMode;
 
-enum flowControl {
+typedef enum {
 	FLOW_CONTROL_OFF = 0,				// flow control disabled
 	FLOW_CONTROL_XON,					// flow control uses XON/XOFF
 	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
-};
+} flowControl;
 
-enum valueType {						// value typing for config and JSON
+typedef enum {						// value typing for config and JSON
 	TYPE_EMPTY = -1,					// value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
@@ -214,7 +214,7 @@ enum valueType {						// value typing for config and JSON
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT							// object is a parent to a sub-object
-};
+} valueType;
 
 /**** operations flags and shorthand ****/
 
@@ -251,7 +251,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	struct nvObject *nx;				// pointer to next object or NULL if last object
 	index_t index;						// index of tokenized name, or -1 if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
-	int8_t valuetype;					// see valueType enum
+	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
 	float value;						// numeric value
 	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group

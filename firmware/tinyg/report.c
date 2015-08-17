@@ -42,6 +42,8 @@ srSingleton_t sr;
 qrSingleton_t qr;
 rxSingleton_t rx;
 
+#define SR_WORKING_LIST_LEN (2*(NV_STATUS_REPORT_LEN+1)) // supports full replacements
+
 /**** Exception Reports ************************************************************
  * rpt_exception() - generate an exception message - always in JSON format
  *
@@ -83,7 +85,6 @@ stat_t rpt_er(nvObj_t *nv)
 //void _startup_helper(stat_t status, const char_t *msg)
 void _startup_helper(stat_t status, const char *msg)
 {
-#ifndef __SUPPRESS_STARTUP_MESSAGES
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	nv_reset_nv_list();
 	nv_add_object((const char_t *)"fv");		// firmware version
@@ -93,7 +94,6 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char_t *)"id");		// hardware ID
 	nv_add_string((const char_t *)"msg", pstr2str(msg));	// startup message
 	json_print_response(status);
-#endif
 }
 
 void rpt_print_initializing_message(void)
@@ -209,45 +209,40 @@ void sr_init_status_report()
  *
  *    {sr:{<key1>:t},...{<keyN>:t}} adds <key1> through <keyN> to the status report list
  *    {sr:{<key1>:f},...{<keyN>:t}} removes <key1> through <keyN> from the status report list
- *    {sr:{<key1>:n},...{<keyN>:t}} returns the value of <key1> through <keyN>
  *    {sr:n} requests an unfiltered status report. This is handed by sr_set(), not here
  *
- *    - Lines may have a mix of t, f and n commands
- *    - nv points to the parent "sr" element on entry 
+ *    - Lines may have a mix of t and f commands
+ *    - On entry nv points to the parent "sr" element on entry 
+ *    - List ordering is not guaranteed in the case of mixed removes and adds in the same command
  *
  *  Error conditions:
  *    - unless otherwise noted all failures leave original SR list untouched
  *    - attempt to add element would overflow list max. Fail w/STAT_INPUT_EXCEEDS_MAX_LENGTH
  *    - token not recognized. Fail w/STAT_UNRECOGNIZED_NAME
- *    - value other than 't', 'f' or 'n' encountered. Fail w/STAT_UNSUPPORTED_TYPE
+ *    - value other than 't', or 'f' encountered. Fail w/STAT_UNSUPPORTED_TYPE
  *    - malformed JSON fails as usual before this point
  */
 /*  Implementation notes:
  *    - Need to pack the list in order to remove 0'd elements. Otherwise need to change populate functions to skip over 0'd elements
  *    - Changing SR config wipes the values list. Start fresh. Do this by calling _populate_unfiltered_status_report() at end
  *    - Persistence should be moved to the end of the function
+ *    - Allow -1's in the list as skips. Pack the list at the end
  *
  */
-static stat_t _setsr_error_exit(nvObj_t *nv, stat_t status)
-{
-    return (status);
-}
 
-static index_t _setsr_scan_list(index_t *list, index_t item)
-{
-    return (item);
-}
+#pragma GCC optimize ("O0")
 
 stat_t sr_set_status_report(nvObj_t *nv)
 /* Version 2 */
 {
-    uint8_t i;
-	uint8_t items = 0;                              // count of active SR items in the list
-    index_t working_item;
+    int8_t i;
+    int8_t j;
+    index_t item;                       // status report item being worked on
+    nvObj_t *nv_first = nv->nx;         // save for later
 
     // initialize the working list from the current status report list
-	index_t working_list[2*(NV_STATUS_REPORT_LEN+1)]; // 2x allows for total replacement
-	for (i=0; i<(2*(NV_STATUS_REPORT_LEN+1)); i++) {
+	index_t working_list[SR_WORKING_LIST_LEN]; // 2x allows for total replacement
+	for (i=0; i<SR_WORKING_LIST_LEN; i++) {
     	working_list[i] = NO_MATCH;
 	}
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -255,34 +250,70 @@ stat_t sr_set_status_report(nvObj_t *nv)
     }    
 
     // iterate the items in the nvlist
-    nv = nv->nx;                                    // advance to first element past the "sr"
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-		if (nv->valuetype == TYPE_EMPTY) { break; }
-
-        if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
-	        working_item = nv_get_index(nv->group,nv->token);
-            if (working_item == NO_MATCH) {
-                _setsr_error_exit(nv, STAT_UNRECOGNIZED_NAME);
-            }
-            items++;
-            // scan the list to see if it's already there
-            
+        if ((nv = nv->nx) == NULL) {                // advance to next element (past the "sr" parent)
+            return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
+        }                                           
+		if (nv->valuetype == TYPE_EMPTY) {          // end of items
+            break; 
+        }
+		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
+    		return (STAT_UNSUPPORTED_TYPE);
 		}
+	    if ((item = nv_get_index(nv->group,nv->token)) == NO_MATCH) {
+    	    return(STAT_UNRECOGNIZED_NAME);         // trap non-existent tags
+	    }
+        if (fp_FALSE(nv->value)) {                  // remove an item from the working list
+            for (j=0; j<SR_WORKING_LIST_LEN; j++) {
+                if (working_list[j] == item) {      // item exists in working list
+                    working_list[j] = NO_MATCH;
+                    break;
+                }
+            }
+        } else {                                    // add an item to the working list
+	        for (j=0; j<SR_WORKING_LIST_LEN; j++) {
+    	        if (working_list[j] == item) {      // item already exists in working list
+                    break;
+    	        }
+    	        if (working_list[j] == NO_MATCH) {  // add the item to working list
+        	        working_list[j] = item;
+                    break;
+    	        }
+            }
+        }
 	}
-    
-    // finalize the list
+    // pack the list and copy it to the SR list
+    // i is the read pointer, j is the write pointer
+    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++, j++) {
+        if (working_list[i] == NO_MATCH) { i++; }
+        working_list[j] = working_list[i];
+    }
+    working_list[j] = NO_MATCH;                     // terminate the list
+
+    for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // test for overflow
+        if (working_list[i] == NO_MATCH) {
+            break;
+        }
+    }
+    if (i > NV_STATUS_REPORT_LEN) {
+        return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
+    }
 	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
     
     // persist the new / updated list    
-//	index_t sr_start = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
-//	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-//			nv->value = nv->index;							// persist the index as the value
-//			nv->index = sr_start + i;						// index of the SR persistence location
-//			nv_persist(nv);
-//    }
-	return(_populate_unfiltered_status_report());			// return current values
+    nv = nv_first;
+	nv->index = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
+    nv->valuetype = TYPE_INTEGER;
+	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        nv->value = sr.status_report_list[i];
+		nv_persist(nv);
+		nv->index++;                                // index of the next SR persistence location
+    }
+	_populate_unfiltered_status_report();           // return current values
+	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
+    return (STAT_OK);
 }
-    
+
 /* Version 1    
 //  OUTDATED - from version 1
 //  Note: By the time this function is called any unrecognized tokens have been detected and
@@ -313,6 +344,8 @@ stat_t sr_set_status_report(nvObj_t *nv)
 }
 */
 
+#pragma GCC reset_options
+
 /*
  * sr_request_status_report()	- request a status report to run after minimum interval
  * sr_status_report_callback()	- main loop callback to send a report if one is ready
@@ -327,47 +360,27 @@ stat_t sr_set_status_report(nvObj_t *nv)
  */
 stat_t sr_request_status_report(uint8_t request_type)
 {
-#ifdef __ARM
-	if (request_type == SR_IMMEDIATE_REQUEST) {
-		sr.status_report_systick = SysTickTimer.getValue();
-	}
-	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
-		sr.status_report_systick = SysTickTimer.getValue() + sr.status_report_interval;
-	}
-#endif
-#ifdef __AVR
 	if (request_type == SR_IMMEDIATE_REQUEST) {
 		sr.status_report_systick = SysTickTimer_getValue();
 	}
 	if ((request_type == SR_TIMED_REQUEST) && (sr.status_report_requested == false)) {
 		sr.status_report_systick = SysTickTimer_getValue() + sr.status_report_interval;
 	}
-#endif
 	sr.status_report_requested = true;
 	return (STAT_OK);
 }
 
 stat_t sr_status_report_callback() 		// called by controller dispatcher
 {
-#ifdef __SUPPRESS_STATUS_REPORTS
-	return (STAT_NOOP);
-#endif
-
-	if (sr.status_report_verbosity == SR_OFF)
+	if (sr.status_report_verbosity == SR_OFF) {
         return (STAT_NOOP);
-
-	if (sr.status_report_requested == false)
+    }
+	if (sr.status_report_requested == false) {
         return (STAT_NOOP);
-
-#ifdef __ARM
-	if (SysTickTimer.getValue() < sr.status_report_systick)
+    }
+	if (SysTickTimer_getValue() < sr.status_report_systick) {
         return (STAT_NOOP);
-#endif
-#ifdef __AVR
-	if (SysTickTimer_getValue() < sr.status_report_systick)
-        return (STAT_NOOP);
-#endif
-
+    }
 	sr.status_report_requested = false;		// disable reports until requested again
 
 	if (sr.status_report_verbosity == SR_VERBOSE) {
@@ -575,10 +588,6 @@ void qr_request_queue_report(int8_t buffers)
  */
 stat_t qr_queue_report_callback() 		// called by controller dispatcher
 {
-#ifdef __SUPPRESS_QUEUE_REPORTS
-	return (STAT_NOOP);
-#endif
-
 	if (qr.queue_report_verbosity == QR_OFF)
         return (STAT_NOOP);
 
