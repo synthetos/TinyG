@@ -485,7 +485,7 @@ void json_print_response(uint8_t status)
 	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		nv_reset_nv_list();
-		nv_add_string((const char_t *)"err", escape_string(cs.in_buf, cs.saved_buf));
+		nv_add_string((const char_t *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t nv_type;
@@ -518,34 +518,31 @@ void json_print_response(uint8_t status)
 	// Footer processing
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
+//			rpt_exception(STAT_JSON_TOO_LONG, NULL);		// report this as an exception
 			json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
 			return;
 		}
 	}
-	char_t footer_string[NV_FOOTER_LEN];
-	sprintf((char *)footer_string, "%d,%d,%d,0", FOOTER_REVISION, status, cs.linelen);
-	cs.linelen = 0;											// reset linelen so it's only reported once
+	char footer_string[NV_FOOTER_LEN];
+    
+    if (xio.rx_mode == RX_MODE_STREAM) {                    // streaming style footer
+        sprintf(footer_string, "2,%d,%d", status, cs.linelen);	//...streaming
+        cs.linelen = 0;										// reset linelen so it's only reported once
+    } else {                                                // packet style footer
+        sprintf(footer_string, "3,%d,%d", status, xio_get_packet_slots());
+    }
 
 	nv_copy_string(nv, footer_string);						// link string to nv object
-//	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
-	nv->depth = js.json_footer_depth;						// 0=footer is peer to response 'r', 1=child of response 'r'
+	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
+//	nv->depth = js.json_footer_depth; // deprecated			// 0=footer is peer to response 'r', 1=child of response 'r'
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");									// terminate the list
 	nv->nx = NULL;
 
-	// do all this to avoid having to serialize it twice
-	int16_t strcount = json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));// make JSON string w/o checksum
-	if (strcount < 0) { return;}							// encountered an overrun during serialization
-	if (strcount > OUTPUT_BUFFER_LEN - MAX_TAIL_LEN) { return;}	// would overrun during checksum generation
-	int16_t strcount2 = strcount;
-	char tail[MAX_TAIL_LEN];
-
-	while (cs.out_buf[strcount] != '0') { strcount--; }		// find end of checksum
-	strcpy(tail, cs.out_buf + strcount + 1);				// save the json termination
-
-	while (cs.out_buf[strcount2] != ',') { strcount2--; }// find start of checksum
-	sprintf((char *)cs.out_buf + strcount2 + 1, "%d%s", compute_checksum(cs.out_buf, strcount2), tail);
-	fprintf(stderr, "%s", cs.out_buf);
+	// serialize the JSON response and print it if there were no errors
+	if (json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
+    	fprintf(stderr, "%s", cs.out_buf);
+	}
 }
 
 /***********************************************************************************

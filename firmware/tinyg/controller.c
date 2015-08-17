@@ -67,7 +67,11 @@ static stat_t _limit_switch_handler(void);
 static stat_t _system_assertions(void);
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
-static stat_t _command_dispatch(void);
+
+static stat_t _controller_state(void);
+static stat_t _dispatch_command(void);
+static stat_t _dispatch_control(void);
+static void _dispatch_kernel(void);
 
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
@@ -87,19 +91,20 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
+	cs.config_version = TINYG_CONFIG_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
 
 #ifdef __AVR
-	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
+	cs.controller_state = CONTROLLER_STARTUP;		// ready to run startup lines
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
-	cs.default_src = std_in;
-	tg_set_primary_source(cs.default_src);
+	xio.default_src = std_in;
+	controller_set_primary_source(xio.default_src);
 #endif
 
 #ifdef __ARM
-	cs.state = CONTROLLER_NOT_CONNECTED;			// find USB next
+	cs.controller_state = CONTROLLER_NOT_CONNECTED;	// find USB next
 	IndicatorLed.setFrequency(100000);
 #endif
 }
@@ -172,6 +177,9 @@ static void _controller_HSM()
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
+
+	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
+
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_jogging_callback());			// jog function
@@ -185,106 +193,102 @@ static void _controller_HSM()
 #ifdef __AVR
 	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
 #endif
-	DISPATCH(_command_dispatch());				// read and execute next command
+	DISPATCH(_controller_state());				// controller state management
+	DISPATCH(_dispatch_command());				// read and execute next command
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
-/*****************************************************************************
- * _command_dispatch() - dispatch line received from active input device
- *
- *	Reads next command line and dispatches to relevant parser or action
- *	Accepts commands if the move queue has room - EAGAINS if it doesn't
- *	Manages cutback to serial input from file devices (EOF)
- *	Also responsible for prompts and for flow control
+/*****************************************************************************************
+ * _controller_state() - manage conrtroller connection, startup, and other state changes
  */
-
-static stat_t _command_dispatch()
+static stat_t _controller_state()
 {
 #ifdef __AVR
-	stat_t status;
-
-	// read input line or return if not a completed line
-	// xio_gets() is a non-blocking workalike of fgets()
-	while (true) {
-		if ((status = xio_gets(cs.primary_src, cs.in_buf, sizeof(cs.in_buf))) == STAT_OK) {
-			cs.bufp = cs.in_buf;
-			break;
-		}
-		// handle end-of-file from file devices
-		if (status == STAT_EOF) {						// EOF can come from file devices only
-			if (cfg.comm_mode == TEXT_MODE) {
-				fprintf_P(stderr, PSTR("End of command file\n"));
-			} else {
-				rpt_exception(STAT_EOF);				// not really an exception
-			}
-			tg_reset_source();							// reset to default source
-		}
-		return (status);								// Note: STAT_EAGAIN, errors, etc. will drop through
-	}
-#endif // __AVR
-#ifdef __ARM
-	// detect USB connection and transition to disconnected state if it disconnected
-	if (SerialUSB.isConnected() == false) cs.state = CONTROLLER_NOT_CONNECTED;
-
-	// read input line and return if not a completed line
-	if (cs.state == CONTROLLER_READY) {
-		if (read_line(cs.in_buf, &cs.read_index, sizeof(cs.in_buf)) != STAT_OK) {
-			cs.bufp = cs.in_buf;
-			return (STAT_OK);	// This is an exception: returns OK for anything NOT OK, so the idler always runs
-		}
-	} else if (cs.state == CONTROLLER_NOT_CONNECTED) {
-		if (SerialUSB.isConnected() == false) return (STAT_OK);
+	if (cs.controller_state <= CONTROLLER_STARTUP) {		// first time through after reset
+		cs.controller_state = CONTROLLER_READY;
 		cm_request_queue_flush();
 		rpt_print_system_ready_message();
-		cs.state = CONTROLLER_STARTUP;
-
-	} else if (cs.state == CONTROLLER_STARTUP) {		// run startup code
-		cs.state = CONTROLLER_READY;
-
-	} else {
-		return (STAT_OK);
-	}
-	cs.read_index = 0;
-#endif // __ARM
-
-	// set up the buffers
-	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
-	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
-
-	// dispatch the new text line
-	switch (toupper(*cs.bufp)) {						// first char
-
-		case '!': { cm_request_feedhold(); break; }		// include for AVR diagnostics and ARM serial
-		case '%': { cm_request_queue_flush(); break; }
-		case '~': { cm_request_cycle_start(); break; }
-
-		case NUL: { 									// blank line (just a CR)
-			if (cfg.comm_mode != JSON_MODE) {
-				text_response(STAT_OK, cs.saved_buf);
-			}
-			break;
-		}
-		case '$': case '?': case 'H': { 				// text mode input
-			cfg.comm_mode = TEXT_MODE;
-			text_response(text_parser(cs.bufp), cs.saved_buf);
-			break;
-		}
-		case '{': { 									// JSON input
-			cfg.comm_mode = JSON_MODE;
-			json_parser(cs.bufp);
-			break;
-		}
-		default: {										// anything else must be Gcode
-			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
-				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
-				json_parser(cs.bufp);
-			} else {									//...or run it as text
-				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
-			}
-		}
 	}
 	return (STAT_OK);
+#endif // __AVR
+
+#ifdef __ARM
+	// detect USB connection and transition to disconnected state if it disconnected
+	//	if (SerialUSB.isConnected() == false) cs.state = CONTROLLER_NOT_CONNECTED;
+	return (xio_callback());					// manages state changes in the XIO system
+#endif // __ARM
+}
+
+/*****************************************************************************
+ * command dispatchers
+ * _dispatch_command - entry point for control and data dispatches
+ * _dispatch_control - entry point for control-0nly dispatches
+ * _dispatch_kernel - core dispatch routines
+ *
+ *	Reads next command line and dispatches to relevant parser or action
+ */
+static stat_t _dispatch_command()
+{
+#ifdef __AVR
+	devflags_t flags = DEV_IS_BOTH;
+	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+	return (STAT_OK);
+#endif
+#ifdef __ARM
+	devflags_t flags = DEV_IS_BOTH;
+	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
+	return (STAT_OK);
+#endif
+}
+
+static stat_t _dispatch_control()
+{
+#ifdef __AVR
+	devflags_t flags = DEV_IS_CTRL;
+	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+	return (STAT_OK);
+#endif
+#ifdef __ARM
+	devflags_t flags = DEV_IS_CTRL;
+	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
+	return (STAT_OK);
+#endif
+}
+
+static void _dispatch_kernel()
+{
+    // skip leading whitespace & quotes
+	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) { 
+        cs.bufp++; 
+    }
+	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+
+	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
+		if (cs.comm_mode == TEXT_MODE) {
+			text_response(STAT_OK, cs.saved_buf);
+		}
+    }    
+	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
+	else if (*cs.bufp == '!') { cm_request_feedhold(); }
+	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
+	else if (*cs.bufp == '~') { cm_request_cycle_start(); }
+
+	else if (*cs.bufp == '{') {							    // process as JSON mode
+		cs.comm_mode = JSON_MODE;							// switch to JSON mode
+		json_parser(cs.bufp);
+    }    
+	else if (strchr("$?Hh", *cs.bufp) != NULL) {			// process as text mode
+		cs.comm_mode = TEXT_MODE;							// switch to text mode
+		text_response(text_parser(cs.bufp), cs.saved_buf);
+    }    
+	else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
+		text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
+    }    
+	else {
+		strncpy(cs.out_buf, cs.bufp, (MAXED_BUFFER_LEN-8));	// use out_buf as temp; '-8' is buffer for JSON chars
+		sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
+		json_parser(cs.bufp);
+	}
 }
 
 
@@ -360,18 +364,18 @@ static stat_t _normal_idler()
 }
 
 /*
- * tg_reset_source() 		 - reset source to default input device (see note)
- * tg_set_primary_source() 	 - set current primary input source
- * tg_set_secondary_source() - set current primary input source
+ * controller_reset_source() 		 - reset source to default input device (see note)
+ * controller_set_primary_source() 	 - set current primary input source
+ * controller_set_secondary_source() - set current primary input source
  *
  * Note: Once multiple serial devices are supported reset_source() should
  * be expanded to also set the stdout/stderr console device so the prompt
  * and other messages are sent to the active device.
  */
 
-void tg_reset_source() { tg_set_primary_source(cs.default_src);}
-void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+void controller_reset_source() { controller_set_primary_source(xio.default_src);}
+void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
+void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up

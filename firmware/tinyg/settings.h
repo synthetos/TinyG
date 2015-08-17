@@ -55,6 +55,7 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
+//#define COMM_RX_MODE	            RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 #define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 #define NETWORK_MODE				NETWORK_STANDALONE
 
@@ -64,7 +65,7 @@
 
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE=
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
-#define STATUS_REPORT_INTERVAL_MS	500						// milliseconds - set $SV=0 to disable
+#define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 #define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
 //tgfx-friendly defaults
 //#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
@@ -78,10 +79,11 @@
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-// Comm mode and echo levels
-#define COM_EXPAND_CR				false
-#define COM_ENABLE_ECHO				false
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+// Communications settings
+#define XIO_EXPAND_CR				false
+#define XIO_ENABLE_ECHO				false
+#define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+#define XIO_RX_MODE	                RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 
 //**** DEBUG SETTINGS ****
 
@@ -102,16 +104,17 @@
 #endif
 
 /**** MACHINE PROFILES ******************************************************/
+//{"sr":{"line":t,"posx":t,"posy":t,"posz":t,"vel":t,"unit":t,"stat":t,"feed":t,"coor":t,"momo":t,"plan":t,"path":t,"gc":t,"dist":t,"mpox":t,"mpoy":t,"mpoz":t}}
 
 // machine default profiles - choose only one:
 
-#include "settings/settings_default.h"				// Default settings for release
+//#include "settings/settings_default.h"				// Default settings for release
 //#include "settings/settings_cnc3040.h"
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_openpnp.h"				// OpenPnP
 //#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix Fireball V90
-//#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
+#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 

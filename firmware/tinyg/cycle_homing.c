@@ -148,7 +148,7 @@ static int8_t _get_next_axis(int8_t axis);
  *	Another Note: When coding a cycle (like this one) you must wait until
  *	the last move has actually been queued (or has finished) before declaring
  *	the cycle to be done. Otherwise there is a nasty race condition in the
- *	tg_controller() that will accept the next command before the position of
+ *	controller_controller() that will accept the next command before the position of
  *	the final move has been recorded in the Gcode model. That's what the call
  *	to cm_isbusy() is about.
  */
@@ -212,7 +212,7 @@ static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 }
 
 /* UNUSED
-
+#ifdef __NEW_SWITCHES
 static void _trigger_feedhold(switch_t *s)
 {
 	cm_request_feedhold();
@@ -229,6 +229,7 @@ static void _restore_switch_settings(switch_t *s)
 	s->on_trailing = hm.switch_saved_on_trailing;
 }
 */
+
 static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis

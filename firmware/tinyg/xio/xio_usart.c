@@ -165,14 +165,14 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 {
 	dx->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
 	dx->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
-	cfg.usb_baud_rate = baud;
+	xio.usb_baud_rate = baud;
 }
 
 /*
  * USART flow control functions and helpers
  *
- * xio_xoff_usart() - send XOFF flow control for USART devices
- * xio_xon_usart()  - send XON flow control for USART devices
+ * xio_xoff_usart() - send XOFF or RTS-off flow control for USART devices
+ * xio_xon_usart() - send XON or RTS-on  flow control for USART devices
  * xio_fc_usart() - Usart device flow control callback
  * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
  * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
@@ -186,14 +186,14 @@ void xio_xoff_usart(xioUsart_t *dx)
 		dx->fc_state_rx = FC_IN_XOFF;
 
 		// If using XON/XOFF flow control
-		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+		if (xio.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char_rx = XOFF;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
 		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 1 means we're NOT ready for more data.
-		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+		if (xio.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTSET = USB_RTS_bm;
 		}
 	}
@@ -205,14 +205,14 @@ void xio_xon_usart(xioUsart_t *dx)
 		dx->fc_state_rx = FC_IN_XON;
 
 		// If using XON/XOFF flow control
-		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+		if (xio.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char_rx = XON;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
 		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 0 means we're ready for more data.
-		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+		if (xio.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTCLR = USB_RTS_bm;
 		}
 	}
@@ -237,7 +237,6 @@ buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx)
 
 buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 {
-//	return (dx->rx_buf_count);
 	if (dx->rx_buf_head <= dx->rx_buf_tail) {
 		return (dx->rx_buf_tail - dx->rx_buf_head);
 	} else {

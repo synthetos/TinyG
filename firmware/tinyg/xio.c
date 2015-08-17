@@ -81,12 +81,11 @@
 #include "tinyg.h"					// needed by init() for default source
 #include "config.h"					// needed by init() for default source
 #include "controller.h"				// needed by init() for default source
+#include "report.h"
+#include "util.h"
 
-//
-typedef struct xioSingleton {
-	FILE * stderr_shadow;			// used for stack overflow / memory integrity checking
-} xioSingleton_t;
-xioSingleton_t xio;
+static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
+static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -98,6 +97,8 @@ void xio_init()
 {
 	// set memory integrity check
 	xio_set_stderr(0);				// set a bogus value; may be overwritten with a real value
+
+	memset(&xio, 0, sizeof(xioSingleton_t));	// clear all values
 
 	// setup device types
 	xio_init_usart();
@@ -122,10 +123,16 @@ void xio_init()
  *		 not set up then it will fail in the assertions test. Need to fix this.
  */
 
-void xio_init_assertions() {}
+void xio_init_assertions()
+{
+    xio.magic_start = MAGICNUM;
+    xio.magic_end = MAGICNUM;
+}
 
 uint8_t xio_test_assertions()
 {
+	if (xio.magic_start					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+	if (xio.magic_end					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
@@ -303,4 +310,280 @@ void xio_set_stderr(const uint8_t dev)
 {
 	stderr = &ds[dev].file;
 	xio.stderr_shadow = stderr;		// this is the last thing in RAM, so we use it as a memory corruption canary
+}
+
+/***************************************************************************************
+ * readline() - serial reader wrapper
+ */
+
+char_t *readline(devflags_t *flags, uint16_t *size)
+{
+	if (xio.rx_mode == RX_MODE_PACKET) {
+		return (_readline_packet(flags, size));
+	}
+	return (_readline_stream(flags, size));
+}
+
+// parse the buffer to see if its a control
+// +++ Note: parsing for control is somewhat naiive. This will need to get better
+static bool _parse_control(char *p) 
+{
+	if (strchr("{$?!~%Hh", *p) != NULL) {		        // a match indicates control line
+    	return (true);
+    }    
+    return (false);    
+};
+
+/*
+ * _readline_stream() - streaming serial reader
+ *
+ *	Arguments:
+ *	  - Flags request DEV_IS_CTRL, DEV_IS_CTRL, or either (both); returns type detected.
+ *	  - Size is ignored on input, set to line length on return.
+ *	  - Returns pointer to buffer or NULL pointer if no data.
+ *
+ *	Function:
+ *	  - Read active RX device(s). Return an input line or a NULL pointer if no completed line.
+ *		THe *flags arg is set to indicate the type of line returned, and *size is set to
+ *		length of the returned line. The *size returned includes the space taken by the
+ *		terminating CR or LF, so this is one (1) more than a standard strlen().
+ *
+ *		Currently this function does no special handling for doubly terminated lines e.g. CRLF.
+ *		In this case the first termination returns the line; the second returns a null line of *size = 1
+ *
+ *	  - Data Blocking: This function has a special behavior to support sending CTRLs while
+ *		executing cycles. If the flags request ctrl but not data and a data line is read from
+ *		the RX device, the buffer (containing a data line) will not be returned. The buffer
+ *		will be held until a call is made that requests data (may request both DATA and CTRL).
+ */
+static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
+{
+	*flags = flag;
+	*size = xio.buf_size;
+	return (xio.in_buf);
+}
+
+static char_t *_exit_null(devflags_t *flags, uint16_t *size)
+{
+	*size = 0;
+	*flags = DEV_IS_NONE;
+	return ((char_t *)NULL);
+}
+
+static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
+{
+	// Handle cases where you are already holding a completed data buffer
+	if (xio.buf_state == BUFFER_IS_DATA) {
+		if (*flags & DEV_IS_DATA) {
+			xio.buf_state = BUFFER_IS_FREE;				// indicates it's OK to start filling this buffer again
+			return (_exit_line(DEV_IS_DATA, flags, size));
+		} else {
+			return(_exit_null(flags, size));
+		}
+	}
+	// Read the input device and process the line
+	stat_t status;
+	if ((status = xio_gets(xio.primary_src, xio.in_buf, sizeof(xio.in_buf))) == XIO_EAGAIN) {
+		return(_exit_null(flags, size));
+	}
+	xio.buf_size = strlen(xio.in_buf)+1;				// set size. Add 1 to account for the terminating CR or LF
+
+	//*** got a full buffer ***
+	if (status == STAT_EOF) {							// EOF can come from file devices only
+		if (cs.comm_mode == TEXT_MODE) {
+			fprintf_P(stderr, PSTR("End of command file\n"));
+		} else {
+//			rpt_exception(STAT_EOF, NULL);				// not really an exception
+			rpt_exception(STAT_EOF);				// not really an exception
+		}
+		controller_reset_source();						// reset to active source to default source
+	}
+	if (xio.in_buf[0] == NUL) {							// look for lines with no data (nul)
+		return (_exit_line(DEV_IS_NONE, flags, size));
+	}
+	if (_parse_control(xio.in_buf)) {	                // true indicates control line
+		return (_exit_line(DEV_IS_CTRL, flags, size));
+	}
+	if (*flags & DEV_IS_DATA) {							// got a data line
+		return (_exit_line(DEV_IS_DATA, flags, size));	// case where it's OK to return the data line
+	}
+	xio.buf_state = BUFFER_IS_DATA;						// case where it's not OK to return the DATA line
+	return(_exit_null(flags, size));
+}
+
+/*
+ * readline_packet() - packetized reader
+ *
+ *	This function reads a full line of characters from an input device (e.g. USB) into a line
+ *  buffer (packet). It keeps multiple line buffers, and returns a completed buffer according 
+ *  to the rules below.
+ *
+ *	Single Device Reads (reads from USB port only)
+ *	 This case reads both ctrl and data packets from the USB device
+ *	  - Step 1) Read all data from the input device:
+ *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
+ *		  and filling up slot buffers until the USB device has no more characters or there
+ *		  are no more slots available.
+ *		- As completed lines are read parse them and mark them as a control or data packet.
+ *		- Discard blank lines (single NUL character)
+ *		- Annotate stored packets with an incrementing sequence number.
+ *	  - Step 2) When done reading:
+ *		- Return the control packet with the lowest sequence number
+ *		- If there are no control packets return the data packet with the lowest sequence number
+ *		- Return with no data if there are no pending control or data packets
+ *
+ *	Multiple Device Reads (USB port and FLASH or other mass storage device)
+ *	 In this case the USB port is treated as ctrl and the mass storage port is treated as data
+ *	  - Step 1) Read from USB:
+ *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
+ *		  and filling up slot buffers until the USB device has no more characters or there
+ *		  are no more slots available.
+ *		- As completed lines are read parse them as a control or data packet.
+ *		- Discard blank lines and data lines
+ *		- Annotate stored packets with an incrementing sequence number.
+ *	  - Step 2) When done reading:
+ *		- Return the control packet with the lowest sequence number.
+ *		- If there are no control packet read and return a packet from the data device
+ *		- Return with no data and an EOF flag if there are no pending control or data packets
+ *		- When EOF is encountered revert to Single Device mode (USB only)
+ *
+ *	ARGS:
+ *
+ *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA, or 0 (DEV_FLAGS_CLEAR)
+ *			 if no packet is returned.
+ *
+ *   size -  Does nothing. Returns zero. Here for compatibility with ARM readline()
+ *
+ *	 char_t * Returns a pointer to the buffer containing the packet, or NULL (*0) if no text
+ *
+ *  Notes:
+ *
+ *  - Only Single Device Read is currently implemented
+ *
+ *	- Accepts CR or LF as line terminator. Replaces CR or LF with NUL in the returned string.
+ *
+ *  - Assumes synchronous operation. The readline() caller (controller) must completely finish
+ *		with the the returned line (PROCESSING state) before calling readline() again. When
+ *		readline() is called it frees the PROCESSING buffer.
+ *
+ *	- The number of available (free) buffers reported back in the footer or the packet report 
+ *      will always be 2 less than the number of free buffers you think you should have. 
+ *      This is because there is always a buffer FILLING, and there is always a buffer PROCESSING.
+ */
+uint8_t xio_get_packet_slots() 
+{ 
+    uint8_t free = 0;
+    
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
+        if (xio.slot[i].state == BUFFER_IS_FREE) {    
+            free++;
+        }
+    }
+    return (free);      
+}
+
+//**************************
+//*** readline() helpers ***
+//**************************
+
+// starting on slot s, return the index of the first slot with a given state
+static int8_t _get_next_slot(int8_t s, cmBufferState state)  
+{
+	while (s < RX_PACKET_SLOTS) {
+		if (xio.slot[s].state == state) {
+            return (s);
+        }        
+		s++;
+	}
+	return (-1);
+}
+
+// return lowest sequence-numbered slot for for the given state
+static int8_t _get_lowest_seqnum_slot(cmBufferState state)	
+{
+	int8_t slot = -1;
+	uint32_t seqnum = MAX_ULONG;
+
+	for (uint8_t s=0; s < RX_PACKET_SLOTS; s++) {
+		if ((xio.slot[s].state == state) && (xio.slot[s].seqnum < seqnum)) {
+			seqnum = xio.slot[s].seqnum;
+			slot = s;
+		}
+	}
+	return (slot);
+}
+
+// read slot contents. discard nuls, mark as CTRL or DATA, set seqnum
+static void _mark_slot(int8_t s)	
+{
+    char *p = xio.slot[s].buf;                          // buffer pointer
+    
+    // discard null buffers
+	if (*p == NUL) {
+		xio.slot[s].state = BUFFER_IS_FREE;
+		return;											// return if no data present
+	}
+    
+    // skip leading whitespace & quotes
+    while ((*p == SPC) || (*p == TAB) || (*p == '"')) { p++; }
+    
+	// mark slot w/sequence number and command type
+	xio.slot[s].seqnum = xio.next_slot_seqnum++;
+	if (_parse_control(p)) {		                    // true indicates control line
+		xio.slot[s].state = BUFFER_IS_CTRL;
+	} else {
+		xio.slot[s].state = BUFFER_IS_DATA;
+	}
+}
+
+static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, then the lowest seq data, or NULL
+{
+	int8_t s;
+
+    if (*flags & DEV_IS_CTRL) {                                 // scan for CTRL slots
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_CTRL)) != -1) {
+		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+		    *flags = DEV_IS_CTRL;
+		    return (xio.slot[s].buf);                           // return CTRL slot
+	    }
+    }
+    if (*flags & DEV_IS_DATA) {                                 // scan for DATA slots
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_DATA)) != -1) {
+		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+		    *flags = DEV_IS_DATA;
+		    return (xio.slot[s].buf);                           // return DATA slot
+	    }
+    }    
+	*flags = DEV_IS_NONE;										// got no data
+	return ((char_t *)NULL);									// there was no slot to return
+}
+
+static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
+{
+	int8_t s=0;										// slot index
+
+	// Free a previously processing slot (assumes calling readline() means a free should occur)
+	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
+		xio.slot[s].state = BUFFER_IS_FREE;
+	}
+
+	// Look for a partially filled slot if one exists
+	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
+	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
+		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
+			return (_return_slot(flags));			// no more characters to read. Return an available slot
+		}
+		_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
+	}
+
+	// Now fill free slots until you run out of slots or characters
+	s=0;
+	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
+		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
+			xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
+			return (_return_slot(flags));			// no more characters to read. Return an available slot
+		}
+		_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
+	}
+	return (_return_slot(flags));
 }
