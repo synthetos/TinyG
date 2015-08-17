@@ -1248,7 +1248,7 @@ stat_t cm_queue_flush()
 #endif
 	mp_flush_planner();						// flush planner queue
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-	rx_request_rx_report();
+//	rx_request_rx_report();
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);

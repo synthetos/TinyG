@@ -36,10 +36,6 @@
 #include "util.h"
 #include "xio.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocation ****/
 
 srSingleton_t sr;
@@ -539,9 +535,9 @@ void rx_request_rx_report(void) {
  * rx_report_callback() - send rx report if one has been requested
  */
 stat_t rx_report_callback(void) {
-    if (!rx.rx_report_requested)
+    if (!rx.rx_report_requested) {
         return (STAT_NOOP);
-
+    }    
     rx.rx_report_requested = false;
 
     fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);
@@ -683,7 +679,3 @@ void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
 void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

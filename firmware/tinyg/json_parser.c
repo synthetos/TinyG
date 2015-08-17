@@ -528,7 +528,7 @@ void json_print_response(uint8_t status)
     if (xio.rx_mode == RX_MODE_STREAM) {                    // streaming style footer
         sprintf(footer_string, "2,%d,%d", status, cs.linelen);	//...streaming
         cs.linelen = 0;										// reset linelen so it's only reported once
-    } else {                                                // packet style footer
+    } else {                                                // line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_packet_slots());
     }
 

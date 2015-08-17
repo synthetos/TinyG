@@ -412,7 +412,7 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 }
 
 /*
- * readline_packet() - packetized reader
+ * readline_packet() - packetized reader (line mode)
  *
  *	This function reads a full line of characters from an input device (e.g. USB) into a line
  *  buffer (packet). It keeps multiple line buffers, and returns a completed buffer according 

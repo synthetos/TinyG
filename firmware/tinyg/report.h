@@ -28,10 +28,6 @@
 #ifndef REPORT_H_ONCE
 #define REPORT_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Configs, Definitions and Structures ****/
 //
 // Notes:
@@ -152,9 +148,5 @@ stat_t qo_get(nvObj_t *nv);
 	#define qr_print_qo tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: REPORT_H_ONCE

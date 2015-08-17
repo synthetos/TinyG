@@ -467,7 +467,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qo",  _f0, 0, qr_print_qo,  qo_get,  set_nul,  (float *)&cs.null, 0 },	// queue report - buffers removed from queue
 	{ "", "er",  _f0, 0, tx_print_nul, rpt_er,  set_nul,  (float *)&cs.null, 0 },	// invoke bogus exception report for testing
 	{ "", "qf",  _f0, 0, tx_print_nul, get_nul, cm_run_qf,(float *)&cs.null, 0 },	// queue flush
-	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// bytes or packets in RX buffer
+	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// bytes or lines in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
 //	{ "", "clc", _f0, 0, tx_print_nul, st_clc,  st_clc,   (float *)&cs.null, 0 },	// clear diagnostic step counters
 	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
@@ -846,7 +846,7 @@ static stat_t _do_all(nvObj_t *nv)	// print all parameters
  * set_ec() - enable CRLF on TX
  * set_ee() - enable character echo
  * set_ex() - enable XON/XOFF or RTS/CTS flow control
- * get_rx()	- get bytes or packets available in RX buffer(s)
+ * get_rx()	- get bytes or lines available in RX buffer(s)
  * set_baud() - set USB baud rate
  *
  *	The above assume USB is the std device
@@ -967,7 +967,7 @@ stat_t set_baud_callback(void)
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF,2=RTS/CTS]\n";
-static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=streaming_mode,1=packet_mode]\n";
+static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=streaming_mode,1=line_mode]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
