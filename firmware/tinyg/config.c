@@ -130,7 +130,6 @@ void config_init()
 
 	read_persistent_value(nv);
 	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
-//	if (fp_NE(nv->value, cs.fw_build)) {
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
@@ -141,7 +140,7 @@ void config_init()
 				nv_set(nv);
 			}
 		}
-		sr_init_status_report();
+		sr_init_status_report(false);           // load stored status report setup
 	}
 #endif
 }
@@ -162,8 +161,8 @@ static void _set_defa(nvObj_t *nv)
 			nv_persist(nv);
 		}
 	}
-	sr_init_status_report();					// reset status reports
-	rpt_print_initializing_message();			// don't start TX until all the NVM persistence is done
+	sr_init_status_report(true);                // reset status reports
+	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
 
 stat_t set_defaults(nvObj_t *nv)
