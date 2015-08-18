@@ -67,8 +67,6 @@
 #define STATUS_REPORT_MIN_MS		100						// milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 #define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
-//tgfx-friendly defaults
-//#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -83,8 +81,8 @@
 #define XIO_EXPAND_CR				false
 #define XIO_ENABLE_ECHO				false
 #define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
-//#define XIO_RX_MODE	                RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
-#define XIO_RX_MODE	                RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
+#define XIO_RX_MODE	                RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+//#define XIO_RX_MODE	              RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
 
 //**** DEBUG SETTINGS ****
 

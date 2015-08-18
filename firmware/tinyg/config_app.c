@@ -883,7 +883,7 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 static stat_t get_rx(nvObj_t *nv)
 {
 #ifdef __AVR
-    if (xio.rx_mode == RX_MODE_STREAM) {
+    if (xio.rx_mode == RX_MODE_CHAR) {
 	    nv->value = (float)xio_get_usb_rx_free();
     } else {
 	    nv->value = (float)xio_get_packet_slots();
@@ -961,7 +961,7 @@ stat_t set_baud_callback(void)
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF,2=RTS/CTS]\n";
-static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=streaming_mode,1=line_mode]\n";
+static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=char_mode,1=line_mode]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";

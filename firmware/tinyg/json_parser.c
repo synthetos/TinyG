@@ -521,8 +521,8 @@ void json_print_response(uint8_t status)
 	}
 	char footer_string[NV_FOOTER_LEN];
     
-    if (xio.rx_mode == RX_MODE_STREAM) {                    // streaming style footer
-        sprintf(footer_string, "2,%d,%d", status, cs.linelen);	//...streaming
+    if (xio.rx_mode == RX_MODE_CHAR) {                      // character style footer
+        sprintf(footer_string, "2,%d,%d", status, cs.linelen);	//...streaming mode
         cs.linelen = 0;										// reset linelen so it's only reported once
     } else {                                                // line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_packet_slots());
@@ -530,7 +530,6 @@ void json_print_response(uint8_t status)
 
 	nv_copy_string(nv, footer_string);						// link string to nv object
 	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
-//	nv->depth = js.json_footer_depth; // deprecated			// 0=footer is peer to response 'r', 1=child of response 'r'
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");									// terminate the list
 	nv->nx = NULL;

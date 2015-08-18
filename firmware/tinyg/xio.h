@@ -152,8 +152,8 @@ typedef uint16_t devflags_t;
 #define flags_t uint16_t
 
 typedef enum {
-    RX_MODE_STREAM = 0,
-    RX_MODE_PACKET
+    RX_MODE_CHAR = 0,                            // character mode input (streaming)
+    RX_MODE_LINE                                 // line mode input (packet)
 } xioRXMode;
 
 typedef struct xioDEVICE {						// common device struct (one per dev)
@@ -198,11 +198,13 @@ typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
+char packet_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for packet slots
+
 typedef struct packetSlot {				// packet buffer slots
     cmBufferState state;				// state of slot
     uint32_t seqnum;					// sequence number of slot
     char *bufp;                         // pointer to buffer used by slot
-    char buf[RX_PACKET_LEN];	        // allocated buffer for slot
+//    char buf[RX_PACKET_LEN];	        // allocated buffer for slot
 } slot_t;
 
 typedef struct xioSingleton {

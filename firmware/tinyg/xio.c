@@ -114,7 +114,8 @@ void xio_init()
     // set up XIO buffers and pointers
     xio.bufp = xio.in_buf;                          // pointer for streaming readline
     for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {     // pointers for packet readline
-        xio.slot[i].bufp = xio.slot[i].buf;
+//        xio.slot[i].bufp = xio.slot[i].buf;
+        xio.slot[i].bufp = packet_bufs[i];
     }
 
 	xio_init_assertions();
@@ -336,10 +337,10 @@ void xio_set_stderr(const uint8_t dev)
 
 char_t *readline(devflags_t *flags, uint16_t *size)
 {
-	if (xio.rx_mode == RX_MODE_PACKET) {
-		return (_readline_packet(flags, size));
-	}
-	return (_readline_stream(flags, size));
+    if (xio.rx_mode == RX_MODE_CHAR) {
+        return (_readline_stream(flags, size));
+    }
+    return (_readline_packet(flags, size));
 }
 
 // parse the buffer to see if its a control
@@ -353,7 +354,7 @@ static bool _parse_control(char *p)
 };
 
 /*
- * _readline_stream() - streaming serial reader
+ * _readline_stream() - character-mode serial reader (streaming)
  *
  *	Arguments:
  *	  - Flags request DEV_IS_CTRL, DEV_IS_CTRL, or either (both); returns type detected.
@@ -378,7 +379,6 @@ static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
 {
 	*flags = flag;
 	*size = xio.buf_size;
-//	return (xio.in_buf);
 	return (xio.bufp);
 }
 
@@ -402,11 +402,9 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	}
 	// Read the input device and process the line
 	stat_t status;
-//	if ((status = xio_gets(xio.primary_src, xio.in_buf, sizeof(xio.in_buf))) == XIO_EAGAIN) {
 	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_STREAM_BUFFER_LEN)) == XIO_EAGAIN) {
 		return(_exit_null(flags, size));
 	}
-//	xio.buf_size = strlen(xio.in_buf)+1;				// set size. Add 1 to account for the terminating CR or LF
 	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
 
 	//*** got a full buffer ***
@@ -419,11 +417,9 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 		}
 		controller_reset_source();						// reset to active source to default source
 	}
-//	if (xio.in_buf[0] == NUL) {							// look for lines with no data (nul)
 	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
-//	if (_parse_control(xio.in_buf)) {	                // true indicates control line
 	if (_parse_control(xio.bufp)) {                     // true indicates control line
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
@@ -435,7 +431,7 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 }
 
 /*
- * readline_packet() - packetized reader (line mode)
+ * readline_packet() - line-mode reader (packet mode)
  *
  *	This function reads a full line of characters from an input device (e.g. USB) into a line
  *  buffer (packet). It keeps multiple line buffers, and returns a completed buffer according
