@@ -315,8 +315,17 @@ void xio_set_stderr(const uint8_t dev)
 /***************************************************************************************
  * readline() - serial reader wrapper
  *
+ *  Arguments:
+ *   *flags - One of: DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_BOTH
+ *   *size  - Set max size for buffer
+ *
  *  Returns:
- *    *char - pointer to buffer containing a full line
+ *    *char - which will be one of:
+ *          - a valid char pointer to buffer containing a full line of text
+ *          - NULL (0) if there is no text to process
+ *          - _FDEV_ERR (-1) if the line overflowed the input buffer
+ *
+ *   *flags - returns set to one of: DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
  */
 
 char_t *readline(devflags_t *flags, uint16_t *size)
@@ -397,7 +406,7 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 			fprintf_P(stderr, PSTR("End of command file\n"));
 		} else {
 //			rpt_exception(STAT_EOF, NULL);				// not really an exception
-			rpt_exception(STAT_EOF);				// not really an exception
+			rpt_exception(STAT_EOF);				    // not really an exception
 		}
 		controller_reset_source();						// reset to active source to default source
 	}
@@ -452,12 +461,14 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
  *
  *	ARGS:
  *
- *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA, or 0 (DEV_FLAGS_CLEAR)
- *			 if no packet is returned.
+ *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA, 
+ *                                                 or DEV_IS_NONE (0) if no packet is returned.
  *
  *   size -  Does nothing. Returns zero. Here for compatibility with ARM readline()
  *
- *	 char_t * Returns a pointer to the buffer containing the packet, or NULL (*0) if no text
+ *	 char_t * Returns a pointer to the buffer containing the packet, 
+ *            or NULL (*0) if no text,
+ *            of _FDEV_ERR (-1) if a buffer overflow occurred
  *
  *  Notes:
  *
@@ -558,44 +569,70 @@ static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, th
 	    }
     }
 	*flags = DEV_IS_NONE;										// got no data
-	return ((char_t *)NULL);									// there was no slot to return
+    return ((char_t *)NULL);									// there was no slot to return
 }
+
+static char_t *_return_on_overflow(devflags_t *flags, int8_t slot)  // buffer overflow return
+{
+    rpt_exception(STAT_BUFFER_FULL);
+    printf(xio.slot[slot].buf);
+    xio.slot[slot].state = BUFFER_IS_FREE;
+    *flags = DEV_IS_NONE;                                       // got no data
+    return ((char_t *)_FDEV_ERR);                               // buffer overflow occurred
+}
+
+#pragma GCC optimize ("O0")
+// insert function here
+//#pragma GCC reset_options
 
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 {
 	int8_t s=0;										// slot index
-//    stat_t stat;
+    stat_t stat;
 
 	// Free a previously processing slot (assumes calling readline() means a free should occur)
 	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
 		xio.slot[s].state = BUFFER_IS_FREE;
 	}
-/*
+
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
         stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
-    	if (stat == XIO_BUFFER_FULL) {
-            return (-1);
-        }
-    	if (stat == XIO_EAGAIN) {
+    	if (stat == (stat_t)XIO_EAGAIN) {
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
     	}
+    	if (stat == (stat_t)XIO_BUFFER_FULL) {
+//            return (_return_on_overflow(flags, s, ds[XIO_DEV_USB].buf));
+//            return (_return_on_overflow(flags, s, xio.slot[s].buf));
+            return (_return_on_overflow(flags, s));
+        }
     	_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
 	}
 
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-    	if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
-        	xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
-        	return (_return_slot(flags));			// no more characters to read. Return an available slot
-    	}
+//    	if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
+//        	xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
+//        	return (_return_slot(flags));			// no more characters to read. Return an available slot
+//    	}
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
+        if (stat == XIO_EAGAIN) {
+            xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
+            return (_return_slot(flags));			// no more characters to read. Return an available slot
+        }
+        if (stat == XIO_BUFFER_FULL) {
+//            return (_return_overflow(flags));
+//            return (_return_on_overflow(flags, s, ds[XIO_DEV_USB].buf));
+//            return (_return_on_overflow(flags, s, xio.slot[s].buf));
+            return (_return_on_overflow(flags, s));
+        }
     	_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
 	}
 	return (_return_slot(flags));
-*/
 
+/*
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
@@ -615,5 +652,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 		_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
 	}
 	return (_return_slot(flags));
-
+*/
 }
+
+#pragma GCC reset_options

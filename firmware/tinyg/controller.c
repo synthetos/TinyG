@@ -163,7 +163,6 @@ static void _controller_HSM()
 	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
 	DISPATCH(_shutdown_idler());				// 3. idle in shutdown state
-//	DISPATCH( poll_switches());					// 4. run a switch polling cycle
 	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
 
 	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
@@ -173,7 +172,6 @@ static void _controller_HSM()
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
 	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
-//	DISPATCH(switch_debounce_callback());		// debounce switches
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
@@ -230,9 +228,21 @@ static stat_t _controller_state()
 static stat_t _dispatch_command()
 {
 #ifdef __AVR
+//	devflags_t flags = DEV_IS_BOTH;
+//	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+//	return (STAT_OK);
+
 	devflags_t flags = DEV_IS_BOTH;
-	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+	cs.bufp = readline(&flags, &cs.linelen);
+    if (cs.bufp == (char *)_FDEV_ERR) {
+        cm_soft_alarm(STAT_BUFFER_FULL);
+        return (STAT_BUFFER_FULL);
+    }    
+    if (cs.bufp != (char *)NULL) {
+        _dispatch_kernel();
+    }
 	return (STAT_OK);
+
 #endif
 #ifdef __ARM
 	devflags_t flags = DEV_IS_BOTH;
@@ -244,9 +254,21 @@ static stat_t _dispatch_command()
 static stat_t _dispatch_control()
 {
 #ifdef __AVR
+//	devflags_t flags = DEV_IS_CTRL;
+//	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+//	return (STAT_OK);
+
 	devflags_t flags = DEV_IS_CTRL;
-	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
+	cs.bufp = readline(&flags, &cs.linelen);
+	if (cs.bufp == (char *)_FDEV_ERR) {
+    	cm_soft_alarm(STAT_BUFFER_FULL);
+        return (STAT_BUFFER_FULL);
+	}
+	if (cs.bufp != (char *)NULL) {
+    	_dispatch_kernel();
+	}
 	return (STAT_OK);
+
 #endif
 #ifdef __ARM
 	devflags_t flags = DEV_IS_CTRL;

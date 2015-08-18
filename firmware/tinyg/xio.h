@@ -92,9 +92,9 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
 
-#define RX_PACKET_SLOTS	8					// number of readline() input buffers
-#define RX_PACKET_LEN 200				    // input buffer length
-#define RX_STREAM_BUFFER_LEN 255			// input buffer for streaming serial mode
+#define RX_PACKET_SLOTS	18					// number of readline() input buffers
+#define RX_PACKET_LEN 80				    // input buffer length
+#define RX_STREAM_BUFFER_LEN 200			// input buffer for streaming serial mode
 
 typedef enum {						        // readline() buffer and slot states
     BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)

@@ -45,7 +45,7 @@ using Motate::SysTickTimer;
 
 /* Convenient place to park this handy diagnostic pair
 #pragma GCC optimize ("O0")
-<insert function here>
+// insert function here
 #pragma GCC reset_options
 */
 
