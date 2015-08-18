@@ -91,10 +91,12 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
-
-#define RX_PACKET_SLOTS	18					// number of readline() input buffers
-#define RX_PACKET_LEN 80				    // input buffer length
 #define RX_STREAM_BUFFER_LEN 200			// input buffer for streaming serial mode
+#define RX_PACKET_SLOTS	12					// number of readline() input buffers
+#define RX_PACKET_LEN 80				    // input buffer length
+#define RX_LINEBUF_MAX 80                   // maximum allocated buffer size
+#define RX_LINEBUF_DATA 512                 // line buffer pool for data lines
+#define RX_LINEBUF_CTRL 256                 // line buffer pool for control lines
 
 typedef enum {						        // readline() buffer and slot states
     BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
@@ -198,7 +200,12 @@ typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
-char packet_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for packet slots
+typedef struct line_bufs {
+    char line_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for line slots
+    char data_bufs[RX_LINEBUF_DATA];                // line buffer pool for data lines
+    char ctrl_bufs[RX_LINEBUF_CTRL];                // line buffer pool for control lines
+} line_bufs_t;
+line_bufs_t lines;
 
 typedef struct packetSlot {				// packet buffer slots
     cmBufferState state;				// state of slot

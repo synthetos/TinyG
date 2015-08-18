@@ -114,8 +114,7 @@ void xio_init()
     // set up XIO buffers and pointers
     xio.bufp = xio.in_buf;                          // pointer for streaming readline
     for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {     // pointers for packet readline
-//        xio.slot[i].bufp = xio.slot[i].buf;
-        xio.slot[i].bufp = packet_bufs[i];
+        xio.slot[i].bufp = lines.line_bufs[i];
     }
 
 	xio_init_assertions();
@@ -506,6 +505,16 @@ uint8_t xio_get_packet_slots()
 //**************************
 //*** readline() helpers ***
 //**************************
+
+static char * _get_new_line_buffer()
+{
+    return (NULL);
+}
+
+static void _free_line_buffer()
+{
+    return;
+}
 
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)
