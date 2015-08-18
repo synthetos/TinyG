@@ -113,9 +113,12 @@ void xio_init()
 
     // set up XIO buffers and pointers
     xio.bufp = xio.in_buf;                          // pointer for streaming readline
+
     for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {     // pointers for packet readline
         xio.slot[i].bufp = lines.line_bufs[i];
     }
+    lines.ctrl_pool_start = lines.ctrl_pool;
+    lines.ctrl_pool_end = lines.ctrl_pool_start + sizeof(lines.ctrl_pool);
 
 	xio_init_assertions();
 }
@@ -506,8 +509,16 @@ uint8_t xio_get_packet_slots()
 //*** readline() helpers ***
 //**************************
 
-static char * _get_new_line_buffer()
+static char * _get_new_line_buffer(devflags_t *flags)
 {
+    if (*flags & DEV_IS_CTRL) {
+        if (lines.ctrl_buf_count >= RX_CTRLBUF_MAX_LINES) { // it's maxed out
+            return (NULL);
+        }
+    }    
+    if (*flags & DEV_IS_DATA) {
+        
+    }
     return (NULL);
 }
 
