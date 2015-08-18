@@ -272,10 +272,10 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 	}
 	while (true) {
 		switch (_gets_helper(d,dx)) {
-			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); // empty condition
-			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);// overrun err
-			case (XIO_EOL): return (XIO_OK);			  // got complete line
-			case (XIO_EAGAIN): break;					  // loop for next character
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);       // empty condition
+			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);   // overrun err
+			case (XIO_EOL): return (XIO_OK);                    // got complete line
+			case (XIO_EAGAIN): break;                           // loop for next character
 		}
 	}
 	return (XIO_OK);
