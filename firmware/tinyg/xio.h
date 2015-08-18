@@ -95,16 +95,15 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define RX_CHAR_BUFFER_LEN 200			    // input buffer for streaming serial mode
 #define RX_LINE_SLOTS	12					// number of readline() input buffers
 #define RX_LINE_LEN 80				        // input buffer length
+/*
+#define RX_CTRL_MAX_LENGTH 80               // maximum buffer size for control buffers
+#define RX_CTRL_MAX_LINES 24                // maximum distinct control buffers (lines)
+#define RX_CTRL_POOL 256                    // memory pool allocated for control buffers
 
-#define RX_CTRLBUF_MAX_LENGTH 80            // maximum buffer size for control buffers
-#define RX_CTRLBUF_MAX_LINES 24             // maximum distinct control buffers (lines)
-#define RX_CTRLBUF_POOL 256                 // memory pool allocated for control buffers
-
-#define RX_DATABUF_MAX_LENGTH 80            // maximum buffer size for data buffers
-#define RX_DATABUF_MAX_LINES 24             // maximum distinct data buffers (lines)
-#define RX_DATABUF_POOL 512                 // memory pool allocated for data buffers
-
-
+#define RX_DATA_MAX_LENGTH 80               // maximum buffer size for data buffers
+#define RX_DATA_MAX_LINES 24                // maximum distinct data buffers (lines)
+#define RX_DATA_POOL 512                    // memory pool allocated for data buffers
+*/
 typedef enum {						        // readline() buffer and slot states
     BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
     BUFFER_IS_FILLING,						// buffer is partially loaded
@@ -207,25 +206,57 @@ typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
-typedef struct line_buf {                       // control structure for a single line buffer
-    uint8_t len;                                // buffer length in bytes
-    char *bufp;                                 // line buffer pointer
-} line_buf_t;
 
-typedef struct line_bufs {                      // control structure for all data and ctrl line buffers
-    uint8_t ctrl_buf_count;                     // how many control buffers you think you have
-    char *ctrl_pool_start;                      // starting address of control buffer pool
-    char *ctrl_pool_end;                        // ending address of control buffer pool
-    line_buf_t ctrl[RX_CTRLBUF_MAX_LINES];      // structs for control buffers
 
-    uint8_t data_buf_count;                     // how many data buffers you think you have
-    line_buf_t data[RX_DATABUF_MAX_LINES];      // structs for data buffers
+#define RX_CTRL_LEN_MAX 80              // maximum buffer size for control buffers
+#define RX_CTRL_BUFS_MAX 24             // maximum distinct control buffers (lines)
+#define RX_CTRL_POOL 256                // memory pool allocated for control buffers
 
-    char ctrl_pool[RX_CTRLBUF_POOL];            // line buffer pool for control lines
-    char data_pool[RX_DATABUF_POOL];            // line buffer pool for data lines
-    char line_bufs[RX_LINE_SLOTS][RX_LINE_LEN]; // buffers allocated for line slots
+#define RX_DATA_LEN 80                  // maximum buffer size for data buffers
+#define RX_DATA_BUFS_MAX 24             // maximum distinct data buffers (lines)
+#define RX_DATA_POOL 512                // memory pool allocated for data buffers
+
+typedef struct line_buf {               // control structure for a single line buffer
+    cmBufferState state;                // buffer state: see cmBufferState
+    uint8_t len;                        // buffer length in bytes
+    char *ptr;                            // pointer to buffer (finally!)
+} buf_buf_t;
+
+/* and now for some ASCII art
+ *
+ */
+/*
+typedef struct line_mgr {               // structure to manage a buffer pool
+    char *base_ptr;                     // pointer to base of finished buffers
+    char *free_ptr;                     // pointer to free region from which to grab next buffer
+    char *write_ptr;                    // pointer to current buffer being written
+    uint8_t buf_count;                  // how many control buffers you think you have
+    char *pool_base;                    // starting address of control buffer pool
+    char *pool_top;                     // ending address of control buffer pool
+} buf_mgr_t;
+*/
+typedef struct line_mgr {               // structure to manage a buffer pool
+    uint8_t full;                       // index of start of full buffers
+    uint8_t free;                       // index of free region from which to grab next buffer
+    uint8_t filling;                    // index of buffer currently filling
+    uint8_t count;                      // count of full, filling and processing buffers
+    uint8_t count_max;                  // maximum allowable full, filling and processing buffers
+    char *pool_base;                    // starting address of control buffer pool
+    char *pool_top;                     // ending address of control buffer pool
+} buf_mgr_t;
+
+typedef struct line_bufs {              // control structure for all data and ctrl line buffers
+    buf_mgr_t c;                       // manager for control buffers
+    buf_mgr_t d;                       // manager for data buffers
+
+    buf_buf_t cbuf[RX_CTRL_BUFS_MAX];  // buffer structs for control buffers
+    buf_buf_t dbuf[RX_DATA_BUFS_MAX];  // buffer structs for data buffers
+
+    char c_pool[RX_CTRL_POOL];          // line buffer pool for control lines
+    char d_pool[RX_DATA_POOL];          // line buffer pool for data lines
+    char bufs[RX_LINE_SLOTS][RX_LINE_LEN];  // buffers allocated for line slots
 } line_bufs_t;
-line_bufs_t lines;
+line_bufs_t bufs;
 
 typedef struct packetSlot {				// packet buffer slots
     cmBufferState state;				// state of slot

@@ -86,6 +86,7 @@
 
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
+static void _init_readline(void);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -112,13 +113,7 @@ void xio_init()
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 
     // set up XIO buffers and pointers
-    xio.bufp = xio.in_buf;                          // pointer for streaming readline
-
-    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {     // pointers for packet readline
-        xio.slot[i].bufp = lines.line_bufs[i];
-    }
-    lines.ctrl_pool_start = lines.ctrl_pool;
-    lines.ctrl_pool_end = lines.ctrl_pool_start + sizeof(lines.ctrl_pool);
+    _init_readline();
 
 	xio_init_assertions();
 }
@@ -470,12 +465,12 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
  *
  *	ARGS:
  *
- *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA, 
+ *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA,
  *                                                 or DEV_IS_NONE (0) if no packet is returned.
  *
  *   size -  Does nothing. Returns zero. Here for compatibility with ARM readline()
  *
- *	 char_t * Returns a pointer to the buffer containing the packet, 
+ *	 char_t * Returns a pointer to the buffer containing the packet,
  *            or NULL (*0) if no text,
  *            of _FDEV_ERR (-1) if a buffer overflow occurred
  *
@@ -509,15 +504,48 @@ uint8_t xio_get_packet_slots()
 //*** readline() helpers ***
 //**************************
 
-static char * _get_new_line_buffer(devflags_t *flags)
+static void _init_readline()
 {
+    xio.bufp = xio.in_buf;                          // pointer for streaming readline
+
+    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {       // pointers for old packet readline
+        xio.slot[i].bufp = bufs.bufs[i];
+    }
+
+    buf_mgr_t *b = &bufs.c;
+    b->full = 0;
+    b->free = 0;
+    b->filling = 0;
+    b->count = 0;
+    b->count_max = RX_CTRL_BUFS_MAX;
+    b->pool_base = bufs.c_pool;                     // base address of control buffer pool
+    b->pool_top = b->pool_base + sizeof(bufs.c_pool); // address of top of control buffer pool
+}
+
+/*
+ * _get_new_line_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+ */
+
+static char * _get_new_line_buffer(devflags_t *flags, uint16_t size)
+{
+    buf_mgr_t *b;
     if (*flags & DEV_IS_CTRL) {
-        if (lines.ctrl_buf_count >= RX_CTRLBUF_MAX_LINES) { // it's maxed out
+        b = &bufs.c;                                 // initialize to the control pointer
+        if (b->count >= b->count_max) {             // it's maxed out on count
             return (NULL);
         }
-    }    
+        if ((b->pool_top - bufs.cbuf[b->free].ptr) > size) {  // is there space at the top?
+            b->filling = b->free;
+            b->free++;
+        } else if ((bufs.cbuf[b->filling].ptr - b->pool_base) > size) { // is there space at the bottom?
+            b->filling = 0;
+            b->free = 1;
+        } else {
+            return (NULL);                          // not enough free buffer space
+        }
+    }
     if (*flags & DEV_IS_DATA) {
-        
+        b = &bufs.d;                                // initialize to the control pointer
     }
     return (NULL);
 }
