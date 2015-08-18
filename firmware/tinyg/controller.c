@@ -228,17 +228,12 @@ static stat_t _controller_state()
 static stat_t _dispatch_command()
 {
 #ifdef __AVR
-//	devflags_t flags = DEV_IS_BOTH;
-//	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
-//	return (STAT_OK);
-
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
-    if (cs.bufp == (char *)_FDEV_ERR) {
-        cm_soft_alarm(STAT_BUFFER_FULL);
-        return (STAT_BUFFER_FULL);
+    if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
+        return(cm_soft_alarm(STAT_BUFFER_FULL));
     }    
-    if (cs.bufp != (char *)NULL) {
+    if (cs.bufp != (char *)NULL) {          // process the command
         _dispatch_kernel();
     }
 	return (STAT_OK);
@@ -254,17 +249,12 @@ static stat_t _dispatch_command()
 static stat_t _dispatch_control()
 {
 #ifdef __AVR
-//	devflags_t flags = DEV_IS_CTRL;
-//	if ((cs.bufp = readline(&flags, &cs.linelen)) != NULL) _dispatch_kernel();
-//	return (STAT_OK);
-
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
-	if (cs.bufp == (char *)_FDEV_ERR) {
-    	cm_soft_alarm(STAT_BUFFER_FULL);
-        return (STAT_BUFFER_FULL);
+	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
+    	return(cm_soft_alarm(STAT_BUFFER_FULL));
 	}
-	if (cs.bufp != (char *)NULL) {
+	if (cs.bufp != (char *)NULL) {          // process the command
     	_dispatch_kernel();
 	}
 	return (STAT_OK);

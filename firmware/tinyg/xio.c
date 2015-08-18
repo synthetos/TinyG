@@ -574,16 +574,14 @@ static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, th
 
 static char_t *_return_on_overflow(devflags_t *flags, int8_t slot)  // buffer overflow return
 {
-    rpt_exception(STAT_BUFFER_FULL);
-    printf(xio.slot[slot].buf);
+    rpt_exception(STAT_BUFFER_FULL); // when porting this to 0.98 include a truncated version of the line in the exception report
+//    printf(xio.slot[slot].buf);
     xio.slot[slot].state = BUFFER_IS_FREE;
     *flags = DEV_IS_NONE;                                       // got no data
     return ((char_t *)_FDEV_ERR);                               // buffer overflow occurred
 }
 
-#pragma GCC optimize ("O0")
-// insert function here
-//#pragma GCC reset_options
+//#pragma GCC optimize ("O0")
 
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 {
@@ -603,8 +601,6 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
     	}
     	if (stat == (stat_t)XIO_BUFFER_FULL) {
-//            return (_return_on_overflow(flags, s, ds[XIO_DEV_USB].buf));
-//            return (_return_on_overflow(flags, s, xio.slot[s].buf));
             return (_return_on_overflow(flags, s));
         }
     	_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
@@ -613,46 +609,17 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-//    	if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
-//        	xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
-//        	return (_return_slot(flags));			// no more characters to read. Return an available slot
-//    	}
         stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
         if (stat == XIO_EAGAIN) {
             xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
             return (_return_slot(flags));			// no more characters to read. Return an available slot
         }
         if (stat == XIO_BUFFER_FULL) {
-//            return (_return_overflow(flags));
-//            return (_return_on_overflow(flags, s, ds[XIO_DEV_USB].buf));
-//            return (_return_on_overflow(flags, s, xio.slot[s].buf));
             return (_return_on_overflow(flags, s));
         }
     	_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
 	}
 	return (_return_slot(flags));
-
-/*
-	// Look for a partially filled slot if one exists
-	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
-	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
-			return (_return_slot(flags));			// no more characters to read. Return an available slot
-		}
-		_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
-	}
-
-	// Now fill free slots until you run out of slots or characters
-	s=0;
-	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-		if (xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN) == STAT_EAGAIN) {
-			xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
-			return (_return_slot(flags));			// no more characters to read. Return an available slot
-		}
-		_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
-	}
-	return (_return_slot(flags));
-*/
 }
 
-#pragma GCC reset_options
+//#pragma GCC reset_options
