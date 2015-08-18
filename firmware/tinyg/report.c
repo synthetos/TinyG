@@ -213,11 +213,9 @@ void sr_init_status_report(bool use_defaults)
  *    - All failures leave original SR list untouched
  *    - An attempt to add an element that exceeds list max fails with STAT_INPUT_EXCEEDS_MAX_LENGTH
  *    - A token that is not recognized fails with STAT_UNRECOGNIZED_NAME
- *    - A value other than 't', or 'f' fails with STAT_UNSUPPORTED_TYPE
+ *    - A value other than 't', or 'f' fails with STAT_INPUT_VALUE_RANGE_ERROR
  *    - Malformed JSON fails as usual before this point
  */
-
-//#pragma GCC optimize ("O0")
 
 static void _persist_status_report_list(nvObj_t *nv)
 {
@@ -272,7 +270,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
             break; 
         }
 		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
-    		return (STAT_UNSUPPORTED_TYPE);
+    		return (STAT_INPUT_VALUE_RANGE_ERROR);
 		}
 	    if ((item = nv_get_index(nv->group,nv->token)) == NO_MATCH) {
     	    return(STAT_UNRECOGNIZED_NAME);         // trap non-existent tags
@@ -316,8 +314,6 @@ stat_t sr_set_status_report(nvObj_t *nv)
     _persist_status_report_list(nv_first);
     return (STAT_OK);
 }
-
-//#pragma GCC reset_options
 
 /*
  * sr_request_status_report()	- request a status report to run after minimum interval
