@@ -113,7 +113,7 @@ void xio_init()
 
     // set up XIO buffers and pointers
     xio.bufp = xio.in_buf;                          // pointer for streaming readline
-    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {     // pointers for packet readline
+    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {     // pointers for packet readline
         xio.slot[i].bufp = lines.line_bufs[i];
     }
 
@@ -401,7 +401,7 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	}
 	// Read the input device and process the line
 	stat_t status;
-	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_STREAM_BUFFER_LEN)) == XIO_EAGAIN) {
+	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_CHAR_BUFFER_LEN)) == XIO_EAGAIN) {
 		return(_exit_null(flags, size));
 	}
 	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
@@ -494,7 +494,7 @@ uint8_t xio_get_packet_slots()
 {
     uint8_t free = 0;
 
-    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
+    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {
         if (xio.slot[i].state == BUFFER_IS_FREE) {
             free++;
         }
@@ -519,7 +519,7 @@ static void _free_line_buffer()
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)
 {
-	while (s < RX_PACKET_SLOTS) {
+	while (s < RX_LINE_SLOTS) {
 		if (xio.slot[s].state == state) {
             return (s);
         }
@@ -534,7 +534,7 @@ static int8_t _get_lowest_seqnum_slot(cmBufferState state)
 	int8_t slot = -1;
 	uint32_t seqnum = MAX_ULONG;
 
-	for (uint8_t s=0; s < RX_PACKET_SLOTS; s++) {
+	for (uint8_t s=0; s < RX_LINE_SLOTS; s++) {
 		if ((xio.slot[s].state == state) && (xio.slot[s].seqnum < seqnum)) {
 			seqnum = xio.slot[s].seqnum;
 			slot = s;
@@ -612,7 +612,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_LINE_LEN);
     	if (stat == (stat_t)XIO_EAGAIN) {
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
     	}
@@ -625,7 +625,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_LINE_LEN);
         if (stat == XIO_EAGAIN) {
             xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
             return (_return_slot(flags));			// no more characters to read. Return an available slot

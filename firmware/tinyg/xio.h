@@ -82,21 +82,27 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 };
 // If your change these ^, check these v
 
-#define XIO_DEV_USART_COUNT 	2 				// # of USART devices
-#define XIO_DEV_USART_OFFSET	0				// offset for computing indices
+#define XIO_DEV_USART_COUNT 	2           // # of USART devices
+#define XIO_DEV_USART_OFFSET	0           // offset for computing indices
 
-#define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
+#define XIO_DEV_SPI_COUNT 		2           // # of SPI devices
 #define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
-#define XIO_DEV_FILE_COUNT		1				// # of FILE devices
+#define XIO_DEV_FILE_COUNT		1           // # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
-#define RX_STREAM_BUFFER_LEN 200			// input buffer for streaming serial mode
-#define RX_PACKET_SLOTS	12					// number of readline() input buffers
-#define RX_PACKET_LEN 80				    // input buffer length
-#define RX_LINEBUF_MAX 80                   // maximum allocated buffer size
-#define RX_LINEBUF_DATA 512                 // line buffer pool for data lines
-#define RX_LINEBUF_CTRL 256                 // line buffer pool for control lines
+
+#define RX_CHAR_BUFFER_LEN 200			    // input buffer for streaming serial mode
+#define RX_LINE_SLOTS	12					// number of readline() input buffers
+#define RX_LINE_LEN 80				        // input buffer length
+
+#define RX_DATABUF_MAX_LENGTH 80            // maximum buffer size for data buffers
+#define RX_DATABUF_MAX_LINES 24             // maximum distinct data buffers (lines)
+#define RX_DATABUF_POOL 512                 // memory pool allocated for data buffers
+
+#define RX_CTRLBUF_MAX_LENGTH 80            // maximum buffer size for control buffers
+#define RX_CTRLBUF_MAX_LINES 24             // maximum distinct control buffers (lines)
+#define RX_CTRLBUF_POOL 256                 // memory pool allocated for control buffers
 
 typedef enum {						        // readline() buffer and slot states
     BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
@@ -201,9 +207,9 @@ typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
 typedef struct line_bufs {
-    char line_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for line slots
-    char data_bufs[RX_LINEBUF_DATA];                // line buffer pool for data lines
-    char ctrl_bufs[RX_LINEBUF_CTRL];                // line buffer pool for control lines
+    char data_bufs[RX_DATABUF_POOL];            // line buffer pool for data lines
+    char ctrl_bufs[RX_CTRLBUF_POOL];            // line buffer pool for control lines
+    char line_bufs[RX_LINE_SLOTS][RX_LINE_LEN]; // buffers allocated for line slots
 } line_bufs_t;
 line_bufs_t lines;
 
@@ -235,11 +241,11 @@ typedef struct xioSingleton {
     uint8_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
     char *bufp;                         // pointer to input buffer
-    char in_buf[RX_STREAM_BUFFER_LEN];
+    char in_buf[RX_CHAR_BUFFER_LEN];
 
     // packetized reader
     uint32_t next_slot_seqnum;
-    slot_t slot[RX_PACKET_SLOTS];
+    slot_t slot[RX_LINE_SLOTS];
 
     uint16_t magic_end;
 } xioSingleton_t;
