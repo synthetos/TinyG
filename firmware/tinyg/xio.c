@@ -111,6 +111,12 @@ void xio_init()
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 
+    // set up XIO buffers and pointers
+    xio.bufp = xio.in_buf;                          // pointer for streaming readline
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {     // pointers for packet readline
+        xio.slot[i].bufp = xio.slot[i].buf;
+    }
+
 	xio_init_assertions();
 }
 
@@ -372,7 +378,8 @@ static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
 {
 	*flags = flag;
 	*size = xio.buf_size;
-	return (xio.in_buf);
+//	return (xio.in_buf);
+	return (xio.bufp);
 }
 
 static char_t *_exit_null(devflags_t *flags, uint16_t *size)
@@ -395,10 +402,12 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	}
 	// Read the input device and process the line
 	stat_t status;
-	if ((status = xio_gets(xio.primary_src, xio.in_buf, sizeof(xio.in_buf))) == XIO_EAGAIN) {
+//	if ((status = xio_gets(xio.primary_src, xio.in_buf, sizeof(xio.in_buf))) == XIO_EAGAIN) {
+	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_STREAM_BUFFER_LEN)) == XIO_EAGAIN) {
 		return(_exit_null(flags, size));
 	}
-	xio.buf_size = strlen(xio.in_buf)+1;				// set size. Add 1 to account for the terminating CR or LF
+//	xio.buf_size = strlen(xio.in_buf)+1;				// set size. Add 1 to account for the terminating CR or LF
+	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
 
 	//*** got a full buffer ***
 	if (status == STAT_EOF) {							// EOF can come from file devices only
@@ -410,10 +419,12 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 		}
 		controller_reset_source();						// reset to active source to default source
 	}
-	if (xio.in_buf[0] == NUL) {							// look for lines with no data (nul)
+//	if (xio.in_buf[0] == NUL) {							// look for lines with no data (nul)
+	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
-	if (_parse_control(xio.in_buf)) {	                // true indicates control line
+//	if (_parse_control(xio.in_buf)) {	                // true indicates control line
+	if (_parse_control(xio.bufp)) {                     // true indicates control line
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
 	if (*flags & DEV_IS_DATA) {							// got a data line
@@ -530,7 +541,7 @@ static int8_t _get_lowest_seqnum_slot(cmBufferState state)
 // read slot contents. discard nuls, mark as CTRL or DATA, set seqnum
 static void _mark_slot(int8_t s)
 {
-    char *p = xio.slot[s].buf;                          // buffer pointer
+    char *p = xio.slot[s].bufp;                          // buffer pointer
 
     // discard null buffers
 	if (*p == NUL) {
@@ -558,14 +569,14 @@ static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, th
 	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_CTRL)) != -1) {
 		    xio.slot[s].state = BUFFER_IS_PROCESSING;
 		    *flags = DEV_IS_CTRL;
-		    return (xio.slot[s].buf);                           // return CTRL slot
+		    return (xio.slot[s].bufp);                           // return CTRL slot
 	    }
     }
     if (*flags & DEV_IS_DATA) {                                 // scan for DATA slots
 	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_DATA)) != -1) {
 		    xio.slot[s].state = BUFFER_IS_PROCESSING;
 		    *flags = DEV_IS_DATA;
-		    return (xio.slot[s].buf);                           // return DATA slot
+		    return (xio.slot[s].bufp);                           // return DATA slot
 	    }
     }
 	*flags = DEV_IS_NONE;										// got no data
@@ -596,7 +607,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
     	if (stat == (stat_t)XIO_EAGAIN) {
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
     	}
@@ -609,7 +620,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].buf, RX_PACKET_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
         if (stat == XIO_EAGAIN) {
             xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
             return (_return_slot(flags));			// no more characters to read. Return an available slot

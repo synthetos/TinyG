@@ -28,10 +28,6 @@
 #ifndef _JSON_PARSER_H_ONCE
 #define _JSON_PARSER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Configs, Definitions and Structures ****/
 
 /* JSON array definitions / revisions */
@@ -109,9 +105,5 @@ stat_t json_set_jv(nvObj_t *nv);
 	#define js_print_fs tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: JSON_PARSER_H_ONCE

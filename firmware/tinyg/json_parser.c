@@ -35,10 +35,6 @@
 #include "util.h"
 #include "xio.h"					// for char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocation ****/
 
 jsSingleton_t js;
@@ -601,7 +597,3 @@ void js_print_js(nvObj_t *nv) { text_print_ui8(nv, fmt_js);}
 void js_print_fs(nvObj_t *nv) { text_print_ui8(nv, fmt_fs);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus

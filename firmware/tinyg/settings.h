@@ -83,7 +83,8 @@
 #define XIO_EXPAND_CR				false
 #define XIO_ENABLE_ECHO				false
 #define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
-#define XIO_RX_MODE	                RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
+//#define XIO_RX_MODE	                RX_MODE_PACKET          // one of: RX_MODE_STREAM, RX_MODE_PACKET
+#define XIO_RX_MODE	                RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
 
 //**** DEBUG SETTINGS ****
 

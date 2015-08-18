@@ -198,9 +198,10 @@ typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
-typedef struct windowSlot {				// windowing buffer slots
+typedef struct packetSlot {				// packet buffer slots
     cmBufferState state;				// state of slot
     uint32_t seqnum;					// sequence number of slot
+    char *bufp;                         // pointer to buffer used by slot
     char buf[RX_PACKET_LEN];	        // allocated buffer for slot
 } slot_t;
 
@@ -224,6 +225,7 @@ typedef struct xioSingleton {
     // streaming reader
     uint8_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
+    char *bufp;                         // pointer to input buffer
     char in_buf[RX_STREAM_BUFFER_LEN];
 
     // packetized reader
