@@ -239,9 +239,10 @@ typedef struct bufHdr {                 // buffer header block (NB: It's not rea
 } buf_blk_t;
 
 typedef struct {                        // structure to manage a buffer pool
-    buf_blk_t *used;                    // start of used buffers: filling, queued, processing
-    buf_blk_t *free;                    // start of free region from which to grab next buffer
-    uint16_t max_size;                  // settable value for max buffer size
+    buf_blk_t *used_base;               // start of used buffers: filling, queued, processing
+    buf_blk_t *used_top;                // end of used buffers: filling, queued, processing
+    buf_blk_t *free_base;               // start of free region from which to grab next buffer
+    uint16_t requested_size;            // settable value for requested buffer size
     uint8_t buffers_available;          // estimated count of remaining buffers
     uint8_t pool;                       // self reference for whether this is a CTRL or DATA manager
     char *pool_base;                    // starting address of control buffer pool

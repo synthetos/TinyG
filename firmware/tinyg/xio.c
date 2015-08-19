@@ -526,15 +526,16 @@ static void _init_readline()
     bm[_CTRL].pool_base = ctrl_pool;                    // base address of control buffer pool
     bm[_CTRL].pool_top = ctrl_pool + sizeof(ctrl_pool); // address of top of control buffer pool
 
-    bm[_CTRL].pool = BUFFER_IS_DATA;
+    bm[_DATA].pool = BUFFER_IS_DATA;
     bm[_DATA].pool_base = data_pool;
     bm[_DATA].pool_top = data_pool + sizeof(data_pool);
 
     for (uint8_t i=_CTRL; i<_DATA+1; i++) {             // initialize buffer managers
-        bm[i].free = bm[i].buf;                         // initialize to first header block
-        bm[i].used = bm[i].buf;                         // ditto
+        bm[i].used_base = bm[i].buf;                    // initialize to first header block
+        bm[i].used_top = bm[i].buf;                     // same
+        bm[i].free_base = bm[i].buf;                    // same
         bm[i].buffers_available = RX_BUFS_MAX;          // estimated buffers available
-        bm[i].max_size = RX_BUF_SIZE_MAX;               // this parameter may be overwritten later
+        bm[i].requested_size = RX_BUF_SIZE_MAX;         // this parameter may be overwritten later
         for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
             bm[i].buf[j].state = BUFFER_IS_FREE;
             bm[i].buf[j].size = 0;
@@ -546,41 +547,26 @@ static void _init_readline()
     _test_new_bufs();   //+++++ some unit testing wedged in here
 }
 
-/* The general sequence of events is:
- *  1. call readline() the first time
- *  2. read one char from the RX device - parse into CTRL or DATA
- *  3. get a free buffer from CTRL or DATA pool and mark as FILLING
- *  4. exit when the RX channel has no more chars, leaving a partially filled buffer
+/*
+ * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
+ *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
+ *  - There can only be zero or one BUFFER_IS_PROCESSING buffers, total
+ *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
+ *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
+ *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
+ *    - The FREE list always grows from the base to the top (with wrap) until it cannot grow
+ *    - Posts always occur by flipping a buffer from free to used
+ *    - USED buffers are always consumed in order from base to top (with wrap)
  *
- *  5. call readline() again
- *  6. get FILLING buffer and continue to fill.
- *     6a. exit readline with NULL if no more characters to read. Will re-enter at 5.
- *  7. post the line to the appropriate pool with a PROCESSING state
- *  8. pass back the char * as the return from readline()
- *
- *  9. process the contents of the PROCESSING buffer
- * 10. call readline() again
- * 11. free PROCESSING buffers (with void args)
- *
- * Readline() processing can be restated as:
+ * Readline() processing can be stated as:
  *  1. call readline()
  *  2. free PROCESSING buffer (either frees or no-op)
  *  3. get FILLING buffer and continue to fill if one was returned
  *  4. if no FILLING buffer get FREE buffer (which becomes a new FILLING buffer)
  *  5. read from RX into FILLING buffer
- *  6. if buffer is not complete, exit
- *  7. if buffer is complete: label as PROCESSING and return as char *
- *
- * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
- *  - All functions (including _get_buffer) need to specify DEV_IS_CTRL or DEV_IS_DATA in args
- *    - So you need to know if it's control or data BEFORE you call _get_buffer()
- *  - There can only be zero or one BUFFER_IS_PROCESSING
- *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
- *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
- *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
- *    - The FREE list always grows from the bottom to the top (with wrap) until it cannot grow
- *    - Posts always occur by flipping a buffer from free to used
- *    - USED buffers are always consumed in order from bottom to top (with wrap)
+ *    5a. if buffer is not complete, exit
+ *    5b. if buffer is complete: post buffer
+ *  6. get next buffer to process and return as char *
  */
 
 #pragma GCC optimize ("O0")
@@ -588,10 +574,47 @@ static void _init_readline()
 // ********* TESTING NEW LINEBUF CODE ******* REMOVE LATER
 static void _test_new_bufs()
 {
-    char *c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].max_size);
-    sprintf(c, "write some text in here\n");
-    _post_buffer(c);
-    _free_processing_buffer();
+    char *c;
+
+    // 1.
+    _free_processing_buffer();                  // 2.
+    if ((c = _get_filling_buffer()) == NULL) {  // 3.
+        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
+            printf("no free buffer available\n");
+            return;
+        }
+    }
+//    sprintf(c, "write some text in here\n");    // 5.
+    sprintf(c, "123456789\n");                  // 5.
+    _post_buffer(c);                            // 5b.
+//    _get_next_processing_buffer();            // 6.
+
+
+    // 1.
+    _free_processing_buffer();                  // 2.
+    if ((c = _get_filling_buffer()) == NULL) {  // 3.
+        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
+            printf("no free buffer available\n");
+            return;
+        }
+    }
+    sprintf(c, "write some text in here\n");    // 5.
+    _post_buffer(c);                            // 5b.
+    //    _get_next_processing_buffer();            // 6.
+
+
+    // 1.
+    _free_processing_buffer();                  // 2.
+    if ((c = _get_filling_buffer()) == NULL) {  // 3.
+        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
+            printf("no free buffer available\n");
+            return;
+        }
+    }
+    sprintf(c, "write some text in here\n");    // 5.
+    _post_buffer(c);                            // 5b.
+    //    _get_next_processing_buffer();            // 6.
+
 }
 
 /*
@@ -614,9 +637,9 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
     } else if (flags & DEV_IS_DATA) {
         b = &bm[_DATA];
     } else {
-        return (NULL);                          // no flag set. Return
+        return (NULL);                          // no flag set. THis exception inicates an erro in the flag setting
     }
-    buf_blk_t *f = b->free;                     // pointer to first free buffer (header block)
+    buf_blk_t *f = b->free_base;                // pointer to first free buffer (header block)
 
     if (f->state != BUFFER_IS_FREE) {           // buffer headers are maxed out
         return (NULL);
@@ -624,19 +647,22 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
 
     if ((b->pool_top - f->bufp) > size) {       // is there room at the top?
         f->bufp = f->bufp;                      // no-op - optimizes out. Here for illustration
-    } else if ((b->used->bufp - b->pool_base) > size) { // is there room at the bottom?
-        f->bufp = b->pool_base;
+        f->size = b->pool_top - f->bufp;        // claim all available space
+
+    } else if ((b->used_base->bufp - b->pool_base) > size) { // is there room at the bottom?
+        f->bufp = b->pool_base;                 // reset the pointer to the base
+        f->size = b->used_base->bufp - b->pool_base; // claim all available space
+
     } else {
         return (NULL);                          // failed to get a buffer
     }
-    f->size = size;
     f->state = BUFFER_IS_FILLING;
-    b->used = f;
+    b->used_top = f;
 
-    b->free = f->nx;                            // NB: this might not be true if nx is not free
-    if (f->nx->state == BUFFER_IS_FREE) {
-        f->nx->bufp = f->bufp + size;           // advance the pointer if the block is free
-    }
+    // set the FREE list to the next buffer.
+    // But this might be erroneous if the next buffer is not free. sort that out later
+    // Also, makes no sense to set bufp here as that will change during post.
+    b->free_base = f->nx;
     return (f->bufp);
 }
 
@@ -646,10 +672,10 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
 
 static char *_get_filling_buffer()
 {
-    if (bm[_CTRL].used->state == BUFFER_IS_FILLING) {
-        return (bm[_CTRL].used->bufp);
-        } else if (bm[_DATA].used->state == BUFFER_IS_FILLING) {
-        return (bm[_DATA].used->bufp);
+    if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
+        return (bm[_CTRL].used_base->bufp);
+    } else if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
+        return (bm[_DATA].used_base->bufp);
     }
     return (NULL);
 }
@@ -666,32 +692,37 @@ static void _post_buffer(char *bufp)
     buf_mgr_t *b;
     if ((bufp >= bm[_CTRL].pool_base) && (bufp < bm[_CTRL].pool_top)) {
         b = &bm[_CTRL];
-    }
+    } else
     if ((bufp >= bm[_DATA].pool_base) && (bufp < bm[_DATA].pool_top)) {
         b = &bm[_DATA];
     } else {
         return;                     // not supposed to happen
     }
-    b->buf->state = b->pool;        // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
-    b->free->size = strlen(bufp);
+//    b->buf->state = b->pool;        // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
+    b->used_top->state = b->pool;           // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
+    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for termianting NUL
+
+    if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
+        b->free_base->bufp = b->used_top->bufp + b->used_top->size;
+    }
 }
 
 /*
- * _free_processing_buffer() - a the processing buffer or exit silently
+ * _free_processing_buffer() - return the processing buffer to the free list or exit silently
  */
 
 static void _free_processing_buffer()
 {
     buf_mgr_t *b;
-    if (bm[_CTRL].used->state == BUFFER_IS_PROCESSING) {
+    if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
         b = &bm[_CTRL];
-    } else if (bm[_DATA].used->state == BUFFER_IS_PROCESSING) {
+    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
         b = &bm[_DATA];
     } else {
-        return;                     // not supposed to happen
+        return;     // this is fine. It just didn't find anything
     }
-    b->used->state = BUFFER_IS_FREE;
-    b->used = b->used->nx;
+    b->used_base->state = BUFFER_IS_FREE;
+    b->used_base = b->used_base->nx;
 }
 
 #pragma GCC reset_options
