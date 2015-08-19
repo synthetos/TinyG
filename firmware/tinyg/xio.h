@@ -104,13 +104,21 @@ typedef uint16_t devflags_t;
 #define DEV_CAN_READ		(0x0010)
 #define DEV_CAN_WRITE		(0x0020)
 
-// channel state
+// channel type
 #define DEV_IS_NONE			(0x0000)    // None of the following
 #define DEV_IS_CTRL			(0x0001)    // device is set as a control channel
 #define DEV_IS_DATA			(0x0002)    // device is set as a data channel
 #define DEV_IS_PRIMARY		(0x0004)    // device is the primary control channel
 #define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
-
+/*
+typedef enum {
+    DEV_IS_NONE	= (0x0000),                 // None of the following
+    DEV_IS_CTRL	= (0x0001),                 // device is set as a control channel
+    DEV_IS_DATA	= (0x0002),                 // device is set as a data channel
+    DEV_IS_BOTH	= (0x0003),                 // (DEV_IS_CTRL | DEV_IS_DATA)
+    DEV_IS_PRIMARY = (0x0004)               // device is the primary control channel
+} channelType;
+*/
 // device connection state
 #define DEV_IS_DISCONNECTED	(0x0010)    // device just disconnected (transient state)
 #define DEV_IS_CONNECTED	(0x0020)    // device is connected (e.g. USB)
@@ -227,13 +235,15 @@ typedef struct bufHdr {                 // buffer header block (NB: It's not rea
     struct bufHdr *nx;                  // pointer to next buffer control block
     cmBufferState state;                // buffer state: see cmBufferState
     uint16_t size;                      // buffer size in bytes
-    char *ptr;                          // pointer to char buffer start (finally!)
+    char *bufp;                         // pointer to char buffer start (finally!)
 } buf_blk_t;
 
 typedef struct {                        // structure to manage a buffer pool
     buf_blk_t *used;                    // start of used buffers: filling, queued, processing
     buf_blk_t *free;                    // start of free region from which to grab next buffer
     uint16_t max_size;                  // settable value for max buffer size
+    uint8_t buffers_available;          // estimated count of remaining buffers
+    uint8_t pool;                       // self reference for whether this is a CTRL or DATA manager
     char *pool_base;                    // starting address of control buffer pool
     char *pool_top;                     // ending address of control buffer pool
     buf_blk_t buf[RX_BUFS_MAX];         // buffer structs for control buffers
