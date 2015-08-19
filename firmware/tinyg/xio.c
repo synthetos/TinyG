@@ -564,11 +564,8 @@ static void _init_readline()
 // ********* TESTING NEW LINEBUF CODE ******* REMOVE LATER
 static void _test_new_bufs()
 {
-//    buf_mgr_t *b = &bm[_CTRL];
-
     char *c = _get_buffer(DEV_IS_CTRL, bm[_CTRL].max_size);
     sprintf(c, "write some text in here\n");
-//    b->used->state = BUFFER_IS_PROCESSING;
     _post_buffer(DEV_IS_CTRL, BUFFER_IS_PROCESSING);
     _free_buffer(c);
 }
@@ -632,6 +629,8 @@ static void _post_buffer(devflags_t flags, cmBufferState state)
 {
     buf_mgr_t *b = _set_b(flags);       // pointer to control or data buffer manager
     buf_blk_t *f = b->free;             // pointer to first free buffer (header block)
+
+    
 }
 
 /*
@@ -652,18 +651,6 @@ static void _free_buffer(char *buf)
     b->used->state = BUFFER_IS_FREE;
     b->used = b->used->nx;
 }
-/*
-    buf_mgr_t *b;
-    for (uint8_t i=_CTRL; i<_DATA+1; i++) {
-        b = &bm[i];
-        if (b->used->state == state) {
-            b->used->state = BUFFER_IS_FREE;
-            b->used = b->used->nx;
-            return;
-        }
-    }
-}
-*/
 
 #pragma GCC reset_options
 
