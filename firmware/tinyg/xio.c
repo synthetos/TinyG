@@ -522,20 +522,28 @@ static void _init_readline()
     b->pool_top = b->pool_base + sizeof(bufs.c_pool); // address of top of control buffer pool
 }
 
-/*
- * _get_new_line_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+/* The operations are:
+ *  - get a free buffer (filling)
+ *  - queue a filled buffer for use (full)
+ *  - return the next buffer for processing (processing)
+ *  - return a processed buffer as free (free)
  */
 
-static char * _get_new_line_buffer(devflags_t *flags, uint16_t size)
+/*
+ * _get_free_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+ */
+
+static char * _get_free_buffer(devflags_t *flags, uint16_t size)
 {
     buf_mgr_t *b;
     if (*flags & DEV_IS_CTRL) {
-        b = &bufs.c;                                 // initialize to the control pointer
+        b = &bufs.c;                                // initialize to the control pointer
         if (b->count >= b->count_max) {             // it's maxed out on count
             return (NULL);
         }
-        if ((b->pool_top - bufs.cbuf[b->free].ptr) > size) {  // is there space at the top?
-            b->filling = b->free;
+        if ((b->pool_top - bufs.cbuf[b->free].ptr) > size) {  // is there room at the top?
+            b->filling = b->free;                   // make the
+//            bufs.cbuf[b->filling].ptr =
             b->free++;
         } else if ((bufs.cbuf[b->filling].ptr - b->pool_base) > size) { // is there space at the bottom?
             b->filling = 0;
@@ -550,7 +558,29 @@ static char * _get_new_line_buffer(devflags_t *flags, uint16_t size)
     return (NULL);
 }
 
-static void _free_line_buffer()
+/*
+ * _queue_buffer()
+ */
+
+static void _queue_buffer()
+{
+    return;
+}
+
+/*
+ * _get_buffer_for_processing()
+ */
+
+static char * _get_buffer_for_processing()
+{
+    return (NULL);
+}
+
+/*
+ * _free_buffer()
+ */
+
+static void _free_buffer()
 {
     return;
 }
