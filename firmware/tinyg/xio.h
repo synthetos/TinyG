@@ -82,35 +82,14 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 };
 // If your change these ^, check these v
 
-#define XIO_DEV_USART_COUNT 	2           // # of USART devices
-#define XIO_DEV_USART_OFFSET	0           // offset for computing indices
+#define XIO_DEV_USART_COUNT 	2       // # of USART devices
+#define XIO_DEV_USART_OFFSET	0       // offset for computing indices
 
-#define XIO_DEV_SPI_COUNT 		2           // # of SPI devices
+#define XIO_DEV_SPI_COUNT 		2       // # of SPI devices
 #define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
-#define XIO_DEV_FILE_COUNT		1           // # of FILE devices
+#define XIO_DEV_FILE_COUNT		1       // # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
-
-
-#define RX_CHAR_BUFFER_LEN 200			    // input buffer for streaming serial mode
-#define RX_LINE_SLOTS	12					// number of readline() input buffers
-#define RX_LINE_LEN 80				        // input buffer length
-/*
-#define RX_CTRL_MAX_LENGTH 80               // maximum buffer size for control buffers
-#define RX_CTRL_MAX_LINES 24                // maximum distinct control buffers (lines)
-#define RX_CTRL_POOL 256                    // memory pool allocated for control buffers
-
-#define RX_DATA_MAX_LENGTH 80               // maximum buffer size for data buffers
-#define RX_DATA_MAX_LINES 24                // maximum distinct data buffers (lines)
-#define RX_DATA_POOL 512                    // memory pool allocated for data buffers
-*/
-typedef enum {						        // readline() buffer and slot states
-    BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
-    BUFFER_IS_FILLING,						// buffer is partially loaded
-    BUFFER_IS_CTRL,							// buffer contains a control line
-    BUFFER_IS_DATA,							// buffer contains a data line
-    BUFFER_IS_PROCESSING					// buffer is in use by the caller
-} cmBufferState;
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
@@ -120,27 +99,26 @@ typedef enum {						        // readline() buffer and slot states
 typedef uint16_t devflags_t;
 
 // device capabilities flags
-#define DEV_CAN_BE_CTRL		(0x0001)		// device can be a control channel
-#define DEV_CAN_BE_DATA		(0x0002)		// device can be a data channel
+#define DEV_CAN_BE_CTRL		(0x0001)    // device can be a control channel
+#define DEV_CAN_BE_DATA		(0x0002)    // device can be a data channel
 #define DEV_CAN_READ		(0x0010)
 #define DEV_CAN_WRITE		(0x0020)
 
-// Device state flags
 // channel state
-#define DEV_IS_NONE			(0x0000)		// None of the following
-#define DEV_IS_CTRL			(0x0001)		// device is set as a control channel
-#define DEV_IS_DATA			(0x0002)		// device is set as a data channel
-#define DEV_IS_PRIMARY		(0x0004)		// device is the primary control channel
+#define DEV_IS_NONE			(0x0000)    // None of the following
+#define DEV_IS_CTRL			(0x0001)    // device is set as a control channel
+#define DEV_IS_DATA			(0x0002)    // device is set as a data channel
+#define DEV_IS_PRIMARY		(0x0004)    // device is the primary control channel
 #define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
 
 // device connection state
-#define DEV_IS_DISCONNECTED	(0x0010)		// device just disconnected (transient state)
-#define DEV_IS_CONNECTED	(0x0020)		// device is connected (e.g. USB)
-#define DEV_IS_READY		(0x0040)		// device is ready for use
-#define DEV_IS_ACTIVE		(0x0080)		// device is active
+#define DEV_IS_DISCONNECTED	(0x0010)    // device just disconnected (transient state)
+#define DEV_IS_CONNECTED	(0x0020)    // device is connected (e.g. USB)
+#define DEV_IS_READY		(0x0040)    // device is ready for use
+#define DEV_IS_ACTIVE		(0x0080)    // device is active
 
 // device exception flags
-#define DEV_THROW_EOF		(0x0100)		// end of file encountered
+#define DEV_THROW_EOF		(0x0100)    // end of file encountered
 
 
 /******************************************************************************
@@ -207,21 +185,31 @@ typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
 
 
-// old packet slot struct
-typedef struct packetSlot {				// packet buffer slots
-    cmBufferState state;				// state of slot
-    uint32_t seqnum;					// sequence number of slot
-    char *bufp;                         // pointer to buffer used by slot
-//    char buf[RX_PACKET_LEN];	        // allocated buffer for slot
-} slot_t;
+/******************************************************************************
+ * Readline Buffer Management
+ */
+#define RX_CHAR_BUFFER_LEN 200			// input buffer for streaming serial mode
+#define RX_PACKET_SLOTS	12              // number of readline() input buffers
+#define RX_PACKET_LEN 80                // input buffer length
 
-#define RX_CTRL_LEN_MAX 80              // maximum buffer size for control buffers
-#define RX_CTRL_BUFS_MAX 24             // maximum distinct control buffers (lines)
-#define RX_CTRL_POOL 256                // memory pool allocated for control buffers
+#define _CTRL			    (0)		    // index for linemode buffer structures
+#define _DATA			    (1)		    // index for linemode buffer structures
+#define RX_BUFS_MAX         24          // maximum distinct buffers in a list
 
-#define RX_DATA_LEN 80                  // maximum buffer size for data buffers
-#define RX_DATA_BUFS_MAX 24             // maximum distinct data buffers (lines)
-#define RX_DATA_POOL 512                // memory pool allocated for data buffers
+#define RX_CTRL_LEN_MAX     80          // maximum buffer size for control buffers
+#define RX_CTRL_POOL        256         // memory pool allocated for control buffers
+
+#define RX_DATA_LEN         80          // maximum buffer size for data buffers
+#define RX_DATA_POOL        512         // memory pool allocated for data buffers
+
+typedef enum {						    // readline() buffer and slot states
+    BUFFER_IS_UNDEFINED = -1,           // buffer (slot) is undefined (linemode operation)
+    BUFFER_IS_FREE = 0,                 // buffer (slot) is available (must be 0)
+    BUFFER_IS_FILLING,                  // buffer is partially loaded
+    BUFFER_IS_CTRL,                     // buffer contains a control line
+    BUFFER_IS_DATA,                     // buffer contains a data line
+    BUFFER_IS_PROCESSING                // buffer is in use by the caller
+} cmBufferState;
 
 /* and now for some ASCII art: Buffer pool viewed from top to bottom
  * ----- pool_top (char * address)
@@ -236,44 +224,34 @@ typedef struct packetSlot {				// packet buffer slots
  * -----
  * ----- pool_base  (char * address)
  */
-/*
-typedef enum {						        // readline() buffer and slot states
-    BUFFER_IS_FREE = 0,						// buffer (slot) is available (must be 0)
-    BUFFER_IS_FILLING,						// buffer is partially loaded
-    BUFFER_IS_CTRL,							// buffer contains a control line
-    BUFFER_IS_DATA,							// buffer contains a data line
-    BUFFER_IS_PROCESSING					// buffer is in use by the caller
-} cmBufferState;
 
-*/
-typedef struct {                        // control structure for a single line buffer
+typedef struct bufHdr {                 // buffer header block (NB: It's not really a header)
+    struct bufHdr *nx;                  // pointer to next buffer control block
     cmBufferState state;                // buffer state: see cmBufferState
-    uint8_t len;                        // buffer length in bytes
-    char *ptr;                          // pointer to buffer (finally!)
-} buf_buf_t;
+    uint16_t size;                      // buffer size in bytes
+    char *ptr;                          // pointer to char buffer start (finally!)
+} buf_blk_t;
 
 typedef struct {                        // structure to manage a buffer pool
-    uint8_t first_free;                 // index of free region from which to grab next buffer
-//    uint8_t filling;                    // index of buffer currently filling
-    uint8_t first_full;                 // index of start of full buffers
-    uint8_t count;                      // count of full, filling and processing buffers
-    uint8_t count_max;                  // maximum allowable full, filling and processing buffers
+    buf_blk_t *first_free;              // free region from which to grab next buffer
+    buf_blk_t *first_used;              // start of used buffers: filling, queued, processing
+//    buf_blk_t *filling;                 // buffer currently filling
     char *pool_base;                    // starting address of control buffer pool
     char *pool_top;                     // ending address of control buffer pool
+    buf_blk_t buf[RX_BUFS_MAX];         // buffer structs for control buffers
 } buf_mgr_t;
+buf_mgr_t bm[2];                        // buffer manager structs for _CTRL and _DATA
 
-typedef struct {                        // control structure for all data and ctrl line buffers
-    buf_mgr_t c;                        // manager for control buffers
-    buf_mgr_t d;                        // manager for data buffers
+char ctrl_pool[RX_CTRL_POOL];           // buffer pool for control buffers
+char data_pool[RX_DATA_POOL];           // buffer pool for data buffers
 
-    buf_buf_t cbuf[RX_CTRL_BUFS_MAX];   // buffer structs for control buffers
-    buf_buf_t dbuf[RX_DATA_BUFS_MAX];   // buffer structs for data buffers
-
-    char c_pool[RX_CTRL_POOL];          // line buffer pool for control lines
-    char d_pool[RX_DATA_POOL];          // line buffer pool for data lines
-    char bufs[RX_LINE_SLOTS][RX_LINE_LEN]; // buffers allocated for line slots
-} line_bufs_t;
-line_bufs_t bufs;
+// old packet slot structs and buffer allocation
+typedef struct packetSlot {				// packet buffer slots
+    cmBufferState state;				// state of slot
+    uint32_t seqnum;					// sequence number of slot
+    char *bufp;                         // pointer to buffer used by slot
+} slot_t;
+char packet_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for line slots (old packet mode)
 
 typedef struct xioSingleton {
     uint16_t magic_start;
@@ -300,7 +278,7 @@ typedef struct xioSingleton {
 
     // packetized reader
     uint32_t next_slot_seqnum;
-    slot_t slot[RX_LINE_SLOTS];
+    slot_t slot[RX_PACKET_SLOTS];
 
     uint16_t magic_end;
 } xioSingleton_t;

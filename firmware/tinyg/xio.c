@@ -492,7 +492,7 @@ uint8_t xio_get_packet_slots()
 {
     uint8_t free = 0;
 
-    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
         if (xio.slot[i].state == BUFFER_IS_FREE) {
             free++;
         }
@@ -506,20 +506,31 @@ uint8_t xio_get_packet_slots()
 
 static void _init_readline()
 {
-    xio.bufp = xio.in_buf;                          // pointer for streaming readline
+    // streaming readline setup
+    xio.bufp = xio.in_buf;                              // pointer for streaming readline
 
-    for (uint8_t i=0; i<RX_LINE_SLOTS; i++) {       // pointers for old packet readline
-        xio.slot[i].bufp = bufs.bufs[i];
+    // old packet readline setup
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {         // pointers for old packet readline
+        xio.slot[i].bufp = packet_bufs[i];
     }
 
-    buf_mgr_t *b = &bufs.c;
-    b->full = 0;
-    b->free = 0;
-    b->filling = 0;
-    b->count = 0;
-    b->count_max = RX_CTRL_BUFS_MAX;
-    b->pool_base = bufs.c_pool;                     // base address of control buffer pool
-    b->pool_top = b->pool_base + sizeof(bufs.c_pool); // address of top of control buffer pool
+    // new linemode readline setup
+    for (uint8_t i=_CTRL; i<_DATA+1; i++) {             // initialize buffer managers
+        bm[i].free = bm[i].buf;                         // initialize to first header block
+        bm[i].used = bm[i].buf;                         // ditto
+//        bm[i].filling = NULL;
+        for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
+            bm[i].buf[j].state = BUFFER_IS_UNDEFINED;
+            bm[i].buf[j].size = 0;
+            bm[i].buf[j].ptr = NULL;
+            bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
+        }        
+        bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
+    }
+    bm[_CTRL].pool_base = ctrl_pool;                    // base address of control buffer pool
+    bm[_CTRL].pool_top = ctrl_pool + sizeof(ctrl_pool); // address of top of control buffer pool
+    bm[_DATA].pool_base = data_pool;
+    bm[_DATA].pool_top = data_pool + sizeof(data_pool);
 }
 
 /* The operations are:
@@ -529,32 +540,49 @@ static void _init_readline()
  *  - return a processed buffer as free (free)
  */
 
+#pragma GCC optimize ("O0")
+
+static buf_mgr_t *_set_b(devflags_t *flags) 
+{
+    if (*flags & DEV_IS_CTRL) {
+        return(&bm[_CTRL]);
+    }
+    return(&bm[_DATA]);
+}
+
+//static buf_blk_t *_set_b(devflags_t *flags)
+
 /*
- * _get_free_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+ * _get_new_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+ *
+ *  flags - what pool should it come from? Should be one of DEV_IS_CTRL or DEV_IS_DATA
+ *  size - what is the maximum size for the buffer?
  */
 
-static char * _get_free_buffer(devflags_t *flags, uint16_t size)
+static char * _get_new_buffer(devflags_t *flags, uint16_t size)
 {
-    buf_mgr_t *b;
-    if (*flags & DEV_IS_CTRL) {
-        b = &bufs.c;                                // initialize to the control pointer
-        if (b->count >= b->count_max) {             // it's maxed out on count
-            return (NULL);
-        }
-        if ((b->pool_top - bufs.cbuf[b->free].ptr) > size) {  // is there room at the top?
-            b->filling = b->free;                   // make the
+    buf_mgr_t *b = _set_b(flags);       // pointer to control or data buffer manager 
+    buf_blk_t *ff = b->first_free;      // pointer to first free buffer header block
+    
+    if (ff->state != BUFFER_IS_FREE) {    // control buffers are maxed out
+        return (NULL);
+    }
+    
+/*    
+     = b->buf[b->first_free];          // point to the first free buffer
+    
+    if ((b->pool_top - bb->ptr) > size) {           // is there room at the top?
+        b->filling = b->first_free;                 // make the free buffer filling
+        
 //            bufs.cbuf[b->filling].ptr =
-            b->free++;
-        } else if ((bufs.cbuf[b->filling].ptr - b->pool_base) > size) { // is there space at the bottom?
-            b->filling = 0;
-            b->free = 1;
-        } else {
-            return (NULL);                          // not enough free buffer space
-        }
+//            b->free++;
+    } else if ((b->buf[b->filling].ptr - b->pool_base) > size) { // is there space at the bottom?
+//            b->filling = 0;
+//            b->free = 1;
+    } else {
+        return (NULL);                          // not enough free buffer space
     }
-    if (*flags & DEV_IS_DATA) {
-        b = &bufs.d;                                // initialize to the control pointer
-    }
+*/
     return (NULL);
 }
 
@@ -588,7 +616,7 @@ static void _free_buffer()
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)
 {
-	while (s < RX_LINE_SLOTS) {
+	while (s < RX_PACKET_SLOTS) {
 		if (xio.slot[s].state == state) {
             return (s);
         }
@@ -603,7 +631,7 @@ static int8_t _get_lowest_seqnum_slot(cmBufferState state)
 	int8_t slot = -1;
 	uint32_t seqnum = MAX_ULONG;
 
-	for (uint8_t s=0; s < RX_LINE_SLOTS; s++) {
+	for (uint8_t s=0; s < RX_PACKET_SLOTS; s++) {
 		if ((xio.slot[s].state == state) && (xio.slot[s].seqnum < seqnum)) {
 			seqnum = xio.slot[s].seqnum;
 			slot = s;
@@ -666,8 +694,6 @@ static char_t *_return_on_overflow(devflags_t *flags, int8_t slot)  // buffer ov
     return ((char_t *)_FDEV_ERR);                               // buffer overflow occurred
 }
 
-//#pragma GCC optimize ("O0")
-
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 {
 	int8_t s=0;										// slot index
@@ -681,7 +707,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
 	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_LINE_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
     	if (stat == (stat_t)XIO_EAGAIN) {
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
     	}
@@ -694,7 +720,7 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	// Now fill free slots until you run out of slots or characters
 	s=0;
 	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_LINE_LEN);
+        stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
         if (stat == XIO_EAGAIN) {
             xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
             return (_return_slot(flags));			// no more characters to read. Return an available slot
@@ -707,4 +733,4 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	return (_return_slot(flags));
 }
 
-//#pragma GCC reset_options
+#pragma GCC reset_options
