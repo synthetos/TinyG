@@ -88,6 +88,12 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
 static void _init_readline(void);
 
+static char *_get_buffer(devflags_t flags, uint16_t size);
+static void _post_buffer(devflags_t flags, cmBufferState state);
+//static void _free_buffer(char *buf, cmBufferState state);
+static void _free_buffer(char *buf);
+static void _test_new_bufs();
+
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
  */
@@ -515,103 +521,157 @@ static void _init_readline()
     }
 
     // new linemode readline setup
-    for (uint8_t i=_CTRL; i<_DATA+1; i++) {             // initialize buffer managers
-        bm[i].free = bm[i].buf;                         // initialize to first header block
-        bm[i].used = bm[i].buf;                         // ditto
-//        bm[i].filling = NULL;
-        for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
-            bm[i].buf[j].state = BUFFER_IS_UNDEFINED;
-            bm[i].buf[j].size = 0;
-            bm[i].buf[j].ptr = NULL;
-            bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
-        }        
-        bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
-    }
     bm[_CTRL].pool_base = ctrl_pool;                    // base address of control buffer pool
     bm[_CTRL].pool_top = ctrl_pool + sizeof(ctrl_pool); // address of top of control buffer pool
     bm[_DATA].pool_base = data_pool;
     bm[_DATA].pool_top = data_pool + sizeof(data_pool);
+
+    for (uint8_t i=_CTRL; i<_DATA+1; i++) {             // initialize buffer managers
+        bm[i].free = bm[i].buf;                         // initialize to first header block
+        bm[i].used = bm[i].buf;                         // ditto
+        bm[i].max_size = RX_BUF_SIZE_MAX;               // this parameter may be overwritten later
+        for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
+            bm[i].buf[j].state = BUFFER_IS_FREE;
+            bm[i].buf[j].size = 0;
+            bm[i].buf[j].ptr = bm[i].pool_base;         // point all bufs to the base of RAM
+            bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
+        }        
+        bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
+    }
+    _test_new_bufs();   //+++++ some unit testing wedged in here
 }
 
 /* The operations are:
  *  - get a free buffer (filling)
  *  - queue a filled buffer for use (full)
  *  - return the next buffer for processing (processing)
- *  - return a processed buffer as free (free)
+ *  - return a processed buffer (free it)
+ *
+ * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
+ *  - All functions (including _get_buffer) need to specify DEV_IS_CTRL or DEV_IS_DATA in args 
+ *    - So you need to know if it's control or data BEFORE you call _get_buffer()
+ *  - There can only be zero or one BUFFER_IS_PROCESSING 
+ *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
+ *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
+ *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
+ *    - The FREE list always grows from the bottom to the top (with wrap) until it cannot grow
+ *    - Posts always occur by flipping a buffer from free to used
+ *    - USED buffers are always consumed in order from bottom to top (with wrap)
  */
 
 #pragma GCC optimize ("O0")
 
-static buf_mgr_t *_set_b(devflags_t *flags) 
+// ********* TESTING NEW LINEBUF CODE ******* REMOVE LATER
+static void _test_new_bufs()
 {
-    if (*flags & DEV_IS_CTRL) {
+//    buf_mgr_t *b = &bm[_CTRL];
+
+    char *c = _get_buffer(DEV_IS_CTRL, bm[_CTRL].max_size);
+    sprintf(c, "write some text in here\n");
+//    b->used->state = BUFFER_IS_PROCESSING;
+    _post_buffer(DEV_IS_CTRL, BUFFER_IS_PROCESSING);
+    _free_buffer(c);
+}
+
+static buf_mgr_t *_set_b(devflags_t flags) 
+{
+    if (flags & DEV_IS_CTRL) {
         return(&bm[_CTRL]);
     }
     return(&bm[_DATA]);
 }
 
-//static buf_blk_t *_set_b(devflags_t *flags)
-
 /*
- * _get_new_buffer() - return pointer to a buffer of size 'size' or NULL if not possible
+ * _get_buffer() - get first buffer fromthe FREE list
  *
- *  flags - what pool should it come from? Should be one of DEV_IS_CTRL or DEV_IS_DATA
- *  size - what is the maximum size for the buffer?
+ * Return char * pointer to a buffer of size 'size' or NULL if this is not possible
+ *
+ * Args:
+ *    - flags - what pool should it come from? Should be one of DEV_IS_CTRL or DEV_IS_DATA
+ *    - size - what is the maximum size for the buffer?
+ *
+ * Assumptions on entry:
+ *    - f->ptr is a valid char pointer and points to the start of a free region
  */
 
-static char * _get_new_buffer(devflags_t *flags, uint16_t size)
+static char * _get_buffer(devflags_t flags, uint16_t size)
 {
     buf_mgr_t *b = _set_b(flags);       // pointer to control or data buffer manager 
-    buf_blk_t *ff = b->first_free;      // pointer to first free buffer header block
+    buf_blk_t *f = b->free;             // pointer to first free buffer (header block)
     
-    if (ff->state != BUFFER_IS_FREE) {    // control buffers are maxed out
+    if (f->state != BUFFER_IS_FREE) { // buffer headers are maxed out
         return (NULL);
     }
     
-/*    
-     = b->buf[b->first_free];          // point to the first free buffer
-    
-    if ((b->pool_top - bb->ptr) > size) {           // is there room at the top?
-        b->filling = b->first_free;                 // make the free buffer filling
-        
-//            bufs.cbuf[b->filling].ptr =
-//            b->free++;
-    } else if ((b->buf[b->filling].ptr - b->pool_base) > size) { // is there space at the bottom?
-//            b->filling = 0;
-//            b->free = 1;
+    if ((b->pool_top - f->ptr) > size) {        // is there room at the top?
+        f->ptr = f->ptr;                        // no-op - optimizes out. Here for illustration
+    } else if ((b->used->ptr - b->pool_base) > size) { // is there room at the bottom?
+        f->ptr = b->pool_base;
     } else {
-        return (NULL);                          // not enough free buffer space
+        return (NULL);                          // failed to get a buffer
     }
+    f->size = size;
+    f->state = BUFFER_IS_FILLING;
+    b->used = f;
+
+    b->free = f->nx;                            // NB: this might not be true if nx is not free
+    if (f->nx->state == BUFFER_IS_FREE) {
+        f->nx->ptr = f->ptr + size;             // advance the pointer if the block is free
+    }
+    return (f->ptr);
+}
+
+/*
+ * _post_buffer() - post the buffer to the end of the USED list
+ *
+ * This occurs by changing it's state in place. 
+ * Also truncates the size, giving back unused chars. Adjusts next FREE accordingly
+ */
+
+static void _post_buffer(devflags_t flags, cmBufferState state)
+{
+    buf_mgr_t *b = _set_b(flags);       // pointer to control or data buffer manager
+    buf_blk_t *f = b->free;             // pointer to first free buffer (header block)
+}
+
+/*
+ * _free_buffer() - a buffer based on it's character pinter
+ */
+
+static void _free_buffer(char *buf)
+{
+    buf_mgr_t *b;
+    // find out which pool the buffer belongs to
+    if ((buf >= bm[_CTRL].pool_base) && (buf < bm[_CTRL].pool_top)) {
+        b = &bm[_CTRL];
+    } else if ((buf >= bm[_DATA].pool_base) && (buf < bm[_DATA].pool_top)) {
+        b = &bm[_DATA];
+    } else {
+        return;     // fail silently. This is not a pointer we can use
+    }
+    b->used->state = BUFFER_IS_FREE;
+    b->used = b->used->nx;
+}
+/*
+    buf_mgr_t *b;
+    for (uint8_t i=_CTRL; i<_DATA+1; i++) {
+        b = &bm[i];
+        if (b->used->state == state) {
+            b->used->state = BUFFER_IS_FREE;
+            b->used = b->used->nx;
+            return;
+        }
+    }
+}
 */
-    return (NULL);
-}
 
-/*
- * _queue_buffer()
- */
+#pragma GCC reset_options
 
-static void _queue_buffer()
-{
-    return;
-}
 
-/*
- * _get_buffer_for_processing()
- */
 
-static char * _get_buffer_for_processing()
-{
-    return (NULL);
-}
 
-/*
- * _free_buffer()
- */
 
-static void _free_buffer()
-{
-    return;
-}
+
 
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)
@@ -732,5 +792,3 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 	}
 	return (_return_slot(flags));
 }
-
-#pragma GCC reset_options

@@ -195,15 +195,13 @@ typedef void (*x_flow_t)(xioDev_t *d);
 #define _CTRL			    (0)		    // index for linemode buffer structures
 #define _DATA			    (1)		    // index for linemode buffer structures
 #define RX_BUFS_MAX         24          // maximum distinct buffers in a list
+#define RX_BUF_SIZE_MAX     80          // default maximum buffer size for buffers
 
-#define RX_CTRL_LEN_MAX     80          // maximum buffer size for control buffers
 #define RX_CTRL_POOL        256         // memory pool allocated for control buffers
-
-#define RX_DATA_LEN         80          // maximum buffer size for data buffers
 #define RX_DATA_POOL        512         // memory pool allocated for data buffers
 
 typedef enum {						    // readline() buffer and slot states
-    BUFFER_IS_UNDEFINED = -1,           // buffer (slot) is undefined (linemode operation)
+//    BUFFER_IS_UNDEFINED = -1,           // buffer (slot) is undefined (linemode operation)
     BUFFER_IS_FREE = 0,                 // buffer (slot) is available (must be 0)
     BUFFER_IS_FILLING,                  // buffer is partially loaded
     BUFFER_IS_CTRL,                     // buffer contains a control line
@@ -215,12 +213,12 @@ typedef enum {						    // readline() buffer and slot states
  * ----- pool_top (char * address)
  * -----
  * ----- free - free space at the top of the filling buffer
- * ----- filling - currently open buffer for filling
- * ----- full - full buffer N
- * ----- full - ....
- * ----- full - full buffer 2
- * ----- full - full buffer 1
- * ----- processing - buffer being processed by controller
+ * -----      - (filling) currently open buffer for filling
+ * -----      - (control or data) full buffer N
+ * -----      - (control or data) ....
+ * -----      - (control or data) full buffer 2
+ * -----      - (control or data) full buffer 1
+ * ----- used - (processing) buffer being processed by controller
  * -----
  * ----- pool_base  (char * address)
  */
@@ -233,9 +231,9 @@ typedef struct bufHdr {                 // buffer header block (NB: It's not rea
 } buf_blk_t;
 
 typedef struct {                        // structure to manage a buffer pool
-    buf_blk_t *first_free;              // free region from which to grab next buffer
-    buf_blk_t *first_used;              // start of used buffers: filling, queued, processing
-//    buf_blk_t *filling;                 // buffer currently filling
+    buf_blk_t *used;                    // start of used buffers: filling, queued, processing
+    buf_blk_t *free;                    // start of free region from which to grab next buffer
+    uint16_t max_size;                  // settable value for max buffer size
     char *pool_base;                    // starting address of control buffer pool
     char *pool_top;                     // ending address of control buffer pool
     buf_blk_t buf[RX_BUFS_MAX];         // buffer structs for control buffers
