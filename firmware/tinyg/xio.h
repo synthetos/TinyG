@@ -232,7 +232,8 @@ typedef enum {						    // readline() buffer and slot states
  */
 
 typedef struct bufHdr {                 // buffer header block (NB: It's not really a header)
-    struct bufHdr *nx;                  // pointer to next buffer control block
+    struct bufHdr *pv;                  // pointer to previous buffer block
+    struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState
     uint16_t size;                      // buffer size in bytes
     char *bufp;                         // pointer to char buffer start (finally!)

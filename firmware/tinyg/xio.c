@@ -90,8 +90,9 @@ static void _init_readline(void);
 
 static char *_get_free_buffer(devflags_t flags, uint16_t size);
 static char *_get_filling_buffer(void);
-static void _post_buffer(char *bufp);
+static char *_get_next_processing_buffer(void);
 static void _free_processing_buffer(void);
+static void _post_buffer(char *bufp);
 
 static void _test_new_bufs();
 
@@ -540,8 +541,10 @@ static void _init_readline()
             bm[i].buf[j].state = BUFFER_IS_FREE;
             bm[i].buf[j].size = 0;
             bm[i].buf[j].bufp = bm[i].pool_base;        // point all bufs to the base of RAM
+            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
             bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
         }
+        bm[i].buf[0].nx = &bm[i].buf[RX_BUFS_MAX-1];     // close the pv loop
         bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
     }
     _test_new_bufs();   //+++++ some unit testing wedged in here
@@ -584,10 +587,9 @@ static void _test_new_bufs()
             return;
         }
     }
-//    sprintf(c, "write some text in here\n");    // 5.
     sprintf(c, "123456789\n");                  // 5.
     _post_buffer(c);                            // 5b.
-//    _get_next_processing_buffer();            // 6.
+//    _get_next_processing_buffer();              // 6.   Don't do this on the first go
 
 
     // 1.
@@ -600,7 +602,7 @@ static void _test_new_bufs()
     }
     sprintf(c, "write some text in here\n");    // 5.
     _post_buffer(c);                            // 5b.
-    //    _get_next_processing_buffer();            // 6.
+    _get_next_processing_buffer();            // 6.
 
 
     // 1.
@@ -611,9 +613,9 @@ static void _test_new_bufs()
             return;
         }
     }
-    sprintf(c, "write some text in here\n");    // 5.
+    sprintf(c, "this is an excessively long line that exceeds the recommanded length by a number of characters I'd not even care to count manually\n");    // 5.
     _post_buffer(c);                            // 5b.
-    //    _get_next_processing_buffer();            // 6.
+    _get_next_processing_buffer();            // 6.
 
 }
 
@@ -681,6 +683,42 @@ static char *_get_filling_buffer()
 }
 
 /*
+ * _get_next_processing_buffer() - return the next buffer to process
+ *
+ * Assumes that the buffer to process is always the one at the top of the used list
+ */
+
+static char *_get_next_processing_buffer()
+{
+    if (bm[_CTRL].used_top->state == BUFFER_IS_PROCESSING) {
+        return (bm[_CTRL].used_top->bufp);
+    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
+        return (bm[_DATA].used_top->bufp);
+    }
+    return (NULL);
+}
+
+/*
+ * _free_processing_buffer() - return the processing buffer to the free list or exit silently
+ */
+
+static void _free_processing_buffer()
+{
+    buf_mgr_t *b;
+    if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
+        b = &bm[_CTRL];
+    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
+        b = &bm[_DATA];
+    } else {
+        return;     // this is fine. It just didn't find anything
+    }
+    b->used_top->state = BUFFER_IS_FREE;
+    if (b->used_top->pv != BUFFER_IS_FREE) {
+        b->used_top = b->used_top->pv;
+    }
+}
+
+/*
  * _post_buffer() - post the buffer as BUFFER_IS_CTRL or BUFFER_IS_DATA the give back unused space
  *
  * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA in place.
@@ -698,31 +736,12 @@ static void _post_buffer(char *bufp)
     } else {
         return;                     // not supposed to happen
     }
-//    b->buf->state = b->pool;        // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
     b->used_top->state = b->pool;           // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
     b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for termianting NUL
 
     if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
         b->free_base->bufp = b->used_top->bufp + b->used_top->size;
     }
-}
-
-/*
- * _free_processing_buffer() - return the processing buffer to the free list or exit silently
- */
-
-static void _free_processing_buffer()
-{
-    buf_mgr_t *b;
-    if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
-        b = &bm[_CTRL];
-    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
-        b = &bm[_DATA];
-    } else {
-        return;     // this is fine. It just didn't find anything
-    }
-    b->used_base->state = BUFFER_IS_FREE;
-    b->used_base = b->used_base->nx;
 }
 
 #pragma GCC reset_options
