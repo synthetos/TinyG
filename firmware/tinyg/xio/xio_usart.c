@@ -265,7 +265,8 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 
 	if (d->flag_in_line == false) {				// first time thru initializations
 		d->flag_in_line = true;					// yes, we are busy getting a line
-		d->len = 0;								// zero buffer
+//		d->len = 0;								// zero buffer
+		d->len = strlen(buf);					// initialize length. Skip initial chars
 		d->buf = buf;
 		d->size = size;
 		d->signal = XIO_SIG_OK;					// reset signal register

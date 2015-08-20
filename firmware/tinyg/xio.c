@@ -86,6 +86,8 @@
 
 #define __LINEMODE
 
+char single_char_buffer[2] = { NUL, NUL };
+
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
 static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
@@ -635,19 +637,21 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
 
 /*
  * _get_filling_buffer() - get char * pointer to the currently filling buffer or NULL if none found
+ *
+ * b points to the controlling buffer manager on return.
  */
 
-static char *_get_filling_buffer(buf_mgr_t *b, buf_hdr_t *h)
+static char *_get_filling_buffer(buf_mgr_t **b)
 {
     if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
-        b = &bm[_CTRL];
-        h = bm[_CTRL].used_base;
+        *b = &bm[_CTRL];
+//        h = bm[_CTRL].used_base;
         return (bm[_CTRL].used_base->bufp);
 
     } else
     if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
-        b = &bm[_DATA];
-        h = bm[_DATA].used_base;
+        *b = &bm[_DATA];
+//        h = bm[_DATA].used_base;
         return (bm[_DATA].used_base->bufp);
 
     }
@@ -655,12 +659,12 @@ static char *_get_filling_buffer(buf_mgr_t *b, buf_hdr_t *h)
 }
 
 /*
- * _get_next_buffer_to_process() - return the next buffer to process. Search ctrl first, then data
+ * _next_buffer_to_process() - Search ctrl first, then data; send NULL if nothing to process
  *
  * Assumes that the buffer to process is always the one at the base of the used list
  */
 
-static char *_get_next_buffer_to_process()
+static char *_next_buffer_to_process()
 {
     if (bm[_CTRL].used_base->state == BUFFER_IS_CTRL) {
         bm[_CTRL].used_base->state = BUFFER_IS_PROCESSING;
@@ -676,10 +680,10 @@ static char *_get_next_buffer_to_process()
 }
 
 /*
- * _free_processing_buffer() - return the processing buffer to the free list or exit silently
+ * _free_processed_buffer() - return the processing buffer to the free list or exit silently
  */
 
-static void _free_processing_buffer()
+static void _free_processed_buffer()
 {
     buf_mgr_t *b;
     if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
@@ -743,56 +747,78 @@ static void _post_buffer(char *bufp)
 static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 {
     char *bufp;                 // pointer to allocated buffer
-//    stat_t status;
+    stat_t status;
     buf_mgr_t *b = NULL;        // keep compiler happy - uninitialized variable warnings
-    buf_hdr_t *h = NULL;
+//    buf_hdr_t *h = NULL;
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
-    _free_processing_buffer();                          // 1. Free a buffer is one is processing
+    _free_processed_buffer();                          // 1. Free a buffer is one is processing
 
 	// Get a partially filled buffer if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
-    if ((bufp = _get_filling_buffer(b,h)) != NULL) {    // 2. Get a buffer if one is filling
-    	stat_t status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
+    if ((bufp = _get_filling_buffer(&b)) != NULL) {      // 2. Get a buffer if one is filling
+    	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
     	if (status == XIO_EAGAIN) {
-        	return (NULL);			                    // no more characters to read. Return an available slot
+            return(_next_buffer_to_process());   // no more chars to read
     	}
     	if (status == XIO_BUFFER_FULL) {
         	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
     	}
         _post_buffer(bufp);                             // post your newly filled buffer
-//        return(_get_next_buffer_to_process());          // return the next buffer to process
     }
 
-	// XXXX Now fill free buffers until you run out of buffers or incoming characters
 	// Now fill a free buffer if you can
+	// XXXX Now fill free buffers until you run out of buffers or incoming characters
 
     // Read single character to determine if you have a new control or data buffer
-    // Start by discarding leading whitespace
-    char c;                                             // single character buffer
-    for (uint8_t i=0; i<RX_BUF_SIZE_MAX; i++) {         // for loop is simply to trap potential runaway cases
-//        c = xio_getc_usart(XIO_DEV_USB);
-//        c = xio_getc_usart(&ds[XIO_DEV_USB].file);
-        c = xio_getc(XIO_DEV_USB);
+    // or if the single char buffer is not NUL you got one last time but could not get a buffer for it
+    if (single_char_buffer[0] == NUL) {
+        for (uint8_t i=0; i<RX_BUF_SIZE_MAX; i++) {         // for loop is simply to trap potential runaway cases
+//          single_char_buffer[0] = xio_getc_usart(XIO_DEV_USB);
+//          single_char_buffer[0] = xio_getc_usart(&ds[XIO_DEV_USB].file);
+            single_char_buffer[0] = xio_getc(XIO_DEV_USB);  // xio_getc() must be set to non-blocking reads
 
-        if ((c <= ' ') || (c == DEL)) {                 // toss leading ctrls, WS & DEL
-            continue;
+            // exit if there was no character
+            if (single_char_buffer[0] == (char)_FDEV_ERR) {
+                single_char_buffer[0] = NUL;                        // reset single_char_buffer
+                return(_next_buffer_to_process());
+            }
+            // discard leading whitespace
+            if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
+                continue;
+            }
+            // single_char_buffer[0] can be either a valid char or _FDEV_ERR (no char) at this point
+            break;
         }
-        break;
-    }
-/*
-    // This is wrong
-    if (strchr("{$?!~%Hh", c) != NULL) {		    // a match indicates control line
+    }        
+
+    // Parse the character and try to get the correct buffer        
+    if (strchr("{$?!~%Hh", single_char_buffer[0]) != NULL) { // a match indicates control line
         if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-//                printf("no free buffer available\n");
+            // printf("no free control buffer\n");
+            return(_next_buffer_to_process());
         }
-    } else
+    } else {
         if ((bufp = _get_free_buffer(DEV_IS_DATA, bm[_DATA].requested_size)) == NULL) {   // 4.
-//                printf("no free buffer available\n");
+            // printf("no free data buffer\n");
+            return(_next_buffer_to_process());
         }
     }
-*/
-    return(_get_next_buffer_to_process());          // return the next buffer to process
+  
+    // Write the character to the buffer and keep reading
+    bufp[0] = single_char_buffer[0];
+    single_char_buffer[0] = NUL;                            // reset single_char_buffer
+
+    status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
+    if (status == XIO_EAGAIN) {
+        return(_next_buffer_to_process());
+    }
+    if (status == XIO_BUFFER_FULL) {
+        return ((char *)_FDEV_ERR);                 // buffer overflow occurred
+    }
+    _post_buffer(bufp);                             // post your newly filled buffer
+
+    return(_next_buffer_to_process());
 }
 
 /*

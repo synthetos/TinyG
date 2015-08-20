@@ -78,7 +78,8 @@
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
 #define USB_BAUD  XIO_BAUD_115200
-#define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
+//#define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )  // blocking character reads
+#define USB_FLAGS (XIO_ECHO | XIO_XOFF | XIO_LINEMODE )                 // non-blocking character reads
 
 #define USB_USART USARTC0						// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect	 	// (RX) reception complete IRQ
