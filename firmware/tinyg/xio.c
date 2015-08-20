@@ -645,13 +645,11 @@ static char *_get_filling_buffer(buf_mgr_t **b)
 {
     if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
         *b = &bm[_CTRL];
-//        h = bm[_CTRL].used_base;
         return (bm[_CTRL].used_base->bufp);
 
     } else
     if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
         *b = &bm[_DATA];
-//        h = bm[_DATA].used_base;
         return (bm[_DATA].used_base->bufp);
 
     }
@@ -768,56 +766,49 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     }
 
 	// Now fill a free buffer if you can
-	// XXXX Now fill free buffers until you run out of buffers or incoming characters
-
-    // Read single character to determine if you have a new control or data buffer
-    // or if the single char buffer is not NUL you got one last time but could not get a buffer for it
+    // Read single character to determine if you have a new control or data buffer or if the
+    // single_char_buffer is not NUL you got one last time but could not get a buffer for it
     if (single_char_buffer[0] == NUL) {
-        for (uint8_t i=0; i<RX_BUF_SIZE_MAX; i++) {         // for loop is simply to trap potential runaway cases
-//          single_char_buffer[0] = xio_getc_usart(XIO_DEV_USB);
-//          single_char_buffer[0] = xio_getc_usart(&ds[XIO_DEV_USB].file);
+        for (uint8_t i=0; i<RX_BUF_SIZE_MAX; i++) {         // loop is just to trap potential runaway cases
             single_char_buffer[0] = xio_getc(XIO_DEV_USB);  // xio_getc() must be set to non-blocking reads
 
-            // exit if there was no character
-            if (single_char_buffer[0] == (char)_FDEV_ERR) {
-                single_char_buffer[0] = NUL;                        // reset single_char_buffer
+            // exit if no character read
+            if (single_char_buffer[0] == (char)_FDEV_ERR) { // requires the cast
+                single_char_buffer[0] = NUL;                // reset the single_char_buffer
                 return(_next_buffer_to_process());
             }
             // discard leading whitespace
             if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
                 continue;
             }
-            // single_char_buffer[0] can be either a valid char or _FDEV_ERR (no char) at this point
-            break;
+            break;                                          // you have a valid character now
         }
     }        
 
     // Parse the character and try to get the correct buffer        
     if (strchr("{$?!~%Hh", single_char_buffer[0]) != NULL) { // a match indicates control line
         if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            // printf("no free control buffer\n");
-            return(_next_buffer_to_process());
+            return(_next_buffer_to_process());              // still holding the single char
         }
+        b = &bm[_CTRL];
     } else {
         if ((bufp = _get_free_buffer(DEV_IS_DATA, bm[_DATA].requested_size)) == NULL) {   // 4.
-            // printf("no free data buffer\n");
-            return(_next_buffer_to_process());
+            return(_next_buffer_to_process());              // still holding the single char
         }
+        b = &bm[_DATA];
     }
   
-    // Write the character to the buffer and keep reading
-    bufp[0] = single_char_buffer[0];
-    single_char_buffer[0] = NUL;                            // reset single_char_buffer
+    // Got a buffer (BUFFER_IS_FILLING)
+    bufp[0] = single_char_buffer[0];                // write char to the buffer and keep reading
+    single_char_buffer[0] = NUL;                    // reset single_char_buffer
 
-    status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
-    if (status == XIO_EAGAIN) {
-        return(_next_buffer_to_process());
+    if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) {
+        return(_next_buffer_to_process());          // buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
         return ((char *)_FDEV_ERR);                 // buffer overflow occurred
     }
     _post_buffer(bufp);                             // post your newly filled buffer
-
     return(_next_buffer_to_process());
 }
 
