@@ -84,16 +84,20 @@
 #include "report.h"
 #include "util.h"
 
-static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
-static void _init_readline(void);
+static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
+static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
 
+static void _init_readline_stream(void);
+//static void _init_readline_charmode(void);
+static void _init_readline_linemode(void);
+/*
 static char *_get_free_buffer(devflags_t flags, uint16_t size);
 static char *_get_filling_buffer(void);
 static char *_get_next_buffer_to_process(void);
 static void _free_processing_buffer(void);
 static void _post_buffer(char *bufp);
-
+*/
 static void _test_new_bufs();
 
 /********************************************************************************
@@ -121,7 +125,8 @@ void xio_init()
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 
     // set up XIO buffers and pointers
-    _init_readline();
+    _init_readline_stream();
+    _init_readline_linemode();
 
 	xio_init_assertions();
 }
@@ -346,6 +351,7 @@ char_t *readline(devflags_t *flags, uint16_t *size)
         return (_readline_stream(flags, size));
     }
     return (_readline_packet(flags, size));
+//    return (_readline_linemode(flags, size));
 }
 
 // parse the buffer to see if its a control
@@ -380,6 +386,13 @@ static bool _parse_control(char *p)
  *		the RX device, the buffer (containing a data line) will not be returned. The buffer
  *		will be held until a call is made that requests data (may request both DATA and CTRL).
  */
+
+static void _init_readline_stream()
+{
+    // streaming readline setup
+    xio.bufp = xio.in_buf;                              // pointer for streaming readline
+}
+
 static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
 {
 	*flags = flag;
@@ -435,84 +448,47 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	return(_exit_null(flags, size));
 }
 
-/*
- * readline_packet() - line-mode reader (packet mode)
- *
- *	This function reads a full line of characters from an input device (e.g. USB) into a line
- *  buffer (packet). It keeps multiple line buffers, and returns a completed buffer according
- *  to the rules below.
- *
- *	Single Device Reads (reads from USB port only)
- *	 This case reads both ctrl and data packets from the USB device
- *	  - Step 1) Read all data from the input device:
- *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
- *		  and filling up slot buffers until the USB device has no more characters or there
- *		  are no more slots available.
- *		- As completed lines are read parse them and mark them as a control or data packet.
- *		- Discard blank lines (single NUL character)
- *		- Annotate stored packets with an incrementing sequence number.
- *	  - Step 2) When done reading:
- *		- Return the control packet with the lowest sequence number
- *		- If there are no control packets return the data packet with the lowest sequence number
- *		- Return with no data if there are no pending control or data packets
- *
- *	Multiple Device Reads (USB port and FLASH or other mass storage device)
- *	 In this case the USB port is treated as ctrl and the mass storage port is treated as data
- *	  - Step 1) Read from USB:
- *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
- *		  and filling up slot buffers until the USB device has no more characters or there
- *		  are no more slots available.
- *		- As completed lines are read parse them as a control or data packet.
- *		- Discard blank lines and data lines
- *		- Annotate stored packets with an incrementing sequence number.
- *	  - Step 2) When done reading:
- *		- Return the control packet with the lowest sequence number.
- *		- If there are no control packet read and return a packet from the data device
- *		- Return with no data and an EOF flag if there are no pending control or data packets
- *		- When EOF is encountered revert to Single Device mode (USB only)
- *
- *	ARGS:
- *
- *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA,
- *                                                 or DEV_IS_NONE (0) if no packet is returned.
- *
- *   size -  Does nothing. Returns zero. Here for compatibility with ARM readline()
- *
- *	 char_t * Returns a pointer to the buffer containing the packet,
- *            or NULL (*0) if no text,
- *            of _FDEV_ERR (-1) if a buffer overflow occurred
- *
- *  Notes:
- *
- *  - Only Single Device Read is currently implemented
- *
- *	- Accepts CR or LF as line terminator. Replaces CR or LF with NUL in the returned string.
- *
- *  - Assumes synchronous operation. The readline() caller (controller) must completely finish
- *		with the the returned line (PROCESSING state) before calling readline() again. When
- *		readline() is called it frees the PROCESSING buffer.
- *
- *	- The number of available (free) buffers reported back in the footer or the packet report
- *      will always be 2 less than the number of free buffers you think you should have.
- *      This is because there is always a buffer FILLING, and there is always a buffer PROCESSING.
- */
-uint8_t xio_get_packet_slots()
-{
-    uint8_t free = 0;
 
-    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
-        if (xio.slot[i].state == BUFFER_IS_FREE) {
-            free++;
-        }
-    }
-    return (free);
-}
 
 //**************************
 //*** readline() helpers ***
 //**************************
 
-static void _init_readline()
+// ****************************************************************************
+// **** LINE MODE FUNCTIONS ***************************************************
+// ****************************************************************************
+/*
+ * Terminology:
+ *  - "Header" refers to the buffer control structure buf_hdr_t
+ *  - "Buffer" refers to the actual character buffer allocated from a pool
+ *  - "Pool" refers to a char array from which buffers are allocated
+ *  - "Free" refers to a header that is unallocated and available for use
+ *  - "Used" refers to a header that has an allocated buffer and is in some stage of use
+ *  - "Base" refers to the bottom of a queue or list
+ *  - "Top" refers to the top of a queue or list
+ *
+ * Operation:
+ *  - The header list (buf) is a circular FIFO implemented as a forward linked list
+ *  - Headers are added to the top (newest element) and removed from the base (oldest).
+ *  - Free headers start above used_top and are advanced "upwards"
+ *  - If a header is free the size is zero and the bufp is invalid
+ *  - If there is only one used buffer used_base and used_top point to the same buffer
+ *  - If there are no used buffers used_base, used_top and free_base are the same
+ *  - If the header queue is full used_base and used_top are adjacent.
+ *    Free_base points to used_base but must not be used until used_base slot becomes free
+ *
+ *
+ * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
+ *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
+ *  - There can only be zero or one BUFFER_IS_PROCESSING buffers, total
+ *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
+ *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
+ *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
+ *    - The FREE list always grows from the base to the top (with wrap) until it cannot grow
+ *    - Posts always occur by flipping a buffer from free to used
+ *    - USED buffers are always consumed in order from base to top (with wrap)
+ */
+static void _init_readline_linemode()
 {
     // streaming readline setup
     xio.bufp = xio.in_buf;                              // pointer for streaming readline
@@ -551,53 +527,16 @@ static void _init_readline()
     _test_new_bufs();   //+++++ some unit testing wedged in here
 }
 
-/*
- * Terminology:
- *  - "Header" refers to the buffer control structure buf_hdr_t
- *  - "Buffer" refers to the actual character buffer allocated from a pool
- *  - "Pool" refers to a char array from which buffers are allocated
- *  - "Free" refers to a header that is unallocated and available for use
- *  - "Used" refers to a header that has an allocated buffer and is in some stage of use
- *  - "Base" refers to the bottom of a queue or list
- *  - "Top" refers to the top of a queue or list
- *
- * Operation:
- *  - The header list (buf) is a circular FIFO implemented as a forward linked list
- *  - Headers are added to the top (newest element) and removed from the base (oldest).
- *  - Free headers start above used_top and are advanced "upwards"
- *  - If a header is free the size is zero and the bufp is invalid
- *  - If there is only one used buffer used_base and used_top point to the same buffer
- *  - If there are no used buffers used_base, used_top and free_base are the same
- *  - If the header queue is full used_base and used_top are adjacent.
- *    Free_base points to used_base but must not be used until used_base slot becomes free
- *
- *
- * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
- *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
- *  - There can only be zero or one BUFFER_IS_PROCESSING buffers, total
- *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
- *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
- *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
- *    - The FREE list always grows from the base to the top (with wrap) until it cannot grow
- *    - Posts always occur by flipping a buffer from free to used
- *    - USED buffers are always consumed in order from base to top (with wrap)
- *
- * Readline() processing can be stated as:
- *  1. call readline()
- *  2. free PROCESSING buffer (either frees or no-op)
- *  3. get FILLING buffer and continue to fill if one was returned
- *  4. if no FILLING buffer get FREE buffer (which becomes a new FILLING buffer)
- *  5. read from RX into FILLING buffer
- *    5a. if buffer is not complete, exit
- *    5b. if buffer is complete: post buffer
- *  6. get next buffer to process and return as char *
- */
-
 #pragma GCC optimize ("O0")
 
 // ********* TESTING NEW LINEBUF CODE ******* REMOVE LATER
 static void _test_new_bufs()
 {
+    uint16_t size = 80;
+    devflags_t flags = DEV_IS_CTRL;
+
+    _readline_linemode(&flags, &size);
+/*
     char *c;
 
     // 1.
@@ -637,7 +576,7 @@ static void _test_new_bufs()
     sprintf(c, "this is an excessively long line that exceeds the recommanded length by a number of characters I'd not even care to count manually\n");    // 5.
     _post_buffer(c);                            // 5b.
     _get_next_buffer_to_process();            // 6.
-
+*/
 }
 
 /*
@@ -693,13 +632,17 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
  * _get_filling_buffer() - get char * pointer to the currently filling buffer or NULL if none found
  */
 
-static char *_get_filling_buffer()
+static char *_get_filling_buffer(buf_mgr_t *b, buf_hdr_t *h)
 {
     if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
+        b = &bm[_CTRL];
+        h = bm[_CTRL].used_base;
         return (bm[_CTRL].used_base->bufp);
 
     } else
     if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
+        b = &bm[_DATA];
+        h = bm[_DATA].used_base;
         return (bm[_DATA].used_base->bufp);
 
     }
@@ -779,13 +722,168 @@ static void _post_buffer(char *bufp)
     }
 }
 
+/*
+ * _readline_linemode() - read a line using dynamic allocation
+ *
+ * Operation summarized as:
+ *    1. free PROCESSING buffer (either frees or no-op)
+ *    2. get FILLING buffer and continue to fill if one was returned
+ *    3. if no FILLING buffer get FREE buffer (which becomes a new FILLING buffer)
+ *    4. read from RX into FILLING buffer
+ *      4a. if buffer is not complete, exit
+ *      4b. if buffer is complete: post buffer
+ *    5. get next buffer to process and return as char *
+ */
+
+static char *_readline_linemode(devflags_t *flags, uint16_t *size)
+{
+    char *bufp;
+    stat_t status;
+    buf_mgr_t *b = NULL;    // keep compiler happy - uninitialized variable warnings
+    buf_hdr_t *h = NULL;
+
+	// Free a previously processing buffer (assumes calling readline means a free should occur)
+    _free_processing_buffer();                      // 1. Free a buffer is one is processing
+
+	// Get a partially filled buffer if one exists
+	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
+    if ((bufp = _get_filling_buffer(b,h)) != NULL) {      // 2. Get a buffer if one is filling
+    	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, RX_PACKET_LEN);
+    	if (status == (stat_t)XIO_EAGAIN) {
+        	return (NULL);			                // no more characters to read. Return an available slot
+    	}
+    	if (status == (stat_t)XIO_BUFFER_FULL) {
+//        	return (_return_on_overflow(flags, s));
+        	return ((char *)_FDEV_ERR);             // buffer overflow occurred
+    	}
+//    	_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
+    }
+
+    if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 3.
+        return (NULL);                          // there was no free buffer or some other error occurred
+    }
+
+//    sprintf(bufp, "123456789\n");                      // 4.
+//    _post_buffer(bufp);                                // 4b.
+//    _get_next_buffer_to_process();                  // 5.
+
+    return (NULL);
+}
+
+/*
+	// Free a previously processing slot (assumes calling readline() means a free should occur)
+	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
+    	xio.slot[s].state = BUFFER_IS_FREE;
+	}
+
+	// Look for a partially filled slot if one exists
+	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
+	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
+    	stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
+    	if (stat == (stat_t)XIO_EAGAIN) {
+        	return (_return_slot(flags));			// no more characters to read. Return an available slot
+    	}
+    	if (stat == (stat_t)XIO_BUFFER_FULL) {
+        	return (_return_on_overflow(flags, s));
+    	}
+    	_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
+	}
+
+	// Now fill free slots until you run out of slots or characters
+	s=0;
+	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
+    	stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
+    	if (stat == XIO_EAGAIN) {
+        	xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
+        	return (_return_slot(flags));			// no more characters to read. Return an available slot
+    	}
+    	if (stat == XIO_BUFFER_FULL) {
+        	return (_return_on_overflow(flags, s));
+    	}
+    	_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
+	}
+	return (_return_slot(flags));
+*/
+
 #pragma GCC reset_options
 
 
+// ****************************************************************************
+// **** PACKET MODE FUNCTIONS *************************************************
+// ****************************************************************************
+/*
+ * readline_packet() - line-mode reader (packet mode)
+ *
+ *	This function reads a full line of characters from an input device (e.g. USB) into a line
+ *  buffer (packet). It keeps multiple line buffers, and returns a completed buffer according
+ *  to the rules below.
+ *
+ *	Single Device Reads (reads from USB port only)
+ *	 This case reads both ctrl and data packets from the USB device
+ *	  - Step 1) Read all data from the input device:
+ *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
+ *		  and filling up slot buffers until the USB device has no more characters or there
+ *		  are no more slots available.
+ *		- As completed lines are read parse them and mark them as a control or data packet.
+ *		- Discard blank lines (single NUL character)
+ *		- Annotate stored packets with an incrementing sequence number.
+ *	  - Step 2) When done reading:
+ *		- Return the control packet with the lowest sequence number
+ *		- If there are no control packets return the data packet with the lowest sequence number
+ *		- Return with no data if there are no pending control or data packets
+ *
+ *	Multiple Device Reads (USB port and FLASH or other mass storage device)
+ *	 In this case the USB port is treated as ctrl and the mass storage port is treated as data
+ *	  - Step 1) Read from USB:
+ *		- Read from the USB's RX queue into the currently filling slot buffer. Keep reading
+ *		  and filling up slot buffers until the USB device has no more characters or there
+ *		  are no more slots available.
+ *		- As completed lines are read parse them as a control or data packet.
+ *		- Discard blank lines and data lines
+ *		- Annotate stored packets with an incrementing sequence number.
+ *	  - Step 2) When done reading:
+ *		- Return the control packet with the lowest sequence number.
+ *		- If there are no control packet read and return a packet from the data device
+ *		- Return with no data and an EOF flag if there are no pending control or data packets
+ *		- When EOF is encountered revert to Single Device mode (USB only)
+ *
+ *	ARGS:
+ *
+ *	 flags - Returns the type of packet returned - DEV_IS_CTRL, DEV_IS_DATA,
+ *                                                 or DEV_IS_NONE (0) if no packet is returned.
+ *
+ *   size -  Does nothing. Returns zero. Here for compatibility with ARM readline()
+ *
+ *	 char_t * Returns a pointer to the buffer containing the packet,
+ *            or NULL (*0) if no text,
+ *            of _FDEV_ERR (-1) if a buffer overflow occurred
+ *
+ *  Notes:
+ *
+ *  - Only Single Device Read is currently implemented
+ *
+ *	- Accepts CR or LF as line terminator. Replaces CR or LF with NUL in the returned string.
+ *
+ *  - Assumes synchronous operation. The readline() caller (controller) must completely finish
+ *		with the the returned line (PROCESSING state) before calling readline() again. When
+ *		readline() is called it frees the PROCESSING buffer.
+ *
+ *	- The number of available (free) buffers reported back in the footer or the packet report
+ *      will always be 2 less than the number of free buffers you think you should have.
+ *      This is because there is always a buffer FILLING, and there is always a buffer PROCESSING.
+ */
 
+uint8_t xio_get_packet_slots()
+{
+    uint8_t free = 0;
 
-
-
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
+        if (xio.slot[i].state == BUFFER_IS_FREE) {
+            free++;
+        }
+    }
+    return (free);
+}
 
 // starting on slot s, return the index of the first slot with a given state
 static int8_t _get_next_slot(int8_t s, cmBufferState state)
