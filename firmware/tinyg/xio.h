@@ -231,24 +231,25 @@ typedef enum {						    // readline() buffer and slot states
  * ----- pool_base  (char * address)
  */
 
-typedef struct bufHdr {                 // buffer header block (NB: It's not really a header)
-    struct bufHdr *pv;                  // pointer to previous buffer block
+typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
+//    struct bufHdr *pv;                  // pointer to previous buffer block
+    uint8_t bufnum;  //+++++ DIAGNOSTIC
     struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState
     uint16_t size;                      // buffer size in bytes
     char *bufp;                         // pointer to char buffer start (finally!)
-} buf_blk_t;
+} buf_hdr_t;
 
-typedef struct {                        // structure to manage a buffer pool
-    buf_blk_t *used_base;               // start of used buffers: filling, queued, processing
-    buf_blk_t *used_top;                // end of used buffers: filling, queued, processing
-    buf_blk_t *free_base;               // start of free region from which to grab next buffer
-    uint16_t requested_size;            // settable value for requested buffer size
-    uint8_t buffers_available;          // estimated count of remaining buffers
-    uint8_t pool;                       // self reference for whether this is a CTRL or DATA manager
-    char *pool_base;                    // starting address of control buffer pool
-    char *pool_top;                     // ending address of control buffer pool
-    buf_blk_t buf[RX_BUFS_MAX];         // buffer structs for control buffers
+typedef struct bufMgr{                  // structure to manage a buffer pool
+    buf_hdr_t *used_base;               // start of used buffers: may be filling, ctrl, data, processing
+    buf_hdr_t *used_top;                // end of used buffers
+    buf_hdr_t *free_base;               // start of free region
+    uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
+    uint8_t estd_buffers_available;     // estimated count of available buffers for reporting to UI
+    uint8_t pool_type;                  // One of BUFFER_IS_CTRL or BUFFER_IS_DATA to self reference this manager struct
+    char *pool_base;                    // starting address of buffer pool
+    char *pool_top;                     // ending address of buffer pool
+    buf_hdr_t buf[RX_BUFS_MAX];         // circular linked list of header structs
 } buf_mgr_t;
 buf_mgr_t bm[2];                        // buffer manager structs for _CTRL and _DATA
 

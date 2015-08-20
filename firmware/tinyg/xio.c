@@ -90,7 +90,7 @@ static void _init_readline(void);
 
 static char *_get_free_buffer(devflags_t flags, uint16_t size);
 static char *_get_filling_buffer(void);
-static char *_get_next_processing_buffer(void);
+static char *_get_next_buffer_to_process(void);
 static void _free_processing_buffer(void);
 static void _post_buffer(char *bufp);
 
@@ -523,11 +523,11 @@ static void _init_readline()
     }
 
     // new linemode readline setup
-    bm[_CTRL].pool = BUFFER_IS_CTRL;                    // self referential label
+    bm[_CTRL].pool_type = BUFFER_IS_CTRL;               // self referential label
     bm[_CTRL].pool_base = ctrl_pool;                    // base address of control buffer pool
     bm[_CTRL].pool_top = ctrl_pool + sizeof(ctrl_pool); // address of top of control buffer pool
 
-    bm[_DATA].pool = BUFFER_IS_DATA;
+    bm[_DATA].pool_type = BUFFER_IS_DATA;
     bm[_DATA].pool_base = data_pool;
     bm[_DATA].pool_top = data_pool + sizeof(data_pool);
 
@@ -535,22 +535,43 @@ static void _init_readline()
         bm[i].used_base = bm[i].buf;                    // initialize to first header block
         bm[i].used_top = bm[i].buf;                     // same
         bm[i].free_base = bm[i].buf;                    // same
-        bm[i].buffers_available = RX_BUFS_MAX;          // estimated buffers available
+        bm[i].estd_buffers_available = RX_BUFS_MAX;     // estimated buffers available
         bm[i].requested_size = RX_BUF_SIZE_MAX;         // this parameter may be overwritten later
         for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
             bm[i].buf[j].state = BUFFER_IS_FREE;
             bm[i].buf[j].size = 0;
             bm[i].buf[j].bufp = bm[i].pool_base;        // point all bufs to the base of RAM
-            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
+//            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
             bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
+            bm[i].buf[j].bufnum = j;                    // ++++++ DIAGNOSTIC
         }
-        bm[i].buf[0].nx = &bm[i].buf[RX_BUFS_MAX-1];     // close the pv loop
+//        bm[i].buf[0].pv = &bm[i].buf[RX_BUFS_MAX-1];     // close the pv loop
         bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
     }
     _test_new_bufs();   //+++++ some unit testing wedged in here
 }
 
 /*
+ * Terminology:
+ *  - "Header" refers to the buffer control structure buf_hdr_t
+ *  - "Buffer" refers to the actual character buffer allocated from a pool
+ *  - "Pool" refers to a char array from which buffers are allocated
+ *  - "Free" refers to a header that is unallocated and available for use
+ *  - "Used" refers to a header that has an allocated buffer and is in some stage of use
+ *  - "Base" refers to the bottom of a queue or list
+ *  - "Top" refers to the top of a queue or list
+ *
+ * Operation:
+ *  - The header list (buf) is a circular FIFO implemented as a forward linked list
+ *  - Headers are added to the top (newest element) and removed from the base (oldest).
+ *  - Free headers start above used_top and are advanced "upwards"
+ *  - If a header is free the size is zero and the bufp is invalid
+ *  - If there is only one used buffer used_base and used_top point to the same buffer
+ *  - If there are no used buffers used_base, used_top and free_base are the same
+ *  - If the header queue is full used_base and used_top are adjacent.
+ *    Free_base points to used_base but must not be used until used_base slot becomes free
+ *
+ *
  * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
  *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
  *  - There can only be zero or one BUFFER_IS_PROCESSING buffers, total
@@ -589,7 +610,7 @@ static void _test_new_bufs()
     }
     sprintf(c, "123456789\n");                  // 5.
     _post_buffer(c);                            // 5b.
-//    _get_next_processing_buffer();              // 6.   Don't do this on the first go
+//    _get_next_buffer_to_process();              // 6.   Don't do this on the first go
 
 
     // 1.
@@ -602,7 +623,7 @@ static void _test_new_bufs()
     }
     sprintf(c, "write some text in here\n");    // 5.
     _post_buffer(c);                            // 5b.
-    _get_next_processing_buffer();            // 6.
+    _get_next_buffer_to_process();            // 6.
 
 
     // 1.
@@ -615,7 +636,7 @@ static void _test_new_bufs()
     }
     sprintf(c, "this is an excessively long line that exceeds the recommanded length by a number of characters I'd not even care to count manually\n");    // 5.
     _post_buffer(c);                            // 5b.
-    _get_next_processing_buffer();            // 6.
+    _get_next_buffer_to_process();            // 6.
 
 }
 
@@ -639,12 +660,12 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
     } else if (flags & DEV_IS_DATA) {
         b = &bm[_DATA];
     } else {
-        return (NULL);                          // no flag set. THis exception inicates an erro in the flag setting
+        return (NULL);                          // no flag set. This exception indicates an error in the flag setting
     }
-    buf_blk_t *f = b->free_base;                // pointer to first free buffer (header block)
+    buf_hdr_t *f = b->free_base;                // pointer to first free block
 
     if (f->state != BUFFER_IS_FREE) {           // buffer headers are maxed out
-        return (NULL);
+        return (NULL);                          // this happens if there are no more header blocks left
     }
 
     if ((b->pool_top - f->bufp) > size) {       // is there room at the top?
@@ -656,7 +677,7 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
         f->size = b->used_base->bufp - b->pool_base; // claim all available space
 
     } else {
-        return (NULL);                          // failed to get a buffer
+        return (NULL);                          // this happens if there is insufficient buffer space left
     }
     f->state = BUFFER_IS_FILLING;
     b->used_top = f;
@@ -676,26 +697,34 @@ static char *_get_filling_buffer()
 {
     if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
         return (bm[_CTRL].used_base->bufp);
-    } else if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
+
+    } else
+    if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
         return (bm[_DATA].used_base->bufp);
+
     }
-    return (NULL);
+    return (NULL);  // This is OK. Didn't have an open buffer that was filling
 }
 
 /*
- * _get_next_processing_buffer() - return the next buffer to process
+ * _get_next_buffer_to_process() - return the next buffer to process. Search ctrl first, then data
  *
- * Assumes that the buffer to process is always the one at the top of the used list
+ * Assumes that the buffer to process is always the one at the base of the used list
  */
 
-static char *_get_next_processing_buffer()
+static char *_get_next_buffer_to_process()
 {
-    if (bm[_CTRL].used_top->state == BUFFER_IS_PROCESSING) {
-        return (bm[_CTRL].used_top->bufp);
-    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
-        return (bm[_DATA].used_top->bufp);
+    if (bm[_CTRL].used_base->state == BUFFER_IS_CTRL) {
+        bm[_CTRL].used_base->state = BUFFER_IS_PROCESSING;
+        return (bm[_CTRL].used_base->bufp);
+
+    } else
+    if (bm[_DATA].used_base->state == BUFFER_IS_DATA) {
+        bm[_DATA].used_base->state = BUFFER_IS_PROCESSING;
+        return (bm[_DATA].used_base->bufp);
+
     }
-    return (NULL);
+    return (NULL);  // This is OK. Didn't have anything to process
 }
 
 /*
@@ -707,14 +736,18 @@ static void _free_processing_buffer()
     buf_mgr_t *b;
     if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
         b = &bm[_CTRL];
-    } else if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
+
+    } else
+    if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
         b = &bm[_DATA];
+
     } else {
-        return;     // this is fine. It just didn't find anything
+        return;     // this is OK. It just didn't find anything
     }
-    b->used_top->state = BUFFER_IS_FREE;
-    if (b->used_top->pv != BUFFER_IS_FREE) {
-        b->used_top = b->used_top->pv;
+    b->used_base->state = BUFFER_IS_FREE;
+    b->used_base->size = 0;
+    if (b->used_base->nx != BUFFER_IS_FREE) {
+        b->used_base = b->used_base->nx;
     }
 }
 
@@ -730,13 +763,15 @@ static void _post_buffer(char *bufp)
     buf_mgr_t *b;
     if ((bufp >= bm[_CTRL].pool_base) && (bufp < bm[_CTRL].pool_top)) {
         b = &bm[_CTRL];
+
     } else
     if ((bufp >= bm[_DATA].pool_base) && (bufp < bm[_DATA].pool_top)) {
         b = &bm[_DATA];
+
     } else {
-        return;                     // not supposed to happen
+        return;     // not supposed to happen
     }
-    b->used_top->state = b->pool;           // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
+    b->used_top->state = b->pool_type;      // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
     b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for termianting NUL
 
     if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
