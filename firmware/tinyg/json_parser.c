@@ -156,7 +156,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
 			if (*str == '(') in_comment = true;
-			if ((*str <= ' ') || (*str == DEL)) continue; // toss ctrls, WS & DEL
+			if ((*str <= ' ') || (*str == DEL)) { continue; } // toss leading ctrls, WS & DEL
 			*wr++ = tolower(*str);
 		} else {							// Gcode comment processing
 			if (*str == ')') in_comment = false;
@@ -520,7 +520,7 @@ void json_print_response(uint8_t status)
 		}
 	}
 	char footer_string[NV_FOOTER_LEN];
-    
+
     if (xio.rx_mode == RX_MODE_CHAR) {                      // character style footer
         sprintf(footer_string, "2,%d,%d", status, cs.linelen);	//...streaming mode
         cs.linelen = 0;										// reset linelen so it's only reported once
