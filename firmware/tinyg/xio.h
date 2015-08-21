@@ -232,6 +232,7 @@ typedef enum {						    // readline() buffer and slot states
 
 typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
     uint8_t bufnum;  //+++++ DIAGNOSTIC
+    struct bufHdr *pv;                  // pointer to next buffer block
     struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState
     uint16_t size;                      // buffer size in bytes

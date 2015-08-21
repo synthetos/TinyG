@@ -95,14 +95,6 @@ static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
 static void _init_readline_stream(void);
 //static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
-/*
-static char *_get_free_buffer(devflags_t flags, uint16_t size);
-static char *_get_filling_buffer(void);
-static char *_get_next_buffer_to_process(void);
-static void _free_processing_buffer(void);
-static void _post_buffer(char *bufp);
-*/
-static void _test_new_bufs();
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -361,106 +353,6 @@ char_t *readline(devflags_t *flags, uint16_t *size)
 #endif
 }
 
-// parse the buffer to see if its a control
-// +++ Note: parsing for control is somewhat naiive. This will need to get better
-static bool _parse_control(char *p)
-{
-	if (strchr("{$?!~%Hh", *p) != NULL) {		        // a match indicates control line
-    	return (true);
-    }
-    return (false);
-};
-
-/*
- * _readline_stream() - character-mode serial reader (streaming)
- *
- *	Arguments:
- *	  - Flags request DEV_IS_CTRL, DEV_IS_CTRL, or either (both); returns type detected.
- *	  - Size is ignored on input, set to line length on return.
- *	  - Returns pointer to buffer or NULL pointer if no data.
- *
- *	Function:
- *	  - Read active RX device(s). Return an input line or a NULL pointer if no completed line.
- *		THe *flags arg is set to indicate the type of line returned, and *size is set to
- *		length of the returned line. The *size returned includes the space taken by the
- *		terminating CR or LF, so this is one (1) more than a standard strlen().
- *
- *		Currently this function does no special handling for doubly terminated lines e.g. CRLF.
- *		In this case the first termination returns the line; the second returns a null line of *size = 1
- *
- *	  - Data Blocking: This function has a special behavior to support sending CTRLs while
- *		executing cycles. If the flags request ctrl but not data and a data line is read from
- *		the RX device, the buffer (containing a data line) will not be returned. The buffer
- *		will be held until a call is made that requests data (may request both DATA and CTRL).
- */
-
-static void _init_readline_stream()
-{
-    // streaming readline setup
-    xio.bufp = xio.in_buf;                              // pointer for streaming readline
-}
-
-static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
-{
-	*flags = flag;
-	*size = xio.buf_size;
-	return (xio.bufp);
-}
-
-static char_t *_exit_null(devflags_t *flags, uint16_t *size)
-{
-	*size = 0;
-	*flags = DEV_IS_NONE;
-	return ((char_t *)NULL);
-}
-
-static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
-{
-	// Handle cases where you are already holding a completed data buffer
-	if (xio.buf_state == BUFFER_IS_DATA) {
-		if (*flags & DEV_IS_DATA) {
-			xio.buf_state = BUFFER_IS_FREE;				// indicates it's OK to start filling this buffer again
-			return (_exit_line(DEV_IS_DATA, flags, size));
-		} else {
-			return(_exit_null(flags, size));
-		}
-	}
-	// Read the input device and process the line
-	stat_t status;
-	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_CHAR_BUFFER_LEN)) == XIO_EAGAIN) {
-		return(_exit_null(flags, size));
-	}
-	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
-
-	//*** got a full buffer ***
-	if (status == STAT_EOF) {							// EOF can come from file devices only
-		if (cs.comm_mode == TEXT_MODE) {
-			fprintf_P(stderr, PSTR("End of command file\n"));
-		} else {
-//			rpt_exception(STAT_EOF, NULL);				// not really an exception
-			rpt_exception(STAT_EOF);				    // not really an exception
-		}
-		controller_reset_source();						// reset to active source to default source
-	}
-	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
-		return (_exit_line(DEV_IS_NONE, flags, size));
-	}
-	if (_parse_control(xio.bufp)) {                     // true indicates control line
-		return (_exit_line(DEV_IS_CTRL, flags, size));
-	}
-	if (*flags & DEV_IS_DATA) {							// got a data line
-		return (_exit_line(DEV_IS_DATA, flags, size));	// case where it's OK to return the data line
-	}
-	xio.buf_state = BUFFER_IS_DATA;						// case where it's not OK to return the DATA line
-	return(_exit_null(flags, size));
-}
-
-
-
-//**************************
-//*** readline() helpers ***
-//**************************
-
 // ****************************************************************************
 // **** LINE MODE FUNCTIONS ***************************************************
 // ****************************************************************************
@@ -525,9 +417,11 @@ static void _init_readline_linemode()
             bm[i].buf[j].state = BUFFER_IS_FREE;
             bm[i].buf[j].size = 0;
             bm[i].buf[j].bufp = bm[i].pool_base;        // point all bufs to the base of RAM
+            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
             bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
             bm[i].buf[j].bufnum = j;                    // ++++++ DIAGNOSTIC
         }
+        bm[i].buf[0].pv = &bm[i].buf[RX_BUFS_MAX-1];    // close the pv loop
         bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
     }
 }
@@ -627,6 +521,9 @@ static char *_next_buffer_to_process()
 
 /*
  * _free_processed_buffer() - return the processing buffer to the free list or exit silently
+ *
+ *  The buffer to free will be at the base if the used list.
+ *  Invalidate bufp because we can't know what it's eventually going to become
  */
 
 static void _free_processed_buffer()
@@ -643,9 +540,12 @@ static void _free_processed_buffer()
         return;     // this is OK. It just didn't find anything
     }
     b->used_base->state = BUFFER_IS_FREE;
-    b->used_base->size = 0;
+//    b->used_base->size = 0;
     b->used_base->bufp = NULL;
-    if (b->used_base->nx != BUFFER_IS_FREE) {
+    if (b->used_base->nx != BUFFER_IS_FREE) {   // advance the used base if the next buffer is not free
+        if (b->used_top == b->used_base) {      // need to advance the top as well
+            b->used_top = b->used_base->nx;
+        }
         b->used_base = b->used_base->nx;
     }
 }
@@ -671,7 +571,7 @@ static void _post_buffer(char *bufp)
         return;     // not supposed to happen
     }
     b->used_top->state = b->pool_type;      // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
-    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for termianting NUL
+    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for terminating NUL
 
     if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
         b->free_base->bufp = b->used_top->bufp + b->used_top->size;
@@ -761,6 +661,108 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 }
 
 #pragma GCC reset_options
+
+
+// ****************************************************************************
+// **** STREAMING MODE FUNCTIONS **********************************************
+// ****************************************************************************
+/*
+ * _readline_stream() - character-mode serial reader (streaming)
+ *
+ *	Arguments:
+ *	  - Flags request DEV_IS_CTRL, DEV_IS_CTRL, or either (both); returns type detected.
+ *	  - Size is ignored on input, set to line length on return.
+ *	  - Returns pointer to buffer or NULL pointer if no data.
+ *
+ *	Function:
+ *	  - Read active RX device(s). Return an input line or a NULL pointer if no completed line.
+ *		THe *flags arg is set to indicate the type of line returned, and *size is set to
+ *		length of the returned line. The *size returned includes the space taken by the
+ *		terminating CR or LF, so this is one (1) more than a standard strlen().
+ *
+ *		Currently this function does no special handling for doubly terminated lines e.g. CRLF.
+ *		In this case the first termination returns the line; the second returns a null line of *size = 1
+ *
+ *	  - Data Blocking: This function has a special behavior to support sending CTRLs while
+ *		executing cycles. If the flags request ctrl but not data and a data line is read from
+ *		the RX device, the buffer (containing a data line) will not be returned. The buffer
+ *		will be held until a call is made that requests data (may request both DATA and CTRL).
+ */
+
+/*
+ *_parse_control() - parse the buffer to see if its a control
+ *
+ * Parsing for control is somewhat naiive. This may need to get better
+ * Note: this function is used by both streaming mode and packet mode
+ */
+static bool _parse_control(char *p)
+{
+    if (strchr("{$?!~%Hh", *p) != NULL) {		        // a match indicates control line
+        return (true);
+    }
+    return (false);
+};
+
+static void _init_readline_stream()
+{
+    xio.bufp = xio.in_buf;                              // pointer for streaming readline
+}
+
+static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
+{
+	*flags = flag;
+	*size = xio.buf_size;
+	return (xio.bufp);
+}
+
+static char_t *_exit_null(devflags_t *flags, uint16_t *size)
+{
+	*size = 0;
+	*flags = DEV_IS_NONE;
+	return ((char_t *)NULL);
+}
+
+static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
+{
+	// Handle cases where you are already holding a completed data buffer
+	if (xio.buf_state == BUFFER_IS_DATA) {
+		if (*flags & DEV_IS_DATA) {
+			xio.buf_state = BUFFER_IS_FREE;				// indicates it's OK to start filling this buffer again
+			return (_exit_line(DEV_IS_DATA, flags, size));
+		} else {
+			return(_exit_null(flags, size));
+		}
+	}
+	// Read the input device and process the line
+	stat_t status;
+	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_CHAR_BUFFER_LEN)) == XIO_EAGAIN) {
+		return(_exit_null(flags, size));
+	}
+	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
+
+	//*** got a full buffer ***
+	if (status == STAT_EOF) {							// EOF can come from file devices only
+		if (cs.comm_mode == TEXT_MODE) {
+			fprintf_P(stderr, PSTR("End of command file\n"));
+		} else {
+//			rpt_exception(STAT_EOF, NULL);				// not really an exception
+			rpt_exception(STAT_EOF);				    // not really an exception
+		}
+		controller_reset_source();						// reset to active source to default source
+	}
+	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
+		return (_exit_line(DEV_IS_NONE, flags, size));
+	}
+	if (_parse_control(xio.bufp)) {                     // true indicates control line
+		return (_exit_line(DEV_IS_CTRL, flags, size));
+	}
+	if (*flags & DEV_IS_DATA) {							// got a data line
+		return (_exit_line(DEV_IS_DATA, flags, size));	// case where it's OK to return the data line
+	}
+	xio.buf_state = BUFFER_IS_DATA;						// case where it's not OK to return the DATA line
+	return(_exit_null(flags, size));
+}
+
 
 // ****************************************************************************
 // **** PACKET MODE FUNCTIONS *************************************************
