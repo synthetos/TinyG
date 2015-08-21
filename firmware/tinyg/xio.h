@@ -209,7 +209,6 @@ typedef void (*x_flow_t)(xioDev_t *d);
 #define RX_DATA_POOL        512         // memory pool allocated for data buffers
 
 typedef enum {						    // readline() buffer and slot states
-//    BUFFER_IS_UNDEFINED = -1,           // buffer (slot) is undefined (linemode operation)
     BUFFER_IS_FREE = 0,                 // buffer (slot) is available (must be 0)
     BUFFER_IS_FILLING,                  // buffer is partially loaded
     BUFFER_IS_CTRL,                     // buffer contains a control line
@@ -232,7 +231,6 @@ typedef enum {						    // readline() buffer and slot states
  */
 
 typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
-//    struct bufHdr *pv;                  // pointer to previous buffer block
     uint8_t bufnum;  //+++++ DIAGNOSTIC
     struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState

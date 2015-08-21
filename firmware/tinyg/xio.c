@@ -478,7 +478,8 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
  *  - The header list (buf) is a circular FIFO implemented as a forward linked list
  *  - Headers are added to the top (newest element) and removed from the base (oldest).
  *  - Free headers start above used_top and are advanced "upwards"
- *  - If a header is free the size is zero and the bufp is invalid
+ *  - If a header is free the size is zero and the bufp is invalid except if the free
+ *      buffer is the one immediately following the used_top
  *  - If there is only one used buffer used_base and used_top point to the same buffer
  *  - If there are no used buffers used_base, used_top and free_base are the same
  *  - If the header queue is full used_base and used_top are adjacent.
@@ -524,67 +525,14 @@ static void _init_readline_linemode()
             bm[i].buf[j].state = BUFFER_IS_FREE;
             bm[i].buf[j].size = 0;
             bm[i].buf[j].bufp = bm[i].pool_base;        // point all bufs to the base of RAM
-//            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
             bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
             bm[i].buf[j].bufnum = j;                    // ++++++ DIAGNOSTIC
         }
-//        bm[i].buf[0].pv = &bm[i].buf[RX_BUFS_MAX-1];     // close the pv loop
         bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
     }
-    _test_new_bufs();   //+++++ some unit testing wedged in here
 }
 
 #pragma GCC optimize ("O0")
-
-// ********* TESTING NEW LINEBUF CODE ******* REMOVE LATER
-static void _test_new_bufs()
-{
-    uint16_t size = 80;
-    devflags_t flags = DEV_IS_CTRL;
-
-    _readline_linemode(&flags, &size);
-/*
-    char *c;
-
-    // 1.
-    _free_processing_buffer();                  // 2.
-    if ((c = _get_filling_buffer()) == NULL) {  // 3.
-        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            printf("no free buffer available\n");
-            return;
-        }
-    }
-    sprintf(c, "123456789\n");                  // 5.
-    _post_buffer(c);                            // 5b.
-//    _get_next_buffer_to_process();              // 6.   Don't do this on the first go
-
-
-    // 1.
-    _free_processing_buffer();                  // 2.
-    if ((c = _get_filling_buffer()) == NULL) {  // 3.
-        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            printf("no free buffer available\n");
-            return;
-        }
-    }
-    sprintf(c, "write some text in here\n");    // 5.
-    _post_buffer(c);                            // 5b.
-    _get_next_buffer_to_process();            // 6.
-
-
-    // 1.
-    _free_processing_buffer();                  // 2.
-    if ((c = _get_filling_buffer()) == NULL) {  // 3.
-        if ((c = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            printf("no free buffer available\n");
-            return;
-        }
-    }
-    sprintf(c, "this is an excessively long line that exceeds the recommanded length by a number of characters I'd not even care to count manually\n");    // 5.
-    _post_buffer(c);                            // 5b.
-    _get_next_buffer_to_process();            // 6.
-*/
-}
 
 /*
  * _get_free_buffer() - get lowest free buffer from _CTRL or _DATA. Allocate space
@@ -696,6 +644,7 @@ static void _free_processed_buffer()
     }
     b->used_base->state = BUFFER_IS_FREE;
     b->used_base->size = 0;
+    b->used_base->bufp = NULL;
     if (b->used_base->nx != BUFFER_IS_FREE) {
         b->used_base = b->used_base->nx;
     }
@@ -704,8 +653,8 @@ static void _free_processed_buffer()
 /*
  * _post_buffer() - post the buffer as BUFFER_IS_CTRL or BUFFER_IS_DATA the give back unused space
  *
- * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA in place.
- * Then truncate the size, giving back unused chars to the next FREE buffer.
+ * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA
+ * in place. Then truncate the size, giving back unused chars to the next FREE buffer.
  */
 
 static void _post_buffer(char *bufp)
@@ -747,7 +696,6 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     char *bufp;                 // pointer to allocated buffer
     stat_t status;
     buf_mgr_t *b = NULL;        // keep compiler happy - uninitialized variable warnings
-//    buf_hdr_t *h = NULL;
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
     _free_processed_buffer();                          // 1. Free a buffer is one is processing
@@ -781,23 +729,23 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
             if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
                 continue;
             }
-            break;                                          // you have a valid character now
+            break;                                  // you have a valid character now
         }
-    }        
+    }
 
-    // Parse the character and try to get the correct buffer        
+    // Parse the character and try to get the correct buffer
     if (strchr("{$?!~%Hh", single_char_buffer[0]) != NULL) { // a match indicates control line
         if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process());              // still holding the single char
+            return(_next_buffer_to_process());      // no buffer available, but still holding the single char
         }
         b = &bm[_CTRL];
     } else {
         if ((bufp = _get_free_buffer(DEV_IS_DATA, bm[_DATA].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process());              // still holding the single char
+            return(_next_buffer_to_process());      // no buffer available, but still holding the single char
         }
         b = &bm[_DATA];
     }
-  
+
     // Got a buffer (BUFFER_IS_FILLING)
     bufp[0] = single_char_buffer[0];                // write char to the buffer and keep reading
     single_char_buffer[0] = NUL;                    // reset single_char_buffer
@@ -811,41 +759,6 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     _post_buffer(bufp);                             // post your newly filled buffer
     return(_next_buffer_to_process());
 }
-
-/*
-	// Free a previously processing slot (assumes calling readline() means a free should occur)
-	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
-    	xio.slot[s].state = BUFFER_IS_FREE;
-	}
-
-	// Look for a partially filled slot if one exists
-	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
-	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
-    	stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
-    	if (stat == (stat_t)XIO_EAGAIN) {
-        	return (_return_slot(flags));			// no more characters to read. Return an available slot
-    	}
-    	if (stat == (stat_t)XIO_BUFFER_FULL) {
-        	return (_return_on_overflow(flags, s));
-    	}
-    	_mark_slot(s);								// mark the completed line as ctrl or data or reject blank lines
-	}
-
-	// Now fill free slots until you run out of slots or characters
-	s=0;
-	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
-    	stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
-    	if (stat == XIO_EAGAIN) {
-        	xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
-        	return (_return_slot(flags));			// no more characters to read. Return an available slot
-    	}
-    	if (stat == XIO_BUFFER_FULL) {
-        	return (_return_on_overflow(flags, s));
-    	}
-    	_mark_slot(s++);							// mark the completed line as ctrl or data or reject blank lines
-	}
-	return (_return_slot(flags));
-*/
 
 #pragma GCC reset_options
 

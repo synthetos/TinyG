@@ -93,7 +93,7 @@ static struct cfgUSART const cfgUsart[] PROGMEM = {
  * FUNCTIONS
  ******************************************************************************/
 
-static int _gets_helper(xioDev_t *d, xioUsart_t *dx);
+//static int _gets_helper(xioDev_t *d, xioUsart_t *dx);
 
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -259,6 +259,45 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  *	Note: This function assumes ignore CR and ignore LF handled upstream before the RX buffer
  */
+
+//#pragma GCC optimize ("O0")
+
+static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
+{
+    char c = NUL;
+
+    if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+        dx->rx_buf_count = 0;					// reset count for good measure
+        return(XIO_BUFFER_EMPTY);				// stop reading
+    }
+    advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
+    dx->rx_buf_count--;
+    d->x_flow(d);								// run flow control
+//	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
+    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+    if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
+
+    if (d->len >= d->size) {                    // handle buffer overruns
+        d->buf[d->size-1] = NUL;                // terminate line (d->size is zero based)
+        d->signal = XIO_SIG_EOL;
+        d->flag_in_line = false;                // reset in-line state
+        d->len = 0;                             // reset length counter
+        return (XIO_BUFFER_FULL);
+    }
+    if ((c == CR) || (c == LF)) {				// handle CR, LF termination
+        d->buf[(d->len)++] = NUL;
+        d->signal = XIO_SIG_EOL;
+        d->flag_in_line = false;				// clear in-line state (reset)
+        return (XIO_EOL);						// return for end-of-line
+    }
+    //	d->buf[(d->len)++] = c;						// write character to buffer
+    d->buf[d->len] = c;						    // write character to buffer
+    d->len++;
+    return (XIO_EAGAIN);
+}
+
+//#pragma GCC reset_options
+
 int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 {
 	xioUsart_t *dx = d->x;						// USART pointer
@@ -280,40 +319,6 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 		}
 	}
 	return (XIO_OK);
-}
-
-static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
-{
-	char c = NUL;
-
-	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
-		dx->rx_buf_count = 0;					// reset count for good measure
-		return(XIO_BUFFER_EMPTY);				// stop reading
-	}
-	advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
-	dx->rx_buf_count--;
-	d->x_flow(d);								// run flow control
-//	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
-	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-	if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
-
-	if (d->len >= d->size) {                    // handle buffer overruns
-		d->buf[d->size-1] = NUL;                // terminate line (d->size is zero based)
-		d->signal = XIO_SIG_EOL;
-        d->flag_in_line = false;                // reset in-line state
-        d->len = 0;                             // reset length counter
-		return (XIO_BUFFER_FULL);
-	}
-	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
-		d->buf[(d->len)++] = NUL;
-		d->signal = XIO_SIG_EOL;
-		d->flag_in_line = false;				// clear in-line state (reset)
-		return (XIO_EOL);						// return for end-of-line
-	}
-//	d->buf[(d->len)++] = c;						// write character to buffer
-	d->buf[d->len] = c;						    // write character to buffer
-    d->len++;
-	return (XIO_EAGAIN);
 }
 
 /*

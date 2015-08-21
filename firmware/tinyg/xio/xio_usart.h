@@ -51,10 +51,10 @@
 //#define buffer_t uint16_t						// larger buffers
 
 // Must reserve 2 bytes for buffer management
-#define RX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
-#define TX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
-//#define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
-//#define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
+#define RX_BUFFER_SIZE (buffer_t)16			// buffer_t can be 8 bits
+#define TX_BUFFER_SIZE (buffer_t)16			// buffer_t can be 8 bits
+//#define RX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
+//#define TX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
 //#define buffer_t uint16_t						// slower, but larger buffers
