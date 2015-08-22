@@ -648,6 +648,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 
     // Got a buffer (BUFFER_IS_FILLING)
     bufp[0] = single_char_buffer[0];                // write char to the buffer and keep reading
+    bufp[1] = NUL;                                  // terminate it
     single_char_buffer[0] = NUL;                    // reset single_char_buffer
 
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) {
