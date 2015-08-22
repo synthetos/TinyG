@@ -232,7 +232,7 @@ static stat_t _dispatch_command()
 	cs.bufp = readline(&flags, &cs.linelen);
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
         return(cm_soft_alarm(STAT_BUFFER_FULL));
-    }    
+    }
     if (cs.bufp != (char *)NULL) {          // process the command
         _dispatch_kernel();
     }

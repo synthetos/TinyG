@@ -32,6 +32,12 @@
         <port>49159</port>
         <ssl>False</ssl>
       </Channel>
+      <ToolOptions>
+        <InterfaceProperties>
+        </InterfaceProperties>
+        <InterfaceName>
+        </InterfaceName>
+      </ToolOptions>
     </com_atmel_avrdbg_tool_simulator>
     <AsfFrameworkConfig>
       <framework-data>

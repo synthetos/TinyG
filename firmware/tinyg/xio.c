@@ -469,7 +469,9 @@ static char *_get_free_buffer(devflags_t flags, uint16_t size)
     }
     f->state = BUFFER_IS_FILLING;
     b->used_top = f;
-
+//    if (f->nx->state != BUFFER_IS_FREE) {
+//        printf("@");
+//    }
     // set the FREE list to the next buffer.
     // But this might be erroneous if the next buffer is not free. sort that out later
     // Also, makes no sense to set bufp here as that will change during post.
@@ -488,14 +490,38 @@ static char *_get_filling_buffer(buf_mgr_t **b)
     if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
         *b = &bm[_CTRL];
         return (bm[_CTRL].used_base->bufp);
-
-    } else
+    }
     if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
         *b = &bm[_DATA];
         return (bm[_DATA].used_base->bufp);
-
     }
     return (NULL);  // This is OK. Didn't have an open buffer that was filling
+}
+
+/*
+ * _post_buffer() - post the buffer as BUFFER_IS_CTRL or BUFFER_IS_DATA the give back unused space
+ *
+ * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA
+ * in place. Then truncate the size, giving back unused chars to the next FREE buffer.
+ */
+
+static void _post_buffer(char *bufp)
+{
+    buf_mgr_t *b;
+    if ((bufp >= bm[_CTRL].pool_base) && (bufp < bm[_CTRL].pool_top)) {
+        b = &bm[_CTRL];
+    } else 
+    if ((bufp >= bm[_DATA].pool_base) && (bufp < bm[_DATA].pool_top)) {
+        b = &bm[_DATA];
+    } else {
+        return;     // not supposed to happen
+    }
+    b->used_top->state = b->pool_type;      // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
+    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for terminating NUL
+
+    if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
+        b->free_base->bufp = b->used_top->bufp + b->used_top->size+1; // +1 advances off terminating NUL
+    }
 }
 
 /*
@@ -504,18 +530,23 @@ static char *_get_filling_buffer(buf_mgr_t **b)
  * Assumes that the buffer to process is always the one at the base of the used list
  */
 
-static char *_next_buffer_to_process()
+static char *_next_buffer_to_process(devflags_t *flags)
 {
-    if (bm[_CTRL].used_base->state == BUFFER_IS_CTRL) {
-        bm[_CTRL].used_base->state = BUFFER_IS_PROCESSING;
-        return (bm[_CTRL].used_base->bufp);
-
-    } else
-    if (bm[_DATA].used_base->state == BUFFER_IS_DATA) {
-        bm[_DATA].used_base->state = BUFFER_IS_PROCESSING;
-        return (bm[_DATA].used_base->bufp);
-
+    if (*flags & DEV_IS_CTRL) {     // use & to allow DEV_IS_BOTH
+        if (bm[_CTRL].used_base->state == BUFFER_IS_CTRL) {
+            bm[_CTRL].used_base->state = BUFFER_IS_PROCESSING;
+            *flags = (DEV_IS_CTRL);
+            return (bm[_CTRL].used_base->bufp);
+        }        
     }
+    if (*flags & DEV_IS_DATA) {     // use & to allow DEV_IS_BOTH
+        if (bm[_DATA].used_base->state == BUFFER_IS_DATA) {
+            bm[_DATA].used_base->state = BUFFER_IS_PROCESSING;
+            *flags = (DEV_IS_DATA);
+            return (bm[_DATA].used_base->bufp);
+        }
+    }    
+    *flags = (DEV_IS_NONE);
     return (NULL);  // This is OK. Didn't have anything to process
 }
 
@@ -551,34 +582,6 @@ static void _free_processed_buffer()
 }
 
 /*
- * _post_buffer() - post the buffer as BUFFER_IS_CTRL or BUFFER_IS_DATA the give back unused space
- *
- * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA
- * in place. Then truncate the size, giving back unused chars to the next FREE buffer.
- */
-
-static void _post_buffer(char *bufp)
-{
-    buf_mgr_t *b;
-    if ((bufp >= bm[_CTRL].pool_base) && (bufp < bm[_CTRL].pool_top)) {
-        b = &bm[_CTRL];
-
-    } else
-    if ((bufp >= bm[_DATA].pool_base) && (bufp < bm[_DATA].pool_top)) {
-        b = &bm[_DATA];
-
-    } else {
-        return;     // not supposed to happen
-    }
-    b->used_top->state = b->pool_type;      // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
-    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for terminating NUL
-
-    if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
-        b->free_base->bufp = b->used_top->bufp + b->used_top->size;
-    }
-}
-
-/*
  * _readline_linemode() - read a line using dynamic allocation
  *
  * Operation summarized as:
@@ -605,7 +608,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     if ((bufp = _get_filling_buffer(&b)) != NULL) {      // 2. Get a buffer if one is filling
     	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
     	if (status == XIO_EAGAIN) {
-            return(_next_buffer_to_process());   // no more chars to read
+            return(_next_buffer_to_process(flags));     // no more chars to read
     	}
     	if (status == XIO_BUFFER_FULL) {
         	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
@@ -623,7 +626,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
             // exit if no character read
             if (single_char_buffer[0] == (char)_FDEV_ERR) { // requires the cast
                 single_char_buffer[0] = NUL;                // reset the single_char_buffer
-                return(_next_buffer_to_process());
+                return(_next_buffer_to_process(flags));
             }
             // discard leading whitespace
             if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
@@ -636,12 +639,12 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     // Parse the character and try to get the correct buffer
     if (strchr("{$?!~%Hh", single_char_buffer[0]) != NULL) { // a match indicates control line
         if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process());      // no buffer available, but still holding the single char
+            return(_next_buffer_to_process(flags)); // no buffer available, but still holding the single char
         }
         b = &bm[_CTRL];
     } else {
         if ((bufp = _get_free_buffer(DEV_IS_DATA, bm[_DATA].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process());      // no buffer available, but still holding the single char
+            return(_next_buffer_to_process(flags)); // no buffer available, but still holding the single char
         }
         b = &bm[_DATA];
     }
@@ -652,13 +655,13 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     single_char_buffer[0] = NUL;                    // reset single_char_buffer
 
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) {
-        return(_next_buffer_to_process());          // buffer is not yet full
+        return(_next_buffer_to_process(flags));     // buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
         return ((char *)_FDEV_ERR);                 // buffer overflow occurred
     }
     _post_buffer(bufp);                             // post your newly filled buffer
-    return(_next_buffer_to_process());
+    return(_next_buffer_to_process(flags));
 }
 
 #pragma GCC reset_options
