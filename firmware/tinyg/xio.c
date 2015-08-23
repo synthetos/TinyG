@@ -426,12 +426,12 @@ static char *_get_free_buffer(uint16_t requested_size)
 {
     buf_mgr_t *b = &bm;                             // pointer to buffer manager
     buf_hdr_t *h = b->used_top;                     // top of used list
-    buf_hdr_t *f = h->nx;                           // pointer to first (maybe) free header
-
-    if (b->used_base == b->used_top) {
+    buf_hdr_t *f = h->nx;                           // pointer to free header
+ 
+    // setup pointers
+    if ((h == b->used_base) && (h->state == BUFFER_FREE)) { // zero used buffers
         f = h;
     }
-
     if (f->state != BUFFER_FREE) {                  // buffer headers are maxed out
         return (NULL);                              // this happens if there are no more free headers left
     }
@@ -480,29 +480,29 @@ static void _post_buffer(char *bufp)
 {
     char c;
     buf_mgr_t *b = &bm;
-    buf_hdr_t *h = b->used_top;             // posting buffer is always at top of used list
+    buf_hdr_t *h = b->used_top;                     // posting buffer is always at top of used list
 
-    h->size = strlen(bufp) + 1;             // set initial size; give back unused bytes; account for terminating NUL
+    h->size = strlen(bufp) + 1;                     // set initial size; give back unused bytes; account for terminating NUL
 
     // clean up the buffer by cursoring past any leading white space and blank lines
     for (uint8_t i=0; i<h->size; i++, h->bufp++) {
         c = *(h->bufp);
-        if ((c == CR) || (c == LF)) {       // blank line. Undo the buffer and return
+        if ((c == CR) || (c == LF)) {               // blank line. Undo the buffer and return
             h->state = BUFFER_FREE;
             if (h->pv != BUFFER_FREE) {
                 b->used_top = h->pv;
             }
             return;
         }
-        if (c <= ' ') {                     // white space
+        if (c <= ' ') {                             // white space
             continue;
         }
         break;
     }
-    h->size = strlen(bufp) + 1;             // set actual size; account for terminating NUL
+    h->size = strlen(bufp) + 1;                     // set actual size; account for terminating NUL
 
     // set flags for buffer
-    if (strchr("{$?!~%Hh", c) != NULL) {    // a match indicates control line
+    if (strchr("{$?!~%Hh", c) != NULL) {            // a match indicates control line
         h->flags = DEV_IS_CTRL;
     } else {
         h->flags = DEV_IS_DATA;
@@ -521,16 +521,13 @@ static char *_next_buffer_to_process(devflags_t *flags)
     buf_hdr_t *h = bm.used_base;                        // pointer to first used block
 
     // scan the used list for the lowest ctrl header 
-    if (*flags & DEV_IS_CTRL) {                         // use & to allow DEV_IS_BOTH
+    if (*flags & DEV_IS_CTRL) {                         // use '&' to allow DEV_IS_BOTH
         for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) { // only process headers once
-            if (h->state == BUFFER_FREE) {              // exit the scan
+            if (h->state == BUFFER_FREE) {              // terminate the scan
                 break;
             }
-            if (h->state == BUFFER_FRAGMENT) {          // skip over fragmented headers
-                break;
-            }
-            if (h->flags & DEV_IS_CTRL) {
-                *flags = (DEV_IS_CTRL);
+            if ((h->state == BUFFER_FULL) && (h->flags & DEV_IS_CTRL)) {
+                *flags = (DEV_IS_CTRL);                 // set as control only
                 h->state = BUFFER_PROCESSING;
                 return (h->bufp);
             }
@@ -539,15 +536,12 @@ static char *_next_buffer_to_process(devflags_t *flags)
 
     // next scan the used list for the lowest data header
     h = bm.used_base;                                   // reset pointer to first used block
-    if (*flags & DEV_IS_DATA) {                         // use & to allow DEV_IS_BOTH
+    if (*flags & DEV_IS_DATA) {                         // use '&' to allow DEV_IS_BOTH
         for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) { // make sure you only process the header queue once
             if (h->state == BUFFER_FREE) {              // exit the scan
                 break;
             }
-            if (h->state == BUFFER_FRAGMENT) {          // skip over fragmented headers
-                break;
-            }
-            if (h->flags & DEV_IS_DATA) {
+            if ((h->state == BUFFER_FULL) && (h->flags & DEV_IS_DATA)) {
                 *flags = (DEV_IS_DATA);
                 h->state = BUFFER_PROCESSING;
                 return (h->bufp);
@@ -570,23 +564,30 @@ static char *_next_buffer_to_process(devflags_t *flags)
 static void _free_processed_buffer()
 {
     buf_mgr_t *b = &bm;
-    buf_hdr_t *h = b->used_base;                // pointer to first used block
+    buf_hdr_t *h = b->used_base;                        // pointer to first used block
 
     // scan the used list for the PROCESSING header - if one exists. It may not
-    for (uint8_t i=0; i<RX_HEADERS; i++) {      // make sure you only process the header queue once
-        if (h->state == BUFFER_PROCESSING) {    // free it - with conditions
-            h->bufp = NULL;
-            if (h == b->used_base) {            // handling if freed buffer is the base
+    for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) {     // make sure you only process the header queue once
+        if (h->state == BUFFER_PROCESSING) {            // free it - with conditions
+            if (h->state == BUFFER_FREE) {              // exit the scan
+                break;
+            }
+            if (h == b->used_base) {                    // processing buffer is the base
+                h->bufp = NULL;
                 h->state = BUFFER_FREE;
-                b->used_base = b->used_base->nx;
-                if (h == b->used_top) {         // additional special handling if base is also == top
-                    b->used_top = b->used_base;
+                if (h != b->used_top) {                 // adjust base
+                    b->used_base = b->used_base->nx;
                 }
-            } else {                            // handling if buffer is in the middle of used list
+            } else if (h == b->used_top) {              // processing buffer is the top
+                h->bufp = NULL;
+                h->state = BUFFER_FREE;
+                if (h->pv->state == BUFFER_FREE) {      // adjust top
+                    b->used_top = h->pv;
+                }
+            } else {                                    // buffer is in the middle of used list
                 h->state = BUFFER_FRAGMENT;
                 b->fragments++;
             }
-            h = h->nx;
             break;
         }
     }
