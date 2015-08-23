@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.23	// line mode - set up for virtual buffers
+#define TINYG_FIRMWARE_BUILD        440.24	// line mode using a single buffer pool for control and data
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

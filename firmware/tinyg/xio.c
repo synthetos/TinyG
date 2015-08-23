@@ -86,13 +86,14 @@
 
 #define __LINEMODE
 
-char single_char_buffer[2] = { NUL, NUL };
+//char single_char_buffer[2] = { NUL, NUL };
 
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size);
 static char_t *_readline_packet(devflags_t *flags, uint16_t *size);
 static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
 
 static void _init_readline_stream(void);
+static void _init_readline_packet(void);
 //static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
 
@@ -122,6 +123,7 @@ void xio_init()
 
     // set up XIO buffers and pointers
     _init_readline_stream();
+    _init_readline_packet();
     _init_readline_linemode();
 
 	xio_init_assertions();
@@ -359,29 +361,26 @@ char_t *readline(devflags_t *flags, uint16_t *size)
 /*
  * Terminology:
  *  - "Header" refers to the buffer control structure buf_hdr_t
- *  - "Buffer" refers to the actual character buffer allocated from a pool
+ *  - "Buffer" refers to the actual character buffer RAW allocated from the rx pool
  *  - "Pool" refers to a char array from which buffers are allocated
  *  - "Free" refers to a header that is unallocated and available for use
- *  - "Used" refers to a header that has an allocated buffer and is in some stage of use
+ *  - "Used" refers to a header that has an allocated buffer and is in some state of use
  *  - "Base" refers to the bottom of a queue or list
  *  - "Top" refers to the top of a queue or list
  *
  * Operation:
  *  - The header list (buf) is a circular FIFO implemented as a forward linked list
- *  - Headers are added to the top (newest element) and removed from the base (oldest).
+ *  - Headers are added to the top (newest element) and removed from the base (oldest element).
  *  - Free headers start above used_top and are advanced "upwards"
- *  - If a header is free the size is zero and the bufp is invalid except if the free
- *      buffer is the one immediately following the used_top
- *  - If there is only one used buffer used_base and used_top point to the same buffer
- *  - If there are no used buffers used_base, used_top and free_base are the same
- *  - If the header queue is full used_base and used_top are adjacent.
- *    Free_base points to used_base but must not be used until used_base slot becomes free
- *
+ *      - All data in a free header except the BUFFER_FREE state is invalid
+ *  - If there is only one used buffer used_base and used_top point to the same buffer and state != BUFFER_FREE
+ *  - If there are no used buffers used_base, used_top point to the same buffer and state == BUFFER_FREE
+ *  - If the header queue is full (maxed out) used_base and used_top are adjacent.
  *
  * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
  *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
- *  - There can only be zero or one BUFFER_IS_PROCESSING buffers, total
- *  - When readline() is called we should always free the current BUFFER_IS_PROCESSING
+ *  - There can only be zero or one BUFFER_PROCESSING buffers, total
+ *  - When readline() is called we should always free the current BUFFER_PROCESSING
  *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
  *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
  *    - The FREE list always grows from the base to the top (with wrap) until it cannot grow
@@ -390,40 +389,23 @@ char_t *readline(devflags_t *flags, uint16_t *size)
  */
 static void _init_readline_linemode()
 {
-    // streaming readline setup
-    xio.bufp = xio.in_buf;                              // pointer for streaming readline
+    bm.pool_base = rx_pool;                         // base address of RX buffer pool
+    bm.pool_top = rx_pool + sizeof(rx_pool);        // address of top of RX buffer pool
 
-    // old packet readline setup
-    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {         // pointers for old packet readline
-        xio.slot[i].bufp = packet_bufs[i];
+    bm.used_base = bm.buf;                          // initialize to first header block
+    bm.used_top = bm.buf;                           // same
+    bm.estd_buffers_available = RX_HEADERS;         // estimated buffers available
+    bm.requested_size = RX_BUFFER_REQESTED_SIZE;    // this parameter may be overwritten later
+    for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
+        bm.buf[i].bufnum = i;                       // ++++++ NUMBER THE HEADER AS A DIAGNOSTIC
+        bm.buf[i].size = 0;
+        bm.buf[i].state = BUFFER_FREE;
+        bm.buf[i].bufp = bm.pool_base;              // point all bufs to the base of RAM
+        bm.buf[i].pv = &(bm.buf[i-1]);              // link the buffers via pv
+        bm.buf[i].nx = &(bm.buf[i+1]);              // link the buffers via nx
     }
-
-    // new linemode readline setup
-    bm[_CTRL].pool_type = BUFFER_IS_CTRL;               // self referential label
-    bm[_CTRL].pool_base = ctrl_pool;                    // base address of control buffer pool
-    bm[_CTRL].pool_top = ctrl_pool + sizeof(ctrl_pool); // address of top of control buffer pool
-
-    bm[_DATA].pool_type = BUFFER_IS_DATA;
-    bm[_DATA].pool_base = data_pool;
-    bm[_DATA].pool_top = data_pool + sizeof(data_pool);
-
-    for (uint8_t i=_CTRL; i<_DATA+1; i++) {             // initialize buffer managers
-        bm[i].used_base = bm[i].buf;                    // initialize to first header block
-        bm[i].used_top = bm[i].buf;                     // same
-        bm[i].free_base = bm[i].buf;                    // same
-        bm[i].estd_buffers_available = RX_BUFS_MAX;     // estimated buffers available
-        bm[i].requested_size = RX_BUF_SIZE_MAX;         // this parameter may be overwritten later
-        for (uint8_t j=0; j<RX_BUFS_MAX; j++) {         // initialize buffer control blocks
-            bm[i].buf[j].state = BUFFER_IS_FREE;
-            bm[i].buf[j].size = 0;
-            bm[i].buf[j].bufp = bm[i].pool_base;        // point all bufs to the base of RAM
-            bm[i].buf[j].pv = &(bm[i].buf[j-1]);        // link the buffers via pv
-            bm[i].buf[j].nx = &(bm[i].buf[j+1]);        // link the buffers via nx
-            bm[i].buf[j].bufnum = j;                    // ++++++ DIAGNOSTIC
-        }
-        bm[i].buf[0].pv = &bm[i].buf[RX_BUFS_MAX-1];    // close the pv loop
-        bm[i].buf[RX_BUFS_MAX-1].nx = bm[i].buf;        // close the nx loop
-    }
+    bm.buf[0].pv = &bm.buf[RX_HEADERS-1];           // close the pv loop
+    bm.buf[RX_HEADERS-1].nx = bm.buf;               // close the nx loop
 }
 
 #pragma GCC optimize ("O0")
@@ -440,114 +422,142 @@ static void _init_readline_linemode()
  *    - NULL if this the request is not possible
  */
 
-static char *_get_free_buffer(devflags_t flags, uint16_t size)
+static char *_get_free_buffer(uint16_t requested_size)
 {
-    buf_mgr_t *b;                               // pointer to control or data buffer manager
-    if (flags & DEV_IS_CTRL) {
-        b = &bm[_CTRL];
-    } else if (flags & DEV_IS_DATA) {
-        b = &bm[_DATA];
+    buf_mgr_t *b = &bm;                             // pointer to buffer manager
+    buf_hdr_t *h = b->used_top;                     // top of used list
+    buf_hdr_t *f = h->nx;                           // pointer to first (maybe) free header
+
+    if (b->used_base == b->used_top) {
+        f = h;
+    }
+
+    if (f->state != BUFFER_FREE) {                  // buffer headers are maxed out
+        return (NULL);                              // this happens if there are no more free headers left
+    }
+
+    // attempt to allocate free RAM above the used_top
+    f->bufp = h->bufp + h->size +1;                 // set the buffer pointer just past the used_top
+    if ((b->pool_top - f->bufp) > requested_size) { // is there enough RAM at the top?
+        f->size = b->pool_top - f->bufp;            // claim all available RAM (no reason not to)
+
+    // if not, attempt to allocate free RAM below the used_base (wraparound case)
+    } else if ((b->used_base->bufp - b->pool_base) > requested_size) {
+        f->bufp = b->pool_base;                     // reset the pointer to the base
+        f->size = b->used_base->bufp - b->pool_base; // claim all available RAM
+
+    // this happens if there is insufficient RAM left
     } else {
-        return (NULL);                          // no flag set. This exception indicates an error in the flag setting
-    }
-    buf_hdr_t *f = b->free_base;                // pointer to first free block
-
-    if (f->state != BUFFER_IS_FREE) {           // buffer headers are maxed out
-        return (NULL);                          // this happens if there are no more header blocks left
+        return (NULL);                              
     }
 
-    if ((b->pool_top - f->bufp) > size) {       // is there room at the top?
-        f->bufp = f->bufp;                      // no-op - optimizes out. Here for illustration
-        f->size = b->pool_top - f->bufp;        // claim all available space
-
-    } else if ((b->used_base->bufp - b->pool_base) > size) { // is there room at the bottom?
-        f->bufp = b->pool_base;                 // reset the pointer to the base
-        f->size = b->used_base->bufp - b->pool_base; // claim all available space
-
-    } else {
-        return (NULL);                          // this happens if there is insufficient buffer space left
-    }
-    f->state = BUFFER_IS_FILLING;
-    b->used_top = f;
-//    if (f->nx->state != BUFFER_IS_FREE) {
-//        printf("@");
-//    }
-    // set the FREE list to the next buffer.
-    // But this might be erroneous if the next buffer is not free. sort that out later
-    // Also, makes no sense to set bufp here as that will change during post.
-    b->free_base = f->nx;
+    f->state = BUFFER_FILLING;                      // claim the header
+    b->used_top = f;                                // move the top to the header
     return (f->bufp);
 }
 
 /*
  * _get_filling_buffer() - get char * pointer to the currently filling buffer or NULL if none found
- *
- * b points to the controlling buffer manager on return.
  */
 
-static char *_get_filling_buffer(buf_mgr_t **b)
+static char *_get_filling_buffer()
 {
-    if (bm[_CTRL].used_base->state == BUFFER_IS_FILLING) {
-        *b = &bm[_CTRL];
-        return (bm[_CTRL].used_base->bufp);
-    }
-    if (bm[_DATA].used_base->state == BUFFER_IS_FILLING) {
-        *b = &bm[_DATA];
-        return (bm[_DATA].used_base->bufp);
+    if (bm.used_base->state == BUFFER_FILLING) {
+        return (bm.used_base->bufp);
     }
     return (NULL);  // This is OK. Didn't have an open buffer that was filling
 }
 
 /*
- * _post_buffer() - post the buffer as BUFFER_IS_CTRL or BUFFER_IS_DATA the give back unused space
+ * _post_buffer() - post a FILLING buffer to FULL status
  *
- * This occurs by changing it's state from BUFFER_IS_FILLING to BUFFER_IS_CTRL or BUFFER_IS_DATA
- * in place. Then truncate the size, giving back unused chars to the next FREE buffer.
+ *  Perform the following line pre-processing functions:
+ *    - Strip whitespace and leading terminations (CR/LF)
+ *  Set they flags and truncate the size, giving back unused chars to the pool.
  */
 
 static void _post_buffer(char *bufp)
 {
-    buf_mgr_t *b;
-    if ((bufp >= bm[_CTRL].pool_base) && (bufp < bm[_CTRL].pool_top)) {
-        b = &bm[_CTRL];
-    } else 
-    if ((bufp >= bm[_DATA].pool_base) && (bufp < bm[_DATA].pool_top)) {
-        b = &bm[_DATA];
-    } else {
-        return;     // not supposed to happen
-    }
-    b->used_top->state = b->pool_type;      // label as BUFFER_IS_CONTROL or BUFFER_IS_DATA - no longer BUFFER_IS_FILLING
-    b->used_top->size = strlen(bufp)+1;     // give back unused bytes; account for terminating NUL
+    char c;
+    buf_mgr_t *b = &bm;
+    buf_hdr_t *h = b->used_top;             // posting buffer is always at top of used list
 
-    if (b->free_base->state == BUFFER_IS_FREE) { // set free buffer to new start of free space
-        b->free_base->bufp = b->used_top->bufp + b->used_top->size+1; // +1 advances off terminating NUL
+    h->size = strlen(bufp) + 1;             // set initial size; give back unused bytes; account for terminating NUL
+
+    // clean up the buffer by cursoring past any leading white space and blank lines
+    for (uint8_t i=0; i<h->size; i++, h->bufp++) {
+        c = *(h->bufp);
+        if ((c == CR) || (c == LF)) {       // blank line. Undo the buffer and return
+            h->state = BUFFER_FREE;
+            if (h->pv != BUFFER_FREE) {
+                b->used_top = h->pv;
+            }
+            return;
+        }
+        if (c <= ' ') {                     // white space
+            continue;
+        }
+        break;
     }
+    h->size = strlen(bufp) + 1;             // set actual size; account for terminating NUL
+
+    // set flags for buffer
+    if (strchr("{$?!~%Hh", c) != NULL) {    // a match indicates control line
+        h->flags = DEV_IS_CTRL;
+    } else {
+        h->flags = DEV_IS_DATA;
+    }
+    h->state = BUFFER_FULL;
 }
 
 /*
  * _next_buffer_to_process() - Search ctrl first, then data; send NULL if nothing to process
  *
- * Assumes that the buffer to process is always the one at the base of the used list
+ * Assumes that the buffer to process is always lowest ctrl or data of the used list
  */
 
 static char *_next_buffer_to_process(devflags_t *flags)
 {
-    if (*flags & DEV_IS_CTRL) {     // use & to allow DEV_IS_BOTH
-        if (bm[_CTRL].used_base->state == BUFFER_IS_CTRL) {
-            bm[_CTRL].used_base->state = BUFFER_IS_PROCESSING;
-            *flags = (DEV_IS_CTRL);
-            return (bm[_CTRL].used_base->bufp);
+    buf_hdr_t *h = bm.used_base;                        // pointer to first used block
+
+    // scan the used list for the lowest ctrl header 
+    if (*flags & DEV_IS_CTRL) {                         // use & to allow DEV_IS_BOTH
+        for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) { // only process headers once
+            if (h->state == BUFFER_FREE) {              // exit the scan
+                break;
+            }
+            if (h->state == BUFFER_FRAGMENT) {          // skip over fragmented headers
+                break;
+            }
+            if (h->flags & DEV_IS_CTRL) {
+                *flags = (DEV_IS_CTRL);
+                h->state = BUFFER_PROCESSING;
+                return (h->bufp);
+            }
         }        
     }
-    if (*flags & DEV_IS_DATA) {     // use & to allow DEV_IS_BOTH
-        if (bm[_DATA].used_base->state == BUFFER_IS_DATA) {
-            bm[_DATA].used_base->state = BUFFER_IS_PROCESSING;
-            *flags = (DEV_IS_DATA);
-            return (bm[_DATA].used_base->bufp);
+
+    // next scan the used list for the lowest data header
+    h = bm.used_base;                                   // reset pointer to first used block
+    if (*flags & DEV_IS_DATA) {                         // use & to allow DEV_IS_BOTH
+        for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) { // make sure you only process the header queue once
+            if (h->state == BUFFER_FREE) {              // exit the scan
+                break;
+            }
+            if (h->state == BUFFER_FRAGMENT) {          // skip over fragmented headers
+                break;
+            }
+            if (h->flags & DEV_IS_DATA) {
+                *flags = (DEV_IS_DATA);
+                h->state = BUFFER_PROCESSING;
+                return (h->bufp);
+            }
         }
-    }    
+    }
+    
+    // This is OK. Didn't have anything to process
     *flags = (DEV_IS_NONE);
-    return (NULL);  // This is OK. Didn't have anything to process
+    return (NULL);
 }
 
 /*
@@ -559,25 +569,26 @@ static char *_next_buffer_to_process(devflags_t *flags)
 
 static void _free_processed_buffer()
 {
-    buf_mgr_t *b;
-    if (bm[_CTRL].used_base->state == BUFFER_IS_PROCESSING) {
-        b = &bm[_CTRL];
+    buf_mgr_t *b = &bm;
+    buf_hdr_t *h = b->used_base;                // pointer to first used block
 
-    } else
-    if (bm[_DATA].used_base->state == BUFFER_IS_PROCESSING) {
-        b = &bm[_DATA];
-
-    } else {
-        return;     // this is OK. It just didn't find anything
-    }
-    b->used_base->state = BUFFER_IS_FREE;
-//    b->used_base->size = 0;
-    b->used_base->bufp = NULL;
-    if (b->used_base->nx != BUFFER_IS_FREE) {   // advance the used base if the next buffer is not free
-        if (b->used_top == b->used_base) {      // need to advance the top as well
-            b->used_top = b->used_base->nx;
+    // scan the used list for the PROCESSING header - if one exists. It may not
+    for (uint8_t i=0; i<RX_HEADERS; i++) {      // make sure you only process the header queue once
+        if (h->state == BUFFER_PROCESSING) {    // free it - with conditions
+            h->bufp = NULL;
+            if (h == b->used_base) {            // handling if freed buffer is the base
+                h->state = BUFFER_FREE;
+                b->used_base = b->used_base->nx;
+                if (h == b->used_top) {         // additional special handling if base is also == top
+                    b->used_top = b->used_base;
+                }
+            } else {                            // handling if buffer is in the middle of used list
+                h->state = BUFFER_FRAGMENT;
+                b->fragments++;
+            }
+            h = h->nx;
+            break;
         }
-        b->used_base = b->used_base->nx;
     }
 }
 
@@ -587,7 +598,7 @@ static void _free_processed_buffer()
  * Operation summarized as:
  *    1. free PROCESSING buffer (either frees or no-op)
  *    2. get FILLING buffer and continue to fill if one was returned
- *    3. if no FILLING buffer get FREE buffer (which becomes a new FILLING buffer)
+ *    3. if no FILLING buffer get a FREE buffer (which becomes a new FILLING buffer)
  *    4. read from RX into FILLING buffer
  *      4a. if buffer is not complete, exit
  *      4b. if buffer is complete: post buffer
@@ -598,14 +609,14 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 {
     char *bufp;                 // pointer to allocated buffer
     stat_t status;
-    buf_mgr_t *b = NULL;        // keep compiler happy - uninitialized variable warnings
+    buf_mgr_t *b = &bm;
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
-    _free_processed_buffer();                          // 1. Free a buffer is one is processing
+    _free_processed_buffer();                           // 1. Free a buffer is one is processing
 
-	// Get a partially filled buffer if one exists
+	// Resume a partially filled buffer if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
-    if ((bufp = _get_filling_buffer(&b)) != NULL) {      // 2. Get a buffer if one is filling
+    if ((bufp = _get_filling_buffer()) != NULL) {       // 2. Get a buffer if one is filling
     	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
@@ -616,44 +627,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
         _post_buffer(bufp);                             // post your newly filled buffer
     }
 
-	// Now fill a free buffer if you can
-    // Read single character to determine if you have a new control or data buffer or if the
-    // single_char_buffer is not NUL you got one last time but could not get a buffer for it
-    if (single_char_buffer[0] == NUL) {
-        for (uint8_t i=0; i<RX_BUF_SIZE_MAX; i++) {         // loop is just to trap potential runaway cases
-            single_char_buffer[0] = xio_getc(XIO_DEV_USB);  // xio_getc() must be set to non-blocking reads
-
-            // exit if no character read
-            if (single_char_buffer[0] == (char)_FDEV_ERR) { // requires the cast
-                single_char_buffer[0] = NUL;                // reset the single_char_buffer
-                return(_next_buffer_to_process(flags));
-            }
-            // discard leading whitespace
-            if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
-                continue;
-            }
-            break;                                  // you have a valid character now
-        }
+    // Get a new free buffer
+    if ((bufp = _get_free_buffer(b->requested_size)) == NULL) {   // 4.
+        return(_next_buffer_to_process(flags));         // no buffer available
     }
-
-    // Parse the character and try to get the correct buffer
-    if (strchr("{$?!~%Hh", single_char_buffer[0]) != NULL) { // a match indicates control line
-        if ((bufp = _get_free_buffer(DEV_IS_CTRL, bm[_CTRL].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process(flags)); // no buffer available, but still holding the single char
-        }
-        b = &bm[_CTRL];
-    } else {
-        if ((bufp = _get_free_buffer(DEV_IS_DATA, bm[_DATA].requested_size)) == NULL) {   // 4.
-            return(_next_buffer_to_process(flags)); // no buffer available, but still holding the single char
-        }
-        b = &bm[_DATA];
-    }
-
-    // Got a buffer (BUFFER_IS_FILLING)
-    bufp[0] = single_char_buffer[0];                // write char to the buffer and keep reading
-    bufp[1] = NUL;                                  // terminate it
-    single_char_buffer[0] = NUL;                    // reset single_char_buffer
-
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) {
         return(_next_buffer_to_process(flags));     // buffer is not yet full
     }
@@ -663,7 +640,26 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     _post_buffer(bufp);                             // post your newly filled buffer
     return(_next_buffer_to_process(flags));
 }
+/*
+	// Start a new buffer if you have characters to read
+	if (single_char_buffer[0] == NUL) {
+    	for (uint8_t i=0; i<RX_HEADERS; i++) {         // loop is just to trap potential runaway cases
+        	single_char_buffer[0] = xio_getc(XIO_DEV_USB);  // xio_getc() must be set to non-blocking reads
 
+        	// exit if no character read
+        	if (single_char_buffer[0] == (char)_FDEV_ERR) { // requires the cast
+            	single_char_buffer[0] = NUL;                // reset the single_char_buffer
+            	return(_next_buffer_to_process(flags));
+        	}
+        	// discard leading whitespace
+        	if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
+            	continue;
+        	}
+        	break;                                  // you have a valid character now
+    	}
+	}
+
+*/
 #pragma GCC reset_options
 
 
@@ -728,10 +724,10 @@ static char_t *_exit_null(devflags_t *flags, uint16_t *size)
 
 static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 {
-	// Handle cases where you are already holding a completed data buffer
-	if (xio.buf_state == BUFFER_IS_DATA) {
+	// Handle cases where you are already holding a completed buffer
+	if (xio.buf_state == BUFFER_FULL) {
 		if (*flags & DEV_IS_DATA) {
-			xio.buf_state = BUFFER_IS_FREE;				// indicates it's OK to start filling this buffer again
+			xio.buf_state = BUFFER_FREE;				// indicates it's OK to start filling this buffer again
 			return (_exit_line(DEV_IS_DATA, flags, size));
 		} else {
 			return(_exit_null(flags, size));
@@ -763,7 +759,7 @@ static char_t *_readline_stream(devflags_t *flags, uint16_t *size)
 	if (*flags & DEV_IS_DATA) {							// got a data line
 		return (_exit_line(DEV_IS_DATA, flags, size));	// case where it's OK to return the data line
 	}
-	xio.buf_state = BUFFER_IS_DATA;						// case where it's not OK to return the DATA line
+	xio.buf_state = BUFFER_FULL;						// case where it's not OK to return the DATA line
 	return(_exit_null(flags, size));
 }
 
@@ -838,11 +834,18 @@ uint8_t xio_get_packet_slots()
     uint8_t free = 0;
 
     for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
-        if (xio.slot[i].state == BUFFER_IS_FREE) {
+        if (xio.slot[i].state == BUFFER_FREE) {
             free++;
         }
     }
     return (free);
+}
+
+void _init_readline_packet()
+{
+    for (uint8_t i=0; i<RX_PACKET_SLOTS; i++) {
+        xio.slot[i].bufp = packet_bufs[i];
+    }
 }
 
 #ifndef __LINEMODE
@@ -881,7 +884,7 @@ static void _mark_slot(int8_t s)
 
     // discard null buffers
 	if (*p == NUL) {
-		xio.slot[s].state = BUFFER_IS_FREE;
+		xio.slot[s].state = BUFFER_FREE;
 		return;											// return if no data present
 	}
 
@@ -891,9 +894,9 @@ static void _mark_slot(int8_t s)
 	// mark slot w/sequence number and command type
 	xio.slot[s].seqnum = xio.next_slot_seqnum++;
 	if (_parse_control(p)) {		                    // true indicates control line
-		xio.slot[s].state = BUFFER_IS_CTRL;
+		xio.slot[s].state = BUFFER_CTRL;
 	} else {
-		xio.slot[s].state = BUFFER_IS_DATA;
+		xio.slot[s].state = BUFFER_DATA;
 	}
 }
 
@@ -902,15 +905,15 @@ static char_t *_return_slot(devflags_t *flags) // return the lowest seq ctrl, th
 	int8_t s;
 
     if (*flags & DEV_IS_CTRL) {                                 // scan for CTRL slots
-	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_CTRL)) != -1) {
-		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_CTRL)) != -1) {
+		    xio.slot[s].state = BUFFER_PROCESSING;
 		    *flags = DEV_IS_CTRL;
 		    return (xio.slot[s].bufp);                           // return CTRL slot
 	    }
     }
     if (*flags & DEV_IS_DATA) {                                 // scan for DATA slots
-	    if ((s = _get_lowest_seqnum_slot(BUFFER_IS_DATA)) != -1) {
-		    xio.slot[s].state = BUFFER_IS_PROCESSING;
+	    if ((s = _get_lowest_seqnum_slot(BUFFER_DATA)) != -1) {
+		    xio.slot[s].state = BUFFER_PROCESSING;
 		    *flags = DEV_IS_DATA;
 		    return (xio.slot[s].bufp);                           // return DATA slot
 	    }
@@ -923,7 +926,7 @@ static char_t *_return_on_overflow(devflags_t *flags, int8_t slot)  // buffer ov
 {
     rpt_exception(STAT_BUFFER_FULL); // when porting this to 0.98 include a truncated version of the line in the exception report
 //    printf(xio.slot[slot].buf);
-    xio.slot[slot].state = BUFFER_IS_FREE;
+    xio.slot[slot].state = BUFFER_FREE;
     *flags = DEV_IS_NONE;                                       // got no data
     return ((char_t *)_FDEV_ERR);                               // buffer overflow occurred
 }
@@ -934,13 +937,13 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
     stat_t stat;
 
 	// Free a previously processing slot (assumes calling readline() means a free should occur)
-	if ((s = _get_next_slot(0, BUFFER_IS_PROCESSING)) != -1) {  // this is OK. skip the free
-		xio.slot[s].state = BUFFER_IS_FREE;
+	if ((s = _get_next_slot(0, BUFFER_PROCESSING)) != -1) {  // this is OK. skip the free
+		xio.slot[s].state = BUFFER_FREE;
 	}
 
 	// Look for a partially filled slot if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
-	if ((s = _get_next_slot(0, BUFFER_IS_FILLING)) != -1) {
+	if ((s = _get_next_slot(0, BUFFER_FILLING)) != -1) {
         stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
     	if (stat == (stat_t)XIO_EAGAIN) {
         	return (_return_slot(flags));			// no more characters to read. Return an available slot
@@ -953,10 +956,10 @@ static char_t *_readline_packet(devflags_t *flags, uint16_t *size)
 
 	// Now fill free slots until you run out of slots or characters
 	s=0;
-	while ((s = _get_next_slot(s, BUFFER_IS_FREE)) != -1) {
+	while ((s = _get_next_slot(s, BUFFER_FREE)) != -1) {
         stat = xio_gets_usart(&ds[XIO_DEV_USB], xio.slot[s].bufp, RX_PACKET_LEN);
         if (stat == XIO_EAGAIN) {
-            xio.slot[s].state = BUFFER_IS_FILLING;	// got some characters. Declare the buffer to be filling
+            xio.slot[s].state = BUFFER_FILLING;	// got some characters. Declare the buffer to be filling
             return (_return_slot(flags));			// no more characters to read. Return an available slot
         }
         if (stat == XIO_BUFFER_FULL) {

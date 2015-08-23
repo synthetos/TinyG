@@ -112,11 +112,11 @@ typedef uint16_t devflags_t;
 #define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
 /*
 typedef enum {
-    DEV_IS_NONE	= (0x0000),                 // None of the following
-    DEV_IS_CTRL	= (0x0001),                 // device is set as a control channel
-    DEV_IS_DATA	= (0x0002),                 // device is set as a data channel
-    DEV_IS_BOTH	= (0x0003),                 // (DEV_IS_CTRL | DEV_IS_DATA)
-    DEV_IS_PRIMARY = (0x0004)               // device is the primary control channel
+    DEV_IS_NONE	= (0x0000),             // None of the following
+    DEV_IS_CTRL	= (0x0001),             // device is set as a control channel
+    DEV_IS_DATA	= (0x0002),             // device is set as a data channel
+    DEV_IS_BOTH	= (0x0003),             // (DEV_IS_CTRL | DEV_IS_DATA)
+    DEV_IS_PRIMARY = (0x0004)           // device is the primary control channel
 } channelType;
 */
 // device connection state
@@ -196,24 +196,25 @@ typedef void (*x_flow_t)(xioDev_t *d);
 /******************************************************************************
  * Readline Buffer Management
  */
-#define RX_CHAR_BUFFER_LEN 200			// input buffer for streaming serial mode
-#define RX_PACKET_SLOTS	12              // number of readline() input buffers
-#define RX_PACKET_LEN 80                // input buffer length
+#define RX_CHAR_BUFFER_LEN      200          // input buffer for streaming serial mode
+#define RX_PACKET_SLOTS	        12          // number of readline() input buffers
+#define RX_PACKET_LEN           80          // input buffer length
 
-#define _CTRL			    (0)		    // index for linemode buffer structures
-#define _DATA			    (1)		    // index for linemode buffer structures
-#define RX_BUFS_MAX         24          // maximum distinct buffers in a list
-#define RX_BUF_SIZE_MAX     80          // default maximum buffer size for buffers
+#define RX_HEADERS              24          // buffer headers in the list
+#define RX_BUFFER_REQESTED_SIZE 80          // requested size for buffers
+#define RX_BUFFER_POOL_SIZE     512         // total size of RX buffer memory pool
 
-#define RX_CTRL_POOL        256         // memory pool allocated for control buffers
-#define RX_DATA_POOL        512         // memory pool allocated for data buffers
+//#define _CTRL			        (0)		    // index for linemode buffer structures
+//#define _DATA			        (1)		    // index for linemode buffer structures
+//#define RX_CTRL_POOL          256         // memory pool allocated for control buffers
+//#define RX_DATA_POOL          512         // memory pool allocated for data buffers
 
-typedef enum {						    // readline() buffer and slot states
-    BUFFER_IS_FREE = 0,                 // buffer (slot) is available (must be 0)
-    BUFFER_IS_FILLING,                  // buffer is partially loaded
-    BUFFER_IS_CTRL,                     // buffer contains a control line
-    BUFFER_IS_DATA,                     // buffer contains a data line
-    BUFFER_IS_PROCESSING                // buffer is in use by the caller
+typedef enum {                              // readline() buffer and slot states
+    BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
+    BUFFER_FRAGMENT,                        // buffer is free but in the middle of the list
+    BUFFER_FILLING,                         // buffer is partially loaded
+    BUFFER_FULL,                            // buffer contains a full line
+    BUFFER_PROCESSING                       // buffer is in use by the caller
 } cmBufferState;
 
 /* and now for some ASCII art: Buffer pool viewed from top to bottom
@@ -235,6 +236,7 @@ typedef struct bufHdr {                 // buffer header (NB: It's not actually 
     struct bufHdr *pv;                  // pointer to next buffer block
     struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState
+    uint8_t flags;                       // DEV_IS_CTRL, DEV_IS_DATA
     uint16_t size;                      // buffer size in bytes
     char *bufp;                         // pointer to char buffer start (finally!)
 } buf_hdr_t;
@@ -242,18 +244,16 @@ typedef struct bufHdr {                 // buffer header (NB: It's not actually 
 typedef struct bufMgr{                  // structure to manage a buffer pool
     buf_hdr_t *used_base;               // start of used buffers: may be filling, ctrl, data, processing
     buf_hdr_t *used_top;                // end of used buffers
-    buf_hdr_t *free_base;               // start of free region
     uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
     uint8_t estd_buffers_available;     // estimated count of available buffers for reporting to UI
-    uint8_t pool_type;                  // One of BUFFER_IS_CTRL or BUFFER_IS_DATA to self reference this manager struct
+    uint8_t fragments;                  // used to track header fragmentation
     char *pool_base;                    // starting address of buffer pool
     char *pool_top;                     // ending address of buffer pool
-    buf_hdr_t buf[RX_BUFS_MAX];         // circular linked list of header structs
+    buf_hdr_t buf[RX_HEADERS];          // circular linked list of header structs
 } buf_mgr_t;
-buf_mgr_t bm[2];                        // buffer manager structs for _CTRL and _DATA
+buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
 
-char ctrl_pool[RX_CTRL_POOL];           // buffer pool for control buffers
-char data_pool[RX_DATA_POOL];           // buffer pool for data buffers
+char rx_pool[RX_BUFFER_POOL_SIZE];      // statically allocated buffer pool
 
 // old packet slot structs and buffer allocation
 typedef struct packetSlot {				// packet buffer slots
