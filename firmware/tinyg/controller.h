@@ -29,8 +29,7 @@
 #define CONTROLLER_H_ONCE
 
 #define SAVED_BUFFER_LEN 80			    // saved buffer size (for reporting only)
-#define MAXED_BUFFER_LEN 255			// text buffer size (255 max)
-#define OUTPUT_BUFFER_LEN 512			// text buffer size
+#define OUTPUT_BUFFER_LEN 512			// buffer for serialized JSON output & text output
 // see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
@@ -78,9 +77,8 @@ typedef struct controllerSingleton {	// main TG controller struct
 	char_t *bufp;						// pointer to primary or secondary in buffer
 	uint16_t linelen;					// length of currently processing line
 	uint16_t read_index;				// length of line being read
-//	char_t in_buf[MAXED_BUFFER_LEN];	// primary input buffer
-	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer
-	char_t saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer for serialized JSON and text output
+	char_t saved_buf[SAVED_BUFFER_LEN];	// buffer for saving the input buffer (reporting only)
 
 	magic_t magic_end;
 } controller_t;

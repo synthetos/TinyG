@@ -103,6 +103,8 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
 
+    xio_queue_RX_string_usb("$test=51\n");		// run braid partial file (doesn't work if text mode is disabled)
+
 /* Run test 99 */
 //	xio_queue_RX_string_usb("$test=99\n");		// run test file (doesn't work if text mode is disabled)
 //	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file

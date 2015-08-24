@@ -196,18 +196,15 @@ typedef void (*x_flow_t)(xioDev_t *d);
 /******************************************************************************
  * Readline Buffer Management
  */
-#define RX_CHAR_BUFFER_LEN      200         // input buffer for streaming serial mode
-#define RX_PACKET_SLOTS	        12          // number of readline() input buffers
-#define RX_PACKET_LEN           80          // input buffer length
 
-#define RX_HEADERS              24          // buffer headers in the list
+//#define RX_HEADERS              32          // buffer headers in the list
+//#define RX_BUFFER_REQUESTED_SIZE 200         // requested size for buffers
+//#define RX_BUFFER_POOL_SIZE     1024         // total size of RX buffer memory pool
+
+// values for testing
+#define RX_HEADERS               8          // buffer headers in the list
 #define RX_BUFFER_REQUESTED_SIZE 80         // requested size for buffers
-#define RX_BUFFER_POOL_SIZE     512         // total size of RX buffer memory pool
-
-//#define _CTRL			        (0)		    // index for linemode buffer structures
-//#define _DATA			        (1)		    // index for linemode buffer structures
-//#define RX_CTRL_POOL          256         // memory pool allocated for control buffers
-//#define RX_DATA_POOL          512         // memory pool allocated for data buffers
+#define RX_BUFFER_POOL_SIZE     256         // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
@@ -241,30 +238,27 @@ typedef struct bufHdr {                 // buffer header (NB: It's not actually 
     char *bufp;                         // pointer to char buffer start (finally!)
 } buf_hdr_t;
 
-typedef struct bufMgr{                  // structure to manage a buffer pool
+typedef struct bufMgr {                 // structure to manage a buffer pool
     uint16_t magic_start;
     buf_hdr_t *used_base;               // start of used headers: may be filling, ctrl, data, processing
     buf_hdr_t *used_top;                // end of used headers
     uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
-    uint8_t estd_buffers_available;     // estimated count of available buffers for reporting to UI
     uint8_t fragments;                  // used to track header fragmentation
+    uint8_t free_headers;               // running count of free buffers
+    uint8_t out_of_ram;                 // true if allocation failure occurs
     char *pool_base;                    // starting address of buffer pool
     char *pool_top;                     // ending address of buffer pool
-    uint16_t magic_middle;
     buf_hdr_t buf[RX_HEADERS];          // circular linked list of header structs
     uint16_t magic_end;
 } buf_mgr_t;
 buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
 
-char rx_pool[RX_BUFFER_POOL_SIZE];      // statically allocated buffer pool
-
-// old packet slot structs and buffer allocation
-typedef struct packetSlot {				// packet buffer slots
-    cmBufferState state;				// state of slot
-    uint32_t seqnum;					// sequence number of slot
-    char *bufp;                         // pointer to buffer used by slot
-} slot_t;
-char packet_bufs[RX_PACKET_SLOTS][RX_PACKET_LEN]; // buffers allocated for line slots (old packet mode)
+typedef struct bufPool {
+    uint16_t magic_start;
+    char rx_pool[RX_BUFFER_POOL_SIZE];  // statically allocated buffer pool
+    uint16_t magic_end;
+} buf_pool_t;
+buf_pool_t bufpool;
 
 typedef struct xioSingleton {
     uint16_t magic_start;
@@ -284,14 +278,10 @@ typedef struct xioSingleton {
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
 
     // character mode reader
-    uint8_t buf_size;					// persistent size variable
+    uint16_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
     char *bufp;                         // pointer to input buffer
-    char in_buf[RX_CHAR_BUFFER_LEN];
-
-    // line mode reader
-    uint32_t next_slot_seqnum;
-    slot_t slot[RX_PACKET_SLOTS];
+//    char in_buf[RX_CHAR_BUFFER_LEN];
 
     uint16_t magic_end;
 } xioSingleton_t;

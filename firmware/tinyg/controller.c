@@ -309,13 +309,6 @@ static void _dispatch_kernel()
     	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
     	sr_request_status_report(SR_TIMED_REQUEST);         // generate incremental status report to show any changes
 	}
-/*
-    else {
-		strncpy(cs.out_buf, cs.bufp, (MAXED_BUFFER_LEN-10));	// use out_buf as temp; '-10' is buffer for JSON chars
-		sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
-		json_parser(cs.bufp);
-	}
-*/
 }
 
 

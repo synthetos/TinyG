@@ -68,7 +68,7 @@
 
 /****** DEVELOPMENT SETTINGS ******/
 
-#define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xx) in config_app
+#define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xxN) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
 
