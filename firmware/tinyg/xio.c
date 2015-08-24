@@ -142,12 +142,20 @@ void xio_init_assertions()
 {
     xio.magic_start = MAGICNUM;
     xio.magic_end = MAGICNUM;
+    bm.magic_start = MAGICNUM;
+    bm.magic_middle = MAGICNUM;
+    bm.magic_end = MAGICNUM;
 }
 
 uint8_t xio_test_assertions()
 {
+	if (bm.magic_start					!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
+	if (bm.magic_middle					!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
+	if (bm.magic_end					!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
+
 	if (xio.magic_start					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (xio.magic_end					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+
 	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
@@ -408,9 +416,17 @@ static void _init_readline_linemode()
     bm.buf[0].pv = &bm.buf[RX_HEADERS-1];           // close the pv loop
     bm.buf[RX_HEADERS-1].nx = bm.buf;               // close the nx loop
 
-    // +++++ DIAGNOSTIC
-//    char fake_rx[] = {"g21\n g0x10\n g0x0\n  g0x40\n g1f300y10\n g0x0y0\n"}; // cannot exceed the length of the RX buffer
-//    xio_queue_RX_string_usb(fake_rx);
+// +++++ DIAGNOSTIC - Note: fake RX string cannot exceed the length of the RX buffer (254 chars)
+//    char fake_rx[] = {"g21\n g0x10\n g0x0\n  g0x40\n g1f300y10\n g0x0y0\n"}; 
+/*
+const char fake_rx[] = "\
+N1 T1M6\n\r\
+N2 G17\n\r\
+N3 G21 (mm)\n\r\
+N4 (S8000)\n\r\
+";
+xio_queue_RX_string_usb(fake_rx);
+*/
 }
 
 #pragma GCC optimize ("O0")
@@ -494,8 +510,8 @@ static void _post_buffer(char *bufp)
     // clean up the buffer by cursoring past any leading white space and blank lines
     for (uint8_t i=0; i<h->size; i++, h->bufp++) {  // shouldn't ever finish the iteration - here for protection
         c = *(h->bufp);
-        if ((c == CR) || (c == LF)) {               // blank line. Undo the buffer and return
-            h->state = BUFFER_FREE;
+        if (c == NUL) {                             // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart() 
+            h->state = BUFFER_FREE;                 // undo the buffer and return
             if (h->pv != BUFFER_FREE) {
                 b->used_top = h->pv;
             }

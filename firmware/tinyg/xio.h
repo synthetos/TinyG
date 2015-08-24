@@ -242,6 +242,7 @@ typedef struct bufHdr {                 // buffer header (NB: It's not actually 
 } buf_hdr_t;
 
 typedef struct bufMgr{                  // structure to manage a buffer pool
+    uint16_t magic_start;
     buf_hdr_t *used_base;               // start of used headers: may be filling, ctrl, data, processing
     buf_hdr_t *used_top;                // end of used headers
     uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
@@ -249,7 +250,9 @@ typedef struct bufMgr{                  // structure to manage a buffer pool
     uint8_t fragments;                  // used to track header fragmentation
     char *pool_base;                    // starting address of buffer pool
     char *pool_top;                     // ending address of buffer pool
+    uint16_t magic_middle;
     buf_hdr_t buf[RX_HEADERS];          // circular linked list of header structs
+    uint16_t magic_end;
 } buf_mgr_t;
 buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
 

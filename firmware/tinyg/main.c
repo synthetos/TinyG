@@ -274,8 +274,8 @@ static const char stat_85[] PROGMEM = "85";
 static const char stat_86[] PROGMEM = "86";
 static const char stat_87[] PROGMEM = "87";
 static const char stat_88[] PROGMEM = "88";
-static const char stat_89[] PROGMEM = "89";
 
+static const char stat_89[] PROGMEM = "IO memory allocation assertion failure";
 static const char stat_90[] PROGMEM = "Config sub-system assertion failure";
 static const char stat_91[] PROGMEM = "IO sub-system assertion failure";
 static const char stat_92[] PROGMEM = "Encoder assertion failure";

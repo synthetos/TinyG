@@ -358,10 +358,10 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_86 86
 #define	STAT_ERROR_87 87
 #define	STAT_ERROR_88 88
-#define	STAT_ERROR_89 89
 
 // Assertion failures - build down from 99 until they meet the system internal errors
 
+#define	STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE 89
 #define	STAT_CONFIG_ASSERTION_FAILURE 90
 #define	STAT_XIO_ASSERTION_FAILURE 91
 #define	STAT_ENCODER_ASSERTION_FAILURE 92
