@@ -283,13 +283,13 @@ typedef struct xioSingleton {
     uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
 
-    // streaming reader
+    // character mode reader
     uint8_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
     char *bufp;                         // pointer to input buffer
     char in_buf[RX_CHAR_BUFFER_LEN];
 
-    // packetized reader
+    // line mode reader
     uint32_t next_slot_seqnum;
     slot_t slot[RX_PACKET_SLOTS];
 
@@ -326,8 +326,8 @@ void xio_init_assertions(void);
 uint8_t xio_test_assertions(void);
 uint8_t xio_isbusy(void);
 
-uint8_t xio_get_packet_slots();
 char *readline(devflags_t *flags, uint16_t *size);
+uint8_t xio_get_line_buffers_available();
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);

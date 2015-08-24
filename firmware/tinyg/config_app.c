@@ -886,7 +886,7 @@ static stat_t get_rx(nvObj_t *nv)
     if (xio.rx_mode == RX_MODE_CHAR) {
 	    nv->value = (float)xio_get_usb_rx_free();
     } else {
-	    nv->value = (float)xio_get_packet_slots();
+	    nv->value = (float)xio_get_line_buffers_available();
     }            
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
