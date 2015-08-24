@@ -409,8 +409,8 @@ static void _init_readline_linemode()
     bm.buf[RX_HEADERS-1].nx = bm.buf;               // close the nx loop
 
     // +++++ DIAGNOSTIC
-    char fake_rx[] = {"g0x10\n g0x0\n"}; // cannot exceed the length of the RX buffer
-    xio_queue_RX_string_usb(fake_rx);
+//    char fake_rx[] = {"g21\n g0x10\n g0x0\n  g0x40\n g1f300y10\n g0x0y0\n"}; // cannot exceed the length of the RX buffer
+//    xio_queue_RX_string_usb(fake_rx);
 }
 
 #pragma GCC optimize ("O0")
@@ -640,12 +640,12 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
         return(_next_buffer_to_process(flags));         // no buffer available
     }
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) {
-        return(_next_buffer_to_process(flags));     // buffer is not yet full
+        return(_next_buffer_to_process(flags));         // buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
-        return ((char *)_FDEV_ERR);                 // buffer overflow occurred
+        return ((char *)_FDEV_ERR);                     // buffer overflow occurred
     }
-    _post_buffer(bufp);                             // post your newly filled buffer
+    _post_buffer(bufp);                                 // post newly filled buffer
     return(_next_buffer_to_process(flags));
 }
 
