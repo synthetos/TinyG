@@ -270,8 +270,8 @@ static stat_t _dispatch_control()
 static void _dispatch_kernel()
 {
     // skip leading whitespace & quotes
-	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) { 
-        cs.bufp++; 
+	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) {
+        cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
 
@@ -279,7 +279,7 @@ static void _dispatch_kernel()
 		if (cs.comm_mode == TEXT_MODE) {
 			text_response(STAT_OK, cs.saved_buf);
 		}
-    }    
+    }
 	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
 	else if (*cs.bufp == '!') { cm_request_feedhold(); }
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
@@ -288,19 +288,34 @@ static void _dispatch_kernel()
 	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode
 		json_parser(cs.bufp);
-    }    
+    }
+#ifdef __TEXT_MODE
 	else if (strchr("$?Hh", *cs.bufp) != NULL) {			// process as text mode
 		cs.comm_mode = TEXT_MODE;							// switch to text mode
 		text_response(text_parser(cs.bufp), cs.saved_buf);
-    }    
+    }
 	else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
 		text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
-    }    
-	else {
-		strncpy(cs.out_buf, cs.bufp, (MAXED_BUFFER_LEN-8));	// use out_buf as temp; '-8' is buffer for JSON chars
+    }
+#endif
+	else {  // anything else is interpreted as Gcode
+
+    	// this optimization bypasses the standard JSON parser and does what it needs directly
+    	nvObj_t *nv = nv_reset_nv_list();                   // get a fresh nvObj list
+    	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
+    	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
+    	nv->valuetype = TYPE_STRING;
+    	float status = gc_gcode_parser(cs.bufp);
+    	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
+    	sr_request_status_report(SR_TIMED_REQUEST);         // generate incremental status report to show any changes
+	}
+/*
+    else {
+		strncpy(cs.out_buf, cs.bufp, (MAXED_BUFFER_LEN-10));	// use out_buf as temp; '-10' is buffer for JSON chars
 		sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);
 		json_parser(cs.bufp);
 	}
+*/
 }
 
 

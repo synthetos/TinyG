@@ -196,12 +196,12 @@ typedef void (*x_flow_t)(xioDev_t *d);
 /******************************************************************************
  * Readline Buffer Management
  */
-#define RX_CHAR_BUFFER_LEN      200          // input buffer for streaming serial mode
+#define RX_CHAR_BUFFER_LEN      200         // input buffer for streaming serial mode
 #define RX_PACKET_SLOTS	        12          // number of readline() input buffers
 #define RX_PACKET_LEN           80          // input buffer length
 
 #define RX_HEADERS              24          // buffer headers in the list
-#define RX_BUFFER_REQESTED_SIZE 80          // requested size for buffers
+#define RX_BUFFER_REQUESTED_SIZE 80         // requested size for buffers
 #define RX_BUFFER_POOL_SIZE     512         // total size of RX buffer memory pool
 
 //#define _CTRL			        (0)		    // index for linemode buffer structures
@@ -242,8 +242,8 @@ typedef struct bufHdr {                 // buffer header (NB: It's not actually 
 } buf_hdr_t;
 
 typedef struct bufMgr{                  // structure to manage a buffer pool
-    buf_hdr_t *used_base;               // start of used buffers: may be filling, ctrl, data, processing
-    buf_hdr_t *used_top;                // end of used buffers
+    buf_hdr_t *used_base;               // start of used headers: may be filling, ctrl, data, processing
+    buf_hdr_t *used_top;                // end of used headers
     uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
     uint8_t estd_buffers_available;     // estimated count of available buffers for reporting to UI
     uint8_t fragments;                  // used to track header fragmentation

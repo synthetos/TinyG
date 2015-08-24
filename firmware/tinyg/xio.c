@@ -359,33 +359,34 @@ char_t *readline(devflags_t *flags, uint16_t *size)
 // **** LINE MODE FUNCTIONS ***************************************************
 // ****************************************************************************
 /*
- * Terminology:
+ * Terms:
  *  - "Header" refers to the buffer control structure buf_hdr_t
  *  - "Buffer" refers to the actual character buffer RAW allocated from the rx pool
  *  - "Pool" refers to a char array from which buffers are allocated
  *  - "Free" refers to a header that is unallocated and available for use
  *  - "Used" refers to a header that has an allocated buffer and is in some state of use
- *  - "Base" refers to the bottom of a queue or list
- *  - "Top" refers to the top of a queue or list
+ *  - "Base" refers to the bottom of the memory pool or header list
+ *  - "Top" refers to the top of the memory pool or header list
  *
  * Operation:
  *  - The header list (buf) is a circular FIFO implemented as a forward linked list
+ *      - "used" headers point to the dynamically allocated memory buffers (bufp)
+ *      - "free" headers have no allocated memory
  *  - Headers are added to the top (newest element) and removed from the base (oldest element).
- *  - Free headers start above used_top and are advanced "upwards"
- *      - All data in a free header except the BUFFER_FREE state is invalid
- *  - If there is only one used buffer used_base and used_top point to the same buffer and state != BUFFER_FREE
- *  - If there are no used buffers used_base, used_top point to the same buffer and state == BUFFER_FREE
- *  - If the header queue is full (maxed out) used_base and used_top are adjacent.
+ *      - When 2 or more headers in use the used_base and used_top are 2 distinct headers
+ *      - If only one header is in use then used_base and used_top point to the same header whose state != BUFFER_FREE
+ *      - If no headers are in use then used_base and used_top point to the same header whose state == BUFFER_FREE
+ *      - If the header queue is full (maxed out) used_base and used_top are adjacent, with no free headers in between
+ *      - The used_top header is usually FILLING
+ *      - The used_base header is usually FULL
+ *  - Free (unused) headers start above used_top and are advanced "upwards"
+ *      - All data in a free header is invalid except the BUFFER_FREE state
  *
  * Assumptions and Constraints. We can guarantee or must anticipate the following behaviors:
- *  - _get_free_buffer() needs to specify DEV_IS_CTRL or DEV_IS_DATA before calling it
- *  - There can only be zero or one BUFFER_PROCESSING buffers, total
- *  - When readline() is called we should always free the current BUFFER_PROCESSING
- *  - If header queue is full the FREE ptr may point to a non-free block. Must always check
- *  - FIFO ordering is always maintained within the _CTRL and _DATA pools. Simplifies things dramatically
- *    - The FREE list always grows from the base to the top (with wrap) until it cannot grow
- *    - Posts always occur by flipping a buffer from free to used
- *    - USED buffers are always consumed in order from base to top (with wrap)
+ *  - There can only be zero or on BUFFER_FILLING header, otherwise this in a system error
+ *  - There can only be zero or one BUFFER_PROCESSING header, otherwise this in a system error
+ *  - When readline() is called it should always attempt free the current BUFFER_PROCESSING, if one exists
+ *      - Based on assumption that readline is only called after the controller is done with the PROCESSING buffer
  */
 static void _init_readline_linemode()
 {
@@ -395,7 +396,7 @@ static void _init_readline_linemode()
     bm.used_base = bm.buf;                          // initialize to first header block
     bm.used_top = bm.buf;                           // same
     bm.estd_buffers_available = RX_HEADERS;         // estimated buffers available
-    bm.requested_size = RX_BUFFER_REQESTED_SIZE;    // this parameter may be overwritten later
+    bm.requested_size = RX_BUFFER_REQUESTED_SIZE;   // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
         bm.buf[i].bufnum = i;                       // ++++++ NUMBER THE HEADER AS A DIAGNOSTIC
         bm.buf[i].size = 0;
@@ -406,6 +407,10 @@ static void _init_readline_linemode()
     }
     bm.buf[0].pv = &bm.buf[RX_HEADERS-1];           // close the pv loop
     bm.buf[RX_HEADERS-1].nx = bm.buf;               // close the nx loop
+
+    // +++++ DIAGNOSTIC
+    char fake_rx[] = {"g0x10\n g0x0\n"}; // cannot exceed the length of the RX buffer
+    xio_queue_RX_string_usb(fake_rx);
 }
 
 #pragma GCC optimize ("O0")
@@ -414,8 +419,7 @@ static void _init_readline_linemode()
  * _get_free_buffer() - get lowest free buffer from _CTRL or _DATA. Allocate space
  *
  *   Args:
- *    - flags - what pool should it come from? Should be one of DEV_IS_CTRL or DEV_IS_DATA
- *    - size - what is the minumum size for the buffer?
+ *    - requested_size - will fail if the requested size cannot be allocated
  *
  *   Returns:
  *    - char * pointer to a buffer of size at least 'size'
@@ -425,45 +429,50 @@ static void _init_readline_linemode()
 static char *_get_free_buffer(uint16_t requested_size)
 {
     buf_mgr_t *b = &bm;                             // pointer to buffer manager
-    buf_hdr_t *h = b->used_top;                     // top of used list
-    buf_hdr_t *f = h->nx;                           // pointer to free header
- 
-    // setup pointers
-    if ((h == b->used_base) && (h->state == BUFFER_FREE)) { // zero used buffers
+
+    // setup base and top pointers and look for no-free-headers case
+    buf_hdr_t *h = b->used_top;                             // top of used list
+    buf_hdr_t *f = h->nx;                                   // pointer to free header
+    if ((h == b->used_base) && (h->state == BUFFER_FREE)) { // if there are zero used buffers
         f = h;
     }
-    if (f->state != BUFFER_FREE) {                  // buffer headers are maxed out
-        return (NULL);                              // this happens if there are no more free headers left
+    if (f->state != BUFFER_FREE) {                          // buffer headers are maxed out
+        return (NULL);                                      // this happens if there are no more free headers left
     }
 
     // attempt to allocate free RAM above the used_top
-    f->bufp = h->bufp + h->size +1;                 // set the buffer pointer just past the used_top
-    if ((b->pool_top - f->bufp) > requested_size) { // is there enough RAM at the top?
-        f->size = b->pool_top - f->bufp;            // claim all available RAM (no reason not to)
+    f->bufp = h->bufp + h->size +1;                         // set the buffer pointer just past the used_top
+    if ((f->bufp < b->pool_base) || (f->bufp > b->pool_top)) { // never supposed to happen, but protects against memory faults
+        f->bufp = b->pool_base;
+    }
+    if ((b->pool_top - f->bufp) > requested_size) {         // is there enough RAM at the top?
+        f->size = b->pool_top - f->bufp;                    // claim all available RAM (no reason not to)
 
     // if not, attempt to allocate free RAM below the used_base (wraparound case)
     } else if ((b->used_base->bufp - b->pool_base) > requested_size) {
-        f->bufp = b->pool_base;                     // reset the pointer to the base
-        f->size = b->used_base->bufp - b->pool_base; // claim all available RAM
+        f->bufp = b->pool_base;                             // reset the pointer to the base
+        f->size = b->used_base->bufp - b->pool_base;        // claim all available RAM
 
     // this happens if there is insufficient RAM left
     } else {
-        return (NULL);                              
+        return (NULL);
     }
 
-    f->state = BUFFER_FILLING;                      // claim the header
-    b->used_top = f;                                // move the top to the header
+    f->state = BUFFER_FILLING;      // claim the header
+    b->used_top = f;                // advance the top to the filling buffer
     return (f->bufp);
 }
 
 /*
  * _get_filling_buffer() - get char * pointer to the currently filling buffer or NULL if none found
+ *
+ * If there is a filling buffer it will always be found at the top of the used headers
  */
 
 static char *_get_filling_buffer()
 {
-    if (bm.used_base->state == BUFFER_FILLING) {
-        return (bm.used_base->bufp);
+    if (bm.used_top->state == BUFFER_FILLING) {
+        return (bm.used_top->bufp);
     }
     return (NULL);  // This is OK. Didn't have an open buffer that was filling
 }
@@ -482,10 +491,8 @@ static void _post_buffer(char *bufp)
     buf_mgr_t *b = &bm;
     buf_hdr_t *h = b->used_top;                     // posting buffer is always at top of used list
 
-    h->size = strlen(bufp) + 1;                     // set initial size; give back unused bytes; account for terminating NUL
-
     // clean up the buffer by cursoring past any leading white space and blank lines
-    for (uint8_t i=0; i<h->size; i++, h->bufp++) {
+    for (uint8_t i=0; i<h->size; i++, h->bufp++) {  // shouldn't ever finish the iteration - here for protection
         c = *(h->bufp);
         if ((c == CR) || (c == LF)) {               // blank line. Undo the buffer and return
             h->state = BUFFER_FREE;
@@ -520,7 +527,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
 {
     buf_hdr_t *h = bm.used_base;                        // pointer to first used block
 
-    // scan the used list for the lowest ctrl header 
+    // scan the used list for the lowest ctrl header
     if (*flags & DEV_IS_CTRL) {                         // use '&' to allow DEV_IS_BOTH
         for (uint8_t i=0; i<RX_HEADERS; i++, h=h->nx) { // only process headers once
             if (h->state == BUFFER_FREE) {              // terminate the scan
@@ -531,7 +538,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 h->state = BUFFER_PROCESSING;
                 return (h->bufp);
             }
-        }        
+        }
     }
 
     // next scan the used list for the lowest data header
@@ -548,7 +555,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
             }
         }
     }
-    
+
     // This is OK. Didn't have anything to process
     *flags = (DEV_IS_NONE);
     return (NULL);
@@ -641,28 +648,8 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     _post_buffer(bufp);                             // post your newly filled buffer
     return(_next_buffer_to_process(flags));
 }
-/*
-	// Start a new buffer if you have characters to read
-	if (single_char_buffer[0] == NUL) {
-    	for (uint8_t i=0; i<RX_HEADERS; i++) {         // loop is just to trap potential runaway cases
-        	single_char_buffer[0] = xio_getc(XIO_DEV_USB);  // xio_getc() must be set to non-blocking reads
 
-        	// exit if no character read
-        	if (single_char_buffer[0] == (char)_FDEV_ERR) { // requires the cast
-            	single_char_buffer[0] = NUL;                // reset the single_char_buffer
-            	return(_next_buffer_to_process(flags));
-        	}
-        	// discard leading whitespace
-        	if ((single_char_buffer[0] <= ' ') || (single_char_buffer[0] == DEL)) {
-            	continue;
-        	}
-        	break;                                  // you have a valid character now
-    	}
-	}
-
-*/
 #pragma GCC reset_options
-
 
 // ****************************************************************************
 // **** STREAMING MODE FUNCTIONS **********************************************
