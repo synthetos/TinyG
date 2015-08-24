@@ -110,9 +110,16 @@ void xio_init()
 
 	// open individual devices (file device opens occur at time-of-use)
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
+
+#ifdef XIO_DEV_RS485
 	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
+#endif
+#ifdef XIO_DEV_SPI1
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
+#endif
+#ifdef XIO_DEV_SPI2
 	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
+#endif
 
     // set up XIO buffers and pointers
     _init_readline_charmode();
@@ -152,12 +159,20 @@ uint8_t xio_test_assertions()
 
 	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+
+#ifdef XIO_DEV_RS485
 	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+#endif
+#ifdef XIO_DEV_SPI1
 	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+#endif
+#ifdef XIO_DEV_SPI2
 	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+#endif
+
 //	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 //	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
@@ -377,6 +392,7 @@ char_t *readline(devflags_t *flags, uint16_t *size)
  *      - If the header queue is full (maxed out) used_base and used_top are adjacent, with no free headers in between
  *      - The used_top header is usually FILLING
  *      - The used_base header is usually FULL
+ *      - There is a possible case of used_base == used_top where state == BUFFER_FRAGMENT. this is cleaned up.
  *  - Free (unused) headers start above used_top and are advanced "upwards"
  *      - All data in a free header is invalid except the BUFFER_FREE state
  *
@@ -398,7 +414,7 @@ static void _init_readline_linemode()
     bm.out_of_ram = false;
     bm.requested_size = RX_BUFFER_REQUESTED_SIZE;   // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
-        bm.buf[i].bufnum = i;                       // ++++++ NUMBER THE HEADER AS A DIAGNOSTIC
+//        bm.buf[i].bufnum = i;                       // ++++++ NUMBER THE HEADER AS A DIAGNOSTIC
         bm.buf[i].size = 0;
         bm.buf[i].state = BUFFER_FREE;
         bm.buf[i].bufp = bm.pool_base;              // point all bufs to the base of RAM
@@ -421,7 +437,7 @@ xio_queue_RX_string_usb(fake_rx);
 */
 }
 
-#pragma GCC optimize ("O0")
+//#pragma GCC optimize ("O0")
 
 /*
  * xio_get_line_buffers_available()
@@ -498,7 +514,7 @@ static char *_get_filling_buffer()
     if (bm.used_top->state == BUFFER_FILLING) {
         return (bm.used_top->bufp);
     }
-    return (NULL);  // This is OK. Didn't have an open buffer that was filling
+    return (NULL);  // This is OK. Didn't have a buffer that was filling
 }
 
 /*
@@ -511,7 +527,7 @@ static char *_get_filling_buffer()
 
 static void _post_buffer(char *bufp)
 {
-    char c;
+    char c = NUL;
     buf_mgr_t *b = &bm;
     buf_hdr_t *top = b->used_top;                   // posting buffer is always at top of used list
 
@@ -526,12 +542,12 @@ static void _post_buffer(char *bufp)
             b->free_headers++;
             return;
         }
-        if (c <= ' ') {                             // white space
+        if (c <= ' ') {                             // remove leading white space
             continue;
         }
         break;
     }
-    top->size = strlen(bufp) + 1;                   // set actual size; account for terminating NUL
+    top->size = strlen(bufp) + 1;                   // set size; account for terminating NUL
 
     // set flags for buffer
     if (strchr("{$?!~%Hh", c) != NULL) {            // a match indicates control line
@@ -589,12 +605,12 @@ static char *_next_buffer_to_process(devflags_t *flags)
 /*
  * _free_processed_buffer() - return the processing buffer to the free list or exit silently
  *
- *  There are some conditions. Generally, the buffer to free will be at used_base. But not
- *  if there is a mix of CTRL and DATA buffers - so you have to scan. 
+ *  There are some conditions. Generally, the buffer to free will be found at used_base. 
+ *  But not if there is a mix of CTRL and DATA buffers - so you have to scan. It might
+ *  also encounter FRAGMENTS, which should be skipped over.
  *  Invalidate bufp because we can't know what it's eventually going to become
  */
 
-//static void _free_processed_buffer(devflags_t flags)
 static void _free_processed_buffer()
 {
     buf_mgr_t *b = &bm;
@@ -627,6 +643,14 @@ static void _free_processed_buffer()
             break;
         }
     }
+    // reclaim a fragment from the base (defragmentation routine)
+    if (b->used_base->state == BUFFER_FRAGMENT) {
+        b->used_base->state = BUFFER_FREE;
+        if (b->used_base != b->used_top) {          // if they are the same don't advance the pointer
+            b->used_base = b->used_base->nx;
+        }
+        b->fragments--;
+    }
 }
 
 /*
@@ -649,7 +673,6 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     buf_mgr_t *b = &bm;
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
-//    _free_processed_buffer(*flags);                     // 1. Free a buffer is one is processing
     _free_processed_buffer();                           // 1. Free a buffer is one is processing
 
 	// Resume a partially filled buffer if one exists
@@ -679,7 +702,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }
 
-#pragma GCC reset_options
+//#pragma GCC reset_options
 
 
 // ****************************************************************************

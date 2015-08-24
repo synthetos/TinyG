@@ -73,7 +73,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
 	XIO_DEV_SPI1,		// SPI		SPI channel #1
-	XIO_DEV_SPI2,		// SPI		SPI channel #2
+//	XIO_DEV_SPI2,		// SPI		SPI channel #2
 //	XIO_DEV_SPI3,		// SPI		SPI channel #3
 //	XIO_DEV_SPI4,		// SPI		SPI channel #4
 	XIO_DEV_PGM,		// FILE		Program memory file  (read only)
@@ -85,7 +85,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_USART_COUNT 	2       // # of USART devices
 #define XIO_DEV_USART_OFFSET	0       // offset for computing indices
 
-#define XIO_DEV_SPI_COUNT 		2       // # of SPI devices
+#define XIO_DEV_SPI_COUNT 		1       // # of SPI devices
 #define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
 #define XIO_DEV_FILE_COUNT		1       // # of FILE devices
@@ -110,15 +110,7 @@ typedef uint16_t devflags_t;
 #define DEV_IS_DATA			(0x0002)    // device is set as a data channel
 #define DEV_IS_PRIMARY		(0x0004)    // device is the primary control channel
 #define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
-/*
-typedef enum {
-    DEV_IS_NONE	= (0x0000),             // None of the following
-    DEV_IS_CTRL	= (0x0001),             // device is set as a control channel
-    DEV_IS_DATA	= (0x0002),             // device is set as a data channel
-    DEV_IS_BOTH	= (0x0003),             // (DEV_IS_CTRL | DEV_IS_DATA)
-    DEV_IS_PRIMARY = (0x0004)           // device is the primary control channel
-} channelType;
-*/
+
 // device connection state
 #define DEV_IS_DISCONNECTED	(0x0010)    // device just disconnected (transient state)
 #define DEV_IS_CONNECTED	(0x0020)    // device is connected (e.g. USB)
@@ -197,14 +189,9 @@ typedef void (*x_flow_t)(xioDev_t *d);
  * Readline Buffer Management
  */
 
-//#define RX_HEADERS              32          // buffer headers in the list
-//#define RX_BUFFER_REQUESTED_SIZE 200         // requested size for buffers
-//#define RX_BUFFER_POOL_SIZE     1024         // total size of RX buffer memory pool
-
-// values for testing
-#define RX_HEADERS               8          // buffer headers in the list
-#define RX_BUFFER_REQUESTED_SIZE 80         // requested size for buffers
-#define RX_BUFFER_POOL_SIZE     256         // total size of RX buffer memory pool
+#define RX_HEADERS              32          // buffer headers in the list
+#define RX_BUFFER_REQUESTED_SIZE 200         // requested size for buffers
+#define RX_BUFFER_POOL_SIZE     1024         // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
@@ -229,11 +216,11 @@ typedef enum {                              // readline() buffer and slot states
  */
 
 typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
-    uint8_t bufnum;  //+++++ DIAGNOSTIC
-    struct bufHdr *pv;                  // pointer to next buffer block
+//    uint8_t bufnum;  //+++++ DIAGNOSTIC
+    struct bufHdr *pv;                  // pointer to previous buffer block
     struct bufHdr *nx;                  // pointer to next buffer block
     cmBufferState state;                // buffer state: see cmBufferState
-    uint8_t flags;                       // DEV_IS_CTRL, DEV_IS_DATA
+    uint8_t flags;                      // DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
     uint16_t size;                      // buffer size in bytes
     char *bufp;                         // pointer to char buffer start (finally!)
 } buf_hdr_t;
@@ -281,7 +268,6 @@ typedef struct xioSingleton {
     uint16_t buf_size;					// persistent size variable
     uint8_t buf_state;					// holds CTRL or DATA once this is known
     char *bufp;                         // pointer to input buffer
-//    char in_buf[RX_CHAR_BUFFER_LEN];
 
     uint16_t magic_end;
 } xioSingleton_t;
