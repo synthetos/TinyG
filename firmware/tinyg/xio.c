@@ -414,7 +414,7 @@ static void _init_readline_linemode()
     bm.out_of_ram = false;
     bm.requested_size = RX_BUFFER_REQUESTED_SIZE;   // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
-//        bm.buf[i].bufnum = i;                       // ++++++ NUMBER THE HEADER AS A DIAGNOSTIC
+        bm.buf[i].bufnum = i;                       // ++++++ DIAGNOSTIC - NUMBER THE HEADER
         bm.buf[i].size = 0;
         bm.buf[i].state = BUFFER_FREE;
         bm.buf[i].bufp = bm.pool_base;              // point all bufs to the base of RAM
@@ -434,7 +434,7 @@ static void _init_readline_linemode()
 uint8_t xio_get_line_buffers_available()
 {
     if (bm.out_of_ram) {
-        return (0);        
+        return (0);
     }
     return (bm.free_headers);
 }
@@ -485,7 +485,7 @@ static char *_get_free_buffer(uint16_t requested_size)
         return (NULL);
     }
     b->out_of_ram = false;
-    b->free_headers--;    
+    b->free_headers--;
     free->state = BUFFER_FILLING;      // claim the header
     b->used_top = free;                // advance the top to the filling buffer
     return (free->bufp);
@@ -519,7 +519,7 @@ static void _post_buffer()
     // clean up the buffer by cursoring past any leading white space, and discard blank lines
     for (uint8_t i=0; i<top->size; i++, top->bufp++) { // shouldn't ever finish the iteration - here for protection
         c = *(top->bufp);
-        if (c == NUL) {                             // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart() 
+        if (c == NUL) {                             // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
             top->state = BUFFER_FREE;               // undo the buffer and return
             if (top->pv != BUFFER_FREE) {           // drop the top down unless top == base
                 b->used_top = top->pv;
@@ -591,7 +591,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
 /*
  * _free_processed_buffer() - return the processing buffer to the free list or exit silently
  *
- *  There are some conditions. Generally, the buffer to free will be found at used_base. 
+ *  There are some conditions. Generally, the buffer to free will be found at used_base.
  *  But not if there is a mix of CTRL and DATA buffers - so you have to scan. It might
  *  also encounter FRAGMENTS, which should be skipped over.
  *  Invalidate bufp because we can't know what it's eventually going to become
@@ -770,7 +770,7 @@ static char_t *_readline_charmode(devflags_t *flags, uint16_t *size)
 	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
-    
+
     if (strchr("{$?!~%Hh", *xio.bufp) != NULL) {        // true indicates control line
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
