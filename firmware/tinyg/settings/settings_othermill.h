@@ -44,10 +44,6 @@
 #define JUNCTION_ACCELERATION		100000		// centripetal acceleration around corners
 #define LATCH_VELOCITY				25			// reeeeally slow for accuracy
 
-// WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
-// new machines use a stepper which has the same config as the other axis.
-#define HAS_CANSTACK_Z_AXIS 0
-
 // *** settings.h overrides ***
 // Note: there are some commented test values below
 
@@ -96,9 +92,20 @@
 
 // *** motor settings ***
 
+/* WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
+   newer machines use a stepper which has the same config as the other axes.
+   The following settings should be used for can stack machines:
+#define M2_STEP_ANGLE 			15          // motor setting
+#define M2_TRAVEL_PER_REV 		1.27254     // motor setting
+#define Z_VELOCITY_MAX 			1000        // axis setting
+*/
+
+//#define SCREW_TRAVEL 5.08     // actual value
+#define SCREW_TRAVEL 10.16      // value to make the machine handle 2x size for testing
+
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa
-#define M4_TRAVEL_PER_REV 		5.08				// 1tr
+#define M4_TRAVEL_PER_REV 		SCREW_TRAVEL		// 1tr
 #define M4_MICROSTEPS 			8					// 1mi		1,2,4,8
 #define M4_POLARITY 			0					// 1po		0=normal, 1=reversed
 #define M4_POWER_MODE 			MOTOR_POWER_MODE	// 1pm		TRUE=low power idle enabled
@@ -106,20 +113,15 @@
 
 #define M3_MOTOR_MAP 			AXIS_Y
 #define M3_STEP_ANGLE 			1.8
-#define M3_TRAVEL_PER_REV 		5.08
+#define M3_TRAVEL_PER_REV 		SCREW_TRAVEL
 #define M3_MICROSTEPS 			8
 #define M3_POLARITY 			1
 #define M3_POWER_MODE 			MOTOR_POWER_MODE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M2_MOTOR_MAP 			AXIS_Z
-#if HAS_CANSTACK_Z_AXIS
-#define M2_STEP_ANGLE 			15
-#define M2_TRAVEL_PER_REV 		1.27254
-#else
 #define M2_STEP_ANGLE 			1.8
-#define M2_TRAVEL_PER_REV 		5.08
-#endif
+#define M2_TRAVEL_PER_REV 		SCREW_TRAVEL
 #define M2_MICROSTEPS 			8
 #define M2_POLARITY 			1
 #define M2_POWER_MODE 			MOTOR_POWER_MODE
@@ -169,11 +171,7 @@
 #define Y_JERK_HOMING			JERK_HOMING
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#if HAS_CANSTACK_Z_AXIS
-#define Z_VELOCITY_MAX 			1000
-#else
 #define Z_VELOCITY_MAX 			X_VELOCITY_MAX
-#endif
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			-70
 #define Z_TRAVEL_MAX 			0

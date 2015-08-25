@@ -260,8 +260,6 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
  *	Note: This function assumes ignore CR and ignore LF handled upstream before the RX buffer
  */
 
-//#pragma GCC optimize ("O0")
-
 static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
@@ -273,7 +271,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
     dx->rx_buf_count--;
     d->x_flow(d);								// run flow control
-//	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
+//	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
     c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
@@ -296,8 +294,6 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     return (XIO_EAGAIN);
 }
 
-//#pragma GCC reset_options
-
 int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 {
 	xioUsart_t *dx = d->x;						// USART pointer
@@ -305,7 +301,6 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 	if (d->flag_in_line == false) {				// first time thru initializations
 		d->flag_in_line = true;					// yes, we are busy getting a line
 		d->len = 0;								// zero buffer
-//		d->len = strlen(buf);					// initialize length. Skip initial chars
 		d->buf = buf;
 		d->size = size;
 		d->signal = XIO_SIG_OK;					// reset signal register

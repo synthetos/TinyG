@@ -189,9 +189,9 @@ typedef void (*x_flow_t)(xioDev_t *d);
  * Readline Buffer Management
  */
 
-#define RX_HEADERS              32          // buffer headers in the list
-#define RX_BUFFER_REQUESTED_SIZE 200         // requested size for buffers
-#define RX_BUFFER_POOL_SIZE     1024         // total size of RX buffer memory pool
+#define RX_HEADERS                32        // buffer headers in the list
+#define RX_BUFFER_REQUESTED_SIZE 200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_POOL_SIZE     1280        // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
@@ -242,7 +242,7 @@ buf_mgr_t bm;                           // buffer manager struct for _CTRL and _
 
 typedef struct bufPool {
     uint16_t magic_start;
-    char rx_pool[RX_BUFFER_POOL_SIZE];  // statically allocated buffer pool
+    char rx_pool[RX_BUFFER_POOL_SIZE];  // statically allocated buffer pool with guard bands
     uint16_t magic_end;
 } buf_pool_t;
 buf_pool_t bufpool;
