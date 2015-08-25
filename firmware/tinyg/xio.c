@@ -509,36 +509,35 @@ static char *_get_filling_buffer()
  * _post_buffer() - post a FILLING buffer to FULL status
  */
 
-//static void _post_buffer(char *bufp)
 static void _post_buffer()
 {
     char c = NUL;
     buf_mgr_t *b = &bm;
-    buf_hdr_t *top = b->used_top;                   // posting buffer is always at top of used list
+    buf_hdr_t *top = b->used_top;           // posting buffer is always at top of used list
 
     // clean up the buffer by cursoring past any leading white space, and discard blank lines
-    for (uint8_t i=0; i<top->size; i++, top->bufp++) { // shouldn't ever finish the iteration - here for protection
+    // the FOR loop shouldn't ever finish - it's here for protection
+    for (uint8_t i=0; i<top->size; i++, top->bufp++) { 
         c = *(top->bufp);
-        if (c == NUL) {                             // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
-            top->state = BUFFER_FREE;               // undo the buffer and return
-            if (top->pv != BUFFER_FREE) {           // drop the top down unless top == base
+        if (c == NUL) {                     // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
+            top->state = BUFFER_FREE;       // undo the buffer and return
+            if (top->pv != BUFFER_FREE) {   // drop the top down unless top == base
                 b->used_top = top->pv;
             }
             b->free_headers++;
             return;
         }
-        if (c <= ' ') {                             // remove leading white space
+        if (c <= ' ') {                     // remove leading white space
             continue;
         }
         break;
     }
 
-    // set the size, accounting for the terminating NUL. GIves back unused RAM
-//    top->size = strlen(bufp) + 1;
+    // set the size, accounting for the terminating NUL. Gives back unused RAM
     top->size = strlen(top->bufp) + 1;
 
     // set flags for buffer
-    if (strchr("{$?!~%Hh", c) != NULL) {            // a match indicates control line
+    if (strchr("{$?!~%Hh", c) != NULL) {    // a match indicates control line
         top->flags = DEV_IS_CTRL;
     } else {
         top->flags = DEV_IS_DATA;
@@ -672,7 +671,6 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     	if (status == XIO_BUFFER_FULL) {
         	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
     	}
-//        _post_buffer(bufp);                             // post your newly filled buffer
         _post_buffer();                             // post your newly filled buffer
     }
 
@@ -686,7 +684,6 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     if (status == XIO_BUFFER_FULL) {
         return ((char *)_FDEV_ERR);                     // buffer overflow occurred
     }
-//    _post_buffer(bufp);                                 // 5. post newly filled buffer
     _post_buffer();                                     // 5. post newly filled buffer
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }

@@ -54,8 +54,8 @@
 #undef MOTOR_POWER_MODE
 #define MOTOR_POWER_MODE MOTOR_POWERED_IN_CYCLE
 
-#undef  STATUS_REPORT_DEFAULTS
-#define STATUS_REPORT_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
+//#undef  STATUS_REPORT_DEFAULTS
+//#define STATUS_REPORT_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
 
 #undef	SWITCH_TYPE
 #define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
@@ -72,8 +72,8 @@
 #undef  JSON_SYNTAX_MODE
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
 
-#undef	QUEUE_REPORT_VERBOSITY
-#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
+//#undef	QUEUE_REPORT_VERBOSITY
+//#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
 
 #undef	STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED
