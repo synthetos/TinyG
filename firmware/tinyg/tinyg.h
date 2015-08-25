@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.24	// line mode using a single buffer pool for control and data
+#define TINYG_FIRMWARE_BUILD        440.25	// merged in G10 L20
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

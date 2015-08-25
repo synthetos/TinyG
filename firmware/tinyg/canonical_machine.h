@@ -151,7 +151,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
-	uint8_t l_word;						// L word - used by G10s
+	uint8_t L_word;						// L word - used by G10s
 
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
@@ -570,7 +570,10 @@ stat_t cm_clear(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+//stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
+                            const uint8_t L_word,
+                            const float offset[], float flag[]);
 
 void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
