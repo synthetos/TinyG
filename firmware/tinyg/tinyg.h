@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.25	// merged in G10 L20
+#define TINYG_FIRMWARE_BUILD        440.26	// be sure to update EEPROM defaults
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
