@@ -40,7 +40,7 @@
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
-static void _reset_replannable_list(void);
+//static void _reset_replannable_list(void);
 
 /* Runtime-specific setters and getters
  *

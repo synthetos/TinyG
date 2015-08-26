@@ -82,7 +82,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.21	// updated Probotix settings profile
+#define TINYG_FIRMWARE_BUILD        444.22	// checkpoint for test; merge with edge-for-version-0.98
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.98                        // firmware major version
