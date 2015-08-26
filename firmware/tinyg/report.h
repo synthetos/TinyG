@@ -37,6 +37,7 @@
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
                                             // **** must also line up in cfgArray, se00 - seXX ****
 
+#define SR_THROTTLE_COUNT   4       // scale back filtered SR's during time-constrained intervals
 #define MIN_ARC_QR_INTERVAL 200     // minimum interval between QRs during arc generation (in system ticks)
 
 typedef enum {                      // status report enable and verbosity
@@ -46,8 +47,10 @@ typedef enum {                      // status report enable and verbosity
 } srVerbosity;
 
 typedef enum {
-	SR_TIMED_REQUEST = 0,           // request a status report at next timer interval
-	SR_IMMEDIATE_REQUEST            // request a status report ASAP
+    SR_REQUEST_IMMEDIATE = 0,		// request a full or filtered status report ASAP (depending on SR_VERBOSITY setting)
+    SR_REQUEST_IMMEDIATE_FULL,		// request a full status report ASAP (regardless of SR_VERBOSITY setting)
+    SR_REQUEST_TIMED,				// request a full or filtered status report at next timer interval (as above)
+    SR_REQUEST_TIMED_FULL			// request a full status report at next timer interval (as above)
 } cmStatusReportRequest;
 
 typedef enum {                      // planner queue enable and verbosity
@@ -63,9 +66,12 @@ typedef struct srSingleton {
 	uint32_t status_report_interval;					// in milliseconds
 
 	/*** runtime values (PRIVATE) ***/
-	uint8_t status_report_requested;					// flag that SR has been requested
+//	uint8_t status_report_requested;					// flag that SR has been requested
+	srVerbosity status_report_request;                  // flag that SR has been requested, and what type
 	uint32_t status_report_systick;						// SysTick value for next status report
+    index_t index_of_stat_variable;                     // like it says, the index of the "stat" variable
 	index_t stat_index;									// table index value for stat - determined during initialization
+    uint8_t throttle_counter;                           // slow down SRs when in a constrained time (not phat_city)
 	index_t status_report_list[NV_STATUS_REPORT_LEN];	// status report elements to report
 	float status_report_value[NV_STATUS_REPORT_LEN];	// previous values for filtered reporting
 

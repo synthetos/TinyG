@@ -31,7 +31,6 @@
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
 #include "../config.h"					// needed to find flow control setting
-#include "../network.h"
 #include "../hardware.h"
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
@@ -138,10 +137,6 @@ ISR(USB_CTS_ISR_vect)
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
-
-	if (cs.network_mode == NETWORK_MASTER) {	// forward character if you are a master
-		net_forward(c);
-	}
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
 		hw_request_hard_reset();
@@ -156,7 +151,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		return;
 	}
 	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		cm_request_cycle_start();
+		cm_request_end_hold();
 		return;
 	}
 	if (USB.flag_xoff) {

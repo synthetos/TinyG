@@ -45,6 +45,7 @@ C_SRCS +=  \
 ../config.c \
 ../config_app.c \
 ../controller.c \
+../coolant.c \
 ../cycle_homing.c \
 ../cycle_jogging.c \
 ../cycle_probing.c \
@@ -56,7 +57,6 @@ C_SRCS +=  \
 ../json_parser.c \
 ../kinematics.c \
 ../main.c \
-../network.c \
 ../persistence.c \
 ../planner.c \
 ../plan_arc.c \
@@ -94,6 +94,7 @@ canonical_machine.o \
 config.o \
 config_app.o \
 controller.o \
+coolant.o \
 cycle_homing.o \
 cycle_jogging.o \
 cycle_probing.o \
@@ -105,7 +106,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 persistence.o \
 planner.o \
 plan_arc.o \
@@ -136,6 +136,7 @@ canonical_machine.o \
 config.o \
 config_app.o \
 controller.o \
+coolant.o \
 cycle_homing.o \
 cycle_jogging.o \
 cycle_probing.o \
@@ -147,7 +148,6 @@ help.o \
 json_parser.o \
 kinematics.o \
 main.o \
-network.o \
 persistence.o \
 planner.o \
 plan_arc.o \
@@ -178,6 +178,7 @@ canonical_machine.d \
 config.d \
 config_app.d \
 controller.d \
+coolant.d \
 cycle_homing.d \
 cycle_jogging.d \
 cycle_probing.d \
@@ -189,7 +190,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 persistence.d \
 planner.d \
 plan_arc.d \
@@ -220,6 +220,7 @@ canonical_machine.d \
 config.d \
 config_app.d \
 controller.d \
+coolant.d \
 cycle_homing.d \
 cycle_jogging.d \
 cycle_probing.d \
@@ -231,7 +232,6 @@ help.d \
 json_parser.d \
 kinematics.d \
 main.d \
-network.d \
 persistence.d \
 planner.d \
 plan_arc.d \

@@ -34,11 +34,10 @@
 #include "text_parser.h"
 #include "settings.h"
 #include "planner.h"
-//#include "plan_arc.h"
 #include "stepper.h"
 #include "gpio.h"
-//#include "spindle.h"
-//#include "coolant.h"
+#include "spindle.h"
+#include "coolant.h"
 #include "pwm.h"
 #include "report.h"
 #include "hardware.h"
@@ -103,14 +102,14 @@ static stat_t get_tick(nvObj_t *nv);		// get system tick count
  *  - The precision value 'p' only affects JSON responses. You need to also set
  *    the %f in the corresponding format string to set text mode display precision
  */
-/* !!! WARNING !!! 
+/* !!! WARNING !!!
  *
- *  If you are developing in this table and your board has persistence for configuration 
+ *  If you are developing in this table and your board has persistence for configuration
  *  settings (like TinyGv8 does) you must either change the firmware build number or
- *  run $defa=1 (or {defa:1} ) after you load new firmware or the items in persistence 
+ *  run $defa=1 (or {defa:1} ) after you load new firmware or the items in persistence
  *  from your previous load may write erroneous values into the initialization variables.
- *  This usually causes all hell to break loose during testing - making you think that 
- *  there is something wrong with your code or this table. 
+ *  This usually causes all hell to break loose during testing - making you think that
+ *  there is something wrong with your code or this table.
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
@@ -490,26 +489,25 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g30","g30c",_fi,  3, cm_print_cpos, get_flt, set_nul,(float *)&cm.gmx.g30_position[AXIS_C], 0 },
 
 	// this is a 128bit UUID for identifying a previously committed job state
-	{ "jid","jida",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[0], 0},
-	{ "jid","jidb",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[1], 0},
-	{ "jid","jidc",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[2], 0},
-	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cs.job_id[3], 0},
+	{ "jid","jida",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cfg.job_id[0], 0},
+	{ "jid","jidb",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cfg.job_id[1], 0},
+	{ "jid","jidc",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cfg.job_id[2], 0},
+	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (float *)&cfg.job_id[3], 0},
 
 	// General system parameters
 	{ "sys","ja",_fipnc,0, cm_print_ja,   get_flt, set_flu,  (float *)&cm.junction_acceleration,    JUNCTION_ACCELERATION },
 	{ "sys","ct", _fipnc,4, cm_print_ct,  get_flt, set_flu,  (float *)&cm.chordal_tolerance,        CHORDAL_TOLERANCE },
 	{ "sys","sl", _fipn, 0, cm_print_sl,  get_ui8, set_01,   (float *)&cm.soft_limit_enable,        SOFT_LIMIT_ENABLE },
-
 	{ "sys","lim",_fipn, 0, cm_print_lim, get_ui8, set_01,   (float *)&cm.limit_enable,	            HARD_LIMIT_ENABLE },
 	{ "sys","saf",_fipn, 0, cm_print_saf, get_ui8, set_01,   (float *)&cm.safety_interlock_enable,	SAFETY_INTERLOCK_ENABLE },
 	{ "sys","mt", _fipn, 2, st_print_mt,  get_flt, st_set_mt,(float *)&st_cfg.motor_power_timeout,  MOTOR_POWER_TIMEOUT},
+
 //	{ "sys","m48e",_fipn,0, cm_print_m48e,get_ui8, set_01,   (float *)&cm.gmx.m48_enable, 0 },      // M48/M49 feedrate & spindle override enable
 //	{ "sys","mfoe",_fipn,0, cm_print_mfoe,get_ui8, set_01,   (float *)&cm.gmx.mfo_enable,           FEED_OVERRIDE_ENABLE},
 //	{ "sys","mfo", _fipn,3, cm_print_mfo, get_flt,cm_set_mfo,(float *)&cm.gmx.mfo_factor,           FEED_OVERRIDE_FACTOR},
 //	{ "sys","mtoe",_fipn,0, cm_print_mtoe,get_ui8, set_01,   (float *)&cm.gmx.mto_enable,           TRAVERSE_OVERRIDE_ENABLE},
 //	{ "sys","mto", _fipn,3, cm_print_mto, get_flt,cm_set_mto,(float *)&cm.gmx.mto_factor,           TRAVERSE_OVERRIDE_FACTOR},
 
-/*
     // Spindle functions
     { "sys","spep",_fipn,0, cm_print_spep,get_ui8, set_01,   (float *)&spindle.enable_polarity,     SPINDLE_ENABLE_POLARITY },
     { "sys","spdp",_fipn,0, cm_print_spdp,get_ui8, set_01,   (float *)&spindle.dir_polarity,        SPINDLE_DIR_POLARITY },
@@ -527,12 +525,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "sys","coph",_fipn,0, cm_print_coph,get_ui8, set_01,   (float *)&coolant.pause_on_hold,       COOLANT_PAUSE_ON_HOLD },
     { "",   "com", _f0,  0, cm_print_com, get_ui8, set_nul,  (float *)&coolant.mist_enable, 0 },    // get mist coolant enable
     { "",   "cof", _f0,  0, cm_print_cof, get_ui8, set_nul,  (float *)&coolant.flood_enable, 0 },   // get flood coolant enable
-*/
+
     // Communications and reporting parameters
 #ifdef __TEXT_MODE
     { "sys","tv", _fipn, 0, tx_print_tv,  get_ui8, set_01,     (float *)&txt.text_verbosity,        TEXT_VERBOSITY },
 #endif
-	{ "sys","ej", _fipn, 0, js_print_ej,  get_ui8, set_01,     (float *)&cfg.comm_mode,             COMM_MODE },
+	{ "sys","ej", _fipn, 0, js_print_ej,  get_ui8, set_01,     (float *)&cs.comm_mode,              COMM_MODE },
 	{ "sys","jv", _fipn, 0, js_print_jv,  get_ui8, json_set_jv,(float *)&js.json_verbosity,         JSON_VERBOSITY },
 	{ "sys","js", _fipn, 0, js_print_js,  get_ui8, set_01,     (float *)&js.json_syntax,            JSON_SYNTAX_MODE },
 	{ "sys","qv", _fipn, 0, qr_print_qv,  get_ui8, set_0123,   (float *)&qr.queue_report_verbosity, QUEUE_REPORT_VERBOSITY },
@@ -1025,11 +1023,7 @@ static stat_t get_rx(nvObj_t *nv)
 
 static stat_t get_tick(nvObj_t *nv)
 {
-#ifdef __AVR
     nv->value = (float)SysTickTimer_getValue();
-#else
-    nv->value = (float)SysTickTimer.getValue();
-#endif
     nv->valuetype = TYPE_INT;
     return (STAT_OK);
 }
@@ -1100,7 +1094,7 @@ static stat_t set_baud(nvObj_t *nv)
 		return (STAT_INPUT_VALUE_UNSUPPORTED);
 	}
 	cfg.usb_baud_rate = baud;
-	cfg.usb_baud_flag = true;
+	cs.usb_baud_flag = true;
 	char message[NV_MESSAGE_LEN];
 	sprintf_P(message, PSTR("*** NOTICE *** Resetting baud rate to %s"),GET_TEXT_ITEM(msg_baud, baud));
 	nv_add_conditional_message(message);
@@ -1109,8 +1103,8 @@ static stat_t set_baud(nvObj_t *nv)
 
 stat_t set_baud_callback(void)
 {
-	if (cfg.usb_baud_flag == false) { return(STAT_NOOP);}
-	cfg.usb_baud_flag = false;
+	if (cs.usb_baud_flag == false) { return(STAT_NOOP);}
+	cs.usb_baud_flag = false;
 	xio_set_baud(XIO_DEV_USB, cfg.usb_baud_rate);
 	return (STAT_OK);
 }

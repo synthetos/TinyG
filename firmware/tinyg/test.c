@@ -41,7 +41,7 @@ uint8_t run_test(nvObj_t *nv)
 			return (STAT_ERROR);
 		}
 	}
-	tg_set_primary_source(XIO_DEV_PGM);
+	cs_set_primary_source(XIO_DEV_PGM);
 	return (STAT_OK);
 }
 

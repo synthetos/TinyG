@@ -41,7 +41,7 @@
 #define INIT_MESSAGE "Initializing configs to TEST settings"
 
 #define JERK_MAX					500			// 500 million mm/(min^3)
-#define JERK_HOMING					1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
+#define JERK_HIGH					1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
 #define JUNCTION_DEVIATION			0.01		// default value, in mm
 #define JUNCTION_ACCELERATION		100000		// centripetal acceleration around corners
 #define LATCH_VELOCITY				25			// reeeeally slow for accuracy
@@ -178,7 +178,7 @@
 #define X_LATCH_VELOCITY 		LATCH_VELOCITY		// xlv		mm/min
 #define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			0					// xzb		mm
-#define X_JERK_HOMING			JERK_HOMING			// xjh
+#define X_JERK_HIGH			JERK_HIGH			// xjh
 
 //#define Y_AXIS_MODE 			AXIS_DISABLED		// DIAGNOSTIC TEST ONLY!!!
 #define Y_AXIS_MODE 			AXIS_STANDARD
@@ -194,7 +194,7 @@
 #define Y_LATCH_VELOCITY 		LATCH_VELOCITY
 #define Y_LATCH_BACKOFF 		5
 #define Y_ZERO_BACKOFF 			0
-#define Y_JERK_HOMING			JERK_HOMING
+#define Y_JERK_HIGH			JERK_HIGH
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
 #if HAS_CANSTACK_Z_AXIS
@@ -213,7 +213,7 @@
 #define Z_LATCH_VELOCITY 		LATCH_VELOCITY
 #define Z_LATCH_BACKOFF 		5
 #define Z_ZERO_BACKOFF 			0
-#define Z_JERK_HOMING			JERK_HOMING
+#define Z_JERK_HIGH			JERK_HIGH
 
 // A values are chosen to make the A motor react the same as X for testing
 #define A_AXIS_MODE 			AXIS_RADIUS
@@ -230,7 +230,7 @@
 #define A_LATCH_VELOCITY 		100
 #define A_LATCH_BACKOFF 		5
 #define A_ZERO_BACKOFF 			2
-#define A_JERK_HOMING			A_JERK_MAX
+#define A_JERK_HIGH			A_JERK_MAX
 
 #define B_AXIS_MODE 			AXIS_DISABLED
 #define B_VELOCITY_MAX 			3600

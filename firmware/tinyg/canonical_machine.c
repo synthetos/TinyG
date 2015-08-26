@@ -98,7 +98,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
-//#include "coolant.h"
+#include "coolant.h"
 //#include "pwm.h"
 #include "report.h"
 #include "gpio.h"
@@ -120,8 +120,6 @@ cmSingleton_t cm;		// canonical machine controller singleton
 static void _exec_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_select_tool(float *value, bool *flags);
-static void _exec_mist_coolant_control(float *value, bool *flags);
-static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 
@@ -136,6 +134,34 @@ static int8_t _get_axis_type(const index_t index);
  * Internal getters and setters      *
  * Canonical Machine State functions *
  *************************************/
+/*
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+void cm_set_motion_state(const cmMotionState motion_state)
+{
+    cm.motion_state = motion_state;
+
+    switch (motion_state) {
+        case (MOTION_STOP):     { ACTIVE_MODEL = MODEL; break; }
+        case (MOTION_PLANNING): { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_RUN):      { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_HOLD):     { ACTIVE_MODEL = RUNTIME; break; }
+    }
+}
+
+/*
+ * cm_get_machine_state()
+ * cm_get_motion_state()
+ * cm_get_cycle_state()
+ * cm_get_hold_state()
+ * cm_get_homing_state()
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+cmMachineState  cm_get_machine_state() { return cm.machine_state;}
+cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
+cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
+cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
+cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
  * cm_get_combined_state() - combines raw states into something a user might want to see
@@ -187,34 +213,6 @@ cmCombinedState cm_get_combined_state()
     }
 }
 
-/*
- * cm_get_machine_state()
- * cm_get_motion_state()
- * cm_get_cycle_state()
- * cm_get_hold_state()
- * cm_get_homing_state()
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-cmMachineState  cm_get_machine_state() { return cm.machine_state;}
-cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
-cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
-cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
-cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
-
-/*
- * cm_set_motion_state() - adjusts active model pointer as well
- */
-void cm_set_motion_state(uint8_t motion_state)
-{
-    cm.motion_state = motion_state;
-
-    switch (motion_state) {
-        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
-        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
-        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
-    }
-}
-
 /***********************************
  * Model State Getters and Setters *
  ***********************************/
@@ -238,10 +236,6 @@ uint8_t cm_get_tool(const GCodeState_t *gcode_state) { return gcode_state->tool;
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
 float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
-
-uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
-void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
-void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
 
 void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode)
 {
@@ -415,12 +409,6 @@ float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 void cm_finalize_move()
 {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
-
-// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
-// SUPERSEDED by gcode_parsser INVERSE_TIME_MODE test ~line 252
-//	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
-//		cm.gm.feed_rate = 0;
-//	}
 }
 
 void cm_update_model_position_from_runtime()
@@ -532,27 +520,7 @@ void cm_set_model_target(const float target[], const bool flags[])
  *	a min or a max if the value is more than +/- 1000000 (plus or minus 1 million ).
  *	This allows a single end to be tested w/the other disabled, should that requirement ever arise.
  */
-/*
-stat_t cm_test_soft_limits(float target[])
-{
-	if (cm.soft_limit_enable == true) {
-		for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-			if (cm.homed[axis] != true) continue;		// don't test axes that are not homed
 
-			if (fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) continue;
-
-			if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && (target[axis] < cm.a[axis].travel_min)) {
-				return (STAT_SOFT_LIMIT_EXCEEDED);
-			}
-
-			if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && (target[axis] > cm.a[axis].travel_max)) {
-				return (STAT_SOFT_LIMIT_EXCEEDED);
-			}
-		}
-	}
-	return (STAT_OK);
-}
-*/
 static stat_t _finalize_soft_limits(const stat_t status)
 {
     cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;     // cancel motion
@@ -608,7 +576,8 @@ void canonical_machine_init()
 
     canonical_machine_init_assertions();		// establish assertions
     ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
-    cm_arc_init();                              // Note: spindle and coolant inits are independent
+    cm_arc_init();
+    // Note: spindle and coolant inits are independent
 }
 
 void canonical_machine_reset()
@@ -758,8 +727,8 @@ stat_t cm_is_alarmed()
 void cm_halt_all(void)
 {
     cm_halt_motion();
-//	cm_spindle_off_immediate();
-//	cm_coolant_off_immediate();
+	cm_spindle_off_immediate();
+	cm_coolant_off_immediate();
 }
 
 void cm_halt_motion(void)
@@ -835,8 +804,8 @@ stat_t cm_shutdown(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+    coolant_reset();                            // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
     for (uint8_t i = 0; i < HOMING_AXES; i++) { // unhome axes and the machine
@@ -865,8 +834,8 @@ stat_t cm_panic(const stat_t status, const char *msg)
         return (STAT_OK);
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+    coolant_reset();                            // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
 	cm.machine_state = MACHINE_PANIC;           // don't reset anything. Panics are not recoverable
@@ -1073,7 +1042,7 @@ static void _exec_absolute_origin(float *value, bool *flags)
  * G92's behave according to NIST 3.5.18 & LinuxCNC G92
  * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
-stat_t cm_set_origin_offsets(const float offset[], bool flags[])
+stat_t cm_set_origin_offsets(const float offset[],  bool flags[])
 {
 	// set offsets in the Gcode model extended context
 	cm.gmx.origin_offset_enable = true;
@@ -1123,7 +1092,7 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
-stat_t cm_straight_traverse(float target[], bool flags[])
+stat_t cm_straight_traverse(const float target[], const bool flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 
@@ -1159,7 +1128,7 @@ stat_t cm_set_g28_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g28_position(float target[], bool flags[])
+stat_t cm_goto_g28_position(const float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
@@ -1173,7 +1142,7 @@ stat_t cm_set_g30_position(void)
 	return (STAT_OK);
 }
 
-stat_t cm_goto_g30_position(float target[], bool flags[])
+stat_t cm_goto_g30_position(const float target[], const bool flags[])
 {
 	cm_set_absolute_override(MODEL, true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
@@ -1240,7 +1209,7 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
 /*
  * cm_dwell() - G4, P parameter (seconds)
  */
-stat_t cm_dwell(float seconds)
+stat_t cm_dwell(const float seconds)
 {
 	cm.gm.parameter = seconds;
 	mp_dwell(seconds);
@@ -1250,7 +1219,7 @@ stat_t cm_dwell(float seconds)
 /*
  * cm_straight_feed() - G1
  */
-stat_t cm_straight_feed(float target[], bool flags[])
+stat_t cm_straight_feed(const float target[], const bool flags[])
 {
 	// trap zero feed rate condition
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
@@ -1297,7 +1266,7 @@ stat_t cm_straight_feed(float target[], bool flags[])
  * Note: These functions don't actually do anything for now, and there's a bug
  *		 where T and M in different blocks don;t work correctly
  */
-stat_t cm_select_tool(uint8_t tool_select)
+stat_t cm_select_tool(const uint8_t tool_select)
 {
 	float value[] = { (float)tool_select };
 	mp_queue_command(_exec_select_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
@@ -1309,7 +1278,7 @@ static void _exec_select_tool(float *value, bool *flags)
 	cm.gm.tool_select = (uint8_t)value[0];
 }
 
-stat_t cm_change_tool(uint8_t tool_change)
+stat_t cm_change_tool(const uint8_t tool_change)
 {
 	float value[] = { (float)cm.gm.tool_select };
     mp_queue_command(_exec_change_tool, value, FLAGS_ONE);			// NB: flags vector is not actually used
@@ -1324,67 +1293,17 @@ static void _exec_change_tool(float *value, bool *flags)
 /***********************************
  * Miscellaneous Functions (4.3.9) *
  ***********************************/
+// see coolant.c/.h
+
 /*
- * cm_mist_coolant_control() - M7
- * cm_flood_coolant_control() - M8, M9
+ * cm_message() - queue a RAM string as a message in the response (unconditionally)
+ *
+ *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-stat_t cm_mist_coolant_control(uint8_t mist_coolant)
+void cm_message(const char *message)
 {
-	float value[] = { (float)mist_coolant };
-	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
-	return (STAT_OK);
-}
-static void _exec_mist_coolant_control(float *value, bool *flags)
-{
-	cm.gm.mist_coolant = (uint8_t)value[0];
-
-#ifdef __AVR
-	if (cm.gm.mist_coolant == true) {
-		gpio_set_bit_on(MIST_COOLANT_BIT);
-    } else {
-	    gpio_set_bit_off(MIST_COOLANT_BIT);
-    }
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.mist_coolant == true) {
-		coolant_enable_pin.set();
-    } else {
-    	coolant_enable_pin.clear();
-    }
-#endif // __ARM
-}
-
-stat_t cm_flood_coolant_control(uint8_t flood_coolant)
-{
-	float value[AXES] = { (float)flood_coolant };
-	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
-	return (STAT_OK);
-}
-static void _exec_flood_coolant_control(float *value, bool *flags)
-{
-	cm.gm.flood_coolant = (uint8_t)value[0];
-
-#ifdef __AVR
-	if (cm.gm.flood_coolant == true) {
-		gpio_set_bit_on(FLOOD_COOLANT_BIT);
-	} else {
-		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-		float vect[] = { 0 };				         // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
-	}
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.flood_coolant == true) {
-		coolant_enable_pin.set();
-	} else {
-		coolant_enable_pin.clear();
-		float vect[] = { 0 };				         // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_ONE); // M9 special function
-	}
-#endif // __ARM
+	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
 
 /*
@@ -1462,17 +1381,6 @@ stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 	return (STAT_OK);
 }
 
-/*
- * cm_message() - queue a RAM string as a message in the response (unconditionally)
- *
- *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
- */
-
-void cm_message(char *message)
-{
-	nv_add_string((const char *)"msg", message);	// add message to the response object
-}
-
 /******************************
  * Program Functions (4.3.10) *
  ******************************/
@@ -1527,41 +1435,122 @@ void cm_message(char *message)
  *		should start to run anything in the planner queue
  */
 
-void cm_request_feedhold(void) { cm.feedhold_requested = true; }
-void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
-void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
+/*
+ * cm_request_feedhold()
+ * cm_request_end_hold() - cycle restart
+ * cm_request_queue_flush()
+ */
+void cm_request_feedhold(void) {
+    // honor request if not already in a feedhold and you are moving
+    if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
+        cm.hold_state = FEEDHOLD_REQUESTED;
+    }
+}
 
+void cm_request_end_hold(void)
+{
+    if (cm.hold_state != FEEDHOLD_OFF) {
+        cm.end_hold_requested = true;
+    }
+}
+
+void cm_request_queue_flush()
+{
+    if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
+        (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
+#ifdef __ARM
+        xio_flush_read();                           // flush the input buffers - you can do that now
+#else //__AVR
+        xio_reset_usb_rx_buffers();				    // flush serial queues - you can do that now
+#endif
+        cm.queue_flush_state = FLUSH_REQUESTED;     // request planner flush once motion has stopped
+    }
+}
+
+/*
+ * cm_feedhold_sequencing_callback() - sequence feedhold, queue_flush, and end_hold requests
+ */
 stat_t cm_feedhold_sequencing_callback()
 {
-	if (cm.feedhold_requested == true) {
-		if ((cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF)) {
-			cm_set_motion_state(MOTION_HOLD);
-			cm.hold_state = FEEDHOLD_SYNC;	// invokes hold from aline execution
-		}
-		cm.feedhold_requested = false;
+	if (cm.hold_state == FEEDHOLD_REQUESTED) {
+		cm_start_hold();                            // feed won't run unless the machine is moving
 	}
-	if (cm.queue_flush_requested == true) {
-		if (((cm.motion_state == MOTION_STOP) ||
-			((cm.motion_state == MOTION_HOLD) && (cm.hold_state == FEEDHOLD_HOLD))) &&
-			!cm_get_runtime_busy()) {
-			cm.queue_flush_requested = false;
-			cm_queue_flush();
-		}
+	if (cm.queue_flush_state == FLUSH_REQUESTED) {
+        cm_queue_flush();                           // queue flush won't run until runtime is idle
 	}
-	bool feedhold_processing =				// added feedhold processing lockout from omco fork
-		cm.hold_state == FEEDHOLD_SYNC ||
-		cm.hold_state == FEEDHOLD_PLAN ||
-		cm.hold_state == FEEDHOLD_DECEL;
-	if ((cm.cycle_start_requested == true) && (cm.queue_flush_requested == false) && !feedhold_processing) {
-		cm.cycle_start_requested = false;
-		cm.hold_state = FEEDHOLD_END_HOLD;
-		cm_cycle_start();
-		mp_end_hold();
+	if (cm.end_hold_requested) {
+        if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
+			cm_end_hold();
+		}
 	}
 	return (STAT_OK);
 }
 
-stat_t cm_queue_flush()
+/*
+ * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
+ * cm_start_hold() - start a feedhhold by signalling the exec
+ * cm_end_hold()   - end a feedhold by returning the system to normal operation
+ * cm_queue_flush() - Flush planner queue and correct model positions
+ */
+bool cm_has_hold()
+{
+    return (cm.hold_state != FEEDHOLD_OFF);
+}
+
+void cm_start_hold()
+{
+    if (mp_has_runnable_buffer()) {                         // meaning there's something running
+        cm_spindle_optional_pause(spindle.pause_on_hold);   // pause if this option is selected
+        cm_coolant_optional_pause(coolant.pause_on_hold);   // pause if this option is selected
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_SYNC;	                    // invokes hold from aline execution
+    }
+}
+
+void cm_end_hold()
+{
+	if (cm.hold_state == FEEDHOLD_HOLD) {
+        cm.end_hold_requested = false;
+	    mp_exit_hold_state();
+
+        // State machine cases:
+        if (cm.machine_state == MACHINE_ALARM) {
+            cm_spindle_off_immediate();
+            cm_coolant_off_immediate();
+
+        } else if (cm.motion_state == MOTION_STOP) { // && (! MACHINE_ALARM)
+            cm_spindle_off_immediate();
+            cm_coolant_off_immediate();
+		    cm_cycle_end();
+
+        } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM)
+		    cm_cycle_start();
+            cm_spindle_resume(spindle.dwell_seconds);
+            cm_coolant_resume();
+            st_request_exec_move();
+        }
+    }
+}
+
+/* g2 version */
+void cm_queue_flush()
+{
+    if (mp_runtime_is_idle()) {                     // can't flush planner during movement
+        mp_flush_planner();
+
+        for (uint8_t axis = AXIS_X; axis < AXES; axis++) { // set all positions
+            cm_set_position(axis, mp_get_runtime_absolute_position(axis));
+        }
+        if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
+            cm_end_hold();
+        }
+        cm.queue_flush_state = FLUSH_OFF;
+        qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
+    }
+}
+/* */
+/*
+void cm_queue_flush()
 {
 	if (cm_get_runtime_busy() == true)
         return (STAT_COMMAND_NOT_ACCEPTED);
@@ -1571,7 +1560,7 @@ stat_t cm_queue_flush()
 #endif
 	mp_flush_planner();						// flush planner queue
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-	rx_request_rx_report();
+//	rx_request_rx_report();
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
@@ -1580,11 +1569,14 @@ stat_t cm_queue_flush()
 	}
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 	_exec_program_finalize(value, FLAGS_ONE);	// finalize now, not later
-	return (STAT_OK);
 }
+*/
 
-/*
- * Program and cycle state functions
+/******************************
+ * Program Functions (4.3.10) *
+ ******************************/
+/* This group implements stop, start, and end functions.
+ * It is extended beyond the NIST spec to handle various situations.
  *
  * _exec_program_finalize() 	- helper
  * cm_cycle_start()
@@ -1592,7 +1584,18 @@ stat_t cm_queue_flush()
  * cm_program_stop()			- M0
  * cm_optional_program_stop()	- M1
  * cm_program_end()				- M2, M30
+ */
+ /*
+ * Program and cycle state functions
  *
+ * cm_program_stop and cm_optional_program_stop are synchronous Gcode commands
+ * that are received through the interpreter. They cause all motion to stop
+ * at the end of the current command, including spindle motion.
+ *
+ * Note that the stop occurs at the end of the immediately preceding command
+ * (i.e. the stop is queued behind the last command).
+ *
+ * cm_program_end is a stop that also resets the machine to initial state
  * cm_program_end() implements M2 and M30
  * The END behaviors are defined by NIST 3.6.1 are:
  *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
@@ -1627,7 +1630,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
 	}
 	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
-	cm.cycle_start_requested = false;					// cancel any pending cycle start request
+    cm.end_hold_requested = false;					    // cancel any pending end hold request
 	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END
@@ -1638,13 +1641,13 @@ static void _exec_program_finalize(float *value, bool *flags)
 		cm_select_plane(cm.default_select_plane);		// reset to default arc plane
 		cm_set_distance_mode(cm.default_distance_mode);
 //++++	cm_set_units_mode(cm.default_units_mode);		// reset to default units mode +++ REMOVED +++
-		cm_spindle_control(SPINDLE_OFF);				// M5
+		cm_spindle_control(SPINDLE_OFF);                // M5
 		cm_flood_coolant_control(false);				// M9
 		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-	sr_request_status_report(SR_IMMEDIATE_REQUEST);		// request a final status report (not unfiltered)
+	sr_request_status_report(SR_REQUEST_IMMEDIATE);		// request a final status report (not unfiltered)
 }
 
 void cm_cycle_start()
@@ -1755,8 +1758,8 @@ static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2,
 
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Machining";
-static const char msg_cycs2[] PROGMEM = "Probe";
-static const char msg_cycs3[] PROGMEM = "Homing";
+static const char msg_cycs2[] PROGMEM = "Homing";
+static const char msg_cycs3[] PROGMEM = "Probe";
 static const char msg_cycs4[] PROGMEM = "Jog";
 static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3,  msg_cycs4 };
 
@@ -2240,10 +2243,7 @@ void cm_print_gdi(nvObj_t *nv) { text_print_int(nv, fmt_gdi);}
 
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
 const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%17.4f%s\n";
-const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
-//const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
-//const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
-//const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
+const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d [0=disable,1=enable]\n";
 const char fmt_lim[] PROGMEM ="[lim] limit switch enable%10d [0=disable,1=enable]\n";
 const char fmt_saf[] PROGMEM ="[saf] safety interlock enable%6d [0=disable,1=enable]\n";
 
@@ -2255,12 +2255,16 @@ const char fmt_mto[] PROGMEM ="[mto]  manual traverse override%8.3f [0.05 < mto 
 
 void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+//void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+void cm_print_sl(nvObj_t *nv) { text_print(nv, fmt_sl);}        // TYPE_INT
 void cm_print_lim(nvObj_t *nv){ text_print(nv, fmt_lim);}       // TYPE_INT
 void cm_print_saf(nvObj_t *nv){ text_print(nv, fmt_saf);}       // TYPE_INT
-//void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
-//void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
-//void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
+
+void cm_print_m48e(nvObj_t *nv) { text_print(nv, fmt_m48e);}    // TYPE_INT
+void cm_print_mfoe(nvObj_t *nv){ text_print(nv, fmt_mfoe);}     // TYPE INT
+void cm_print_mfo(nvObj_t *nv) { text_print(nv, fmt_mfo);}      // TYPE FLOAT
+void cm_print_mtoe(nvObj_t *nv){ text_print(nv, fmt_mtoe);}     // TYPE INT
+void cm_print_mto(nvObj_t *nv) { text_print(nv, fmt_mto);}      // TYPE FLOAT
 
 /*
  * axis print functions
@@ -2278,8 +2282,8 @@ void cm_print_saf(nvObj_t *nv){ text_print(nv, fmt_saf);}       // TYPE_INT
  *	cm_print_jh()
  *	cm_print_jd()
  *	cm_print_ra()
- *	cm_print_sn()
- *	cm_print_sx()
+ *	cm_print_hi()
+ *	cm_print_hd()
  *	cm_print_lv()
  *	cm_print_lb()
  *	cm_print_zb()

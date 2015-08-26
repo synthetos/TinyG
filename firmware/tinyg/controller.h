@@ -2,8 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,10 +28,6 @@
 #ifndef CONTROLLER_H_ONCE
 #define CONTROLLER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
 #define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512			// text buffer size
@@ -40,54 +36,64 @@ extern "C"{
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
 
+#define LED_NORMAL_BLINK_RATE 3000      // blink rate for normal operation (in ms)
+#define LED_ALARM_BLINK_RATE 750        // blink rate for alarm state (in ms)
+#define LED_SHUTDOWN_BLINK_RATE 300     // blink rate for shutdown state (in ms)
+#define LED_PANIC_BLINK_RATE 100        // blink rate for panic state (in ms)
+
+typedef enum {                          // manages startup lines
+    CONTROLLER_INITIALIZING = 0,        // controller is initializing - not ready for use
+    CONTROLLER_NOT_CONNECTED,           // has not yet detected connection to USB (or other comm channel)
+    CONTROLLER_CONNECTED,               // has connected to USB (or other comm channel)
+    CONTROLLER_STARTUP,                 // is running startup messages and lines
+    CONTROLLER_READY,                   // is active and ready for use
+    CONTROLLER_PAUSED                   // is paused - presumably in preparation for queue flush
+} csControllerState;
+
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-	uint8_t state;						// controller state
 	float null;							// dumping ground for items with no target
+
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
 	float hw_platform;					// tinyg hardware compatibility - platform type
 	float hw_version;					// tinyg hardware compatibility - platform revision
 
-	// communications state variables
-	uint8_t primary_src;				// primary input source device
-	uint8_t secondary_src;				// secondary input source device
-	uint8_t default_src;				// default source device
-	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
-
-	uint16_t linelen;					// length of currently processing line
-	uint16_t read_index;				// length of line being read
-
 	// system state variables
-	uint8_t led_state;		// LEGACY	// 0=off, 1=on
-	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
-	uint32_t led_timer;					// used by idlers to flash indicator LED
-	uint8_t hard_reset_requested;		// flag to perform a hard reset
-	uint8_t bootloader_requested;		// flag to enter the bootloader
-	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
+	csControllerState controller_state;
+	uint32_t led_timer;                 // used to flash indicator LED
+	uint32_t led_blink_rate;            // used to flash indicator LED
 
-//	uint8_t sync_to_time_state;
-//	uint32_t sync_to_time_time;
+	// communications (and other) state variables
+	uint8_t comm_mode;                  // TEXT_MODE or JSON_MODE
 
-	int32_t job_id[4];					// uuid to identify the job
+#ifdef __ARM
+	uint8_t state_usb0;
+	uint8_t state_usb1;
+#endif
+
+#ifdef __AVR
+	uint8_t primary_src;                // primary input source device
+	uint8_t secondary_src;              // secondary input source device
+	uint8_t default_src;                // default source device
+
+	uint16_t read_index;				// length of line being read
+	uint8_t led_state;		            // used by AVR IndicatorLed_toggle() in gpio.c
+	uint8_t usb_baud_flag;              // running a USB baudrate update sequence
+	uint8_t hard_reset_requested;       // flag to perform a hard reset
+	uint8_t bootloader_requested;       // flag to enter the bootloader
+#endif
 
 	// controller serial buffers
-	char *bufp;						// pointer to primary or secondary in buffer
-	char in_buf[INPUT_BUFFER_LEN];	// primary input buffer
-	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer
-	char saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+	char *bufp;                         // pointer to primary or secondary in buffer
+	uint16_t linelen;                   // length of currently processing line
+	char in_buf[INPUT_BUFFER_LEN];      // primary input buffer
+	char out_buf[OUTPUT_BUFFER_LEN];    // output buffer
+	char saved_buf[SAVED_BUFFER_LEN];   // save the input buffer
 	magic_t magic_end;
 } controller_t;
 
 extern controller_t cs;					// controller state structure
-
-typedef enum {				            // manages startup lines
-	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
-	CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
-	CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
-	CONTROLLER_STARTUP,					// controller is running startup messages and lines
-	CONTROLLER_READY					// controller is active and ready for use
-} cmControllerState;
 
 /**** function prototypes ****/
 
@@ -95,14 +101,9 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
 void controller_run(void);
-//void controller_reset(void);
 
-void tg_reset_source(void);
-void tg_set_primary_source(uint8_t dev);
-void tg_set_secondary_source(uint8_t dev);
-
-#ifdef __cplusplus
-}
-#endif
+void cs_reset_source(void);
+void cs_set_primary_source(uint8_t dev);
+//void cs_set_secondary_source(uint8_t dev);
 
 #endif // End of include guard: CONTROLLER_H_ONCE

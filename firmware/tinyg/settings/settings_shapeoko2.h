@@ -45,7 +45,7 @@
 #define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
 
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
-#define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
+#define HARD_LIMIT_ENABLE           0						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
 
 #define SPINDLE_ENABLE_POLARITY     1                       // 0=active low, 1=active high
@@ -59,14 +59,15 @@
 
 // Communications and reporting settings
 
-#define TEXT_VERBOSITY              TV_VERBOSE              // one of: TV_SILENT, TV_VERBOSE
 #define COMM_MODE                   JSON_MODE               // one of: TEXT_MODE, JSON_MODE
+#define TEXT_VERBOSITY              TV_VERBOSE              // one of: TV_SILENT, TV_VERBOSE
 
 #define XIO_EXPAND_CR               false                   // serial IO settings (AVR only)
 #define XIO_ENABLE_ECHO             false
 #define XIO_ENABLE_FLOW_CONTROL     FLOW_CONTROL_XON        // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
-#define JSON_VERBOSITY              JV_MESSAGES             // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+//#define JSON_VERBOSITY              JV_MESSAGES             // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY              JV_VERBOSE             // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_SYNTAX_MODE            JSON_SYNTAX_STRICT      // one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 
 #define QUEUE_REPORT_VERBOSITY		QR_OFF		            // one of: QR_OFF, QR_SINGLE, QR_TRIPLE
@@ -75,7 +76,7 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-#define STATUS_REPORT_DEFAULTS "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
+#define STATUS_REPORT_DEFAULTS "line", "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
 //#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","admo","frmo","momo","stat"
 // Alternate SRs that report in drawable units
 //#define STATUS_REPORT_DEFAULTS "line","vel","mpox","mpoy","mpoz","mpoa","coor","ofsa","ofsx","ofsy","ofsz","dist","unit","stat","homz","homy","homx","momo"
@@ -151,12 +152,15 @@
 #define JUNCTION_DEVIATION_Z        0.01                    // larger is faster
 #define JUNCTION_DEVIATION_ABC      0.5                     // larger is faster
 
+#define VELOCITY_MAX                16000    // 16000
+#define JERK_MAX                    5000    // 5000
+
 #define X_AXIS_MODE                 AXIS_STANDARD           // xam  see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX              16000                   // xvm  G0 max velocity in mm/min
+#define X_VELOCITY_MAX              VELOCITY_MAX            // xvm  G0 max velocity in mm/min
 #define X_FEEDRATE_MAX              X_VELOCITY_MAX          // xfr  G1 max feed rate in mm/min
 #define X_TRAVEL_MIN                0                       // xtn  minimum travel for soft limits
-#define X_TRAVEL_MAX                420                     // xtm  travel between switches or crashes
-#define X_JERK_MAX                  5000                    // xjm  yes, that's "5 billion" mm/(min^3)
+#define X_TRAVEL_MAX                300                     // xtm  travel between switches or crashes
+#define X_JERK_MAX                  JERK_MAX                // xjm  yes, that's "5 billion" mm/(min^3)
 #define X_JERK_HIGH                 10000                   // xjh
 #define X_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY   // xjd
 #define X_SWITCH_MODE_MIN           SW_MODE_HOMING          // xsn  SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -165,15 +169,15 @@
 #define X_HOMING_DIR                0                       // xhd  0=search moves negative, 1= search moves positive
 #define X_SEARCH_VELOCITY           3000                    // xsv  minus means move to minimum switch
 #define X_LATCH_VELOCITY            100                     // xlv  mm/min
-#define X_LATCH_BACKOFF             6                       // xlb  mm
-#define X_ZERO_BACKOFF              3                       // xzb  mm
+#define X_LATCH_BACKOFF             3                       // xlb  mm
+#define X_ZERO_BACKOFF              2                       // xzb  mm
 
 #define Y_AXIS_MODE                 AXIS_STANDARD
-#define Y_VELOCITY_MAX              16000
+#define Y_VELOCITY_MAX              VELOCITY_MAX
 #define Y_FEEDRATE_MAX              Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN                0
-#define Y_TRAVEL_MAX                420
-#define Y_JERK_MAX                  5000
+#define Y_TRAVEL_MAX                330
+#define Y_JERK_MAX                  JERK_MAX
 #define Y_JERK_HIGH                 10000
 #define Y_JUNCTION_DEVIATION        JUNCTION_DEVIATION_XY
 #define Y_SWITCH_MODE_MIN           SW_MODE_HOMING
@@ -182,14 +186,14 @@
 #define Y_HOMING_DIR                0
 #define Y_SEARCH_VELOCITY           3000
 #define Y_LATCH_VELOCITY            100
-#define Y_LATCH_BACKOFF             6
-#define Y_ZERO_BACKOFF              3
+#define Y_LATCH_BACKOFF             3
+#define Y_ZERO_BACKOFF              2
 
 #define Z_AXIS_MODE                 AXIS_STANDARD
 #define Z_VELOCITY_MAX              1000
 #define Z_FEEDRATE_MAX              Z_VELOCITY_MAX
 #define Z_TRAVEL_MAX                0
-#define Z_TRAVEL_MIN                100
+#define Z_TRAVEL_MIN                -80
 #define Z_JERK_MAX                  500                 // was 100
 #define Z_JERK_HIGH                 500
 #define Z_JUNCTION_DEVIATION        JUNCTION_DEVIATION_Z
@@ -199,7 +203,7 @@
 #define Z_HOMING_DIR                1
 #define Z_SEARCH_VELOCITY           (Z_VELOCITY_MAX * 0.66666)
 #define Z_LATCH_VELOCITY            100
-#define Z_LATCH_BACKOFF             6
+#define Z_LATCH_BACKOFF             3
 #define Z_ZERO_BACKOFF              2
 
 #define A_AXIS_MODE                 AXIS_STANDARD
@@ -277,22 +281,26 @@
 */
 // Xmin on v8/v9 boards
 #define DI1_MODE                    NORMALLY_CLOSED
-#define DI1_ACTION                  INPUT_ACTION_STOP
+//#define DI1_ACTION                  INPUT_ACTION_STOP
+#define DI1_ACTION                  INPUT_ACTION_NONE
 #define DI1_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Xmax
 #define DI2_MODE                    NORMALLY_CLOSED
-#define DI2_ACTION                  INPUT_ACTION_STOP
+//#define DI2_ACTION                  INPUT_ACTION_STOP
+#define DI2_ACTION                  INPUT_ACTION_NONE
 #define DI2_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Ymin
 #define DI3_MODE                    NORMALLY_CLOSED
-#define DI3_ACTION                  INPUT_ACTION_STOP
+//#define DI3_ACTION                  INPUT_ACTION_STOP
+#define DI3_ACTION                  INPUT_ACTION_NONE
 #define DI3_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Ymax
 #define DI4_MODE                    NORMALLY_CLOSED
-#define DI4_ACTION                  INPUT_ACTION_STOP
+//#define DI4_ACTION                  INPUT_ACTION_STOP
+#define DI4_ACTION                  INPUT_ACTION_NONE
 #define DI4_FUNCTION                INPUT_FUNCTION_LIMIT
 
 // Zmin
@@ -341,7 +349,7 @@
 //	- set G55 to be a zero in the middle of the table
 //	- no action for the others
 
-#define G54_X_OFFSET 0			// G54 is traditionally set to all zeros
+#define G54_X_OFFSET 0
 #define G54_Y_OFFSET 0
 #define G54_Z_OFFSET 0
 #define G54_A_OFFSET 0

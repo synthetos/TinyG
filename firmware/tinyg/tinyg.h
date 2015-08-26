@@ -40,23 +40,25 @@
  *      - change release to 0.98
  *      - refactor limits and homing for new inputs
  *      - update probing
- *
  *    - update assertions to use new style w/panic's
- *    - add new hold logic
- *    - move spindle and coolant to separate files
- *    - remove Kahan references
- *    - Add const qualifiers to bool flags in arglists
- *    - install test_print() methods instead of local conversions
- *    - update firmware build number for FBS values (not sure how this will work)
- *    - move job IDs to config (from controller)
- *    - move $ej from cfg to controller (cs)
- *    - move USB parameters from cfg to xio (see set_baud()), including comm_mode
- *    - remove network.c/.h
- *
- *  Back-back-port to g2
- *    - changes in digital IO system
- *    - pwr indicator lights (pwr settings)
- *    - controller assertions in controller.cpp should be same style as .c file
+ *    - update JSON parser and footers
+ *      - footer revision number
+ *      - new JSON JV settings
+ *      - packet mode
+ *      - JSON serialization optimization
+ *    - plan_exec updates  (dev-445-g2sync)
+ *      - add new hold logic
+ *      - remove old JERK code
+ *      - remove Kahan references
+ *    - install spindle and coolant separate files
+ *    - extend status report requests for FULL option
+ *    - small stuff
+ *      - move job IDs to config (from controller)
+ *      - remove network.c/.h
+ *      - move $ej from cfg to controller (cs.comm_mode)
+
+ *      - install test_print() methods instead of local conversions
+ *      - Add const qualifiers to bool flags in arglists
  */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -70,34 +72,27 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef __ARM
-#include "MotatePins.h"
-#endif
-
 /****** DEFINITIONS THAT MAY ULTIMATELY BE PROVIDED BY THE MAKEFILE ******/
 
-#define __ARCHITECTURE  __AVR
-#define __PLATFORM      __ATMEL_XMEGA
-#define __PROCESSOR     __XMEGA192A
-#define __BOARD         __TINYG_V8
+#define __ARCHITECTURE  __AVR               // or __ARM
+#define __PLATFORM      __ATMEL_XMEGA       // unused for now
+#define __PROCESSOR     __XMEGA192A         // unused for now
+#define __BOARD         __TINYG_V8          // unused for now
 
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        444.16	// edge candidate. Testing for errors and stability
-
+#define TINYG_FIRMWARE_BUILD        444.23	// merge with edge-for-version-0.98
 #endif
-#define TINYG_FIRMWARE_VERSION		0.98					// firmware major version
-#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	// see hardware.h
-#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8		// see hardware.h
+
+#define TINYG_FIRMWARE_VERSION		0.98                        // firmware major version
+#define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA     // see hardware.h
+#define TINYG_HARDWARE_VERSION		HW_VERSION_TINYGV8          // see hardware.h
 #define TINYG_HARDWARE_VERSION_MAX	TINYG_HARDWARE_VERSION
 
 /****** COMPILE-TIME SETTINGS ******/
 
 #define __STEP_CORRECTION
-//#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
-//#define __KAHAN							// Use Kahan summation in aline exec functions
-
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
 
@@ -109,6 +104,10 @@
 //#ifndef WEAK
 //#define WEAK  __attribute__ ((weak))
 //#endif
+
+#ifdef __ARM
+#include "MotatePins.h"
+#endif
 
 /******************************************************************************
  ***** TINYG APPLICATION DEFINITIONS ******************************************
@@ -163,10 +162,6 @@ typedef enum {
 /************************************************************************************
  ***** PLATFORM COMPATIBILITY *******************************************************
  ************************************************************************************/
-#undef __AVR
-#define __AVR
-//#undef __ARM
-//#define __ARM
 
 /*********************
  * AVR Compatibility *

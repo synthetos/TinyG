@@ -51,8 +51,8 @@
 typedef enum {
     INPUT_MODE_DISABLED = -1,           // input is disabled
     INPUT_ACTIVE_LOW = 0,               // input is active low (aka normally open)
-    INPUT_ACTIVE_HIGH = 1,		        // input is active high (aka normally closed)
-	INPUT_MODE_MAX                      // unused. Just for range checking
+    INPUT_ACTIVE_HIGH = 1,              // input is active high (aka normally closed)
+    INPUT_MODE_MAX                      // unused. Just for range checking
 } inputMode;
 #define NORMALLY_OPEN   INPUT_ACTIVE_LOW    // equivalent
 #define NORMALLY_CLOSED INPUT_ACTIVE_HIGH   // equivalent

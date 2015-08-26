@@ -34,7 +34,7 @@
 // for now there is only one JSON array in use - the footer
 // if you add these make sure there are no collisions w/present or past numbers
 
-#define FOOTER_REVISION 1
+#define FOOTER_REVISION 2   // Note: change hard-coded footer revision in json_print_response()
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 typedef enum {

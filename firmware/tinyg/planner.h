@@ -89,13 +89,6 @@ typedef enum {                      // code blocks for planning and trapezoid ge
     COMMAND_BLOCK                   // this block is a command
 } blockHint;
 
-typedef enum {                      // planner operating state
-    PLANNER_IDLE = 0,               // planner and movement are idle
-    PLANNER_STARTUP,                // ingesting blocks before movement is started
-    PLANNER_OPTIMISTIC,             // plan by leaving last block unplanned
-    PLANNER_PESSIMISTIC             // plan by planning all blocks, including the tail
-} plannerState;
-
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 #define PLANNER_BUFFER_POOL_SIZE 32                     // Suggest 12 min. Limit is 255
@@ -140,62 +133,81 @@ typedef enum {                      // planner operating state
  *	Planner structures
  */
 
-typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
-	struct mpBuffer *pv;			// static pointer to previous buffer
-	struct mpBuffer *nx;			// static pointer to next buffer
+typedef struct mpBuffer {               // See Planning Velocity Notes for variable usage
+	struct mpBuffer *pv;                // static pointer to previous buffer
+	struct mpBuffer *nx;                // static pointer to next buffer
 	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
-	cm_exec_t cm_func;				// callback to canonical machine execution function
+	cm_exec_t cm_func;                  // callback to canonical machine execution function
 
 	float naiive_move_time;
 
-	uint8_t buffer_state;			// used to manage queuing/dequeuing
-	uint8_t move_type;				// used to dispatch to run routine
-	uint8_t move_code;				// byte that can be used by used exec functions
-	uint8_t move_state;				// move state machine sequence
-	uint8_t replannable;			// TRUE if move can be re-planned
+	mpBufferState buffer_state;	        // used to manage queuing/dequeuing
+	moveType move_type;                 // used to dispatch to run routine
+	moveState move_state;               // move state machine sequence
+	uint8_t move_code;                  // byte that can be used by used exec functions
 
-	float unit[AXES];				// unit vector for axis scaling & planning
-    bool axis_flags[AXES];          // set true for axes participating in the move & for command parameters
+	uint8_t replannable;                // TRUE if move can be re-planned
 
-	float length;					// total length of line or helix in mm
+	float unit[AXES];                   // unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move & for command parameters
+
+	float length;                       // total length of line or helix in mm
 	float head_length;
 	float body_length;
 	float tail_length;
-									// *** SEE NOTES ON THESE VARIABLES, in aline() ***
-	float entry_velocity;			// entry velocity requested for the move
-	float cruise_velocity;			// cruise velocity requested & achieved
-	float exit_velocity;			// exit velocity requested for the move
 
-	float entry_vmax;				// max junction velocity at entry of this move
-	float cruise_vmax;				// max cruise velocity requested for move
-	float exit_vmax;				// max exit velocity possible (redundant)
-	float delta_vmax;				// max velocity difference for this move
-	float braking_velocity;			// current value for braking velocity
+    float head_time;                    // computed move time for head
+    float body_time;                    // ...body
+    float tail_time;                    // ...tail
+    float move_time;                    // ...entire move
 
-	uint8_t jerk_axis;				// rate limiting axis used to compute jerk for the move
-	float jerk;						// maximum linear jerk term for this move
-	float recip_jerk;				// 1/Jm used for planning (computed and cached)
-	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
+	float entry_velocity;               // entry velocity requested for the move
+	float cruise_velocity;              // cruise velocity requested & achieved
+	float exit_velocity;                // exit velocity requested for the move
 
-	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
+	float entry_vmax;                   // max junction velocity at entry of this move
+	float cruise_vmax;                  // max cruise velocity requested for move
+	float exit_vmax;                    // max exit velocity possible (redundant)
+	float delta_vmax;                   // max velocity difference for this move
+	float braking_velocity;             // current value for braking velocity
+
+	uint8_t jerk_axis;                  // rate limiting axis used to compute jerk for the move
+	float jerk;                         // maximum linear jerk term for this move
+	float recip_jerk;                   // 1/Jm used for planning (computed and cached)
+	float cbrt_jerk;                    // cube root of Jm used for planning (computed and cached)
+
+	GCodeState_t gm;                    // Gode model state - passed from model, used by planner and runtime
 
 } mpBuf_t;
 
-typedef struct mpBufferPool {		// ring buffer for sub-moves
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t buffers_available;		// running count of available buffers
-	mpBuf_t *w;						// get_write_buffer pointer
-	mpBuf_t *q;						// queue_write_buffer pointer
-	mpBuf_t *r;						// get/end_run_buffer pointer
+typedef struct mpBufferPool {           // ring buffer for sub-moves
+	magic_t magic_start;                // magic number to test memory integrity
+
+    // planner state variables
+//    plannerState planner_state;       // current state of planner
+    float time_in_run;		            // time left in the buffer executed by the runtime
+    float time_in_plan;	                // total time planned in the run and planner
+    bool request_planning;              // a process has requested unconditional planning (used by feedhold)
+    bool new_block;                     // marks the arrival of a new block for planning
+    bool new_block_timeout;             // block arrival rate is timing out (no new blocks arriving)
+    uint32_t new_block_timer;           // timeout if no new block received N ms after last block committed
+    bool backplanning;                  // true if planner is in a back-planning pass
+    mpBuf_t *backplan_return;           // buffer to return to once back-planning is complete
+
+	uint8_t buffers_available;          // running count of available buffers
+	mpBuf_t *w;                         // get_write_buffer pointer
+	mpBuf_t *q;                         // queue_write_buffer pointer
+	mpBuf_t *r;                         // get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
+
 	magic_t magic_end;
 } mpBufferPool_t;
 
-typedef struct mpMoveMasterSingleton { // common variables for planning (move master)
-	magic_t magic_start;			// magic number to test memory integrity
-	float position[AXES];			// final move position for planning purposes
+typedef struct mpMoveMasterSingleton {  // common variables for planning (move master)
+	magic_t magic_start;                // magic number to test memory integrity
+	float position[AXES];               // final move position for planning purposes
 
-	float jerk;						// jerk values cached from previous block
+	float jerk;                         // jerk values cached from previous block
 	float recip_jerk;
 	float cbrt_jerk;
 
@@ -204,73 +216,62 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t move_state;				// state of the overall move
-	uint8_t section;				// what section is the move in?
-	uint8_t section_state;			// state within a move section
+	magic_t magic_start;                // magic number to test memory integrity
+	moveState move_state;               // state of the overall move
+	moveSection section;                // what section is the move in?
+	sectionState section_state;         // state within a move section
 
-	float unit[AXES];				// unit vector for axis scaling & planning
+	float unit[AXES];                   // unit vector for axis scaling & planning
     bool axis_flags[AXES];              // set true for axes participating in the move
-	float target[AXES];				// final target for bf (used to correct rounding errors)
-	float position[AXES];			// current move position
-	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
-	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
+	float target[AXES];                 // final target for bf (used to correct rounding errors)
+	float position[AXES];               // current move position
+	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
 
-	float target_steps[MOTORS];		// current MR target (absolute target as steps)
-	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
-	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
+	float target_steps[MOTORS];         // current MR target (absolute target as steps)
+	float position_steps[MOTORS];       // current MR position (target from previous segment)
+	float commanded_steps[MOTORS];      // will align with next encoder sample (target from 2nd previous segment)
+	float encoder_steps[MOTORS];        // encoder position in steps - ideally the same as commanded_steps
+	float following_error[MOTORS];      // difference between encoder_steps and commanded steps
 
-	float head_length;				// copies of bf variables of same name
+	float head_length;                  // copies of bf variables of same name
 	float body_length;
 	float tail_length;
 
-	float entry_velocity;
+	float head_time;                    // copies of bf variables of same name
+	float body_time;
+	float tail_time;
+
+	float entry_velocity;               // actual velocities for the move
 	float cruise_velocity;
 	float exit_velocity;
 
-	float segments;					// number of segments in line (also used by arc generation)
-	uint32_t segment_count;			// count of running segments
-	float segment_velocity;			// computed velocity for aline segment
-	float segment_time;				// actual time increment per aline segment
-	float jerk;						// max linear jerk
+	float segments;                     // number of segments in line (also used by arc generation)
+	uint32_t segment_count;             // count of running segments
+	float segment_velocity;             // computed velocity for aline segment
+	float segment_time;                 // actual time increment per aline segment
+	float jerk;                         // max linear jerk
 
-#ifdef __JERK_EXEC					// values used exclusively by computed jerk acceleration
-	float jerk_div2;				// cached value for efficiency
-	float midpoint_velocity;		// velocity at accel/decel midpoint
-	float midpoint_acceleration;	//
-	float accel_time;				//
-	float segment_accel_time;		//
-	float elapsed_accel_time;		//
-#else								// values used exclusively by forward differencing acceleration
-	float forward_diff_1;			// forward difference level 1
-	float forward_diff_2;			// forward difference level 2
-	float forward_diff_3;			// forward difference level 3
-	float forward_diff_4;			// forward difference level 4
-	float forward_diff_5;			// forward difference level 5
-#ifdef __KAHAN
-	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
-	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
-	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
-	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
-	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
-#endif
-#endif
+	float forward_diff_1;               // forward difference level 1
+	float forward_diff_2;               // forward difference level 2
+	float forward_diff_3;               // forward difference level 3
+	float forward_diff_4;               // forward difference level 4
+	float forward_diff_5;               // forward difference level 5
 
-	GCodeState_t gm;				// gcode model state currently executing
+	GCodeState_t gm;                    // gcode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
 
 // Reference global scope structures
-extern mpBufferPool_t mb;				// move buffer queue
-extern mpMoveMasterSingleton_t mm;		// context for line planning
-extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
+extern mpBufferPool_t mb;               // move buffer queue
+extern mpMoveMasterSingleton_t mm;      // context for line planning
+extern mpMoveRuntimeSingleton_t mr;     // context for line runtime
 
 /*
  * Global Scope Functions
  */
+
+//planner.cpp functions
 
 void planner_init(void);
 void planner_reset(void);
@@ -283,40 +284,39 @@ void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
 void mp_set_steps_to_runtime_position(void);
 
-void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags);
+void mp_queue_command(void(*cm_exec_t)(float[], bool[]), float *value, bool *flags);
 stat_t mp_runtime_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
-
-stat_t mp_aline(GCodeState_t *gm_in);
+void mp_request_out_of_band_dwell(float seconds);
+stat_t mp_exec_out_of_band_dwell(void);
 
 // planner functions and helpers
-uint8_t mp_get_planner_buffers(void);
+//uint8_t mp_get_planner_buffers(void);
+uint8_t mp_get_planner_buffers_available(void);
 bool mp_planner_is_full(void);
 bool mp_has_runnable_buffer(void);
+//bool mp_is_phat_city_time(void);
 
-stat_t mp_plan_hold_callback(void);
-stat_t mp_end_hold(void);
-stat_t mp_feed_rate_override(uint8_t flag, float parameter);
+//void mp_replan_queue(mpBuf_t *bf);
+//void mp_start_feed_override(const float ramp_time, const float override_factor);
+//void mp_end_feed_override(const float ramp_time);
 
-// planner buffer handlers
-uint8_t mp_get_planner_buffers_available(void);
+// planner buffer primitives
 void mp_init_buffers(void);
-mpBuf_t * mp_get_write_buffer(void);
-void mp_unget_write_buffer(void);
-void mp_commit_write_buffer(const uint8_t move_type);
-
-mpBuf_t * mp_get_run_buffer(void);
-uint8_t mp_free_run_buffer(void);
-mpBuf_t * mp_get_first_buffer(void);
-mpBuf_t * mp_get_last_buffer(void);
 
 //mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf);
 //mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf);
 #define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))	// use the macro instead
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
+mpBuf_t * mp_get_write_buffer(void);
+void mp_commit_write_buffer(const uint8_t move_type);
+mpBuf_t * mp_get_run_buffer(void);
+uint8_t mp_free_run_buffer(void);
+
+//void mp_unget_write_buffer(void);
 void mp_clear_buffer(mpBuf_t *bf);
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
@@ -329,7 +329,11 @@ void mp_set_runtime_work_offset(float offset[]);
 bool mp_get_runtime_busy(void);
 bool mp_runtime_is_idle(void);
 
-float* mp_get_planner_position_vector(void);
+stat_t mp_aline(GCodeState_t *gm_in);
+void mp_plan_block_list(void);
+
+//stat_t mp_feed_rate_override(uint8_t flag, float parameter);
+//float* mp_get_planner_position_vector(void);
 
 // plan_zoid.c functions
 void mp_calculate_trapezoid(mpBuf_t *bf);
@@ -339,5 +343,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_exit_hold_state(void);
 
 #endif	// End of include Guard: PLANNER_H_ONCE

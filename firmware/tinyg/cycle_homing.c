@@ -309,8 +309,6 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		cm.homed[axis] = true;
 
 	} else { // handle G28.4 cycle - set position to the point of switch closure
-//		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
-        // set position to exact point of switch closure
         cm_queue_flush();                                   // flush queue & end feedhold
         float contact_position[AXES];
         kn_forward_kinematics(en_get_encoder_snapshot_vector(), contact_position);
@@ -331,7 +329,12 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	flags[axis] = true;
 	cm_set_feed_rate(velocity);
     cm_queue_flush();                                     // flush queue and end hold (if applicable)
-	ritorno(cm_straight_feed(vect, flags));
+//	ritorno(cm_straight_feed(vect, flags));
+    stat_t status = cm_straight_feed(vect, flags);
+    if (status != STAT_OK) {
+        rpt_exception(status, "Homing move failed. Check min/max settings");
+        return (_homing_error_exit(axis, STAT_HOMING_CYCLE_FAILED));
+    }
 	return (STAT_EAGAIN);
 }
 

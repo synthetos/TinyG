@@ -52,7 +52,6 @@
 #include "controller.h"
 #include "util.h"
 #include "report.h"
-//#include "xio.h"						// signals
 
 #ifdef __AVR
     #include <avr/interrupt.h>
@@ -106,9 +105,10 @@ static InputPin<kInput12_PinNumber> input_12_pin(kPullUp);
  *	bind the ports and set bit IO directions, respectively. See hardware.h for details
  */
 
-#ifdef __ARM
 void gpio_init(void)
 {
+#ifdef __ARM
+
     /* Priority only needs set once in the system during startup.
      * However, if we wish to switch the interrupt trigger, here are other options:
      *  kPinInterruptOnRisingEdge
@@ -130,14 +130,11 @@ void gpio_init(void)
 //    input_11_pin.setInterrupts(kPinInterruptOnChange|kPinInterruptPriorityMedium);
 //    input_12_pin.setInterrupts(kPinInterruptOnChange|kPinInterruptPriorityMedium);
 	return(gpio_reset());
-}
 #endif
 
 #ifdef __AVR
-void gpio_init(void)
-{
-    for (uint8_t i=0; i<D_IN_PAIRS; i++) {
 
+    for (uint8_t i=0; i<D_IN_PAIRS; i++) {
         // Setup input bits and interrupts
         // Must have been previously set to inputs by stepper_init()
         if (d_in[i].mode == INPUT_MODE_DISABLED) {
@@ -158,20 +155,11 @@ void gpio_init(void)
         hw.sw_port[i]->INTCTRL = GPIO1_INTLVL;                  // see hardware.h for setting
     }
     return(gpio_reset());
-}
 #endif
+}
 
 void gpio_reset(void)
 {
-/*
-#ifdef __AVR
-    for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-        sw.debounce[i] = SW_IDLE;
-        read_switch(i);
-    }
-    sw.limit_flag = false;
-#endif
-*/
     d_in_t *in;
 
     for (uint8_t i=0; i<D_IN_CHANNELS; i++) {
@@ -180,13 +168,9 @@ void gpio_reset(void)
             in->state = INPUT_DISABLED;
             continue;
         }
-        in->state = (_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
+        in->state = (inputState)(_read_raw_pin(i+1) ^ (in->mode ^ 1));    // correct for NO or NC mode
         in->lockout_ms = INPUT_LOCKOUT_MS;
-#ifdef __ARM
-        in->lockout_timer = SysTickTimer.getValue();
-#else
         in->lockout_timer = SysTickTimer_getValue();
-#endif
     }
 }
 
@@ -237,7 +221,7 @@ static bool _read_raw_pin(const uint8_t input_num_ext)
  * NOTE: InputPin<>.get() returns a uint32_t, and will NOT necessarily be 1 for true.
  * The actual values will be the pin's port mask or 0, so you must check for non-zero.
  *
- * NOTE: The MOTATE_PIN_INTERRUPT will null out any pins that rae not defined, so no 
+ * NOTE: The MOTATE_PIN_INTERRUPT will null out any pins that rae not defined, so no
  * need to ifdef them out for different board configurations
  */
 #ifdef __ARM
@@ -283,24 +267,16 @@ static uint8_t _condition_pin(const uint8_t input_num_ext, const int8_t pin_valu
     }
 
     // return if the input is in lockout period (take no action)
-#ifdef __ARM
-    if (SysTickTimer.getValue() < in->lockout_timer) { return (0); }
-#else
     if (SysTickTimer_getValue() < in->lockout_timer) { return (0); }
-#endif
     // return if no change in state
     int8_t pin_value_corrected = (pin_value ^ ((int)in->mode ^ 1));	// correct for NO or NC mode
-    if (in->state == pin_value_corrected) {
+    if (in->state == (inputState)pin_value_corrected) {
         return (0);
     }
 
     // record the changed state
-    in->state = pin_value_corrected;
-#ifdef __ARM
-    in->lockout_timer = SysTickTimer.getValue() + in->lockout_ms;
-#else
+    in->state = (inputState)pin_value_corrected;
     in->lockout_timer = SysTickTimer_getValue() + in->lockout_ms;
-#endif
     if (pin_value_corrected == INPUT_ACTIVE) {
         in->edge = INPUT_EDGE_LEADING;
     } else {
@@ -322,14 +298,14 @@ static void _dispatch_pin(const uint8_t input_num_ext)
         return;
     }
 
-    d_in_t *in = &d_in[input_num_ext-1];  // array index is one less than input number
+    d_in_t *in = &d_in[input_num_ext-1];    // array index is one less than input number
 
     // perform homing operations if in homing mode
     if (in->homing_mode) {
         if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
             en_take_encoder_snapshot();
-//            cm_start_hold();
-            cm_request_feedhold();
+            cm_start_hold();
+//            cm_request_feedhold();
         }
         return;
     }
@@ -338,8 +314,8 @@ static void _dispatch_pin(const uint8_t input_num_ext)
     if (in->probing_mode) {
         if (in->edge == INPUT_EDGE_LEADING) {   // we only want the leading edge to fire
             en_take_encoder_snapshot();
-//            cm_start_hold();
-            cm_request_feedhold();
+            cm_start_hold();
+//            cm_request_feedhold();
         }
         return;
     }
@@ -350,12 +326,12 @@ static void _dispatch_pin(const uint8_t input_num_ext)
 
     if (in->edge == INPUT_EDGE_LEADING) {
         if (in->action == INPUT_ACTION_STOP) {
-//			cm_start_hold();
-            cm_request_feedhold();
+			cm_start_hold();
+//            cm_request_feedhold();
         }
         if (in->action == INPUT_ACTION_FAST_STOP) {
-//			cm_start_hold();                        // for now is same as STOP
-            cm_request_feedhold();
+			cm_start_hold();                        // for now is same as STOP
+//            cm_request_feedhold();
         }
         if (in->action == INPUT_ACTION_HALT) {
             cm_halt_all();					        // hard stop, including spindle and coolant
@@ -389,8 +365,7 @@ static void _dispatch_pin(const uint8_t input_num_ext)
             cm.safety_interlock_reengaged = input_num_ext;
         }
     }
-    sr_request_status_report(SR_TIMED_REQUEST);     //+++++ v8 style - change this to g2 style
-//    sr_request_status_report(SR_REQUEST_TIMED);   //+++++ g2 style
+    sr_request_status_report(SR_REQUEST_TIMED);
 }
 
 /********************************************
@@ -532,6 +507,9 @@ void IndicatorLed_clear()
 
 void IndicatorLed_toggle()
 {
+#ifdef __ARM
+    IndicatorLed.toggle();
+#else
 	if (cs.led_state == 0) {
 		gpio_led_on(INDICATOR_LED);
 		cs.led_state = 1;
@@ -539,6 +517,7 @@ void IndicatorLed_toggle()
 		gpio_led_off(INDICATOR_LED);
 		cs.led_state = 0;
 	}
+#endif
 }
 
 /*

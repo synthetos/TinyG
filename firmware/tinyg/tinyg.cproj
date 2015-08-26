@@ -83,7 +83,7 @@
         <InterfaceName>PDI</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800004463</ToolNumber>
+      <ToolNumber>J41800021149</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <UseGdb>True</UseGdb>
@@ -179,6 +179,12 @@
     <Compile Include="controller.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="coolant.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="coolant.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cycle_homing.c">
       <SubType>compile</SubType>
     </Compile>
@@ -234,12 +240,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="network.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="network.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="persistence.c">

@@ -10,6 +10,8 @@ config_app.c
 
 controller.c
 
+coolant.c
+
 cycle_homing.c
 
 cycle_jogging.c
@@ -31,8 +33,6 @@ json_parser.c
 kinematics.c
 
 main.c
-
-network.c
 
 persistence.c
 

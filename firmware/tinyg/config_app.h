@@ -42,16 +42,14 @@ typedef struct cfgParameters {		// mostly communications variables at this point
 	uint16_t magic_start;			// magic number to test memory integrity
 
 	// Job ID
-//	int32_t job_id[4];				// uuid to identify the job
+	int32_t job_id[4];				// uuid to identify the job
 
 	// communications settings
-	uint8_t comm_mode;				// TG_TEXT_MODE or TG_JSON_MODE
 	uint8_t enable_cr;				// enable CR in CRFL expansion on TX
 	uint8_t enable_echo;			// enable text-mode echo
 	uint8_t enable_flow_control;	// enable XON/XOFF or RTS/CTS flow control
-
 	uint8_t usb_baud_rate;			// see xio_usart.h for XIO_BAUD values
-	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
+//	uint8_t usb_baud_flag;			// technically this belongs in the controller singleton
 
 //#ifdef __USER_DATA
 	// user-defined data groups

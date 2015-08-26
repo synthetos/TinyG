@@ -400,7 +400,7 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cfg.comm_mode == TEXT_MODE) {
+	if (cs.comm_mode == TEXT_MODE) {
         return (STAT_UNRECOGNIZED_NAME);
     }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
@@ -683,7 +683,7 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 
 nvObj_t *nv_add_conditional_message(const char *string)	// conditionally add a message object to the body
 {
-	if ((cfg.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
+	if ((cs.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(nv_add_string((const char *)"msg", string));
 }
 
@@ -704,7 +704,7 @@ nvObj_t *nv_add_conditional_message(const char *string)	// conditionally add a m
 
 void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 {
-	if (cfg.comm_mode == JSON_MODE) {
+	if (cs.comm_mode == JSON_MODE) {
 		json_print_list(status, json_flags);
 	} else {
 		text_print_list(status, text_flags);

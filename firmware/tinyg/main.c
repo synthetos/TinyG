@@ -31,7 +31,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
-#include "network.h"
+#include "coolant.h"
 #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
@@ -145,11 +145,10 @@ void application_init_startup(void)
 {
     // start the application
     controller_init(STD_IN, STD_OUT, STD_ERR);  // should be first startup init (requires xio_init())
-	network_init();	//++++ REMOVE LATER	 		// reset std devices if required	- must follow config_init()
     config_init();					            // apply the config settings from persistence
     canonical_machine_reset();
     spindle_init();                   // should be after PWM and canonical machine inits and config_init()
-//    spindle_reset();
+    spindle_reset();
 
 #ifdef __AVR
     // now bring up the interrupts and get started
