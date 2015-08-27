@@ -1267,6 +1267,7 @@ stat_t cm_queue_flush()
 
 #ifdef __AVR
 	xio_reset_usb_rx_buffers();				// flush serial queues
+    xio_reset_readline_linemode();          // flush linemode readline
 #endif
 	mp_flush_planner();						// flush planner queue
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available

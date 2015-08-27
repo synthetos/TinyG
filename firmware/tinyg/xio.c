@@ -428,6 +428,14 @@ static void _init_readline_linemode()
 //#pragma GCC optimize ("O0")
 
 /*
+ * xio_reset_readline_linemode()
+ */
+
+void xio_reset_readline_linemode()
+{
+    _init_readline_linemode();
+}
+/*
  * xio_get_line_buffers_available()
  */
 
