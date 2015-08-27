@@ -285,6 +285,11 @@ static void _dispatch_kernel()
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
 	else if (*cs.bufp == '~') { cm_request_cycle_start(); }
 
+    // this is a hack until we can figure out how a buffer might obtain a leading '?'
+    else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
+        cs.bufp++;
+    }
+
 	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode
 		json_parser(cs.bufp);

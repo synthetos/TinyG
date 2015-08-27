@@ -55,9 +55,16 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
-//#define COMM_RX_MODE	            RX_MODE_STREAM          // one of: RX_MODE_STREAM, RX_MODE_PACKET
-#define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 #define NETWORK_MODE				NETWORK_STANDALONE
+
+#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+//#define XIO_RX_MODE                 RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
+
+#define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
+
+#define XIO_EXPAND_CR				false
+#define XIO_ENABLE_ECHO				false
+#define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 
 //#define JSON_VERBOSITY				JV_MESSAGES				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 #define JSON_VERBOSITY				JV_VERBOSE				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
@@ -77,13 +84,6 @@
 #define GCODE_DEFAULT_COORD_SYSTEM	G54						// G54, G55, G56, G57, G58 or G59
 #define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
-
-// Communications settings
-#define XIO_EXPAND_CR				false
-#define XIO_ENABLE_ECHO				false
-#define XIO_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON		// FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
-#define XIO_RX_MODE	                RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
-//#define XIO_RX_MODE	              RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
 
 //**** DEBUG SETTINGS ****
 

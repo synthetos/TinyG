@@ -357,7 +357,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 void cm_finalize_move() {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
-	// if in ivnerse time mode reset feed rate so next block requires an explicit feed rate setting
+	// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
 	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
 		cm.gm.feed_rate = 0;
 	}

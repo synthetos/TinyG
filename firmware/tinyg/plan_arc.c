@@ -67,6 +67,12 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 				   float radius,                        // non-zero radius implies radius mode
 				   uint8_t motion_mode)                 // defined motion mode
 {
+
+    // +++++ FAKEOUT FOR TESTING
+//    if (cm.gm.linenum == 16) {
+//        return (STAT_ARC_SPECIFICATION_ERROR);
+//    }
+
 	////////////////////////////////////////////////////
 	// Set axis plane and trap arc specification errors
 
@@ -192,12 +198,12 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 
 stat_t cm_arc_callback()
 {
-	if (arc.run_state == MOVE_OFF)
+	if (arc.run_state == MOVE_OFF) {
         return (STAT_NOOP);
-
-	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM)
+    }
+	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
         return (STAT_EAGAIN);
-
+    }
 	arc.theta += arc.arc_segment_theta;
 	arc.gm.target[arc.plane_axis_0] = arc.center_0 + sin(arc.theta) * arc.radius;
 	arc.gm.target[arc.plane_axis_1] = arc.center_1 + cos(arc.theta) * arc.radius;
@@ -205,8 +211,9 @@ stat_t cm_arc_callback()
 	mp_aline(&arc.gm);								// run the line
 	copy_vector(arc.position, arc.gm.target);		// update arc current position
 
-	if (--arc.arc_segment_count > 0)
+	if (--arc.arc_segment_count > 0) {
         return (STAT_EAGAIN);
+    }
 	arc.run_state = MOVE_OFF;
 	return (STAT_OK);
 }
@@ -239,6 +246,8 @@ void cm_abort_arc()
  *
  *  Parts of this routine were originally sourced from the grbl project.
  */
+
+//#pragma GCC optimize ("O0")
 
 static stat_t _compute_arc()
 {
@@ -327,6 +336,9 @@ static stat_t _compute_arc()
 	arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
 	return (STAT_OK);
 }
+
+// insert function here
+//#pragma GCC reset_options
 
 /*
  * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius.

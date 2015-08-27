@@ -271,8 +271,8 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
     dx->rx_buf_count--;
     d->x_flow(d);								// run flow control
-//	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
-    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
+//    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
     if (d->len >= d->size) {                    // handle buffer overruns

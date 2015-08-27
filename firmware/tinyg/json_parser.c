@@ -351,9 +351,6 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 
 uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return (0);
-#else
 	char_t *str = out_buf;
 	char_t *str_max = out_buf + size - BUFFER_MARGIN;
 	int8_t initial_depth = nv->depth;
@@ -416,7 +413,6 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 	str += sprintf((char *)str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
-#endif
 }
 
 /*
@@ -428,10 +424,6 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
  */
 void json_print_object(nvObj_t *nv)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return;
-#endif
-
 	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
 	fprintf(stderr, "%s", (char *)cs.out_buf);
 }
@@ -490,6 +482,8 @@ void json_print_response(uint8_t status)
 
 			if (nv_type == NV_TYPE_GCODE) {
 				if (js.echo_json_gcode_block == false) {	// kill command echo if not enabled
+//				if ((js.echo_json_gcode_block == false) &&
+//                    (status == STAT_OK)) {	                // kill command echo if not enabled
 					nv->valuetype = TYPE_EMPTY;
 				}
 

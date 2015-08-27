@@ -466,18 +466,28 @@ static char *_get_free_buffer(uint16_t requested_size)
         return (NULL);                      // this happens if there are no more free headers left
     }
 
-    // attempt to allocate free RAM above used_top
-    free->bufp = top->bufp + top->size +1;                  // set the buffer pointer just past used_top
-    if ((free->bufp < b->pool_base) || (free->bufp > b->pool_top)) { // never supposed to happen, but protects against memory faults
-        free->bufp = b->pool_base;
+    // initialize the buffer pointer to a meaningful location
+    if (top->state != BUFFER_FREE) {                    // meaning the buffer pointer is valid
+        free->bufp = top->bufp + top->size +1;          // set buffer pointer just past used_top
+    } else if (b->used_base->state != BUFFER_FREE) {    // meaning the used_base buffer pointer is valid
+        free->bufp = b->used_base->bufp + b->used_base->size +1;
+    } else {
+       free->bufp = b->pool_base;
     }
+
+//    free->bufp = top->bufp + top->size +1;              // set the buffer pointer just past used_top
+    if ((free->bufp < b->pool_base) || (free->bufp > b->pool_top)) {
+        free->bufp = b->pool_base;                      // never supposed to happen, but protects against memory faults
+    }
+
+    // attempt to allocate free RAM above used_top
     if ((b->pool_top - free->bufp) > requested_size) {      // is there enough RAM at the top?
-        free->size = b->pool_top - free->bufp;              // claim all available RAM (no reason not to)
+        free->size = b->pool_top - free->bufp -1;           // claim all available RAM (no reason not to)
 
     // if not, attempt to allocate free RAM below the used_base (wraparound case)
     } else if ((b->used_base->bufp - b->pool_base) > requested_size) {
         free->bufp = b->pool_base;                          // reset the pointer to the base
-        free->size = b->used_base->bufp - b->pool_base;     // claim all available RAM
+        free->size = b->used_base->bufp - b->pool_base -1;  // claim all available RAM
 
     // this happens if there is insufficient RAM left
     } else {
@@ -517,7 +527,7 @@ static void _post_buffer()
 
     // clean up the buffer by cursoring past any leading white space, and discard blank lines
     // the FOR loop shouldn't ever finish - it's here for protection
-    for (uint8_t i=0; i<top->size; i++, top->bufp++) { 
+    for (uint8_t i=0; i<top->size; i++, top->bufp++) {
         c = *(top->bufp);
         if (c == NUL) {                     // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
             top->state = BUFFER_FREE;       // undo the buffer and return
@@ -671,7 +681,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     	if (status == XIO_BUFFER_FULL) {
         	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
     	}
-        _post_buffer();                             // post your newly filled buffer
+        _post_buffer();                                 // post your newly filled buffer
     }
 
     // Get a new free buffer
