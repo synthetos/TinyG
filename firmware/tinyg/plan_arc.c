@@ -68,7 +68,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 				   uint8_t motion_mode)                 // defined motion mode
 {
 
-    // +++++ FAKEOUT FOR TESTING
+    // +++++ DIAGNOSTIC FAKEOUT FOR TESTING
 //    if (cm.gm.linenum == 16) {
 //        return (STAT_ARC_SPECIFICATION_ERROR);
 //    }
