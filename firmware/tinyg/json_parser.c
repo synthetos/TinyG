@@ -511,14 +511,15 @@ void json_print_response(uint8_t status)
 			    rpt_exception(STAT_JSON_TOO_LONG);          // report this as an exception
                 nv->value = cs.txn_id;
                 strcpy(nv->token, "tid");
-			    nv->valuetype = TYPE_FLOAT;
+//			    nv->valuetype = TYPE_INTEGER;
+			    nv->valuetype = TYPE_DATA;
         	    json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
         	    return;
     	    }
 	    }
         nv->value = cs.txn_id;
         strcpy(nv->token, "tid");
-        nv->valuetype = TYPE_FLOAT;
+        nv->valuetype = TYPE_INTEGER;
         nv = nv->nx;
     }
 

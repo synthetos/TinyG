@@ -153,8 +153,9 @@ static void _normalize_gcode_block(char_t *str, char_t **com, char_t **msg, uint
         // look for JSON active comment
         if (*rd == '{') {                   // look for a transaction ID (hack hack)
 		    if ((tolower(*(rd+1)) == 't') && (tolower(*(rd+2)) == 'i') && (tolower(*(rd+3)) == 'd')) {
-	            char *end;
-	            cs.txn_id = strtof((rd+5), &end);
+//	            char *end;
+//	            cs.txn_id = strtof((rd+5), &end);
+	            cs.txn_id = atoi(rd+5);
 		    }
         }
 
