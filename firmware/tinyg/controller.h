@@ -72,11 +72,11 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
 
 	int32_t job_id[4];					// uuid to identify the job
+    float txn_id;
 
 	// controller serial buffers
 	char *bufp;                         // pointer to primary or secondary input buffer
 	uint16_t linelen;					// length of currently processing line
-//	uint16_t read_index;				// length of line being read
 	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer for serialized JSON and text output
 	char saved_buf[SAVED_BUFFER_LEN];	// buffer for saving the input buffer (reporting only)
 

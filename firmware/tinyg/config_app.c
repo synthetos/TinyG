@@ -107,8 +107,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum,0 },		// Model line number
-	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(float *)&cm.gm.linenum,0 },		// Active line number - model or runtime line number
+	{ "",   "tid", _fi, 0, tx_print_flt,  get_flt,     set_flt,  (float *)&cs.txn_id, 0 },      // Transaction id
+//	{ "",   "tid", _fi, 0, tx_print_str,  get_str,     set_str,  (float *)&cs.txn_id, 0 },      // Transaction id
+	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum, 0 },  // Model line number
+	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(float *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
 	{ "",   "feed",_f0, 2, cm_print_feed, cm_get_feed, set_nul,(float *)&cs.null, 0 },			// feed rate
 	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(float *)&cs.null, 0 },			// combined machine state
@@ -887,7 +889,7 @@ static stat_t get_rx(nvObj_t *nv)
 	    nv->value = (float)xio_get_usb_rx_free();
     } else {
 	    nv->value = (float)xio_get_line_buffers_available();
-    }            
+    }
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif

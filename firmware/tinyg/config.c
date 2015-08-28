@@ -68,7 +68,7 @@ stat_t nv_set(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
 }
 
@@ -76,7 +76,7 @@ stat_t nv_get(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
 }
 
@@ -84,7 +84,7 @@ void nv_print(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return;
-    }    
+    }
 	((fptrCmd)GET_TABLE_WORD(print))(nv);
 }
 
@@ -93,10 +93,10 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 #ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
-    }    
+    }
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
-    }    
+    }
 #endif
 	return (STAT_OK);
 }
@@ -274,7 +274,7 @@ stat_t set_01(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 1) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
@@ -282,7 +282,7 @@ stat_t set_012(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 2) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
@@ -290,13 +290,13 @@ stat_t set_0123(nvObj_t *nv)
 {
 	if ((uint8_t)nv->value > 3) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
+    }
 	return (set_ui8(nv));
 }
 
 stat_t set_int16(nvObj_t *nv)
 {
-//	nv->value = 0;  // clears the entire value as next line only fills 
+//	nv->value = 0;  // clears the entire value as next line only fills
 	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);

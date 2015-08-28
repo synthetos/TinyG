@@ -482,8 +482,6 @@ void json_print_response(uint8_t status)
 
 			if (nv_type == NV_TYPE_GCODE) {
 				if (js.echo_json_gcode_block == false) {	// kill command echo if not enabled
-//				if ((js.echo_json_gcode_block == false) &&
-//                    (status == STAT_OK)) {	                // kill command echo if not enabled
 					nv->valuetype = TYPE_EMPTY;
 				}
 
@@ -504,6 +502,25 @@ void json_print_response(uint8_t status)
 			}
 		} while ((nv = nv->nx) != NULL);
 	}
+
+    // Add a transaction ID if one was present in the request
+    if (fp_NOT_ZERO(cs.txn_id)) {
+	    while(nv->valuetype != TYPE_EMPTY) {                // find a free nvObj at end of the list...
+    	    if ((nv = nv->nx) == NULL) {                    //...or hit the NULL and overwrite the last element with the TID
+//			    rpt_exception(STAT_JSON_TOO_LONG, "stopped at TID");// report this as an exception
+			    rpt_exception(STAT_JSON_TOO_LONG);          // report this as an exception
+                nv->value = cs.txn_id;
+                strcpy(nv->token, "tid");
+			    nv->valuetype = TYPE_FLOAT;
+        	    json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
+        	    return;
+    	    }
+	    }
+        nv->value = cs.txn_id;
+        strcpy(nv->token, "tid");
+        nv->valuetype = TYPE_FLOAT;
+        nv = nv->nx;
+    }
 
 	// Footer processing
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...

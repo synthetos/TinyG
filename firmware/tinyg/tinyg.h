@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.29	// Changed linemode buffer count to 24; default flow control is now RTS/CTS (was XON/XOFF)
+#define TINYG_FIRMWARE_BUILD        440.30	// Installed transaction ID
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

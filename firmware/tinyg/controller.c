@@ -274,6 +274,7 @@ static void _dispatch_kernel()
         cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+    cs.txn_id = 0;                                          // reset the transaction ID
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
