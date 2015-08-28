@@ -1,6 +1,6 @@
 /*
  * xio.c - Xmega IO devices - common code file
- * Part of TinyG project
+ * Part of TinyG project (g1)
  *
  * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *

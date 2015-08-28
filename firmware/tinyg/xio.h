@@ -1,6 +1,6 @@
 /*
  * xio.h - Xmega IO devices - common header file
- * Part of TinyG project
+ * Part of TinyG project (g1)
  *
  * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
  *
@@ -189,9 +189,9 @@ typedef void (*x_flow_t)(xioDev_t *d);
  * Readline Buffer Management
  */
 
-#define RX_HEADERS                32        // buffer headers in the list
+#define RX_HEADERS                26        // buffer headers in the list
 #define RX_BUFFER_REQUESTED_SIZE 200        // minimum requested buffer size (they are usually larger)
-#define RX_BUFFER_POOL_SIZE     1280        // total size of RX buffer memory pool
+#define RX_BUFFER_POOL_SIZE     2000        // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
@@ -217,9 +217,9 @@ typedef enum {                              // readline() buffer and slot states
 
 typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
     uint8_t bufnum;                     //+++++ DIAGNOSTIC. Can be removed
-    struct bufHdr *pv;                  // pointer to previous buffer block
-    struct bufHdr *nx;                  // pointer to next buffer block
-    cmBufferState state;                // buffer state: see cmBufferState
+    struct bufHdr *pv;                  // pointer to previous header block
+    struct bufHdr *nx;                  // pointer to next header block
+    cmBufferState state;                // header state: see cmBufferState
     uint8_t flags;                      // DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
     uint16_t size;                      // buffer size in bytes
     char *bufp;                         // pointer to char buffer start (finally!)
