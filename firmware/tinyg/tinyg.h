@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.28	// queue flush changes
+#define TINYG_FIRMWARE_BUILD        440.29	// Changed linemode buffer count to 24
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
