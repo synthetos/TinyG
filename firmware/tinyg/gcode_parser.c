@@ -148,7 +148,17 @@ static void _normalize_gcode_block(char_t *str, char_t **com, char_t **msg, uint
 	// process comments and messages
 	if (**com != NUL) {
 		rd = *com;
-		while (isspace(*rd)) { rd++; }		// skip any leading spaces before "msg"
+		while (isspace(*rd)) { rd++; }		// skip any leading spaces before first character
+
+        // look for JSON active comment
+        if (*rd == '{') {                   // look for a transaction ID (hack hack)
+		    if ((tolower(*(rd+1)) == 't') && (tolower(*(rd+2)) == 'i') && (tolower(*(rd+3)) == 'd')) {
+	            char *end;
+	            cs.txn_id = strtof((rd+5), &end);
+		    }
+        }
+
+        // Look for MSG active comment
 		if ((tolower(*rd) == 'm') && (tolower(*(rd+1)) == 's') && (tolower(*(rd+2)) == 'g')) {
 			*msg = rd+3;
 		}
