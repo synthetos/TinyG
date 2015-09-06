@@ -143,6 +143,8 @@ void config_init()
 		sr_init_status_report(false);           // load stored status report setup
 	}
 #endif
+
+    nvl.container_index = nv_get_index("", "txt");   // cache the index of the txt container
 }
 
 /*
@@ -418,6 +420,15 @@ uint8_t nv_group_is_prefixed(char_t *group)
 	if (strcmp("sr",group) == 0) return (false);
 	if (strcmp("sys",group) == 0) return (false);
 	return (true);
+}
+
+/*
+ * nv_index_is_container() - return true if the NV object is a container (txt)
+ */
+
+bool nv_index_is_container(index_t index)
+{
+    return (nvl.container_index == index);   
 }
 
 /***********************************************************************************

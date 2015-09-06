@@ -102,11 +102,13 @@ static stat_t _json_parser_kernal(char_t *str)
 
 	// parse the JSON command into the nv body
 	do {
-		if (--i == 0)
+		if (--i == 0) {
             return (STAT_JSON_TOO_MANY_PAIRS);      // length error
-
-        // Use relaxed parser. Will read eitehr strict or relaxed mode. To use strict-only parser refer
-        // to build earlier than 407.03. Substitute _get_nv_pair_strict() for _get_nv_pair()
+        }
+                
+        // Use relaxed parser. Will read either strict or relaxed mode. 
+        // To use strict-only parser refer to builds earlier than 407.03. 
+        // Substitute _get_nv_pair_strict() for _get_nv_pair()
 		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
@@ -118,6 +120,11 @@ static stat_t _json_parser_kernal(char_t *str)
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_NAME);
 		}
+        // test for a container (txt)
+        if (nv_index_is_container(nv->index)) {
+            nv->valuetype = TYPE_CONTAINER;
+        }
+        // test for groups
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
 		}
@@ -150,13 +157,14 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 	char_t *wr;								// write pointer
 	uint8_t in_comment = false;
 
-	if (strlen(str) > size)
+	if (strlen(str) > size) {
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
-
+    }
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
 			if (*str == '(') in_comment = true;
 			if ((*str <= ' ') || (*str == DEL)) { continue; } // toss leading ctrls, WS & DEL
+			if (*str == '\\') { continue; } // remove escape backslashes
 			*wr++ = tolower(*str);
 		} else {							// Gcode comment processing
 			if (*str == ')') in_comment = false;
@@ -463,10 +471,6 @@ void json_print_list(stat_t status, uint8_t flags)
 
 void json_print_response(uint8_t status)
 {
-#ifdef __SILENCE_JSON_RESPONSES
-	return;
-#endif
-
 	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing

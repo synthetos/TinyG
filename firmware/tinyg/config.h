@@ -213,7 +213,8 @@ typedef enum {						// value typing for config and JSON
 	TYPE_FLOAT,							// value is a floating point number
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT							// object is a parent to a sub-object
+	TYPE_PARENT,						// object is a parent to a sub-object
+    TYPE_CONTAINER                      // object is a JSON container
 } valueType;
 
 /**** operations flags and shorthand ****/
@@ -237,11 +238,7 @@ typedef enum {						// value typing for config and JSON
 
 typedef struct nvString {				// shared string object
 	uint16_t magic_start;
-  #if (NV_SHARED_STRING_LEN < 256)
-	uint8_t wp;							// use this string array index value if string len < 256 bytes
-  #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
-  #endif
 	char_t string[NV_SHARED_STRING_LEN];
 	uint16_t magic_end;					// guard to detect string buffer underruns
 } nvStr_t;
@@ -264,6 +261,7 @@ typedef void (*fptrPrint)(nvObj_t *nv);	// required for PROGMEM access
 
 typedef struct nvList {
 	uint16_t magic_start;
+    index_t container_index;            // cache the index of the txt container
 	nvObj_t list[NV_LIST_LEN];			// list of nv objects, including space for a JSON header element
 	uint16_t magic_end;
 } nvList_t;
@@ -310,6 +308,7 @@ index_t	nv_index_max(void);					// (see config_app.c)
 uint8_t nv_index_is_single(index_t index);	// (see config_app.c)
 uint8_t nv_index_is_group(index_t index);	// (see config_app.c)
 uint8_t nv_index_lt_groups(index_t index);	// (see config_app.c)
+bool nv_index_is_container(index_t index);
 uint8_t nv_group_is_prefixed(char_t *group);
 
 // generic internal functions and accessors

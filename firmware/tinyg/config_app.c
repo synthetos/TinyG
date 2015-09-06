@@ -107,8 +107,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "tid", _fi, 0, tx_print_flt,  get_flt,     set_flt,  (float *)&cs.txn_id, 0 },      // Transaction id
-//	{ "",   "tid", _fi, 0, tx_print_str,  get_str,     set_str,  (float *)&cs.txn_id, 0 },      // Transaction id
+	{ "",   "txt", _f0, 0, tx_print_nul,  get_nul,     get_nul,(float *)&cs.null, 0 },          // Text wrapper
+	{ "",   "tid", _fi, 0, tx_print_flt,  get_flt,     set_flt,(float *)&cs.txn_id, 0 },        // Transaction id
+//	{ "",   "tid", _fi, 0, tx_print_str,  get_str,     set_str,(float *)&cs.txn_id, 0 },        // Transaction id
 	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum, 0 },  // Model line number
 	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(float *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
@@ -716,6 +717,7 @@ index_t	nv_index_max() { return ( NV_INDEX_MAX );}
 uint8_t nv_index_is_single(index_t index) { return ((index <= NV_INDEX_END_SINGLES) ? true : false);}
 uint8_t nv_index_is_group(index_t index) { return (((index >= NV_INDEX_START_GROUPS) && (index < NV_INDEX_START_UBER_GROUPS)) ? true : false);}
 uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GROUPS) ? true : false);}
+
 
 /***** APPLICATION SPECIFIC CONFIGS AND EXTENSIONS TO GENERIC FUNCTIONS *****/
 

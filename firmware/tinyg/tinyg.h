@@ -27,7 +27,11 @@
  * then set the top one to \winavr\bin\avr-gcc.exe  (C:\WinAVR-20100110\bin\avr-gcc.exe)
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
-
+/*
+ *  - handle txt wrapper JSON input (ignore in text mode)
+ *  - make tid natural uint32_t - i.e. up to 4B
+ *  - convert startup messages to sr's
+ */
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
 
@@ -45,7 +49,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.30	// Installed transaction ID
+#define TINYG_FIRMWARE_BUILD        440.31	// text wrappers and transaction ID
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
