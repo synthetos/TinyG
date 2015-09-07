@@ -90,14 +90,12 @@ void nv_print(nvObj_t *nv)
 
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
-#ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
     }
-#endif
 	return (STAT_OK);
 }
 
@@ -144,7 +142,8 @@ void config_init()
 	}
 #endif
 
-    nvl.container_index = nv_get_index("", "txt");   // cache the index of the txt container
+    nvl.container_index = nv_get_index("", "txt");  // cache the index of the txt container
+    nvl.tid_index = nv_get_index("", "tid");        // cache the index of the tid
 }
 
 /*

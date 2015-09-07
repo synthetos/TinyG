@@ -101,14 +101,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// group token flags p, print_func,	 get_func,  set_func, target for get/set,   	    default value
 	{ "sys", "fb", _fipn,2, hw_print_fb, get_flt,   set_nul,  (float *)&cs.fw_build,        TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
 	{ "sys", "fv", _fipn,3, hw_print_fv, get_flt,   set_nul,  (float *)&cs.fw_version,      TINYG_FIRMWARE_VERSION },
-//	{ "sys", "cv", _fipn,0, hw_print_cv, get_flt,   set_nul,  (float *)&cs.config_version,	TINYG_CONFIG_VERSION },
 	{ "sys", "hp", _fipn,0, hw_print_hp, get_flt,   set_flt,  (float *)&cs.hw_platform,     TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn,0, hw_print_hv, get_flt,   hw_set_hv,(float *)&cs.hw_version,      TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "tid", _fi, 0, tx_print_flt,  get_flt,     set_flt,(float *)&cs.txn_id, 0 },        // Transaction id
-//	{ "",   "tid", _fi, 0, tx_print_str,  get_str,     set_str,(float *)&cs.txn_id, 0 },        // Transaction id
 	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum, 0 },  // Model line number
 	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(float *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
 	{ "",   "vel", _f0, 2, cm_print_vel,  cm_get_vel,  set_nul,(float *)&cs.null, 0 },			// current velocity
@@ -470,7 +467,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// bytes or lines in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
-	{ "", "txt", _f0, 0, tx_print_nul, get_nul, get_nul,  (float *)&cs.null, 0 },   // Text wrapper
+
+    // special functions
+	{ "", "txt", _f0, 0, tx_print_nul, get_nul, get_nul,  (float *)&cs.null, 0 },   // Text wrapper (container)
+	{ "", "tid", _fi, 0, tx_print_flt, get_flt, set_nul,  (float *)&cs.txn_id, 0 }, // Transaction id
+//	{ "", "tid", _fi, 0, tx_print_str, get_str, set_nul,  (float *)&cs.txn_id, 0 }, // Transaction id
 
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_f0, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen
