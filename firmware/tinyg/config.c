@@ -260,6 +260,7 @@ stat_t get_flt(nvObj_t *nv)
 
 /* Generic sets()
  *	set_nul()   - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
+ *	set_not()   - set nothing (returns STAT_OK)
  *	set_ui8()   - set value as 8 bit uint8_t value
  *	set_01()    - set a 0 or 1 uint8_t value with validation
  *	set_012()   - set a 0, 1 or 2 uint8_t value with validation
@@ -270,6 +271,8 @@ stat_t get_flt(nvObj_t *nv)
  *	set_flt()   - set value as float
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
+
+stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
 
 stat_t set_ui8(nvObj_t *nv)
 {

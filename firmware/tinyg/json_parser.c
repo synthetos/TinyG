@@ -30,6 +30,7 @@
 #include "controller.h"
 #include "json_parser.h"
 #include "text_parser.h"
+#include "gcode_parser.h"
 #include "canonical_machine.h"
 #include "report.h"
 #include "util.h"
@@ -112,6 +113,11 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
         }
         nv_reset_nv_list(NUL);
         js.json_continuation = true;
+
+    // it's gcode
+    } else {
+        strcpy(nv->token,"gc");
+        text_response(gc_gcode_parser(str), cs.saved_buf);
     }
 }
 

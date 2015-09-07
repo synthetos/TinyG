@@ -380,9 +380,10 @@ stat_t sr_run_text_status_report()
  */
 static stat_t _populate_unfiltered_status_report()
 {
-	char sr_str[] = "sr";
+//	char sr_str[] = "sr";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets *nv to the start of the body
+//	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list("sr");	// sets *nv to the start of the body
 
 //	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 //	strcpy(nv->token, sr_str);
@@ -462,11 +463,13 @@ static uint8_t _populate_filtered_status_report()
  * sr_set()		- set status report elements
  * sr_set_si()	- set status report interval
  */
-stat_t sr_get(nvObj_t *nv) { 
+stat_t sr_get(nvObj_t *nv) 
+{   
     return (_populate_unfiltered_status_report());
 }
 
-stat_t sr_set(nvObj_t *nv) { 
+stat_t sr_set(nvObj_t *nv) 
+{
     return (sr_set_status_report(nv));
 }
 
