@@ -336,7 +336,8 @@ stat_t get_grp(nvObj_t *nv);				// get data for a group
 // nvObj and list functions
 void nv_get_nvObj(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
-nvObj_t *nv_reset_nv_list(void);
+//nvObj_t *nv_reset_nv_list(void);
+nvObj_t *nv_reset_nv_list(char *head);
 stat_t nv_copy_string(nvObj_t *nv, const char_t *src);
 nvObj_t *nv_add_object(const char_t *token);
 nvObj_t *nv_add_integer(const char_t *token, const uint32_t value);

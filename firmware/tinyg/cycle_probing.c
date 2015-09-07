@@ -304,7 +304,7 @@ static stat_t _probing_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the probing callback
 	// - and not the main controller - it requires its own display processing
-	nv_reset_nv_list();
+	nv_reset_nv_list("r");
 	if (axis == -2) {
 		nv_add_conditional_message((const char_t *)"Probing error - invalid probe destination");
 	} else {

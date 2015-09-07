@@ -86,7 +86,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size);
 void json_parser(char_t *str)
 {
     js.json_recursion_depth = 0;    
-    nvObj_t *nv = nv_reset_nv_list();				// get a fresh nvObj list
+    nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
@@ -109,7 +109,7 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
         } else {
 		    printf_P(PSTR("\"}"));
         }
-        nv_reset_nv_list();
+        nv_reset_nv_list(NUL);
     }
 }
 
@@ -542,7 +542,7 @@ void json_print_response(uint8_t status)
 	// Body processing
 	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
-		nv_reset_nv_list();
+		nv_reset_nv_list("r");
 		nv_add_string((const char_t *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup

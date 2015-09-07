@@ -777,7 +777,7 @@ static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to
 		if (list[i][0] == NUL)
             return (STAT_COMPLETE);
 
-		nv_reset_nv_list();
+		nv_reset_nv_list("r");
 		nv = nv_body;
 		strncpy(nv->token, list[i], TOKEN_LEN);
 		nv->index = nv_get_index((const char_t *)"", nv->token);

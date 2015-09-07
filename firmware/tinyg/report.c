@@ -87,7 +87,7 @@ stat_t rpt_er(nvObj_t *nv)
 void _startup_helper(stat_t status, const char *msg)
 {
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
-	nv_reset_nv_list();
+	nv_reset_nv_list("sr");
 	nv_add_object((const char_t *)"fv");		// firmware version
 	nv_add_object((const char_t *)"fb");		// firmware build
 	nv_add_object((const char_t *)"hp");		// hardware platform
@@ -168,7 +168,7 @@ static uint8_t _populate_filtered_status_report(void);
  */
 void sr_init_status_report(bool use_defaults)
 {
-    nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
+    nvObj_t *nv = nv_reset_nv_list("r");	// used for status report persistence locations
     char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
     sr.stat_index = nv_get_index((const char_t *)"", (const char_t *)"stat"); // set index of stat element 
     nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00"); // set first SR persistence index
@@ -382,7 +382,7 @@ static stat_t _populate_unfiltered_status_report()
 {
 	const char_t sr_str[] = "sr";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list("sr");	// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 	strcpy(nv->token, sr_str);
@@ -421,7 +421,7 @@ static uint8_t _populate_filtered_status_report()
 	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list("sr");	// sets nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
 	strcpy(nv->token, sr_str);
@@ -671,7 +671,7 @@ stat_t job_populate_job_report()
 {
 	const char_t job_str[] = "job";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list("job");	// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object
 	strcpy(nv->token, job_str);

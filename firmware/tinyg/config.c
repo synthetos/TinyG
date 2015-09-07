@@ -113,7 +113,7 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  */
 void config_init()
 {
-	nvObj_t *nv = nv_reset_nv_list();
+	nvObj_t *nv = nv_reset_nv_list("r");
 	config_init_assertions();
 
 #ifdef __ARM
@@ -565,15 +565,24 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
-nvObj_t *nv_reset_nv_list()					// clear the header and response body
+/*
+ * nv_reset_nv_list() - set up NV list as a parent or none
+ *
+ *  If a head is present the first token will be written with the head and the rest of the 
+ *  list will be at depth 1. Return pointer to body. If head is NUL set list to depth 0
+ *  and return first block.
+ */
+
+nvObj_t *nv_reset_nv_list(char *head)		// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
 	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
+    uint8_t depth = (*head == NUL) ? 0 : 1;
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);					// the ends are bogus & corrected later
 		nv->nx = (nv+1);
 		nv->index = 0;
-		nv->depth = 1;						// header and footer are corrected later
+		nv->depth = depth;						// header and footer are corrected later
 		nv->precision = 0;
 		nv->valuetype = TYPE_EMPTY;
 		nv->token[0] = NUL;
@@ -583,8 +592,13 @@ nvObj_t *nv_reset_nv_list()					// clear the header and response body
 	nv->pv = NULL;
 	nv->depth = 0;
 	nv->valuetype = TYPE_PARENT;
-	strcpy(nv->token, "r");
-	return (nv_body);						// this is a convenience for calling routines
+//	strcpy(nv->token, "r");
+    if (*head == NUL) {
+        return (nvl.list);
+    } else {
+	    strcpy(nv->token, head);
+	    return (nv_body);					// this is a convenience for calling routines
+    }    
 }
 
 stat_t nv_copy_string(nvObj_t *nv, const char_t *src)
