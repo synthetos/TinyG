@@ -62,8 +62,9 @@ typedef struct jsSingleton {
 
 	/*** config values (PUBLIC) ***/
 	uint8_t json_verbosity;			// see enum in this file for settings
-	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
 	uint8_t json_syntax;			// 0=relaxed syntax, 1=strict syntax
+	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
+    uint8_t json_recurse_depth;     // can only be 0 and 1
 
 	uint8_t echo_json_footer;		// flags for JSON responses serialization
 	uint8_t echo_json_messages;

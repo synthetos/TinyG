@@ -41,7 +41,7 @@ jsSingleton_t js;
 
 /**** local scope stuff ****/
 
-static stat_t _json_parser_kernal(char_t *str);
+static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str);
 static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
@@ -85,18 +85,47 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 void json_parser(char_t *str)
 {
-	stat_t status = _json_parser_kernal(str);
+    js.json_recurse_depth = 0;    
+    nvObj_t *nv = nv_reset_nv_list();				// get a fresh nvObj list
+	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
+/*
+char *_skip_whitespace(char *p)
+{
+    while (*p != NUL) {
+        if ((*p <= ' ') || (*p == DEL)) { 
+            continue; 
+        }
+        return (p);        
+    }
+    return (NUL);   // no chars found
+}
+*/
+char *_js_run_container_as_json (nvObj_t *nv, char *str)
+{
+//    str = _skip_whitespace(str);
+    *(--str) = '{';                 // restart the JSON string
+    _json_parser_kernal(nv, str);   // recurse the JSON parser
+    return (str);
+}
 
-static stat_t _json_parser_kernal(char_t *str)
+void _js_run_container_as_text (nvObj_t *nv, char *str)
+{
+
+}
+
+static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 {
 	stat_t status;
 	int8_t depth;
-	nvObj_t *nv = nv_reset_nv_list();				// get a fresh nvObj list
 	char_t group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN;
+
+    if (++js.json_recurse_depth > 1) {              // can't recurse more than one level
+        return (STAT_JSON_TOO_MANY_PAIRS);
+    } 
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
@@ -122,23 +151,29 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
         // test for a container (txt)
         if (nv_index_is_container(nv->index)) {
-            nv->valuetype = TYPE_CONTAINER;
+            if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
+                str = _js_run_container_as_json(nv, str);
+            } else {
+                _js_run_container_as_text(nv, (char *)*nv->stringp);
+            }
         }
         // test for groups
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
 		}
-		if ((nv = nv->nx) == NULL)
+		if ((nv = nv->nx) == NULL) {
             return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
+        }        
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command
 	nv = nv_body;
-	if (nv->valuetype == TYPE_NULL){				// means GET the value
+	if (nv->valuetype == TYPE_NULL) {               // means GET the value
 		ritorno(nv_get(nv));						// ritorno returns w/status on any errors
 	} else {
-		if (cm.machine_state == MACHINE_ALARM)
+		if (cm.machine_state == MACHINE_ALARM) {
             return (STAT_MACHINE_ALARMED);
+        }        
 		ritorno(nv_set(nv));						// set value or call a function (e.g. gcode)
 		nv_persist(nv);
 	}
@@ -155,16 +190,26 @@ static stat_t _json_parser_kernal(char_t *str)
 static stat_t _normalize_json_string(char_t *str, uint16_t size)
 {
 	char_t *wr;								// write pointer
-	uint8_t in_comment = false;
+	bool in_comment = false;
+    bool in_front = true;                   // leading characters
 
 	if (strlen(str) > size) {
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
     }
 	for (wr = str; *str != NUL; str++) {
 		if (!in_comment) {					// normal processing
-			if (*str == '(') in_comment = true;
-			if ((*str <= ' ') || (*str == DEL)) { continue; } // toss leading ctrls, WS & DEL
-			if (*str == '\\') { continue; } // remove escape backslashes
+			if (*str == '(') {
+                in_comment = true;
+            }            
+            if (in_front) {                 // toss leading ctrls, WS & DEL
+    			if ((*str <= ' ') || (*str == DEL)) { 
+                    continue; 
+                }
+            }
+            in_front = false;      
+			if (*str == '\\') {             // remove escape backslashes
+                continue; 
+            }
 			*wr++ = tolower(*str);
 		} else {							// Gcode comment processing
 			if (*str == ')') in_comment = false;
@@ -313,7 +358,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 		return (STAT_JSON_SYNTAX_ERROR);
 	}
 	if (**pstr == '}') {
-		*depth -= 1;							// pop up a nesting level
+		*depth -= 1;							    // pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
 	if (**pstr == ',')
