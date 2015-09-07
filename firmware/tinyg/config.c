@@ -566,39 +566,39 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 }
 
 /*
- * nv_reset_nv_list() - set up NV list as a parent or none
+ * nv_reset_nv_list() - clear the NV list and set up as a parent or a plain list
  *
- *  If a head is present the first token will be written with the head and the rest of the 
- *  list will be at depth 1. Return pointer to body. If head is NUL set list to depth 0
- *  and return first block.
+ *  If a "head" string is present the first token will be written with the head and 
+ *  the rest of the list will be at depth 1. Returns a pointer to body. 
+ *  If head is NUL set list to depth 0 and return first block (no header).
  */
 
 nvObj_t *nv_reset_nv_list(char *head)		// clear the header and response body
 {
 	nvStr.wp = 0;							// reset the shared string
 	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
-    uint8_t depth = (*head == NUL) ? 0 : 1;
+    uint8_t depth = (*head != NUL) ? 1 : 0; // body element depth = 1 if there is a head
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-		nv->pv = (nv-1);					// the ends are bogus & corrected later
+		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
 		nv->nx = (nv+1);
 		nv->index = 0;
-		nv->depth = depth;						// header and footer are corrected later
+		nv->depth = depth;
 		nv->precision = 0;
 		nv->valuetype = TYPE_EMPTY;
 		nv->token[0] = NUL;
 	}
-	(--nv)->nx = NULL;
-	nv = nvl.list;							// setup response header element ('r')
+	(--nv)->nx = NULL;                      // correct the ends
+	nv = nvl.list;
 	nv->pv = NULL;
-	nv->depth = 0;
-	nv->valuetype = TYPE_PARENT;
-//	strcpy(nv->token, "r");
-    if (*head == NUL) {
-        return (nvl.list);
-    } else {
+
+    // setup head element if one was requested. This is a convenience for calling routines
+    if (*head != NUL) {
+	    nv->depth = 0;
+	    nv->valuetype = TYPE_PARENT;
 	    strcpy(nv->token, head);
-	    return (nv_body);					// this is a convenience for calling routines
-    }    
+	    return (nv_body);					// return pointing to the first body element
+    } // else
+    return (nvl.list);                      // return pointing to the first element
 }
 
 stat_t nv_copy_string(nvObj_t *nv, const char_t *src)

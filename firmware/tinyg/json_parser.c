@@ -85,6 +85,7 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
 void json_parser(char_t *str)
 {
+    js.json_continuation = false;
     js.json_recursion_depth = 0;    
     nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(nv, str);
@@ -105,11 +106,12 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
         text_parser(str);
         cs.comm_mode = JSON_MODE;                   // restore JSON mode
 		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
-    		printf_P(PSTR("\"}"));
+    		printf_P(PSTR("\""));
         } else {
-		    printf_P(PSTR("\"}"));
+		    printf_P(PSTR("\""));
         }
         nv_reset_nv_list(NUL);
+        js.json_continuation = true;
     }
 }
 
@@ -423,7 +425,11 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
 
-	*str++ = '{'; 								// write opening curly
+    if (js.json_continuation) {
+	    *str++ = ','; 								// write continuing comma
+    } else {    
+	    *str++ = '{'; 								// write opening curly
+    }    
 
 	while (true) {
 		if ((nv->valuetype != TYPE_EMPTY) && 
@@ -510,7 +516,8 @@ void json_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case JSON_NO_PRINT: { break; }
-		case JSON_OBJECT_FORMAT: { json_print_object(nv_body); break; }
+//		case JSON_OBJECT_FORMAT: { json_print_object(nv_body); break; }
+		case JSON_OBJECT_FORMAT: { json_print_object(nvl.list); break; }
 		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
 	}
 }

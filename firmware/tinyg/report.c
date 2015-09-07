@@ -380,14 +380,14 @@ stat_t sr_run_text_status_report()
  */
 static stat_t _populate_unfiltered_status_report()
 {
-	const char_t sr_str[] = "sr";
+	char sr_str[] = "sr";
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list("sr");	// sets *nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets *nv to the start of the body
 
-	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
-	strcpy(nv->token, sr_str);
-	nv->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
-	nv = nv->nx;							// no need to check for NULL as list has just been reset
+//	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
+//	strcpy(nv->token, sr_str);
+//	nv->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
+//	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
@@ -397,8 +397,9 @@ static stat_t _populate_unfiltered_status_report()
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);			//...or here.
 
-		if ((nv = nv->nx) == NULL)
+		if ((nv = nv->nx) == NULL) {
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
+        }        
 	}
 	return (STAT_OK);
 }
@@ -418,15 +419,15 @@ static stat_t _populate_unfiltered_status_report()
  */
 static uint8_t _populate_filtered_status_report()
 {
-	const char_t sr_str[] = "sr";
+	char sr_str[] = "sr";
 	uint8_t has_data = false;
 	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list("sr");	// sets nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets nv to the start of the body
 
-	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
-	strcpy(nv->token, sr_str);
+//	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
+//	strcpy(nv->token, sr_str);
 //	nv->index = nv_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
-	nv = nv->nx;							// no need to check for NULL as list has just been reset
+//	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
