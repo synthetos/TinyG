@@ -181,12 +181,12 @@ void text_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case TEXT_NO_PRINT: { break; }
-		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
-		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
+//		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
+//		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
 		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(nv_body);}
 	}
 }
-
+/*
 void text_print_inline_pairs(nvObj_t *nv)
 {
 	uint32_t *v = (uint32_t*)&nv->value;
@@ -228,7 +228,7 @@ void text_print_inline_values(nvObj_t *nv)
 		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
 	}
 }
-
+*/
 void text_print_multiline_formatted(nvObj_t *nv)
 {
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
@@ -281,12 +281,6 @@ void text_finalize_message(char *msg)
     }
     printf(start);
 }
-
-//void text_print_nul(nvObj_t *nv, const char *format) { fprintf_P(stderr, format);}	// just print the format string
-//void text_print_str(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, *nv->stringp);}
-//void text_print_ui8(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint8_t)nv->value);}
-//void text_print_int(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint32_t)nv->value);}
-//void text_print_flt(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, nv->value);}
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
 { 

@@ -512,7 +512,6 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 void json_print_object(nvObj_t *nv)
 {
 	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
-//	fprintf(stderr, "%s", (char *)cs.out_buf);
 	printf(cs.out_buf);
 }
 
@@ -633,7 +632,6 @@ void json_print_response(uint8_t status)
 
 	// serialize the JSON response and print it if there were no errors
 	if (json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
-//    	fprintf(stderr, "%s", cs.out_buf);
     	printf(cs.out_buf);
 	}
 }
