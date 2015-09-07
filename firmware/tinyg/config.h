@@ -213,7 +213,8 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_FLOAT,							// value is a floating point number
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT						    // object is a parent to a sub-object (may also be a txt container)
+	TYPE_PARENT,					    // object is a parent to a sub-object (may also be a txt container)
+    TYPE_SKIP                           // do not execute this object (used for tid)
 } valueType;
 
 /**** operations flags and shorthand ****/

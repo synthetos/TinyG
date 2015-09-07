@@ -94,7 +94,7 @@ void json_parser(char_t *str)
 
 void _js_run_container_as_text (nvObj_t *nv, char *str)
 {
-
+    return;
 }
 
 static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
@@ -102,11 +102,11 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 	stat_t status;
 	int8_t depth;
 	char_t group[GROUP_LEN+1] = {NUL};              // group identifier - starts as NUL
-	int8_t i = NV_BODY_LEN;
+	int8_t i = NV_BODY_LEN-1;                       // -1 allows for a TID in extreme cases
 
     if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
         return (STAT_JSON_TOO_MANY_PAIRS);
-    } 
+    }
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
@@ -123,7 +123,6 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
-//		if (group[0] != NUL) {
 		if (*group != NUL) {
 			strncpy(nv->group, group, GROUP_LEN);	// copy the parent's group to this child
 		}
@@ -131,11 +130,11 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_NAME);
 		}
-        // test for a container (txt)
+        // test and process container (txt)
         if (nv_index_is_container(nv->index)) {
             if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
-                *(--str) = '{';                     // reposition the JSON string
-                _json_parser_kernal(nv, str);       // recurse the JSON parser
+                *(--str) = '{';                     // back-up the JSON string
+                _json_parser_kernal(nv, str);       // call JSON parser recursively
                 return (STAT_OK);                   // return to original parse
             } else {
                 _js_run_container_as_text(nv, (char *)*nv->stringp);
@@ -143,8 +142,8 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
         }
         // test for a transaction ID (tid)
         if (nv->index == nvl.tid_index) {
-            cs.txn_id = (uint32_t)nv->value;        // make sure it always reports regardless of alarm state
-            nv->valuetype = TYPE_NULL;
+            cs.txn_id = (uint32_t)nv->value;        // saves the value regardless of alarm state
+            nv->valuetype = TYPE_SKIP;
         }
         // test for groups
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
@@ -157,20 +156,19 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 
 	// execute the command(s)
 	nv = nv_body;
-    while (nv->valuetype != TYPE_EMPTY) {
-	    if (nv->valuetype == TYPE_NULL) {       // means GET the value
-		    ritorno(nv_get(nv));                // ritorno returns w/status on any errors
+    for (i=0; i<NV_BODY_LEN; i++, nv=nv->nx) {
+        if (nv->valuetype == TYPE_EMPTY) { break; }     // end the loop
+        if (nv->valuetype == TYPE_SKIP) { continue; }   // skip over tids
 
-	    } else {
-		    if (cm.machine_state == MACHINE_ALARM) {
+	    if (nv->valuetype == TYPE_NULL) {           // GET the value
+		    ritorno(nv_get(nv));                    // ritorno returns w/status on any errors
+        } else { 
+	        if (cm.machine_state == MACHINE_ALARM) {
                 return (STAT_MACHINE_ALARMED);
             }        
-		    ritorno(nv_set(nv));				// set value or call a function (e.g. gcode)
-		    nv_persist(nv);
-	    }
-		if ((nv = nv->nx) == NULL) {
-    		return (STAT_JSON_TOO_MANY_PAIRS);  // Not supposed to encounter a NULL
-		}
+	        ritorno(nv_set(nv));				    // SET value or call a function (e.g. gcode)
+	        nv_persist(nv);
+        }        
     }
 	return (STAT_OK);								// only successful commands exit through this point
 }
@@ -411,7 +409,9 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 	*str++ = '{'; 								// write opening curly
 
 	while (true) {
-		if (nv->valuetype != TYPE_EMPTY) {
+		if ((nv->valuetype != TYPE_EMPTY) && 
+            (nv->valuetype != TYPE_SKIP)) {
+            
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			if (js.json_syntax == JSON_SYNTAX_RELAXED) {		// write name
@@ -551,7 +551,6 @@ void json_print_response(uint8_t status)
 	}
 
     // Add a transaction ID if one was present in the request
-/*
     if (fp_NOT_ZERO(cs.txn_id)) {
 	    while(nv->valuetype != TYPE_EMPTY) {                // find a free nvObj at end of the list...
     	    if ((nv = nv->nx) == NULL) {                    //...or hit the NULL and overwrite the last element with the TID
@@ -560,6 +559,7 @@ void json_print_response(uint8_t status)
                 nv->value = cs.txn_id;
                 strcpy(nv->token, "tid");
 			    nv->valuetype = TYPE_FLOAT;
+                nv->depth = 0;                              // always a top-level object
         	    json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
         	    return;
     	    }
@@ -567,9 +567,10 @@ void json_print_response(uint8_t status)
         nv->value = cs.txn_id;
         strcpy(nv->token, "tid");
         nv->valuetype = TYPE_FLOAT;
+        nv->depth = 0;                                      // always a top-level object
         nv = nv->nx;
     }
-*/
+
 	// Footer processing
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
