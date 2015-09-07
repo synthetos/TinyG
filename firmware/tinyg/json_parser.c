@@ -412,12 +412,13 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
+//#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
 
 uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
-	char_t *str_max = out_buf + size - BUFFER_MARGIN;
+//	char_t *str_max = out_buf + size - BUFFER_MARGIN;
+	char_t *str_max = out_buf + size;
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -497,7 +498,8 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 void json_print_object(nvObj_t *nv)
 {
 	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
-	fprintf(stderr, "%s", (char *)cs.out_buf);
+//	fprintf(stderr, "%s", (char *)cs.out_buf);
+	printf(cs.out_buf);
 }
 
 /*
