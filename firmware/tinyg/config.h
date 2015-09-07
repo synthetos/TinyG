@@ -195,8 +195,8 @@ typedef int16_t index_t;				// -1 is reserved for no find
 typedef enum {
 	TEXT_MODE = 0,						// text command line mode
 	JSON_MODE,							// strict JSON construction
-	JSON_MODE_RELAXED					// relaxed JSON construction (future)
-} tgCommunicationsMode;
+	JSON_MODE_TXT_OVERRIDE			    // JSON mode while in TXT override
+} commMode;
 
 typedef enum {
 	FLOW_CONTROL_OFF = 0,				// flow control disabled

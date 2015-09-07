@@ -2,7 +2,7 @@
  * text_parser.h - text parser and text mode support for tinyg2
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,10 +27,6 @@
 
 #ifndef TEXT_PARSER_H_ONCE
 #define TEXT_PARSER_H_ONCE
-
-#ifdef __cplusplus
-extern "C"{
-#endif
 
 enum textVerbosity {
 	TV_SILENT = 0,					// no response is provided
@@ -102,9 +98,5 @@ extern txtSingleton_t txt;
 stat_t text_parser_stub(char_t *str);
 void text_response_stub(const stat_t status, char_t *buf);
 void text_print_list_stub(stat_t status, uint8_t flags);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: TEXT_PARSER_H_ONCE

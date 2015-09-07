@@ -305,6 +305,7 @@ uint8_t xio_isbusy(void);
 char *readline(devflags_t *flags, uint16_t *size);
 void xio_reset_readline_linemode(void);
 uint8_t xio_get_line_buffers_available(void);
+//uint8_t xio_is_control(char *str);
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);

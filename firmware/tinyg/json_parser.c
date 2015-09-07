@@ -94,8 +94,23 @@ void json_parser(char_t *str)
 
 void _js_run_container_as_text (nvObj_t *nv, char *str)
 {
-//    nv->valuetype = TYPE_STRING;
-    return;
+    // process pure text-mode commands    
+    if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
+		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
+    		printf_P(PSTR("{r:{msg:\""));
+		} else {
+    		printf_P(PSTR("{\"r\":{\"msg\":\""));
+		}
+        cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
+        text_parser(str);
+        cs.comm_mode = JSON_MODE;                   // restore JSON mode
+		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
+    		printf_P(PSTR("\"}"));
+        } else {
+		    printf_P(PSTR("\"}"));
+        }
+        nv_reset_nv_list();
+    }
 }
 
 static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)

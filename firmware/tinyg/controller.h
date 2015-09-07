@@ -60,7 +60,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t default_src;				// default source device
 	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
-    uint8_t comm_mode;					// 0=text mode, 1=JSON mode
+    uint8_t comm_mode;					// 0=text mode, 1=JSON mode, 2=JSON in txt override
 
 	// system state variables
 	cmControllerState controller_state;

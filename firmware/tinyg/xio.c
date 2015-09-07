@@ -435,6 +435,7 @@ void xio_reset_readline_linemode()
 {
     _init_readline_linemode();
 }
+
 /*
  * xio_get_line_buffers_available()
  */
@@ -447,6 +448,15 @@ uint8_t xio_get_line_buffers_available()
     return (bm.free_headers);
 }
 
+/*
+ * xio_is_control() - return true if line is a control line
+ */
+/*
+uint8_t xio_is_control(char *str)
+{
+    return (strchr("{$?!~%Hh", *str) != NULL);  // a match indicates control line
+}
+*/
 /*
  * _get_free_buffer() - get a free buffer header and allocate space
  *

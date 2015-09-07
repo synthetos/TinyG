@@ -469,7 +469,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
 
     // special functions
-	{ "", "txt", _f0, 0, tx_print_nul, get_str, get_str,  (float *)&cs.null, 0 },   // Text wrapper (container)
+	{ "", "txt", _f0, 0, tx_print_nul, get_nul, set_nul,  (float *)&cs.null, 0 },   // Text wrapper (container)
+//	{ "", "txt", _f0, 0, tx_print_nul, get_str, get_str,  (float *)&cs.null, 0 },   // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_flt, get_flt, set_nul,  (float *)&cs.txn_id, 0 }, // Transaction id
 //	{ "", "tid", _fi, 0, tx_print_str, get_str, set_nul,  (float *)&cs.txn_id, 0 }, // Transaction id
 

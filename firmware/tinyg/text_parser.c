@@ -35,10 +35,6 @@
 #include "util.h"
 #include "xio.h"					// for ASCII char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
 #ifndef __TEXT_MODE
@@ -284,7 +280,3 @@ void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
 
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
