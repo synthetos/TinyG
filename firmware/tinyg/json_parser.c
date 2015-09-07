@@ -106,15 +106,15 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
         cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
         text_parser(str);
         cs.comm_mode = JSON_MODE;                   // restore JSON mode
-		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
+//		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
     		printf_P(PSTR("\""));
-        } else {
-		    printf_P(PSTR("\""));
-        }
+//        } else {
+//		    printf_P(PSTR("\""));
+//        }
         nv_reset_nv_list(NUL);
         js.json_continuation = true;
 
-    // it's gcode
+    // process gcode
     } else {
         strcpy(nv->token,"gc");
         text_response(gc_gcode_parser(str), cs.saved_buf);
@@ -420,12 +420,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-//#define BUFFER_MARGIN 8			// safety margin to avoid buffer overruns during footer checksum generation
-
 uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 {
 	char_t *str = out_buf;
-//	char_t *str_max = out_buf + size - BUFFER_MARGIN;
 	char_t *str_max = out_buf + size;
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
@@ -471,7 +468,6 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
             }
 			else if (nv->valuetype == TYPE_FLOAT)	{ 
                 preprocess_float(nv);
-//				str += fntoa((char *)str, nv->value, nv->precision);
 				str += fntoa(str, nv->value, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
@@ -494,8 +490,14 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 	}
 
 	// closing curlies and NEWLINE
-	while (prev_depth-- > initial_depth) { *str++ = '}';}
-	str += sprintf((char *)str, "}\n");	// using sprintf for this last one ensures a NUL termination
+	while (prev_depth-- > initial_depth) { 
+        *str++ = '}';
+    }
+    if (js.json_continuation) {                 // once and only once
+        js.json_continuation = false;
+        *str++ = '}';
+    }
+	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	if (str > out_buf + size) { return (-1);}
 	return (str - out_buf);
 }
@@ -522,7 +524,6 @@ void json_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case JSON_NO_PRINT: { break; }
-//		case JSON_OBJECT_FORMAT: { json_print_object(nv_body); break; }
 		case JSON_OBJECT_FORMAT: { json_print_object(nvl.list); break; }
 		case JSON_RESPONSE_FORMAT: { json_print_response(status); break; }
 	}
@@ -632,7 +633,8 @@ void json_print_response(uint8_t status)
 
 	// serialize the JSON response and print it if there were no errors
 	if (json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
-    	fprintf(stderr, "%s", cs.out_buf);
+//    	fprintf(stderr, "%s", cs.out_buf);
+    	printf(cs.out_buf);
 	}
 }
 
