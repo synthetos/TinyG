@@ -1955,7 +1955,11 @@ static const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 
 static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    char msg[NV_MESSAGE_LEN];
+	sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    text_finalize_message(msg);
+
 }
 
 static void _print_axis_flt(nvObj_t *nv, const char *format)
@@ -1966,7 +1970,10 @@ static void _print_axis_flt(nvObj_t *nv, const char *format)
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, units);
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, units);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value, units);
+    text_finalize_message(msg);
 }
 
 static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
@@ -1977,7 +1984,10 @@ static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->token, nv->value, units);
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->token, nv->value, units);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->token, nv->value, units);
+    text_finalize_message(msg);
 }
 
 static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
@@ -1985,13 +1995,21 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 	char axes[] = {"XYZABC"};
 	uint8_t axis = _get_axis(nv->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
-	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
+//	fprintf_P(stderr, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
+    text_finalize_message(msg);
 }
 
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
-	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
-	GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
+//	fprintf_P(stderr, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
+//	GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
+
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
+                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
+    text_finalize_message(msg);
 }
 
 void cm_print_fr(nvObj_t *nv) { _print_axis_flt(nv, fmt_Xfr);}

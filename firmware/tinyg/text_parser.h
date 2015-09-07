@@ -44,7 +44,7 @@ typedef struct txtSingleton {		// text mode data
 
 	/*** config values (PUBLIC) ***/
 
-	char_t format[NV_FORMAT_LEN+1];
+	char format[NV_FORMAT_LEN+1];
 
 	/*** runtime values (PRIVATE) ***/
 
@@ -63,6 +63,8 @@ extern txtSingleton_t txt;
 	void text_print_inline_pairs(nvObj_t *nv);
 	void text_print_inline_values(nvObj_t *nv);
 	void text_print_multiline_formatted(nvObj_t *nv);
+
+    void text_finalize_message(char *str);
 
 	void tx_print_nul(nvObj_t *nv);
 	void tx_print_str(nvObj_t *nv);
@@ -84,6 +86,7 @@ extern txtSingleton_t txt;
 	#define text_parser text_parser_stub
 	#define text_response text_response_stub
 	#define text_print_list text_print_list_stub
+    #define text_finalize_message tx_print_stub
 	#define tx_print_nul tx_print_stub
 	#define tx_print_ui8 tx_print_stub
 	#define tx_print_int tx_print_stub

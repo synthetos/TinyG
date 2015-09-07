@@ -27,6 +27,7 @@
 
 #include "tinyg.h"
 #include "config.h"
+#include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
 #include "json_parser.h"
@@ -260,15 +261,73 @@ void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(nvObj_t *nv, const char *format) { fprintf_P(stderr, format);}	// just print the format string
-void text_print_str(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, *nv->stringp);}
-void text_print_ui8(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint8_t)nv->value);}
-void text_print_int(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint32_t)nv->value);}
-void text_print_flt(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, nv->value);}
+void text_finalize_message(char *msg)
+{
+    char *start = msg;
+
+    // if running text strings in JSON mode do JSON escaping
+    if (cs.comm_mode == JSON_MODE_TXT_OVERRIDE) {
+        while (*msg != NUL) {
+            
+            // substitute \n for LFs (and exit)
+            if (*msg == LF) {
+                *msg = '\\';
+                *(++msg) = 'n';
+                *(++msg) = NUL;
+                break;
+            }
+            msg++;
+        }
+    }
+    printf(start);
+}
+
+//void text_print_nul(nvObj_t *nv, const char *format) { fprintf_P(stderr, format);}	// just print the format string
+//void text_print_str(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, *nv->stringp);}
+//void text_print_ui8(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint8_t)nv->value);}
+//void text_print_int(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint32_t)nv->value);}
+//void text_print_flt(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, nv->value);}
+
+void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
+{ 
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format);
+    text_finalize_message(msg);
+}
+
+void text_print_str(nvObj_t *nv, const char *format) 
+{ 
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, *nv->stringp);
+    text_finalize_message(msg);
+}
+
+void text_print_ui8(nvObj_t *nv, const char *format)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, (uint8_t)nv->value);
+    text_finalize_message(msg);
+}
+
+void text_print_int(nvObj_t *nv, const char *format)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, (uint32_t)nv->value);
+    text_finalize_message(msg);
+}
+
+void text_print_flt(nvObj_t *nv, const char *format) 
+{ 
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->value);
+    text_finalize_message(msg);
+}
 
 void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
 {
-	fprintf_P(stderr, format, nv->value, units);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->value, units);
+    text_finalize_message(msg);
 }
 
 /*

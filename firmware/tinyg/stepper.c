@@ -1316,22 +1316,34 @@ void st_print_md(nvObj_t *nv) { text_print_nul(nv, fmt_md);}
 
 static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    text_finalize_message(msg);
 }
 
 static void _print_motor_flt_units(nvObj_t *nv, const char *format, uint8_t units)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
+    text_finalize_message(msg);
 }
 
 static void _print_motor_flt(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
+//	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value);
+    text_finalize_message(msg);
 }
 
 static void _print_motor_pwr(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->token[0], nv->value);
+//	fprintf_P(stderr, format, nv->token[0], nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->token[0], nv->value);
+    text_finalize_message(msg);
 }
 
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
