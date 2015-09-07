@@ -208,6 +208,7 @@ stat_t config_test_assertions()
 
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
+ *  get_str()  - get value from stringp[] (no action required)
  *	get_ui8()  - get value as 8 bit uint8_t
  *	get_int()  - get value as 32 bit integer
  *	get_data() - get value as 32 bit integer blind cast
@@ -218,6 +219,12 @@ stat_t get_nul(nvObj_t *nv)
 {
 	nv->valuetype = TYPE_NULL;
 	return (STAT_PARAMETER_CANNOT_BE_READ);
+}
+
+stat_t get_str(nvObj_t *nv)
+{
+    nv->valuetype = TYPE_STRING;
+    return (STAT_OK);
 }
 
 stat_t get_ui8(nvObj_t *nv)

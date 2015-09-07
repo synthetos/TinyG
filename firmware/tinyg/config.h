@@ -324,6 +324,7 @@ stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);				// set floating point value
 
 stat_t get_nul(nvObj_t *nv);				// get null value type
+stat_t get_str(nvObj_t *nv);                // get stringp[] value
 stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
 stat_t get_int(nvObj_t *nv);				// get uint32_t integer value
 stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast

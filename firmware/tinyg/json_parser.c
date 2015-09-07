@@ -94,6 +94,7 @@ void json_parser(char_t *str)
 
 void _js_run_container_as_text (nvObj_t *nv, char *str)
 {
+//    nv->valuetype = TYPE_STRING;
     return;
 }
 
@@ -434,11 +435,16 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 				uint32_t *v = (uint32_t*)&nv->value;
 				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
 			}
-			else if (nv->valuetype == TYPE_STRING)	{ str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_ARRAY)	{ str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);}
-			else if (nv->valuetype == TYPE_FLOAT)	{ preprocess_float(nv);
-//													  str += fntoa((char *)str, nv->value, nv->precision);
-													  str += fntoa(str, nv->value, nv->precision);
+			else if (nv->valuetype == TYPE_STRING)	{ 
+                str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);
+            }
+			else if (nv->valuetype == TYPE_ARRAY)	{ 
+                str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);
+            }
+			else if (nv->valuetype == TYPE_FLOAT)	{ 
+                preprocess_float(nv);
+//				str += fntoa((char *)str, nv->value, nv->precision);
+				str += fntoa(str, nv->value, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
 				if (fp_FALSE(nv->value)) { str += sprintf((char *)str, "false");}
