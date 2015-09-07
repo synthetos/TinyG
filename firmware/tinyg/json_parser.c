@@ -91,21 +91,9 @@ void json_parser(char_t *str)
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
-/*
-char *_skip_whitespace(char *p)
-{
-    while (*p != NUL) {
-        if ((*p <= ' ') || (*p == DEL)) { 
-            continue; 
-        }
-        return (p);        
-    }
-    return (NUL);   // no chars found
-}
-*/
+
 char *_js_run_container_as_json (nvObj_t *nv, char *str)
 {
-//    str = _skip_whitespace(str);
     *(--str) = '{';                 // restart the JSON string
     _json_parser_kernal(nv, str);   // recurse the JSON parser
     return (str);
@@ -289,10 +277,11 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 
 	// Find the start of the value part
 	for (i=0; true; i++, (*pstr)++) {
-		if (isalnum((int)**pstr)) break;
-		if (strchr(value, (int)**pstr) != NULL) break;
-		if (i == MAX_PAD_CHARS)
+		if (isalnum((int)**pstr)) { break; }
+		if (strchr(value, (int)**pstr) != NULL) { break; }
+		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// nulls (gets)
@@ -303,8 +292,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
 		nv->value = (float)strtod(*pstr, &tmp);	// tmp is the end pointer
-		if(tmp == *pstr)
+		if(tmp == *pstr) {
             return (STAT_BAD_NUMBER_FORMAT);
+        }        
 		nv->valuetype = TYPE_FLOAT;
 
 	// object parent
@@ -318,8 +308,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	} else if (**pstr == '\"') { 				// value is a string
 		(*pstr)++;
 		nv->valuetype = TYPE_STRING;
-		if ((tmp = strchr(*pstr, '\"')) == NULL)
+		if ((tmp = strchr(*pstr, '\"')) == NULL) {
             return (STAT_JSON_SYNTAX_ERROR);    // find the end of the string
+        }        
 		*tmp = NUL;
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
@@ -331,7 +322,6 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 		} else {
 			ritorno(nv_copy_string(nv, *pstr));
 		}
-
 		*pstr = ++tmp;
 
 	// boolean true/false
@@ -361,9 +351,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 		*depth -= 1;							    // pop up a nesting level
 		(*pstr)++;								// advance to comma or whatever follows
 	}
-	if (**pstr == ',')
+	if (**pstr == ',') {
         return (STAT_EAGAIN);                   // signal that there is more to parse
-
+    }    
 	(*pstr)++;
 	return (STAT_OK);							// signal that parsing is complete
 }
