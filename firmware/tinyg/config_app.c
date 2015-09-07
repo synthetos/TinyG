@@ -107,7 +107,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (float *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-	{ "",   "txt", _f0, 0, tx_print_nul,  get_nul,     get_nul,(float *)&cs.null, 0 },          // Text wrapper
 	{ "",   "tid", _fi, 0, tx_print_flt,  get_flt,     set_flt,(float *)&cs.txn_id, 0 },        // Transaction id
 //	{ "",   "tid", _fi, 0, tx_print_str,  get_str,     set_str,(float *)&cs.txn_id, 0 },        // Transaction id
 	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(float *)&cm.gm.linenum, 0 },  // Model line number
@@ -471,6 +470,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (float *)&cs.null, 0 },	// bytes or lines in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (float *)&cs.null, 0 },	// string for generic messages
 	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (float *)&cs.null, 0 },	// GET a clear to clear soft alarm
+	{ "", "txt", _f0, 0, tx_print_nul, get_nul, get_nul,  (float *)&cs.null, 0 },   // Text wrapper
 
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (float *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_f0, 0, tx_print_nul, help_defa, set_defaults,(float *)&cs.null,0 },	// set/print defaults / help screen

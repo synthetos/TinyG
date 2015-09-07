@@ -91,14 +91,14 @@ void json_parser(char_t *str)
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
-
+/*
 char *_js_run_container_as_json (nvObj_t *nv, char *str)
 {
     *(--str) = '{';                 // restart the JSON string
     _json_parser_kernal(nv, str);   // recurse the JSON parser
     return (str);
 }
-
+*/
 void _js_run_container_as_text (nvObj_t *nv, char *str)
 {
 
@@ -108,10 +108,10 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 {
 	stat_t status;
 	int8_t depth;
-	char_t group[GROUP_LEN+1] = {""};				// group identifier - starts as NUL
+	char_t group[GROUP_LEN+1] = {NUL};              // group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN;
 
-    if (++js.json_recurse_depth > 1) {              // can't recurse more than one level
+    if (js.json_recurse_depth++ > 1) {              // can't recurse more than one level
         return (STAT_JSON_TOO_MANY_PAIRS);
     } 
 
@@ -140,7 +140,9 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
         // test for a container (txt)
         if (nv_index_is_container(nv->index)) {
             if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
-                str = _js_run_container_as_json(nv, str);
+                *(--str) = '{';                     // reposition the JSON string
+                _json_parser_kernal(nv, str);       // recurse the JSON parser
+                return (STAT_OK);                   // return to original parse
             } else {
                 _js_run_container_as_text(nv, (char *)*nv->stringp);
             }
@@ -258,8 +260,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 			name = (*pstr)++;
 			break;
 		}
-		if (i == MAX_PAD_CHARS)
+		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// Find the end of name, NUL terminate and copy token
@@ -269,8 +272,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
 			break;
 		}
-		if (i == MAX_NAME_CHARS)
+		if (i == MAX_NAME_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
+        }        
 	}
 
 	// --- Process value part ---  (organized from most to least frequently encountered)
@@ -287,7 +291,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
 		nv->valuetype = TYPE_NULL;
-		nv->value = TYPE_NULL;
+//		nv->value = TYPE_NULL;
 
 	// numbers
 	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
