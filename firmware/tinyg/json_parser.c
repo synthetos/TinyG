@@ -101,9 +101,11 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
 	int8_t depth;
 	char_t group[GROUP_LEN+1] = {NUL};              // group identifier - starts as NUL
 	int8_t i = NV_BODY_LEN-2;                       // -2 allows space for TID and footer
+    nvObj_t *nv_start = *nv;
 
     if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
-        return (STAT_JSON_TOO_MANY_PAIRS);
+//        return (STAT_JSON_TOO_MANY_PAIRS);
+        return (STAT_ERROR_114);
     }
 
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
@@ -111,7 +113,8 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
 	// parse the JSON command into the nv body
 	do {
 		if (--i == 0) {
-            return (STAT_JSON_TOO_MANY_PAIRS);      // length error
+//            return (STAT_JSON_TOO_MANY_PAIRS);      // length error
+            return (STAT_ERROR_115);      // length error
         }
                 
         // Use relaxed parser. Will read either strict or relaxed mode. 
@@ -132,12 +135,8 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
         if (nv_index_is_container((*nv)->index)) {
             char *ptr = *(*nv)->stringp;
             if (*ptr == '{') {
-//            if (*(*nv)->stringp == '{') {
-//            if ((*nv)->stringp == '{') {
                 _json_parser_kernal(nv, ptr);       // call JSON parser recursively
-//                _json_parser_kernal(nv, *(*nv)->stringp);   // call JSON parser recursively
             } else {
-//                _js_run_container_as_text((*nv), *(*nv)->stringp);
                 _js_run_container_as_text((*nv), ptr);
             }
         }
@@ -150,14 +149,19 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
 		if ((nv_index_is_group((*nv)->index)) && (nv_group_is_prefixed((*nv)->token))) {
 			strncpy(group, (*nv)->token, GROUP_LEN); // record the group ID
 		}
-		if (((*nv) = (*nv)->nx) == NULL) {
-            return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
-        }        
+		if ((*nv = (*nv)->nx) == NULL) {
+//            return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
+            return (STAT_ERROR_116);      // Not supposed to encounter a NULL
+        }
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command(s)
-	(*nv) = nv_body;
-    for (i=0; i<NV_BODY_LEN; i++, (*nv)=(*nv)->nx) {
+//	*nv = nv_body;
+//    *nv = (&nvl.list[1]);
+//    *nv = &nvl.list[1];
+    *nv = nv_start;
+
+    for (i=0; i<NV_BODY_LEN; i++, *nv=(*nv)->nx) {
         if ((*nv)->valuetype == TYPE_EMPTY) { break; }     // end the loop
         if ((*nv)->valuetype == TYPE_SKIP) { continue; }   // skip over tids
 
