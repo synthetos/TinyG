@@ -28,10 +28,14 @@
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
 /*
- *  - handle txt wrapper JSON input (ignore in text mode)
- *  - make tid natural uint32_t - i.e. up to 4B
- *  - convert startup messages to sr's
+ *  txt handling notes (still to go)
+ *    - make tid natural uint32_t - i.e. up to 4B
+ *    - handle ill-formed wrapped JSON (currently fails silently)
+ *    - handle non-quoted txt: values (error handling fails silently)
+ *    - integer TIDs
+ *    - handle {sr:n} case properly
  */
+
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
 
