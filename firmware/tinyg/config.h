@@ -239,7 +239,7 @@ typedef enum {						    // value typing for config and JSON
 typedef struct nvString {				// shared string object
 	uint16_t magic_start;
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
-	char_t string[NV_SHARED_STRING_LEN];
+	char string[NV_SHARED_STRING_LEN];
 	uint16_t magic_end;					// guard to detect string buffer underruns
 } nvStr_t;
 
@@ -250,10 +250,13 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
-	float value;						// numeric value
-	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
-	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
-	char_t (*stringp)[];				// pointer to array of characters from shared character array
+    union {
+        float value;                    // float values
+        uint32_t value_int;             // raw int values
+    };
+	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
+	char token[TOKEN_LEN+1];			// full mnemonic token for lookup
+	char (*stringp)[];				    // pointer to array of characters from shared character array
 } nvObj_t; 								// OK, so it's not REALLY an object
 
 typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cfg table access
@@ -268,8 +271,8 @@ typedef struct nvList {
 } nvList_t;
 
 typedef struct cfgItem {
-	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
-	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
+	char group[GROUP_LEN+1];			// group prefix (with NUL termination)
+	char token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);

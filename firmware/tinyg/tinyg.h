@@ -32,7 +32,7 @@
  *    - handle ill-formed wrapped JSON (currently fails silently)
  *    - handle non-quoted txt: values (error handling fails silently)
  *    - handle {sr:n} case properly
- *    - CANcel for ^x    
+ *    - CANcel for ^x
  */
 
 #ifndef TINYG_H_ONCE
