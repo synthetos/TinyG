@@ -156,10 +156,13 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
 		}
         // test and process container (txt)
         if (nv_index_is_container(nv->index)) {
-            if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
-                *(--str) = '{';                     // back-up the JSON string
-                _json_parser_kernal(nv, str);       // call JSON parser recursively
-                return (STAT_OK);                   // return to original parse
+            char *ptr = (char *)*nv->stringp;
+//            if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
+//                *(--str) = '{';                     // back-up the JSON string
+//                _json_parser_kernal(nv, str);       // call JSON parser recursively
+            if (*ptr == '{') {
+                _json_parser_kernal(nv, ptr);       // call JSON parser recursively
+//                return (STAT_OK);                   // return to original parse
             } else {
                 _js_run_container_as_text(nv, (char *)*nv->stringp);
             }
