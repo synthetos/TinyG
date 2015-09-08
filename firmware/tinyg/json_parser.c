@@ -108,7 +108,8 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
     }
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX));	// return if error
 
-	// parse the JSON string into the nv list
+	//---- parse the JSON string into the nv list ----//
+
     while (*nv != NULL) {
         
 		if ((status = _get_nv_pair(*nv, &str, &depth)) > STAT_EAGAIN) { // erred out
@@ -132,7 +133,6 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
         }
         // test and process transaction ID (tid)
         if ((*nv)->index == nvl.tid_index) {
-            cs.txn_id = (uint32_t)(*nv)->value;     // saves the value regardless of alarm state
             (*nv)->valuetype = TYPE_SKIP;
         }
         // test for groups
@@ -149,7 +149,7 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
         }
     }
 
-	// execute the command(s) from the main line and the txt container (if present)
+	//---- execute the command(s) from the main line and txt container (if present) ----//
 
 	*nv = nv_body;
     for (uint8_t i=0; i<NV_BODY_LEN; i++, *nv=(*nv)->nx) {
@@ -172,10 +172,12 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
 /*
  * _js_run_container_as_text - callout from JSON kernal to run text commands
  *
- *	Starts a JSON response then runs the text command in a 'msg' element.
- *  Text lines are terminated with JSON-friendly line ends (e,g \n instead of LF).
- *  The text response string is closed, then json_continuation is set so that the 
- *  JSON response is properly handled.
+ *	For text-mode commands this starts a JSON response then runs the text command 
+ *  in a 'msg' element. Text lines are terminated with JSON-friendly line ends 
+ *  (e,g \n instead of LF). The text response string is closed, then 
+ *  json_continuation is set so that the JSON response is properly handled.
+ *
+ *  Gcode is simply wrapped in a JSON gc tag and processed.
  */
 
 static void _js_run_container_as_text (nvObj_t *nv, char *str)
@@ -321,6 +323,11 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
         }        
 	}
 
+    // special handling for transaction ID (this is a hack)
+    if (strcmp(nv->token, "tid") == 0) {
+        cs.txn_id = (uint32_t)atol(*pstr);
+    }
+
 	// nulls (gets)
 	if ((**pstr == 'n') || ((**pstr == '\"') && (*(*pstr+1) == '\"'))) { // process null value
 		nv->valuetype = TYPE_NULL;
@@ -336,7 +343,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') {
 		nv->valuetype = TYPE_PARENT;
-//		*depth += 1;							// nv_reset_nv() sets the next object's level so this is redundant
+//		*depth += 1;    // nv_reset_nv() sets the next object's level so this is redundant
 		(*pstr)++;
 		return(STAT_EAGAIN);					// signal that there is more to parse
 
@@ -382,7 +389,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 		nv->valuetype = TYPE_BOOL;
 		nv->value = false;
 
-	// arrays
+	// arrays (not supported on input)
 	} else if (**pstr == '[') {
 		nv->valuetype = TYPE_ARRAY;
 		ritorno(nv_copy_string(nv, *pstr));		// copy array into string for error displays
@@ -403,9 +410,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	}
 	if (**pstr == ',') {
         return (STAT_EAGAIN);                   // signal that there is more to parse
-    }    
+    }
 	(*pstr)++;
-	return (STAT_OK);							// signal that parsing is complete
+	return (STAT_OK);							// signal this is the last pair; parsing is complete
 }
 
 /****************************************************************************
@@ -472,27 +479,32 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 			}
 
 			// serialize output value
-			if		(nv->valuetype == TYPE_NULL)		{ str += (char_t)sprintf((char *)str, "null");} // Note that that "" is NOT null.
+			if (nv->valuetype == TYPE_NULL)	{ 
+                str += sprintf(str, "null");        // Note that that "" is NOT null.
+            }
 			else if (nv->valuetype == TYPE_INTEGER)	{
-				str += (char_t)sprintf((char *)str, "%1.0f", (double)nv->value);
+				str += sprintf(str, "%1.0f", (double)nv->value);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{
 				uint32_t *v = (uint32_t*)&nv->value;
-				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
+				str += sprintf(str, "\"0x%lx\"", *v);
 			}
 			else if (nv->valuetype == TYPE_STRING)	{
-                str += (char_t)sprintf((char *)str, "\"%s\"", *nv->stringp);
+                str += sprintf(str, "\"%s\"", *nv->stringp);
             }
 			else if (nv->valuetype == TYPE_ARRAY)	{ 
-                str += (char_t)sprintf((char *)str, "[%s]", *nv->stringp);
+                str += sprintf(str, "[%s]", *nv->stringp);
             }
 			else if (nv->valuetype == TYPE_FLOAT)	{ 
                 preprocess_float(nv);
 				str += fntoa(str, nv->value, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
-				if (fp_FALSE(nv->value)) { str += sprintf((char *)str, "false");}
-				else { str += (char_t)sprintf((char *)str, "true"); }
+				if (fp_FALSE(nv->value)) { 
+                    str += sprintf(str, "false");
+				} else { 
+                    str += sprintf(str, "true");
+                }
 			}
 			if (nv->valuetype == TYPE_PARENT) {
 				*str++ = '{';
@@ -614,7 +626,7 @@ void json_print_response(uint8_t status)
 			    rpt_exception(STAT_JSON_TOO_LONG);          // report this as an exception
                 nv->value = cs.txn_id;
                 strcpy(nv->token, "tid");
-			    nv->valuetype = TYPE_FLOAT;
+			    nv->valuetype = TYPE_INTEGER;
                 nv->depth = 0;                              // always a top-level object
         	    json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
         	    return;
@@ -622,7 +634,7 @@ void json_print_response(uint8_t status)
 	    }
         nv->value = cs.txn_id;
         strcpy(nv->token, "tid");
-        nv->valuetype = TYPE_FLOAT;
+        nv->valuetype = TYPE_INTEGER;
         nv->depth = 0;                                      // always a top-level object
         nv = nv->nx;
     }

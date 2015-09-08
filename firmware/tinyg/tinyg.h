@@ -29,11 +29,10 @@
  */
 /*
  *  txt handling notes (still to go)
- *    - make tid natural uint32_t - i.e. up to 4B
  *    - handle ill-formed wrapped JSON (currently fails silently)
  *    - handle non-quoted txt: values (error handling fails silently)
- *    - integer TIDs
  *    - handle {sr:n} case properly
+ *    - CANcel for ^x    
  */
 
 #ifndef TINYG_H_ONCE
@@ -53,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.31	// text wrappers and transaction ID
+#define TINYG_FIRMWARE_BUILD        440.32	// transaction ID
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
