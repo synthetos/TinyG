@@ -187,7 +187,6 @@ typedef int16_t index_t;				// -1 is reserved for no find
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
-//#define NO_MATCH (index_t)0xFFFF
 #define NO_MATCH (index_t)-1
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
@@ -205,6 +204,7 @@ typedef enum {
 } flowControl;
 
 typedef enum {						    // value typing for config and JSON
+    TYPE_SKIP = -2,                     // do not execute this object (used for tid)
 	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
@@ -214,7 +214,7 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT,					    // object is a parent to a sub-object (may also be a txt container)
-    TYPE_SKIP                           // do not execute this object (used for tid)
+//    TYPE_SKIP                           // do not execute this object (used for tid)
 } valueType;
 
 /**** operations flags and shorthand ****/
