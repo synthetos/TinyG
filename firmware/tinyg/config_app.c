@@ -780,7 +780,7 @@ static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to
 		nv_reset_nv_list("r");
 		nv = nv_body;
 		strncpy(nv->token, list[i], TOKEN_LEN);
-		nv->index = nv_get_index((const char_t *)"", nv->token);
+		nv->index = nv_get_index((const char *)"", nv->token);
 //		nv->valuetype = TYPE_PARENT;
 		nv_get_nvObj(nv);
 		nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
@@ -935,13 +935,13 @@ static stat_t set_baud(nvObj_t *nv)
 {
 	uint8_t baud = (uint8_t)nv->value;
 	if ((baud < 1) || (baud > 6)) {
-		nv_add_conditional_message((const char_t *)"*** WARNING *** Unsupported baud rate specified");
+		nv_add_conditional_message((const char *)"*** WARNING *** Unsupported baud rate specified");
 //		nv_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
 	xio.usb_baud_rate = baud;
 	xio.usb_baud_flag = true;
-	char_t message[NV_MESSAGE_LEN];
+	char message[NV_MESSAGE_LEN];
 	sprintf_P(message, PSTR("*** NOTICE *** Resetting baud rate to %s"),GET_TEXT_ITEM(msg_baud, baud));
 	nv_add_conditional_message(message);
 	return (STAT_OK);

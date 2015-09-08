@@ -83,17 +83,17 @@ stat_t rpt_er(nvObj_t *nv)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-//void _startup_helper(stat_t status, const char_t *msg)
+//void _startup_helper(stat_t status, const char *msg)
 void _startup_helper(stat_t status, const char *msg)
 {
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	nv_reset_nv_list("sr");
-	nv_add_object((const char_t *)"fv");		// firmware version
-	nv_add_object((const char_t *)"fb");		// firmware build
-	nv_add_object((const char_t *)"hp");		// hardware platform
-	nv_add_object((const char_t *)"hv");		// hardware version
-	nv_add_object((const char_t *)"id");		// hardware ID
-	nv_add_string((const char_t *)"msg", pstr2str(msg));	// startup message
+	nv_add_object((const char *)"fv");		// firmware version
+	nv_add_object((const char *)"fb");		// firmware build
+	nv_add_object((const char *)"hp");		// hardware platform
+	nv_add_object((const char *)"hv");		// hardware version
+	nv_add_object((const char *)"id");		// hardware ID
+	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
 	json_print_response(status);
 }
 
@@ -111,7 +111,7 @@ void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
 	if (cs.comm_mode == TEXT_MODE)
-        text_response(STAT_OK, (char_t *)"");   // prompt
+        text_response(STAT_OK, (char *)"");   // prompt
 }
 
 /*****************************************************************************
@@ -169,9 +169,9 @@ static uint8_t _populate_filtered_status_report(void);
 void sr_init_status_report(bool use_defaults)
 {
     nvObj_t *nv = nv_reset_nv_list("r");	// used for status report persistence locations
-    char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    sr.stat_index = nv_get_index((const char_t *)"", (const char_t *)"stat"); // set index of stat element 
-    nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00"); // set first SR persistence index
+    char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
+    sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element 
+    nv->index = nv_get_index((const char *)"", (const char *)"se00"); // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
 
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -182,7 +182,7 @@ void sr_init_status_report(bool use_defaults)
             if (sr_defaults[i][0] == NUL) {                 // load the index for the SR element
                 nv->value = NO_MATCH;                       // label as a blank spot
             } else {                                        // set and persist the default value
-                if ((nv->value = nv_get_index((const char_t *)"", sr_defaults[i])) == NO_MATCH) {
+                if ((nv->value = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
                     rpt_exception(STAT_BAD_STATUS_REPORT_SETTING); // trap mis-configured profile settings
                     return;
                 }
@@ -219,7 +219,7 @@ void sr_init_status_report(bool use_defaults)
 
 static void _persist_status_report_list(nvObj_t *nv)
 {
-    nv->index = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
+    nv->index = nv_get_index((const char *)"",(const char *)"se00");// set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
         nv->value = sr.status_report_list[i];
@@ -381,13 +381,13 @@ stat_t sr_run_text_status_report()
 static stat_t _populate_unfiltered_status_report()
 {
 //	char sr_str[] = "sr";
-	char_t tmp[TOKEN_LEN+1];
+	char tmp[TOKEN_LEN+1];
 //	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets *nv to the start of the body
 	nvObj_t *nv = nv_reset_nv_list("sr");	// sets *nv to the start of the body
 
 //	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
 //	strcpy(nv->token, sr_str);
-//	nv->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
+//	nv->index = nv_get_index((const char *)"", sr_str);// set the index - may be needed by calling function
 //	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -422,12 +422,12 @@ static uint8_t _populate_filtered_status_report()
 {
 	char sr_str[] = "sr";
 	uint8_t has_data = false;
-	char_t tmp[TOKEN_LEN+1];
+	char tmp[TOKEN_LEN+1];
 	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets nv to the start of the body
 
 //	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
 //	strcpy(nv->token, sr_str);
-//	nv->index = nv_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
+//	nv->index = nv_get_index((const char *)"", sr_str);// OMITTED - set the index - may be needed by calling function
 //	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -673,17 +673,17 @@ stat_t qo_get(nvObj_t *nv)
  */
 stat_t job_populate_job_report()
 {
-	const char_t job_str[] = "job";
-	char_t tmp[TOKEN_LEN+1];
+	const char job_str[] = "job";
+	char tmp[TOKEN_LEN+1];
 	nvObj_t *nv = nv_reset_nv_list("job");	// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object
 	strcpy(nv->token, job_str);
 
-	//nv->index = nv_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
+	//nv->index = nv_get_index((const char *)"", job_str);// set the index - may be needed by calling function
 	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
-	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	index_t job_start = nv_get_index((const char *)"",(const char *)"job1");// set first job persistence index
 	for (uint8_t i=0; i<4; i++) {
 
 		nv->index = job_start + i;
@@ -701,7 +701,7 @@ stat_t job_populate_job_report()
 
 stat_t job_set_job_report(nvObj_t *nv)
 {
-	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	index_t job_start = nv_get_index((const char *)"",(const char *)"job1");// set first job persistence index
 
 	for (uint8_t i=0; i<4; i++) {
 		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}

@@ -42,10 +42,10 @@ jsSingleton_t js;
 
 /**** local scope stuff ****/
 
-static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str);
+static stat_t _json_parser_kernal(nvObj_t **nv, char *str);
 static void _js_run_container_as_text (nvObj_t *nv, char *str);
-static stat_t _normalize_json_string(char_t *str, uint16_t size);
-static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
+static stat_t _normalize_json_string(char *str, uint16_t size);
+static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 
 /****************************************************************************
  * json_parser() - exposed part of JSON parser
@@ -87,7 +87,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
  *		in an application agnostic way. It should work for other apps than TinyG
  */
 
-void json_parser(char_t *str)
+void json_parser(char *str)
 {
     js.json_continuation = false;
     js.json_recursion_depth = 0;    
@@ -97,7 +97,7 @@ void json_parser(char_t *str)
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
 
-static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
+static stat_t _json_parser_kernal(nvObj_t **nv, char *str)
 {
 	stat_t status;
 	int8_t depth;
@@ -210,9 +210,9 @@ static void _js_run_container_as_text (nvObj_t *nv, char *str)
  *	to lower case, with the exception of gcode comments
  */
 
-static stat_t _normalize_json_string(char_t *str, uint16_t size)
+static stat_t _normalize_json_string(char *str, uint16_t size)
 {
-	char_t *wr;								// write pointer
+	char *wr;								// write pointer
 	bool in_comment = false;
     bool in_front = true;                   // leading characters
 
@@ -276,20 +276,20 @@ static stat_t _normalize_json_string(char_t *str, uint16_t size)
 #define MAX_PAD_CHARS 8
 #define MAX_NAME_CHARS 32
 
-static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
+static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
 	uint8_t i;
-	char_t *end;
-	char_t leaders[] = {"{,\""};				// open curly, quote and leading comma
-	char_t separators[] = {":\""};				// colon and quote
-	char_t terminators[] = {"},\""};			// close curly, comma and quote
-	char_t value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
+	char *end;
+	char leaders[] = {"{,\""};				// open curly, quote and leading comma
+	char separators[] = {":\""};				// colon and quote
+	char terminators[] = {"},\""};			// close curly, comma and quote
+	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
 
 	nv_reset_nv(nv);							// wipes the object and sets the depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
-	char_t * name = *pstr;
+	char * name = *pstr;
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(leaders, (int)**pstr) == NULL) { 		// find leading character of name
 			name = (*pstr)++;
@@ -447,10 +447,10 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
  *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
-uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
+uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 {
-	char_t *str = out_buf;
-	char_t *str_max = out_buf + size;
+	char *str = out_buf;
+	char *str_max = out_buf + size;
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
@@ -588,7 +588,7 @@ void json_print_response(uint8_t status)
 	nvObj_t *nv = nv_body;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
 		nv_reset_nv_list("r");
-		nv_add_string((const char_t *)"err", escape_string(cs.bufp, cs.saved_buf));
+		nv_add_string((const char *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t nv_type;

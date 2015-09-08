@@ -623,7 +623,7 @@ stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
 stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
 stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
 
-void cm_message(char_t *message);								// msg to console (e.g. Gcode comments)
+void cm_message(char *message);								// msg to console (e.g. Gcode comments)
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
@@ -658,7 +658,7 @@ float cm_get_jogging_dest(void);
 
 /*--- cfgArray interface functions ---*/
 
-char_t cm_get_axis_char(const int8_t axis);
+char cm_get_axis_char(const int8_t axis);
 
 stat_t cm_get_mline(nvObj_t *nv);		// get model line number
 stat_t cm_get_line(nvObj_t *nv);		// get active (model or runtime) line number

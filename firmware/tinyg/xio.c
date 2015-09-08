@@ -87,8 +87,8 @@
 static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
 
-static char_t *_readline_charmode(devflags_t *flags, uint16_t *size);
-static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
+static char *_readline_charmode(devflags_t *flags, uint16_t *size);
+static char *_readline_linemode(devflags_t *flags, uint16_t *size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -360,7 +360,7 @@ void xio_set_stderr(const uint8_t dev)
  *   *flags - returns set to one of: DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
  */
 
-char_t *readline(devflags_t *flags, uint16_t *size)
+char *readline(devflags_t *flags, uint16_t *size)
 {
     if (xio.rx_mode == RX_MODE_CHAR) {
         return (_readline_charmode(flags, size));
@@ -750,21 +750,21 @@ static void _init_readline_charmode()
     xio.bufp = bufpool.rx_pool;     // use the RX pool for character mode
 }
 
-static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
+static char *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
 {
 	*flags = flag;
 	*size = xio.buf_size;
 	return (xio.bufp);
 }
 
-static char_t *_exit_null(devflags_t *flags, uint16_t *size)
+static char *_exit_null(devflags_t *flags, uint16_t *size)
 {
 	*size = 0;
 	*flags = DEV_IS_NONE;
-	return ((char_t *)NULL);
+	return ((char *)NULL);
 }
 
-static char_t *_readline_charmode(devflags_t *flags, uint16_t *size)
+static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 {
 	// Handle cases where you are already holding a completed buffer
 	if (xio.buf_state == BUFFER_FULL) {

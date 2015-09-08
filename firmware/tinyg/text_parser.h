@@ -57,8 +57,8 @@ extern txtSingleton_t txt;
 
 #ifdef __TEXT_MODE
 
-	stat_t text_parser(char_t *str);
-	void text_response(const stat_t status, char_t *buf);
+	stat_t text_parser(char *str);
+	void text_response(const stat_t status, char *buf);
 	void text_print_list(stat_t status, uint8_t flags);
 	void text_print_inline_pairs(nvObj_t *nv);
 	void text_print_inline_values(nvObj_t *nv);
@@ -98,8 +98,8 @@ extern txtSingleton_t txt;
 
 #endif
 
-stat_t text_parser_stub(char_t *str);
-void text_response_stub(const stat_t status, char_t *buf);
+stat_t text_parser_stub(char *str);
+void text_response_stub(const stat_t status, char *buf);
 void text_print_list_stub(stat_t status, uint8_t flags);
 
 #endif // End of include guard: TEXT_PARSER_H_ONCE

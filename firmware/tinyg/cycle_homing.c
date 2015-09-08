@@ -433,11 +433,11 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 	nv_reset_nv_list("r");
 
 	if (axis == -2) {
-		nv_add_conditional_message((const char_t *)"Homing error - Bad or no axis(es) specified");;
+		nv_add_conditional_message((const char *)"Homing error - Bad or no axis(es) specified");;
 	} else {
 		char message[NV_MESSAGE_LEN];
 		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
-		nv_add_conditional_message((char_t *)message);
+		nv_add_conditional_message((char *)message);
 	}
 	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
 
