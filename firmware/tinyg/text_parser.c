@@ -165,7 +165,7 @@ void text_response(const stat_t status, char_t *buf)
 	nvObj_t *nv = nv_body+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		fprintf(stderr, (char *)*nv->stringp);
+		fprintf(stderr, *nv->stringp);
 	}
 	fprintf(stderr, "\n");
 }

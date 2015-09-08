@@ -42,7 +42,7 @@ jsSingleton_t js;
 
 /**** local scope stuff ****/
 
-static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str);
+static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str);
 static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth);
 static stat_t _normalize_json_string(char_t *str, uint16_t size);
 
@@ -89,7 +89,7 @@ void json_parser(char_t *str)
     js.json_continuation = false;
     js.json_recursion_depth = 0;    
     nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list
-	stat_t status = _json_parser_kernal(nv, str);
+	stat_t status = _json_parser_kernal(&nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
@@ -98,7 +98,7 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
 {
     // process pure text-mode commands    
     if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
-		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
+		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// opening JSON
     		printf_P(PSTR("{r:{msg:\""));
 		} else {
     		printf_P(PSTR("{\"r\":{\"msg\":\""));
@@ -106,13 +106,9 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
         cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
         text_parser(str);
         cs.comm_mode = JSON_MODE;                   // restore JSON mode
-//		if (js.json_syntax == JSON_SYNTAX_RELAXED) {// preamble
-    		printf_P(PSTR("\""));
-//        } else {
-//		    printf_P(PSTR("\""));
-//        }
+    	printf_P(PSTR("\""));                       // close quote
         nv_reset_nv_list(NUL);
-        js.json_continuation = true;
+        js.json_continuation = true;                // enable correct actions when closing JSON string
 
     // process gcode
     } else {
@@ -121,12 +117,12 @@ void _js_run_container_as_text (nvObj_t *nv, char *str)
     }
 }
 
-static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
+static stat_t _json_parser_kernal(nvObj_t **nv, char_t *str)
 {
 	stat_t status;
 	int8_t depth;
 	char_t group[GROUP_LEN+1] = {NUL};              // group identifier - starts as NUL
-	int8_t i = NV_BODY_LEN-1;                       // -1 allows for a TID in extreme cases
+	int8_t i = NV_BODY_LEN-2;                       // -2 allows space for TID and footer
 
     if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
         return (STAT_JSON_TOO_MANY_PAIRS);
@@ -143,58 +139,54 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char_t *str)
         // Use relaxed parser. Will read either strict or relaxed mode. 
         // To use strict-only parser refer to builds earlier than 407.03. 
         // Substitute _get_nv_pair_strict() for _get_nv_pair()
-		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_EAGAIN) { // erred out
+		if ((status = _get_nv_pair(*nv, &str, &depth)) > STAT_EAGAIN) { // erred out
 			return (status);
 		}
 		// propagate the group from previous NV pair (if relevant)
 		if (*group != NUL) {
-			strncpy(nv->group, group, GROUP_LEN);	// copy the parent's group to this child
+			strncpy((*nv)->group, group, GROUP_LEN);	// copy the parent's group to this child
 		}
 		// validate the token and get the index
-		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
+		if (((*nv)->index = nv_get_index((*nv)->group, (*nv)->token)) == NO_MATCH) {
 			return (STAT_UNRECOGNIZED_NAME);
 		}
         // test and process container (txt)
-        if (nv_index_is_container(nv->index)) {
-            char *ptr = (char *)*nv->stringp;
-//            if (nv->valuetype == TYPE_PARENT) {     // process container as JSON
-//                *(--str) = '{';                     // back-up the JSON string
-//                _json_parser_kernal(nv, str);       // call JSON parser recursively
+        if (nv_index_is_container((*nv)->index)) {
+            char *ptr = *(*nv)->stringp;
             if (*ptr == '{') {
                 _json_parser_kernal(nv, ptr);       // call JSON parser recursively
-//                return (STAT_OK);                   // return to original parse
             } else {
-                _js_run_container_as_text(nv, (char *)*nv->stringp);
+                _js_run_container_as_text((*nv), *(*nv)->stringp);
             }
         }
         // test for a transaction ID (tid)
-        if (nv->index == nvl.tid_index) {
-            cs.txn_id = (uint32_t)nv->value;        // saves the value regardless of alarm state
-            nv->valuetype = TYPE_SKIP;
+        if ((*nv)->index == nvl.tid_index) {
+            cs.txn_id = (uint32_t)(*nv)->value;        // saves the value regardless of alarm state
+            (*nv)->valuetype = TYPE_SKIP;
         }
         // test for groups
-		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
-			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
+		if ((nv_index_is_group((*nv)->index)) && (nv_group_is_prefixed((*nv)->token))) {
+			strncpy(group, (*nv)->token, GROUP_LEN);	// record the group ID
 		}
-		if ((nv = nv->nx) == NULL) {
+		if (((*nv) = (*nv)->nx) == NULL) {
             return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
         }        
 	} while (status != STAT_OK);					// breaks when parsing is complete
 
 	// execute the command(s)
-	nv = nv_body;
-    for (i=0; i<NV_BODY_LEN; i++, nv=nv->nx) {
-        if (nv->valuetype == TYPE_EMPTY) { break; }     // end the loop
-        if (nv->valuetype == TYPE_SKIP) { continue; }   // skip over tids
+	(*nv) = nv_body;
+    for (i=0; i<NV_BODY_LEN; i++, (*nv)=(*nv)->nx) {
+        if ((*nv)->valuetype == TYPE_EMPTY) { break; }     // end the loop
+        if ((*nv)->valuetype == TYPE_SKIP) { continue; }   // skip over tids
 
-	    if (nv->valuetype == TYPE_NULL) {           // GET the value
-		    ritorno(nv_get(nv));                    // ritorno returns w/status on any errors
+	    if ((*nv)->valuetype == TYPE_NULL) {           // GET the value
+		    ritorno(nv_get((*nv)));                    // ritorno returns w/status on any errors
         } else { 
 	        if (cm.machine_state == MACHINE_ALARM) {
                 return (STAT_MACHINE_ALARMED);
             }        
-	        ritorno(nv_set(nv));				    // SET value or call a function (e.g. gcode)
-	        nv_persist(nv);
+	        ritorno(nv_set((*nv)));				    // SET value or call a function (e.g. gcode)
+	        nv_persist((*nv));
         }        
     }
 	return (STAT_OK);								// only successful commands exit through this point
@@ -463,11 +455,11 @@ uint16_t json_serialize(nvObj_t *nv, char_t *out_buf, uint16_t size)
 				uint32_t *v = (uint32_t*)&nv->value;
 				str += (char_t)sprintf((char *)str, "\"0x%lx\"", *v);
 			}
-			else if (nv->valuetype == TYPE_STRING)	{ 
-                str += (char_t)sprintf((char *)str, "\"%s\"",(char *)*nv->stringp);
+			else if (nv->valuetype == TYPE_STRING)	{
+                str += (char_t)sprintf((char *)str, "\"%s\"", *nv->stringp);
             }
 			else if (nv->valuetype == TYPE_ARRAY)	{ 
-                str += (char_t)sprintf((char *)str, "[%s]",  (char *)*nv->stringp);
+                str += (char_t)sprintf((char *)str, "[%s]", *nv->stringp);
             }
 			else if (nv->valuetype == TYPE_FLOAT)	{ 
                 preprocess_float(nv);
