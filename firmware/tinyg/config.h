@@ -223,6 +223,7 @@ typedef enum {						    // value typing for config and JSON
 #define F_PERSIST 		0x02			// persist this item when set is run
 #define F_NOSTRIP		0x04			// do not strip the group prefix from the token
 #define F_CONVERT		0x08			// set if unit conversion is required
+#define F_FLOAT		    0x10			// set if value is a float
 
 #define _f0				0x00
 #define _fi				(F_INITIALIZE)

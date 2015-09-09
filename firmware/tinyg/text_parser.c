@@ -197,7 +197,8 @@ void text_print_inline_pairs(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
+//			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
+			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%lu"), nv->token, nv->value_int); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
@@ -218,7 +219,8 @@ void text_print_inline_values(nvObj_t *nv)
 								  fntoa(global_string_buf, nv->value, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
+//			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
+			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%lu"), nv->value_int); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
 			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
@@ -300,6 +302,7 @@ void text_print_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, (uint8_t)nv->value);
+//    sprintf_P(msg, format, (uint8_t)nv->value_int);
     text_finalize_message(msg);
 }
 
@@ -307,6 +310,7 @@ void text_print_int(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, (uint32_t)nv->value);
+//    sprintf_P(msg, format, (uint32_t)nv->value_int);
     text_finalize_message(msg);
 }
 
