@@ -1696,18 +1696,18 @@ stat_t cm_get_ofs(nvObj_t *nv)
 stat_t cm_get_am(nvObj_t *nv)
 {
 	get_ui8(nv);
-	return(_get_msg_helper(nv, msg_am, nv->value));
-//	return(_get_msg_helper(nv, msg_am, nv->value_int));
+//	return(_get_msg_helper(nv, msg_am, nv->value));
+	return(_get_msg_helper(nv, msg_am, nv->value_int));
 }
 
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
-		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-//		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+//		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	} else {
-		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-//		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+//		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	}
 	set_ui8(nv);
 	return(STAT_OK);
@@ -1975,8 +1975,8 @@ static const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-	sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
-//	sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_int);
+//	sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+	sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_int);
     text_finalize_message(msg);
 
 }
@@ -2020,10 +2020,12 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
-                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
-//    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, nv->value_int,
-//                GET_TEXT_ITEM(msg_am, nv->value_int));
+
+//    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
+//                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
+
+    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value_int,
+                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value_int));
     text_finalize_message(msg);
 }
 

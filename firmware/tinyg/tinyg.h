@@ -100,7 +100,6 @@
 																	// gets rely on nv->index having been set
 #define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[nv->index].a)	// get byte value from cfgArray
 #define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
-#define GET_TABLE_LONG(a)  pgm_read_dword(&cfgArray[nv->index].a)   // get uint32 value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[nv->index].a)	// get float value from cfgArray
 #define GET_TOKEN_BYTE(a)  (char)pgm_read_byte(&cfgArray[i].a)	    // get token byte value from cfgArray
 
@@ -134,7 +133,6 @@
 													// gets rely on nv->index having been set
 #define GET_TABLE_BYTE(a)  cfgArray[nv->index].a	// get byte value from cfgArray
 #define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
-#define GET_TABLE_LONG(a)  cfgArray[nv->index].a	// get uint32 value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get FP value from cfgArray
 #define GET_TOKEN_BYTE(i,a) (char)cfgArray[i].a	    // get token byte value from cfgArray
 
