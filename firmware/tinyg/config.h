@@ -230,6 +230,7 @@ typedef enum {						    // value typing for config and JSON
 #define _fp				(F_PERSIST)
 #define _fn				(F_NOSTRIP)
 #define _fc				(F_CONVERT)
+#define _ff				(F_FLOAT)
 #define _fip			(F_INITIALIZE | F_PERSIST)
 #define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
 #define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
