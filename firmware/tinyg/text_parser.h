@@ -66,12 +66,14 @@ extern txtSingleton_t txt;
 
     void text_finalize_message(char *str);
 
+	void tx_print(nvObj_t *nv);         // does all formats
 	void tx_print_nul(nvObj_t *nv);
 	void tx_print_str(nvObj_t *nv);
 	void tx_print_ui8(nvObj_t *nv);
 	void tx_print_int(nvObj_t *nv);
 	void tx_print_flt(nvObj_t *nv);
 
+	void text_print(nvObj_t *nv, const char *format);   // does all formats except units
 	void text_print_nul(nvObj_t *nv, const char *format);
 	void text_print_str(nvObj_t *nv, const char *format);
 	void text_print_ui8(nvObj_t *nv, const char *format);

@@ -262,6 +262,15 @@ void tx_print_ui8(nvObj_t *nv) { text_print_ui8(nv, fmt_ui8);}
 void tx_print_int(nvObj_t *nv) { text_print_int(nv, fmt_int);}
 void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
 
+void tx_print(nvObj_t *nv) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_FLOAT:   { text_print_flt(nv, fmt_flt); break;}
+        case TYPE_INTEGER: { text_print_int(nv, fmt_int); break;}
+        case TYPE_STRING:  { text_print_str(nv, fmt_str); break;}
+        //   TYPE_NULL is not needed in this list as it does nothing
+    }
+}
+
 /*
  * Text print primitives using external formats
  *
@@ -331,6 +340,15 @@ void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, nv->value, units);
     text_finalize_message(msg);
+}
+
+void text_print(nvObj_t *nv, const char *format) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_NULL:    { text_print_nul(nv, format); break;}
+        case TYPE_FLOAT:   { text_print_flt(nv, format); break;}
+        case TYPE_INTEGER: { text_print_int(nv, format); break;}
+        case TYPE_STRING:  { text_print_str(nv, format); break;}
+    }
 }
 
 /*
