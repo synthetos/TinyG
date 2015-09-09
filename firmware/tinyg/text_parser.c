@@ -311,7 +311,7 @@ void text_print_str(nvObj_t *nv, const char *format)
     sprintf_P(msg, format, *nv->stringp);
     text_finalize_message(msg);
 }
-
+/*
 void text_print_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
@@ -319,11 +319,10 @@ void text_print_ui8(nvObj_t *nv, const char *format)
     sprintf_P(msg, format, (uint8_t)nv->value_int);
     text_finalize_message(msg);
 }
-
+*/
 void text_print_int(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-//    sprintf_P(msg, format, (uint32_t)nv->value);
     sprintf_P(msg, format, (uint32_t)nv->value_int);
     text_finalize_message(msg);
 }
@@ -356,7 +355,8 @@ void text_print(nvObj_t *nv, const char *format) {
  */
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
 
-void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
+//void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
+void tx_print_tv(nvObj_t *nv) { text_print(nv, fmt_tv);}
 
 
 #endif // __TEXT_MODE

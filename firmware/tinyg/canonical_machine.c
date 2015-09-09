@@ -1873,7 +1873,7 @@ const char fmt_gdi[] PROGMEM = "[gdi] default gcode distance mode%2d [0=G90,1=G9
 
 void cm_print_vel(nvObj_t *nv) { text_print_flt_units(nv, fmt_vel, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_feed(nvObj_t *nv) { text_print_flt_units(nv, fmt_feed, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_line(nvObj_t *nv) { text_print_int(nv, fmt_line);}
+void cm_print_line(nvObj_t *nv) { text_print(nv, fmt_line);}
 void cm_print_stat(nvObj_t *nv) { text_print_str(nv, fmt_stat);}
 void cm_print_macs(nvObj_t *nv) { text_print_str(nv, fmt_macs);}
 void cm_print_cycs(nvObj_t *nv) { text_print_str(nv, fmt_cycs);}
@@ -1906,7 +1906,8 @@ const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+//void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
+void cm_print_sl(nvObj_t *nv) { text_print(nv, fmt_sl);}
 void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIVE_MODEL));}

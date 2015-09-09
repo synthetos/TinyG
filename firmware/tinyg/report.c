@@ -489,8 +489,10 @@ static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
 void sr_print_sr(nvObj_t *nv) { _populate_unfiltered_status_report();}
-void sr_print_si(nvObj_t *nv) { text_print_flt(nv, fmt_si);}
-void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
+//void sr_print_si(nvObj_t *nv) { text_print_flt(nv, fmt_si);}
+//void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
+void sr_print_si(nvObj_t *nv) { text_print(nv, fmt_si);}
+void sr_print_sv(nvObj_t *nv) { text_print(nv, fmt_sv);}
 
 #endif // __TEXT_MODE
 
@@ -743,10 +745,15 @@ static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_qi[] PROGMEM = "qi:%d\n";
 static const char fmt_qo[] PROGMEM = "qo:%d\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
-
+/*
 void qr_print_qr(nvObj_t *nv) { text_print_int(nv, fmt_qr);}
 void qr_print_qi(nvObj_t *nv) { text_print_int(nv, fmt_qi);}
 void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
 void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
+*/
+void qr_print_qr(nvObj_t *nv) { text_print(nv, fmt_qr);}
+void qr_print_qi(nvObj_t *nv) { text_print(nv, fmt_qi);}
+void qr_print_qo(nvObj_t *nv) { text_print(nv, fmt_qo);}
+void qr_print_qv(nvObj_t *nv) { text_print(nv, fmt_qv);}
 
 #endif // __TEXT_MODE

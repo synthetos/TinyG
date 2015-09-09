@@ -717,10 +717,15 @@ static const char fmt_ej[] PROGMEM = "[ej]  enable json mode%13d [0=text,1=JSON]
 static const char fmt_jv[] PROGMEM = "[jv]  json verbosity%15d [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]\n";
 static const char fmt_js[] PROGMEM = "[js]  json serialize style%9d [0=relaxed,1=strict]\n";
 static const char fmt_fs[] PROGMEM = "[fs]  footer style%17d [0=new,1=old]\n";
-
+/*
 void js_print_ej(nvObj_t *nv) { text_print_ui8(nv, fmt_ej);}
 void js_print_jv(nvObj_t *nv) { text_print_ui8(nv, fmt_jv);}
 void js_print_js(nvObj_t *nv) { text_print_ui8(nv, fmt_js);}
 void js_print_fs(nvObj_t *nv) { text_print_ui8(nv, fmt_fs);}
+*/
+void js_print_ej(nvObj_t *nv) { text_print(nv, fmt_ej);}
+void js_print_jv(nvObj_t *nv) { text_print(nv, fmt_jv);}
+void js_print_js(nvObj_t *nv) { text_print(nv, fmt_js);}
+void js_print_fs(nvObj_t *nv) { text_print(nv, fmt_fs);}
 
 #endif // __TEXT_MODE

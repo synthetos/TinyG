@@ -252,7 +252,8 @@ stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 #ifdef __TEXT_MODE
 
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
-void sw_print_st(nvObj_t *nv) { text_print_ui8(nv, fmt_st);}
+//void sw_print_st(nvObj_t *nv) { text_print_ui8(nv, fmt_st);}
+void sw_print_st(nvObj_t *nv) { text_print(nv, fmt_st);}
 
 //static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
 //void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, (uint8_t)nv->value);}
