@@ -104,7 +104,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 //	{ "sys", "hp", _fipn,0, hw_print_hp, get_flt,   set_flt,  (uint32_t *)&cs.hw_platform,     TINYG_HARDWARE_PLATFORM },
 //	{ "sys", "hv", _fipn,0, hw_print_hv, get_flt,   hw_set_hv,(uint32_t *)&cs.hw_version,      TINYG_HARDWARE_VERSION },
-	{ "sys", "hp", _fipn, 0, hw_print_hp, get_int,   set_ui8,   (uint32_t *)&cs.hw_platform,     TINYG_HARDWARE_PLATFORM },
+	{ "sys", "hp", _fipn, 0, hw_print_hp, get_int,   set_int,   (uint32_t *)&cs.hw_platform,     TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipnf,0, hw_print_hv, get_flt,   hw_set_hv, (uint32_t *)&cs.hw_version,      TINYG_HARDWARE_VERSION },
 
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (uint32_t *)&cs.null, 0 },  // device ID (ASCII signature)
@@ -113,7 +113,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
 	{ "",   "n",   _fi, 0, cm_print_line, get_int,     set_int,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
 	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int,(uint32_t *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
-	{ "",   "vel", _ff, 2, cm_print_vel,  cm_get_vel,  set_nul, (uint32_t *)&cs.null, 0 },			// current velocity
+	{ "",   "vel", _ff, 2, cm_print_vel,  cm_get_vel,  set_nul,(uint32_t *)&cs.null, 0 },			// current velocity
 	{ "",   "feed",_ff, 2, cm_print_feed, cm_get_feed, set_nul,(uint32_t *)&cs.null, 0 },			// feed rate
 	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(uint32_t *)&cs.null, 0 },			// combined machine state
 	{ "",   "macs",_f0, 0, cm_print_macs, cm_get_macs, set_nul,(uint32_t *)&cs.null, 0 },			// raw machine state

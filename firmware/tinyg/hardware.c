@@ -241,7 +241,7 @@ stat_t hw_set_hv(nvObj_t *nv)
 
 static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
 static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
-static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n";
+static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15lu\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 
