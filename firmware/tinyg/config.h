@@ -223,7 +223,7 @@ typedef enum {						    // value typing for config and JSON
 #define F_PERSIST 		0x02			// persist this item when set is run
 #define F_NOSTRIP		0x04			// do not strip the group prefix from the token
 #define F_CONVERT		0x08			// set if unit conversion is required
-#define F_FLOAT		    0x10			// set if value is a float
+#define F_FLOAT		    0x10			// set if value is a float (otherwise it's an int)
 
 #define _f0				0x00
 #define _fi				(F_INITIALIZE)
@@ -234,6 +234,11 @@ typedef enum {						    // value typing for config and JSON
 #define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
 #define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
 #define _fipnc			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT)
+#define _fif			(F_INITIALIZE | F_FLOAT)
+#define _fipf			(F_INITIALIZE | F_PERSIST | F_FLOAT)
+#define _fipcf			(F_INITIALIZE | F_PERSIST | F_CONVERT | F_FLOAT)
+#define _fipnf			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_FLOAT)
+#define _fipncf			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT | F_FLOAT)
 
 /**** Structures ****/
 
@@ -279,7 +284,8 @@ typedef struct cfgItem {
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
-	float *target;						// target for writing config value
+//	float *target;						// target for writing config value
+	uint32_t *target;					// target for writing config value
 	float def_value;					// default value for config item
 } cfgItem_t;
 

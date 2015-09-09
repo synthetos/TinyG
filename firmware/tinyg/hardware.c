@@ -40,10 +40,6 @@
 #include "xmega/xmega_rtc.h"
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*
  * _port_bindings  - bind XMEGA ports to hardware - these changed at board revision 7
  * hardware_init() - lowest level hardware init
@@ -67,7 +63,7 @@ static void _port_bindings(float hw_version)
 		hw.out_port[1] = &PORT_OUT_V7_Y;
 		hw.out_port[2] = &PORT_OUT_V7_Z;
 		hw.out_port[3] = &PORT_OUT_V7_A;
-		} else {
+	} else {
 		hw.out_port[0] = &PORT_OUT_V6_X;
 		hw.out_port[1] = &PORT_OUT_V6_Y;
 		hw.out_port[2] = &PORT_OUT_V6_Z;
@@ -256,7 +252,3 @@ void hw_print_hv(nvObj_t *nv) { text_print_flt(nv, fmt_hv);}
 void hw_print_id(nvObj_t *nv) { text_print_str(nv, fmt_id);}
 
 #endif //__TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
