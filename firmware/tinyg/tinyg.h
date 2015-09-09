@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.32	// transaction ID
+#define TINYG_FIRMWARE_BUILD        440.33	// converting base number format to uint32
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -98,8 +98,9 @@
 
 #include <avr/pgmspace.h>		// defines PROGMEM and PSTR
 																	// gets rely on nv->index having been set
-#define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[nv->index].a)	// get byte value from cfgArray
+#define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
+#define GET_TABLE_LONG(a)  pgm_read_dword(&cfgArray[nv->index].a)   // get uint32 value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[nv->index].a)	// get float value from cfgArray
 #define GET_TOKEN_BYTE(a)  (char)pgm_read_byte(&cfgArray[i].a)	    // get token byte value from cfgArray
 
@@ -131,9 +132,10 @@
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
 													// gets rely on nv->index having been set
-#define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  cfgArray[nv->index].a	// get byte value from cfgArray
-#define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get byte value from cfgArray
+#define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
+#define GET_TABLE_LONG(a)  cfgArray[nv->index].a	// get uint32 value from cfgArray
+#define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get FP value from cfgArray
 #define GET_TOKEN_BYTE(i,a) (char)cfgArray[i].a	    // get token byte value from cfgArray
 
 #define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a

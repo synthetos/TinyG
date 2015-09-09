@@ -261,6 +261,8 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
         float value;                    // float values
         uint32_t value_int;             // raw int values
     };
+    float value_flt;                    // float values
+    uint32_t value_int2;             // raw int values
 	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char (*stringp)[];				    // pointer to array of characters from shared character array
@@ -285,9 +287,9 @@ typedef struct cfgItem {
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
-//	float *target;						// target for writing config value
 	uint32_t *target;					// target for writing config value
-	float def_value;					// default value for config item
+	float default_value;				// default value for config item
+//    double default_value;				// default value for config item
 } cfgItem_t;
 
 /**** static allocation and definitions ****/
@@ -339,7 +341,7 @@ stat_t set_flt(nvObj_t *nv);				// set floating point value
 stat_t get_nul(nvObj_t *nv);				// get null value type
 stat_t get_str(nvObj_t *nv);                // get stringp[] value
 stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
-stat_t get_int(nvObj_t *nv);				// get uint32_t integer value
+stat_t get_int(nvObj_t *nv);				// get integer value
 stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast
 stat_t get_flt(nvObj_t *nv);				// get floating point value
 

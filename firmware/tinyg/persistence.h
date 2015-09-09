@@ -2,7 +2,7 @@
  * persistence.h - persistence code
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2013 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -39,7 +39,8 @@ typedef struct nvmSingleton {
 	uint16_t base_addr;					// NVM base address
 	uint16_t profile_base;				// NVM base address of current profile]
 	uint16_t address;
-	float tmp_value;
+//	float tmp_value;
+	uint32_t tmp_value;
 	int8_t byte_array[NVM_VALUE_LEN];
 } nvmSingleton_t;
 

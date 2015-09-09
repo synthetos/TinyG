@@ -156,7 +156,10 @@ static void _set_defa(nvObj_t *nv)
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-			nv->value = GET_TABLE_FLOAT(def_value);
+    		nv->value = GET_TABLE_FLOAT(default_value); // get default as float
+    		if (!(GET_TABLE_BYTE(flags) & F_FLOAT)) {
+                nv->value_int = (uint32_t)nv->value;    // cast in place to int if required
+            }
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			nv_set(nv);
 			nv_persist(nv);
@@ -229,7 +232,9 @@ stat_t get_str(nvObj_t *nv)
 
 stat_t get_ui8(nvObj_t *nv)
 {
-	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
+//    return (get_int(nv));
+//	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((uint8_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -283,17 +288,21 @@ stat_t set_int(nvObj_t *nv)
 
 stat_t set_ui8(nvObj_t *nv)
 {
-	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
+//    return (set_int(nv));
+//	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
+	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_01(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 1) {
+//	if ((uint8_t)nv->value > 1) {
+	if (nv->value_int > 1) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
+//	return (set_int(nv));
 }
 
 stat_t set_012(nvObj_t *nv)
@@ -302,6 +311,7 @@ stat_t set_012(nvObj_t *nv)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
+//    return (set_int(nv));
 }
 
 stat_t set_0123(nvObj_t *nv)
@@ -310,6 +320,7 @@ stat_t set_0123(nvObj_t *nv)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
+//    return (set_int(nv));
 }
 
 stat_t set_int16(nvObj_t *nv)
@@ -322,6 +333,7 @@ stat_t set_int16(nvObj_t *nv)
 
 stat_t set_int32(nvObj_t *nv)
 {
+//    return (set_int(nv));
     *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
