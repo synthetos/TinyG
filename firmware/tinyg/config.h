@@ -326,13 +326,12 @@ uint8_t nv_group_is_prefixed(char *group);
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);				// set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
 stat_t set_not(nvObj_t *nv);				// set nothing (returns STAT_OK)
-stat_t set_ui8(nvObj_t *nv);				// set uint8_t value
+stat_t set_ui8(nvObj_t *nv);				// set value as 8 bit integer
+stat_t set_int16(nvObj_t *nv);				// set value as 16 bit integer
+stat_t set_int32(nvObj_t *nv);				// set value as 32 bit integer
 stat_t set_01(nvObj_t *nv);					// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
-stat_t set_int16(nvObj_t *nv);				// set value as a 16 bit integer
-stat_t set_int32(nvObj_t *nv);				// set value as a 32 bit integer
-stat_t set_int(nvObj_t *nv);				// set integer value
 stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);				// set floating point value
 

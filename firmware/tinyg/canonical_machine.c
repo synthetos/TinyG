@@ -1990,7 +1990,7 @@ static void _print_axis_flt(nvObj_t *nv, const char *format)
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value, units);
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_flt, units);
     text_finalize_message(msg);
 }
 
@@ -2003,7 +2003,7 @@ static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
 	}
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->token, nv->value, units);
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->token, nv->value_flt, units);
     text_finalize_message(msg);
 }
 
@@ -2013,7 +2013,7 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 	uint8_t axis = _get_axis(nv->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, axes[axis], nv->value, GET_TEXT_ITEM(msg_units, units));
+    sprintf_P(msg, format, axes[axis], nv->value_flt, GET_TEXT_ITEM(msg_units, units));
     text_finalize_message(msg);
 }
 

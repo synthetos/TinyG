@@ -103,18 +103,6 @@ stat_t write_persistent_value(nvObj_t *nv)
 	}
 	nv->value_int =nvm.tmp_value;		// always restore value
 	return (STAT_OK);
-
-/*
-	nvm.tmp_value = nv->value;
-	ritorno(read_persistent_value(nv));
-	if ((isnan((double)nv->value)) || (isinf((double)nv->value)) || (fp_NE(nv->value, nvm.tmp_value))) {
-		memcpy(&nvm.byte_array, &nvm.tmp_value, NVM_VALUE_LEN);
-		nvm.address = nvm.profile_base + (nv->index * NVM_VALUE_LEN);
-		(void)EEPROM_WriteBytes(nvm.address, nvm.byte_array, NVM_VALUE_LEN);
-	}
-	nv->value =nvm.tmp_value;		// always restore value
-	return (STAT_OK);
-*/
 }
 #endif // __AVR
 

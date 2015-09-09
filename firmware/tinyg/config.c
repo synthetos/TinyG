@@ -286,7 +286,7 @@ stat_t get_flt(nvObj_t *nv)
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
 stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
-
+/*
 stat_t set_int(nvObj_t *nv)
 {
 //    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
@@ -294,14 +294,34 @@ stat_t set_int(nvObj_t *nv)
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
-
+*/
 stat_t set_ui8(nvObj_t *nv)
 {
-    return (set_int(nv));
+//    return (set_int(nv));
 //	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
-//	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value_int;
-//	nv->valuetype = TYPE_INTEGER;
-//	return(STAT_OK);
+	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value_int;
+	nv->valuetype = TYPE_INTEGER;
+	return(STAT_OK);
+}
+
+stat_t set_int16(nvObj_t *nv)
+{
+//	nv->value = 0;  // clears the entire value as next line only fills
+//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
+//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value_int;
+	*((uint16_t *)GET_TABLE_WORD(target)) = nv->value_int;
+	nv->valuetype = TYPE_INTEGER;
+	return(STAT_OK);
+}
+
+stat_t set_int32(nvObj_t *nv)
+{
+//    return (set_int(nv));
+//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
+//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
+    *((uint32_t *)GET_TABLE_WORD(target)) = nv->value_int;
+    nv->valuetype = TYPE_INTEGER;
+    return(STAT_OK);
 }
 
 stat_t set_01(nvObj_t *nv)
@@ -310,8 +330,7 @@ stat_t set_01(nvObj_t *nv)
 	if (nv->value_int > 1) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-//	return (set_ui8(nv));
-	return (set_int(nv));
+	return (set_ui8(nv));
 }
 
 stat_t set_012(nvObj_t *nv)
@@ -321,7 +340,6 @@ stat_t set_012(nvObj_t *nv)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
-//    return (set_int(nv));
 }
 
 stat_t set_0123(nvObj_t *nv)
@@ -331,25 +349,6 @@ stat_t set_0123(nvObj_t *nv)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
-//    return (set_int(nv));
-}
-
-stat_t set_int16(nvObj_t *nv)
-{
-//	nv->value = 0;  // clears the entire value as next line only fills
-//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
-	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value_int;
-	nv->valuetype = TYPE_INTEGER;
-	return(STAT_OK);
-}
-
-stat_t set_int32(nvObj_t *nv)
-{
-//    return (set_int(nv));
-//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
-    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
-    nv->valuetype = TYPE_INTEGER;
-    return(STAT_OK);
 }
 
 stat_t set_data(nvObj_t *nv)
