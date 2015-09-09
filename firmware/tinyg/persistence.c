@@ -62,6 +62,7 @@ void persistence_init()
  * read_persistent_value()	- return value (as float) by index
  * write_persistent_value() - write to NVM by index, but only if the value has changed
  *
+ *  All persistence occurs in uint32_t (not float)
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
 
@@ -71,7 +72,8 @@ stat_t read_persistent_value(nvObj_t *nv)
 	nvm.address = nvm.profile_base + (nv->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm.address, nvm.byte_array, NVM_VALUE_LEN);
 //	memcpy(&nv->value, &nvm.byte_array, NVM_VALUE_LEN);
-	memcpy(&nv->value_int, &nvm.byte_array, NVM_VALUE_LEN);
+//	memcpy(&nv->value_int, &nvm.byte_array, NVM_VALUE_LEN);
+    nv->value_int = 0;
 	return (STAT_OK);
 }
 #endif // __AVR

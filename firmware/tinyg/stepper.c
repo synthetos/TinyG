@@ -1190,7 +1190,8 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_conditional_message((const char *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_int32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
+//	set_int32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
+	set_int(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);
 	_set_hw_microsteps(_get_motor(nv), (uint8_t)nv->value);
 	return (STAT_OK);
@@ -1200,7 +1201,8 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
 	if ((uint8_t)nv->value >= MOTOR_POWER_MODE_MAX_VALUE)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-	set_ui8(nv);
+//	set_ui8(nv);
+	set_int(nv);
 	return (STAT_OK);
 	// NOTE: The motor power callback makes these settings take effect immediately
 }
@@ -1317,7 +1319,8 @@ void st_print_md(nvObj_t *nv) { text_print_nul(nv, fmt_md);}
 static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+//    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value_int);
     text_finalize_message(msg);
 }
 

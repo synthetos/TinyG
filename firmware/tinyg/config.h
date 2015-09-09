@@ -247,7 +247,7 @@ typedef struct nvString {				// shared string object
 	uint16_t magic_start;
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
 	char string[NV_SHARED_STRING_LEN];
-	uint16_t magic_end;					// guard to detect string buffer underruns
+	uint16_t magic_end;					// guard to detect string buffer overruns
 } nvStr_t;
 
 typedef struct nvObject {				// depending on use, not all elements may be populated
@@ -261,8 +261,6 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
         float value;                    // float values
         uint32_t value_int;             // raw int values
     };
-    float value_flt;                    // float values
-    uint32_t value_int2;             // raw int values
 	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
 	char token[TOKEN_LEN+1];			// full mnemonic token for lookup
 	char (*stringp)[];				    // pointer to array of characters from shared character array
@@ -288,8 +286,7 @@ typedef struct cfgItem {
 	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
 	uint32_t *target;					// target for writing config value
-	float default_value;				// default value for config item
-//    double default_value;				// default value for config item
+	float default_value;				// default value for config item - will be cast to uint32_t as required
 } cfgItem_t;
 
 /**** static allocation and definitions ****/
