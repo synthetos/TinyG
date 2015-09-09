@@ -112,30 +112,35 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 		*wr = tolower(*rd);							// convert string to lower case
 		if (*rd == ',') { *wr = *(++rd);}			// skip over commas
 	}
-	*wr = NUL;										// terminate the string
+	*wr = NUL;										// terminate the name string
 
 	// parse fields into the nv struct
-	nv->valuetype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) {	// no value part
 		strncpy(nv->token, str, TOKEN_LEN);
+	    nv->valuetype = TYPE_NULL;
+	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
+    	    return (STAT_UNRECOGNIZED_NAME);
+	    }
 	} else {
-		*rd = NUL;									// terminate at end of name
-		strncpy(nv->token, str, TOKEN_LEN);
-		str = ++rd;
-		nv->value = strtof(str, &rd);				// rd used as end pointer
-		if (rd != str) {
-			nv->valuetype = TYPE_FLOAT;
-		}
+	    *rd = NUL;									// terminate at end of name
+	    strncpy(nv->token, str, TOKEN_LEN);         // copy to token
+	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
+    	    return (STAT_UNRECOGNIZED_NAME);
+	    }
+	    if (GET_TABLE_BYTE(flags) & F_FLOAT) {      // copy value as float
+		    str = ++rd;
+		    nv->value = strtof(str, &rd);           // rd used as end pointer
+		    nv->valuetype = TYPE_FLOAT;
+	    } else {                                    // copy value as integer
+		    str = ++rd;
+            nv->value_int = atol(str);
+    		nv->valuetype = TYPE_INTEGER;
+        }
 	}
 
-	// validate and post-process the token
-	if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
-		return (STAT_UNRECOGNIZED_NAME);
-	}
+	// post-process the token
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
-
-	// see if you need to strip the token
-	if (nv->group[0] != NUL) {
+	if (nv->group[0] != NUL) {	                    // see if you need to strip the token
 		wr = nv->token;
 		rd = nv->token + strlen(nv->group);
 		while (*rd != NUL) { *(wr)++ = *(rd)++;}
