@@ -237,7 +237,7 @@ stat_t get_ui8(nvObj_t *nv)
 stat_t get_int(nvObj_t *nv)
 {
 //	nv->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
-	nv->value = *((uint32_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((uint32_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -273,6 +273,13 @@ stat_t get_flt(nvObj_t *nv)
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
 stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
+
+stat_t set_int(nvObj_t *nv)
+{
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
+    nv->valuetype = TYPE_INTEGER;
+    return(STAT_OK);
+}
 
 stat_t set_ui8(nvObj_t *nv)
 {

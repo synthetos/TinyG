@@ -306,16 +306,16 @@ void text_print_str(nvObj_t *nv, const char *format)
 void text_print_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, (uint8_t)nv->value);
-//    sprintf_P(msg, format, (uint8_t)nv->value_int);
+//    sprintf_P(msg, format, (uint8_t)nv->value);
+    sprintf_P(msg, format, (uint8_t)nv->value_int);
     text_finalize_message(msg);
 }
 
 void text_print_int(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, (uint32_t)nv->value);
-//    sprintf_P(msg, format, (uint32_t)nv->value_int);
+//    sprintf_P(msg, format, (uint32_t)nv->value);
+    sprintf_P(msg, format, (uint32_t)nv->value_int);
     text_finalize_message(msg);
 }
 

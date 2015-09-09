@@ -1590,7 +1590,8 @@ static int8_t _get_axis_type(const index_t index)
 
 stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value)
 {
-	nv->value = (float)value;
+//	nv->value = (float)value;
+	nv->value_int = value;
 	nv->valuetype = TYPE_INTEGER;
 	return(nv_copy_string(nv, (const char *)GET_TEXT_ITEM(msg_array, value)));
 }
@@ -1842,7 +1843,8 @@ stat_t cm_run_joga(nvObj_t *nv)
 
 const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%s/min\n";
 const char fmt_feed[] PROGMEM = "Feed rate:%16.3f%s/min\n";
-const char fmt_line[] PROGMEM = "Line number:%10.0f\n";
+//const char fmt_line[] PROGMEM = "Line number:%10.0f\n";
+const char fmt_line[] PROGMEM = "Line number:%10lu\n";
 const char fmt_stat[] PROGMEM = "Machine state:       %s\n"; // combined machine state
 const char fmt_macs[] PROGMEM = "Raw machine state:   %s\n"; // raw machine state
 const char fmt_cycs[] PROGMEM = "Cycle state:         %s\n";

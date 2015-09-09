@@ -332,6 +332,7 @@ stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
 stat_t set_int16(nvObj_t *nv);				// set value as a 16 bit integer
 stat_t set_int32(nvObj_t *nv);				// set value as a 32 bit integer
+stat_t set_int(nvObj_t *nv);				// set integer value
 stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);				// set floating point value
 
