@@ -1157,7 +1157,7 @@ static int8_t _get_motor(const nvObj_t *nv)
 static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
 	uint8_t m = _get_motor(nv);
-//	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
+	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
     st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
 	st_reset();
 }

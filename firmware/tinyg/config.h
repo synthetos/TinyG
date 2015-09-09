@@ -259,6 +259,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t precision;					// decimal precision for reporting (JSON)
     union {
         float value;                    // float values
+        float value_flt;                // float values
         uint32_t value_int;             // raw int values
     };
 	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group

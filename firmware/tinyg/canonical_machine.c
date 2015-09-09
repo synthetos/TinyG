@@ -1638,11 +1638,11 @@ stat_t cm_get_line(nvObj_t *nv)
 stat_t cm_get_vel(nvObj_t *nv)
 {
 	if (cm_get_motion_state() == MOTION_STOP) {
-		nv->value = 0;
+		nv->value_flt = 0;
 	} else {
-		nv->value = mp_get_runtime_velocity();
+		nv->value_flt = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) {
-            nv->value *= INCHES_PER_MM;
+            nv->value_flt *= INCHES_PER_MM;
         }        
 	}
 	nv->precision = GET_TABLE_WORD(precision);
@@ -1652,9 +1652,9 @@ stat_t cm_get_vel(nvObj_t *nv)
 
 stat_t cm_get_feed(nvObj_t *nv)
 {
-	nv->value = cm_get_feed_rate(ACTIVE_MODEL);
+	nv->value_flt = cm_get_feed_rate(ACTIVE_MODEL);
 	if (cm_get_units_mode(ACTIVE_MODEL) == INCHES) {
-        nv->value *= INCHES_PER_MM;
+        nv->value_flt *= INCHES_PER_MM;
     }    
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -1663,7 +1663,7 @@ stat_t cm_get_feed(nvObj_t *nv)
 
 stat_t cm_get_pos(nvObj_t *nv)
 {
-	nv->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1671,7 +1671,7 @@ stat_t cm_get_pos(nvObj_t *nv)
 
 stat_t cm_get_mpo(nvObj_t *nv)
 {
-	nv->value = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1679,7 +1679,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 
 stat_t cm_get_ofs(nvObj_t *nv)
 {
-	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1743,18 +1743,18 @@ void cm_set_axis_jerk(uint8_t axis, float jerk)
 
 stat_t cm_set_xjm(nvObj_t *nv)
 {
-	if (nv->value > JERK_MULTIPLIER) {
-        nv->value /= JERK_MULTIPLIER;
+	if (nv->value_flt > JERK_MULTIPLIER) {
+        nv->value_flt /= JERK_MULTIPLIER;
     }    
 	set_flu(nv);
-	cm_set_axis_jerk(_get_axis(nv->index), nv->value);
+	cm_set_axis_jerk(_get_axis(nv->index), nv->value_flt);
 	return(STAT_OK);
 }
 
 stat_t cm_set_xjh(nvObj_t *nv)
 {
-	if (nv->value > JERK_MULTIPLIER) {
-        nv->value /= JERK_MULTIPLIER;
+	if (nv->value_flt > JERK_MULTIPLIER) {
+        nv->value_flt /= JERK_MULTIPLIER;
     }    
 	set_flu(nv);
 	return(STAT_OK);
@@ -1776,7 +1776,7 @@ stat_t cm_run_qf(nvObj_t *nv)
 stat_t cm_run_home(nvObj_t *nv)
 {
 //	if (fp_TRUE(nv->value)) { cm_homing_cycle_start();}
-	if (nv->value == true) { 
+	if (nv->value_int == true) { 
         cm_homing_cycle_start();
     }
 	return (STAT_OK);
@@ -2020,12 +2020,8 @@ static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
 {
     char msg[NV_MESSAGE_LEN];
-
-//    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
-//                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
-
     sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value_int,
-                GET_TEXT_ITEM(msg_am, (uint8_t)nv->value_int));
+              GET_TEXT_ITEM(msg_am, (uint8_t)nv->value_int));
     text_finalize_message(msg);
 }
 
