@@ -127,7 +127,8 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
+//	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
+	if (fp_NE(nv->value, cs.fw_build)) {        // case (1) NVM is not setup or not in revision
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
@@ -175,14 +176,18 @@ static void _set_defa(nvObj_t *nv)
 stat_t set_defaults(nvObj_t *nv)
 {
 	// failsafe. nv->value must be true or no action occurs
-	if (fp_FALSE(nv->value)) return(help_defa(nv));
+//	if (fp_FALSE(nv->value)) return(help_defa(nv));
+	if (nv->value_int != true) {
+        return(help_defa(nv));
+    }    
 	_set_defa(nv);
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
 //	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
 //	nv->index = nv_get_index("", nv->token);	// correct, but not required
 	nv->valuetype = TYPE_INTEGER;
-	nv->value = 1;
+//	nv->value = 1;
+	nv->value_int = 1;
 	return (STAT_OK);
 }
 
@@ -285,7 +290,7 @@ stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
 stat_t set_int(nvObj_t *nv)
 {
 //    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
-    *((uint32_t *)GET_TABLE_LONG(target)) = (uint32_t)nv->value_int;
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
@@ -311,7 +316,8 @@ stat_t set_01(nvObj_t *nv)
 
 stat_t set_012(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 2) {
+//	if ((uint8_t)nv->value > 2) {
+	if (nv->value_int > 2) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
@@ -320,7 +326,8 @@ stat_t set_012(nvObj_t *nv)
 
 stat_t set_0123(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 3) {
+//	if ((uint8_t)nv->value > 3) {
+	if (nv->value_int > 3) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
@@ -330,7 +337,8 @@ stat_t set_0123(nvObj_t *nv)
 stat_t set_int16(nvObj_t *nv)
 {
 //	nv->value = 0;  // clears the entire value as next line only fills
-	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
+//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
+	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
@@ -338,7 +346,8 @@ stat_t set_int16(nvObj_t *nv)
 stat_t set_int32(nvObj_t *nv)
 {
 //    return (set_int(nv));
-    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
+//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
@@ -573,7 +582,8 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 {
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
-	nv->value = 0;
+//	nv->value = 0;
+	nv->value_int = 0;
 	nv->precision = 0;
 	nv->token[0] = NUL;
 	nv->group[0] = NUL;
@@ -674,7 +684,8 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
-		nv->value = (float) value;
+//		nv->value = (float) value;
+		nv->value_int = value;
 		nv->valuetype = TYPE_INTEGER;
 		return (nv);
 	}

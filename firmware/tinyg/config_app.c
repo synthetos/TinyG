@@ -107,13 +107,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "hv", _fipnf,0, hw_print_hv, get_flt,  hw_set_hv,(uint32_t *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _fn,  0, hw_print_id, hw_get_id, set_nul,  (uint32_t *)&cs.null, 0 },  // device ID (ASCII signature)
 
-	{ "1","1ma",_fip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-	{ "1","1sa",_fipf, 3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-	{ "1","1tr",_fipcf,4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
-	{ "1","1mi",_fip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
-	{ "1","1po",_fip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
-	{ "1","1pm",_fip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
-
 	// dynamic model attributes for reporting purposes (up front for speed)
 //	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
 	{ "",   "n",   _fi, 0, cm_print_line, get_int,     set_int,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
@@ -191,12 +184,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 
 	// Motor parameters
-//	{ "1","1ma",_fip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
-//	{ "1","1sa",_fipf, 3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
-//	{ "1","1tr",_fipcf,4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
-//	{ "1","1mi",_fip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
-//	{ "1","1po",_fip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
-//	{ "1","1pm",_fip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
+	{ "1","1ma",_fip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
+	{ "1","1sa",_fipf, 3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
+	{ "1","1tr",_fipcf,4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
+	{ "1","1mi",_fip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
+	{ "1","1po",_fip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
+	{ "1","1pm",_fip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
 #ifdef __ARM
 	{ "1","1pl",_fipf, 3, st_print_pl, get_flt, st_set_pl, (uint32_t *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #endif

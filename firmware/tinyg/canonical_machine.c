@@ -1613,21 +1613,24 @@ stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_fe
 
 stat_t cm_get_toolv(nvObj_t *nv)
 {
-	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
+//	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
+	nv->value_int = cm_get_tool(ACTIVE_MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t cm_get_mline(nvObj_t *nv)
 {
-	nv->value = (float)cm_get_linenum(MODEL);
+//	nv->value = (float)cm_get_linenum(MODEL);
+	nv->value_int = cm_get_linenum(MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t cm_get_line(nvObj_t *nv)
 {
-	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
+//	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
+	nv->value_int = cm_get_linenum(ACTIVE_MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1638,7 +1641,9 @@ stat_t cm_get_vel(nvObj_t *nv)
 		nv->value = 0;
 	} else {
 		nv->value = mp_get_runtime_velocity();
-		if (cm_get_units_mode(RUNTIME) == INCHES) nv->value *= INCHES_PER_MM;
+		if (cm_get_units_mode(RUNTIME) == INCHES) {
+            nv->value *= INCHES_PER_MM;
+        }        
 	}
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -1648,7 +1653,9 @@ stat_t cm_get_vel(nvObj_t *nv)
 stat_t cm_get_feed(nvObj_t *nv)
 {
 	nv->value = cm_get_feed_rate(ACTIVE_MODEL);
-	if (cm_get_units_mode(ACTIVE_MODEL) == INCHES) nv->value *= INCHES_PER_MM;
+	if (cm_get_units_mode(ACTIVE_MODEL) == INCHES) {
+        nv->value *= INCHES_PER_MM;
+    }    
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1690,14 +1697,17 @@ stat_t cm_get_am(nvObj_t *nv)
 {
 	get_ui8(nv);
 	return(_get_msg_helper(nv, msg_am, nv->value));
+//	return(_get_msg_helper(nv, msg_am, nv->value_int));
 }
 
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
 		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+//		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	} else {
 		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+//		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 	}
 	set_ui8(nv);
 	return(STAT_OK);
@@ -1733,7 +1743,9 @@ void cm_set_axis_jerk(uint8_t axis, float jerk)
 
 stat_t cm_set_xjm(nvObj_t *nv)
 {
-	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
+	if (nv->value > JERK_MULTIPLIER) {
+        nv->value /= JERK_MULTIPLIER;
+    }    
 	set_flu(nv);
 	cm_set_axis_jerk(_get_axis(nv->index), nv->value);
 	return(STAT_OK);
@@ -1741,7 +1753,9 @@ stat_t cm_set_xjm(nvObj_t *nv)
 
 stat_t cm_set_xjh(nvObj_t *nv)
 {
-	if (nv->value > JERK_MULTIPLIER) nv->value /= JERK_MULTIPLIER;
+	if (nv->value > JERK_MULTIPLIER) {
+        nv->value /= JERK_MULTIPLIER;
+    }    
 	set_flu(nv);
 	return(STAT_OK);
 }
@@ -1761,7 +1775,10 @@ stat_t cm_run_qf(nvObj_t *nv)
 
 stat_t cm_run_home(nvObj_t *nv)
 {
-	if (fp_TRUE(nv->value)) { cm_homing_cycle_start();}
+//	if (fp_TRUE(nv->value)) { cm_homing_cycle_start();}
+	if (nv->value == true) { 
+        cm_homing_cycle_start();
+    }
 	return (STAT_OK);
 }
 
@@ -1843,7 +1860,6 @@ stat_t cm_run_joga(nvObj_t *nv)
 
 const char fmt_vel[]  PROGMEM = "Velocity:%17.3f%s/min\n";
 const char fmt_feed[] PROGMEM = "Feed rate:%16.3f%s/min\n";
-//const char fmt_line[] PROGMEM = "Line number:%10.0f\n";
 const char fmt_line[] PROGMEM = "Line number:%10lu\n";
 const char fmt_stat[] PROGMEM = "Machine state:       %s\n"; // combined machine state
 const char fmt_macs[] PROGMEM = "Raw machine state:   %s\n"; // raw machine state
@@ -1960,6 +1976,7 @@ static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
 	sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+//	sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_int);
     text_finalize_message(msg);
 
 }
@@ -2005,6 +2022,8 @@ void cm_print_am(nvObj_t *nv)	// print axis mode with enumeration string
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, (uint8_t)nv->value,
                 GET_TEXT_ITEM(msg_am, (uint8_t)nv->value));
+//    sprintf_P(msg, fmt_Xam, nv->group, nv->token, nv->group, nv->value_int,
+//                GET_TEXT_ITEM(msg_am, nv->value_int));
     text_finalize_message(msg);
 }
 
