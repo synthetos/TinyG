@@ -182,7 +182,7 @@ stat_t set_defaults(nvObj_t *nv)
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
 //	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
-//	nv->index = nv_get_index("", nv->token);	// correct, but not required
+//	nv->index = nv_get_index("", nv->token);	    // correct, but not required
 	nv->valuetype = TYPE_INTEGER;
 	nv->value_int = 1;
 	return (STAT_OK);

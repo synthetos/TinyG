@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.33	// converting base number format to uint32
+#define TINYG_FIRMWARE_BUILD        440.34	// back to large TIDs
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
