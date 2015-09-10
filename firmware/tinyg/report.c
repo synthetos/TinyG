@@ -178,11 +178,11 @@ void sr_init_status_report(bool use_defaults)
         if (!use_defaults) {
             read_persistent_value(nv);                      // read NVram into nv->value element
 //            sr.status_report_list[i] = (index_t)nv->value;  // pre-load the stored SR list
-            sr.status_report_list[i] = nv->value_int;  // pre-load the stored SR list
+            sr.status_report_list[i] = nv->value_int;       // pre-load the stored SR list
         } else {
             if (sr_defaults[i][0] == NUL) {                 // load the index for the SR element
 //                nv->value = NO_MATCH;                       // label as a blank spot
-                nv->value_int = NO_MATCH;                       // label as a blank spot
+                nv->value_int = NO_MATCH;                   // label as a blank spot
             } else {                                        // set and persist the default value
 //                if ((nv->value = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
                 if ((nv->value_int = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
