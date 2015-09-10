@@ -333,8 +333,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		nv->valuetype = TYPE_NULL;
 
 	// numbers
-	} else if (isdigit(**pstr) || (**pstr == '-')) {// value is a number
-		nv->value = (float)strtod(*pstr, &end);     // 'end' will get set
+	} else if (isdigit(**pstr) || (**pstr == '-')) {    // value is a number
+		nv->value_flt = (float)strtod(*pstr, &end);     // 'end' will get set
 		if (end == *pstr) {
             return (STAT_BAD_NUMBER_FORMAT);
         }
@@ -384,10 +384,12 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	// boolean true/false
 	} else if (**pstr == 't') {
 		nv->valuetype = TYPE_BOOL;
-		nv->value = true;
+//		nv->value = true;
+		nv->value_int = true;
 	} else if (**pstr == 'f') {
 		nv->valuetype = TYPE_BOOL;
-		nv->value = false;
+//		nv->value = false;
+		nv->value_int = false;
 
 	// arrays (not supported on input)
 	} else if (**pstr == '[') {
@@ -475,7 +477,9 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 
 			// check for illegal float values
 			if (nv->valuetype == TYPE_FLOAT) {
-				if (isnan((double)nv->value) || isinf((double)nv->value)) { nv->value = 0;}
+				if (isnan((double)nv->value) || isinf((double)nv->value)) { 
+                    nv->value = 0;
+                }
 			}
 
 			// serialize output value
@@ -483,7 +487,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
                 str += sprintf(str, "null");        // Note that that "" is NOT null.
             }
 			else if (nv->valuetype == TYPE_INTEGER)	{
-				str += sprintf(str, "%1.0f", (double)nv->value);
+//				str += sprintf(str, "%1.0f", (double)nv->value);
+				str += sprintf(str, "%lu", nv->value_int);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{
 				uint32_t *v = (uint32_t*)&nv->value;
@@ -500,7 +505,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 				str += fntoa(str, nv->value, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
-				if (fp_FALSE(nv->value)) { 
+//				if (fp_FALSE(nv->value)) {
+				if (nv->value_int == false) {
                     str += sprintf(str, "false");
 				} else { 
                     str += sprintf(str, "true");
@@ -611,7 +617,7 @@ void json_print_response(uint8_t status)
 				}
 
 			} else if (nv_type == NV_TYPE_LINENUM) {		// kill line number echo if not enabled
-				if ((js.echo_json_linenum == false) || (fp_ZERO(nv->value))) { // do not report line# 0
+				if ((js.echo_json_linenum == false) || (nv->value_int)) { // do not report line# 0
 					nv->valuetype = TYPE_EMPTY;
 				}
 			}
@@ -624,7 +630,7 @@ void json_print_response(uint8_t status)
     	    if ((nv = nv->nx) == NULL) {                    //...or hit the NULL and overwrite the last element with the TID
 //			    rpt_exception(STAT_JSON_TOO_LONG, "stopped at TID");// report this as an exception
 			    rpt_exception(STAT_JSON_TOO_LONG);          // report this as an exception
-                nv->value = cs.txn_id;
+                nv->value_int = cs.txn_id;
                 strcpy(nv->token, "tid");
 			    nv->valuetype = TYPE_INTEGER;
                 nv->depth = 0;                              // always a top-level object
@@ -632,7 +638,8 @@ void json_print_response(uint8_t status)
         	    return;
     	    }
 	    }
-        nv->value = cs.txn_id;
+//        nv->value = cs.txn_id;
+        nv->value_int = cs.txn_id;
         strcpy(nv->token, "tid");
         nv->valuetype = TYPE_INTEGER;
         nv->depth = 0;                                      // always a top-level object
@@ -679,21 +686,29 @@ void json_print_response(uint8_t status)
 
 stat_t json_set_jv(nvObj_t *nv)
 {
-	if (nv->value > JV_VERBOSE)
+//	if (nv->value > JV_VERBOSE) {
+	if (nv->value_int > JV_VERBOSE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-	js.json_verbosity = nv->value;
+    }    
+	js.json_verbosity = nv->value_int;
 
 	js.echo_json_footer = false;
 	js.echo_json_messages = false;
 	js.echo_json_configs = false;
 	js.echo_json_linenum = false;
 	js.echo_json_gcode_block = false;
-
+/*
 	if (nv->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
 	if (nv->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
 	if (nv->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
 	if (nv->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
 	if (nv->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
+*/
+	if (nv->value_int >= JV_FOOTER) 	{ js.echo_json_footer = true;}
+	if (nv->value_int >= JV_MESSAGES)	{ js.echo_json_messages = true;}
+	if (nv->value_int >= JV_CONFIGS)	{ js.echo_json_configs = true;}
+	if (nv->value_int >= JV_LINENUM)	{ js.echo_json_linenum = true;}
+	if (nv->value_int >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
 
 	return(STAT_OK);
 }
