@@ -229,8 +229,9 @@ stat_t config_test_assertions()
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
  *  get_str()  - get value from stringp[] (no action required)
- *	get_ui8()  - get value as 8 bit uint8_t
- *	get_int()  - get value as 32 bit integer
+ *	get_ui8()  - get value as uint8_t
+ *	get_u16()  - get value as uint16_t 
+ *	get_u32()  - get value as uint32_t
  *	get_data() - get value as 32 bit integer blind cast
  *	get_flt()  - get value as float
  *	get_format() - internal accessor for printf() format string
@@ -249,19 +250,23 @@ stat_t get_str(nvObj_t *nv)
 
 stat_t get_ui8(nvObj_t *nv)
 {
-//    return (get_int(nv));
-//	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
 	nv->value_int = *((uint8_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t get_int(nvObj_t *nv)
+stat_t get_u16(nvObj_t *nv)
 {
-//	nv->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
-	nv->value_int = *((uint32_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((uint16_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
+}
+
+stat_t get_u32(nvObj_t *nv)
+{
+    nv->value_int = *((uint32_t *)GET_TABLE_WORD(target));
+    nv->valuetype = TYPE_INTEGER;
+    return (STAT_OK);
 }
 
 stat_t get_data(nvObj_t *nv)
@@ -285,12 +290,12 @@ stat_t get_flt(nvObj_t *nv)
 /* Generic sets()
  *	set_nul()   - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
  *	set_not()   - set nothing (returns STAT_OK)
- *	set_ui8()   - set value as 8 bit uint8_t value
+ *	set_ui8()   - set value as uint8_t value
+ *	set_u16()   - set value as uint16 value
+ *	set_u32()   - set value as uint32 value
  *	set_01()    - set a 0 or 1 uint8_t value with validation
  *	set_012()   - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123()  - set a 0, 1, 2 or 3 uint8_t value with validation
- *	set_int16() - set value as 16 bit integer
- *	set_int32() - set value as 32 bit integer
  *	set_data()  - set value as 32 bit integer blind cast
  *	set_flt()   - set value as float
  */
@@ -309,28 +314,20 @@ stat_t set_int(nvObj_t *nv)
 
 stat_t set_ui8(nvObj_t *nv)
 {
-//    return (set_int(nv));
-//	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
 	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
-stat_t set_int16(nvObj_t *nv)
+stat_t set_u16(nvObj_t *nv)
 {
-//	nv->value = 0;  // clears the entire value as next line only fills
-//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
-//	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value_int;
 	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
-stat_t set_int32(nvObj_t *nv)
+stat_t set_u32(nvObj_t *nv)
 {
-//    return (set_int(nv));
-//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
-//    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
     *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t )nv->value_int;
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);

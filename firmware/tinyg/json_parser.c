@@ -374,7 +374,6 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
 		if (strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x') {
-//			uint32_t *v = (uint32_t*)&nv->value;
 			uint32_t *v = (uint32_t*)&nv->value_flt;
 			*v = strtoul((const char *)*pstr, 0L, 0);
 			nv->valuetype = TYPE_DATA;
@@ -385,11 +384,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	// boolean true/false
 	} else if (**pstr == 't') {
 		nv->valuetype = TYPE_BOOL;
-//		nv->value = true;
 		nv->value_int = true;
 	} else if (**pstr == 'f') {
 		nv->valuetype = TYPE_BOOL;
-//		nv->value = false;
 		nv->value_int = false;
 
 	// arrays (not supported on input)
@@ -478,9 +475,7 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 
 			// check for illegal float values
 			if (nv->valuetype == TYPE_FLOAT) {
-//				if (isnan((double)nv->value) || isinf((double)nv->value)) { 
 				if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) {
-//                    nv->value = 0;
                     nv->value_flt = 0;
                 }
 			}
@@ -490,11 +485,9 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
                 str += sprintf(str, "null");        // Note that that "" is NOT null.
             }
 			else if (nv->valuetype == TYPE_INTEGER)	{
-//				str += sprintf(str, "%1.0f", (double)nv->value);
 				str += sprintf(str, "%lu", nv->value_int);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{
-//				uint32_t *v = (uint32_t*)&nv->value;
 				uint32_t *v = (uint32_t*)&nv->value_flt;
 				str += sprintf(str, "\"0x%lx\"", *v);
 			}
@@ -506,11 +499,9 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
             }
 			else if (nv->valuetype == TYPE_FLOAT)	{ 
                 preprocess_float(nv);
-//				str += fntoa(str, nv->value, nv->precision);
 				str += fntoa(str, nv->value_flt, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
-//				if (fp_FALSE(nv->value)) {
 				if (nv->value_int == false) {
                     str += sprintf(str, "false");
 				} else { 
@@ -643,7 +634,6 @@ void json_print_response(uint8_t status)
         	    return;
     	    }
 	    }
-//        nv->value = cs.txn_id;
         nv->value_int = cs.txn_id;
         strcpy(nv->token, "tid");
         nv->valuetype = TYPE_INTEGER;
@@ -691,7 +681,6 @@ void json_print_response(uint8_t status)
 
 stat_t json_set_jv(nvObj_t *nv)
 {
-//	if (nv->value > JV_VERBOSE) {
 	if (nv->value_int > JV_VERBOSE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }    
@@ -702,13 +691,7 @@ stat_t json_set_jv(nvObj_t *nv)
 	js.echo_json_configs = false;
 	js.echo_json_linenum = false;
 	js.echo_json_gcode_block = false;
-/*
-	if (nv->value >= JV_FOOTER) 	{ js.echo_json_footer = true;}
-	if (nv->value >= JV_MESSAGES)	{ js.echo_json_messages = true;}
-	if (nv->value >= JV_CONFIGS)	{ js.echo_json_configs = true;}
-	if (nv->value >= JV_LINENUM)	{ js.echo_json_linenum = true;}
-	if (nv->value >= JV_VERBOSE)	{ js.echo_json_gcode_block = true;}
-*/
+
 	if (nv->value_int >= JV_FOOTER) 	{ js.echo_json_footer = true;}
 	if (nv->value_int >= JV_MESSAGES)	{ js.echo_json_messages = true;}
 	if (nv->value_int >= JV_CONFIGS)	{ js.echo_json_configs = true;}

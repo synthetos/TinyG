@@ -187,7 +187,6 @@ typedef int16_t index_t;				// -1 is reserved for no find
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
-//#define NO_MATCH (index_t)-1
 #define NO_MATCH (index_t)0xFFFF
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
@@ -215,7 +214,6 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
 	TYPE_PARENT,					    // object is a parent to a sub-object (may also be a txt container)
-//    TYPE_SKIP                           // do not execute this object (used for tid)
 } valueType;
 
 /**** operations flags and shorthand ****/
@@ -259,7 +257,6 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
     union {
-//        float value;                    // float values
         float value_flt;                // float values
         uint32_t value_int;             // raw int values
     };
@@ -327,9 +324,9 @@ uint8_t nv_group_is_prefixed(char *group);
 // generic internal functions and accessors
 stat_t set_nul(nvObj_t *nv);				// set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
 stat_t set_not(nvObj_t *nv);				// set nothing (returns STAT_OK)
-stat_t set_ui8(nvObj_t *nv);				// set value as 8 bit integer
-stat_t set_int16(nvObj_t *nv);				// set value as 16 bit integer
-stat_t set_int32(nvObj_t *nv);				// set value as 32 bit integer
+stat_t set_ui8(nvObj_t *nv);				// set value as uint8_t
+stat_t set_u16(nvObj_t *nv);				// set value as uint16_t
+stat_t set_u32(nvObj_t *nv);				// set value as uint32_t
 stat_t set_01(nvObj_t *nv);					// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
@@ -339,8 +336,9 @@ stat_t set_flt(nvObj_t *nv);				// set floating point value
 stat_t get_nul(nvObj_t *nv);				// get null value type
 stat_t get_str(nvObj_t *nv);                // get stringp[] value
 stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
-stat_t get_int(nvObj_t *nv);				// get integer value
-stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast
+stat_t get_u16(nvObj_t *nv);				// get uint32_t value
+stat_t get_u32(nvObj_t *nv);				// get uint32_t value
+stat_t get_data(nvObj_t *nv);				// get uint32_t blind cast
 stat_t get_flt(nvObj_t *nv);				// get floating point value
 
 stat_t set_grp(nvObj_t *nv);				// set data for a group
