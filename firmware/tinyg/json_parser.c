@@ -374,7 +374,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 		// if string begins with 0x it might be data, needs to be at least 3 chars long
 		if (strlen(*pstr)>=3 && (*pstr)[0]=='0' && (*pstr)[1]=='x') {
-			uint32_t *v = (uint32_t*)&nv->value;
+//			uint32_t *v = (uint32_t*)&nv->value;
+			uint32_t *v = (uint32_t*)&nv->value_flt;
 			*v = strtoul((const char *)*pstr, 0L, 0);
 			nv->valuetype = TYPE_DATA;
 		} else {
@@ -477,8 +478,10 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 
 			// check for illegal float values
 			if (nv->valuetype == TYPE_FLOAT) {
-				if (isnan((double)nv->value) || isinf((double)nv->value)) { 
-                    nv->value = 0;
+//				if (isnan((double)nv->value) || isinf((double)nv->value)) { 
+				if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) {
+//                    nv->value = 0;
+                    nv->value_flt = 0;
                 }
 			}
 
@@ -491,7 +494,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 				str += sprintf(str, "%lu", nv->value_int);
 			}
 			else if (nv->valuetype == TYPE_DATA)	{
-				uint32_t *v = (uint32_t*)&nv->value;
+//				uint32_t *v = (uint32_t*)&nv->value;
+				uint32_t *v = (uint32_t*)&nv->value_flt;
 				str += sprintf(str, "\"0x%lx\"", *v);
 			}
 			else if (nv->valuetype == TYPE_STRING)	{
@@ -502,7 +506,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
             }
 			else if (nv->valuetype == TYPE_FLOAT)	{ 
                 preprocess_float(nv);
-				str += fntoa(str, nv->value, nv->precision);
+//				str += fntoa(str, nv->value, nv->precision);
+				str += fntoa(str, nv->value_flt, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
 //				if (fp_FALSE(nv->value)) {

@@ -376,7 +376,9 @@ stat_t cm_deferred_write_callback()
 {
 	if ((cm.cycle_state == CYCLE_OFF) && (cm.deferred_write_flag == true)) {
 #ifdef __AVR
-		if (xio_isbusy()) return (STAT_OK);		// don't write back if serial RX is not empty
+		if (xio_isbusy()) {
+            return (STAT_OK);		// don't write back if serial RX is not empty
+        }        
 #endif
 		cm.deferred_write_flag = false;
 		nvObj_t nv;
@@ -384,7 +386,8 @@ stat_t cm_deferred_write_callback()
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				nv.index = nv_get_index((const char *)"", nv.token);
-				nv.value = cm.offset[i][j];
+//				nv.value = cm.offset[i][j];
+				nv.value_flt = cm.offset[i][j];
 				nv_persist(&nv);				// Note: only writes values that have changed
 			}
 		}

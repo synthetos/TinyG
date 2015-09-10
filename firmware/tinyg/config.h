@@ -187,7 +187,8 @@ typedef int16_t index_t;				// -1 is reserved for no find
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
-#define NO_MATCH (index_t)-1
+//#define NO_MATCH (index_t)-1
+#define NO_MATCH (index_t)0xFFFF
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
 
@@ -258,7 +259,7 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
     union {
-        float value;                    // float values
+//        float value;                    // float values
         float value_flt;                // float values
         uint32_t value_int;             // raw int values
     };

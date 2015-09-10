@@ -128,7 +128,8 @@ void config_init()
 
 	read_persistent_value(nv);
 //	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
-	if (fp_NE(nv->value, cs.fw_build)) {        // case (1) NVM is not setup or not in revision
+//	if (fp_NE(nv->value, cs.fw_build)) {        // case (1) NVM is not setup or not in revision
+	if (fp_NE(nv->value_flt, cs.fw_build)) {    // case (1) NVM is not setup or not in revision
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
@@ -136,6 +137,13 @@ void config_init()
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
 				read_persistent_value(nv);
+/*
+                if (GET_TABLE_BYTE(flags) & F_FLOAT) {
+                    nv->valuetype = TYPE_FLOAT;
+                } else {
+                    nv->valuetype = TYPE_INTEGER;
+                }
+*/
 				nv_set(nv);
 			}
 		}
@@ -157,9 +165,10 @@ static void _set_defa(nvObj_t *nv)
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-    		nv->value = GET_TABLE_FLOAT(default_value); // get default as float
-    		if (!(GET_TABLE_BYTE(flags) & F_FLOAT)) {
-                nv->value_int = (uint32_t)nv->value;    // cast in place to int if required
+//    		nv->value = GET_TABLE_FLOAT(default_value); // get default as float
+    		nv->value_flt = GET_TABLE_FLOAT(default_value); // get default as float
+            if (!(GET_TABLE_BYTE(flags) & F_FLOAT)) {
+                nv->value_int = (uint32_t)nv->value_flt;    // cast in place to int if required
                 nv->valuetype = TYPE_INTEGER;
             } else {
                 nv->valuetype = TYPE_FLOAT;
@@ -257,7 +266,8 @@ stat_t get_int(nvObj_t *nv)
 
 stat_t get_data(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+//	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	*v = *((uint32_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_DATA;
 	return (STAT_OK);
@@ -265,7 +275,8 @@ stat_t get_data(nvObj_t *nv)
 
 stat_t get_flt(nvObj_t *nv)
 {
-	nv->value = *((float *)GET_TABLE_WORD(target));
+//	nv->value = *((float *)GET_TABLE_WORD(target));
+	nv->value_flt = *((float *)GET_TABLE_WORD(target));
 	nv->precision = (int8_t)GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -295,11 +306,12 @@ stat_t set_int(nvObj_t *nv)
     return(STAT_OK);
 }
 */
+
 stat_t set_ui8(nvObj_t *nv)
 {
 //    return (set_int(nv));
 //	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
-	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value_int;
+	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
@@ -309,7 +321,7 @@ stat_t set_int16(nvObj_t *nv)
 //	nv->value = 0;  // clears the entire value as next line only fills
 //	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
 //	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value_int;
-	*((uint16_t *)GET_TABLE_WORD(target)) = nv->value_int;
+	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
 	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
@@ -319,7 +331,7 @@ stat_t set_int32(nvObj_t *nv)
 //    return (set_int(nv));
 //    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
 //    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value_int;
-    *((uint32_t *)GET_TABLE_WORD(target)) = nv->value_int;
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t )nv->value_int;
     nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
@@ -353,7 +365,8 @@ stat_t set_0123(nvObj_t *nv)
 
 stat_t set_data(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+//	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	*((uint32_t *)GET_TABLE_WORD(target)) = *v;
 	nv->valuetype = TYPE_DATA;
 	return(STAT_OK);
@@ -361,7 +374,8 @@ stat_t set_data(nvObj_t *nv)
 
 stat_t set_flt(nvObj_t *nv)
 {
-	*((float *)GET_TABLE_WORD(target)) = nv->value;
+//	*((float *)GET_TABLE_WORD(target)) = nv->value;
+	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
@@ -701,7 +715,8 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 		}
 		strcpy(nv->token, token);
 		float *v = (float*)&value;
-		nv->value = *v;
+//		nv->value = *v;
+		nv->value_flt = *v;
 		nv->valuetype = TYPE_DATA;
 		return (nv);
 	}
@@ -717,7 +732,8 @@ nvObj_t *nv_add_float(const char *token, const float value)	// add a float objec
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
-		nv->value = value;
+//		nv->value = value;
+		nv->value_flt = value;
 		nv->valuetype = TYPE_FLOAT;
 		return (nv);
 	}
@@ -791,7 +807,8 @@ void nv_dump_nv(nvObj_t *nv)
 			 nv->depth,
 			 nv->valuetype,
 			 nv->precision,
-			 (double)nv->value,
+//			 (double)nv->value,
+			 (double)nv->value_flt,
 			 nv->group,
 			 nv->token,
 			 (char *)nv->stringp);

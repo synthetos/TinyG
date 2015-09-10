@@ -107,8 +107,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// dynamic model attributes for reporting purposes (up front for speed)
 //	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
-	{ "",   "n",   _fi, 0, cm_print_line, get_int,     set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
-	{ "",   "line",_fi, 0, cm_print_line, cm_get_line, set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
+	{ "",   "n",   _f0, 0, cm_print_line, get_int,     set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
+	{ "",   "line",_f0, 0, cm_print_line, cm_get_line, set_int32,(uint32_t *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
 	{ "",   "vel", _ff, 2, cm_print_vel,  cm_get_vel,  set_nul,(uint32_t *)&cs.null, 0 },			// current velocity
 	{ "",   "feed",_ff, 2, cm_print_feed, cm_get_feed, set_nul,(uint32_t *)&cs.null, 0 },			// feed rate
 	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(uint32_t *)&cs.null, 0 },			// combined machine state
@@ -728,9 +728,11 @@ uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GRO
 stat_t set_flu(nvObj_t *nv)
 {
 	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
-		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
+//		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
+		nv->value_flt *= MM_PER_INCH;					// convert to canonical millimeter units
 	}
-	*((float *)GET_TABLE_WORD(target)) = nv->value;	// write value as millimeters or degrees
+//	*((float *)GET_TABLE_WORD(target)) = nv->value;	// write value as millimeters or degrees
+	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;	// write value as millimeters or degrees
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
@@ -742,10 +744,12 @@ stat_t set_flu(nvObj_t *nv)
 
 void preprocess_float(nvObj_t *nv)
 {
-	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
+//	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
+	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) return; // illegal float values
 	if (GET_TABLE_BYTE(flags) & F_CONVERT) {		// unit conversion required?
 		if (cm_get_units_mode(MODEL) == INCHES) {
-			nv->value *= INCHES_PER_MM;
+//			nv->value *= INCHES_PER_MM;
+			nv->value_flt *= INCHES_PER_MM;
 		}
 	}
 }
@@ -847,7 +851,8 @@ static stat_t _do_all(nvObj_t *nv)	// print all parameters
 
 static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 {
-	if (fp_NOT_ZERO(nv->value)) {
+//	if (fp_NOT_ZERO(nv->value)) {
+	if (nv->value_int == true) {
 		(void)xio_ctrl(XIO_DEV_USB, yes);
 	} else {
 		(void)xio_ctrl(XIO_DEV_USB, no);
@@ -857,25 +862,34 @@ static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 
 static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
 {
-	if (nv->value > true)
+//	if (nv->value > true)
+	if (nv->value_int > true) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-	xio.enable_cr = (uint8_t)nv->value;
+    }    
+//	xio.enable_cr = (uint8_t)nv->value;
+	xio.enable_cr = nv->value_int;
 	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
 static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 {
-	if (nv->value > true)
+//	if (nv->value > true)
+    if (nv->value_int > true) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-	xio.enable_echo = (uint8_t)nv->value;
+    }    
+//	xio.enable_echo = (uint8_t)nv->value;
+	xio.enable_echo = nv->value_int;
 	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
 static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 {
-	if (nv->value > FLOW_CONTROL_RTS)
+//	if (nv->value > FLOW_CONTROL_RTS)
+	if (nv->value_int > FLOW_CONTROL_RTS) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-	xio.enable_flow_control = (uint8_t)nv->value;
+    }
+//	xio.enable_flow_control = (uint8_t)nv->value;
+	xio.enable_flow_control = nv->value_int;
 	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
 
@@ -883,15 +897,18 @@ static stat_t get_rx(nvObj_t *nv)
 {
 #ifdef __AVR
     if (xio.rx_mode == RX_MODE_CHAR) {
-	    nv->value = (float)xio_get_usb_rx_free();
+//	    nv->value = (float)xio_get_usb_rx_free();
+	    nv->value_int = xio_get_usb_rx_free();
     } else {
-	    nv->value = (float)xio_get_line_buffers_available();
+//	    nv->value = (float)xio_get_line_buffers_available();
+	    nv->value_int = xio_get_line_buffers_available();
     }
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 #ifdef __ARM
-	nv->value = (float)254;				// ARM always says the serial buffer is available (max)
+//	nv->value = (float)254;				// ARM always says the serial buffer is available (max)
+	nv->value_int = 254;				// ARM always says the serial buffer is available (max)
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
@@ -926,7 +943,8 @@ static const char *const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2,
 
 static stat_t set_baud(nvObj_t *nv)
 {
-	uint8_t baud = (uint8_t)nv->value;
+//	uint8_t baud = (uint8_t)nv->value;
+	uint8_t baud = nv->value_int;
 	if ((baud < 1) || (baud > 6)) {
 		nv_add_conditional_message((const char *)"*** WARNING *** Unsupported baud rate specified");
 //		nv_add_conditional_message(PSTR("*** WARNING *** Unsupported baud rate specified"));

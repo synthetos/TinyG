@@ -237,8 +237,10 @@ stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 
 stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 {
-	if (nv->value > SW_MODE_MAX_VALUE)
+//	if (nv->value > SW_MODE_MAX_VALUE) {
+	if (nv->value_int > SW_MODE_MAX_VALUE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	set_ui8(nv);
 	switch_init();
 	return (STAT_OK);

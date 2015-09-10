@@ -129,7 +129,8 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    }
 	    if (GET_TABLE_BYTE(flags) & F_FLOAT) {      // copy value as float
 		    str = ++rd;
-		    nv->value = strtof(str, &rd);           // rd used as end pointer
+//		    nv->value = strtof(str, &rd);           // rd used as end pointer
+		    nv->value_flt = strtof(str, &rd);           // rd used as end pointer
 		    nv->valuetype = TYPE_FLOAT;
 	    } else {                                    // copy value as integer
 		    str = ++rd;
@@ -330,14 +331,16 @@ void text_print_int(nvObj_t *nv, const char *format)
 void text_print_flt(nvObj_t *nv, const char *format) 
 { 
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->value);
+//    sprintf_P(msg, format, nv->value);
+    sprintf_P(msg, format, nv->value_flt);
     text_finalize_message(msg);
 }
 
 void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->value, units);
+//    sprintf_P(msg, format, nv->value, units);
+    sprintf_P(msg, format, nv->value_flt, units);
     text_finalize_message(msg);
 }
 
