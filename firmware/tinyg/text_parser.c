@@ -129,7 +129,6 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    }
 	    if (GET_TABLE_BYTE(flags) & F_FLOAT) {      // copy value as float
 		    str = ++rd;
-//		    nv->value = strtof(str, &rd);           // rd used as end pointer
 		    nv->value_flt = strtof(str, &rd);           // rd used as end pointer
 		    nv->valuetype = TYPE_FLOAT;
 	    } else {                                    // copy value as integer
@@ -195,15 +194,14 @@ void text_print_list(stat_t status, uint8_t flags)
 /*
 void text_print_inline_pairs(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value, nv->precision);
+								  fntoa(global_string_buf, nv->value_flt, nv->precision);
 								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
-//			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%lu"), nv->token, nv->value_int); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
@@ -217,15 +215,14 @@ void text_print_inline_pairs(nvObj_t *nv)
 
 void text_print_inline_values(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
 		switch (nv->valuetype) {
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value, nv->precision);
+								  fntoa(global_string_buf, nv->value_flt, nv->precision);
 								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
 								}
-//			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
 			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%lu"), nv->value_int); break;}
 			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
 			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
@@ -316,7 +313,6 @@ void text_print_str(nvObj_t *nv, const char *format)
 void text_print_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-//    sprintf_P(msg, format, (uint8_t)nv->value);
     sprintf_P(msg, format, (uint8_t)nv->value_int);
     text_finalize_message(msg);
 }
@@ -331,7 +327,6 @@ void text_print_int(nvObj_t *nv, const char *format)
 void text_print_flt(nvObj_t *nv, const char *format) 
 { 
     char msg[NV_MESSAGE_LEN];
-//    sprintf_P(msg, format, nv->value);
     sprintf_P(msg, format, nv->value_flt);
     text_finalize_message(msg);
 }
@@ -339,7 +334,6 @@ void text_print_flt(nvObj_t *nv, const char *format)
 void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
 {
     char msg[NV_MESSAGE_LEN];
-//    sprintf_P(msg, format, nv->value, units);
     sprintf_P(msg, format, nv->value_flt, units);
     text_finalize_message(msg);
 }

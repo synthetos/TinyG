@@ -721,17 +721,15 @@ uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GRO
  *
  * The number 'setted' will have been delivered in external units (inches or mm).
  * It is written to the target memory location in internal canonical units (mm).
- * The original nv->value is also changed so persistence works correctly.
+ * The original nv->value_flt is also changed so persistence works correctly.
  * Displays should convert back from internal canonical form to external form.
  */
 
 stat_t set_flu(nvObj_t *nv)
 {
 	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
-//		nv->value *= MM_PER_INCH;					// convert to canonical millimeter units
 		nv->value_flt *= MM_PER_INCH;					// convert to canonical millimeter units
 	}
-//	*((float *)GET_TABLE_WORD(target)) = nv->value;	// write value as millimeters or degrees
 	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;	// write value as millimeters or degrees
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -744,11 +742,9 @@ stat_t set_flu(nvObj_t *nv)
 
 void preprocess_float(nvObj_t *nv)
 {
-//	if (isnan((double)nv->value) || isinf((double)nv->value)) return; // illegal float values
 	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) return; // illegal float values
 	if (GET_TABLE_BYTE(flags) & F_CONVERT) {		// unit conversion required?
 		if (cm_get_units_mode(MODEL) == INCHES) {
-//			nv->value *= INCHES_PER_MM;
 			nv->value_flt *= INCHES_PER_MM;
 		}
 	}
@@ -851,7 +847,6 @@ static stat_t _do_all(nvObj_t *nv)	// print all parameters
 
 static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 {
-//	if (fp_NOT_ZERO(nv->value)) {
 	if (nv->value_int != 0) {
 		(void)xio_ctrl(XIO_DEV_USB, yes);
 	} else {
@@ -862,33 +857,27 @@ static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 
 static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
 {
-//	if (nv->value > true)
 	if (nv->value_int > true) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
-//	xio.enable_cr = (uint8_t)nv->value;
+    }
 	xio.enable_cr = (uint8_t)nv->value_int;     // the cast is required to prevent neighbors from being clobbered
 	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
 static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 {
-//	if (nv->value > true)
     if (nv->value_int > true) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
-//	xio.enable_echo = (uint8_t)nv->value;
+    }
 	xio.enable_echo = (uint8_t)nv->value_int;   // the cast is required
 	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
 static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 {
-//	if (nv->value > FLOW_CONTROL_RTS)
 	if (nv->value_int > FLOW_CONTROL_RTS) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-//	xio.enable_flow_control = (uint8_t)nv->value;
 	xio.enable_flow_control = (uint8_t)nv->value_int; // the cast is required
 	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
@@ -897,17 +886,14 @@ static stat_t get_rx(nvObj_t *nv)
 {
 #ifdef __AVR
     if (xio.rx_mode == RX_MODE_CHAR) {
-//	    nv->value = (float)xio_get_usb_rx_free();
 	    nv->value_int = xio_get_usb_rx_free();
     } else {
-//	    nv->value = (float)xio_get_line_buffers_available();
 	    nv->value_int = xio_get_line_buffers_available();
     }
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 #endif
 #ifdef __ARM
-//	nv->value = (float)254;				// ARM always says the serial buffer is available (max)
 	nv->value_int = 254;				// ARM always says the serial buffer is available (max)
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
@@ -943,7 +929,6 @@ static const char *const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2,
 
 static stat_t set_baud(nvObj_t *nv)
 {
-//	uint8_t baud = (uint8_t)nv->value;
 	uint8_t baud = nv->value_int;
 	if ((baud < 1) || (baud > 6)) {
 		nv_add_conditional_message((const char *)"*** WARNING *** Unsupported baud rate specified");
@@ -982,15 +967,7 @@ static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=char_mode,1=l
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
-/*
-void cfg_print_ec(nvObj_t *nv) { text_print_ui8(nv, fmt_ec);}
-void cfg_print_ee(nvObj_t *nv) { text_print_ui8(nv, fmt_ee);}
-void cfg_print_ex(nvObj_t *nv) { text_print_ui8(nv, fmt_ex);}
-void cfg_print_rxm(nvObj_t *nv) { text_print_ui8(nv, fmt_rxm);}
-void cfg_print_baud(nvObj_t *nv) { text_print_ui8(nv, fmt_baud);}
-void cfg_print_net(nvObj_t *nv) { text_print_ui8(nv, fmt_net);}
-void cfg_print_rx(nvObj_t *nv) { text_print_ui8(nv, fmt_rx);}
-*/
+
 void cfg_print_ec(nvObj_t *nv) { text_print(nv, fmt_ec);}
 void cfg_print_ee(nvObj_t *nv) { text_print(nv, fmt_ee);}
 void cfg_print_ex(nvObj_t *nv) { text_print(nv, fmt_ex);}

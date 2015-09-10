@@ -1593,7 +1593,6 @@ static int8_t _get_axis_type(const index_t index)
 
 stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value)
 {
-//	nv->value = (float)value;
 	nv->value_int = value;
 	nv->valuetype = TYPE_INTEGER;
 	return(nv_copy_string(nv, (const char *)GET_TEXT_ITEM(msg_array, value)));
@@ -1616,7 +1615,6 @@ stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_fe
 
 stat_t cm_get_toolv(nvObj_t *nv)
 {
-//	nv->value = (float)cm_get_tool(ACTIVE_MODEL);
 	nv->value_int = cm_get_tool(ACTIVE_MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
@@ -1624,7 +1622,6 @@ stat_t cm_get_toolv(nvObj_t *nv)
 
 stat_t cm_get_mline(nvObj_t *nv)
 {
-//	nv->value = (float)cm_get_linenum(MODEL);
 	nv->value_int = cm_get_linenum(MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
@@ -1632,7 +1629,6 @@ stat_t cm_get_mline(nvObj_t *nv)
 
 stat_t cm_get_line(nvObj_t *nv)
 {
-//	nv->value = (float)cm_get_linenum(ACTIVE_MODEL);
 	nv->value_int = cm_get_linenum(ACTIVE_MODEL);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
@@ -1699,18 +1695,19 @@ stat_t cm_get_ofs(nvObj_t *nv)
 stat_t cm_get_am(nvObj_t *nv)
 {
 	get_ui8(nv);
-//	return(_get_msg_helper(nv, msg_am, nv->value));
 	return(_get_msg_helper(nv, msg_am, nv->value_int));
 }
 
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
-//		if (nv->value > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { 
+            return (STAT_INPUT_EXCEEDS_MAX_VALUE);
+        }
 	} else {
-//		if (nv->value > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
+		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { 
+            return (STAT_INPUT_EXCEEDS_MAX_VALUE);
+        }
 	}
 	set_ui8(nv);
 	return(STAT_OK);
@@ -1778,7 +1775,6 @@ stat_t cm_run_qf(nvObj_t *nv)
 
 stat_t cm_run_home(nvObj_t *nv)
 {
-//	if (fp_TRUE(nv->value)) { cm_homing_cycle_start();}
 	if (nv->value_int == true) { 
         cm_homing_cycle_start();
     }
@@ -1978,7 +1974,6 @@ static const char fmt_cpos[] PROGMEM = "[%s%s] %s %s position%18.3f%s\n";
 static void _print_axis_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-//	sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
 	sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_int);
     text_finalize_message(msg);
 

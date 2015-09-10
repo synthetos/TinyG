@@ -59,7 +59,6 @@
  */
 uint8_t run_test(nvObj_t *nv)
 {
-//	switch ((uint8_t)nv->value) {
 	switch (nv->value_int) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
@@ -85,7 +84,6 @@ uint8_t run_test(nvObj_t *nv)
 		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
 #endif
 		default: {
-//			fprintf_P(stderr,PSTR("Test #%d not found\n"),(uint8_t)nv->value);
 			fprintf_P(stderr,PSTR("Test #%d not found\n"),nv->value_int);
 			return (STAT_ERROR);
 		}

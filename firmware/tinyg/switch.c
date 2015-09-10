@@ -237,7 +237,6 @@ stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 
 stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 {
-//	if (nv->value > SW_MODE_MAX_VALUE) {
 	if (nv->value_int > SW_MODE_MAX_VALUE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
@@ -258,7 +257,7 @@ static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 void sw_print_st(nvObj_t *nv) { text_print(nv, fmt_st);}
 
 //static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
-//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, (uint8_t)nv->value);}
+//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, nv->value_int);}
 
 /*
 static const char msg_sw0[] PROGMEM = "Disabled";

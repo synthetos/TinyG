@@ -223,12 +223,10 @@ stat_t hw_run_boot(nvObj_t *nv)
  */
 stat_t hw_set_hv(nvObj_t *nv)
 {
-//	if (nv->value > TINYG_HARDWARE_VERSION_MAX)
 	if (nv->value_flt > TINYG_HARDWARE_VERSION_MAX) {
         return (STAT_INPUT_EXCEEDS_MAX_VALUE);
     }    
 	set_flt(nv);					// record the hardware version
-//	_port_bindings(nv->value);		// reset port bindings
 	_port_bindings(nv->value_flt);	// reset port bindings
 	switch_init();					// re-initialize the GPIO ports
 //++++	gpio_init();				// re-initialize the GPIO ports
