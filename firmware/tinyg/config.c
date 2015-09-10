@@ -447,9 +447,9 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cs.comm_mode == TEXT_MODE)
+	if (cs.comm_mode == TEXT_MODE) {
         return (STAT_INVALID_OR_MALFORMED_COMMAND);
-
+    }    
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;

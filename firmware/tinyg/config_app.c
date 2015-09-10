@@ -852,7 +852,7 @@ static stat_t _do_all(nvObj_t *nv)	// print all parameters
 static stat_t _set_comm_helper(nvObj_t *nv, uint32_t yes, uint32_t no)
 {
 //	if (fp_NOT_ZERO(nv->value)) {
-	if (nv->value_int == true) {
+	if (nv->value_int != 0) {
 		(void)xio_ctrl(XIO_DEV_USB, yes);
 	} else {
 		(void)xio_ctrl(XIO_DEV_USB, no);
@@ -867,7 +867,7 @@ static stat_t set_ec(nvObj_t *nv) 				// expand CR to CRLF on TX
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }    
 //	xio.enable_cr = (uint8_t)nv->value;
-	xio.enable_cr = nv->value_int;
+	xio.enable_cr = (uint8_t)nv->value_int;     // the cast is required to prevent neighbors from being clobbered
 	return(_set_comm_helper(nv, XIO_CRLF, XIO_NOCRLF));
 }
 
@@ -878,7 +878,7 @@ static stat_t set_ee(nvObj_t *nv) 				// enable character echo
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }    
 //	xio.enable_echo = (uint8_t)nv->value;
-	xio.enable_echo = nv->value_int;
+	xio.enable_echo = (uint8_t)nv->value_int;   // the cast is required
 	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
@@ -889,7 +889,7 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 //	xio.enable_flow_control = (uint8_t)nv->value;
-	xio.enable_flow_control = nv->value_int;
+	xio.enable_flow_control = (uint8_t)nv->value_int; // the cast is required
 	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
 }
 
