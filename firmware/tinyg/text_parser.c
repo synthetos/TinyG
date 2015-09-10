@@ -60,6 +60,7 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
  *	- $x			display a group
  *	- ?				generate a status report (multiline format)
  */
+
 stat_t text_parser(char *str)
 {
 	nvObj_t *nv = nv_reset_nv_list("r");			// returns first object in the body
@@ -83,12 +84,13 @@ stat_t text_parser(char *str)
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser_kernal(str, nv));			// run the parser to decode the command
 	if ((nv->valuetype == TYPE_NULL) || (nv->valuetype == TYPE_PARENT)) {
-		if (nv_get(nv) == STAT_COMPLETE){			// populate value, group values, or run uber-group displays
+		if (nv_get(nv) == STAT_COMPLETE) {          // populate value, group values, or run uber-group displays
 			return (STAT_OK);						// return for uber-group displays so they don't print twice
 		}
 	} else { 										// process SET and RUN commands
-		if (cm.machine_state == MACHINE_ALARM)
+		if (cm.machine_state == MACHINE_ALARM) {
             return (STAT_MACHINE_ALARMED);
+        }        
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array
@@ -97,6 +99,15 @@ stat_t text_parser(char *str)
 	nv_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
 	return (status);
 }
+
+/*	_text_parser_kernal() - Parse the next statement and populate the command object (nvObj) with:
+ *    - nv->token
+ *    - nv->group       - group is captured if the token belogs to a group
+ *    - nv->index       - validates name token in the process
+ *    - nv->valuetype   - can only be TYPE_FLOAT or TYPE_INTEGER)
+ *    - nv->value_int or nv->value_flt
+ *    - nv-stringp      - receives a copy of the input string for use in later reporting
+ */
 
 static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 {
@@ -123,13 +134,13 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    }
 	} else {
 	    *rd = NUL;									// terminate at end of name
-	    strncpy(nv->token, str, TOKEN_LEN);         // copy to token
+	    strncpy(nv->token, str, TOKEN_LEN);         // write to token
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
     	    return (STAT_UNRECOGNIZED_NAME);
 	    }
 	    if (GET_TABLE_BYTE(flags) & F_FLOAT) {      // copy value as float
 		    str = ++rd;
-		    nv->value_flt = strtof(str, &rd);           // rd used as end pointer
+		    nv->value_flt = strtof(str, &rd);       // rd used as end pointer
 		    nv->valuetype = TYPE_FLOAT;
 	    } else {                                    // copy value as integer
 		    str = ++rd;

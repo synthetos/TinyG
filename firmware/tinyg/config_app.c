@@ -464,7 +464,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // special functions
 //	{ "", "txt", _f0, 0, tx_print_nul, get_str, get_str,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)
 	{ "", "txt", _f0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)
-	{ "", "tid", _fi, 0, tx_print_int, get_nul, set_not,  (uint32_t *)&cs.txn_id, 0 }, // Transaction id
+	{ "", "tid", _fi, 0, tx_print_int, get_u32, set_u32,  (uint32_t *)&cs.txn_id, 0 }, // Transaction id
 //	{ "", "tid", _fi, 0, tx_print_str, get_str, set_nul,  (uint32_t *)&cs.txn_id, 0 }, // Transaction id
 
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
@@ -742,7 +742,9 @@ stat_t set_flu(nvObj_t *nv)
 
 void preprocess_float(nvObj_t *nv)
 {
-	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) return; // illegal float values
+	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) { // illegal float values
+        return;
+    }    
 	if (GET_TABLE_BYTE(flags) & F_CONVERT) {		// unit conversion required?
 		if (cm_get_units_mode(MODEL) == INCHES) {
 			nv->value_flt *= INCHES_PER_MM;

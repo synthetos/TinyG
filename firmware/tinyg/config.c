@@ -135,6 +135,11 @@ void config_init()
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
 				read_persistent_value(nv);
+                if (GET_TABLE_BYTE(flags) & F_FLOAT) {
+                    nv->valuetype = TYPE_FLOAT;
+                } else {
+                    nv->valuetype = TYPE_INTEGER;
+                }
 				nv_set(nv);
 			}
 		}
@@ -292,21 +297,21 @@ stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
 stat_t set_ui8(nvObj_t *nv)
 {
 	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
-	nv->valuetype = TYPE_INTEGER;
+//	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_u16(nvObj_t *nv)
 {
 	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
-	nv->valuetype = TYPE_INTEGER;
+//	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_u32(nvObj_t *nv)
 {
     *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t )nv->value_int;
-    nv->valuetype = TYPE_INTEGER;
+ //   nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
 
