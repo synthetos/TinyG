@@ -43,7 +43,9 @@ jsSingleton_t js;
 /**** local scope stuff ****/
 
 //static stat_t _json_parser_kernal(nvObj_t **nv, char *str);
-static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr);
+//static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr);
+static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr);
+
 static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 static void _js_run_container_as_text (nvObj_t *nv, char *str);
 static stat_t _normalize_json_string(char *str, uint16_t size);
@@ -93,7 +95,7 @@ void json_parser(char *str)
     js.json_continuation = false;
     js.json_recursion_depth = 0;    
     nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
-	stat_t status = _json_parser_kernal(&nv, &str);
+	stat_t status = _json_parser_kernal(nv, &str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
@@ -130,7 +132,7 @@ static nvObj_t *_json_parser_execute(nvObj_t *nv)
  *  - exit on the next un-processed nv-pair or EMPTY
  */
 
-static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
+static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr)
 {
 	stat_t status;
 	int8_t depth;
@@ -143,37 +145,38 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
 
 	//---- parse the JSON string into the nv list ----//
 
-    do {    // read the character string
+    do { // read the character string
 
         // decode the next JSON name/value pair
         // returns if error or STAT_COMPLETE
-		if ((status = _get_nv_pair(*nv, pstr, &depth)) > STAT_EAGAIN) {
-			return (status);                            // erred out
+		if ((status = _get_nv_pair(nv, pstr, &depth)) > STAT_EAGAIN) {
+            if (status == STAT_NOOP) {return (STAT_OK);}// normal return
+			return (status);                            // error return
 		}
 		// perform operations on the group value
 		if (*group != NUL) {
-			strncpy((*nv)->group, group, GROUP_LEN);    // copy the parent's group to this child
+			strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
 		}
-		if ((nv_index_is_group((*nv)->index)) && (nv_group_is_prefixed((*nv)->token))) {
-			strncpy(group, (*nv)->token, GROUP_LEN);    // record the group ID
+		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
+			strncpy(group, nv->token, GROUP_LEN);       // record the group ID
 		}
         // Skip TIDs
-        if ((*nv)->index == nvl.tid_index) {
-            (*nv)->valuetype = TYPE_SKIP;
+        if (nv->index == nvl.tid_index) {
+            nv->valuetype = TYPE_SKIP;
         }
         // test and process container (txt)
-        if (nv_index_is_container((*nv)->index)) {
-            if (*(*(*nv)->stringp) == '{') {
-                char *tmp = *(*nv)->stringp;
+        if (nv_index_is_container(nv->index)) {
+            if (*(*nv->stringp) == '{') {
+                char *tmp = *nv->stringp;
                 _json_parser_kernal(nv, &tmp);          // call JSON parser recursively
             } else {
-                _js_run_container_as_text(*nv, *(*nv)->stringp);
+                _js_run_container_as_text(nv, *nv->stringp);
                 continue;
             }
         }
-        *nv = _json_parser_execute(*nv);
+        nv = _json_parser_execute(nv);
 
-    } while ((*nv)->nx != NULL);                        // this test is a safety valve
+    } while (nv->nx != NULL);                           // this test is a safety valve
 
     return (STAT_OK);
 }
@@ -277,7 +280,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  *  RETURNS:
  *    - STAT_EAGAIN     a valid NV pair was returned and there is more to parse
  *    - STAT_OK         a valid NV pair was returned and there is no more to parse
- *    - STAT_COMPLETE   there was nothing to parse
+ *    - STAT_NOOP       there was nothing to parse
  *    - STAT_xxxx       a parsing error occurred
  */
 /*	RELAXED RULES
@@ -302,7 +305,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
     //--- Test for end of data - indicated by garbage or a null ---//
 	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
-        return (STAT_COMPLETE);
+        return (STAT_NOOP);
     }
 
 	nv_reset_nv(nv);							// wipe the object and sets the depth
@@ -437,7 +440,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         return (STAT_EAGAIN);                   // signal that there is more to parse
     }
 	(*pstr)++;
-	return (STAT_OK);							// signal this is the last pair; parsing is complete
+	return (STAT_OK);						// signal this is the last pair; parsing is complete
 }
 
 /****************************************************************************
