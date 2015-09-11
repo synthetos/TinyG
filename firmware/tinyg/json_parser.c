@@ -157,17 +157,15 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
 		if ((nv_index_is_group((*nv)->index)) && (nv_group_is_prefixed((*nv)->token))) {
 			strncpy(group, (*nv)->token, GROUP_LEN);    // record the group ID
 		}
-        
+        // Skip TIDs
+        if ((*nv)->index == nvl.tid_index) {
+            (*nv)->valuetype = TYPE_SKIP;
+        }
         // test and process container (txt)
         if (nv_index_is_container((*nv)->index)) {
             if (*(*(*nv)->stringp) == '{') {
                 char *tmp = *(*nv)->stringp;
-                _json_parser_kernal(nv, &tmp); // call JSON parser recursively
-//                ritorno(_json_parser_kernal(nv, &tmp)); // call JSON parser recursively
-//              ritorno(_json_parser_kernal(nv, &(*(*nv)->stringp))); // DFW - huh?
-//                *nv = _json_parser_execute(*nv);
-//                js.json_recursion_depth--;
-//                break;
+                _json_parser_kernal(nv, &tmp);          // call JSON parser recursively
             } else {
                 _js_run_container_as_text(*nv, *(*nv)->stringp);
                 continue;
@@ -175,7 +173,7 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
         }
         *nv = _json_parser_execute(*nv);
 
-    } while ((*nv)->nx != NULL);
+    } while ((*nv)->nx != NULL);                        // this test is a safety valve
 
     return (STAT_OK);
 }
@@ -297,29 +295,28 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
 	uint8_t i;
 	char *end;
-	char leaders[] = {"{,\""};				// open curly, quote and leading comma
+	char leaders[] = {"{,\""};				    // open curly, quote and leading comma
 	char separators[] = {":\""};				// colon and quote
-	char terminators[] = {"},\""};			// close curly, comma and quote
-	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
-
-	nv_reset_nv(nv);							// wipes the object and sets the depth
+	char terminators[] = {"},\""};			    // close curly, comma and quote
+	char value[] = {"{\".-+"};				    // open curly, quote, period, minus and plus
 
     //--- Test for end of data - indicated by garbage or a null ---//
 	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
         return (STAT_COMPLETE);
     }
 
+	nv_reset_nv(nv);							// wipe the object and sets the depth
+
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
 	char * name = *pstr;
 	for (i=0; true; i++, (*pstr)++) {
-		if (strchr(leaders, (int)**pstr) == NULL) { 		// find leading character of name
+		if (strchr(leaders, (int)**pstr) == NULL) { // find leading character of name
 			name = (*pstr)++;
 			break;
 		}
 		if (i == MAX_PAD_CHARS) {
-//            return (STAT_JSON_SYNTAX_ERROR);
-            return (STAT_ERROR_114);
+            return (STAT_JSON_SYNTAX_ERROR);
         }        
 	}
 
@@ -327,12 +324,11 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(separators, (int)**pstr) != NULL) {
 			*(*pstr)++ = NUL;
-			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
+			strncpy(nv->token, name, TOKEN_LEN+1);  // copy the string to the token
 			break;
 		}
 		if (i == MAX_NAME_CHARS) {
-//            return (STAT_JSON_SYNTAX_ERROR);
-            return (STAT_ERROR_115);
+            return (STAT_JSON_SYNTAX_ERROR);
         }        
 	}
 
@@ -348,8 +344,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		if (isalnum((int)**pstr)) { break; }
 		if (strchr(value, (int)**pstr) != NULL) { break; }
 		if (i == MAX_PAD_CHARS) {
-//            return (STAT_JSON_SYNTAX_ERROR);
-            return (STAT_ERROR_116);
+            return (STAT_JSON_SYNTAX_ERROR);
         }        
 	}
 
@@ -387,8 +382,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         char *wr = (*pstr);                     // write pointer for string manipulation
 	    for (i=0; true; i++, (*pstr)++, wr++) {
     	    if (i == NV_MESSAGE_LEN) {
-//        	    return (STAT_JSON_SYNTAX_ERROR);
-                return (STAT_ERROR_117);
+        	    return (STAT_JSON_SYNTAX_ERROR);
     	    }
             if ((*(*pstr) == '\\') && *((*pstr)+1) == '\"') { // escaped quote
                 *wr = '\"';
@@ -428,14 +422,12 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 	// general error condition
 	} else {
-//        return (STAT_JSON_SYNTAX_ERROR);	    // ill-formed JSON
-        return (STAT_ERROR_118);
+        return (STAT_JSON_SYNTAX_ERROR);	    // ill-formed JSON
     }
 
 	// process comma separators and end curlies
 	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
-//		return (STAT_JSON_SYNTAX_ERROR);
-        return (STAT_ERROR_119);
+		return (STAT_JSON_SYNTAX_ERROR);
 	}
 	if (**pstr == '}') {
 		*depth -= 1;							    // pop up a nesting level
