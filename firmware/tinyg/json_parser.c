@@ -144,10 +144,9 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
 	//---- parse the JSON string into the nv list ----//
 
     do {    // read the character string
-//    for (; *nv!=NULL; *nv=(*nv)->nx) {
-//    for (; (*nv)->valuetype!=TYPE_EMPTY; *nv=(*nv)->nx) {
 
         // decode the next JSON name/value pair
+        // returns if error or STAT_COMPLETE
 		if ((status = _get_nv_pair(*nv, pstr, &depth)) > STAT_EAGAIN) {
 			return (status);                            // erred out
 		}
@@ -163,16 +162,12 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
         if (nv_index_is_container((*nv)->index)) {
             if (*(*(*nv)->stringp) == '{') {
                 char *tmp = *(*nv)->stringp;
-                ritorno(_json_parser_kernal(nv, &tmp)); // call JSON parser recursively
+                _json_parser_kernal(nv, &tmp); // call JSON parser recursively
+//                ritorno(_json_parser_kernal(nv, &tmp)); // call JSON parser recursively
 //              ritorno(_json_parser_kernal(nv, &(*(*nv)->stringp))); // DFW - huh?
-//                break;
-//                _json_parser_execute(*nv);               // execute the JSON NV pair
+//                *nv = _json_parser_execute(*nv);
 //                js.json_recursion_depth--;
-//                while ((*nv = (*nv)->nx) != NULL) {      // position to first free NV pair
-//                    if ((*nv)->valuetype == TYPE_EMPTY) {
-//                        break;
-//                    }
-//                }
+//                break;
             } else {
                 _js_run_container_as_text(*nv, *(*nv)->stringp);
                 continue;
@@ -184,44 +179,6 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr)
 
     return (STAT_OK);
 }
-/*
-	//---- execute the command(s) from the main line and txt container (if present) ----//
-
-//    for (uint8_t i=0; i<NV_BODY_LEN; i++, nr=nr->nx) {
-    for (; nr->nx!=NULL; nr=nr->nx) {
-        if (nr->valuetype == TYPE_EMPTY) {          // end NV execution
-            break; 
-        }
-        if (nr->valuetype == TYPE_NULL) {           // GET the value
-            ritorno(nv_get(nr));                    // ritorno returns w/status on any errors
-        } else {
-            if (cm.machine_state == MACHINE_ALARM) {
-                return (STAT_MACHINE_ALARMED);
-            }
-            ritorno(nv_set(nr));                    // SET value or call a function (e.g. gcode)
-            nv_persist(nr);
-        }
-    }
-    return (STAT_OK);                               // only successful commands exit through this point
-
-	*nv = nv_body;
-    for (uint8_t i=0; i<NV_BODY_LEN; i++, *nv=(*nv)->nx) {
-        if ((*nv)->valuetype == TYPE_EMPTY) { break; }     // end the loop
-        if ((*nv)->valuetype == TYPE_SKIP) { continue; }   // skip over tids
-
-	    if ((*nv)->valuetype == TYPE_NULL) {        // GET the value
-		    ritorno(nv_get(*nv));                   // ritorno returns w/status on any errors
-        } else { 
-	        if (cm.machine_state == MACHINE_ALARM) {
-                return (STAT_MACHINE_ALARMED);
-            }        
-	        ritorno(nv_set(*nv));                   // SET value or call a function (e.g. gcode)
-	        nv_persist(*nv);
-        }        
-    }
-	return (STAT_OK);                               // only successful commands exit through this point
-}
-*/
 
 /*
  * _js_run_container_as_text - callout from JSON kernal to run text commands
@@ -311,16 +268,19 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  *  to be extended to track multiple parents or more than two levels deep it would 
  *  have to track closing curlies - which it does not.
  *
- *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string()
+ *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string(),
+ *  i.e. it can have no leading whitespace, and embedded spaces have been removed
+ *  except for within strings.
  *
  *	If a group prefix is passed in it will be pre-pended to any name parsed to form a 
  *  token string. For example, if "x" is provided as a group and "fr" is found in 
  *  the name string the parser will search for "xfr" in the cfgArray.
  *
  *  RETURNS:
- *    - STAT_EAGAIN  a valid NV pair was returned and there is more to parse
- *    - STAT_OK      a valid NV pair was returned and there is no more to parse
- *    - STAT_xxxx    a parsing error occurred
+ *    - STAT_EAGAIN     a valid NV pair was returned and there is more to parse
+ *    - STAT_OK         a valid NV pair was returned and there is no more to parse
+ *    - STAT_COMPLETE   there was nothing to parse
+ *    - STAT_xxxx       a parsing error occurred
  */
 /*	RELAXED RULES
  *
@@ -343,6 +303,11 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	char value[] = {"{\".-+"};				// open curly, quote, period, minus and plus
 
 	nv_reset_nv(nv);							// wipes the object and sets the depth
+
+    //--- Test for end of data - indicated by garbage or a null ---//
+	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
+        return (STAT_COMPLETE);
+    }
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
