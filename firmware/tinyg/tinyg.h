@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.34	// back to large TIDs
+#define TINYG_FIRMWARE_BUILD        440.35	// testing JSON changes
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
