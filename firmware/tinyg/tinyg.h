@@ -391,7 +391,7 @@ char *get_status_message(stat_t status);
 #define	STAT_JSON_SYNTAX_ERROR 111              // JSON input string is not well formed
 #define	STAT_JSON_TOO_MANY_PAIRS 112            // JSON input string has too many JSON pairs
 #define	STAT_JSON_TOO_LONG 113					// JSON input or output exceeds buffer size
-#define	STAT_ERROR_114 114
+#define	STAT_NESTED_JSON_CONTAINER 114          // txt fields cannot be nested
 #define	STAT_ERROR_115 115
 #define	STAT_ERROR_116 116
 #define	STAT_ERROR_117 117

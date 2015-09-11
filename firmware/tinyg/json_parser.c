@@ -42,10 +42,7 @@ jsSingleton_t js;
 
 /**** local scope stuff ****/
 
-//static stat_t _json_parser_kernal(nvObj_t **nv, char *str);
-//static stat_t _json_parser_kernal(nvObj_t **nv, char **pstr);
-static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr);
-
+static stat_t _json_parser_kernal(nvObj_t *nv, char *str);
 static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth);
 static void _js_run_container_as_text (nvObj_t *nv, char *str);
 static stat_t _normalize_json_string(char *str, uint16_t size);
@@ -95,7 +92,7 @@ void json_parser(char *str)
     js.json_continuation = false;
     js.json_recursion_depth = 0;    
     nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
-	stat_t status = _json_parser_kernal(nv, &str);
+	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
 }
@@ -132,16 +129,16 @@ static nvObj_t *_json_parser_execute(nvObj_t *nv)
  *  - exit on the next un-processed nv-pair or EMPTY
  */
 
-static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr)
+static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 {
 	stat_t status;
 	int8_t depth;
 	char group[GROUP_LEN+1] = {NUL};                // group identifier - starts as NUL
 
     if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
-        return (STAT_JSON_TOO_MANY_PAIRS);
+        return (STAT_NESTED_JSON_CONTAINER);
     }
-	ritorno(_normalize_json_string(*pstr, JSON_OUTPUT_STRING_MAX));	// return if error
+	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX)); // return if error
 
 	//---- parse the JSON string into the nv list ----//
 
@@ -149,10 +146,13 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr)
 
         // decode the next JSON name/value pair
         // returns if error or STAT_COMPLETE
-		if ((status = _get_nv_pair(nv, pstr, &depth)) > STAT_EAGAIN) {
-            if (status == STAT_NOOP) {return (STAT_OK);}// normal return
+		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_NOOP) {
 			return (status);                            // error return
-		}
+        }                    
+        if (status == STAT_NOOP) {                      // normal return
+            return (STAT_OK);
+        }
+
 		// perform operations on the group value
 		if (*group != NUL) {
 			strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
@@ -167,8 +167,7 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char **pstr)
         // test and process container (txt)
         if (nv_index_is_container(nv->index)) {
             if (*(*nv->stringp) == '{') {
-                char *tmp = *nv->stringp;
-                _json_parser_kernal(nv, &tmp);          // call JSON parser recursively
+                _json_parser_kernal(nv, *nv->stringp);  // call JSON parser recursively
             } else {
                 _js_run_container_as_text(nv, *nv->stringp);
                 continue;
@@ -331,7 +330,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 			break;
 		}
 		if (i == MAX_NAME_CHARS) {
-            return (STAT_JSON_SYNTAX_ERROR);
+            return (STAT_UNRECOGNIZED_NAME);
         }        
 	}
 
@@ -347,7 +346,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		if (isalnum((int)**pstr)) { break; }
 		if (strchr(value, (int)**pstr) != NULL) { break; }
 		if (i == MAX_PAD_CHARS) {
-            return (STAT_JSON_SYNTAX_ERROR);
+            return (STAT_UNRECOGNIZED_NAME);
         }        
 	}
 
@@ -385,7 +384,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         char *wr = (*pstr);                     // write pointer for string manipulation
 	    for (i=0; true; i++, (*pstr)++, wr++) {
     	    if (i == NV_MESSAGE_LEN) {
-        	    return (STAT_JSON_SYNTAX_ERROR);
+        	    return (STAT_JSON_TOO_LONG);
     	    }
             if ((*(*pstr) == '\\') && *((*pstr)+1) == '\"') { // escaped quote
                 *wr = '\"';
@@ -440,7 +439,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         return (STAT_EAGAIN);                   // signal that there is more to parse
     }
 	(*pstr)++;
-	return (STAT_OK);						// signal this is the last pair; parsing is complete
+	return (STAT_OK);						    // signal this is the last pair; parsing is complete
 }
 
 /****************************************************************************
