@@ -259,8 +259,9 @@ static stat_t _compute_arc()
     float end_0 = arc.gm.target[arc.plane_axis_0] - arc.position[arc.plane_axis_0] - arc.offset[arc.plane_axis_0];
     float end_1 = arc.gm.target[arc.plane_axis_1] - arc.position[arc.plane_axis_1] - arc.offset[arc.plane_axis_1];
     float err = fabs(hypotf(end_0, end_1) - arc.radius);   // end radius - start radius
-    if ( (err > ARC_RADIUS_ERROR_MAX) ||
-        ((err > ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
+    if ( (err > ARC_RADIUS_ERROR_MAX) || 
+        ((err < ARC_RADIUS_ERROR_MIN) && 
+         (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
 //        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
         return (STAT_ARC_SPECIFICATION_ERROR);
     }

@@ -20,10 +20,6 @@
 #ifndef PLAN_ARC_H_ONCE
 #define PLAN_ARC_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 // Arc radius tests. See http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G2-G3-Arc
 //#define ARC_RADIUS_ERROR_MAX    ((float)0.5)        // max allowable mm between start and end radius
 #define ARC_RADIUS_ERROR_MAX    ((float)1.0)        // max allowable mm between start and end radius
@@ -77,9 +73,5 @@ extern arc_t arc;
 void cm_arc_init(void);
 stat_t cm_arc_callback(void);
 void cm_abort_arc(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	// End of include guard: PLAN_ARC_H_ONCE

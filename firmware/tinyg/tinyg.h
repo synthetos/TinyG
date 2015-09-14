@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.19	// fix for Makercam / PartKam giant arcs
+#define TINYG_FIRMWARE_BUILD        440.20	// arc test
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
