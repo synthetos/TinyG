@@ -354,7 +354,7 @@ typedef struct cfgMotor {				// per-motor configs
 } cfgMotor_t;
 
 typedef struct stConfig {				// stepper configs
-	float motor_power_timeout;			// seconds before setting motors to idle current (currently this is OFF)
+	float motor_power_timeout;		    // seconds before setting motors to idle current (currently this is OFF)
 	cfgMotor_t mot[MOTORS];				// settings for motors 1-N
 } stConfig_t;
 

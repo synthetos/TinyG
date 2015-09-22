@@ -84,13 +84,13 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
  *	  json_parser() is the only exposed part. It does parsing, display, and status reports.
  *	  _get_nv_pair() only does parsing and syntax; no semantic validation or group handling
  *	  _json_parser_kernal() does index validation and group handling and executes sets and gets
- *		in an application agnostic way. It should work for other apps than TinyG
+ *	  in an application agnostic way. It should work for other apps than TinyG
  */
 
 void json_parser(char *str)
 {
     js.json_continuation = false;
-    js.json_recursion_depth = 0;    
+    js.json_recursion_depth = 0;
     nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
 	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
@@ -148,7 +148,7 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
         // returns if error or STAT_COMPLETE
 		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_NOOP) {
 			return (status);                            // error return
-        }                    
+        }
         if (status == STAT_NOOP) {                      // normal return
             return (STAT_OK);
         }
@@ -183,9 +183,9 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 /*
  * _js_run_container_as_text - callout from JSON kernal to run text commands
  *
- *	For text-mode commands this starts a JSON response then runs the text command 
- *  in a 'msg' element. Text lines are terminated with JSON-friendly line ends 
- *  (e,g \n instead of LF). The text response string is closed, then 
+ *	For text-mode commands this starts a JSON response then runs the text command
+ *  in a 'msg' element. Text lines are terminated with JSON-friendly line ends
+ *  (e,g \n instead of LF). The text response string is closed, then
  *  json_continuation is set so that the JSON response is properly handled.
  *
  *  Gcode is simply wrapped in a JSON gc tag and processed.
@@ -212,7 +212,7 @@ static void _js_run_container_as_text (nvObj_t *nv, char *str)
         strcpy(nv->token,"gc");
         text_response(gc_gcode_parser(str), cs.saved_buf);
     }
-}                
+}
 
 /*
  * _normalize_json_string - normalize a JSON string in place
@@ -234,13 +234,13 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
 		if (!in_comment) {					// normal processing
 			if (*str == '(') {
                 in_comment = true;
-            }            
+            }
             if (in_front) {                 // toss leading ctrls, WS & DEL
-    			if ((*str <= ' ') || (*str == DEL)) { 
-                    continue; 
+    			if ((*str <= ' ') || (*str == DEL)) {
+                    continue;
                 }
             }
-            in_front = false;      
+            in_front = false;
 			*wr++ = tolower(*str);
 		} else {							// Gcode comment processing
 			if (*str == ')') in_comment = false;
@@ -261,19 +261,19 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  *    - nv->value_int or nv->value_flt
  *
  *	Leaves string pointer (str) on the first character following the object, which
- *	is the character just past the ',' separator if it's a multi-valued object or 
+ *	is the character just past the ',' separator if it's a multi-valued object or
  *  the terminating NUL if single object or the last in a multi.
  *
- *	Keeps track of tree depth and closing braces as much as it has to. If this were 
- *  to be extended to track multiple parents or more than two levels deep it would 
+ *	Keeps track of tree depth and closing braces as much as it has to. If this were
+ *  to be extended to track multiple parents or more than two levels deep it would
  *  have to track closing curlies - which it does not.
  *
  *	ASSUMES INPUT STRING HAS FIRST BEEN NORMALIZED BY _normalize_json_string(),
  *  i.e. it can have no leading whitespace, and embedded spaces have been removed
  *  except for within strings.
  *
- *	If a group prefix is passed in it will be pre-pended to any name parsed to form a 
- *  token string. For example, if "x" is provided as a group and "fr" is found in 
+ *	If a group prefix is passed in it will be pre-pended to any name parsed to form a
+ *  token string. For example, if "x" is provided as a group and "fr" is found in
  *  the name string the parser will search for "xfr" in the cfgArray.
  *
  *  RETURNS:
@@ -297,10 +297,10 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 {
 	uint8_t i;
 	char *end;
-	char leaders[] = {"{,\""};				    // open curly, quote and leading comma
-	char separators[] = {":\""};				// colon and quote
-	char terminators[] = {"},\""};			    // close curly, comma and quote
-	char value[] = {"{\".-+"};				    // open curly, quote, period, minus and plus
+	char leaders[] =     {  "\",{"    };        // quote, comma, open curly
+	char separators[] =  {  "\":"     };        // quote, colon
+	char terminators[] = {  ",}"      };        // comma, close curly
+	char value[] =       {  "\"{.-+"  };        // quote, open curly, period, minus, plus
 
     //--- Test for end of data - indicated by garbage or a null ---//
 	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
@@ -311,15 +311,18 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
-	char * name = *pstr;
+	char *name = *pstr;
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(leaders, (int)**pstr) == NULL) { // find leading character of name
 			name = (*pstr)++;
 			break;
 		}
+		if (*name == NUL) {
+    		return (STAT_NOOP);
+		}
 		if (i == MAX_PAD_CHARS) {
             return (STAT_JSON_SYNTAX_ERROR);
-        }        
+        }
 	}
 
 	// Find the end of name, NUL terminate and copy token
@@ -331,7 +334,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		}
 		if (i == MAX_NAME_CHARS) {
             return (STAT_UNRECOGNIZED_NAME);
-        }        
+        }
 	}
 
     // Validate the name token and set index
@@ -347,7 +350,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		if (strchr(value, (int)**pstr) != NULL) { break; }
 		if (i == MAX_PAD_CHARS) {
             return (STAT_UNRECOGNIZED_NAME);
-        }        
+        }
 	}
 
 	// nulls (gets)
@@ -389,7 +392,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
             if ((*(*pstr) == '\\') && *((*pstr)+1) == '\"') { // escaped quote
                 *wr = '\"';
                 (*pstr)++;
-                continue;                
+                continue;
             }
             if (*(*pstr) == '\"') {
                 *wr = NUL;
@@ -432,8 +435,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		return (STAT_JSON_SYNTAX_ERROR);
 	}
 	if (**pstr == '}') {
-		*depth -= 1;							    // pop up a nesting level
-		(*pstr)++;								// advance to comma or whatever follows
+		*depth -= 1;                            // pop up a nesting level
+		(*pstr)++;                              // advance to comma or whatever follows
 	}
 	if (**pstr == ',') {
         return (STAT_EAGAIN);                   // signal that there is more to parse
@@ -484,14 +487,14 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 
     if (js.json_continuation) {
 	    *str++ = ','; 								// write continuing comma
-    } else {    
+    } else {
 	    *str++ = '{'; 								// write opening curly
-    }    
+    }
 
 	while (true) {
-		if ((nv->valuetype != TYPE_EMPTY) && 
+		if ((nv->valuetype != TYPE_EMPTY) &&
             (nv->valuetype != TYPE_SKIP)) {
-            
+
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
 			if (js.json_syntax == JSON_SYNTAX_RELAXED) {		// write name
@@ -508,7 +511,7 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 			}
 */
 			// serialize output value
-			if (nv->valuetype == TYPE_NULL)	{ 
+			if (nv->valuetype == TYPE_NULL)	{
                 str += sprintf(str, "null");        // Note that that "" is NOT null.
             }
 			else if (nv->valuetype == TYPE_INTEGER)	{
@@ -521,17 +524,17 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 			else if (nv->valuetype == TYPE_STRING)	{
                 str += sprintf(str, "\"%s\"", *nv->stringp);
             }
-			else if (nv->valuetype == TYPE_ARRAY)	{ 
+			else if (nv->valuetype == TYPE_ARRAY)	{
                 str += sprintf(str, "[%s]", *nv->stringp);
             }
-			else if (nv->valuetype == TYPE_FLOAT)	{ 
+			else if (nv->valuetype == TYPE_FLOAT)	{
                 preprocess_float(nv);
 				str += fntoa(str, nv->value_flt, nv->precision);
 			}
 			else if (nv->valuetype == TYPE_BOOL) {
 				if (nv->value_int == false) {
                     str += sprintf(str, "false");
-				} else { 
+				} else {
                     str += sprintf(str, "true");
                 }
 			}
@@ -551,7 +554,7 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 	}
 
 	// closing curlies and NEWLINE
-	while (prev_depth-- > initial_depth) { 
+	while (prev_depth-- > initial_depth) {
         *str++ = '}';
     }
     if (js.json_continuation) {                 // once and only once
@@ -710,7 +713,7 @@ stat_t json_set_jv(nvObj_t *nv)
 {
 	if (nv->value_int > JV_VERBOSE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
-    }    
+    }
 	js.json_verbosity = nv->value_int;
 
 	js.echo_json_footer = false;

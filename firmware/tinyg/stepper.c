@@ -465,7 +465,7 @@ stat_t st_motor_power_callback() 	// called by controller
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
 			st_run.mot[m].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 			st_run.mot[m].power_systick = SysTickTimer_getValue() +
-											(st_cfg.motor_power_timeout * 1000);
+										  (uint32_t)(st_cfg.motor_power_timeout * 1000);
 		}
 
 		// do not process countdown if in a feedhold
@@ -1216,9 +1216,9 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 stat_t st_set_pl(nvObj_t *nv)	// motor power level
 {
 #ifdef __ARM
-	if (nv->value_flt < (float)0.0) { 
+	if (nv->value_flt < (float)0.0) {
         nv->value_flt = 0.0;
-    } 
+    }
 	if (nv->value_flt > (float)1.0) {
         nv->value_flt = 1; {
 	}
