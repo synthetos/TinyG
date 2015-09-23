@@ -131,8 +131,8 @@ static nvObj_t *_json_parser_execute(nvObj_t *nv)
 
 static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 {
-	stat_t status;
-	int8_t depth;
+	stat_t status = STAT_OK; 
+	int8_t depth = 0;
 	char group[GROUP_LEN+1] = {NUL};                // group identifier - starts as NUL
     nvObj_t *nv_exec;                               // nv pair on which to start execution
 
@@ -251,6 +251,13 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
     }
 	for (wr = str; *str != NUL; str++) {
+        if ((*str == 0xE2) && (*(str+1) == 0x80)) { // replace "smart" quotes in all strings
+            str += 2; 
+            if ((*str == 0x9C) || (*str == 0x9D)) {
+                *wr++ = '\"';
+                continue;
+            }
+        }        
 		if (!in_comment) {					// normal processing
 			if (*str == '(') {
                 in_comment = true;
