@@ -94,7 +94,8 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char *)"hv");		// hardware version
 	nv_add_object((const char *)"id");		// hardware ID
 	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
-	json_print_response(status);
+//	json_print_response(status);
+    json_print_object(NV_HEAD);
 }
 
 void rpt_print_initializing_message(void)

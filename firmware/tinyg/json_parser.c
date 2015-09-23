@@ -652,11 +652,17 @@ void json_print_response(uint8_t status)
 {
 	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
+	// Setup the response header
+	nvObj_t *nv = NV_HEAD;
+	nv->valuetype = TYPE_PARENT;
+	strcpy(nv->token, "r");
+
 	// Body processing
-	nvObj_t *nv = NV_BODY;
+	nv = NV_BODY;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
-//		nv_reset_nv_list("r");
 		nv_reset_nv_list(NUL);
+	    nv->valuetype = TYPE_PARENT;
+	    strcpy(nv->token, "r");
 		nv_add_string((const char *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
@@ -708,10 +714,6 @@ void json_print_response(uint8_t status)
         nv = nv->nx;
     }
 
-	// Setup the response header
-	nv->valuetype = TYPE_PARENT;
-	strcpy(nv->token, "r");
-
 	// Setup the footer
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
@@ -730,7 +732,7 @@ void json_print_response(uint8_t status)
     }
 
 	nv_copy_string(nv, footer_string);						// link string to nv object
-	nv->depth = 0;											// footer 'f' is a peer to response 'r' (hard wired to 0)
+	nv->depth = 0;											// footer is a peer to r{} response
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");									// terminate the list
 	nv->nx = NULL;
