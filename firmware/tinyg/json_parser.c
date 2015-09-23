@@ -257,7 +257,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
                 *wr++ = '\"';
                 continue;
             }
-        }        
+        }
 		if (!in_comment) {					// normal processing
 			if (*str == '(') {
                 in_comment = true;
@@ -469,7 +469,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	if (**pstr == ',') {
         return (STAT_EAGAIN);                   // signal that there is more to parse
     }
-	(*pstr)++;
+    // return on the NUL
 	return (STAT_OK);						    // signal this is the last pair; parsing is complete
 }
 
