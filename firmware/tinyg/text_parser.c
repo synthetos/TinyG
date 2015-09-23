@@ -63,7 +63,8 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
 
 stat_t text_parser(char *str)
 {
-	nvObj_t *nv = nv_reset_nv_list("r");			// returns first object in the body
+//	nvObj_t *nv = nv_reset_nv_list("r");			// returns first object in the body
+	nvObj_t *nv = nv_reset_nv_list(NUL);			// returns first object in the body
 	stat_t status = STAT_OK;
 
 	// trap special displays
@@ -178,7 +179,7 @@ void text_response(const stat_t status, char *buf)
 	} else {
 		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
 	}
-	nvObj_t *nv = nv_body+1;
+	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
 		fprintf(stderr, *nv->stringp);
@@ -199,7 +200,7 @@ void text_print_list(stat_t status, uint8_t flags)
 		case TEXT_NO_PRINT: { break; }
 //		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
 //		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
-		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(nv_body);}
+		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(NV_BODY);}
 	}
 }
 /*

@@ -309,7 +309,8 @@ static void _dispatch_kernel()
 	else {  // anything else is interpreted as Gcode
 
     	// this optimization bypasses the standard JSON parser and does what it needs directly
-    	nvObj_t *nv = nv_reset_nv_list("r");                // get a fresh nvObj list
+//    	nvObj_t *nv = nv_reset_nv_list("r");                // get a fresh nvObj list
+    	nvObj_t *nv = nv_reset_nv_list(NUL);                // get a fresh nvObj list
     	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
     	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
     	nv->valuetype = TYPE_STRING;

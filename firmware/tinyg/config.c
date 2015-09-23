@@ -113,7 +113,8 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  */
 void config_init()
 {
-	nvObj_t *nv = nv_reset_nv_list("r");
+//	nvObj_t *nv = nv_reset_nv_list("r");
+	nvObj_t *nv = nv_reset_nv_list(NUL);
 	config_init_assertions();
 
 #ifdef __ARM
@@ -590,18 +591,33 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 /*
  * nv_reset_nv_list() - clear the NV list and set up as a parent or a plain list
  *
- *  If a "head" string is present the first token will be written with the head and 
- *  the rest of the list will be at depth 1. Returns a pointer to body. 
- *  If head is NUL set list to depth 0 and return first block (no header).
+ *  - Clear all nvObjs in the nvList:
+ *      - set nvObj[i].valuetype = TYPE_EMPTY
+ *      - zero all values and nul all strings
+ *
+ *  - nvObj[0] is reserved for 'r' header:
+ *      - set nvObj[0].valuetype = TYPE_EMPTY
+ *      - set nvObj[0].depth = 0
+ *
+ *  - if "parent" arg is NUL:
+ *      - set nvObj[1..N].depth = 1             // set all depths to 1
+ *      - return nv pointing to nvObj[1]
+ *
+ *  - else if "parent" arg is non-NUL (mark as PARENT):
+ *      - set nvObj[1].valuetype = TYPE_PARENT
+ *      - set nvObj[1].token = "parent"
+ *      - set nvObj[1].depth = 1
+ *      - set nvObj[2..N].depth = 2             // set all remaining depths to 2 
+ *      - return nv pointing to nvObj[2]
  */
 
-nvObj_t *nv_reset_nv_list(char *head)		// clear the header and response body
+nvObj_t *nv_reset_nv_list(char *parent)
 {
-	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
-    uint8_t depth = (*head != NUL) ? 1 : 0; // body element depth = 1 if there is a head
+	nvStr.wp = 0;							    // reset the shared string
+	nvObj_t *nv = nvl.list;					    // set up linked list and initialize elements
+    uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
+		nv->pv = (nv-1);	                        // the ends are bogus & corrected later
 		nv->nx = (nv+1);
 		nv->index = 0;
 		nv->depth = depth;
@@ -609,18 +625,23 @@ nvObj_t *nv_reset_nv_list(char *head)		// clear the header and response body
 		nv->valuetype = TYPE_EMPTY;
 		nv->token[0] = NUL;
 	}
-	(--nv)->nx = NULL;                      // correct the ends
+	(--nv)->nx = NULL;                          // correct the ends
 	nv = nvl.list;
 	nv->pv = NULL;
 
-    // setup head element if one was requested. This is a convenience for calling routines
-    if (*head != NUL) {
-	    nv->depth = 0;
+    // reserve r{} element
+    nv->depth = 0;
+
+    // setup parent element if one was requested. This is a convenience for calling routines
+    if (*parent != NUL) {
+	    nv->depth = 1;
 	    nv->valuetype = TYPE_PARENT;
-	    strcpy(nv->token, head);
-	    return (nv_body);					// return pointing to the first body element
-    } // else
-    return (nvl.list);                      // return pointing to the first element
+	    strcpy(nv->token, parent);
+        NV_BODY = &nvl.list[2];                 // return pointing past parent
+    } else {
+        NV_BODY = &nvl.list[1];                 // return pointing to first free buffer
+    }
+    return (NV_BODY);
 }
 
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
@@ -647,7 +668,7 @@ stat_t nv_copy_string_P(nvObj_t *nv, const char *src_P)
 
 nvObj_t *nv_add_object(const char *token)  // add an object to the body using a token
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
@@ -663,7 +684,7 @@ nvObj_t *nv_add_object(const char *token)  // add an object to the body using a 
 
 nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an integer object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
@@ -679,7 +700,7 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 
 nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
@@ -696,7 +717,7 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 
 nvObj_t *nv_add_float(const char *token, const float value)	// add a float object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
@@ -713,7 +734,7 @@ nvObj_t *nv_add_float(const char *token, const float value)	// add a float objec
 // ASSUMES A RAM STRING. If you need to post a FLASH string use pstr2str to convert it to a RAM string
 nvObj_t *nv_add_string(const char *token, const char *string) // add a string object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety

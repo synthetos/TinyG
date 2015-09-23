@@ -294,9 +294,11 @@ extern nvStr_t nvStr;
 extern nvList_t nvl;
 extern const cfgItem_t cfgArray[];
 
+nvObj_t *NV_BODY;                       // this is dynamic. Set by nv_reset_nv_list()
+#define NV_HEAD (&nvl.list[0])          // this is static
+
 //#define nv_header nv.list
-#define nv_header (&nvl.list[0])
-#define nv_body   (&nvl.list[1])
+//#define nv_body   (&nvl.list[1])
 
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
@@ -347,8 +349,7 @@ stat_t get_grp(nvObj_t *nv);				// get data for a group
 // nvObj and list functions
 void nv_get_nvObj(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
-//nvObj_t *nv_reset_nv_list(void);
-nvObj_t *nv_reset_nv_list(char *head);
+nvObj_t *nv_reset_nv_list(char *parent);
 stat_t nv_copy_string(nvObj_t *nv, const char *src);
 nvObj_t *nv_add_object(const char *token);
 nvObj_t *nv_add_integer(const char *token, const uint32_t value);

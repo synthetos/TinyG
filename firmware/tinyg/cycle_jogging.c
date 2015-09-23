@@ -210,7 +210,7 @@ static stat_t _jogging_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the jogging callback
 	// - and not the main controller - it requires its own display processing
-//	nv_reset_nv_list("r");
+//	nv_reset_nv_list(NUL);
 	_jogging_finalize_exit(axis);					// clean up
 	return (STAT_JOGGING_CYCLE_FAILED);				// jogging state
 }

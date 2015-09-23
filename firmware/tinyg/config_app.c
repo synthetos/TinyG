@@ -775,11 +775,12 @@ void preprocess_float(nvObj_t *nv)
 static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
 {
 	for (uint8_t i=0; i < NV_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL)
+		if (list[i][0] == NUL) {
             return (STAT_COMPLETE);
-
-		nv_reset_nv_list("r");
-		nv = nv_body;
+        }        
+//		nv_reset_nv_list("r");
+		nv_reset_nv_list(NUL);
+		nv = NV_BODY;
 		strncpy(nv->token, list[i], TOKEN_LEN);
 		nv->index = nv_get_index((const char *)"", nv->token);
 //		nv->valuetype = TYPE_PARENT;

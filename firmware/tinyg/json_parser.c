@@ -91,7 +91,8 @@ void json_parser(char *str)
 {
     js.json_continuation = false;
     js.json_recursion_depth = 0;
-    nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
+//    nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
+    nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
 	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
@@ -157,18 +158,24 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 
         // handle PARENTs
         if (nv->valuetype == TYPE_PARENT) {
+		    if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
+    		    strncpy(group, nv->token, GROUP_LEN);       // capture the group ID
+		    }
             do {
                 nv = nv->nx;
                 status = _get_nv_pair(nv, &str, &depth);    // parse the child objects
                 if (status == STAT_NOOP) {
                     break;
                 }
+		        if (*group != NUL) {
+    		        strncpy(nv->group, group, GROUP_LEN);   // copy the parent's group to this child
+		        }
             }
             while (nv->nx != NULL);
 
         // handle all other TYPEs
         } else {
-
+/*
 		    // perform operations on the group value
 		    if (*group != NUL) {
 			    strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
@@ -176,8 +183,8 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 		    if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			    strncpy(group, nv->token, GROUP_LEN);       // record the group ID
 		    }
-
-            // Skip TIDs
+*/
+            // Skip over TIDs
             if (nv->index == nvl.tid_index) {
                 nv->valuetype = TYPE_SKIP;
             }
@@ -192,10 +199,9 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
                 }
             }
         }
-//        nv = _json_parser_execute(nv);
-        nv = _json_parser_execute(nv_exec);
+        nv = _json_parser_execute(nv_exec);                 // execute the list from current starting point
 
-    } while (nv->nx != NULL);                           // this test is a safety valve
+    } while (nv->nx != NULL);                               // this test is a safety valve
 
     return (STAT_OK);
 }
@@ -478,20 +484,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
             return (STAT_EAGAIN);               // signal that there is more to parse
         }
     }
-/*
-	// process closing curlies and adjust the depth variable (only does a single level!)
-	if (**pstr == '}') {
-		*depth -= 1;                            // pop up a nesting level
-		(*pstr)++;                              // advance to comma or whatever follows
-	}
-
-    // look for a comma continuation, trailing whitespace, or a NUL end-of-string 
-	if (**pstr == ',') {                        // return **pstr on the comma
-        return (STAT_EAGAIN);                   // signal that there is more to parse
-    }
-*/
-                                                // return **pstr on the NUL terminator
-	return (STAT_OK);						    // signal this is the last pair; parsing is complete
+    // signal last pair; parsing is complete. Return **pstr on the NUL terminator
+	return (STAT_OK);
 }
 
 /****************************************************************************
@@ -512,18 +506,15 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
  *	  - Assume there can be multiple, independent, non-contiguous JSON objects at a
  *		given depth value. These are processed correctly - e.g. 0,1,1,0,1,1,0,1,1
  *
+ *    - Objects of TYPE_EMPTY or TYPE_SKIP are passed over (ignored)
+ *
+ *	  - If a JSON object has no data it's represented as {}
+ *
  *	  - The list must have a terminating nvObj where nv->nx == NULL.
  *		The terminating object may or may not have data (empty or not empty).
  *
  *	Returns:
  *		Returns length of string
- *
- *	Desired behaviors:
- *	  - Allow self-referential elements that would otherwise cause a recursive loop
- *	  - Skip over empty objects (TYPE_EMPTY)
- *	  - If a JSON object is empty represent it as {}
- *	    --- OR ---
- *	  - If a JSON object is empty omit the object altogether (no curlies)
  */
 
 uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
@@ -534,7 +525,7 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 	int8_t prev_depth = 0;
 	uint8_t need_a_comma = false;
 
-    if (js.json_continuation) {
+    if (js.json_continuation) { // See _json_parser_kernal() / _js_run_container_as_text()
 	    *str++ = ','; 								// write continuing comma
     } else {
 	    *str++ = '{'; 								// write opening curly
@@ -546,37 +537,32 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
-			if (js.json_syntax == JSON_SYNTAX_RELAXED) {		// write name
+            
+            // serialize name
+			if (js.json_syntax == JSON_SYNTAX_RELAXED) { // write name
 				str += sprintf((char *)str, "%s:", nv->token);
 			} else {
 				str += sprintf((char *)str, "\"%s\":", nv->token);
 			}
-/*
-			// check for illegal float values
-			if (nv->valuetype == TYPE_FLOAT) {
-				if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) {
-                    nv->value_flt = 0;
-                }
-			}
-*/
-			// serialize output value
+
+			// serialize value
 			if (nv->valuetype == TYPE_NULL)	{
                 str += sprintf(str, "null");        // Note that that "" is NOT null.
             }
 			else if (nv->valuetype == TYPE_INTEGER)	{
 				str += sprintf(str, "%lu", nv->value_int);
 			}
-			else if (nv->valuetype == TYPE_DATA)	{
+			else if (nv->valuetype == TYPE_DATA) {
 				uint32_t *v = (uint32_t*)&nv->value_flt;
 				str += sprintf(str, "\"0x%lx\"", *v);
 			}
-			else if (nv->valuetype == TYPE_STRING)	{
+			else if (nv->valuetype == TYPE_STRING) {
                 str += sprintf(str, "\"%s\"", *nv->stringp);
             }
-			else if (nv->valuetype == TYPE_ARRAY)	{
+			else if (nv->valuetype == TYPE_ARRAY) {
                 str += sprintf(str, "[%s]", *nv->stringp);
             }
-			else if (nv->valuetype == TYPE_FLOAT)	{
+			else if (nv->valuetype == TYPE_FLOAT) {
                 preprocess_float(nv);
 				str += fntoa(str, nv->value_flt, nv->precision);
 			}
@@ -592,8 +578,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 				need_a_comma = false;
 			}
 		}
-		if (str >= str_max) { return (-1);}		// signal buffer overrun
-		if ((nv = nv->nx) == NULL) { break;}	// end of the list
+		if (str >= str_max) { return (-1); }	    // signal buffer overrun
+		if ((nv = nv->nx) == NULL) { break; }   // end of the list
 
 		while (nv->depth < prev_depth--) {		// iterate the closing curlies
 			need_a_comma = true;
@@ -611,21 +597,8 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
         *str++ = '}';
     }
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
-	if (str > out_buf + size) { return (-1);}
+	if (str > out_buf + size) { return (-1); }
 	return (str - out_buf);
-}
-
-/*
- * json_print_object() - serialize and print the nvObj array directly (w/o header & footer)
- *
- *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
- *	Useful for reports and other simple output.
- *	Object list should be terminated by nv->nx == NULL
- */
-void json_print_object(nvObj_t *nv)
-{
-	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
-	printf(cs.out_buf);
 }
 
 /*
@@ -642,12 +615,26 @@ void json_print_list(stat_t status, uint8_t flags)
 }
 
 /*
+ * json_print_object() - serialize and print the nvObj array directly (w/o header & footer)
+ *
+ *	Ignores JSON verbosity settings and everything else - just serializes the list & prints
+ *	Useful for reports and other simple output.
+ *	Object list must be terminated by nv->nx == NULL
+ */
+void json_print_object(nvObj_t *nv)
+{
+	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
+	printf(cs.out_buf);
+}
+
+/*
  * json_print_response() - JSON responses with headers, footers and observing JSON verbosity
  *
- *	A footer is returned for every setting except $jv=0
+ *	r{} header is returned for every setting except $jv=0
+ *	f{} footer is returned for every setting except $jv=0
  *
  *	JV_SILENT = 0,	// no response is provided for any command
- *	JV_FOOTER,		// responses contain  footer only; no command echo, gcode blocks or messages
+ *	JV_FOOTER,		// responses contain footer only; no command echo, gcode blocks or messages
  *	JV_CONFIGS,		// echo configs; gcode blocks are not echoed; messages are not echoed
  *	JV_MESSAGES,	// echo configs; gcode messages only (if present); no block echo or line numbers
  *	JV_LINENUM,		// echo configs; gcode blocks return messages and line numbers as present
@@ -666,9 +653,10 @@ void json_print_response(uint8_t status)
 	if (js.json_verbosity == JV_SILENT) return;			// silent responses
 
 	// Body processing
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	if (status == STAT_JSON_SYNTAX_ERROR) {
-		nv_reset_nv_list("r");
+//		nv_reset_nv_list("r");
+		nv_reset_nv_list(NUL);
 		nv_add_string((const char *)"err", escape_string(cs.bufp, cs.saved_buf));
 
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
@@ -709,7 +697,7 @@ void json_print_response(uint8_t status)
                 strcpy(nv->token, "tid");
 			    nv->valuetype = TYPE_INTEGER;
                 nv->depth = 0;                              // always a top-level object
-        	    json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
+        	    json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
         	    return;
     	    }
 	    }
@@ -720,11 +708,15 @@ void json_print_response(uint8_t status)
         nv = nv->nx;
     }
 
-	// Footer processing
+	// Setup the response header
+	nv->valuetype = TYPE_PARENT;
+	strcpy(nv->token, "r");
+
+	// Setup the footer
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
 //			rpt_exception(STAT_JSON_TOO_LONG, NULL);		// report this as an exception
-			json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf));
+			json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
 			return;
 		}
 	}
@@ -744,7 +736,7 @@ void json_print_response(uint8_t status)
 	nv->nx = NULL;
 
 	// serialize the JSON response and print it if there were no errors
-	if (json_serialize(nv_header, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
+	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
     	printf(cs.out_buf);
 	}
 }
