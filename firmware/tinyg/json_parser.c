@@ -458,18 +458,39 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         return (STAT_JSON_SYNTAX_ERROR);	    // ill-formed JSON
     }
 
-	// process comma separators and end curlies
-	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { // advance to terminator or err out
+	// advance past any remaining chars in the value to the terminator - or err out
+	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { 
 		return (STAT_JSON_SYNTAX_ERROR);
 	}
+
+	// process closing curlies and adjust the depth variable
+    while (**pstr != NUL) {
+    	if ((**pstr <= ' ') || (**pstr == DEL)) { // toss whitespace characters
+            (*pstr)++;
+            continue;
+        }
+	    if (**pstr == '}') {
+		    *depth -= 1;                        // pop up a nesting level
+		    (*pstr)++;
+            continue;
+	    }
+	    if (**pstr == ',') {                    // return **pstr on the comma
+            return (STAT_EAGAIN);               // signal that there is more to parse
+        }
+    }
+/*
+	// process closing curlies and adjust the depth variable (only does a single level!)
 	if (**pstr == '}') {
 		*depth -= 1;                            // pop up a nesting level
 		(*pstr)++;                              // advance to comma or whatever follows
 	}
-	if (**pstr == ',') {
+
+    // look for a comma continuation, trailing whitespace, or a NUL end-of-string 
+	if (**pstr == ',') {                        // return **pstr on the comma
         return (STAT_EAGAIN);                   // signal that there is more to parse
     }
-    // return on the NUL
+*/
+                                                // return **pstr on the NUL terminator
 	return (STAT_OK);						    // signal this is the last pair; parsing is complete
 }
 
