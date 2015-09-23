@@ -378,7 +378,7 @@ stat_t cm_deferred_write_callback()
 #ifdef __AVR
 		if (xio_isbusy()) {
             return (STAT_OK);		// don't write back if serial RX is not empty
-        }        
+        }
 #endif
 		cm.deferred_write_flag = false;
 		nvObj_t nv;
@@ -606,6 +606,11 @@ stat_t cm_hard_alarm(stat_t status)
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
+
+stat_t cm_pause(nvObj_t *nv) { cm_request_feedhold(); return (STAT_OK); }
+stat_t cm_start(nvObj_t *nv) { cm_request_cycle_start(); return (STAT_OK); }
+stat_t cm_flush(nvObj_t *nv) { cm_request_queue_flush(); return (STAT_OK); }
+stat_t cm_reset(nvObj_t *nv) { hw_request_hard_reset(); return (STAT_OK); }
 
 /**************************
  * Representation (4.3.3) *
@@ -1229,7 +1234,9 @@ void cm_message(char *message)
  *		should start to run anything in the planner queue
  */
 
-void cm_request_feedhold(void) { cm.feedhold_requested = true; }
+void cm_request_feedhold(void) {
+    cm.feedhold_requested = true;
+}
 void cm_request_queue_flush(void) { cm.queue_flush_requested = true; }
 void cm_request_cycle_start(void) { cm.cycle_start_requested = true; }
 
@@ -1642,7 +1649,7 @@ stat_t cm_get_vel(nvObj_t *nv)
 		nv->value_flt = mp_get_runtime_velocity();
 		if (cm_get_units_mode(RUNTIME) == INCHES) {
             nv->value_flt *= INCHES_PER_MM;
-        }        
+        }
 	}
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -1654,7 +1661,7 @@ stat_t cm_get_feed(nvObj_t *nv)
 	nv->value_flt = cm_get_feed_rate(ACTIVE_MODEL);
 	if (cm_get_units_mode(ACTIVE_MODEL) == INCHES) {
         nv->value_flt *= INCHES_PER_MM;
-    }    
+    }
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1701,11 +1708,11 @@ stat_t cm_get_am(nvObj_t *nv)
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
 	if (_get_axis_type(nv->index) == 0) {	// linear
-		if (nv->value_int > AXIS_MODE_MAX_LINEAR) { 
+		if (nv->value_int > AXIS_MODE_MAX_LINEAR) {
             return (STAT_INPUT_EXCEEDS_MAX_VALUE);
         }
 	} else {
-		if (nv->value_int > AXIS_MODE_MAX_ROTARY) { 
+		if (nv->value_int > AXIS_MODE_MAX_ROTARY) {
             return (STAT_INPUT_EXCEEDS_MAX_VALUE);
         }
 	}
@@ -1745,7 +1752,7 @@ stat_t cm_set_xjm(nvObj_t *nv)
 {
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
-    }    
+    }
 	set_flu(nv);
 	cm_set_axis_jerk(_get_axis(nv->index), nv->value_flt);
 	return(STAT_OK);
@@ -1755,7 +1762,7 @@ stat_t cm_set_xjh(nvObj_t *nv)
 {
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
-    }    
+    }
 	set_flu(nv);
 	return(STAT_OK);
 }
@@ -1775,7 +1782,7 @@ stat_t cm_run_qf(nvObj_t *nv)
 
 stat_t cm_run_home(nvObj_t *nv)
 {
-	if (nv->value_int == true) { 
+	if (nv->value_int == true) {
         cm_homing_cycle_start();
     }
 	return (STAT_OK);

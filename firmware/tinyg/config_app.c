@@ -428,27 +428,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jid","jidd",_f0, 0, tx_print_nul, get_data, set_data, (uint32_t *)&cs.job_id[3], 0},
 
 	// System parameters
-	{ "sys","ja",  _fipncf,0, cm_print_ja,  get_flt,   set_flu,    (uint32_t *)&cm.junction_acceleration,JUNCTION_ACCELERATION },
-	{ "sys","ct",  _fipncf,4, cm_print_ct,  get_flt,   set_flu,    (uint32_t *)&cm.chordal_tolerance,	CHORDAL_TOLERANCE },
-	{ "sys","sl",  _fipn,  0, cm_print_sl,  get_ui8,   set_ui8,    (uint32_t *)&cm.soft_limit_enable,	SOFT_LIMIT_ENABLE },
-	{ "sys","st",  _fipn,  0, sw_print_st,  get_ui8,   sw_set_st,  (uint32_t *)&sw.switch_type,			SWITCH_TYPE },
-	{ "sys","mt",  _fipnf, 2, st_print_mt,  get_flt,   st_set_mt,  (uint32_t *)&st_cfg.motor_power_timeout,MOTOR_IDLE_TIMEOUT},
+	{ "sys","ja",  _fipncf,0, cm_print_ja,  get_flt,   set_flu,    (uint32_t *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
+	{ "sys","ct",  _fipncf,4, cm_print_ct,  get_flt,   set_flu,    (uint32_t *)&cm.chordal_tolerance,	    CHORDAL_TOLERANCE },
+	{ "sys","sl",  _fipn,  0, cm_print_sl,  get_ui8,   set_ui8,    (uint32_t *)&cm.soft_limit_enable,	    SOFT_LIMIT_ENABLE },
+	{ "sys","st",  _fipn,  0, sw_print_st,  get_ui8,   sw_set_st,  (uint32_t *)&sw.switch_type,			    SWITCH_TYPE },
+	{ "sys","mt",  _fipnf, 2, st_print_mt,  get_flt,   st_set_mt,  (uint32_t *)&st_cfg.motor_power_timeout, MOTOR_IDLE_TIMEOUT},
 	{ "",   "me",  _f0,    0, tx_print_str, st_set_me, st_set_me,  (uint32_t *)&cs.null, 0 },
 	{ "",   "md",  _f0,    0, tx_print_str, st_set_md, st_set_md,  (uint32_t *)&cs.null, 0 },
 
-	{ "sys","ej",  _fipn, 0, js_print_ej,  get_ui8,   set_01,     (uint32_t *)&cs.comm_mode,			COMM_MODE },
-	{ "sys","jv",  _fipn, 0, js_print_jv,  get_ui8,   json_set_jv,(uint32_t *)&js.json_verbosity,		JSON_VERBOSITY },
-	{ "sys","js",  _fipn, 0, js_print_js,  get_ui8,   set_01,     (uint32_t *)&js.json_syntax, 		    JSON_SYNTAX_MODE },
-	{ "sys","tv",  _fipn, 0, tx_print_tv,  get_ui8,   set_01,     (uint32_t *)&txt.text_verbosity,		TEXT_VERBOSITY },
-	{ "sys","qv",  _fipn, 0, qr_print_qv,  get_ui8,   set_0123,   (uint32_t *)&qr.queue_report_verbosity,QUEUE_REPORT_VERBOSITY },
-	{ "sys","sv",  _fipn, 0, sr_print_sv,  get_ui8,   set_012,    (uint32_t *)&sr.status_report_verbosity,STATUS_REPORT_VERBOSITY },
-	{ "sys","si",  _fipn, 0, sr_print_si,  get_u32,   sr_set_si,  (uint32_t *)&sr.status_report_interval,STATUS_REPORT_INTERVAL_MS },
+	{ "sys","ej",  _fipn, 0, js_print_ej,  get_ui8,   set_01,     (uint32_t *)&cs.comm_mode,			   COMM_MODE },
+	{ "sys","jv",  _fipn, 0, js_print_jv,  get_ui8,   json_set_jv,(uint32_t *)&js.json_verbosity,		   JSON_VERBOSITY },
+	{ "sys","js",  _fipn, 0, js_print_js,  get_ui8,   set_01,     (uint32_t *)&js.json_syntax, 		       JSON_SYNTAX_MODE },
+	{ "sys","tv",  _fipn, 0, tx_print_tv,  get_ui8,   set_01,     (uint32_t *)&txt.text_verbosity,		   TEXT_VERBOSITY },
+	{ "sys","qv",  _fipn, 0, qr_print_qv,  get_ui8,   set_0123,   (uint32_t *)&qr.queue_report_verbosity,  QUEUE_REPORT_VERBOSITY },
+	{ "sys","sv",  _fipn, 0, sr_print_sv,  get_ui8,   set_012,    (uint32_t *)&sr.status_report_verbosity, STATUS_REPORT_VERBOSITY },
+	{ "sys","si",  _fipn, 0, sr_print_si,  get_u32,   sr_set_si,  (uint32_t *)&sr.status_report_interval,  STATUS_REPORT_INTERVAL_MS },
 
-	{ "sys","ec",  _fipn, 0, cfg_print_ec,  get_ui8,   set_ec,     (uint32_t *)&xio.enable_cr,			XIO_EXPAND_CR },
-	{ "sys","ee",  _fipn, 0, cfg_print_ee,  get_ui8,   set_ee,     (uint32_t *)&xio.enable_echo,		XIO_ENABLE_ECHO },
-	{ "sys","ex",  _fipn, 0, cfg_print_ex,  get_ui8,   set_ex,     (uint32_t *)&xio.enable_flow_control,XIO_ENABLE_FLOW_CONTROL },
-	{ "sys","rxm", _fipn, 0, cfg_print_rxm, get_ui8,   set_01,     (uint32_t *)&xio.rx_mode,            XIO_RX_MODE },
-	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,   set_baud,   (uint32_t *)&xio.usb_baud_rate,		XIO_BAUD_115200 },
+	{ "sys","ec",  _fipn, 0, cfg_print_ec,  get_ui8,   set_ec,     (uint32_t *)&xio.enable_cr,			 XIO_EXPAND_CR },
+	{ "sys","ee",  _fipn, 0, cfg_print_ee,  get_ui8,   set_ee,     (uint32_t *)&xio.enable_echo,		 XIO_ENABLE_ECHO },
+	{ "sys","ex",  _fipn, 0, cfg_print_ex,  get_ui8,   set_ex,     (uint32_t *)&xio.enable_flow_control, XIO_ENABLE_FLOW_CONTROL },
+	{ "sys","rxm", _fipn, 0, cfg_print_rxm, get_ui8,   set_01,     (uint32_t *)&xio.rx_mode,             XIO_RX_MODE },
+	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,   set_baud,   (uint32_t *)&xio.usb_baud_rate,		 XIO_BAUD_115200 },
 
     // Reports, tests, help, and messages
 	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,  sr_set,   (uint32_t *)&cs.null, 0 },	// status report object
@@ -460,6 +460,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (uint32_t *)&cs.null, 0 },	// bytes or lines in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (uint32_t *)&cs.null, 0 },	// string for generic messages
 	{ "", "clear",_f0,0, tx_print_nul, cm_clear,cm_clear, (uint32_t *)&cs.null, 0 },	// GET a clear to clear soft alarm
+
+	{ "", "pause",_f0,0, tx_print_nul, cm_pause, cm_pause, (uint32_t *)&cs.null, 0 },
+	{ "", "start",_f0,0, tx_print_nul, cm_start, cm_start, (uint32_t *)&cs.null, 0 },
+	{ "", "flush",_f0,0, tx_print_nul, cm_flush, cm_flush, (uint32_t *)&cs.null, 0 },
+	{ "", "reset",_f0,0, tx_print_nul, cm_reset, cm_reset, (uint32_t *)&cs.null, 0 },
 
     // special functions
 //	{ "", "txt", _f0, 0, tx_print_nul, get_str, get_str,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)

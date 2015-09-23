@@ -162,15 +162,15 @@ static uint8_t _populate_filtered_status_report(void);
 /*
  * sr_init_status_report()
  *
- *  SR settings are not initialized by reading NVram during the system load process. Instead they are 
- *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true 
+ *  SR settings are not initialized by reading NVram during the system load process. Instead they are
+ *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true
  *  then SR settings will be reset from the profile and persisted back to NVram.
  */
 void sr_init_status_report(bool use_defaults)
 {
     nvObj_t *nv = nv_reset_nv_list("r");	// used for status report persistence locations
     char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element 
+    sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element
     nv->index = nv_get_index((const char *)"", (const char *)"se00"); // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
 
@@ -189,7 +189,7 @@ void sr_init_status_report(bool use_defaults)
             }
             nv_set(nv);
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
-        }                
+        }
         sr.status_report_value[i] = 8675309;			    // pre-load SR values with an unlikely number
         nv->index++;                                        // increment SR NVM index
     }
@@ -206,7 +206,7 @@ void sr_init_status_report(bool use_defaults)
  *    {sr:{<key1>:f,...<keyN>:t}} removes <key1> through <keyN> from the status report list
  *
  *    - Lines may have a mix of t and f pairs
- *    - On entry nv points to the parent "sr" element on entry 
+ *    - On entry nv points to the parent "sr" element on entry
  *    - List ordering is not guaranteed in the case of mixed removes and adds in the same command
  *
  *  Error conditions:
@@ -239,7 +239,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
     	working_list[i] = NO_MATCH;
 	}
-    
+
     // process {sr:f}    clear all SR settings
     if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == false)) {
 	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -253,21 +253,21 @@ stat_t sr_set_status_report(nvObj_t *nv)
     if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == true)) {
         sr_init_status_report(true);
         return (STAT_OK);
-    }    
+    }
 
-    // process {sr:{.... process one or more SR drop/adds     
+    // process {sr:{.... process one or more SR drop/adds
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {        // read in the current SR list
         working_list[i] = sr.status_report_list[i];
-    }    
+    }
 
     // iterate the items in the nvlist
     index_t item;                                   // status report item being worked on
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if ((nv = nv->nx) == NULL) {                // advance to next element (past the "sr" parent)
             return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
-        }                                           
+        }
 		if (nv->valuetype == TYPE_EMPTY) {          // end of items
-            break; 
+            break;
         }
 		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
     		return (STAT_INPUT_VALUE_RANGE_ERROR);
@@ -400,7 +400,7 @@ static stat_t _populate_unfiltered_status_report()
 
 		if ((nv = nv->nx) == NULL) {
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
-        }        
+        }
 	}
 	return (STAT_OK);
 }
@@ -463,12 +463,12 @@ static uint8_t _populate_filtered_status_report()
  * sr_set()		- set status report elements
  * sr_set_si()	- set status report interval
  */
-stat_t sr_get(nvObj_t *nv) 
-{   
+stat_t sr_get(nvObj_t *nv)
+{
     return (_populate_unfiltered_status_report());
 }
 
-stat_t sr_set(nvObj_t *nv) 
+stat_t sr_set(nvObj_t *nv)
 {
     return (sr_set_status_report(nv));
 }
@@ -613,7 +613,7 @@ void rx_request_rx_report(void) {
 stat_t rx_report_callback(void) {
     if (!rx.rx_report_requested) {
         return (STAT_NOOP);
-    }    
+    }
     rx.rx_report_requested = false;
 
     fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);

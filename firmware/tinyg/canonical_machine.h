@@ -566,6 +566,11 @@ stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns sa
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
 
+stat_t cm_pause(nvObj_t *nv);
+stat_t cm_start(nvObj_t *nv);
+stat_t cm_flush(nvObj_t *nv);
+stat_t cm_reset(nvObj_t *nv);
+
 // Representation (4.3.3)
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21

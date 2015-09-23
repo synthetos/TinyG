@@ -231,7 +231,8 @@ static stat_t _dispatch_command()
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-        return(cm_soft_alarm(STAT_BUFFER_FULL));
+//        return(cm_soft_alarm(STAT_BUFFER_FULL));
+        return(cm_soft_alarm(STAT_ERROR_18));
     }
     if (cs.bufp != (char *)NULL) {          // process the command
         _dispatch_kernel();
@@ -252,7 +253,8 @@ static stat_t _dispatch_control()
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
 	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-    	return(cm_soft_alarm(STAT_BUFFER_FULL));
+//    	return(cm_soft_alarm(STAT_BUFFER_FULL));
+        return(cm_soft_alarm(STAT_ERROR_19));
 	}
 	if (cs.bufp != (char *)NULL) {          // process the command
     	_dispatch_kernel();
