@@ -488,7 +488,7 @@ stat_t sr_set_si(nvObj_t *nv)
  *********************/
 #ifdef __TEXT_MODE
 
-static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
+static const char fmt_si[] PROGMEM = "[si]  status interval%14lu ms\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
 void sr_print_sr(nvObj_t *nv) { _populate_unfiltered_status_report();}
