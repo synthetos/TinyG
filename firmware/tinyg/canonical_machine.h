@@ -566,6 +566,7 @@ stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns sa
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
 
+stat_t cm_alarm(nvObj_t *nv);
 stat_t cm_pause(nvObj_t *nv);
 stat_t cm_start(nvObj_t *nv);
 stat_t cm_flush(nvObj_t *nv);

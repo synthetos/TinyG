@@ -504,7 +504,7 @@ void sr_print_sv(nvObj_t *nv) { text_print(nv, fmt_sv);}
  * Queue Reports
  *
  *	Queue reports can report three values:
- *	  - qr	queue depth - # of buffers availabel in planner queue
+ *	  - qr	queue depth - # of buffers available in planner queue
  *	  - qi	buffers added to planner queue since las report
  *	  - qo	buffers removed from planner queue since last report
  *

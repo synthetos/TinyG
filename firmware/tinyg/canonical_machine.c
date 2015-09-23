@@ -568,9 +568,12 @@ stat_t canonical_machine_test_assertions(void)
 
 /*
  * cm_soft_alarm() - alarm state; send an exception report and stop processing input
- * cm_clear() 	   - clear soft alarm
+ * cm_clear() 	   - clear soft alarm from command line or JSON
+ * cm_alarm() 	   - invoke soft alarm  from command line or JSON
  * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  */
+
+stat_t cm_alarm(nvObj_t *nv) { cm_soft_alarm(STAT_ALARMED); return (STAT_OK); }
 
 stat_t cm_soft_alarm(stat_t status)
 {
@@ -606,7 +609,6 @@ stat_t cm_hard_alarm(stat_t status)
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
-
 stat_t cm_pause(nvObj_t *nv) { cm_request_feedhold(); return (STAT_OK); }
 stat_t cm_start(nvObj_t *nv) { cm_request_cycle_start(); return (STAT_OK); }
 stat_t cm_flush(nvObj_t *nv) { cm_request_queue_flush(); return (STAT_OK); }
