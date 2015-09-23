@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.38	// analogs for single character commands
+#define TINYG_FIRMWARE_BUILD        440.39	// JSON parser work to support status report setting - testing
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

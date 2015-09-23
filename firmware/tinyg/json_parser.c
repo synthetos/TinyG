@@ -134,6 +134,7 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 	stat_t status;
 	int8_t depth;
 	char group[GROUP_LEN+1] = {NUL};                // group identifier - starts as NUL
+    nvObj_t *nv_exec;                               // nv pair on which to start execution
 
     if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
         return (STAT_NESTED_JSON_CONTAINER);
@@ -143,37 +144,56 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 	//---- parse the JSON string into the nv list ----//
 
     do { // read the character string
+        nv_exec = nv;
 
         // decode the next JSON name/value pair
         // returns if error or STAT_COMPLETE
 		if ((status = _get_nv_pair(nv, &str, &depth)) > STAT_NOOP) {
-			return (status);                            // error return
+			return (status);                                // error return
         }
-        if (status == STAT_NOOP) {                      // normal return
+        if (status == STAT_NOOP) {                          // normal return
             return (STAT_OK);
         }
 
-		// perform operations on the group value
-		if (*group != NUL) {
-			strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
-		}
-		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
-			strncpy(group, nv->token, GROUP_LEN);       // record the group ID
-		}
-        // Skip TIDs
-        if (nv->index == nvl.tid_index) {
-            nv->valuetype = TYPE_SKIP;
-        }
-        // test and process container (txt)
-        if (nv_index_is_container(nv->index)) {
-            if (*(*nv->stringp) == '{') {
-                _json_parser_kernal(nv, *nv->stringp);  // call JSON parser recursively
-            } else {
-                _js_run_container_as_text(nv, *nv->stringp);
-                continue;
+        // handle PARENTs
+        if (nv->valuetype == TYPE_PARENT) {
+            do {
+                nv = nv->nx;
+                status = _get_nv_pair(nv, &str, &depth);    // parse the child objects
+                if (status == STAT_NOOP) {
+                    break;
+                }
+            }
+            while (nv->nx != NULL);
+
+        // handle all other TYPEs
+        } else {
+
+		    // perform operations on the group value
+		    if (*group != NUL) {
+			    strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
+		    }
+		    if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
+			    strncpy(group, nv->token, GROUP_LEN);       // record the group ID
+		    }
+
+            // Skip TIDs
+            if (nv->index == nvl.tid_index) {
+                nv->valuetype = TYPE_SKIP;
+            }
+
+            // test and process container (txt)
+            if (nv_index_is_container(nv->index)) {
+                if (*(*nv->stringp) == '{') {
+                    _json_parser_kernal(nv, *nv->stringp);  // call JSON parser recursively
+                } else {
+                    _js_run_container_as_text(nv, *nv->stringp);
+                    continue;
+                }
             }
         }
-        nv = _json_parser_execute(nv);
+//        nv = _json_parser_execute(nv);
+        nv = _json_parser_execute(nv_exec);
 
     } while (nv->nx != NULL);                           // this test is a safety valve
 
@@ -303,7 +323,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	char value[] =       {  "\"{.-+"  };        // quote, open curly, period, minus, plus
 
     //--- Test for end of data - indicated by garbage or a null ---//
-	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
+//	if ((**pstr == NUL) || (strchr(leaders, (int)**pstr) == NULL)) {
+	if (**pstr == NUL) {
         return (STAT_NOOP);
     }
 
