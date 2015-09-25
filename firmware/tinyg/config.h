@@ -204,7 +204,7 @@ typedef enum {
 } flowControl;
 
 typedef enum {						    // value typing for config and JSON
-    TYPE_SKIP = -2,                     // do not execute this object (used for tid)
+//    TYPE_SKIP = -2,                     // do not execute this object (used for tid)
 	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
@@ -213,6 +213,7 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_FLOAT,							// value is a floating point number
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
+    TYPE_TID,                           // special type for transaction ID
 	TYPE_PARENT					        // object is a parent to a sub-object (may also be a txt container)
 } valueType;
 

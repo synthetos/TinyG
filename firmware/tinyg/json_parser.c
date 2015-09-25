@@ -133,7 +133,7 @@ static nvObj_t *_json_parser_execute(nvObj_t *nv)
 static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 {
 	stat_t status = STAT_OK; 
-	int8_t depth = 0;
+	int8_t depth = 1;
 	char group[GROUP_LEN+1] = {NUL};                // group identifier - starts as NUL
     nvObj_t *nv_exec;                               // nv pair on which to start execution
 
@@ -186,7 +186,7 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 */
             // Skip over TIDs
             if (nv->index == nvl.tid_index) {
-                nv->valuetype = TYPE_SKIP;
+                nv->valuetype = TYPE_TID;
             }
 
             // test and process container (txt)
@@ -532,8 +532,17 @@ uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
     }
 
 	while (true) {
-		if ((nv->valuetype != TYPE_EMPTY) &&
-            (nv->valuetype != TYPE_SKIP)) {
+//		if ((nv->valuetype != TYPE_EMPTY) &&
+//            (nv->valuetype != TYPE_SKIP)) {
+
+		if (nv->valuetype != TYPE_EMPTY) {
+
+            // special handling for transaction ID
+			if (nv->valuetype == TYPE_TID) {
+                cs.txn_id = nv->value_int;
+		        if ((nv = nv->nx) == NULL) { break; }   // end of the list
+                continue;
+            }
 
 			if (need_a_comma) { *str++ = ',';}
 			need_a_comma = true;
@@ -694,7 +703,8 @@ void json_print_response(uint8_t status)
 	}
 
     // Add a transaction ID if one was present in the request
-    if (fp_NOT_ZERO(cs.txn_id)) {
+//    if (fp_NOT_ZERO(cs.txn_id)) {
+    if (cs.txn_id != 0) {
 	    while(nv->valuetype != TYPE_EMPTY) {                // find a free nvObj at end of the list...
     	    if ((nv = nv->nx) == NULL) {                    //...or hit the NULL and overwrite the last element with the TID
 //			    rpt_exception(STAT_JSON_TOO_LONG, "stopped at TID");// report this as an exception

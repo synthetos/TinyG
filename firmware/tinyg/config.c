@@ -566,7 +566,7 @@ void nv_get_nvObj(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
 }
 
-nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
+nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure. Leave depth alone
 {
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
@@ -575,7 +575,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 	nv->token[0] = NUL;
 	nv->group[0] = NUL;
 	nv->stringp = NULL;
-
+/*
 	if (nv->pv == NULL) { 					// set depth correctly
 		nv->depth = 0;
 	} else {
@@ -585,6 +585,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 			nv->depth = nv->pv->depth;
 		}
 	}
+*/
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
