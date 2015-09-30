@@ -630,30 +630,45 @@ nvObj_t *nv_reset_nv_list(char *parent)
 	    nv->depth = 1;
 	    nv->valuetype = TYPE_PARENT;
 	    strcpy(nv->token, parent);
-//        NV_BODY = &nvl.list[2];                 // return pointing past parent
-//    } else {
-//        NV_BODY = &nvl.list[1];                 // return pointing to first free buffer
     }
     return (NV_BODY);
 }
 
 /*
  * nv_relink_nv_list() - relink nx and pv pointers removing EMPTY and SKIP
+ *
+ *  Relink list and return pointer to first non-zero element, or NULL if not found
  */
-void nv_relink_nv_list()
+nvObj_t *nv_relink_nv_list()
 {
-    nvObj_t *nv = nvl.list;             // read pointer - advances for each loop iteration
-    nvObj_t *pv = nvl.list;             // prev pointer - previous non-EMPTY/SKIP pair
-	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-        if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) {
+    nvObj_t *nv = NV_HEAD;  // nvl.list     // read pointer - advances for each loop iteration
+    nvObj_t *pv;                            // previous non-EMPTY/SKIP pair
+    nvObj_t *hd;                            // adjusted head
+    uint8_t i=0, j=0;
+
+    // skip past empty/skip leading elements
+    for ( ; j<NV_LIST_LEN; j++, i++) {
+        if (nv->valuetype >= TYPE_NULL) {
+            break;
+        }
+        nv = nv->nx;                        // skip over TYPE_EMPTY and TYPE_SKIP
+    }
+    if (j == NV_LIST_LEN) {                 // empty list
+        return (NULL);
+    }
+    hd = nv;                                // mark the head
+    pv = nv;
+	for ( ; i<NV_LIST_LEN; i++, nv++) {
+        if (nv->valuetype < TYPE_NULL) {    // handle TYPE_EMPTY and TYPE_SKIP
             continue;
         }
-        pv->nx = nv;                    // Note: the first pair is messed up but gets corrected
+        pv->nx = nv;                        // Note: the first pair is messed up but gets corrected
         nv->pv = pv;
         pv = nv;
 	}
-    NV_HEAD->pv = NULL;
-    pv->nx = NULL;                      // correct the end
+    hd->pv = NULL;                          // correct the ends
+    pv->nx = NULL; 
+    return (hd);
 }
 
 /*

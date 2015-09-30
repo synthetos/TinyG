@@ -103,14 +103,16 @@ void rpt_print_initializing_message(void)
 
 void rpt_print_loading_configs_message(void)
 {
+    js.json_syntax = JSON_SYNTAX_STRICT;    // always do this message strict
 	_startup_helper(STAT_INITIALIZING, PSTR("Loading configs from EEPROM"));
 }
 
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cs.comm_mode == TEXT_MODE)
+	if (cs.comm_mode == TEXT_MODE) {
         text_response(STAT_OK, (char *)"");   // prompt
+    }    
 }
 
 /*****************************************************************************

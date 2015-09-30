@@ -512,28 +512,32 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
  *		The terminating object may or may not have data (empty or not empty).
  *
  *	Returns:
- *		Returns length of string
+ *	   -  length of string (size)
+ *     -  0 if string is empty
+ *     - -1 if string overflowed buffer
  */
 
-int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t size)
+int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 {
 	char *str = out_buf;
-	char *str_max = out_buf + size;
+	char *out_max = out_buf + out_size - 16;        // 16 is a pad to allow value expansion & closing, but ...
+                                                    //...does not need to account for strings which are sized separately
+                                                    
+    if ((nv = nv_relink_nv_list()) == NULL) {       // remove TYPE_EMPTY and TYPE_SKIP pairs
+        *str = NUL;
+        return (0);
+    }
 	int8_t initial_depth = nv->depth;
-	int8_t prev_depth;
+	int8_t prev_depth = initial_depth - 1;          // forces open curly to write
 
-    nv_relink_nv_list();                            // remove TYPE_EMPTY and TYPE_SKIP pairs
-
-    // JSON text continuation special handling. See _json_parser_kernal() / _js_run_container_as_text()
+    // JSON text continuation special handling. 
+    // See _json_parser_kernal() / _js_run_container_as_text()
     if (nv->valuetype == TYPE_TXT_CONTINUATION) {
         nv = nv->nx;                                // skip over head pair
         prev_depth = 1;                             // text continuations are always at depth 1
-    } else {
-        prev_depth = -1;                            // forces open curly to write
     }
 
-    // Serialize the list 
-    // Note: nv points to opening r{} or to the first usable object past the continuation text
+    // Serialize the list - Note: nv points to opening r{} or to the first usable object past the continuation text
 	while (true) {
         
         // close the previous pair (or write open curly for the first pair) 
@@ -568,6 +572,9 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t size)
 			str += sprintf(str, "\"0x%lx\"", *v);
 		}
 		else if (nv->valuetype == TYPE_STRING) {
+            if ((str + strlen(*nv->stringp)) >= out_max) {
+                return (-1);
+            }
             str += sprintf(str, "\"%s\"", *nv->stringp);
         }
 		else if (nv->valuetype == TYPE_ARRAY) {
@@ -584,8 +591,8 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t size)
                 str += sprintf(str, "true");
             }
 		}
-		if (str >= str_max) { 
-            return (-1);                            // signal buffer overrun
+		if (str >= out_max) {                       // test for buffer overrun 
+            return (-1);
         }
         prev_depth = nv->depth;
 		if ((nv = nv->nx) == NULL) {                // end of the list
@@ -593,12 +600,16 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t size)
         }
 	}
 
-	// Final closing curlies and NEWLINE
-	while (prev_depth-- > initial_depth) {
+    // test if sufficient space is left for closing curlies, newline and NUL termination
+	if ((str + prev_depth - initial_depth + 2) > (out_buf + out_size)) {
+        return (-1);
+    }
+
+	// write final closing curlies and NEWLINE
+    while (prev_depth-- > initial_depth) {
         *str++ = '}';
     }
-	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
-	if (str > out_buf + size) { return (-1); }
+	str += sprintf(str, "}\n");	                    // using sprintf for this last one ensures a NUL termination
 	return (str - out_buf);
 }
 
@@ -624,8 +635,10 @@ void json_print_list(stat_t status, uint8_t flags)
  */
 void json_print_object(nvObj_t *nv)
 {
-	json_serialize(nv, cs.out_buf, sizeof(cs.out_buf));
-	printf(cs.out_buf);
+	if (json_serialize(nv, cs.out_buf, sizeof(cs.out_buf)) > 0) {
+        printf(cs.out_buf);
+    }
+    // fails silently on 0 or -1 return. May want to revisit this.
 }
 
 /*
@@ -732,7 +745,7 @@ void json_print_response(uint8_t status)
 	nv->nx = NULL;
 
 	// serialize the JSON response and print it if there were no errors
-	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) >= 0) {
+	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
     	printf(cs.out_buf);
 	}
 }

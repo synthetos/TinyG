@@ -65,7 +65,6 @@ typedef struct jsSingleton {
 	uint8_t json_syntax;			// 0=relaxed syntax, 1=strict syntax
 	uint8_t json_footer_depth;		// 0=footer is peer to response 'r', 1=child of response 'r'
     uint8_t json_recursion_depth;   // only allows a single recursive call (no nesting)
-//    uint8_t json_continuation;      // serialize continues a string (this is a real hack - sorry)
 
 	uint8_t echo_json_footer;		// flags for JSON responses serialization
 	uint8_t echo_json_messages;
@@ -84,7 +83,7 @@ extern jsSingleton_t js;
 /**** Function Prototypes ****/
 
 void json_parser(char *str);
-int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t size);
+int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size);
 void json_print_object(nvObj_t *nv);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);

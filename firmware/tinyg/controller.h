@@ -45,15 +45,11 @@ typedef enum {				            // manages startup lines
 
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-//	float null;							// dumping ground for items with no target
 	uint32_t null;						// dumping ground for items with no target
 
 	// system identification values
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
-//	float config_version;				// tinyg configuration version for host / UI control
-//	float hw_platform;					// tinyg hardware compatibility - platform type
-//	float hw_version;					// tinyg hardware compatibility - platform revision
 	uint8_t hw_platform;                // tinyg hardware compatibility - platform type
 	uint8_t hw_version;                 // tinyg hardware compatibility - platform revision
 
