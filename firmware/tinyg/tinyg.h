@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.40	// Added $alarm
+#define TINYG_FIRMWARE_BUILD        440.41	// fixing sr responses for r{}
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

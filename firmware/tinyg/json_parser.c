@@ -89,7 +89,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 
 void json_parser(char *str)
 {
-    js.json_continuation = false;
+//    js.json_continuation = false;
     js.json_recursion_depth = 0;
 //    nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
@@ -222,16 +222,17 @@ static void _js_run_container_as_text (nvObj_t *nv, char *str)
     // process pure text-mode commands
     if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
         if (js.json_syntax == JSON_SYNTAX_RELAXED) {// opening JSON
-            printf_P(PSTR("{r:{msg:\""));
+            printf_P(PSTR("{r:{txt:\""));
         } else {
-            printf_P(PSTR("{\"r\":{\"msg\":\""));
+            printf_P(PSTR("{\"r\":{\"txt\":\""));
         }
         cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
         text_parser(str);
         cs.comm_mode = JSON_MODE;                   // restore JSON mode
         printf_P(PSTR("\""));                       // close quote
-        nv_reset_nv_list(NUL);
-        js.json_continuation = true;                // enable correct actions when closing JSON string
+        nv_reset_nv_list(NUL);                      // reset the list to start at the head
+        NV_HEAD->valuetype = TYPE_TXT_CONTINUATION; // label the list as a text continuation
+//        js.json_continuation = true;                // enable correct actions when closing JSON string
 
     // process gcode
     } else {
@@ -516,95 +517,124 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
  *	Returns:
  *		Returns length of string
  */
-
-uint16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
+/*
+static nvObj_t *_get_next_nvObj(nvObj_t *nv)
+{
+    while ((nv = nv->nx) != NULL) {
+        if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) {
+            continue;
+        }
+        return (nv);
+    }
+    return (nv);
+}
+*/
+int16_t json_serialize(nvObj_t *nv, char *out_buf, uint16_t size)
 {
 	char *str = out_buf;
 	char *str_max = out_buf + size;
 	int8_t initial_depth = nv->depth;
-	int8_t prev_depth = 0;
-	uint8_t need_a_comma = false;
+//	int8_t prev_depth = 0;
+//	uint8_t need_a_comma = false;
+//    nvl.prev_depth = 0;                             // starting depth is zero
 
-    if (js.json_continuation) { // See _json_parser_kernal() / _js_run_container_as_text()
-	    *str++ = ','; 								// write continuing comma
-    } else {
-	    *str++ = '{'; 								// write opening curly
+    nv_relink_nv_pointers();                        // remove TYPE_EMPTY and TYPE_SKIP pairs
+
+    // JSON text continuation special handling. See _json_parser_kernal() / _js_run_container_as_text()
+//    if (!js.json_continuation) {
+    if (nv->valuetype != TYPE_TXT_CONTINUATION) {
+        nvl.prev_depth = -1;                        // starting depth
+//        nvl.prev_depth = 0;                         // starting depth is zero
+//	    *str++ = '{'; 								// write opening curly if not a continuation
+
+    } else {                                        // otherwise close the text continuation appropriately
+//    if (nv->valuetype == TYPE_TXT_CONTINUATION) {
+        nv = nv->nx;                                // skip over head pair
+//        if (nv->depth == 0) {
+//            *str++ = '}'; 						    // write closing curly
+//        } else {
+//     	    *str++ = ','; 						    // write continuing comma
+//        }
+        nvl.prev_depth = 1;                         // text continuations are always at depth 1
     }
 
+    // Serialize the list
+    // nv points to opening r{} or to the first usable object past the continuation text  
 	while (true) {
-//		if ((nv->valuetype != TYPE_EMPTY) &&
-//            (nv->valuetype != TYPE_SKIP)) {
+        
+        // Close the previous object 
+// 		if (nv->pv->valuetype == TYPE_PARENT) {     // open a new object if the previous object was a parent
+        if (nv->depth > nvl.prev_depth) {           // write opening curlies (no nesting)
+     		*str++ = '{';
 
-		if (nv->valuetype != TYPE_EMPTY) {
+ 		} else if (nv->depth == nvl.prev_depth) {   // write a comma if no depth change
+            *str++ = ',';
 
-            // special handling for transaction ID
-			if (nv->valuetype == TYPE_TID) {
-                cs.txn_id = nv->value_int;
-		        if ((nv = nv->nx) == NULL) { break; }   // end of the list
-                continue;
+        } else {
+            while (nv->depth < nvl.prev_depth) {    // write nested close curlies followed by a comma
+                nvl.prev_depth = nv->depth;
+                *str++ = '}';
             }
-
-			if (need_a_comma) { *str++ = ',';}
-			need_a_comma = true;
+            *str++ = ',';
+        }
             
-            // serialize name
-			if (js.json_syntax == JSON_SYNTAX_RELAXED) { // write name
-				str += sprintf((char *)str, "%s:", nv->token);
+        // serialize name
+		if (js.json_syntax == JSON_SYNTAX_RELAXED) { // write name
+			str += sprintf((char *)str, "%s:", nv->token);
+		} else {
+			str += sprintf((char *)str, "\"%s\":", nv->token);
+		}
+
+		// serialize value
+//		if (nv->valuetype == TYPE_PARENT) {
+//    		*str++ = '{';
+//    	}
+		if (nv->valuetype == TYPE_NULL)	{
+            str += sprintf(str, "null");            // Note that that "" is NOT null.
+        }
+		else if (nv->valuetype == TYPE_INTEGER)	{
+			str += sprintf(str, "%lu", nv->value_int);
+		}
+		else if (nv->valuetype == TYPE_DATA) {
+			uint32_t *v = (uint32_t*)&nv->value_flt;
+			str += sprintf(str, "\"0x%lx\"", *v);
+		}
+		else if (nv->valuetype == TYPE_STRING) {
+            str += sprintf(str, "\"%s\"", *nv->stringp);
+        }
+		else if (nv->valuetype == TYPE_ARRAY) {
+            str += sprintf(str, "[%s]", *nv->stringp);
+        }
+		else if (nv->valuetype == TYPE_FLOAT) {
+            preprocess_float(nv);
+			str += fntoa(str, nv->value_flt, nv->precision);
+		}
+		else if (nv->valuetype == TYPE_BOOL) {
+			if (nv->value_int == false) {
+                str += sprintf(str, "false");
 			} else {
-				str += sprintf((char *)str, "\"%s\":", nv->token);
-			}
-
-			// serialize value
-			if (nv->valuetype == TYPE_NULL)	{
-                str += sprintf(str, "null");        // Note that that "" is NOT null.
+                str += sprintf(str, "true");
             }
-			else if (nv->valuetype == TYPE_INTEGER)	{
-				str += sprintf(str, "%lu", nv->value_int);
-			}
-			else if (nv->valuetype == TYPE_DATA) {
-				uint32_t *v = (uint32_t*)&nv->value_flt;
-				str += sprintf(str, "\"0x%lx\"", *v);
-			}
-			else if (nv->valuetype == TYPE_STRING) {
-                str += sprintf(str, "\"%s\"", *nv->stringp);
-            }
-			else if (nv->valuetype == TYPE_ARRAY) {
-                str += sprintf(str, "[%s]", *nv->stringp);
-            }
-			else if (nv->valuetype == TYPE_FLOAT) {
-                preprocess_float(nv);
-				str += fntoa(str, nv->value_flt, nv->precision);
-			}
-			else if (nv->valuetype == TYPE_BOOL) {
-				if (nv->value_int == false) {
-                    str += sprintf(str, "false");
-				} else {
-                    str += sprintf(str, "true");
-                }
-			}
-			if (nv->valuetype == TYPE_PARENT) {
-				*str++ = '{';
-				need_a_comma = false;
-			}
 		}
-		if (str >= str_max) { return (-1); }	    // signal buffer overrun
-		if ((nv = nv->nx) == NULL) { break; }   // end of the list
+        
+		if (str >= str_max) { 
+            return (-1);                            // signal buffer overrun
+        }
 
-		while (nv->depth < prev_depth--) {		// iterate the closing curlies
-			need_a_comma = true;
-			*str++ = '}';
-		}
-		prev_depth = nv->depth;
+        nvl.prev_depth = nv->depth;
+		if ((nv = nv->nx) == NULL) {    // end of the list
+            break; 
+        }
 	}
 
-	// closing curlies and NEWLINE
-	while (prev_depth-- > initial_depth) {
+	// Final closing curlies and NEWLINE
+	while (nvl.prev_depth-- > initial_depth) {
         *str++ = '}';
     }
-    if (js.json_continuation) {                 // once and only once
-        js.json_continuation = false;
-        *str++ = '}';
-    }
+//    if (js.json_continuation) {                 // once and only once
+//        js.json_continuation = false;
+//        *str++ = '}';
+//    }
 	str += sprintf(str, "}\n");	// using sprintf for this last one ensures a NUL termination
 	if (str > out_buf + size) { return (-1); }
 	return (str - out_buf);
@@ -654,6 +684,8 @@ void json_print_object(nvObj_t *nv)
  *	which you may or may not want to display. This is followed by zero or more displayable objects.
  *	Then if you want a gcode line number you add that here to the end. Finally, a footer goes
  *	on all the (non-silent) responses.
+ *
+ *  NV types labeled as TYPE_EMPTY signal the end of the incoming NV list
  */
 #define MAX_TAIL_LEN 8
 
@@ -663,8 +695,13 @@ void json_print_response(uint8_t status)
 
 	// Setup the response header
 	nvObj_t *nv = NV_HEAD;
-	nv->valuetype = TYPE_PARENT;
-	strcpy(nv->token, "r");
+//    if (!js.json_continuation) {                        // include r{} if not a continuation
+    if (nv->valuetype != TYPE_TXT_CONTINUATION) {       // include r{} if not a continuation
+	    nv->valuetype = TYPE_PARENT;
+	    strcpy(nv->token, "r");
+//    } else {
+//	    nv->valuetype = TYPE_SKIP;
+    }        
 
 	// Body processing
 	nv = NV_BODY;
@@ -674,56 +711,68 @@ void json_print_response(uint8_t status)
 	    strcpy(nv->token, "r");
 		nv_add_string((const char *)"err", escape_string(cs.bufp, cs.saved_buf));
 
+    // Filter the NV pairs down to the JSON verbosity reporting level
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
 		uint8_t nv_type;
 		do {
-			if ((nv_type = nv_get_type(nv)) == NV_TYPE_NULL) break;
+            if (nv->valuetype == TYPE_EMPTY) {		        // find end of list
+                break;
+            }
+            if (nv->valuetype == TYPE_TID) {		        // process transaction IDs
+            	cs.txn_id = nv->value_int;
+            	nv->valuetype = TYPE_SKIP;
+                continue;
+        	}
+//			if ((nv_type = nv_get_type(nv)) == NV_TYPE_NULL) {
+//                break;
+//            }
 
+			nv_type = nv_get_type(nv);
 			if (nv_type == NV_TYPE_GCODE) {
-				if (js.echo_json_gcode_block == false) {	// kill command echo if not enabled
-					nv->valuetype = TYPE_EMPTY;
+				if (js.echo_json_gcode_block == false) {	// skip command echo if not enabled
+					nv->valuetype = TYPE_SKIP;
 				}
-
-//++++		} else if (nv_type == NV_TYPE_CONFIG) {			// kill config echo if not enabled
-//fix me		if (js.echo_json_configs == false) {
-//					nv->valuetype = TYPE_EMPTY;
-//				}
-
-			} else if (nv_type == NV_TYPE_MESSAGE) {		// kill message echo if not enabled
+			} else if (nv_type == NV_TYPE_MESSAGE) {		// skip message echo if not enabled
 				if (js.echo_json_messages == false) {
-					nv->valuetype = TYPE_EMPTY;
+					nv->valuetype = TYPE_SKIP;
 				}
-
-			} else if (nv_type == NV_TYPE_LINENUM) {		// kill line number echo if not enabled
+			} else if (nv_type == NV_TYPE_LINENUM) {		// skip line number echo if not enabled
 				if ((js.echo_json_linenum == false) || (nv->value_int)) { // do not report line# 0
-					nv->valuetype = TYPE_EMPTY;
+					nv->valuetype = TYPE_SKIP;
 				}
-			}
+//++++		} else if (nv_type == NV_TYPE_CONFIG) {			// skip config echo if not enabled
+//fix me		if (js.echo_json_configs == false) {
+//					nv->valuetype = TYPE_SKIP;
+//				}
+            }            
 		} while ((nv = nv->nx) != NULL);
 	}
-
+/*
+    // Locate the end of populated NV pairs
+    for (nv = NV_BODY; nv->nx != NULL; nv = nv->nx) {
+        if (nv->valuetype == TYPE_EMPTY) {
+            break;
+        }
+    }
+    if (nv == NULL) {
+//      rpt_exception(STAT_JSON_TOO_LONG, "stopped at TID");// report this as an exception
+        rpt_exception(STAT_JSON_TOO_LONG);                  // report this as an exception
+        json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
+        return;
+    } else {
+        
+     // nv now points to first available NV
+*/
     // Add a transaction ID if one was present in the request
-//    if (fp_NOT_ZERO(cs.txn_id)) {
     if (cs.txn_id != 0) {
-	    while(nv->valuetype != TYPE_EMPTY) {                // find a free nvObj at end of the list...
-    	    if ((nv = nv->nx) == NULL) {                    //...or hit the NULL and overwrite the last element with the TID
-//			    rpt_exception(STAT_JSON_TOO_LONG, "stopped at TID");// report this as an exception
-			    rpt_exception(STAT_JSON_TOO_LONG);          // report this as an exception
-                nv->value_int = cs.txn_id;
-                strcpy(nv->token, "tid");
-			    nv->valuetype = TYPE_INTEGER;
-                nv->depth = 0;                              // always a top-level object
-        	    json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
-        	    return;
-    	    }
-	    }
+        nv = NV_TID;
         nv->value_int = cs.txn_id;
         strcpy(nv->token, "tid");
         nv->valuetype = TYPE_INTEGER;
         nv->depth = 0;                                      // always a top-level object
-        nv = nv->nx;
+//        nv = nv->nx;
     }
-
+/*
 	// Setup the footer
 	while(nv->valuetype != TYPE_EMPTY) {					// find a free nvObj at end of the list...
 		if ((nv = nv->nx) == NULL) {						//...or hit the NULL and return w/o a footer
@@ -732,6 +781,9 @@ void json_print_response(uint8_t status)
 			return;
 		}
 	}
+*/
+    // Add the footer
+    nv = NV_FOOT;
 	char footer_string[NV_FOOTER_LEN];
 
     if (xio.rx_mode == RX_MODE_CHAR) {                      // character style footer

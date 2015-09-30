@@ -645,6 +645,25 @@ nvObj_t *nv_reset_nv_list(char *parent)
     return (NV_BODY);
 }
 
+/*
+ * nv_relink_nv_pointers() - relink nx and pv pointers remeoving EMPTY and SKIP
+ */
+void nv_relink_nv_pointers()
+{
+    nvObj_t *nv = nvl.list;             // read pointer - advances for each loop iteration
+    nvObj_t *pv = nvl.list;             // prev pointer - previous non-EMPTY/SKIP pair
+	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
+        if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) {
+            continue;
+        }
+        pv->nx = nv;                    // Note: the first pair is messed up but gets corrected
+        nv->pv = pv;
+        pv = nv;
+	}
+    NV_HEAD->pv = NULL;
+    pv->nx = NULL;                      // correct the end
+}
+
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
 	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)

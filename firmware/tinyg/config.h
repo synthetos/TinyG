@@ -204,7 +204,7 @@ typedef enum {
 } flowControl;
 
 typedef enum {						    // value typing for config and JSON
-//    TYPE_SKIP = -2,                     // do not execute this object (used for tid)
+    TYPE_SKIP = -2,                     // do not serialize this object (used for filtering)
 	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
@@ -214,7 +214,8 @@ typedef enum {						    // value typing for config and JSON
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
     TYPE_TID,                           // special type for transaction ID
-	TYPE_PARENT					        // object is a parent to a sub-object (may also be a txt container)
+	TYPE_PARENT,				        // object is a parent to a sub-object (may also be a txt container)
+    TYPE_TXT_CONTINUATION               // NV pair was filled in by _js_run_container_as_text()
 } valueType;
 
 /**** operations flags and shorthand ****/
@@ -273,6 +274,7 @@ typedef struct nvList {
 	uint16_t magic_start;
     index_t container_index;            // cache the txt container index
     index_t tid_index;                  // cache the transaction ID index
+    int8_t prev_depth;                  //+++++
 	nvObj_t list[NV_LIST_LEN];			// list of nv objects, including space for a JSON header element
 	uint16_t magic_end;
 } nvList_t;
@@ -296,7 +298,9 @@ extern nvList_t nvl;
 extern const cfgItem_t cfgArray[];
 
 nvObj_t *NV_BODY;                       // this is dynamic. Set by nv_reset_nv_list()
-#define NV_HEAD (&nvl.list[0])          // this is static
+#define NV_HEAD (&nvl.list[0])              // address of header (this is static)
+#define NV_TID  (&nvl.list[NV_LIST_LEN-2])  // address of transaction ID
+#define NV_FOOT (&nvl.list[NV_LIST_LEN-1])  // address of footer
 
 //#define nv_header nv.list
 //#define nv_body   (&nvl.list[1])
@@ -351,6 +355,7 @@ stat_t get_grp(nvObj_t *nv);				// get data for a group
 void nv_get_nvObj(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(char *parent);
+void nv_relink_nv_pointers(void);
 stat_t nv_copy_string(nvObj_t *nv, const char *src);
 nvObj_t *nv_add_object(const char *token);
 nvObj_t *nv_add_integer(const char *token, const uint32_t value);
