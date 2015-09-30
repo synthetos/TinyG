@@ -520,6 +520,7 @@ uint8_t nv_get_type(nvObj_t *nv)
  * nv_get_nvObj()		- setup a nv object by providing the index
  * nv_reset_nv()		- quick clear for a new nv object
  * nv_reset_nv_list()	- clear entire header, body and footer for a new use
+ * nv_relink_nv_list()  - relink nx and pv pointers removing EMPTY and SKIP
  * nv_copy_string()		- used to write a string to shared string storage and link it
  * nv_add_object()		- write contents of parameter to  first free object in the body
  * nv_add_integer()		- add an integer value to end of nv body (Note 1)
@@ -566,8 +567,8 @@ void nv_get_nvObj(nvObj_t *nv)
 	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
 }
 
-nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure. Leave depth alone
-{
+nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
+{                                           // depth and pointers are NOT affected
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
 	nv->value_int = 0;
@@ -575,17 +576,6 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure. Leave dep
 	nv->token[0] = NUL;
 	nv->group[0] = NUL;
 	nv->stringp = NULL;
-/*
-	if (nv->pv == NULL) { 					// set depth correctly
-		nv->depth = 0;
-	} else {
-		if (nv->pv->valuetype == TYPE_PARENT) {
-			nv->depth = nv->pv->depth + 1;
-		} else {
-			nv->depth = nv->pv->depth;
-		}
-	}
-*/
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
@@ -594,9 +584,9 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure. Leave dep
  *
  *  - Clear all nvObjs in the nvList:
  *      - set nvObj[i].valuetype = TYPE_EMPTY
- *      - zero all values and nul all strings
+ *      - zero all values and NUL terminate all strings
  *
- *  - nvObj[0] is reserved for 'r' header:
+ *  - nvObj[0] is reserved for 'r' header (NV_HEAD)
  *      - set nvObj[0].valuetype = TYPE_EMPTY
  *      - set nvObj[0].depth = 0
  *
@@ -604,7 +594,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure. Leave dep
  *      - set nvObj[1..N].depth = 1             // set all depths to 1
  *      - return nv pointing to nvObj[1]
  *
- *  - else if "parent" arg is non-NUL (mark as PARENT):
+ *  - else if "parent" arg is non-NUL:
  *      - set nvObj[1].valuetype = TYPE_PARENT
  *      - set nvObj[1].token = "parent"
  *      - set nvObj[1].depth = 1
@@ -646,9 +636,9 @@ nvObj_t *nv_reset_nv_list(char *parent)
 }
 
 /*
- * nv_relink_nv_pointers() - relink nx and pv pointers remeoving EMPTY and SKIP
+ * nv_relink_nv_list() - relink nx and pv pointers removing EMPTY and SKIP
  */
-void nv_relink_nv_pointers()
+void nv_relink_nv_list()
 {
     nvObj_t *nv = nvl.list;             // read pointer - advances for each loop iteration
     nvObj_t *pv = nvl.list;             // prev pointer - previous non-EMPTY/SKIP pair
@@ -664,6 +654,9 @@ void nv_relink_nv_pointers()
     pv->nx = NULL;                      // correct the end
 }
 
+/*
+ * nv_copy_string() - copy srouce string to the string allocation buffer and set pointer in NV obj
+ */
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
 	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
@@ -691,12 +684,14 @@ nvObj_t *nv_add_object(const char *token)  // add an object to the body using a 
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+                return (NULL);               // not supposed to find a NULL; here for safety
+            }            
 			continue;
 		}
 		// load the index from the token or die trying
 		if ((nv->index = nv_get_index((const char *)"",token)) == NO_MATCH) { return (NULL);}
-		nv_get_nvObj(nv);				// populate the object from the index
+		nv_get_nvObj(nv);				    // populate the object from the index
 		return (nv);
 	}
 	return (NULL);
@@ -707,7 +702,9 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
@@ -723,7 +720,9 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
 		strcpy(nv->token, token);
@@ -740,7 +739,9 @@ nvObj_t *nv_add_float(const char *token, const float value)	// add a float objec
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
@@ -757,7 +758,9 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
 		strncpy(nv->token, token, TOKEN_LEN);
