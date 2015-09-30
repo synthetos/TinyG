@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.41	// fixing sr responses for r{}
+#define TINYG_FIRMWARE_BUILD        440.42	// Remove vestigial references to json_footer_depth
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

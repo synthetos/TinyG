@@ -62,9 +62,6 @@
 #undef	JSON_VERBOSITY
 #define JSON_VERBOSITY				JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
-#undef  JSON_FOOTER_DEPTH
-#define JSON_FOOTER_DEPTH			0				// 0 = new style, 1 = old style
-
 #undef  JSON_SYNTAX_MODE
 #define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
 
@@ -100,8 +97,8 @@
 #define Z_VELOCITY_MAX 			1000        // axis setting
 */
 
-//#define SCREW_TRAVEL 5.08     // actual value
-#define SCREW_TRAVEL 10.16      // value to make the machine handle 2x size for testing
+#define SCREW_TRAVEL 5.08     // actual value
+//#define SCREW_TRAVEL 10.16      // value to make the machine handle 2x size for testing
 
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa

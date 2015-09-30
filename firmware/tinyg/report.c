@@ -85,7 +85,6 @@ stat_t rpt_er(nvObj_t *nv)
 
 void _startup_helper(stat_t status, const char *msg)
 {
-	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
 	nv_reset_nv_list("sr");
 	nv_add_object((const char *)"fv");		// firmware version
 	nv_add_object((const char *)"fb");		// firmware build
