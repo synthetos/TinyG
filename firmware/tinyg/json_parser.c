@@ -418,9 +418,9 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         char *rd = (*pstr);                     // read pointer for copy to stringp (on 1st char)
         char *wr = (*pstr);                     // write pointer for string manipulation
 	    for (i=0; true; i++, (*pstr)++, wr++) {
-    	    if (i == NV_MESSAGE_LEN) {
-        	    return (STAT_JSON_TOO_LONG);
-    	    }
+//    	    if (i == NV_MESSAGE_LEN) {          // NOT REQUIRED. Assume string has a termination
+//        	    return (STAT_JSON_TOO_LONG);
+//    	    }
             if ((*(*pstr) == '\\') && *((*pstr)+1) == '\"') { // escaped quote
                 *wr = '\"';
                 (*pstr)++;
