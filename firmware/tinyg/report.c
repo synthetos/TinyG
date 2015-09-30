@@ -83,7 +83,6 @@ stat_t rpt_er(nvObj_t *nv)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-//void _startup_helper(stat_t status, const char *msg)
 void _startup_helper(stat_t status, const char *msg)
 {
 	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
@@ -94,7 +93,6 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char *)"hv");		// hardware version
 	nv_add_object((const char *)"id");		// hardware ID
 	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
-//	json_print_response(status);
     json_print_object(NV_HEAD);
 }
 
@@ -169,7 +167,6 @@ static uint8_t _populate_filtered_status_report(void);
  */
 void sr_init_status_report(bool use_defaults)
 {
-//    nvObj_t *nv = nv_reset_nv_list("r");	// used for status report persistence locations
     nvObj_t *nv = nv_reset_nv_list(NUL);	// used for status report persistence locations
     char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
     sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element
@@ -384,8 +381,9 @@ stat_t sr_run_text_status_report()
 static stat_t _populate_unfiltered_status_report()
 {
 	char tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list("sr");	// sets *nv to the start of the body
-
+	nvObj_t *nv = nv_reset_nv_list("sr");
+ 	nv = nv->nx;	                    // set *nv to the first empty pair past the SR parent
+   
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
 		nv_get_nvObj(nv);
@@ -416,11 +414,10 @@ static stat_t _populate_unfiltered_status_report()
  */
 static uint8_t _populate_filtered_status_report()
 {
-//	char sr_str[] = "sr";
 	uint8_t has_data = false;
 	char tmp[TOKEN_LEN+1];
-//	nvObj_t *nv = nv_reset_nv_list(sr_str);	// sets nv to the start of the body
-	nvObj_t *nv = nv_reset_nv_list("sr");	// sets nv to the start of the body
+	nvObj_t *nv = nv_reset_nv_list("sr");
+	nv = nv->nx;	                    // set *nv to the first empty pair past the SR parent
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}

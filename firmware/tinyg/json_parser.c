@@ -89,9 +89,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 
 void json_parser(char *str)
 {
-//    js.json_continuation = false;
     js.json_recursion_depth = 0;
-//    nvObj_t *nv = nv_reset_nv_list("r");		    // get a fresh nvObj list - primed as a 'r'esponse
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
@@ -232,7 +230,6 @@ static void _js_run_container_as_text (nvObj_t *nv, char *str)
         printf_P(PSTR("\""));                       // close quote
         nv_reset_nv_list(NUL);                      // reset the list to start at the head
         NV_HEAD->valuetype = TYPE_TXT_CONTINUATION; // label the list as a text continuation
-//        js.json_continuation = true;                // enable correct actions when closing JSON string
 
     // process gcode
     } else {

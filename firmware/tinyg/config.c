@@ -113,7 +113,6 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  */
 void config_init()
 {
-//	nvObj_t *nv = nv_reset_nv_list("r");
 	nvObj_t *nv = nv_reset_nv_list(NUL);
 	config_init_assertions();
 
@@ -592,20 +591,22 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
  *
  *  - if "parent" arg is NUL:
  *      - set nvObj[1..N].depth = 1             // set all depths to 1
- *      - return nv pointing to nvObj[1]
  *
  *  - else if "parent" arg is non-NUL:
  *      - set nvObj[1].valuetype = TYPE_PARENT
  *      - set nvObj[1].token = "parent"
  *      - set nvObj[1].depth = 1
  *      - set nvObj[2..N].depth = 2             // set all remaining depths to 2 
- *      - return nv pointing to nvObj[2]
+ *
+ *  -  return nv pointing to NV_BODY (nvObj[1])
  */
 
 nvObj_t *nv_reset_nv_list(char *parent)
 {
+    // set up linked list and initialize elements
 	nvStr.wp = 0;							    // reset the shared string
-	nvObj_t *nv = nvl.list;					    // set up linked list and initialize elements
+//	nvObj_t *nv = nvl.list;					    
+	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
     uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);	                        // the ends are bogus & corrected later
@@ -624,13 +625,14 @@ nvObj_t *nv_reset_nv_list(char *parent)
     nv->depth = 0;
 
     // setup parent element if one was requested. This is a convenience for calling routines
+    nv = NV_BODY;
     if (*parent != NUL) {
 	    nv->depth = 1;
 	    nv->valuetype = TYPE_PARENT;
 	    strcpy(nv->token, parent);
-        NV_BODY = &nvl.list[2];                 // return pointing past parent
-    } else {
-        NV_BODY = &nvl.list[1];                 // return pointing to first free buffer
+//        NV_BODY = &nvl.list[2];                 // return pointing past parent
+//    } else {
+//        NV_BODY = &nvl.list[1];                 // return pointing to first free buffer
     }
     return (NV_BODY);
 }
