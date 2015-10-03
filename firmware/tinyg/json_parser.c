@@ -339,7 +339,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	if (**pstr == NUL) {
         return (STAT_NOOP);
     }
-	nv_reset_nv(nv);							// wipe the object and set the depth
+	nv_reset_nv(nv);							// wipe the object
+    nv->depth = *depth;                         // set its depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
@@ -405,7 +406,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') {
 		nv->valuetype = TYPE_PARENT;
-//		*depth += 1;    // nv_reset_nv() sets the next object's level so this is redundant
+		*depth += 1;
 		(*pstr)++;
 		return(STAT_EAGAIN);					// signal that there is more to parse
 
@@ -666,7 +667,13 @@ void json_print_object(nvObj_t *nv)
 
 void json_print_response(uint8_t status)
 {
-	if (js.json_verbosity == JV_SILENT) return;			// silent responses
+	if (js.json_verbosity == JV_SILENT) {               // silent responses
+        return;
+    }
+
+    if (status != STAT_OK) {
+        printf("ERROR %d\n", (int)status);
+    }
 
 	// Setup the response header
 	nvObj_t *nv = NV_HEAD;

@@ -605,7 +605,6 @@ nvObj_t *nv_reset_nv_list(char *parent)
 {
     // set up linked list and initialize elements
 	nvStr.wp = 0;							    // reset the shared string
-//	nvObj_t *nv = nvl.list;					    
 	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
     uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
