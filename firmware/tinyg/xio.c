@@ -412,7 +412,7 @@ static void _init_readline_linemode()
     bm.fragments = 0;
     bm.free_headers = RX_HEADERS;                   // used to report buffers available
     bm.out_of_ram = false;
-    bm.requested_size = RX_BUFFER_REQUESTED_SIZE;   // this parameter may be overwritten later
+    bm.requested_size = RX_BUFFER_MIN_SIZE;         // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
         bm.buf[i].bufnum = i;                       // ++++++ DIAGNOSTIC - NUMBER THE HEADER
         bm.buf[i].size = 0;
