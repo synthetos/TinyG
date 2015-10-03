@@ -130,7 +130,7 @@ static nvObj_t *_json_parser_execute(nvObj_t *nv)
 
 static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 {
-	stat_t status = STAT_OK; 
+	stat_t status = STAT_OK;
 	int8_t depth = 1;
 	char group[GROUP_LEN+1] = {NUL};                // group identifier - starts as NUL
     nvObj_t *nv_exec;                               // nv pair on which to start execution
@@ -256,7 +256,7 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
     }
 	for (wr = str; *str != NUL; str++) {
         if ((*str == 0xE2) && (*(str+1) == 0x80)) { // replace "smart" quotes in all strings
-            str += 2; 
+            str += 2;
             if ((*str == 0x9C) || (*str == 0x9D)) {
                 *wr++ = '\"';
                 continue;
@@ -463,7 +463,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
     }
 
 	// advance past any remaining chars in the value to the terminator - or err out
-	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) { 
+	if ((*pstr = strpbrk(*pstr, terminators)) == NULL) {
 		return (STAT_JSON_SYNTAX_ERROR);
 	}
 
@@ -522,7 +522,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 	char *str = out_buf;
 	char *out_max = out_buf + out_size - 16;        // 16 is a pad to allow value expansion & closing, but ...
                                                     //...does not need to account for strings which are sized separately
-                                                    
+
     if ((nv = nv_relink_nv_list()) == NULL) {       // remove TYPE_EMPTY and TYPE_SKIP pairs
         *str = NUL;
         return (0);
@@ -530,7 +530,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 	int8_t initial_depth = nv->depth;
 	int8_t prev_depth = initial_depth - 1;          // forces open curly to write
 
-    // JSON text continuation special handling. 
+    // JSON text continuation special handling.
     // See _json_parser_kernal() / _js_run_container_as_text()
     if (nv->valuetype == TYPE_TXT_CONTINUATION) {
         nv = nv->nx;                                // skip over head pair
@@ -539,8 +539,8 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
     // Serialize the list - Note: nv points to opening r{} or to the first usable object past the continuation text
 	while (true) {
-        
-        // close the previous pair (or write open curly for the first pair) 
+
+        // close the previous pair (or write open curly for the first pair)
         if (nv->depth > prev_depth) {               // opening curly (no nesting)
      		*str++ = '{';
  		} else if (nv->depth == prev_depth) {       // comma if no depth change
@@ -591,12 +591,12 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
                 str += sprintf(str, "true");
             }
 		}
-		if (str >= out_max) {                       // test for buffer overrun 
+		if (str >= out_max) {                       // test for buffer overrun
             return (-1);
         }
         prev_depth = nv->depth;
 		if ((nv = nv->nx) == NULL) {                // end of the list
-            break; 
+            break;
         }
 	}
 
@@ -673,7 +673,7 @@ void json_print_response(uint8_t status)
     if (nv->valuetype != TYPE_TXT_CONTINUATION) {       // include r{} if not a continuation
 	    nv->valuetype = TYPE_PARENT;
 	    strcpy(nv->token, "r");
-    }        
+    }
 
 	// Body processing
 	nv = NV_BODY;
@@ -714,7 +714,7 @@ void json_print_response(uint8_t status)
 //fix me		if (js.echo_json_configs == false) {
 //					nv->valuetype = TYPE_SKIP;
 //				}
-            }            
+            }
 		} while ((nv = nv->nx) != NULL);
 	}
 

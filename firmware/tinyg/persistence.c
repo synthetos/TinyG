@@ -88,8 +88,8 @@ stat_t read_persistent_value(nvObj_t *nv)
 stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF) {
-        return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-    }    
+        return(rpt_exception(STAT_COMMAND_NOT_ACCEPTED));	// can't write when machine is moving
+    }
 
 	nvm.tmp_value = nv->value_int;
 	ritorno(read_persistent_value(nv));
@@ -107,8 +107,8 @@ stat_t write_persistent_value(nvObj_t *nv)
 stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF) {
-        return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-    }    
+        return(rpt_exception(STAT_COMMAND_NOT_ACCEPTED));	// can't write when machine is moving
+    }
 	return (STAT_OK);
 }
 #endif // __ARM

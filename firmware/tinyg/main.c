@@ -190,7 +190,7 @@ static const char stat_05[] PROGMEM = "Terminated";
 static const char stat_06[] PROGMEM = "Hard reset";
 static const char stat_07[] PROGMEM = "End of line";
 static const char stat_08[] PROGMEM = "End of file";
-static const char stat_09[] PROGMEM = "File not open";
+static const char stat_09[] PROGMEM = "Cannot write to destination";
 
 static const char stat_10[] PROGMEM = "Max file size exceeded";
 static const char stat_11[] PROGMEM = "No such device";

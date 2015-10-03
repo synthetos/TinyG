@@ -270,7 +270,7 @@ char *get_status_message(stat_t status);
 #define STAT_RESET 6					// operation was hard reset (sig kill)
 #define	STAT_EOL 7						// function returned end-of-line
 #define	STAT_EOF 8						// function returned end-of-file
-#define	STAT_FILE_NOT_OPEN 9
+#define	STAT_FILE_NOT_OPEN 9            // cannot write to destination
 #define	STAT_FILE_SIZE_EXCEEDED 10
 #define	STAT_NO_SUCH_DEVICE 11
 #define	STAT_BUFFER_EMPTY 12
