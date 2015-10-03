@@ -666,10 +666,6 @@ void json_print_response(uint8_t status)
         return;
     }
 
-    if (status != STAT_OK) {
-        printf("ERROR %d\n", (int)status);
-    }
-
 	// Setup the response header
 	nvObj_t *nv = NV_HEAD;
     if (nv->valuetype != TYPE_TXT_CONTINUATION) {       // include r{} if not a continuation

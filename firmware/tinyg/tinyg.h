@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.43	// fixed JSON depth bug
+#define TINYG_FIRMWARE_BUILD        440.44	// fixed JSON depth for malformed JSON error cases
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
