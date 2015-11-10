@@ -40,7 +40,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Probotix Fireball V90 profile"
 
-#define JERK_MAX 				100			// yes, that's "100,000,000" mm/(min^3)
+//#define JERK_MAX 				100			// yes, that's "100,000,000" mm/(min^3)
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION 	200000		// centripetal acceleration around corners
 
@@ -99,11 +99,11 @@
 // *** axis settings ***
 
 #define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			2400 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX			1500 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MIN			0					// xtn		minimum travel - used by soft limits and homing
 #define X_TRAVEL_MAX 			400					// xtm		maximum travel - used by soft limits and homing
-#define X_JERK_MAX				JERK_MAX			// xjm
+#define X_JERK_MAX				100			        // xjm
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -114,11 +114,11 @@
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE				AXIS_STANDARD
-#define Y_VELOCITY_MAX			2400
+#define Y_VELOCITY_MAX			1500
 #define Y_FEEDRATE_MAX			Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN			0
 #define Y_TRAVEL_MAX			175
-#define Y_JERK_MAX				JERK_MAX
+#define Y_JERK_MAX				100
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
 #define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT
@@ -129,11 +129,11 @@
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE				AXIS_STANDARD
-#define Z_VELOCITY_MAX			1200
+#define Z_VELOCITY_MAX			1000
 #define Z_FEEDRATE_MAX			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			0
 #define Z_TRAVEL_MAX			75
-#define Z_JERK_MAX				JERK_MAX
+#define Z_JERK_MAX				200
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
