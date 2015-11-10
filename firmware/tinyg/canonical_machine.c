@@ -229,21 +229,22 @@ void cm_set_model_linenum(uint32_t linenum)
  * Notes on Coordinate System and Offset functions
  *
  * All positional information in the canonical machine is kept as absolute coords and in
- *	canonical units (mm). The offsets are only used to translate in and out of canonical form
- *	during interpretation and response.
+ *	canonical units, which are millimeters (mm). The offsets are only used to translate 
+ *  in and out of canonical form during interpretation and display.
  *
  * Managing the coordinate systems & offsets is somewhat complicated. The following affect offsets:
  *	- coordinate system selected. 1-9 correspond to G54-G59
  *	- absolute override: forces current move to be interpreted in machine coordinates: G53 (system 0)
  *	- G92 offsets are added "on top of" the coord system offsets -- if origin_offset_enable == true
+ *  - tool length compensation is applied to all axes, even though it's usually only used for Z (or X)
  *	- G28 and G30 moves; these are run in absolute coordinates
  *
- * The offsets themselves are considered static, are kept in cm, and are supposed to be persistent.
+ * The offsets themselves are considered static, are kept in cm.gmx, and are supposed to be persistent.
  *
  * To reduce complexity and data load the following is done:
- *	- Full data for coordinates/offsets is only accessible by the canonical machine, not the downstream
- *	- A fully resolved set of coord and G92 offsets, with per-move exceptions can be captured as "work_offsets"
- *	- The core gcode context (gm) only knows about the active coord system and the work offsets
+ *	- Full data for coordinates/offsets is only accessible by the canonical machine, not downstream
+ *	- A fully resolved set of coordinate, G92 and tool offsets, with per-move exceptions, is captured as "work_offsets"
+ *	- The core gcode context (gm) only knows about the active coord system, tool offsets, and the work offsets
  */
 
 /*
@@ -292,7 +293,8 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
+//		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
+		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
 	}
 }
 
@@ -333,7 +335,8 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 	float position;
 
 	if (gcode_state == MODEL) {
-		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
+//		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
+		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
@@ -443,6 +446,7 @@ void cm_set_model_target(float target[], float flag[])
 			} else {
 				cm.gm.target[axis] += _to_millimeters(target[axis]);
 			}
+            cm.gm.target[axis] += cm.gmx.tool_offset[axis]; //++++++
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -976,7 +980,7 @@ stat_t cm_straight_feed(float target[], float flags[])
  * _exec_change_tool()	- execution callback
  *
  * Note: These functions don't actually do anything for now, and there's a bug
- *		 where T and M in different blocks don;t work correctly
+ *		 where T and M in different blocks don't work correctly
  */
 stat_t cm_select_tool(uint8_t tool_select)
 {
@@ -999,8 +1003,58 @@ stat_t cm_change_tool(uint8_t tool_change)
 
 static void _exec_change_tool(float *value, float *flag)
 {
-	cm.gm.tool = (uint8_t)value[0];
+    cm.gm.tool = (uint8_t)value[0];
 }
+
+// G43.1
+stat_t cm_tool_offset_set(float target[], float flags[])
+{
+    bool flag = false;
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (!flags[axis]) {
+            continue;
+        }
+        cm.gmx.tool_offset[axis] = _to_millimeters(target[axis]);
+        flag = true;
+    }
+    if (!flag) {
+       return (STAT_GCODE_AXIS_IS_MISSING);
+    }
+    return (STAT_OK);
+}
+
+// G49
+stat_t cm_tool_offset_cancel()
+{
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        cm.gmx.tool_offset[axis] = 0;
+    }
+    return (STAT_OK);
+}
+
+/*
+static void _exec_tool_offset(float *value, float *flag)
+{
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        cm.gmx.tool_offset[axis] = value[axis];
+    }
+}
+
+// G43.1
+stat_t cm_tool_offset_set(float target[])
+{
+	mp_queue_command(_exec_tool_offset, target, target);
+	return (STAT_OK);
+}
+
+// G49
+stat_t cm_tool_offset_cancel()
+{
+	float value[AXES] = { 0,0,0,0,0,0 };
+	mp_queue_command(_exec_tool_offset, value, value);
+    return (STAT_OK);
+}
+*/
 
 /***********************************
  * Miscellaneous Functions (4.3.9) *
