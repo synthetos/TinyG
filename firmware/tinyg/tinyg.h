@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.20	// arc test
+#define TINYG_FIRMWARE_BUILD        441.01	// G43.1 / G49 tool length offsets
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version

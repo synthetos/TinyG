@@ -1012,9 +1012,11 @@ static void _exec_change_tool(float *value, float *flag)
  * cm_tool_offset_cancel() - G49
  *
  *  Tool length offset is positive and relative to absolute coordinates. 
- *  I.e.  - if Z is at 0, G43.1 Z10 will make Z now appear to be at 10 mm.
- *  (The reported work position will be 10 mm). G43.1 does not cause any 
- *  movement but will change status report displays (DRO values).
+ *  If Z is at 0, G43.1 Z10 will make Z now appear to be at 10 mm,
+ *  i.e the reported work position will be 10 mm.
+ *
+ *  G43.1 does not cause any movement but will change status report displays 
+ *  (DRO values). Movement will occur on next feed or traverse.
  *
  *  Changes to tool length offsets take effect immediately (i.e. in the model)
  *  As they affect the creation of new moves. The display of tool length
