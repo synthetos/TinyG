@@ -281,7 +281,7 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 }
 
 /*
- * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
+ * cm_set_work_offsets() - capture coord & tool offsets from the model into absolute values in the gcode_state
  *
  *	This function accepts as input:
  *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
@@ -294,7 +294,7 @@ void cm_set_work_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 //		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
-		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
+		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
 	}
 }
 
@@ -316,9 +316,9 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
 }
 
 /*
- * cm_get_work_position() - return work position in external form
+ * cm_get_work_position() - return work position in externally displayable form
  *
- *	... that means in prevailing units (mm/inch) and with all offsets applied
+ *	... that means in prevailing units (mm/inch) and with all coord & tool offsets applied
  *
  * NOTE: This function only works after the gcode_state struct as had the work_offsets setup by
  *		 calling cm_get_model_coord_offset_vector() first.
@@ -336,7 +336,7 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 
 	if (gcode_state == MODEL) {
 //		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
-		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
+		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
@@ -446,7 +446,7 @@ void cm_set_model_target(float target[], float flag[])
 			} else {
 				cm.gm.target[axis] += _to_millimeters(target[axis]);
 			}
-            cm.gm.target[axis] += cm.gmx.tool_offset[axis]; //++++++
+            cm.gm.target[axis] -= cm.gmx.tool_offset[axis]; //++++++
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -1006,7 +1006,28 @@ static void _exec_change_tool(float *value, float *flag)
     cm.gm.tool = (uint8_t)value[0];
 }
 
-// G43.1
+/* Tool length offsets
+ *
+ * cm_tool_offset_set()    - G43.1
+ * cm_tool_offset_cancel() - G49
+ *
+ *  Tool length offset is positive and relative to absolute coordinates. 
+ *  I.e.  - if Z is at 0, G43.1 Z10 will make Z now appear to be at 10 mm.
+ *  (The reported work position will be 10 mm). G43.1 does not cause any 
+ *  movement but will change status report displays (DRO values).
+ *
+ *  Changes to tool length offsets take effect immediately (i.e. in the model)
+ *  As they affect the creation of new moves. The display of tool length
+ *  changes must be synchronized with the first block affected by the change,
+ *  hence the offset is captured in the work_offset term and passed to the 
+ *  runtime model.
+ *
+ *  Canoncial_machine functions affected by tool length offset:
+ *  - cm_set_model_target()
+ *  - cm_set_work_offsets()
+ *  - cm_get_work_position()
+ */
+
 stat_t cm_tool_offset_set(float target[], float flags[])
 {
     bool flag = false;
@@ -1023,7 +1044,6 @@ stat_t cm_tool_offset_set(float target[], float flags[])
     return (STAT_OK);
 }
 
-// G49
 stat_t cm_tool_offset_cancel()
 {
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -1031,30 +1051,6 @@ stat_t cm_tool_offset_cancel()
     }
     return (STAT_OK);
 }
-
-/*
-static void _exec_tool_offset(float *value, float *flag)
-{
-    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-        cm.gmx.tool_offset[axis] = value[axis];
-    }
-}
-
-// G43.1
-stat_t cm_tool_offset_set(float target[])
-{
-	mp_queue_command(_exec_tool_offset, target, target);
-	return (STAT_OK);
-}
-
-// G49
-stat_t cm_tool_offset_cancel()
-{
-	float value[AXES] = { 0,0,0,0,0,0 };
-	mp_queue_command(_exec_tool_offset, value, value);
-    return (STAT_OK);
-}
-*/
 
 /***********************************
  * Miscellaneous Functions (4.3.9) *

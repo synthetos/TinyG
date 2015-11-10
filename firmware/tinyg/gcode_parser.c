@@ -471,7 +471,7 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_set_units_mode, units_mode);
 	//--> cutter radius compensation goes here
 
-	// tool length compensation
+	// set / cancel tool length offset compensation
     if (cm.gf.tool_offset_set) { return(cm_tool_offset_set(cm.gn.target, cm.gf.target)); }
     if (cm.gf.tool_offset_cancel) { return(cm_tool_offset_cancel()); }
 
