@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.43	// testing JSON changes
+#define TINYG_FIRMWARE_BUILD        440.44	// fixed JSON level nesting problems when expanding groups (2 bugs)
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

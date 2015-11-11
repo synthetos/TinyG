@@ -397,12 +397,15 @@ stat_t set_flt(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
-	char *parent_group = nv->token;				// token in the parent nv object is the group
+//	char *parent = nv->token;				        // token in the parent nv object is the group
+	char parent[TOKEN_LEN];
+    strcpy(parent, nv->token);				        // token in the parent nv object is the group
+    nv_reset_nv_list(parent);                       // reset list as a parent group
 	char group[GROUP_LEN+1];						// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;					// make first object the parent
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
-		if (strcmp(parent_group, group) != 0) continue;
+		if (strcmp(parent, group) != 0) continue;
 		(++nv)->index = i;
 		nv_get_nvObj(nv);
 	}
@@ -609,7 +612,7 @@ nvObj_t *nv_reset_nv_list(char *parent)
 	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
     uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-		nv->pv = (nv-1);	                        // the ends are bogus & corrected later
+		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
 		nv->nx = (nv+1);
 		nv->index = 0;
 		nv->depth = depth;

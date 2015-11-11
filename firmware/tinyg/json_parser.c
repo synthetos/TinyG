@@ -547,7 +547,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
             *str++ = ',';
         } else {
             while (nv->depth < prev_depth) {        // nested close curlies followed by a comma
-                prev_depth = nv->depth;
+                prev_depth--;
                 *str++ = '}';
             }
             *str++ = ',';
