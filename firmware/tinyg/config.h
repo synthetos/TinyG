@@ -181,7 +181,7 @@ typedef int16_t index_t;				// -1 is reserved for no find
 
 										// pre-allocated defines (take RAM permanently)
 #define NV_SHARED_STRING_LEN 512		// shared string for string values
-#define NV_BODY_LEN 30					// body elements - allow for 1 parent + N children
+#define NV_BODY_LEN 36					// body elements - allow for 1 parent + N children
 										// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change
