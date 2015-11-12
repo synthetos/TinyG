@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.46	// putting in range checking and error responses for NV list
+#define TINYG_FIRMWARE_BUILD        440.46	// putting in range checking and error responses for NV list; fixed a bug where JSON executed twice when returning from recursion for a txt container
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
