@@ -342,7 +342,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	if (**pstr == NUL) {
         return (STAT_NOOP);
     }
-	nv_reset_nv(nv);							// wipe the object and set the depth
+	nv_reset_nv(nv);							// wipe the object
+    nv->depth = *depth;                         // set its depth
 
 	// --- Process name part ---
 	// Find, terminate and set pointers for the name. Allow for leading and trailing name quotes.
@@ -408,7 +409,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 	// object parent
 	} else if (**pstr == '{') {
 		nv->valuetype = TYPE_PARENT;
-//		*depth += 1;    // nv_reset_nv() sets the next object's level so this is redundant
+		*depth += 1;
 		(*pstr)++;
 		return(STAT_EAGAIN);					// signal that there is more to parse
 
@@ -544,9 +545,12 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 	while (true) {
 
         // close the previous pair (or write open curly for the first pair)
-        if (nv->depth > prev_depth) {               // opening curly (no nesting)
+        if (nv->depth > prev_depth) {               // opening curly, parent opening curly (Note: no nesting if multiple depth level jump)
      		*str++ = '{';
  		} else if (nv->depth == prev_depth) {       // comma if no depth change
+            if (nv->pv->valuetype == TYPE_PARENT) { // previous parent with no children
+                *str++ = '{'; *str++ = '}';
+            }
             *str++ = ',';
         } else {
             while (nv->depth < prev_depth) {        // nested close curlies followed by a comma
@@ -669,7 +673,9 @@ void json_print_object(nvObj_t *nv)
 
 void json_print_response(uint8_t status)
 {
-	if (js.json_verbosity == JV_SILENT) return;			// silent responses
+	if (js.json_verbosity == JV_SILENT) {               // silent responses
+        return;
+    }
 
 	// Setup the response header
 	nvObj_t *nv = NV_HEAD;
@@ -710,13 +716,13 @@ void json_print_response(uint8_t status)
 					nv->valuetype = TYPE_SKIP;
 				}
 			} else if (nv_type == NV_TYPE_LINENUM) {		// skip line number echo if not enabled
-				if ((js.echo_json_linenum == false) || (nv->value_int)) { // do not report line# 0
+				if ((js.echo_json_linenum == false) || (nv->value_int == 0)) { // do not report line# 0
 					nv->valuetype = TYPE_SKIP;
 				}
-//++++		} else if (nv_type == NV_TYPE_CONFIG) {			// skip config echo if not enabled
-//fix me		if (js.echo_json_configs == false) {
-//					nv->valuetype = TYPE_SKIP;
-//				}
+            } else if (nv_type == NV_TYPE_CONFIG) {			// skip config echo if not enabled
+		        if (js.echo_json_configs == false) {
+					nv->valuetype = TYPE_SKIP;
+				}
             }
 		} while ((nv = nv->nx) != NULL);
 	}
@@ -745,7 +751,6 @@ void json_print_response(uint8_t status)
 	nv->depth = 0;											// footer is a peer to r{} response
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");									// terminate the list
-	nv->nx = NULL;
 
 	// serialize the JSON response and print it if there were no errors
 	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
