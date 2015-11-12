@@ -388,8 +388,9 @@ stat_t set_flt(nvObj_t *nv)
  *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent
  *	group, which this group has none.
  *
- *	All subsequent nvObjs in the body will be populated with their values.
- *	The token field will be populated as will the parent name in the group field.
+ *	All subsequent nvObjs in the body will be populated with their values (unless there
+ *  are no more nvObj struct available). The token field will be populated as will the 
+ *  parent name in the group field.
  *
  *	The sys group is an exception where the children carry a blank group field, even though
  *	the sys parent is labeled as a TYPE_PARENT.
@@ -397,15 +398,28 @@ stat_t set_flt(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
+    nvObj_t *nv_parent = nv;                        // used for error recovery
+    nvObj_t *nv_tmp;                                // used for error recovery
 	char *parent = nv->token;				        // token in the parent nv object is the group
     uint8_t child_depth = nv->depth+1;
 	char group[GROUP_LEN+1];						// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;					// make first object the parent
+
+    // scan the config_app table looking for tokens belonging to the parent group
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
-		if (strcmp(parent, group) != 0) { continue; }
-		(++nv)->index = i;
-		nv_get_nvObj(nv);
+		if (strcmp(parent, group) != 0) {           // if no match try the next one
+            continue; 
+        }
+        nv_tmp = nv;
+        if ((nv = nv_get_next_nvObj(nv)) == NULL) { // get next nvObj or fail
+            do {                                    // undo the group expansion
+                nv_reset_nv(nv_tmp);
+            } while (--nv_tmp >= nv_parent);
+            return (STAT_JSON_TOO_MANY_PAIRS);
+        }
+		nv->index = i;
+		nv_populate_nvObj_by_index(nv);
         nv->depth = child_depth;
 	}
 	return (STAT_OK);
@@ -518,7 +532,8 @@ uint8_t nv_get_type(nvObj_t *nv)
 
 /******************************************************************************
  * nvObj low-level object and list operations
- * nv_get_nvObj()		- setup a nv object by providing the index
+ * nv_get_next_nvObj()  - get the next available nvObj, or NULL if none available
+ * nv_populate_nvObj_by_index() - setup a nv object by providing the index
  * nv_reset_nv()		- quick clear for a new nv object
  * nv_reset_nv_list()	- clear entire header, body and footer for a new use
  * nv_relink_nv_list()  - relink nx and pv pointers removing EMPTY and SKIP
@@ -546,7 +561,19 @@ uint8_t nv_get_type(nvObj_t *nv)
  *	On the ARM (however) this will put the string into flash and skip RAM allocation.
  */
 
-void nv_get_nvObj(nvObj_t *nv)
+nvObj_t *nv_get_next_nvObj(nvObj_t *nv)
+{
+    if (++nv >= NV_TID) {
+        return ((nvObj_t *)NULL);
+    }
+    return nv;
+}
+
+/*
+ * nv_populate_nvObj_by_index() - fill in details of an nvObj given the index field
+ */
+
+void nv_populate_nvObj_by_index(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) { return; }	// sanity
 
@@ -710,7 +737,7 @@ nvObj_t *nv_add_object(const char *token)  // add an object to the body using a 
 		}
 		// load the index from the token or die trying
 		if ((nv->index = nv_get_index((const char *)"",token)) == NO_MATCH) { return (NULL);}
-		nv_get_nvObj(nv);				    // populate the object from the index
+		nv_populate_nvObj_by_index(nv);
 		return (nv);
 	}
 	return (NULL);

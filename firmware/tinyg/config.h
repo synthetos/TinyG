@@ -353,7 +353,8 @@ stat_t set_grp(nvObj_t *nv);				// set data for a group
 stat_t get_grp(nvObj_t *nv);				// get data for a group
 
 // nvObj and list functions
-void nv_get_nvObj(nvObj_t *nv);
+nvObj_t *nv_get_next_nvObj(nvObj_t *nv);
+void nv_populate_nvObj_by_index(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(char *parent);
 nvObj_t *nv_relink_nv_list(void);

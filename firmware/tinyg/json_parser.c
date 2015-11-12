@@ -101,17 +101,25 @@ void json_parser(char *str)
  *
  *  Return nv to next free (EMPTY) nv object in list
  */
-static nvObj_t *_json_parser_execute(nvObj_t *nv)
+static nvObj_t *_json_parser_execute(nvObj_t *nv, stat_t *status)
 {
+    *status = STAT_OK;
     if (nv->valuetype == TYPE_EMPTY) {
         return (nv);
     }
     if (nv->valuetype == TYPE_NULL) {           // GET the value or group
-        nv_get(nv);
+        if ((*status = nv_get(nv)) != STAT_OK) {
+            return (NULL);
+        }
     } else {
         if (cm.machine_state != MACHINE_ALARM) {// don't execute actions if in ALARM state
-            nv_set(nv);                         // SET value or call a function (e.g. gcode)
-            nv_persist(nv);
+            // SET value or call a function (e.g. gcode), then perform conditional persist
+            if ((*status = nv_set(nv)) != STAT_OK) {
+                return (NULL);
+            }
+            if ((*status = nv_persist(nv)) != STAT_OK) {
+                return (NULL);
+            }
         }
 	}
     while (nv->nx != NULL) {                    // find and return next free NV buffer in list
@@ -173,15 +181,7 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 
         // handle all other TYPEs
         } else {
-/*
-		    // perform operations on the group value
-		    if (*group != NUL) {
-			    strncpy(nv->group, group, GROUP_LEN);       // copy the parent's group to this child
-		    }
-		    if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
-			    strncpy(group, nv->token, GROUP_LEN);       // record the group ID
-		    }
-*/
+
             // Skip over TIDs
             if (nv->index == nvl.tid_index) {
                 nv->valuetype = TYPE_TID;
@@ -189,15 +189,18 @@ static stat_t _json_parser_kernal(nvObj_t *nv, char *str)
 
             // test and process container (txt)
             if (nv_index_is_container(nv->index)) {
-                if (*(*nv->stringp) == '{') {
+                if (*(*nv->stringp) == '{') {               // it's JSON passed in as a string 
                     _json_parser_kernal(nv, *nv->stringp);  // call JSON parser recursively
                 } else {
-                    _js_run_container_as_text(nv, *nv->stringp);
-                    continue;
+                    _js_run_container_as_text(nv, *nv->stringp); // it's a text command
                 }
+                continue;
             }
         }
-        nv = _json_parser_execute(nv_exec);                 // execute the list from current starting point
+        nv = _json_parser_execute(nv_exec, &status);        // execute the list from current starting point
+        if (status != STAT_OK) {
+            return (status);
+        }
 
     } while (nv->nx != NULL);                               // this test is a safety valve
 
@@ -365,7 +368,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 			break;
 		}
 		if (i == MAX_NAME_CHARS) {
-            return (STAT_UNRECOGNIZED_NAME);
+            return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
         }
 	}
 
@@ -381,7 +384,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 		if (isalnum((int)**pstr)) { break; }
 		if (strchr(value, (int)**pstr) != NULL) { break; }
 		if (i == MAX_PAD_CHARS) {
-            return (STAT_UNRECOGNIZED_NAME);
+            return (STAT_INVALID_OR_MALFORMED_COMMAND);
         }
 	}
 
