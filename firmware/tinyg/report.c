@@ -387,7 +387,7 @@ static stat_t _populate_unfiltered_status_report()
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 
 		strcpy(tmp, nv->group);			// flatten out groups - WARNING - you cannot use strncpy here...
 		strcat(tmp, nv->token);
@@ -423,7 +423,7 @@ static uint8_t _populate_filtered_status_report()
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
 
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 		// do not report values that have not changed...
 		// ...except for stat=3 (STOP), which is an exception
 		if (nv->value_int == sr.status_report_value[i]) {
@@ -666,7 +666,7 @@ stat_t job_populate_job_report()
 	for (uint8_t i=0; i<4; i++) {
 
 		nv->index = job_start + i;
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 
 		strcpy(tmp, nv->group);				// concatenate groups and tokens - do NOT use strncpy()
 		strcat(tmp, nv->token);

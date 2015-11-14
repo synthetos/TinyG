@@ -181,7 +181,7 @@ typedef int16_t index_t;				// -1 is reserved for no find
 
 										// pre-allocated defines (take RAM permanently)
 #define NV_SHARED_STRING_LEN 512		// shared string for string values
-#define NV_BODY_LEN 30					// body elements - allow for 1 parent + N children
+#define NV_BODY_LEN 36					// body elements - allow for 1 parent + N children
 										// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change
@@ -353,7 +353,8 @@ stat_t set_grp(nvObj_t *nv);				// set data for a group
 stat_t get_grp(nvObj_t *nv);				// get data for a group
 
 // nvObj and list functions
-void nv_get_nvObj(nvObj_t *nv);
+nvObj_t *nv_get_next_nvObj(nvObj_t *nv);
+void nv_populate_nvObj_by_index(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(char *parent);
 nvObj_t *nv_relink_nv_list(void);

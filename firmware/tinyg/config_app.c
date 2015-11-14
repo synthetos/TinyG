@@ -732,7 +732,7 @@ uint8_t nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GRO
 
 stat_t set_flu(nvObj_t *nv)
 {
-	if (cm_get_units_mode(MODEL) == INCHES) {		// if in inches...
+	if (cm_get_units_mode(MODEL) == INCHES) {		    // if in inches...
 		nv->value_flt *= MM_PER_INCH;					// convert to canonical millimeter units
 	}
 	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;	// write value as millimeters or degrees
@@ -783,7 +783,7 @@ static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to
 		strncpy(nv->token, list[i], TOKEN_LEN);
 		nv->index = nv_get_index((const char *)"", nv->token);
 //		nv->valuetype = TYPE_PARENT;
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 		nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
 	}
 	return (STAT_COMPLETE);
