@@ -57,8 +57,8 @@
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
 #define NETWORK_MODE				NETWORK_STANDALONE
 
-//#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
-#define XIO_RX_MODE                 RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
+#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+//#define XIO_RX_MODE                 RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
 
 #define TEXT_VERBOSITY				TV_VERBOSE				// one of: TV_SILENT, TV_VERBOSE
 
@@ -111,9 +111,9 @@
 //#include "settings/settings_cnc3040.h"
 //#include "settings/settings_test.h"					// Settings for testing - not for release
 //#include "settings/settings_openpnp.h"				// OpenPnP
-#include "settings/settings_othermill.h"				// OMC OtherMill
+//#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix Fireball V90
-//#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
+#include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
