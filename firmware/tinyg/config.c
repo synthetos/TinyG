@@ -182,7 +182,7 @@ stat_t set_defaults(nvObj_t *nv)
 	// failsafe. nv->value_int must be true or no action occurs
 	if (nv->value_int != true) {
         return(help_defa(nv));
-    }    
+    }
 	_set_defa(nv);
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
@@ -223,7 +223,7 @@ stat_t config_test_assertions()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
  *  get_str()  - get value from stringp[] (no action required)
  *	get_ui8()  - get value as uint8_t
- *	get_u16()  - get value as uint16_t 
+ *	get_u16()  - get value as uint16_t
  *	get_u32()  - get value as uint32_t
  *	get_data() - get value as 32 bit integer blind cast
  *	get_flt()  - get value as float
@@ -423,7 +423,7 @@ stat_t set_grp(nvObj_t *nv)
 {
 	if (cs.comm_mode == TEXT_MODE) {
         return (STAT_INVALID_OR_MALFORMED_COMMAND);
-    }    
+    }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
@@ -456,7 +456,7 @@ uint8_t nv_group_is_prefixed(char *group)
 
 bool nv_index_is_container(index_t index)
 {
-    return (nvl.container_index == index);   
+    return (nvl.container_index == index);
 }
 
 /***********************************************************************************
@@ -596,7 +596,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
  *      - set nvObj[1].valuetype = TYPE_PARENT
  *      - set nvObj[1].token = "parent"
  *      - set nvObj[1].depth = 1
- *      - set nvObj[2..N].depth = 2             // set all remaining depths to 2 
+ *      - set nvObj[2..N].depth = 2             // set all remaining depths to 2
  *
  *  -  return nv pointing to NV_BODY (nvObj[1])
  */
@@ -666,7 +666,7 @@ nvObj_t *nv_relink_nv_list()
         pv = nv;
 	}
     hd->pv = NULL;                          // correct the ends
-    pv->nx = NULL; 
+    pv->nx = NULL;
     return (hd);
 }
 
@@ -695,6 +695,17 @@ stat_t nv_copy_string_P(nvObj_t *nv, const char *src_P)
 }
 */
 
+static void _add_object_helper(nvObj_t *nv, const char *token, valueType valuetype)
+{
+	nv->valuetype = valuetype;
+	strncpy(nv->token, token, TOKEN_LEN);
+    if (nv->pv->valuetype == TYPE_PARENT) {
+        nv->depth = nv->pv->depth + 1;
+    } else {
+        nv->depth = nv->pv->depth;
+    }
+}
+
 nvObj_t *nv_add_object(const char *token)  // add an object to the body using a token
 {
 	nvObj_t *nv = NV_BODY;
@@ -702,7 +713,7 @@ nvObj_t *nv_add_object(const char *token)  // add an object to the body using a 
 		if (nv->valuetype != TYPE_EMPTY) {
 			if ((nv = nv->nx) == NULL) {
                 return (NULL);               // not supposed to find a NULL; here for safety
-            }            
+            }
 			continue;
 		}
 		// load the index from the token or die trying
@@ -723,9 +734,10 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_INTEGER;
+        _add_object_helper(nv, token, TYPE_INTEGER);
 		nv->value_int = value;
-		nv->valuetype = TYPE_INTEGER;
 		return (nv);
 	}
 	return (NULL);
@@ -741,10 +753,11 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 			}
 			continue;
 		}
-		strcpy(nv->token, token);
+//		strcpy(nv->token, token);
+//		nv->valuetype = TYPE_DATA;
+        _add_object_helper(nv, token, TYPE_DATA);
 		float *v = (float*)&value;
 		nv->value_flt = *v;
-		nv->valuetype = TYPE_DATA;
 		return (nv);
 	}
 	return (NULL);
@@ -760,9 +773,10 @@ nvObj_t *nv_add_float(const char *token, const float value)	// add a float objec
 			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_FLOAT;
+        _add_object_helper(nv, token, TYPE_FLOAT);
 		nv->value_flt = value;
-		nv->valuetype = TYPE_FLOAT;
 		return (nv);
 	}
 	return (NULL);
@@ -779,13 +793,14 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
-		if (nv_copy_string(nv, string) != STAT_OK)
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_STRING;
+        _add_object_helper(nv, token, TYPE_STRING);
+		if (nv_copy_string(nv, string) != STAT_OK) {
             return (NULL);
-
+        }
 		nv->index = nv_get_index((const char *)"", nv->token);
-		nv->valuetype = TYPE_STRING;
-		return (nv);
+        return (nv);
 	}
 	return (NULL);
 }
