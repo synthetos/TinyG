@@ -89,7 +89,6 @@ static stat_t _normalize_json_string(char *str, uint16_t size);
 
 void json_parser(char *str)
 {
-    js.json_recursion_depth = 0;
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(&nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
@@ -148,9 +147,6 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char *str)
 	char group[GROUP_LEN+1] = { NUL };              // group identifier - starts as NUL
     nvObj_t *nv_exec;                               // nv pair on which to start execution
 
-    if (++js.json_recursion_depth > 2) {            // can't recurse more than one level
-        return (STAT_NESTED_JSON_CONTAINER);
-    }
 	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX)); // return if error
 
 	//---- parse the JSON string into the nv list ----//
@@ -192,9 +188,11 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char *str)
                 (*nv)->valuetype = TYPE_TID;
             }
 
-            // test and process container (txt)
+            // test and process text container ("txt" key)
             if (nv_index_is_container((*nv)->index)) {
-                if (*(*(*nv)->stringp) == '{') {               // it's JSON passed in as a string
+                if (strncmp("txt", *(*nv)->stringp, 3) == 0) { // don't allow nested txt containers
+                    return (STAT_NESTED_JSON_CONTAINER);
+                } else if (*(*(*nv)->stringp) == '{') {        // it's JSON passed in as a string
                     _json_parser_kernal(nv, *(*nv)->stringp);  // call JSON parser recursively
                 } else {
                     _js_run_container_as_text(*nv, *(*nv)->stringp); // it's a text command

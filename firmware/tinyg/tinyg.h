@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.48	// fixed JSON serialization bug in : {"txt":"{x:n}",tid:123456789}
+#define TINYG_FIRMWARE_BUILD        441.01	// fixed JSON serialization bug in : {"txt":"{x:n}",tid:123456789}; trap nested txt containers
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
