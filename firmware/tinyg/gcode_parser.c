@@ -302,7 +302,14 @@ static stat_t _parse_gcode_block(char *buf)
 					break;
 				}
 				case 40: break;	// ignore cancel cutter radius compensation
-				case 49: break;	// ignore cancel tool length offset comp.
+                case 43: {
+					switch (_point(value)) {
+    					case 1: { cm.gf.tool_offset_set=1; break; }     // set flag for set
+    					default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
+					}
+                    break;
+                }
+				case 49: { cm.gf.tool_offset_cancel=1; break; }         // set flag for cancel
 				case 53: SET_NON_MODAL (absolute_override, true);
 				case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
 				case 55: SET_MODAL (MODAL_GROUP_G12, coord_system, G55);
@@ -470,7 +477,11 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_select_plane, select_plane);
 	EXEC_FUNC(cm_set_units_mode, units_mode);
 	//--> cutter radius compensation goes here
-	//--> cutter length compensation goes here
+
+	// set / cancel tool length offset compensation
+    if (cm.gf.tool_offset_set) { return(cm_tool_offset_set(cm.gn.target, cm.gf.target)); }
+    if (cm.gf.tool_offset_cancel) { return(cm_tool_offset_cancel()); }
+
 	EXEC_FUNC(cm_set_coord_system, coord_system);
 	EXEC_FUNC(cm_set_path_control, path_control);
 	EXEC_FUNC(cm_set_distance_mode, distance_mode);
@@ -549,4 +560,3 @@ stat_t gc_run_gc(nvObj_t *nv)
 // no text mode functions here. Move along
 
 #endif // __TEXT_MODE
-
