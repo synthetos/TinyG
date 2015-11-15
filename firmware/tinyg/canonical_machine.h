@@ -112,6 +112,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	float tool_offset[AXES];			// XYZABC tool length offsets. Typically only use Z or X
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
@@ -142,7 +143,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t program_flow;				// used only by the gcode_parser
 	uint32_t linenum;					// N word or autoincrement in the model
 
-	float target[AXES]; 				// XYZABC where the move should go
+	float target[AXES]; 				// XYZABC where the move should go. ALso used for offsets & other purposes
 
 	float feed_rate; 					// F - normalized to millimeters/minute
 	float feed_rate_override_factor;	// 1.0000 x F feed rate. Go up or down from there
@@ -165,6 +166,8 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t tool;						// Tool after T and M6 (tool_select and tool_change)
 	uint8_t tool_select;				// T value - T sets this value
 	uint8_t tool_change;				// M6 tool change flag - moves "tool_select" to "tool"
+	uint8_t tool_offset_set;			// set TRUE is tool length offset should be set
+	uint8_t tool_offset_cancel;			// set TRUE is tool length offset should be canceled
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
@@ -566,6 +569,12 @@ stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns sa
 stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
 
+stat_t cm_alarm(nvObj_t *nv);
+stat_t cm_pause(nvObj_t *nv);
+stat_t cm_start(nvObj_t *nv);
+stat_t cm_flush(nvObj_t *nv);
+stat_t cm_reset(nvObj_t *nv);
+
 // Representation (4.3.3)
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
@@ -610,6 +619,8 @@ stat_t cm_dwell(float seconds);									// G4, P parameter
 // Tool Functions (4.3.8)
 stat_t cm_select_tool(uint8_t tool);							// T parameter
 stat_t cm_change_tool(uint8_t tool);							// M6
+stat_t cm_tool_offset_set(float target[], float flags[]);		// G43.1
+stat_t cm_tool_offset_cancel();	                                // G49
 
 // Miscellaneous Functions (4.3.9)
 stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
@@ -623,7 +634,7 @@ stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
 stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
 stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
 
-void cm_message(char_t *message);								// msg to console (e.g. Gcode comments)
+void cm_message(char *message);								// msg to console (e.g. Gcode comments)
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
@@ -658,7 +669,7 @@ float cm_get_jogging_dest(void);
 
 /*--- cfgArray interface functions ---*/
 
-char_t cm_get_axis_char(const int8_t axis);
+char cm_get_axis_char(const int8_t axis);
 
 stat_t cm_get_mline(nvObj_t *nv);		// get model line number
 stat_t cm_get_line(nvObj_t *nv);		// get active (model or runtime) line number

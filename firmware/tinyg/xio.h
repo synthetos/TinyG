@@ -190,7 +190,7 @@ typedef void (*x_flow_t)(xioDev_t *d);
  */
 
 #define RX_HEADERS                26        // buffer headers in the list
-#define RX_BUFFER_REQUESTED_SIZE 200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_MIN_SIZE       256        // minimum requested buffer size (they are usually larger)
 #define RX_BUFFER_POOL_SIZE     2000        // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
@@ -305,6 +305,7 @@ uint8_t xio_isbusy(void);
 char *readline(devflags_t *flags, uint16_t *size);
 void xio_reset_readline_linemode(void);
 uint8_t xio_get_line_buffers_available(void);
+//uint8_t xio_is_control(char *str);
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);

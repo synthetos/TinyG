@@ -87,8 +87,8 @@
 static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
 
-static char_t *_readline_charmode(devflags_t *flags, uint16_t *size);
-static char_t *_readline_linemode(devflags_t *flags, uint16_t *size);
+static char *_readline_charmode(devflags_t *flags, uint16_t *size);
+static char *_readline_linemode(devflags_t *flags, uint16_t *size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -360,7 +360,7 @@ void xio_set_stderr(const uint8_t dev)
  *   *flags - returns set to one of: DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
  */
 
-char_t *readline(devflags_t *flags, uint16_t *size)
+char *readline(devflags_t *flags, uint16_t *size)
 {
     if (xio.rx_mode == RX_MODE_CHAR) {
         return (_readline_charmode(flags, size));
@@ -412,7 +412,7 @@ static void _init_readline_linemode()
     bm.fragments = 0;
     bm.free_headers = RX_HEADERS;                   // used to report buffers available
     bm.out_of_ram = false;
-    bm.requested_size = RX_BUFFER_REQUESTED_SIZE;   // this parameter may be overwritten later
+    bm.requested_size = RX_BUFFER_MIN_SIZE;         // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
         bm.buf[i].bufnum = i;                       // ++++++ DIAGNOSTIC - NUMBER THE HEADER
         bm.buf[i].size = 0;
@@ -435,6 +435,7 @@ void xio_reset_readline_linemode()
 {
     _init_readline_linemode();
 }
+
 /*
  * xio_get_line_buffers_available()
  */
@@ -447,6 +448,15 @@ uint8_t xio_get_line_buffers_available()
     return (bm.free_headers);
 }
 
+/*
+ * xio_is_control() - return true if line is a control line
+ */
+/*
+uint8_t xio_is_control(char *str)
+{
+    return (strchr("{$?!~%Hh", *str) != NULL);  // a match indicates control line
+}
+*/
 /*
  * _get_free_buffer() - get a free buffer header and allocate space
  *
@@ -740,21 +750,21 @@ static void _init_readline_charmode()
     xio.bufp = bufpool.rx_pool;     // use the RX pool for character mode
 }
 
-static char_t *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
+static char *_exit_line(devflags_t flag, devflags_t *flags, uint16_t *size)
 {
 	*flags = flag;
 	*size = xio.buf_size;
 	return (xio.bufp);
 }
 
-static char_t *_exit_null(devflags_t *flags, uint16_t *size)
+static char *_exit_null(devflags_t *flags, uint16_t *size)
 {
 	*size = 0;
 	*flags = DEV_IS_NONE;
-	return ((char_t *)NULL);
+	return ((char *)NULL);
 }
 
-static char_t *_readline_charmode(devflags_t *flags, uint16_t *size)
+static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 {
 	// Handle cases where you are already holding a completed buffer
 	if (xio.buf_state == BUFFER_FULL) {

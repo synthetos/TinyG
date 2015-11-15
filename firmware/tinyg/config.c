@@ -90,14 +90,12 @@ void nv_print(nvObj_t *nv)
 
 stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
 {
-#ifndef __DISABLE_PERSISTENCE	// cutout for faster simulation in test
 	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
 	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
         return(write_persistent_value(nv));
     }
-#endif
 	return (STAT_OK);
 }
 
@@ -115,7 +113,7 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  */
 void config_init()
 {
-	nvObj_t *nv = nv_reset_nv_list();
+	nvObj_t *nv = nv_reset_nv_list(NUL);
 	config_init_assertions();
 
 #ifdef __ARM
@@ -129,7 +127,7 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (nv->value != cs.fw_build) {				// case (1) NVM is not setup or not in revision
+	if (fp_NE(nv->value_flt, cs.fw_build)) {    // case (1) NVM is not setup or not in revision
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
@@ -137,12 +135,20 @@ void config_init()
 			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
 				read_persistent_value(nv);
+                if (GET_TABLE_BYTE(flags) & F_FLOAT) {
+                    nv->valuetype = TYPE_FLOAT;
+                } else {
+                    nv->valuetype = TYPE_INTEGER;
+                }
 				nv_set(nv);
 			}
 		}
 		sr_init_status_report(false);           // load stored status report setup
 	}
 #endif
+
+    nvl.container_index = nv_get_index("", "txt");  // cache the index of the txt container
+    nvl.tid_index = nv_get_index("", "tid");        // cache the index of the tid
 }
 
 /*
@@ -155,9 +161,15 @@ static void _set_defa(nvObj_t *nv)
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
 		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
-			nv->value = GET_TABLE_FLOAT(def_value);
+    		nv->value_flt = GET_TABLE_FLOAT(default_value); // get default as float
+            if (!(GET_TABLE_BYTE(flags) & F_FLOAT)) {
+                nv->value_int = (uint32_t)nv->value_flt;    // cast in place to int if required
+                nv->valuetype = TYPE_INTEGER;
+            } else {
+                nv->valuetype = TYPE_FLOAT;
+            }
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
-			nv_set(nv);
+			nv_set(nv);                         // sets value
 			nv_persist(nv);
 		}
 	}
@@ -167,15 +179,17 @@ static void _set_defa(nvObj_t *nv)
 
 stat_t set_defaults(nvObj_t *nv)
 {
-	// failsafe. nv->value must be true or no action occurs
-	if (fp_FALSE(nv->value)) return(help_defa(nv));
+	// failsafe. nv->value_int must be true or no action occurs
+	if (nv->value_int != true) {
+        return(help_defa(nv));
+    }
 	_set_defa(nv);
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
 //	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
-//	nv->index = nv_get_index("", nv->token);	// correct, but not required
+//	nv->index = nv_get_index("", nv->token);	    // correct, but not required
 	nv->valuetype = TYPE_INTEGER;
-	nv->value = 1;
+	nv->value_int = 1;
 	return (STAT_OK);
 }
 
@@ -207,8 +221,10 @@ stat_t config_test_assertions()
 
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
- *	get_ui8()  - get value as 8 bit uint8_t
- *	get_int()  - get value as 32 bit integer
+ *  get_str()  - get value from stringp[] (no action required)
+ *	get_ui8()  - get value as uint8_t
+ *	get_u16()  - get value as uint16_t
+ *	get_u32()  - get value as uint32_t
  *	get_data() - get value as 32 bit integer blind cast
  *	get_flt()  - get value as float
  *	get_format() - internal accessor for printf() format string
@@ -219,24 +235,36 @@ stat_t get_nul(nvObj_t *nv)
 	return (STAT_PARAMETER_CANNOT_BE_READ);
 }
 
+stat_t get_str(nvObj_t *nv)
+{
+    nv->valuetype = TYPE_STRING;
+    return (STAT_OK);
+}
+
 stat_t get_ui8(nvObj_t *nv)
 {
-	nv->value = (float)*((uint8_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((uint8_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
-stat_t get_int(nvObj_t *nv)
+stat_t get_u16(nvObj_t *nv)
 {
-//	nv->value = (float)*((uint32_t *)GET_TABLE_WORD(target));
-	nv->value = *((uint32_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((uint16_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
+}
+
+stat_t get_u32(nvObj_t *nv)
+{
+    nv->value_int = *((uint32_t *)GET_TABLE_WORD(target));
+    nv->valuetype = TYPE_INTEGER;
+    return (STAT_OK);
 }
 
 stat_t get_data(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	*v = *((uint32_t *)GET_TABLE_WORD(target));
 	nv->valuetype = TYPE_DATA;
 	return (STAT_OK);
@@ -244,7 +272,7 @@ stat_t get_data(nvObj_t *nv)
 
 stat_t get_flt(nvObj_t *nv)
 {
-	nv->value = *((float *)GET_TABLE_WORD(target));
+	nv->value_flt = *((float *)GET_TABLE_WORD(target));
 	nv->precision = (int8_t)GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -252,27 +280,44 @@ stat_t get_flt(nvObj_t *nv)
 
 /* Generic sets()
  *	set_nul()   - set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
- *	set_ui8()   - set value as 8 bit uint8_t value
+ *	set_not()   - set nothing (returns STAT_OK)
+ *	set_ui8()   - set value as uint8_t value
+ *	set_u16()   - set value as uint16 value
+ *	set_u32()   - set value as uint32 value
  *	set_01()    - set a 0 or 1 uint8_t value with validation
  *	set_012()   - set a 0, 1 or 2 uint8_t value with validation
  *	set_0123()  - set a 0, 1, 2 or 3 uint8_t value with validation
- *	set_int16() - set value as 16 bit integer
- *	set_int32() - set value as 32 bit integer
  *	set_data()  - set value as 32 bit integer blind cast
  *	set_flt()   - set value as float
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
+stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
+
 stat_t set_ui8(nvObj_t *nv)
 {
-	*((uint8_t *)GET_TABLE_WORD(target)) = nv->value;
-	nv->valuetype = TYPE_INTEGER;
+	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
+//	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
+}
+
+stat_t set_u16(nvObj_t *nv)
+{
+	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
+//	nv->valuetype = TYPE_INTEGER;
+	return(STAT_OK);
+}
+
+stat_t set_u32(nvObj_t *nv)
+{
+    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t )nv->value_int;
+ //   nv->valuetype = TYPE_INTEGER;
+    return(STAT_OK);
 }
 
 stat_t set_01(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 1) {
+	if (nv->value_int > 1) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
@@ -280,7 +325,7 @@ stat_t set_01(nvObj_t *nv)
 
 stat_t set_012(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 2) {
+	if (nv->value_int > 2) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
@@ -288,30 +333,15 @@ stat_t set_012(nvObj_t *nv)
 
 stat_t set_0123(nvObj_t *nv)
 {
-	if ((uint8_t)nv->value > 3) {
+	if (nv->value_int > 3) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	return (set_ui8(nv));
 }
 
-stat_t set_int16(nvObj_t *nv)
-{
-//	nv->value = 0;  // clears the entire value as next line only fills
-	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t)nv->value;
-	nv->valuetype = TYPE_INTEGER;
-	return(STAT_OK);
-}
-
-stat_t set_int32(nvObj_t *nv)
-{
-    *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t)nv->value;
-    nv->valuetype = TYPE_INTEGER;
-    return(STAT_OK);
-}
-
 stat_t set_data(nvObj_t *nv)
 {
-	uint32_t *v = (uint32_t*)&nv->value;
+	uint32_t *v = (uint32_t*)&nv->value_flt;
 	*((uint32_t *)GET_TABLE_WORD(target)) = *v;
 	nv->valuetype = TYPE_DATA;
 	return(STAT_OK);
@@ -319,7 +349,7 @@ stat_t set_data(nvObj_t *nv)
 
 stat_t set_flt(nvObj_t *nv)
 {
-	*((float *)GET_TABLE_WORD(target)) = nv->value;
+	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return(STAT_OK);
@@ -358,8 +388,9 @@ stat_t set_flt(nvObj_t *nv)
  *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent
  *	group, which this group has none.
  *
- *	All subsequent nvObjs in the body will be populated with their values.
- *	The token field will be populated as will the parent name in the group field.
+ *	All subsequent nvObjs in the body will be populated with their values (unless there
+ *  are no more nvObj struct available). The token field will be populated as will the 
+ *  parent name in the group field.
  *
  *	The sys group is an exception where the children carry a blank group field, even though
  *	the sys parent is labeled as a TYPE_PARENT.
@@ -367,14 +398,29 @@ stat_t set_flt(nvObj_t *nv)
 
 stat_t get_grp(nvObj_t *nv)
 {
-	char_t *parent_group = nv->token;				// token in the parent nv object is the group
-	char_t group[GROUP_LEN+1];						// group string retrieved from cfgArray child
+    nvObj_t *nv_parent = nv;                        // used for error recovery
+    nvObj_t *nv_tmp;                                // used for error recovery
+	char *parent = nv->token;				        // token in the parent nv object is the group
+    uint8_t child_depth = nv->depth+1;
+	char group[GROUP_LEN+1];						// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;					// make first object the parent
+
+    // scan the config_app table looking for tokens belonging to the parent group
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
-		if (strcmp(parent_group, group) != 0) continue;
-		(++nv)->index = i;
-		nv_get_nvObj(nv);
+		if (strcmp(parent, group) != 0) {           // if no match try the next one
+            continue; 
+        }
+        nv_tmp = nv;
+        if ((nv = nv_get_next_nvObj(nv)) == NULL) { // get next nvObj or fail
+            do {                                    // undo the group expansion
+                nv_reset_nv(nv_tmp);
+            } while (--nv_tmp >= nv_parent);
+            return (STAT_JSON_TOO_MANY_PAIRS);
+        }
+		nv->index = i;
+		nv_populate_nvObj_by_index(nv);
+        nv->depth = child_depth;
 	}
 	return (STAT_OK);
 }
@@ -391,9 +437,9 @@ stat_t get_grp(nvObj_t *nv)
 
 stat_t set_grp(nvObj_t *nv)
 {
-	if (cs.comm_mode == TEXT_MODE)
+	if (cs.comm_mode == TEXT_MODE) {
         return (STAT_INVALID_OR_MALFORMED_COMMAND);
-
+    }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
@@ -413,11 +459,20 @@ stat_t set_grp(nvObj_t *nv)
  *	This little function deals with the exception cases that some groups don't use
  *	the parent token as a prefix to the child elements; SR being a good example.
  */
-uint8_t nv_group_is_prefixed(char_t *group)
+uint8_t nv_group_is_prefixed(char *group)
 {
 	if (strcmp("sr",group) == 0) return (false);
 	if (strcmp("sys",group) == 0) return (false);
 	return (true);
+}
+
+/*
+ * nv_index_is_container() - return true if the NV object is a container (txt)
+ */
+
+bool nv_index_is_container(index_t index)
+{
+    return (nvl.container_index == index);
 }
 
 /***********************************************************************************
@@ -434,10 +489,10 @@ uint8_t nv_group_is_prefixed(char_t *group)
  * linear table scan of the PROGMEM strings, which of course could be further
  * optimized with indexes or hashing.
  */
-index_t nv_get_index(const char_t *group, const char_t *token)
+index_t nv_get_index(const char *group, const char *token)
 {
-	char_t c;
-	char_t str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
+	char c;
+	char str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
 	strncpy(str, group, GROUP_LEN+1);
 	strncat(str, token, TOKEN_LEN+1);
 
@@ -477,9 +532,11 @@ uint8_t nv_get_type(nvObj_t *nv)
 
 /******************************************************************************
  * nvObj low-level object and list operations
- * nv_get_nvObj()		- setup a nv object by providing the index
+ * nv_get_next_nvObj()  - get the next available nvObj, or NULL if none available
+ * nv_populate_nvObj_by_index() - setup a nv object by providing the index
  * nv_reset_nv()		- quick clear for a new nv object
  * nv_reset_nv_list()	- clear entire header, body and footer for a new use
+ * nv_relink_nv_list()  - relink nx and pv pointers removing EMPTY and SKIP
  * nv_copy_string()		- used to write a string to shared string storage and link it
  * nv_add_object()		- write contents of parameter to  first free object in the body
  * nv_add_integer()		- add an integer value to end of nv body (Note 1)
@@ -495,16 +552,28 @@ uint8_t nv_get_type(nvObj_t *nv)
  *	all you want to do is display it.
  *
  *	Note: A trick is to cast all string constants for nv_copy_string(), nv_add_object(),
- *	nv_add_string() and nv_add_conditional_message() to (const char_t *). Examples:
+ *	nv_add_string() and nv_add_conditional_message() to (const char *). Examples:
  *
- *		nv_add_string((const char_t *)"msg", string);
+ *		nv_add_string((const char *)"msg", string);
  *
  *	On the AVR this will save a little static RAM. The "msg" string will occupy flash
  *	as an initializer and be instantiated in stack RAM when the function executes.
  *	On the ARM (however) this will put the string into flash and skip RAM allocation.
  */
 
-void nv_get_nvObj(nvObj_t *nv)
+nvObj_t *nv_get_next_nvObj(nvObj_t *nv)
+{
+    if (++nv >= NV_TID) {
+        return ((nvObj_t *)NULL);
+    }
+    return nv;
+}
+
+/*
+ * nv_populate_nvObj_by_index() - fill in details of an nvObj given the index field
+ */
+
+void nv_populate_nvObj_by_index(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) { return; }	// sanity
 
@@ -527,152 +596,240 @@ void nv_get_nvObj(nvObj_t *nv)
 }
 
 nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
-{
+{                                           // depth and pointers are NOT affected
 	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
 	nv->index = 0;
-	nv->value = 0;
+	nv->value_int = 0;
 	nv->precision = 0;
 	nv->token[0] = NUL;
 	nv->group[0] = NUL;
 	nv->stringp = NULL;
-
-	if (nv->pv == NULL) { 					// set depth correctly
-		nv->depth = 0;
-	} else {
-		if (nv->pv->valuetype == TYPE_PARENT) {
-			nv->depth = nv->pv->depth + 1;
-		} else {
-			nv->depth = nv->pv->depth;
-		}
-	}
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
-nvObj_t *nv_reset_nv_list()					// clear the header and response body
+/*
+ * nv_reset_nv_list() - clear the NV list and set up as a parent or a plain list
+ *
+ *  - Clear all nvObjs in the nvList:
+ *      - set nvObj[i].valuetype = TYPE_EMPTY
+ *      - zero all values and NUL terminate all strings
+ *
+ *  - nvObj[0] is reserved for 'r' header (NV_HEAD)
+ *      - set nvObj[0].valuetype = TYPE_EMPTY
+ *      - set nvObj[0].depth = 0
+ *
+ *  - if "parent" arg is NUL:
+ *      - set nvObj[1..N].depth = 1             // set all depths to 1
+ *
+ *  - else if "parent" arg is non-NUL:
+ *      - set nvObj[1].valuetype = TYPE_PARENT
+ *      - set nvObj[1].token = "parent"
+ *      - set nvObj[1].depth = 1
+ *      - set nvObj[2..N].depth = 2             // set all remaining depths to 2
+ *
+ *  -  return nv pointing to NV_BODY (nvObj[1])
+ */
+
+nvObj_t *nv_reset_nv_list(char *parent)
 {
-	nvStr.wp = 0;							// reset the shared string
-	nvObj_t *nv = nvl.list;					// set up linked list and initialize elements
+    // set up linked list and initialize elements
+	nvStr.wp = 0;							    // reset the shared string
+	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
+    uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-		nv->pv = (nv-1);					// the ends are bogus & corrected later
+		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
 		nv->nx = (nv+1);
 		nv->index = 0;
-		nv->depth = 1;						// header and footer are corrected later
+		nv->depth = depth;
 		nv->precision = 0;
 		nv->valuetype = TYPE_EMPTY;
 		nv->token[0] = NUL;
 	}
-	(--nv)->nx = NULL;
-	nv = nvl.list;							// setup response header element ('r')
+	(--nv)->nx = NULL;                          // correct the ends
+	nv = nvl.list;
 	nv->pv = NULL;
-	nv->depth = 0;
-	nv->valuetype = TYPE_PARENT;
-	strcpy(nv->token, "r");
-	return (nv_body);						// this is a convenience for calling routines
+
+    // reserve r{} element
+    nv->depth = 0;
+
+    // setup parent element if one was requested. This is a convenience for calling routines
+    nv = NV_BODY;
+    if (*parent != NUL) {
+	    nv->depth = 1;
+	    nv->valuetype = TYPE_PARENT;
+	    strcpy(nv->token, parent);
+    }
+    return (NV_BODY);
 }
 
-stat_t nv_copy_string(nvObj_t *nv, const char_t *src)
+/*
+ * nv_relink_nv_list() - relink nx and pv pointers removing EMPTY and SKIP
+ *
+ *  Relink list and return pointer to first non-zero element, or NULL if not found
+ */
+nvObj_t *nv_relink_nv_list()
+{
+    nvObj_t *nv = NV_HEAD;  // nvl.list     // read pointer - advances for each loop iteration
+    nvObj_t *pv;                            // previous non-EMPTY/SKIP pair
+    nvObj_t *hd;                            // adjusted head
+    uint8_t i=0, j=0;
+
+    // skip past empty/skip leading elements
+    for ( ; j<NV_LIST_LEN; j++, i++) {
+        if (nv->valuetype >= TYPE_NULL) {
+            break;
+        }
+        nv = nv->nx;                        // skip over TYPE_EMPTY and TYPE_SKIP
+    }
+    if (j == NV_LIST_LEN) {                 // empty list
+        return (NULL);
+    }
+    hd = nv;                                // mark the head
+    pv = nv;
+	for ( ; i<NV_LIST_LEN; i++, nv++) {
+        if (nv->valuetype < TYPE_NULL) {    // handle TYPE_EMPTY and TYPE_SKIP
+            continue;
+        }
+        pv->nx = nv;                        // Note: the first pair is messed up but gets corrected
+        nv->pv = pv;
+        pv = nv;
+	}
+    hd->pv = NULL;                          // correct the ends
+    pv->nx = NULL;
+    return (hd);
+}
+
+/*
+ * nv_copy_string() - copy srouce string to the string allocation buffer and set pointer in NV obj
+ */
+stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
 	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
         return (STAT_BUFFER_FULL);
 
-	char_t *dst = &nvStr.string[nvStr.wp];
+	char *dst = &nvStr.string[nvStr.wp];
 	strcpy(dst, src);						// copy string to current head position
 											// string has already been tested for overflow, above
 	nvStr.wp += strlen(src)+1;				// advance head for next string
-	nv->stringp = (char_t (*)[])dst;
+	nv->stringp = (char (*)[])dst;
 	return (STAT_OK);
 }
 
 /* UNUSED
-stat_t nv_copy_string_P(nvObj_t *nv, const char_t *src_P)
+stat_t nv_copy_string_P(nvObj_t *nv, const char *src_P)
 {
-	char_t buf[NV_SHARED_STRING_LEN];
+	char buf[NV_SHARED_STRING_LEN];
 	strncpy_P(buf, src_P, NV_SHARED_STRING_LEN);
 	return (nv_copy_string(nv, buf));
 }
 */
 
-nvObj_t *nv_add_object(const char_t *token)  // add an object to the body using a token
+static void _add_object_helper(nvObj_t *nv, const char *token, valueType valuetype)
 {
-	nvObj_t *nv = nv_body;
+	nv->valuetype = valuetype;
+	strncpy(nv->token, token, TOKEN_LEN);
+    if (nv->pv->valuetype == TYPE_PARENT) {
+        nv->depth = nv->pv->depth + 1;
+    } else {
+        nv->depth = nv->pv->depth;
+    }
+}
+
+nvObj_t *nv_add_object(const char *token)  // add an object to the body using a token
+{
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+                return (NULL);               // not supposed to find a NULL; here for safety
+            }
 			continue;
 		}
 		// load the index from the token or die trying
-		if ((nv->index = nv_get_index((const char_t *)"",token)) == NO_MATCH) { return (NULL);}
-		nv_get_nvObj(nv);				// populate the object from the index
+		if ((nv->index = nv_get_index((const char *)"",token)) == NO_MATCH) { return (NULL);}
+		nv_populate_nvObj_by_index(nv);
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_integer(const char_t *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an integer object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
-		nv->value = (float) value;
-		nv->valuetype = TYPE_INTEGER;
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_INTEGER;
+        _add_object_helper(nv, token, TYPE_INTEGER);
+		nv->value_int = value;
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_data(const char_t *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL); // not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
-		strcpy(nv->token, token);
+//		strcpy(nv->token, token);
+//		nv->valuetype = TYPE_DATA;
+        _add_object_helper(nv, token, TYPE_DATA);
 		float *v = (float*)&value;
-		nv->value = *v;
-		nv->valuetype = TYPE_DATA;
+		nv->value_flt = *v;
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_float(const char_t *token, const float value)	// add a float object to the body
+nvObj_t *nv_add_float(const char *token, const float value)	// add a float object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
-		nv->value = value;
-		nv->valuetype = TYPE_FLOAT;
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_FLOAT;
+        _add_object_helper(nv, token, TYPE_FLOAT);
+		nv->value_flt = value;
 		return (nv);
 	}
 	return (NULL);
 }
 
 // ASSUMES A RAM STRING. If you need to post a FLASH string use pstr2str to convert it to a RAM string
-nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a string object to the body
+nvObj_t *nv_add_string(const char *token, const char *string) // add a string object to the body
 {
-	nvObj_t *nv = nv_body;
+	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) return(NULL);		// not supposed to find a NULL; here for safety
+			if ((nv = nv->nx) == NULL) {
+    			return (NULL);               // not supposed to find a NULL; here for safety
+			}
 			continue;
 		}
-		strncpy(nv->token, token, TOKEN_LEN);
-		if (nv_copy_string(nv, string) != STAT_OK)
+//		strncpy(nv->token, token, TOKEN_LEN);
+//		nv->valuetype = TYPE_STRING;
+        _add_object_helper(nv, token, TYPE_STRING);
+		if (nv_copy_string(nv, string) != STAT_OK) {
             return (NULL);
-
-		nv->index = nv_get_index((const char_t *)"", nv->token);
-		nv->valuetype = TYPE_STRING;
-		return (nv);
+        }
+		nv->index = nv_get_index((const char *)"", nv->token);
+        return (nv);
 	}
 	return (NULL);
 }
@@ -683,10 +840,10 @@ nvObj_t *nv_add_string(const char_t *token, const char_t *string) // add a strin
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-nvObj_t *nv_add_conditional_message(const char_t *string)	// conditionally add a message object to the body
+nvObj_t *nv_add_conditional_message(const char *string)	// conditionally add a message object to the body
 {
 	if ((cs.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-	return(nv_add_string((const char_t *)"msg", string));
+	return(nv_add_string((const char *)"msg", string));
 }
 
 /**** nv_print_list() - print nv_array as JSON or text **********************
@@ -724,7 +881,7 @@ void nv_dump_nv(nvObj_t *nv)
 			 nv->depth,
 			 nv->valuetype,
 			 nv->precision,
-			 (double)nv->value,
+			 (double)nv->value_flt,
 			 nv->group,
 			 nv->token,
 			 (char *)nv->stringp);

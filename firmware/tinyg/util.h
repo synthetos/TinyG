@@ -74,14 +74,14 @@ float max4(float x1, float x2, float x3, float x4);
 //*** string utilities ***
 
 //#ifdef __ARM
-//char_t * strcpy_U( char_t * dst, const char_t * src );
+//char * strcpy_U( char * dst, const char * src );
 //#endif
 
-uint8_t isnumber(char_t c);
-char_t *escape_string(char_t *dst, char_t *src);
-char_t *pstr2str(const char *pgm_string);
-char_t fntoa(char_t *str, float n, uint8_t precision);
-uint16_t compute_checksum(char_t const *string, const uint16_t length);
+uint8_t isnumber(char c);
+char *escape_string(char *dst, char *src);
+char *pstr2str(const char *pgm_string);
+char fntoa(char *str, float n, uint8_t precision);
+uint16_t compute_checksum(char const *string, const uint16_t length);
 
 //*** other utilities ***
 

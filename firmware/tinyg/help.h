@@ -20,10 +20,6 @@
 #ifndef HELP_H_ONCE
 #define HELP_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #ifdef __HELP_SCREENS
 
 	stat_t help_general(nvObj_t *nv);
@@ -42,9 +38,5 @@ extern "C"{
 	#define help_boot_loader help_stub
 
 #endif // __HELP_SCREENS
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: HELP_H_ONCE

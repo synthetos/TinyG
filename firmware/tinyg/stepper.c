@@ -465,7 +465,7 @@ stat_t st_motor_power_callback() 	// called by controller
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
 			st_run.mot[m].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
 			st_run.mot[m].power_systick = SysTickTimer_getValue() +
-											(st_cfg.motor_power_timeout * 1000);
+										  (uint32_t)(st_cfg.motor_power_timeout * 1000);
 		}
 
 		// do not process countdown if in a feedhold
@@ -1157,7 +1157,7 @@ static int8_t _get_motor(const nvObj_t *nv)
 static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
 	uint8_t m = _get_motor(nv);
-//	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
+	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
     st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
 	st_reset();
 }
@@ -1186,20 +1186,21 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 
 stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
-    uint32_t mi = (uint32_t)nv->value;
+    uint32_t mi = nv->value_int;
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
-		nv_add_conditional_message((const char_t *)"*** WARNING *** Setting non-standard microstep value");
+		nv_add_conditional_message((const char *)"*** WARNING *** Setting non-standard microstep value");
 	}
-	set_int32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
+	set_u32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);
-	_set_hw_microsteps(_get_motor(nv), (uint8_t)nv->value);
+	_set_hw_microsteps(_get_motor(nv), nv->value_int);
 	return (STAT_OK);
 }
 
 stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 {
-	if ((uint8_t)nv->value >= MOTOR_POWER_MODE_MAX_VALUE)
+	if (nv->value_int >= MOTOR_POWER_MODE_MAX_VALUE) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	set_ui8(nv);
 	return (STAT_OK);
 	// NOTE: The motor power callback makes these settings take effect immediately
@@ -1215,15 +1216,16 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
 stat_t st_set_pl(nvObj_t *nv)	// motor power level
 {
 #ifdef __ARM
-	if (nv->value < (float)0.0) nv->value = 0.0;
-	if (nv->value > (float)1.0) {
-		if (nv->value > (float)100) nv->value = 1;
- 		nv->value /= 100;		// accommodate old 0-100 inputs
+	if (nv->value_flt < (float)0.0) {
+        nv->value_flt = 0.0;
+    }
+	if (nv->value_flt > (float)1.0) {
+        nv->value_flt = 1; {
 	}
 	set_flt(nv);	// set power_setting value in the motor config struct (st)
 
 	uint8_t m = _get_motor(nv);
-	st_cfg.mot[m].power_level_scaled = (nv->value * POWER_LEVEL_SCALE_FACTOR);
+	st_cfg.mot[m].power_level_scaled = (nv->value_flt * POWER_LEVEL_SCALE_FACTOR);
 	st_run.mot[m].power_level_dynamic = (st_cfg.mot[m].power_level_scaled);
 	_set_motor_power_level(m, st_cfg.mot[m].power_level_scaled);
 #endif
@@ -1235,7 +1237,7 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
  */
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	nv->value = _motor_is_enabled(_get_motor(nv));
+	nv->value_int = _motor_is_enabled(_get_motor(nv));
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1253,16 +1255,16 @@ stat_t st_get_pwr(nvObj_t *nv)
 
 stat_t st_set_mt(nvObj_t *nv)
 {
-	st_cfg.motor_power_timeout = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value, MOTOR_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_power_timeout = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value_flt, MOTOR_TIMEOUT_SECONDS_MIN));
 	return (STAT_OK);
 }
 
 stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
+	if ((nv->value_int == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_deenergize_motors();
 	} else {
-        uint8_t motor = (uint8_t)nv->value;
+        uint8_t motor = nv->value_int;
         if (motor > MOTORS) {
             return (STAT_INPUT_VALUE_RANGE_ERROR);
         }
@@ -1273,10 +1275,10 @@ stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initiali
 
 stat_t st_set_me(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
 {
-	if (((uint8_t)nv->value == 0) || (nv->valuetype == TYPE_NULL)) {
+	if ((nv->value_int == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_energize_motors();
 	} else {
-        uint8_t motor = (uint8_t)nv->value;
+        uint8_t motor = nv->value_int;
         if (motor > MOTORS) {
             return (STAT_INPUT_VALUE_RANGE_ERROR);
         }
@@ -1316,22 +1318,30 @@ void st_print_md(nvObj_t *nv) { text_print_nul(nv, fmt_md);}
 
 static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, (uint8_t)nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value_int);
+    text_finalize_message(msg);
 }
 
 static void _print_motor_flt_units(nvObj_t *nv, const char *format, uint8_t units)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value, GET_TEXT_ITEM(msg_units, units));
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_flt, GET_TEXT_ITEM(msg_units, units));
+    text_finalize_message(msg);
 }
 
 static void _print_motor_flt(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->group, nv->token, nv->group, nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, nv->value_flt);
+    text_finalize_message(msg);
 }
 
 static void _print_motor_pwr(nvObj_t *nv, const char *format)
 {
-	fprintf_P(stderr, format, nv->token[0], nv->value);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->token[0], nv->value_flt);
+    text_finalize_message(msg);
 }
 
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}

@@ -140,7 +140,7 @@ static void _application_init(void)
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
 	sei();							// enable global interrupts
-	rpt_print_system_ready_message();// (LAST) announce system is ready
+//	rpt_print_system_ready_message();// (LAST) announce system is ready // Moved to controller init
 }
 
 /*
@@ -190,7 +190,7 @@ static const char stat_05[] PROGMEM = "Terminated";
 static const char stat_06[] PROGMEM = "Hard reset";
 static const char stat_07[] PROGMEM = "End of line";
 static const char stat_08[] PROGMEM = "End of file";
-static const char stat_09[] PROGMEM = "File not open";
+static const char stat_09[] PROGMEM = "Cannot write to destination";
 
 static const char stat_10[] PROGMEM = "Max file size exceeded";
 static const char stat_11[] PROGMEM = "No such device";
@@ -302,7 +302,7 @@ static const char stat_110[] PROGMEM = "Input value range error";
 static const char stat_111[] PROGMEM = "JSON syntax error";
 static const char stat_112[] PROGMEM = "JSON input has too many pairs";
 static const char stat_113[] PROGMEM = "JSON string too long";
-static const char stat_114[] PROGMEM = "114";
+static const char stat_114[] PROGMEM = "JSON txt fields cannot be nested";
 static const char stat_115[] PROGMEM = "115";
 static const char stat_116[] PROGMEM = "116";
 static const char stat_117[] PROGMEM = "117";

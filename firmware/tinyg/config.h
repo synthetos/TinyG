@@ -86,20 +86,24 @@
  */
 /*  --- Making changes and adding new values
  *
- *	Adding a new value to config (or changing an existing one) involves touching the following places:
+ *	Adding a new value to config (or changing an existing one) involves touching the 
+ *  following places:
  *
- *	 - Create a new record in cfgArray[]. Use existing ones for examples.
+ *    - Create a new record in cfgArray[]. Use existing ones for examples.
  *
- *	 - Create functions for print, get, and set. You can often use existing generic fucntions for
- *	   get and set, and sometimes print. If print requires any custom text it requires it's own function
- *	   Look in the modules for examples - e.g. at the end of canoonical_machine.c
+ *	  - Create functions for print, get, and set. You can often use existing generic 
+ *      functions for get and set, and sometimes print. If print requires any custom 
+ *      text it requires it's own function. Look in the modules for examples - 
+ *      e.g. at the end of canoonical_machine.c
  *
- *	 - The ordering of group displays is set by the order of items in cfgArray. None of the other
- *	   orders matter but are generally kept sequenced for easier reading and code maintenance. Also,
- *	   Items earlier in the array will resolve token searches faster than ones later in the array.
+ *	  - The ordering of group displays is set by the order of items in cfgArray. 
+ *      None of the other orders matter but are generally kept sequenced for easier 
+ *      reading and code maintenance. Also, items earlier in the array will resolve 
+ *      token searches faster than ones later in the array.
  *
- *	   Note that matching will occur from the most specific to the least specific, meaning that
- *	   if tokens overlap the longer one should be earlier in the array: "gco" should precede "gc".
+ *	    Note that matching will occur from the most specific to the least specific, 
+ *      meaning that if tokens overlap the longer one should be earlier in the array.
+ *      For example, "gco" must precede "gc".
  */
 
 /**** nvObj lists ****
@@ -177,7 +181,7 @@ typedef int16_t index_t;				// -1 is reserved for no find
 
 										// pre-allocated defines (take RAM permanently)
 #define NV_SHARED_STRING_LEN 512		// shared string for string values
-#define NV_BODY_LEN 30					// body elements - allow for 1 parent + N children
+#define NV_BODY_LEN 36					// body elements - allow for 1 parent + N children
 										// (each body element takes about 30 bytes of RAM)
 
 // Stuff you probably don't want to change
@@ -187,16 +191,15 @@ typedef int16_t index_t;				// -1 is reserved for no find
 #define NV_FOOTER_LEN 18				// sufficient space to contain a JSON footer array
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
-//#define NO_MATCH (index_t)0xFFFF
-#define NO_MATCH (index_t)-1
+#define NO_MATCH (index_t)0xFFFF
 #define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
 											// **** must also line up in cfgArray, se00 - seXX ****
 
 typedef enum {
 	TEXT_MODE = 0,						// text command line mode
 	JSON_MODE,							// strict JSON construction
-	JSON_MODE_RELAXED					// relaxed JSON construction (future)
-} tgCommunicationsMode;
+	JSON_MODE_TXT_OVERRIDE			    // JSON mode while in TXT override
+} commMode;
 
 typedef enum {
 	FLOW_CONTROL_OFF = 0,				// flow control disabled
@@ -204,8 +207,9 @@ typedef enum {
 	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
 } flowControl;
 
-typedef enum {						// value typing for config and JSON
-	TYPE_EMPTY = -1,					// value struct is empty (which is not the same as "NULL")
+typedef enum {						    // value typing for config and JSON
+    TYPE_SKIP = -2,                     // do not serialize this object (used for filtering)
+	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
 	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
 	TYPE_BOOL,							// value is "true" (1) or "false"(0)
 	TYPE_INTEGER,						// value is a uint32_t
@@ -213,7 +217,9 @@ typedef enum {						// value typing for config and JSON
 	TYPE_FLOAT,							// value is a floating point number
 	TYPE_STRING,						// value is in string field
 	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
-	TYPE_PARENT							// object is a parent to a sub-object
+    TYPE_TID,                           // special type for transaction ID
+	TYPE_PARENT,				        // object is a parent to a sub-object (may also be a txt container)
+    TYPE_TXT_CONTINUATION               // NV pair was filled in by _js_run_container_as_text()
 } valueType;
 
 /**** operations flags and shorthand ****/
@@ -222,28 +228,31 @@ typedef enum {						// value typing for config and JSON
 #define F_PERSIST 		0x02			// persist this item when set is run
 #define F_NOSTRIP		0x04			// do not strip the group prefix from the token
 #define F_CONVERT		0x08			// set if unit conversion is required
+#define F_FLOAT		    0x10			// set if value is a float (otherwise it's an int)
 
 #define _f0				0x00
 #define _fi				(F_INITIALIZE)
 #define _fp				(F_PERSIST)
 #define _fn				(F_NOSTRIP)
 #define _fc				(F_CONVERT)
+#define _ff				(F_FLOAT)
 #define _fip			(F_INITIALIZE | F_PERSIST)
 #define _fipc			(F_INITIALIZE | F_PERSIST | F_CONVERT)
 #define _fipn			(F_INITIALIZE | F_PERSIST | F_NOSTRIP)
 #define _fipnc			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT)
+#define _fif			(F_INITIALIZE | F_FLOAT)
+#define _fipf			(F_INITIALIZE | F_PERSIST | F_FLOAT)
+#define _fipcf			(F_INITIALIZE | F_PERSIST | F_CONVERT | F_FLOAT)
+#define _fipnf			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_FLOAT)
+#define _fipncf			(F_INITIALIZE | F_PERSIST | F_NOSTRIP | F_CONVERT | F_FLOAT)
 
 /**** Structures ****/
 
 typedef struct nvString {				// shared string object
 	uint16_t magic_start;
-  #if (NV_SHARED_STRING_LEN < 256)
-	uint8_t wp;							// use this string array index value if string len < 256 bytes
-  #else
 	uint16_t wp;						// use this string array index value is string len > 255 bytes
-  #endif
-	char_t string[NV_SHARED_STRING_LEN];
-	uint16_t magic_end;					// guard to detect string buffer underruns
+	char string[NV_SHARED_STRING_LEN];
+	uint16_t magic_end;					// guard to detect string buffer overruns
 } nvStr_t;
 
 typedef struct nvObject {				// depending on use, not all elements may be populated
@@ -253,10 +262,13 @@ typedef struct nvObject {				// depending on use, not all elements may be popula
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
-	float value;						// numeric value
-	char_t group[GROUP_LEN+1];			// group prefix or NUL if not in a group
-	char_t token[TOKEN_LEN+1];			// full mnemonic token for lookup
-	char_t (*stringp)[];				// pointer to array of characters from shared character array
+    union {
+        float value_flt;                // float values
+        uint32_t value_int;             // raw int values
+    };
+	char group[GROUP_LEN+1];			// group prefix or NUL if not in a group
+	char token[TOKEN_LEN+1];			// full mnemonic token for lookup
+	char (*stringp)[];				    // pointer to array of characters from shared character array
 } nvObj_t; 								// OK, so it's not REALLY an object
 
 typedef uint8_t (*fptrCmd)(nvObj_t *nv);// required for cfg table access
@@ -264,20 +276,22 @@ typedef void (*fptrPrint)(nvObj_t *nv);	// required for PROGMEM access
 
 typedef struct nvList {
 	uint16_t magic_start;
+    index_t container_index;            // cache the txt container index
+    index_t tid_index;                  // cache the transaction ID index
 	nvObj_t list[NV_LIST_LEN];			// list of nv objects, including space for a JSON header element
 	uint16_t magic_end;
 } nvList_t;
 
 typedef struct cfgItem {
-	char_t group[GROUP_LEN+1];			// group prefix (with NUL termination)
-	char_t token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
+	char group[GROUP_LEN+1];			// group prefix (with NUL termination)
+	char token[TOKEN_LEN+1];			// token - stripped of group prefix (w/NUL termination)
 	uint8_t flags;						// operations flags - see defines below
 	int8_t precision;					// decimal precision for display (JSON)
 	fptrPrint print;					// print binding: aka void (*print)(nvObj_t *nv);
 	fptrCmd get;						// GET binding aka uint8_t (*get)(nvObj_t *nv)
 	fptrCmd set;						// SET binding aka uint8_t (*set)(nvObj_t *nv)
-	float *target;						// target for writing config value
-	float def_value;					// default value for config item
+	uint32_t *target;					// target for writing config value
+	float default_value;				// default value for config item - will be cast to uint32_t as required
 } cfgItem_t;
 
 /**** static allocation and definitions ****/
@@ -286,9 +300,11 @@ extern nvStr_t nvStr;
 extern nvList_t nvl;
 extern const cfgItem_t cfgArray[];
 
-//#define nv_header nv.list
-#define nv_header (&nvl.list[0])
-#define nv_body   (&nvl.list[1])
+//nvObj_t *NV_BODY;                       // this is dynamic. Set by nv_reset_nv_list()
+#define NV_HEAD (&nvl.list[0])              // address of header element
+#define NV_BODY (&nvl.list[1])              // address of first body element 
+#define NV_TID  (&nvl.list[NV_LIST_LEN-2])  // address of transaction ID
+#define NV_FOOT (&nvl.list[NV_LIST_LEN-1])  // address of footer element
 
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
@@ -305,43 +321,49 @@ stat_t nv_persist(nvObj_t *nv);				// main entry point for persistence
 
 // helpers
 uint8_t nv_get_type(nvObj_t *nv);
-index_t nv_get_index(const char_t *group, const char_t *token);
+index_t nv_get_index(const char *group, const char *token);
 index_t	nv_index_max(void);					// (see config_app.c)
 uint8_t nv_index_is_single(index_t index);	// (see config_app.c)
 uint8_t nv_index_is_group(index_t index);	// (see config_app.c)
 uint8_t nv_index_lt_groups(index_t index);	// (see config_app.c)
-uint8_t nv_group_is_prefixed(char_t *group);
+bool nv_index_is_container(index_t index);
+uint8_t nv_group_is_prefixed(char *group);
 
 // generic internal functions and accessors
-stat_t set_nul(nvObj_t *nv);				// set nothing (no operation)
-stat_t set_ui8(nvObj_t *nv);				// set uint8_t value
+stat_t set_nul(nvObj_t *nv);				// set nothing (returns STAT_PARAMETER_IS_READ_ONLY)
+stat_t set_not(nvObj_t *nv);				// set nothing (returns STAT_OK)
+stat_t set_ui8(nvObj_t *nv);				// set value as uint8_t
+stat_t set_u16(nvObj_t *nv);				// set value as uint16_t
+stat_t set_u32(nvObj_t *nv);				// set value as uint32_t
 stat_t set_01(nvObj_t *nv);					// set a 0 or 1 value with validation
 stat_t set_012(nvObj_t *nv);				// set a 0, 1 or 2 value with validation
 stat_t set_0123(nvObj_t *nv);				// set a 0, 1, 2 or 3 value with validation
-stat_t set_int16(nvObj_t *nv);				// set value as a 16 bit integer
-stat_t set_int32(nvObj_t *nv);				// set value as a 32 bit integer
 stat_t set_data(nvObj_t *nv);				// set uint32_t integer value blind cast
 stat_t set_flt(nvObj_t *nv);				// set floating point value
 
 stat_t get_nul(nvObj_t *nv);				// get null value type
+stat_t get_str(nvObj_t *nv);                // get stringp[] value
 stat_t get_ui8(nvObj_t *nv);				// get uint8_t value
-stat_t get_int(nvObj_t *nv);				// get uint32_t integer value
-stat_t get_data(nvObj_t *nv);				// get uint32_t integer value blind cast
+stat_t get_u16(nvObj_t *nv);				// get uint32_t value
+stat_t get_u32(nvObj_t *nv);				// get uint32_t value
+stat_t get_data(nvObj_t *nv);				// get uint32_t blind cast
 stat_t get_flt(nvObj_t *nv);				// get floating point value
 
 stat_t set_grp(nvObj_t *nv);				// set data for a group
 stat_t get_grp(nvObj_t *nv);				// get data for a group
 
 // nvObj and list functions
-void nv_get_nvObj(nvObj_t *nv);
+nvObj_t *nv_get_next_nvObj(nvObj_t *nv);
+void nv_populate_nvObj_by_index(nvObj_t *nv);
 nvObj_t *nv_reset_nv(nvObj_t *nv);
-nvObj_t *nv_reset_nv_list(void);
-stat_t nv_copy_string(nvObj_t *nv, const char_t *src);
-nvObj_t *nv_add_object(const char_t *token);
-nvObj_t *nv_add_integer(const char_t *token, const uint32_t value);
-nvObj_t *nv_add_float(const char_t *token, const float value);
-nvObj_t *nv_add_string(const char_t *token, const char_t *string);
-nvObj_t *nv_add_conditional_message(const char_t *string);
+nvObj_t *nv_reset_nv_list(char *parent);
+nvObj_t *nv_relink_nv_list(void);
+stat_t nv_copy_string(nvObj_t *nv, const char *src);
+nvObj_t *nv_add_object(const char *token);
+nvObj_t *nv_add_integer(const char *token, const uint32_t value);
+nvObj_t *nv_add_float(const char *token, const float value);
+nvObj_t *nv_add_string(const char *token, const char *string);
+nvObj_t *nv_add_conditional_message(const char *string);
 void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 // application specific helpers and functions (config_app.c)

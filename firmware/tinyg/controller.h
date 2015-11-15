@@ -45,14 +45,13 @@ typedef enum {				            // manages startup lines
 
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-	float null;							// dumping ground for items with no target
+	uint32_t null;						// dumping ground for items with no target
 
 	// system identification values
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
-	float config_version;				// tinyg configuration version for host / UI control
-	float hw_platform;					// tinyg hardware compatibility - platform type
-	float hw_version;					// tinyg hardware compatibility - platform revision
+	uint8_t hw_platform;                // tinyg hardware compatibility - platform type
+	uint8_t hw_version;                 // tinyg hardware compatibility - platform revision
 
 	// communications state variables
 	uint8_t primary_src;				// primary input source device
@@ -60,7 +59,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t default_src;				// default source device
 	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
-    uint8_t comm_mode;					// 0=text mode, 1=JSON mode
+    uint8_t comm_mode;					// 0=text mode, 1=JSON mode, 2=JSON in txt override
 
 	// system state variables
 	cmControllerState controller_state;
@@ -72,7 +71,6 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
 
 	int32_t job_id[4];					// uuid to identify the job
-//    float txn_id;
     uint32_t txn_id;
 
 	// controller serial buffers

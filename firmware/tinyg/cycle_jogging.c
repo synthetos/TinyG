@@ -32,10 +32,6 @@
 #include "planner.h"
 #include "util.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Jogging singleton structure ****/
 
 struct jmJoggingSingleton {			// persistent jogging runtime variables
@@ -214,12 +210,8 @@ static stat_t _jogging_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the jogging callback
 	// - and not the main controller - it requires its own display processing
-//	nv_reset_nv_list();
+//	nv_reset_nv_list(NUL);
 	_jogging_finalize_exit(axis);					// clean up
 	return (STAT_JOGGING_CYCLE_FAILED);				// jogging state
 }
 */
-
-#ifdef __cplusplus
-}
-#endif

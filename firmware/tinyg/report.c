@@ -83,18 +83,16 @@ stat_t rpt_er(nvObj_t *nv)
  *	These messages are always in JSON format to allow UIs to sync
  */
 
-//void _startup_helper(stat_t status, const char_t *msg)
 void _startup_helper(stat_t status, const char *msg)
 {
-	js.json_footer_depth = JSON_FOOTER_DEPTH;	//++++ temporary until changeover is complete
-	nv_reset_nv_list();
-	nv_add_object((const char_t *)"fv");		// firmware version
-	nv_add_object((const char_t *)"fb");		// firmware build
-	nv_add_object((const char_t *)"hp");		// hardware platform
-	nv_add_object((const char_t *)"hv");		// hardware version
-	nv_add_object((const char_t *)"id");		// hardware ID
-	nv_add_string((const char_t *)"msg", pstr2str(msg));	// startup message
-	json_print_response(status);
+	nv_reset_nv_list("sr");
+	nv_add_object((const char *)"fv");		// firmware version
+	nv_add_object((const char *)"fb");		// firmware build
+	nv_add_object((const char *)"hp");		// hardware platform
+	nv_add_object((const char *)"hv");		// hardware version
+	nv_add_object((const char *)"id");		// hardware ID
+	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
+    json_print_object(NV_HEAD);
 }
 
 void rpt_print_initializing_message(void)
@@ -104,14 +102,16 @@ void rpt_print_initializing_message(void)
 
 void rpt_print_loading_configs_message(void)
 {
+    js.json_syntax = JSON_SYNTAX_STRICT;    // always do this message strict
 	_startup_helper(STAT_INITIALIZING, PSTR("Loading configs from EEPROM"));
 }
 
 void rpt_print_system_ready_message(void)
 {
 	_startup_helper(STAT_OK, PSTR("SYSTEM READY"));
-	if (cs.comm_mode == TEXT_MODE)
-        text_response(STAT_OK, (char_t *)"");   // prompt
+	if (cs.comm_mode == TEXT_MODE) {
+        text_response(STAT_OK, (char *)"");   // prompt
+    }
 }
 
 /*****************************************************************************
@@ -162,34 +162,34 @@ static uint8_t _populate_filtered_status_report(void);
 /*
  * sr_init_status_report()
  *
- *  SR settings are not initialized by reading NVram during the system load process. Instead they are 
- *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true 
+ *  SR settings are not initialized by reading NVram during the system load process. Instead they are
+ *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true
  *  then SR settings will be reset from the profile and persisted back to NVram.
  */
 void sr_init_status_report(bool use_defaults)
 {
-    nvObj_t *nv = nv_reset_nv_list();	// used for status report persistence locations
-    char_t sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    sr.stat_index = nv_get_index((const char_t *)"", (const char_t *)"stat"); // set index of stat element 
-    nv->index = nv_get_index((const char_t *)"", (const char_t *)"se00"); // set first SR persistence index
+    nvObj_t *nv = nv_reset_nv_list(NUL);	// used for status report persistence locations
+    char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
+    sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element
+    nv->index = nv_get_index((const char *)"", (const char *)"se00"); // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
 
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if (!use_defaults) {
-            read_persistent_value(nv);                      // read NVram into nv->value element
-            sr.status_report_list[i] = (index_t)nv->value;  // pre-load the stored SR list
+            read_persistent_value(nv);                      // read NVram into nv->value_int element
+            sr.status_report_list[i] = nv->value_int;       // pre-load the stored SR list
         } else {
             if (sr_defaults[i][0] == NUL) {                 // load the index for the SR element
-                nv->value = NO_MATCH;                       // label as a blank spot
+                nv->value_int = NO_MATCH;                   // label as a blank spot
             } else {                                        // set and persist the default value
-                if ((nv->value = nv_get_index((const char_t *)"", sr_defaults[i])) == NO_MATCH) {
+                if ((nv->value_int = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
                     rpt_exception(STAT_BAD_STATUS_REPORT_SETTING); // trap mis-configured profile settings
                     return;
                 }
             }
             nv_set(nv);
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
-        }                
+        }
         sr.status_report_value[i] = 8675309;			    // pre-load SR values with an unlikely number
         nv->index++;                                        // increment SR NVM index
     }
@@ -206,7 +206,7 @@ void sr_init_status_report(bool use_defaults)
  *    {sr:{<key1>:f,...<keyN>:t}} removes <key1> through <keyN> from the status report list
  *
  *    - Lines may have a mix of t and f pairs
- *    - On entry nv points to the parent "sr" element on entry 
+ *    - On entry nv points to the parent "sr" element on entry
  *    - List ordering is not guaranteed in the case of mixed removes and adds in the same command
  *
  *  Error conditions:
@@ -219,10 +219,10 @@ void sr_init_status_report(bool use_defaults)
 
 static void _persist_status_report_list(nvObj_t *nv)
 {
-    nv->index = nv_get_index((const char_t *)"",(const char_t *)"se00");// set first SR persistence index
+    nv->index = nv_get_index((const char *)"",(const char *)"se00");// set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        nv->value = sr.status_report_list[i];
+        nv->value_int = sr.status_report_list[i];
         nv_persist(nv);
         nv->index++;                                // index of the next SR persistence location
     }
@@ -233,15 +233,15 @@ stat_t sr_set_status_report(nvObj_t *nv)
 {
     int8_t i;
     int8_t j;
-    nvObj_t *nv_first = nv;                         // save for later
+    nvObj_t *nv_first_sr_child = nv->nx;            // save for later
 
 	index_t working_list[SR_WORKING_LIST_LEN];      // init working list from the current SR list
 	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
     	working_list[i] = NO_MATCH;
 	}
-    
+
     // process {sr:f}    clear all SR settings
-    if ((nv->valuetype == TYPE_BOOL) && (fp_FALSE(nv->value))) {
+    if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == false)) {
 	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
             sr.status_report_list[i] = NO_MATCH;
         }
@@ -250,24 +250,24 @@ stat_t sr_set_status_report(nvObj_t *nv)
     }
 
     // process {sr:t}    restore SR settings to defaults
-    if ((nv->valuetype == TYPE_BOOL) && (fp_TRUE(nv->value))) {
+    if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == true)) {
         sr_init_status_report(true);
         return (STAT_OK);
-    }    
+    }
 
-    // process {sr:{.... process one or more SR drop/adds     
+    // process {sr:{.... process one or more SR drop/adds
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {        // read in the current SR list
         working_list[i] = sr.status_report_list[i];
-    }    
+    }
 
     // iterate the items in the nvlist
     index_t item;                                   // status report item being worked on
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if ((nv = nv->nx) == NULL) {                // advance to next element (past the "sr" parent)
             return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
-        }                                           
+        }
 		if (nv->valuetype == TYPE_EMPTY) {          // end of items
-            break; 
+            break;
         }
 		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
     		return (STAT_INPUT_VALUE_RANGE_ERROR);
@@ -275,7 +275,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	    if ((item = nv_get_index(nv->group,nv->token)) == NO_MATCH) {
     	    return(STAT_UNRECOGNIZED_NAME);         // trap non-existent tags
 	    }
-        if (fp_FALSE(nv->value)) {                  // remove an item from the working list
+        if (nv->value_int == false) {               // remove an item from the working list
             for (j=0; j<SR_WORKING_LIST_LEN; j++) {
                 if (working_list[j] == item) {      // item exists in working list
                     working_list[j] = NO_MATCH;
@@ -311,7 +311,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
     }
 	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
-    _persist_status_report_list(nv_first);
+    _persist_status_report_list(nv_first_sr_child);
     return (STAT_OK);
 }
 
@@ -376,29 +376,26 @@ stat_t sr_run_text_status_report()
 /*
  * _populate_unfiltered_status_report() - populate nvObj body with status values
  *
- *	Designed to be run as a response; i.e. have a "r" header and a footer.
+ *	Set r_header true if you want the report to be a response.
+ *  Set r_header false if it's to be used as an autogenerated status report
  */
 static stat_t _populate_unfiltered_status_report()
 {
-	const char_t sr_str[] = "sr";
-	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
-
-	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no length checking required)
-	strcpy(nv->token, sr_str);
-	nv->index = nv_get_index((const char_t *)"", sr_str);// set the index - may be needed by calling function
-	nv = nv->nx;							// no need to check for NULL as list has just been reset
+	char tmp[TOKEN_LEN+1];
+	nvObj_t *nv = nv_reset_nv_list("sr");
+ 	nv = nv->nx;	                    // set *nv to the first empty pair past the SR parent
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 
 		strcpy(tmp, nv->group);			// flatten out groups - WARNING - you cannot use strncpy here...
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);			//...or here.
 
-		if ((nv = nv->nx) == NULL)
+		if ((nv = nv->nx) == NULL) {
 			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL));	// should never be NULL unless SR length exceeds available buffer array
+        }
 	}
 	return (STAT_OK);
 }
@@ -418,25 +415,20 @@ static stat_t _populate_unfiltered_status_report()
  */
 static uint8_t _populate_filtered_status_report()
 {
-	const char_t sr_str[] = "sr";
 	uint8_t has_data = false;
-	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets nv to the start of the body
-
-	nv->valuetype = TYPE_PARENT; 			// setup the parent object (no need to length check the copy)
-	strcpy(nv->token, sr_str);
-//	nv->index = nv_get_index((const char_t *)"", sr_str);// OMITTED - set the index - may be needed by calling function
-	nv = nv->nx;							// no need to check for NULL as list has just been reset
+	char tmp[TOKEN_LEN+1];
+	nvObj_t *nv = nv_reset_nv_list("sr");
+	nv = nv->nx;	                    // set *nv to the first empty pair past the SR parent
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
 
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 		// do not report values that have not changed...
 		// ...except for stat=3 (STOP), which is an exception
-		if (fp_EQ(nv->value, sr.status_report_value[i])) {
+		if (nv->value_int == sr.status_report_value[i]) {
 //			if (nv->index != sr.stat_index) {
-//				if (fp_EQ(nv->value, COMBINED_PROGRAM_STOP)) {
+//				if (nv->value_int == COMBINED_PROGRAM_STOP) {
 					nv->valuetype = TYPE_EMPTY;
 					continue;
 //				}
@@ -446,7 +438,7 @@ static uint8_t _populate_filtered_status_report()
 			strcpy(tmp, nv->group);		// flatten out groups - WARNING - you cannot use strncpy here...
 			strcat(tmp, nv->token);
 			strcpy(nv->token, tmp);		//...or here.
-			sr.status_report_value[i] = nv->value;
+			sr.status_report_value[i] = nv->value_int;
 			if ((nv = nv->nx) == NULL) return (false); // should never be NULL unless SR length exceeds available buffer array
 			has_data = true;
 		}
@@ -461,18 +453,23 @@ static uint8_t _populate_filtered_status_report()
  * sr_set()		- set status report elements
  * sr_set_si()	- set status report interval
  */
-stat_t sr_get(nvObj_t *nv) { 
+stat_t sr_get(nvObj_t *nv)
+{
     return (_populate_unfiltered_status_report());
 }
 
-stat_t sr_set(nvObj_t *nv) { 
+stat_t sr_set(nvObj_t *nv)
+{
     return (sr_set_status_report(nv));
 }
 
 stat_t sr_set_si(nvObj_t *nv)
 {
-	if (nv->value < STATUS_REPORT_MIN_MS) { nv->value = STATUS_REPORT_MIN_MS;}
-	sr.status_report_interval = (uint32_t)nv->value;
+	if (nv->value_int < STATUS_REPORT_MIN_MS) {
+    	nv->value_int = STATUS_REPORT_MIN_MS;
+	}
+	sr.status_report_interval = nv->value_int;
+
 	return(STAT_OK);
 }
 
@@ -481,12 +478,14 @@ stat_t sr_set_si(nvObj_t *nv)
  *********************/
 #ifdef __TEXT_MODE
 
-static const char fmt_si[] PROGMEM = "[si]  status interval%14.0f ms\n";
+static const char fmt_si[] PROGMEM = "[si]  status interval%14lu ms\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
 void sr_print_sr(nvObj_t *nv) { _populate_unfiltered_status_report();}
-void sr_print_si(nvObj_t *nv) { text_print_flt(nv, fmt_si);}
-void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
+//void sr_print_si(nvObj_t *nv) { text_print_flt(nv, fmt_si);}
+//void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
+void sr_print_si(nvObj_t *nv) { text_print(nv, fmt_si);}
+void sr_print_sv(nvObj_t *nv) { text_print(nv, fmt_sv);}
 
 #endif // __TEXT_MODE
 
@@ -495,7 +494,7 @@ void sr_print_sv(nvObj_t *nv) { text_print_ui8(nv, fmt_sv);}
  * Queue Reports
  *
  *	Queue reports can report three values:
- *	  - qr	queue depth - # of buffers availabel in planner queue
+ *	  - qr	queue depth - # of buffers available in planner queue
  *	  - qi	buffers added to planner queue since las report
  *	  - qo	buffers removed from planner queue since last report
  *
@@ -604,28 +603,12 @@ void rx_request_rx_report(void) {
 stat_t rx_report_callback(void) {
     if (!rx.rx_report_requested) {
         return (STAT_NOOP);
-    }    
+    }
     rx.rx_report_requested = false;
 
     fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);
     return (STAT_OK);
 }
-
-/* Alternate Formulation for a Single report - using nvObj list
-
-	// get a clean nv object
-//	nvObj_t *nv = nv_reset_nv_list();		// normally you do a list reset but the following is more time efficient
-	nvObj_t *nv = nv_body;
-	nv_reset_nv(nv);
-	nv->nx = NULL;							// terminate the list
-
-	// make a qr object and print it
-	sprintf_P(nv->token, PSTR("qr"));
-	nv->value = qr.buffers_available;
-	nv->valuetype = TYPE_INTEGER;
-	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
-	return (STAT_OK);
-*/
 
 /*
  * Wrappers and Setters - for calling from cfgArray table
@@ -636,14 +619,14 @@ stat_t rx_report_callback(void) {
  */
 stat_t qr_get(nvObj_t *nv)
 {
-	nv->value = (float)mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
+	nv->value_int = mp_get_planner_buffers_available(); // ensure that manually requested QR count is always up to date
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
 
 stat_t qi_get(nvObj_t *nv)
 {
-	nv->value = (float)qr.buffers_added;
+	nv->value_int = qr.buffers_added;
 	nv->valuetype = TYPE_INTEGER;
 	qr.buffers_added = 0;				// reset it
 	return (STAT_OK);
@@ -651,7 +634,7 @@ stat_t qi_get(nvObj_t *nv)
 
 stat_t qo_get(nvObj_t *nv)
 {
-	nv->value = (float)qr.buffers_removed;
+	nv->value_int = qr.buffers_removed;
 	nv->valuetype = TYPE_INTEGER;
 	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
@@ -669,21 +652,21 @@ stat_t qo_get(nvObj_t *nv)
  */
 stat_t job_populate_job_report()
 {
-	const char_t job_str[] = "job";
-	char_t tmp[TOKEN_LEN+1];
-	nvObj_t *nv = nv_reset_nv_list();		// sets *nv to the start of the body
+	const char job_str[] = "job";
+	char tmp[TOKEN_LEN+1];
+	nvObj_t *nv = nv_reset_nv_list("job");	// sets *nv to the start of the body
 
 	nv->valuetype = TYPE_PARENT; 			// setup the parent object
 	strcpy(nv->token, job_str);
 
-	//nv->index = nv_get_index((const char_t *)"", job_str);// set the index - may be needed by calling function
+	//nv->index = nv_get_index((const char *)"", job_str);// set the index - may be needed by calling function
 	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
-	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	index_t job_start = nv_get_index((const char *)"",(const char *)"job1");// set first job persistence index
 	for (uint8_t i=0; i<4; i++) {
 
 		nv->index = job_start + i;
-		nv_get_nvObj(nv);
+		nv_populate_nvObj_by_index(nv);
 
 		strcpy(tmp, nv->group);				// concatenate groups and tokens - do NOT use strncpy()
 		strcat(tmp, nv->token);
@@ -697,13 +680,13 @@ stat_t job_populate_job_report()
 
 stat_t job_set_job_report(nvObj_t *nv)
 {
-	index_t job_start = nv_get_index((const char_t *)"",(const char_t *)"job1");// set first job persistence index
+	index_t job_start = nv_get_index((const char *)"",(const char *)"job1");// set first job persistence index
 
 	for (uint8_t i=0; i<4; i++) {
 		if (((nv = nv->nx) == NULL) || (nv->valuetype == TYPE_EMPTY)) { break;}
 		if (nv->valuetype == TYPE_INTEGER) {
-			cs.job_id[i] = nv->value;
-			nv->index = job_start + i;		// index of the SR persistence location
+			cs.job_id[i] = nv->value_int;
+			nv->index = job_start + i;		// index of the job persistence location
 			nv_persist(nv);
 		} else {
 			return (STAT_UNSUPPORTED_TYPE);
@@ -739,10 +722,15 @@ static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_qi[] PROGMEM = "qi:%d\n";
 static const char fmt_qo[] PROGMEM = "qo:%d\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
-
+/*
 void qr_print_qr(nvObj_t *nv) { text_print_int(nv, fmt_qr);}
 void qr_print_qi(nvObj_t *nv) { text_print_int(nv, fmt_qi);}
 void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
 void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
+*/
+void qr_print_qr(nvObj_t *nv) { text_print(nv, fmt_qr);}
+void qr_print_qi(nvObj_t *nv) { text_print(nv, fmt_qi);}
+void qr_print_qo(nvObj_t *nv) { text_print(nv, fmt_qo);}
+void qr_print_qv(nvObj_t *nv) { text_print(nv, fmt_qv);}
 
 #endif // __TEXT_MODE

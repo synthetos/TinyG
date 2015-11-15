@@ -27,6 +27,13 @@
  * then set the top one to \winavr\bin\avr-gcc.exe  (C:\WinAVR-20100110\bin\avr-gcc.exe)
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
+/*
+ *  txt handling notes (still to go)
+ *    - handle ill-formed wrapped JSON (currently fails silently)
+ *    - handle non-quoted txt: values (error handling fails silently)
+ *    - handle {sr:n} case properly
+ *    - CANcel for ^x
+ */
 
 #ifndef TINYG_H_ONCE
 #define TINYG_H_ONCE
@@ -45,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.30	// Changed transaction ID to an int
+#define TINYG_FIRMWARE_BUILD        441.02	// G43.1 / G49 tool length offsets
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -90,14 +97,11 @@
 #ifdef __AVR
 
 #include <avr/pgmspace.h>		// defines PROGMEM and PSTR
-
-typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
-
 																	// gets rely on nv->index having been set
-#define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[nv->index].a)	// get byte value from cfgArray
+#define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[nv->index].a)	// get float value from cfgArray
-#define GET_TOKEN_BYTE(a)  (char_t)pgm_read_byte(&cfgArray[i].a)	// get token byte value from cfgArray
+#define GET_TOKEN_BYTE(a)  (char)pgm_read_byte(&cfgArray[i].a)	    // get token byte value from cfgArray
 
 // populate the shared buffer with the token string given the index
 #define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
@@ -126,18 +130,14 @@ typedef char char_t;			// ARM/C++ version uses uint8_t as char_t
 #define PROGMEM					// ignore PROGMEM declarations in ARM/GCC++
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
-typedef char char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_t
-								// because in C++ uint8_t and char are distinct types and
-								// we want chars to behave as uint8's
-
 													// gets rely on nv->index having been set
-#define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
 #define GET_TABLE_BYTE(a)  cfgArray[nv->index].a	// get byte value from cfgArray
-#define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get byte value from cfgArray
-#define GET_TOKEN_BYTE(i,a) (char_t)cfgArray[i].a	// get token byte value from cfgArray
+#define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
+#define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get FP value from cfgArray
+#define GET_TOKEN_BYTE(i,a) (char)cfgArray[i].a	    // get token byte value from cfgArray
 
 #define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a
-//#define GET_TOKEN_STRING(i,a) (char_t)cfgArray[i].token)// populate the token string given the index
+//#define GET_TOKEN_STRING(i,a) (char)cfgArray[i].token)// populate the token string given the index
 
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash
 #define GET_UNITS(a) msg_units[cm_get_units_mode(a)]
@@ -158,20 +158,20 @@ typedef char char_t;			// In the ARM/GCC++ version char_t is typedef'd to uint8_
  * The AVR also has "_P" variants that take PROGMEM strings as args.
  * On the ARM/GCC++ the _P functions are just aliases of the non-P variants.
  */
-#define strncpy(d,s,l) (char_t *)strncpy((char *)d, (char *)s, l)
-#define strpbrk(d,s) (char_t *)strpbrk((char *)d, (char *)s)
-#define strcpy(d,s) (char_t *)strcpy((char *)d, (char *)s)
-#define strcat(d,s) (char_t *)strcat((char *)d, (char *)s)
-#define strstr(d,s) (char_t *)strstr((char *)d, (char *)s)
-#define strchr(d,s) (char_t *)strchr((char *)d, (char)s)
+#define strncpy(d,s,l) (char *)strncpy((char *)d, (char *)s, l)
+#define strpbrk(d,s) (char *)strpbrk((char *)d, (char *)s)
+#define strcpy(d,s) (char *)strcpy((char *)d, (char *)s)
+#define strcat(d,s) (char *)strcat((char *)d, (char *)s)
+#define strstr(d,s) (char *)strstr((char *)d, (char *)s)
+#define strchr(d,s) (char *)strchr((char *)d, (char)s)
 #define strcmp(d,s) strcmp((char *)d, (char *)s)
 #define strtod(d,p) strtod((char *)d, (char **)p)
 #define strtof(d,p) strtof((char *)d, (char **)p)
 #define strlen(s) strlen((char *)s)
 #define isdigit(c) isdigit((char)c)
 #define isalnum(c) isalnum((char)c)
-#define tolower(c) (char_t)tolower((char)c)
-#define toupper(c) (char_t)toupper((char)c)
+#define tolower(c) (char)tolower((char)c)
+#define toupper(c) (char)toupper((char)c)
 
 #define printf_P printf		// these functions want char * as inputs, not char_t *
 #define fprintf_P fprintf	// just sayin'
@@ -270,7 +270,7 @@ char *get_status_message(stat_t status);
 #define STAT_RESET 6					// operation was hard reset (sig kill)
 #define	STAT_EOL 7						// function returned end-of-line
 #define	STAT_EOF 8						// function returned end-of-file
-#define	STAT_FILE_NOT_OPEN 9
+#define	STAT_FILE_NOT_OPEN 9            // cannot write to destination
 #define	STAT_FILE_SIZE_EXCEEDED 10
 #define	STAT_NO_SUCH_DEVICE 11
 #define	STAT_BUFFER_EMPTY 12
@@ -391,7 +391,7 @@ char *get_status_message(stat_t status);
 #define	STAT_JSON_SYNTAX_ERROR 111              // JSON input string is not well formed
 #define	STAT_JSON_TOO_MANY_PAIRS 112            // JSON input string has too many JSON pairs
 #define	STAT_JSON_TOO_LONG 113					// JSON input or output exceeds buffer size
-#define	STAT_ERROR_114 114
+#define	STAT_NESTED_JSON_CONTAINER 114          // txt fields cannot be nested
 #define	STAT_ERROR_115 115
 #define	STAT_ERROR_116 116
 #define	STAT_ERROR_117 117
