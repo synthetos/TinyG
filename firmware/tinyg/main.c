@@ -59,6 +59,12 @@ void __libc_init_array(void);
 #endif // __cplusplus
 #endif // __ARM
 
+/******************** System Globals *************************/
+
+//stat_t status_code;						    // allocate a variable for the ritorno macro
+//char global_string_buf[GLOBAL_STRING_LEN];	// allocate a string for global message use
+static char _status_message[STATUS_MESSAGE_LEN];
+
 /******************** Application Code ************************/
 
 #ifdef __ARM
@@ -400,7 +406,7 @@ static const char stat_199[] PROGMEM = "199";
 static const char stat_200[] PROGMEM = "Generic TinyG error";
 static const char stat_201[] PROGMEM = "Move less than minimum length";
 static const char stat_202[] PROGMEM = "Move less than minimum time";
-static const char stat_203[] PROGMEM = "Machine is alarmed - Command not processed";	// current longest message 43 chars (including NUL)
+static const char stat_203[] PROGMEM = "Machine is alarmed - $clear to clear";	// current longest message 37 chars (including NUL)
 static const char stat_204[] PROGMEM = "Limit switch hit - Shutdown occurred";
 static const char stat_205[] PROGMEM = "Trapezoid planner failed to converge";
 static const char stat_206[] PROGMEM = "206";
@@ -484,7 +490,16 @@ static const char *const stat_msg[] PROGMEM = {
 	stat_250, stat_251, stat_252
 };
 
+/*
+ * get_status_message() - support for status messages.
+ */
 char *get_status_message(stat_t status)
 {
-	return ((char *)GET_TEXT_ITEM(stat_msg, status));
+#ifdef __ARM
+    return (&stat_msg[status]); // simple
+#endif
+#ifdef __AVR    // not so simple
+    strncpy_P(_status_message, (char *)pgm_read_word(&stat_msg[status]), STATUS_MESSAGE_LEN);
+    return (_status_message);
+#endif
 }

@@ -98,7 +98,7 @@ extern rxSingleton_t rx;
 /**** Function Prototypes ****/
 
 void rpt_print_message(char *msg);
-stat_t rpt_exception(uint8_t status);
+stat_t rpt_exception(stat_t status, const char *msg);
 
 stat_t rpt_er(nvObj_t *nv);
 void rpt_print_loading_configs_message(void);

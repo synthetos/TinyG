@@ -90,6 +90,7 @@
 #include "config.h"			// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
+#include "controller.h"
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
@@ -225,7 +226,7 @@ void cm_set_model_linenum(uint32_t linenum)
  * Notes on Coordinate System and Offset functions
  *
  * All positional information in the canonical machine is kept as absolute coords and in
- *	canonical units, which are millimeters (mm). The offsets are only used to translate 
+ *	canonical units, which are millimeters (mm). The offsets are only used to translate
  *  in and out of canonical form during interpretation and display.
  *
  * Managing the coordinate systems & offsets is somewhat complicated. The following affect offsets:
@@ -577,11 +578,15 @@ stat_t canonical_machine_test_assertions(void)
  * cm_hard_alarm() - alarm state; send an exception report and shut down machine
  */
 
-stat_t cm_alarm(nvObj_t *nv) { cm_soft_alarm(STAT_ALARMED); return (STAT_OK); }
-
-stat_t cm_soft_alarm(stat_t status)
+stat_t cm_alarm(nvObj_t *nv)
 {
-	rpt_exception(status);					// send alarm message
+    cm_soft_alarm(STAT_ALARMED, cs.saved_buf);
+    return (STAT_OK);
+}
+
+stat_t cm_soft_alarm(stat_t status, const char *msg)
+{
+	rpt_exception(status, msg);				// send alarm message
 	cm.machine_state = MACHINE_ALARM;
 	return (status);						// NB: More efficient than inlining rpt_exception() call.
 }
@@ -596,7 +601,7 @@ stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 	return (STAT_OK);
 }
 
-stat_t cm_hard_alarm(stat_t status)
+stat_t cm_hard_alarm(stat_t status, const char *msg)
 {
 	// stop the motors and the spindle
 	stepper_init();							// hard stop
@@ -609,7 +614,7 @@ stat_t cm_hard_alarm(stat_t status)
 //	gpio_set_bit_off(MIST_COOLANT_BIT);		//++++ replace with exec function
 //	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//++++ replace with exec function
 
-	rpt_exception(status);					// send shutdown message
+	rpt_exception(status, msg);				// send shutdown message
 	cm.machine_state = MACHINE_SHUTDOWN;
 	return (status);
 }
@@ -865,8 +870,9 @@ stat_t cm_straight_traverse(float target[], float flags[])
 
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
-	if (status != STAT_OK) return (cm_soft_alarm(status));
-
+	if (status != STAT_OK) {
+        return (cm_soft_alarm(status, cs.saved_buf));
+    }
 	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
@@ -986,8 +992,9 @@ stat_t cm_straight_feed(float target[], float flags[])
 
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
-	if (status != STAT_OK) return (cm_soft_alarm(status));
-
+	if (status != STAT_OK) {
+        return (cm_soft_alarm(status, cs.saved_buf));
+    }
 	// prep and plan the move
 	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
@@ -1043,17 +1050,17 @@ static void _exec_change_tool(float *value, float *flag)
  * cm_tool_offset_set()    - G43.1
  * cm_tool_offset_cancel() - G49
  *
- *  Tool length offset is positive and relative to absolute coordinates. 
+ *  Tool length offset is positive and relative to absolute coordinates.
  *  If Z is at 0, G43.1 Z10 will make Z now appear to be at 10 mm,
  *  i.e the reported work position will be 10 mm.
  *
- *  G43.1 does not cause any movement but will change status report displays 
+ *  G43.1 does not cause any movement but will change status report displays
  *  (DRO values). Movement will occur on next feed or traverse.
  *
  *  Changes to tool length offsets take effect immediately (i.e. in the model)
  *  As they affect the creation of new moves. The display of tool length
  *  changes must be synchronized with the first block affected by the change,
- *  hence the offset is captured in the work_offset term and passed to the 
+ *  hence the offset is captured in the work_offset term and passed to the
  *  runtime model.
  *
  *  Canoncial_machine functions affected by tool length offset:

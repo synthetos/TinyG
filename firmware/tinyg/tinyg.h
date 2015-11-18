@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.03	// arc tests
+#define TINYG_FIRMWARE_BUILD        441.03	// alarm the system and stop job is command is unsupported
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -251,9 +251,10 @@ typedef uint16_t magic_t;		// magic number size
 typedef uint8_t stat_t;
 extern stat_t status_code;				// allocated in main.c
 
-#define MESSAGE_LEN 80					// global message string storage allocation
-extern char global_string_buf[];				// allocated in main.c
+#define MESSAGE_LEN 100					// global message string storage allocation
+extern char global_string_buf[];		// allocated in main.c
 
+#define STATUS_MESSAGE_LEN 48           // must be shorter than longest status message in stat_msg[] (below)
 char *get_status_message(stat_t status);
 
 // ritorno is a handy way to provide exception returns

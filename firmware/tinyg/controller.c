@@ -231,8 +231,7 @@ static stat_t _dispatch_command()
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-//        return(cm_soft_alarm(STAT_BUFFER_FULL));
-        return(cm_soft_alarm(STAT_ERROR_18));
+        return(cm_soft_alarm(STAT_BUFFER_FULL, cs.saved_buf));
     }
     if (cs.bufp != (char *)NULL) {          // process the command
         _dispatch_kernel();
@@ -253,8 +252,7 @@ static stat_t _dispatch_control()
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
 	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-//    	return(cm_soft_alarm(STAT_BUFFER_FULL));
-        return(cm_soft_alarm(STAT_ERROR_19));
+    	return(cm_soft_alarm(STAT_BUFFER_FULL, cs.saved_buf));
 	}
 	if (cs.bufp != (char *)NULL) {          // process the command
     	_dispatch_kernel();
@@ -448,14 +446,14 @@ static stat_t _limit_switch_handler(void)
 	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 
 	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
+	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT, ""));
 	return (STAT_OK);
 }
 
 /*
  * _system_assertions() - check memory integrity and other assertions
  */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
+#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code, ""));
 
 stat_t _system_assertions()
 {

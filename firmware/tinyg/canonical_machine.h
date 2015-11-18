@@ -565,8 +565,8 @@ void canonical_machine_init(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-stat_t cm_hard_alarm(stat_t status);							// enter hard alarm state. returns same status code
-stat_t cm_soft_alarm(stat_t status);							// enter soft alarm state. returns same status code
+stat_t cm_hard_alarm(stat_t status, const char *msg);			// enter hard alarm state. returns same status code
+stat_t cm_soft_alarm(stat_t status, const char *msg);			// enter soft alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
 
 stat_t cm_alarm(nvObj_t *nv);

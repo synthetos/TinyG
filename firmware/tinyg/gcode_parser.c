@@ -55,8 +55,9 @@ stat_t gc_gcode_parser(char *block)
 	uint8_t block_delete_flag;
 
 	// don't process Gcode blocks if in alarmed state
-	if (cm.machine_state == MACHINE_ALARM) return (STAT_MACHINE_ALARMED);
-
+	if (cm.machine_state == MACHINE_ALARM) {
+        return (STAT_MACHINE_ALARMED);
+    }
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
 
 	// Block delete omits the line if a / char is present in the first space
@@ -118,7 +119,11 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 
 	// Preset comments and messages to NUL string
 	// Not required if com and msg already point to NUL on entry
-//	for (rd = str; *rd != NUL; rd++) { if (*rd == NUL) { *com = rd; *msg = rd; rd = str;} }
+//	for (rd = str; *rd != NUL; rd++) {
+//        if (*rd == NUL) {
+//            *com = rd; *msg = rd; rd = str;
+//        }
+//    }
 
 	// mark block deletes
 	if (*rd == '/') { *block_delete_flag = true; }
@@ -153,8 +158,6 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
         // look for JSON active comment
         if (*rd == '{') {                   // look for a transaction ID (hack hack)
 		    if ((tolower(*(rd+1)) == 't') && (tolower(*(rd+2)) == 'i') && (tolower(*(rd+3)) == 'd')) {
-//	            char *end;
-//	            cs.txn_id = strtof((rd+5), &end);
 	            cs.txn_id = atoi(rd+5);
 		    }
         }
@@ -184,7 +187,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	// get letter part
 	if(isupper(**pstr) == false) {
         return (STAT_INVALID_OR_MALFORMED_COMMAND);
-    }    
+    }
 	*letter = **pstr;
 	(*pstr)++;
 
@@ -328,8 +331,6 @@ static stat_t _parse_gcode_block(char *buf)
 				}
 				case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
 				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL_MOTION_MODE);
-//				case 90: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
-//				case 91: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
 				case 90: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
@@ -407,7 +408,12 @@ static stat_t _parse_gcode_block(char *buf)
 		}
 		if(status != STAT_OK) break;
 	}
-	if ((status != STAT_OK) && (status != STAT_COMPLETE)) return (status);
+    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
+    	return (cm_soft_alarm(status, cs.saved_buf));
+    }
+	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
+        return (status);
+    }
 	ritorno(_validate_gcode_block());
 	return (_execute_gcode_block());		// if successful execute the block
 }
