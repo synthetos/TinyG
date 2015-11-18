@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.03	// alarm the system and stop job is command is unsupported
+#define TINYG_FIRMWARE_BUILD        441.03	// alarm the system and stop job if command is unsupported
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

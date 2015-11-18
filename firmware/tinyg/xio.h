@@ -191,7 +191,8 @@ typedef void (*x_flow_t)(xioDev_t *d);
 
 #define RX_HEADERS                26        // buffer headers in the list
 #define RX_BUFFER_MIN_SIZE       256        // minimum requested buffer size (they are usually larger)
-#define RX_BUFFER_POOL_SIZE     2000        // total size of RX buffer memory pool
+//#define RX_BUFFER_POOL_SIZE     2000        // total size of RX buffer memory pool
+#define RX_BUFFER_POOL_SIZE     1500        // total size of RX buffer memory pool
 
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
