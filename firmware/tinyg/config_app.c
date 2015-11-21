@@ -764,61 +764,66 @@ void preprocess_float(nvObj_t *nv)
  *	- offsets		- group of all offsets and stored positions
  *	- all			- group of all groups
  *
- * _do_group_list()	- get and print all groups in the list (iteration)
+ * _do_group_csv()	- get and print all groups in the list (iteration)
  * _do_motors()		- get and print motor uber group 1-N
  * _do_axes()		- get and print axis uber group XYZABC
  * _do_offsets()	- get and print offset uber group G54-G59, G28, G30, G92
  * _do_all()		- get and print all groups uber group
  */
 
-static stat_t _do_group_list(nvObj_t *nv, char list[][TOKEN_LEN+1]) // helper to print multiple groups in a list
+ // helper to print multiple groups in a list
+#define GROUP_LIST_MAX 48
+static stat_t _do_group_csv_P(nvObj_t *nv, uint8_t items, const char *list_P)
 {
-	for (uint8_t i=0; i < NV_MAX_OBJECTS; i++) {
-		if (list[i][0] == NUL) {
-            return (STAT_COMPLETE);
+    char list[GROUP_LIST_MAX]; strcpy_P(list, list_P);
+    char *w = list;     // pointer to write NULL terminations over commas
+    char *r = list;     // pointer to pass token
+
+	for (; items > 0; items--) {
+
+        // find the token to display
+        while (true) {
+            if ((*w == ',') || (*w == NUL)) {
+                *w = NUL;
+                break;
+            }
+            if (++w > (list + GROUP_LIST_MAX)) {
+                return (STAT_INTERNAL_RANGE_ERROR);
+            }
         }
-//		nv_reset_nv_list("r");
+
+        // process the token
 		nv_reset_nv_list(NUL);
 		nv = NV_BODY;
-		strncpy(nv->token, list[i], TOKEN_LEN);
-		nv->index = nv_get_index((const char *)"", nv->token);
-//		nv->valuetype = TYPE_PARENT;
+		strncpy(nv->token, r, TOKEN_LEN);
+		nv->index = nv_get_index("", nv->token);
+//		nv->valuetype = TYPE_PARENT;        // left in for clarity. Not required
 		nv_populate_nvObj_by_index(nv);
 		nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+
+        // set up to display next token
+        r = (++w);
 	}
 	return (STAT_COMPLETE);
 }
 
+static const char motor_list[] PROGMEM = "1,2,3,4,5,6";
 static stat_t _do_motors(nvObj_t *nv)	// print parameters for all motor groups
 {
-#if MOTORS == 2
-	char list[][TOKEN_LEN+1] = {"1","2",""}; // must have a terminating element
-#endif
-#if MOTORS == 3
-	char list[][TOKEN_LEN+1] = {"1","2","3",""}; // must have a terminating element
-#endif
-#if MOTORS == 4
-	char list[][TOKEN_LEN+1] = {"1","2","3","4",""}; // must have a terminating element
-#endif
-#if MOTORS == 5
-	char list[][TOKEN_LEN+1] = {"1","2","3","4","5",""}; // must have a terminating element
-#endif
-#if MOTORS == 6
-	char list[][TOKEN_LEN+1] = {"1","2","3","4","5","6",""}; // must have a terminating element
-#endif
-	return (_do_group_list(nv, list));
+    return(_do_group_csv_P(nv, MOTORS, motor_list));
 }
 
+static const char axis_list[] PROGMEM = "x,y,z,a,b,c";
 static stat_t _do_axes(nvObj_t *nv)	// print parameters for all axis groups
 {
-	char list[][TOKEN_LEN+1] = {"x","y","z","a","b","c",""}; // must have a terminating element
-	return (_do_group_list(nv, list));
+    return(_do_group_csv_P(nv, AXES, axis_list));
+
 }
 
+static const char offset_list[] PROGMEM = "g54,g55,g56,g57,g58,g59,g92,g28,g30";
 static stat_t _do_offsets(nvObj_t *nv)	// print offset parameters for G54-G59,G92, G28, G30
 {
-	char list[][TOKEN_LEN+1] = {"g54","g55","g56","g57","g58","g59","g92","g28","g30",""}; // must have a terminating element
-	return (_do_group_list(nv, list));
+    return(_do_group_csv_P(nv, 9, offset_list));
 }
 
 static stat_t _do_all(nvObj_t *nv)	// print all parameters

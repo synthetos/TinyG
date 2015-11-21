@@ -390,7 +390,6 @@ stat_t cm_deferred_write_callback()
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				nv.index = nv_get_index((const char *)"", nv.token);
-//				nv.value = cm.offset[i][j];
 				nv.value_flt = cm.offset[i][j];
 				nv_persist(&nv);				// Note: only writes values that have changed
 			}
@@ -1865,7 +1864,7 @@ stat_t cm_run_home(nvObj_t *nv)
 
 stat_t cm_dam(nvObj_t *nv)
 {
-	printf("Active model:\n");
+	printf_P(PSTR("Active model:\n"));
 	cm_print_vel(nv);
 	cm_print_feed(nv);
 	cm_print_line(nv);

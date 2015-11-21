@@ -569,7 +569,6 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
 	float velocity = sqrt(radius * cm.junction_acceleration);
-//	printf ("v:%f\n", velocity);	//+++++
 	return (velocity);
 }
 

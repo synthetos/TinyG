@@ -175,16 +175,16 @@ void text_response(const stat_t status, char *buf)
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, prompt_ok, units);
+		printf_P(prompt_ok, units);
 	} else {
-		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
+		printf_P(prompt_err, units, get_status_message(status), buf);
 	}
 	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		fprintf(stderr, *nv->stringp);
+		printf(*nv->stringp);
 	}
-	fprintf(stderr, "\n");
+	printf_P(PSTR("\n"));
 }
 
 /***** PRINT FUNCTIONS ********************************************************
@@ -212,16 +212,16 @@ void text_print_inline_pairs(nvObj_t *nv)
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value_flt, nv->precision);
-								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
+								  printf_P(PSTR("%s:%s"), nv->token, global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%lu"), nv->token, nv->value_int); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_INTEGER:	{ printf_P(PSTR("%s:%lu"), nv->token, nv->value_int); break;}
+			case TYPE_DATA:	    { printf_P(PSTR("%s:%lu"), nv->token, *v); break;}
+			case TYPE_STRING:	{ printf_P(PSTR("%s:%s"), nv->token, *nv->stringp); break;}
+			case TYPE_EMPTY:	{ printf_P(PSTR("\n")); return; }
             default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
+		if (nv->valuetype != TYPE_EMPTY) { printf_P(PSTR(","));}
 	}
 }
 
@@ -233,16 +233,16 @@ void text_print_inline_values(nvObj_t *nv)
 			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
 			case TYPE_FLOAT:	{ preprocess_float(nv);
 								  fntoa(global_string_buf, nv->value_flt, nv->precision);
-								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
+								  printf_P(PSTR("%s"), global_string_buf) ; break;
 								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%lu"), nv->value_int); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
+			case TYPE_INTEGER:	{ printf_P(PSTR("%lu"), nv->value_int); break;}
+			case TYPE_DATA:	    { printf_P(PSTR("%lu"), *v); break;}
+			case TYPE_STRING:	{ printf_P(PSTR("%s"), *nv->stringp); break;}
+			case TYPE_EMPTY:	{ printf_P(PSTR("\n")); return; }
             default:            { return; }
 		}
 		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
+		if (nv->valuetype != TYPE_EMPTY) { printf_P(PSTR(","));}
 	}
 }
 */

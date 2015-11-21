@@ -565,30 +565,30 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
         // serialize name
 		if (js.json_syntax == JSON_SYNTAX_RELAXED) { // write name
-			str += sprintf((char *)str, "%s:", nv->token);
+			str += sprintf_P((char *)str, PSTR("%s:"), nv->token);
 		} else {
-			str += sprintf((char *)str, "\"%s\":", nv->token);
+			str += sprintf_P((char *)str, PSTR("\"%s\":"), nv->token);
 		}
 
 		// serialize value (Note: parent objects are handled implicitly by depth changes)
 		if (nv->valuetype == TYPE_NULL)	{
-            str += sprintf(str, "null");            // Note that that "" is NOT null.
+            str += sprintf_P(str, PSTR("null"));        // Note that that "" is NOT null.
         }
 		else if (nv->valuetype == TYPE_INTEGER)	{
-			str += sprintf(str, "%lu", nv->value_int);
+			str += sprintf_P(str, PSTR("%lu"), nv->value_int);
 		}
 		else if (nv->valuetype == TYPE_DATA) {
 			uint32_t *v = (uint32_t*)&nv->value_flt;
-			str += sprintf(str, "\"0x%lx\"", *v);
+			str += sprintf_P(str, PSTR("\"0x%lx\""), *v);
 		}
 		else if (nv->valuetype == TYPE_STRING) {
             if ((str + strlen(*nv->stringp)) >= out_max) {
                 return (-1);
             }
-            str += sprintf(str, "\"%s\"", *nv->stringp);
+            str += sprintf_P(str, PSTR("\"%s\""), *nv->stringp);
         }
 		else if (nv->valuetype == TYPE_ARRAY) {
-            str += sprintf(str, "[%s]", *nv->stringp);
+            str += sprintf_P(str, PSTR("[%s]"), *nv->stringp);
         }
 		else if (nv->valuetype == TYPE_FLOAT) {
             preprocess_float(nv);
@@ -596,9 +596,9 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 		}
 		else if (nv->valuetype == TYPE_BOOL) {
 			if (nv->value_int == false) {
-                str += sprintf(str, "false");
+                str += sprintf_P(str, PSTR("false"));
 			} else {
-                str += sprintf(str, "true");
+                str += sprintf_P(str, PSTR("true"));
             }
 		}
 		if (str >= out_max) {                       // test for buffer overrun

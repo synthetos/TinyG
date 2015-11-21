@@ -229,15 +229,15 @@ char fntoa(char *str, float n, uint8_t precision)
 		strcpy(str, "inf");
 		return (3);
 
-	} else if (precision == 0 ) { return((char)sprintf((char *)str, "%0.0f", (double) n));
-	} else if (precision == 1 ) { return((char)sprintf((char *)str, "%0.1f", (double) n));
-	} else if (precision == 2 ) { return((char)sprintf((char *)str, "%0.2f", (double) n));
-	} else if (precision == 3 ) { return((char)sprintf((char *)str, "%0.3f", (double) n));
-	} else if (precision == 4 ) { return((char)sprintf((char *)str, "%0.4f", (double) n));
-	} else if (precision == 5 ) { return((char)sprintf((char *)str, "%0.5f", (double) n));
-	} else if (precision == 6 ) { return((char)sprintf((char *)str, "%0.6f", (double) n));
-	} else if (precision == 7 ) { return((char)sprintf((char *)str, "%0.7f", (double) n));
-	} else					    { return((char)sprintf((char *)str, "%f", (double) n)); }
+	} else if (precision == 0 ) { return((char)sprintf_P((char *)str, PSTR("%0.0f"), (double) n));
+	} else if (precision == 1 ) { return((char)sprintf_P((char *)str, PSTR("%0.1f"), (double) n));
+	} else if (precision == 2 ) { return((char)sprintf_P((char *)str, PSTR("%0.2f"), (double) n));
+	} else if (precision == 3 ) { return((char)sprintf_P((char *)str, PSTR("%0.3f"), (double) n));
+	} else if (precision == 4 ) { return((char)sprintf_P((char *)str, PSTR("%0.4f"), (double) n));
+	} else if (precision == 5 ) { return((char)sprintf_P((char *)str, PSTR("%0.5f"), (double) n));
+	} else if (precision == 6 ) { return((char)sprintf_P((char *)str, PSTR("%0.6f"), (double) n));
+	} else if (precision == 7 ) { return((char)sprintf_P((char *)str, PSTR("%0.7f"), (double) n));
+	} else					    { return((char)sprintf_P((char *)str, PSTR("%f"), (double) n)); }
 }
 
 /*

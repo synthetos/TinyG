@@ -785,7 +785,7 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 	//*** got a full buffer ***
 	if (status == STAT_EOF) {							// EOF can come from file devices only
 		if (cs.comm_mode == TEXT_MODE) {
-			fprintf_P(stderr, PSTR("End of command file\n"));
+			printf_P(PSTR("End of command file\n"));
 		} else {
 			rpt_exception(STAT_EOF, "");				// not really an exception
 		}

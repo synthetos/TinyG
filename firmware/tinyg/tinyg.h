@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.06	// looking for more RAM memory savings
+#define TINYG_FIRMWARE_BUILD        441.07	// more RAM memory savings
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

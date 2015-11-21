@@ -613,7 +613,7 @@ stat_t rx_report_callback(void) {
     }
     rx.rx_report_requested = false;
 
-    fprintf(stderr, "{\"rx\":%d}\n", rx.space_available);
+    printf_P(PSTR("{\"rx\":%d}\n"), rx.space_available);
     return (STAT_OK);
 }
 

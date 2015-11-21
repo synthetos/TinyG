@@ -67,24 +67,24 @@ void print_vector(const char *label, float vector[], uint8_t length);
 	uint8_t dbSHOW_LOAD_MOVE;
 
 #define DEBUG0(dbXXXXXX,msg) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg); \
-								fprintf_P(stderr,PSTR("\n"));}}
+								printf_P(PSTR("DEBUG: ")); \
+								printf_P(msg); \
+								printf_P(PSTR("\n"));}}
 
 #define DEBUG1(dbXXXXXX,msg,a) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a); \
-								fprintf_P(stderr,PSTR("\n"));}}
+								printf_P(PSTR("DEBUG: ")); \
+								printf_P(msg,a); \
+								printf_P(PSTR("\n"));}}
 
 #define DEBUG2(dbXXXXXX,msg,a,b) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a,b); \
-								fprintf_P(stderr,PSTR("\n"));}}
+								printf_P(PSTR("DEBUG: ")); \
+								printf_P(msg,a,b); \
+								printf_P(PSTR("\n"));}}
 
 #define DEBUG3(dbXXXXXX,msg,a,b,c) { if (dbXXXXXX == TRUE) { \
-								fprintf_P(stderr,PSTR("DEBUG: ")); \
-								fprintf_P(stderr,msg,a,b,c); \
-								fprintf_P(stderr,PSTR("\n"));}}
+								printf_P(PSTR("DEBUG: ")); \
+								printf_P(msg,a,b,c); \
+								printf_P(PSTR("\n"));}}
 #else
 #define DEBUG0(dbXXXXXX,msg)
 #define DEBUG1(dbXXXXXX,msg,a)

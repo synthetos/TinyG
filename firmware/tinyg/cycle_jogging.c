@@ -201,7 +201,7 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 
-	printf("{\"jog\":0}\n");
+	printf_P(PSTR("{\"jog\":0}\n"));
 	return (STAT_OK);
 }
 

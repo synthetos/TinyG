@@ -213,7 +213,7 @@ uint8_t read_switch(uint8_t sw_num)
 /*
 void sw_show_switch(void)
 {
-	fprintf_P(stderr, PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
+	printf_P(PSTR("Limit Switch Thrown Xmin %d Xmax %d  Ymin %d Ymax %d  \
 		Zmin %d Zmax %d Amin %d Amax %d\n"),
 		sw.state[SW_MIN_X], sw.state[SW_MAX_X],
 		sw.state[SW_MIN_Y], sw.state[SW_MAX_Y],
@@ -257,7 +257,7 @@ static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 void sw_print_st(nvObj_t *nv) { text_print(nv, fmt_st);}
 
 //static const char fmt_ss[] PROGMEM = "Switch %s state:     %d\n";
-//void sw_print_ss(nvObj_t *nv) { fprintf(stderr, fmt_ss, nv->token, nv->value_int);}
+//void sw_print_ss(nvObj_t *nv) { printf(fmt_ss, nv->token, nv->value_int);}
 
 /*
 static const char msg_sw0[] PROGMEM = "Disabled";

@@ -238,7 +238,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 		// Asymmetric HT' rate-limited case. This is relatively expensive but it's not called very often
 		// iteration trap: uint8_t i=0;
-		// iteration trap: if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
+		// iteration trap: if (++i > TRAPEZOID_ITERATION_MAX) { printf_P(PSTR("_calculate_trapezoid() failed to converge"));}
 
 		float computed_velocity = bf->cruise_vmax;
 		do {

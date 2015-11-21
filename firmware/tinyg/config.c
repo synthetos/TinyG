@@ -461,8 +461,8 @@ stat_t set_grp(nvObj_t *nv)
  */
 uint8_t nv_group_is_prefixed(char *group)
 {
-	if (strcmp("sr",group) == 0) return (false);
-	if (strcmp("sys",group) == 0) return (false);
+	if (strcmp_P(PSTR("sr"), group) == 0) { return (false); }
+	if (strcmp_P(PSTR("sys"), group) == 0) { return (false); }
 	return (true);
 }
 
@@ -521,12 +521,12 @@ index_t nv_get_index(const char *group, const char *token)
 uint8_t nv_get_type(nvObj_t *nv)
 {
 	if (nv->token[0] == NUL) return (NV_TYPE_NULL);
-	if (strcmp("gc", nv->token) == 0) return (NV_TYPE_GCODE);
-	if (strcmp("sr", nv->token) == 0) return (NV_TYPE_REPORT);
-	if (strcmp("qr", nv->token) == 0) return (NV_TYPE_REPORT);
-	if (strcmp("msg",nv->token) == 0) return (NV_TYPE_MESSAGE);
-	if (strcmp("err",nv->token) == 0) return (NV_TYPE_MESSAGE); 	// errors are reported as messages
-	if (strcmp("n",  nv->token) == 0) return (NV_TYPE_LINENUM);
+	if (strcmp_P(PSTR("gc"), nv->token) == 0) { return (NV_TYPE_GCODE); }
+	if (strcmp_P(PSTR("sr"), nv->token) == 0) { return (NV_TYPE_REPORT); }
+	if (strcmp_P(PSTR("qr"), nv->token) == 0) { return (NV_TYPE_REPORT); }
+	if (strcmp_P(PSTR("msg"),nv->token) == 0) { return (NV_TYPE_MESSAGE); }
+	if (strcmp_P(PSTR("err"),nv->token) == 0) { return (NV_TYPE_MESSAGE); }  // errors are reported as messages
+	if (strcmp_P(PSTR("n"),  nv->token) == 0) { return (NV_TYPE_LINENUM); }
 	return (NV_TYPE_CONFIG);
 }
 
@@ -884,7 +884,7 @@ void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 
 void nv_dump_nv(nvObj_t *nv)
 {
-	printf ("i:%d, d:%d, t:%d, p:%d, v:%f, g:%s, t:%s, s:%s\n",
+	printf_P (PSTR("i:%d, d:%d, t:%d, p:%d, v:%f, g:%s, t:%s, s:%s\n"),
 			 nv->index,
 			 nv->depth,
 			 nv->valuetype,
