@@ -57,16 +57,17 @@ rxSingleton_t rx;
 stat_t rpt_exception(stat_t status, const char *msg)
 {
     if (status != STAT_OK) { // makes it possible to call exception reports w/o checking status value
+
         if (js.json_syntax == JSON_SYNTAX_RELAXED) {
-            sprintf(global_string_buf, "{er:{fb:%0.2f,st:%d,msg:\"%s - %s\"}}\n",
-            TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+            printf_P(PSTR("{er:{fb:%0.2f,st:%d,msg:\"%s - %s\"}}\n"),
+                TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+
         } else {
-            sprintf(global_string_buf, "{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s - %s\"}}\n",
-            TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
+            printf_P(PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s - %s\"}}\n"),
+                TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
         }
-        printf("%s", global_string_buf);
     }
-    return (status);			// makes it possible to inline, e.g: return(rpt_exception(status));
+    return (status);			// makes it possible to inline, e.g: return(rpt_exception(status, msg));
 }
 
 /*
@@ -74,7 +75,9 @@ stat_t rpt_exception(stat_t status, const char *msg)
  */
 stat_t rpt_er(nvObj_t *nv)
 {
-	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT, "bogus exception report")); // bogus exception report for testing
+    char msg[sizeof("bogus exception report")];
+    sprintf_P(msg, PSTR("bogus exception report"));
+	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT, msg)); // bogus exception report for testing
 }
 
 /**** Application Messages *********************************************************
@@ -185,7 +188,9 @@ void sr_init_status_report(bool use_defaults)
                 nv->value_int = NO_MATCH;                   // label as a blank spot
             } else {                                        // set and persist the default value
                 if ((nv->value_int = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
-                    rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, "mis-configured status report settings"); // trap mis-configured profile settings
+                    char msg[sizeof("mis-configured status report settings")];
+                    sprintf_P(msg, PSTR("mis-configured status report settings"));
+                    rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, msg); // trap mis-configured profile settings
                     return;
                 }
             }
@@ -396,7 +401,9 @@ static stat_t _populate_unfiltered_status_report()
 		strcpy(nv->token, tmp);			//...or here.
 
 		if ((nv = nv->nx) == NULL) {
-			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL, "unfiltered_status_report"));	// should never be NULL unless SR length exceeds available buffer array
+            char msg[sizeof("_populate_unfiltered_status_report")];
+            sprintf_P(msg, PSTR("_populate_unfiltered_status_report"));
+			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg));	// should never be NULL unless SR length exceeds available buffer array
         }
 	}
 	return (STAT_OK);

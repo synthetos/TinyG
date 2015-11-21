@@ -200,7 +200,9 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 	// Never supposed to fail as buffer availability was checked upstream in the controller
 	if ((bf = mp_get_write_buffer()) == NULL) {
-		cm_hard_alarm(STAT_BUFFER_FULL_FATAL, "mp_queue_command");
+        char msg[sizeof("mp_queue_command")];
+        sprintf_P(msg, PSTR("mp_queue_command"));
+		cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg);
 		return;
 	}
 
@@ -242,7 +244,9 @@ stat_t mp_dwell(float seconds)
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
-   		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL, "mp_dwell"));	// never supposed to fail
+        char msg[sizeof("mp_dwell")];
+        sprintf_P(msg, PSTR("mp_dwell"));
+   		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg));	// never supposed to fail
     }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes
@@ -349,7 +353,9 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 		mb.w = w->nx;
 		return (w);
 	}
-	rpt_exception(STAT_FAILED_TO_GET_PLANNER_BUFFER, "mp_get_write_buffer");
+    char msg[sizeof("mp_get_write_buffer")];
+    sprintf_P(msg, PSTR("mp_get_write_buffer"));
+	rpt_exception(STAT_FAILED_TO_GET_PLANNER_BUFFER, msg);
 	return (NULL);
 }
 

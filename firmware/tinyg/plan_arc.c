@@ -173,7 +173,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	if (status != STAT_OK) {
     	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
     	copy_vector(cm.gm.target, cm.gmx.position);		// reset model position
-    	return (cm_soft_alarm(status));
+    	return (cm_soft_alarm(status, cs.saved_buffer));
 	}
 */
 	cm_cycle_start();						// if not already started
