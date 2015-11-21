@@ -572,10 +572,11 @@ stat_t canonical_machine_test_assertions(void)
 }
 
 /*
- * cm_soft_alarm() - alarm state; send an exception report and stop processing input
- * cm_clear() 	   - clear soft alarm from command line or JSON
- * cm_alarm() 	   - invoke soft alarm  from command line or JSON
- * cm_hard_alarm() - alarm state; send an exception report and shut down machine
+ * cm_soft_alarm()   - alarm state; send an exception report and stop processing input
+ * cm_clear() 	     - clear soft alarm from command line or JSON
+ * cm_alarm() 	     - invoke soft alarm  from command line or JSON
+ * cm_hard_alarm()   - alarm state; send an exception report and shut down machine
+ * cm_hard_alarm_P() - form of the above that accepts a FLASH string as the message
  */
 
 stat_t cm_alarm(nvObj_t *nv)
@@ -599,6 +600,13 @@ stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 		cm.machine_state = MACHINE_CYCLE;
 	}
 	return (STAT_OK);
+}
+
+stat_t cm_hard_alarm_P(stat_t status, const char *msg_P)
+{
+    char msg[STATUS_MESSAGE_LEN];
+    sprintf_P(msg, msg_P);
+    return(cm_hard_alarm(status, msg));
 }
 
 stat_t cm_hard_alarm(stat_t status, const char *msg)

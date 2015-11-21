@@ -69,9 +69,7 @@ stat_t mp_exec_move()
 		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
 	}
 	if (bf->bf_func == NULL) {
-        char msg[sizeof("mp_exec_move")];
-        sprintf_P(msg, PSTR("mp_exec_move"));
-        return(cm_hard_alarm(STAT_INTERNAL_ERROR, msg)); // never supposed to get here
+        return(cm_hard_alarm_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_move"))); // never supposed to get here
     }
 	return (bf->bf_func(bf)); 							// run the move callback in the planner buffer
 }
@@ -210,9 +208,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else
 	if (mr.move_state == MOVE_SKIP_BLOCK) { status = STAT_OK;}
 	else { 	// never supposed to get here
-        char msg[sizeof("mp_exec_aline")];
-        sprintf_P(msg, PSTR("mp_exec_aline"));
-        return(cm_hard_alarm(STAT_INTERNAL_ERROR, msg));
+        return(cm_hard_alarm_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_aline")));
     }
 
 	// Feedhold processing. Refer to canonical_machine.h for state machine

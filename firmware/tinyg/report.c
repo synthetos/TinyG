@@ -401,9 +401,7 @@ static stat_t _populate_unfiltered_status_report()
 		strcpy(nv->token, tmp);			//...or here.
 
 		if ((nv = nv->nx) == NULL) {
-            char msg[sizeof("_populate_unfiltered_status_report")];
-            sprintf_P(msg, PSTR("_populate_unfiltered_status_report"));
-			return (cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg));	// should never be NULL unless SR length exceeds available buffer array
+			return (cm_hard_alarm_P(STAT_BUFFER_FULL_FATAL, PSTR("_populate_unfiltered_status_report")));	// should never be NULL unless SR length exceeds available buffer array
         }
 	}
 	return (STAT_OK);

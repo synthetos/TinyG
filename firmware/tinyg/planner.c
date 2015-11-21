@@ -200,9 +200,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 	// Never supposed to fail as buffer availability was checked upstream in the controller
 	if ((bf = mp_get_write_buffer()) == NULL) {
-        char msg[sizeof("mp_queue_command")];
-        sprintf_P(msg, PSTR("mp_queue_command"));
-		cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg);
+		cm_hard_alarm_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_queue_command"));
 		return;
 	}
 
@@ -244,9 +242,7 @@ stat_t mp_dwell(float seconds)
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
-        char msg[sizeof("mp_dwell")];
-        sprintf_P(msg, PSTR("mp_dwell"));
-   		return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg));	// never supposed to fail
+   		return(cm_hard_alarm_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_dwell")));	// never supposed to fail
     }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes

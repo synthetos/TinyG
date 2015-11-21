@@ -143,9 +143,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) {
-        char msg[sizeof("mp_aline")];
-        sprintf_P(msg, PSTR("mp_aline"));
-        return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL, msg));             // never supposed to fail
+        return(cm_hard_alarm_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));             // never supposed to fail
     }
 	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
 	bf->length = length;
