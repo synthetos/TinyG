@@ -175,8 +175,8 @@ void sr_init_status_report(bool use_defaults)
 {
     nvObj_t *nv = nv_reset_nv_list(NUL);	// used for status report persistence locations
     char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    sr.stat_index = nv_get_index((const char *)"", (const char *)"stat"); // set index of stat element
-    nv->index = nv_get_index((const char *)"", (const char *)"se00"); // set first SR persistence index
+    sr.stat_index = nv_get_index("", "stat");               // set index of stat element
+    nv->index = nv_get_index("", "se00");                   // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
 
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
@@ -226,7 +226,7 @@ void sr_init_status_report(bool use_defaults)
 
 static void _persist_status_report_list(nvObj_t *nv)
 {
-    nv->index = nv_get_index((const char *)"",(const char *)"se00");// set first SR persistence index
+    nv->index = nv_get_index("","se00");            // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
         nv->value_int = sr.status_report_list[i];
@@ -573,23 +573,23 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 
 	if (cs.comm_mode == TEXT_MODE) {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			fprintf(stderr, "qr:%d\n", qr.buffers_available);
+			printf_P(PSTR("qr:%d\n"), qr.buffers_available);
 		} else  {
-			fprintf(stderr, "qr:%d, qi:%d, qo:%d\n", qr.buffers_available,qr.buffers_added,qr.buffers_removed);
+			printf_P(PSTR("qr:%d, qi:%d, qo:%d\n"), qr.buffers_available,qr.buffers_added,qr.buffers_removed);
 		}
 
 	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			fprintf(stderr, "{qr:%d}\n", qr.buffers_available);
+			printf_P(PSTR("{qr:%d}\n"), qr.buffers_available);
 		} else {
-			fprintf(stderr, "{qr:%d,qi:%d,qo:%d}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			printf_P(PSTR("{qr:%d,qi:%d,qo:%d}\n"), qr.buffers_available, qr.buffers_added,qr.buffers_removed);
 		}
 
 	} else {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			fprintf(stderr, "{\"qr\":%d}\n", qr.buffers_available);
+			printf_P(PSTR("{\"qr\":%d}\n"), qr.buffers_available);
 		} else {
-			fprintf(stderr, "{\"qr\":%d,\"qi\":%d,\"qo\":%d}\n", qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			printf_P(PSTR("{\"qr\":%d,\"qi\":%d,\"qo\":%d}\n"), qr.buffers_available, qr.buffers_added,qr.buffers_removed);
 		}
 	}
 	qr_init_queue_report();
@@ -669,7 +669,7 @@ stat_t job_populate_job_report()
 	//nv->index = nv_get_index((const char *)"", job_str);// set the index - may be needed by calling function
 	nv = nv->nx;							// no need to check for NULL as list has just been reset
 
-	index_t job_start = nv_get_index((const char *)"",(const char *)"job1");// set first job persistence index
+	index_t job_start = nv_get_index("", "job1"); // set first job persistence index
 	for (uint8_t i=0; i<4; i++) {
 
 		nv->index = job_start + i;
@@ -708,10 +708,9 @@ uint8_t job_report_callback()
 	if (cs.comm_mode == TEXT_MODE) {
 		// no-op, job_ids are client app state
 	} else if (js.json_syntax == JSON_SYNTAX_RELAXED) {
-		fprintf(stderr, "{job:[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
+		printf_P(PSTR("{job:[%lu,%lu,%lu,%lu]}\n"), cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
 	} else {
-		fprintf(stderr, "{\"job\":[%lu,%lu,%lu,%lu]}\n", cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
-		//job_clear_report();
+		printf_P(PSTR("{\"job\":[%lu,%lu,%lu,%lu]}\n"), cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
 	}
 	return (STAT_OK);
 }
@@ -729,12 +728,7 @@ static const char fmt_qr[] PROGMEM = "qr:%d\n";
 static const char fmt_qi[] PROGMEM = "qi:%d\n";
 static const char fmt_qo[] PROGMEM = "qo:%d\n";
 static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
-/*
-void qr_print_qr(nvObj_t *nv) { text_print_int(nv, fmt_qr);}
-void qr_print_qi(nvObj_t *nv) { text_print_int(nv, fmt_qi);}
-void qr_print_qo(nvObj_t *nv) { text_print_int(nv, fmt_qo);}
-void qr_print_qv(nvObj_t *nv) { text_print_ui8(nv, fmt_qv);}
-*/
+
 void qr_print_qr(nvObj_t *nv) { text_print(nv, fmt_qr);}
 void qr_print_qi(nvObj_t *nv) { text_print(nv, fmt_qi);}
 void qr_print_qo(nvObj_t *nv) { text_print(nv, fmt_qo);}

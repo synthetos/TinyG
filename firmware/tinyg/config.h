@@ -86,22 +86,22 @@
  */
 /*  --- Making changes and adding new values
  *
- *	Adding a new value to config (or changing an existing one) involves touching the 
+ *	Adding a new value to config (or changing an existing one) involves touching the
  *  following places:
  *
  *    - Create a new record in cfgArray[]. Use existing ones for examples.
  *
- *	  - Create functions for print, get, and set. You can often use existing generic 
- *      functions for get and set, and sometimes print. If print requires any custom 
- *      text it requires it's own function. Look in the modules for examples - 
+ *	  - Create functions for print, get, and set. You can often use existing generic
+ *      functions for get and set, and sometimes print. If print requires any custom
+ *      text it requires it's own function. Look in the modules for examples -
  *      e.g. at the end of canoonical_machine.c
  *
- *	  - The ordering of group displays is set by the order of items in cfgArray. 
- *      None of the other orders matter but are generally kept sequenced for easier 
- *      reading and code maintenance. Also, items earlier in the array will resolve 
+ *	  - The ordering of group displays is set by the order of items in cfgArray.
+ *      None of the other orders matter but are generally kept sequenced for easier
+ *      reading and code maintenance. Also, items earlier in the array will resolve
  *      token searches faster than ones later in the array.
  *
- *	    Note that matching will occur from the most specific to the least specific, 
+ *	    Note that matching will occur from the most specific to the least specific,
  *      meaning that if tokens overlap the longer one should be earlier in the array.
  *      For example, "gco" must precede "gc".
  */
@@ -302,7 +302,7 @@ extern const cfgItem_t cfgArray[];
 
 //nvObj_t *NV_BODY;                       // this is dynamic. Set by nv_reset_nv_list()
 #define NV_HEAD (&nvl.list[0])              // address of header element
-#define NV_BODY (&nvl.list[1])              // address of first body element 
+#define NV_BODY (&nvl.list[1])              // address of first body element
 #define NV_TID  (&nvl.list[NV_LIST_LEN-2])  // address of transaction ID
 #define NV_FOOT (&nvl.list[NV_LIST_LEN-1])  // address of footer element
 
@@ -363,7 +363,8 @@ nvObj_t *nv_add_object(const char *token);
 nvObj_t *nv_add_integer(const char *token, const uint32_t value);
 nvObj_t *nv_add_float(const char *token, const float value);
 nvObj_t *nv_add_string(const char *token, const char *string);
-nvObj_t *nv_add_conditional_message(const char *string);
+nvObj_t *nv_add_conditional_message(const char *msg);
+nvObj_t *nv_add_conditional_message_P(const char *msg_P);
 void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags);
 
 // application specific helpers and functions (config_app.c)

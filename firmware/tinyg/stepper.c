@@ -1191,7 +1191,7 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
     uint32_t mi = nv->value_int;
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
-		nv_add_conditional_message((const char *)"*** WARNING *** Setting non-standard microstep value");
+		nv_add_conditional_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
 	set_u32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);

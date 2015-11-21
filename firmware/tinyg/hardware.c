@@ -123,7 +123,7 @@ enum {
 static void _get_id(char *id)
 {
 #ifdef __AVR
-	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
+	char printable[33]; strcpy_P(printable, PSTR("ABCDEFGHJKLMNPQRSTUVWXYZ23456789"));
 	uint8_t i;
 
 	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
@@ -225,7 +225,7 @@ stat_t hw_set_hv(nvObj_t *nv)
 {
 	if (nv->value_flt > TINYG_HARDWARE_VERSION_MAX) {
         return (STAT_INPUT_EXCEEDS_MAX_VALUE);
-    }    
+    }
 	set_flt(nv);					// record the hardware version
 	_port_bindings(nv->value_flt);	// reset port bindings
 	switch_init();					// re-initialize the GPIO ports

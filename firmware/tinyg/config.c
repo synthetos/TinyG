@@ -389,7 +389,7 @@ stat_t set_flt(nvObj_t *nv)
  *	group, which this group has none.
  *
  *	All subsequent nvObjs in the body will be populated with their values (unless there
- *  are no more nvObj struct available). The token field will be populated as will the 
+ *  are no more nvObj struct available). The token field will be populated as will the
  *  parent name in the group field.
  *
  *	The sys group is an exception where the children carry a blank group field, even though
@@ -409,7 +409,7 @@ stat_t get_grp(nvObj_t *nv)
 	for (index_t i=0; nv_index_is_single(i); i++) {
 		strcpy_P(group, cfgArray[i].group);			// don't need strncpy as it's always terminated
 		if (strcmp(parent, group) != 0) {           // if no match try the next one
-            continue; 
+            continue;
         }
         nv_tmp = nv;
         if ((nv = nv_get_next_nvObj(nv)) == NULL) { // get next nvObj or fail
@@ -835,15 +835,23 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 }
 
 /*
- * cm_conditional_message() - queue a RAM string as a message in the response (conditionally)
+ * nv_add_conditional_message() - queue a RAM string as a message in the response (conditionally)
+ * nv_add_conditional_message_P()
  *
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-nvObj_t *nv_add_conditional_message(const char *string)	// conditionally add a message object to the body
+nvObj_t *nv_add_conditional_message_P(const char *msg_P)// conditionally add a FLASH message object to the body
+{
+    char msg[STATUS_MESSAGE_LEN];
+    sprintf_P(msg, msg_P);
+    return(nv_add_conditional_message(msg));
+}
+
+nvObj_t *nv_add_conditional_message(const char *msg)	// conditionally add a message object to the body
 {
 	if ((cs.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
-	return(nv_add_string((const char *)"msg", string));
+	return(nv_add_string((const char *)"msg", msg));
 }
 
 /**** nv_print_list() - print nv_array as JSON or text **********************
