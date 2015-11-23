@@ -85,13 +85,13 @@ stat_t text_parser(char *str)
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser_kernal(str, nv));			// run the parser to decode the command
 	if ((nv->valuetype == TYPE_NULL) || (nv->valuetype == TYPE_PARENT)) {
-		if (nv_get(nv) == STAT_COMPLETE) {          // populate value, group values, or run uber-group displays
+		if (nv_get(nv) == STAT_NO_DISPLAY) {        // populate value, group values, or run uber-group displays
 			return (STAT_OK);						// return for uber-group displays so they don't print twice
 		}
 	} else { 										// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM) {
             return (STAT_MACHINE_ALARMED);
-        }        
+        }
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array
@@ -294,7 +294,7 @@ void text_finalize_message(char *msg)
     // if running text strings in JSON mode do JSON escaping
     if (cs.comm_mode == JSON_MODE_TXT_OVERRIDE) {
         while (*msg != NUL) {
-            
+
             // substitute \n for LFs (and exit)
             if (*msg == LF) {
                 *msg = '\\';
@@ -309,14 +309,14 @@ void text_finalize_message(char *msg)
 }
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
-{ 
+{
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format);
     text_finalize_message(msg);
 }
 
-void text_print_str(nvObj_t *nv, const char *format) 
-{ 
+void text_print_str(nvObj_t *nv, const char *format)
+{
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, *nv->stringp);
     text_finalize_message(msg);
@@ -336,8 +336,8 @@ void text_print_int(nvObj_t *nv, const char *format)
     text_finalize_message(msg);
 }
 
-void text_print_flt(nvObj_t *nv, const char *format) 
-{ 
+void text_print_flt(nvObj_t *nv, const char *format)
+{
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, nv->value_flt);
     text_finalize_message(msg);

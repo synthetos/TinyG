@@ -75,6 +75,9 @@
 #define STATUS_REPORT_INTERVAL_MS	250						// milliseconds - set $SV=0 to disable
 #define STATUS_REPORT_DEFAULTS      "posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
 
+// Note: spaces are not allowed
+static const char PROGMEM SR_DEFAULTS[] = "posx,posy,posz,posa,feed,vel,unit,coor,dist,frmo,stat";
+
 #define QUEUE_REPORT_VERBOSITY		QR_OFF					// one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
 // Gcode startup defaults
@@ -95,15 +98,14 @@
 #define JSON_VERBOSITY				JV_MESSAGES				// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
 
 #undef STATUS_REPORT_DEFAULTS
-#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
-//#define STATUS_REPORT_DEFAULTS "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
+#define STATUS_REPORT_DEFAULTS      "line","posx","posy","posz","posa","feed","vel","unit","coor","dist","frmo","stat"
+//#define STATUS_REPORT_DEFAULTS    "line","posx","posy","posz","vel","_cs1","_es1","_fe1","_xs1","_cs2","_es2","_fe2","_xs2"
 
 #undef STATUS_REPORT_VERBOSITY
 #define STATUS_REPORT_VERBOSITY		SR_FILTERED				// one of: SR_OFF, SR_FILTERED, SR_VERBOSE
 #endif
 
 /**** MACHINE PROFILES ******************************************************/
-//{"sr":{"line":t,"posx":t,"posy":t,"posz":t,"vel":t,"unit":t,"stat":t,"feed":t,"coor":t,"momo":t,"plan":t,"path":t,"gc":t,"dist":t,"mpox":t,"mpoy":t,"mpoz":t}}
 
 // machine default profiles - choose only one:
 

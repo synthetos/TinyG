@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.07	// more RAM memory savings
+#define TINYG_FIRMWARE_BUILD        441.08	// Fix bug in JSON reporting for double reports; changed status report initialization to use CSV list from program memory for defaults
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -266,7 +266,7 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR 1					// generic error return (EPERM)
 #define	STAT_EAGAIN 2					// function would block here (call again)
 #define	STAT_NOOP 3						// function had no-operation
-#define	STAT_COMPLETE 4					// operation is complete
+#define	STAT_COMPLETE 4					// operation is complete / do not create display response
 #define STAT_TERMINATE 5				// operation terminated (gracefully)
 #define STAT_RESET 6					// operation was hard reset (sig kill)
 #define	STAT_EOL 7						// function returned end-of-line
@@ -280,7 +280,7 @@ char *get_status_message(stat_t status);
 #define	STAT_INITIALIZING 15			// initializing - not ready for use
 #define	STAT_ENTERING_BOOT_LOADER 16	// this code actually emitted from boot loader, not TinyG
 #define	STAT_FUNCTION_IS_STUBBED 17
-#define	STAT_ERROR_18 18
+#define	STAT_NO_DISPLAY 18              // suppress results display - presumably handled upstream
 #define	STAT_ERROR_19 19				// NOTE: XIO codes align to here
 
 // Internal errors and startup messages

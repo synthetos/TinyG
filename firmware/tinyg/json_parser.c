@@ -425,7 +425,7 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
         char *rd = (*pstr);                     // read pointer for copy to stringp (on 1st char)
         char *wr = (*pstr);                     // write pointer for string manipulation
 	    for (i=0; true; i++, (*pstr)++, wr++) {
-    	    if (i == MAX_STRING_CHARS) {        // +++++ NOT REQUIRED. Assume string has a closing quote
+    	    if (i == MAX_STRING_CHARS) {        // NOT REQUIRED. Assume string has a closing quote
         	    return (STAT_JSON_TOO_LONG);
     	    }
             if ((*(*pstr) == '\\') && *((*pstr)+1) == '\"') { // escaped quote
@@ -679,6 +679,10 @@ void json_print_response(uint8_t status)
 	if (js.json_verbosity == JV_SILENT) {               // silent responses
         return;
     }
+
+	if (status == STAT_NO_DISPLAY) {                    // upstream function has already performed output
+    	return;
+	}
 
 	// Setup the response header
 	nvObj_t *nv = NV_HEAD;

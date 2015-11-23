@@ -414,7 +414,7 @@ static void _init_readline_linemode()
     bm.out_of_ram = false;
     bm.requested_size = RX_BUFFER_MIN_SIZE;         // this parameter may be overwritten later
     for (uint8_t i=0; i<RX_HEADERS; i++) {          // initialize buffer headers
-        bm.buf[i].bufnum = i;                       // ++++++ DIAGNOSTIC - NUMBER THE HEADER
+        bm.buf[i].bufnum = i;                       // +++++ DIAGNOSTIC ONLY - NUMBER THE HEADER
         bm.buf[i].size = 0;
         bm.buf[i].state = BUFFER_FREE;
         bm.buf[i].bufp = bm.pool_base;              // point all bufs to the base of RAM

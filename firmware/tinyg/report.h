@@ -106,6 +106,7 @@ void rpt_print_initializing_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report(bool use_defaults);
+void sr_init_status_report_P(const char *sr_list_P);
 stat_t sr_set_status_report(nvObj_t *nv);
 stat_t sr_request_status_report(uint8_t request_type);
 stat_t sr_status_report_callback(void);

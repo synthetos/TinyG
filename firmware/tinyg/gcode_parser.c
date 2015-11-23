@@ -181,9 +181,9 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
  */
 static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 {
-	if (**pstr == NUL)
+	if (**pstr == NUL) {
         return (STAT_COMPLETE);    // no more words to process
-
+    }
 	// get letter part
 	if(isupper(**pstr) == false) {
         return (STAT_INVALID_OR_MALFORMED_COMMAND);

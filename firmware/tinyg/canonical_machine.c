@@ -445,7 +445,7 @@ void cm_set_model_target(float target[], float flag[])
 			} else {
 				cm.gm.target[axis] += _to_millimeters(target[axis]);
 			}
-            cm.gm.target[axis] -= cm.gmx.tool_offset[axis]; //++++++
+            cm.gm.target[axis] -= cm.gmx.tool_offset[axis]; //+++++ TEST THIS
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first

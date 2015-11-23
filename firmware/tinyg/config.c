@@ -37,6 +37,7 @@
 #include "text_parser.h"
 #include "persistence.h"
 #include "hardware.h"
+#include "settings.h"
 #include "help.h"
 #include "util.h"
 #include "xio.h"
@@ -143,7 +144,9 @@ void config_init()
 				nv_set(nv);
 			}
 		}
-		sr_init_status_report(false);           // load stored status report setup
+        // +++++ Status Reports
+//	    sr_init_status_report(false);                // reset status reports
+        sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
 	}
 #endif
 
@@ -173,7 +176,9 @@ static void _set_defa(nvObj_t *nv)
 			nv_persist(nv);
 		}
 	}
-	sr_init_status_report(true);                // reset status reports
+    // +++++ Status Reports
+//	sr_init_status_report(true);                // reset status reports
+    sr_init_status_report_P(SR_DEFAULTS);       // reset status reports for defaults
 	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
 
