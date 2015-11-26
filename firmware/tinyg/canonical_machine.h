@@ -89,7 +89,6 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float spindle_speed;				// in RPM
 	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
-	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
@@ -97,6 +96,8 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
 	uint8_t arc_distance_mode;			// G91.1   0=use absolute coords(G90), 1=incremental movement
+	uint8_t feed_rate_mode;				// See cmFeedRateMode for settings
+
 	uint8_t tool;						// M6 tool change - moves "tool_select" to "tool"
 	uint8_t tool_select;				// T value - T sets this value
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
@@ -525,12 +526,14 @@ void cm_set_axis_jerk(uint8_t axis, float jerk);
 
 uint32_t cm_get_linenum(GCodeState_t *gcode_state);
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state);
-uint8_t cm_get_coord_system(GCodeState_t *gcode_state);
-uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
+
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
+uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
+uint8_t cm_get_coord_system(GCodeState_t *gcode_state);
 uint8_t cm_get_path_control(GCodeState_t *gcode_state);
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
 uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state);
+
 uint8_t cm_get_tool(GCodeState_t *gcode_state);
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);

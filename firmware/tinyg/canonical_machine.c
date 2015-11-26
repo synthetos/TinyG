@@ -187,12 +187,14 @@ void cm_set_motion_state(uint8_t motion_state)
  */
 uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
 uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
-uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
-uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units_mode;}
+
 uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
+uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units_mode;}
+uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
 uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
 uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
 uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
+
 uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
