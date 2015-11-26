@@ -461,7 +461,7 @@ static stat_t _execute_gcode_block()
 {
 	stat_t status = STAT_OK;
 
-	cm_set_model_linenum(cm.gn.linenum);
+	cm_set_linenum(cm.gn.linenum);
 	EXEC_FUNC(cm_set_feed_rate_mode, feed_rate_mode);
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
 	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);
@@ -514,7 +514,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: {
-			cm_set_absolute_override(MODEL, cm.gn.absolute_override);	// apply override setting to gm struct
+			cm_set_absolute_override(cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
 				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
@@ -526,7 +526,7 @@ static stat_t _execute_gcode_block()
 			}
 		}
 	}
-	cm_set_absolute_override(MODEL, false);	 // un-set absolute override once the move is planned
+	cm_set_absolute_override(false);	 // un-set absolute override once the move is planned
 
 	// do the program stops and ends : M0, M1, M2, M30, M60
 	if (cm.gf.program_flow == true) {

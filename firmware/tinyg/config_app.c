@@ -106,24 +106,23 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys", "id", _fn,   0, hw_print_id, hw_get_id,set_nul,  (uint32_t *)&cs.null, 0 },  // device ID (ASCII signature)
 
 	// dynamic model attributes for reporting purposes (up front for speed)
-//	{ "",   "n",   _fi, 0, cm_print_line, cm_get_mline,set_u32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
-	{ "",   "n",   _f0, 0, cm_print_line, get_u32,     set_u32,(uint32_t *)&cm.gm.linenum, 0 },  // Model line number
-	{ "",   "line",_f0, 0, cm_print_line, cm_get_line, set_u32,(uint32_t *)&cm.gm.linenum, 0 },  // Active line number - model or runtime line number
-	{ "",   "vel", _ff, 2, cm_print_vel,  cm_get_vel,  set_nul,(uint32_t *)&cs.null, 0 },			// current velocity
-	{ "",   "feed",_ff, 2, cm_print_feed, cm_get_feed, set_nul,(uint32_t *)&cs.null, 0 },			// feed rate
-	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(uint32_t *)&cs.null, 0 },			// combined machine state
-	{ "",   "macs",_f0, 0, cm_print_macs, cm_get_macs, set_nul,(uint32_t *)&cs.null, 0 },			// raw machine state
-	{ "",   "cycs",_f0, 0, cm_print_cycs, cm_get_cycs, set_nul,(uint32_t *)&cs.null, 0 },			// cycle state
-	{ "",   "mots",_f0, 0, cm_print_mots, cm_get_mots, set_nul,(uint32_t *)&cs.null, 0 },			// motion state
-	{ "",   "hold",_f0, 0, cm_print_hold, cm_get_hold, set_nul,(uint32_t *)&cs.null, 0 },			// feedhold state
-	{ "",   "unit",_f0, 0, cm_print_unit, cm_get_unit, set_nul,(uint32_t *)&cs.null, 0 },			// units mode
-	{ "",   "coor",_f0, 0, cm_print_coor, cm_get_coor, set_nul,(uint32_t *)&cs.null, 0 },			// coordinate system
-	{ "",   "momo",_f0, 0, cm_print_momo, cm_get_momo, set_nul,(uint32_t *)&cs.null, 0 },			// motion mode
-	{ "",   "plan",_f0, 0, cm_print_plan, cm_get_plan, set_nul,(uint32_t *)&cs.null, 0 },			// plane select
-	{ "",   "path",_f0, 0, cm_print_path, cm_get_path, set_nul,(uint32_t *)&cs.null, 0 },			// path control mode
-	{ "",   "dist",_f0, 0, cm_print_dist, cm_get_dist, set_nul,(uint32_t *)&cs.null, 0 },			// distance mode
-	{ "",   "frmo",_f0, 0, cm_print_frmo, cm_get_frmo, set_nul,(uint32_t *)&cs.null, 0 },			// feed rate mode
-	{ "",   "tool",_f0, 0, cm_print_tool, cm_get_toolv,set_nul,(uint32_t *)&cs.null, 0 },			// active tool
+	{ "",   "n",   _f0, 0, cm_print_line, get_u32,     set_u32,(uint32_t *)&cm.gm.linenum, 0 }, // Model line number
+	{ "",   "line",_f0, 0, cm_print_line, cm_get_line, set_u32,(uint32_t *)&cm.gm.linenum, 0 }, // Active line number - model or runtime line number
+	{ "",   "vel", _ff, 2, cm_print_vel,  cm_get_vel,  set_nul,(uint32_t *)&cs.null, 0 },       // current velocity
+	{ "",   "feed",_ff, 2, cm_print_feed, cm_get_feed, set_nul,(uint32_t *)&cs.null, 0 },       // feed rate
+	{ "",   "stat",_f0, 0, cm_print_stat, cm_get_stat, set_nul,(uint32_t *)&cs.null, 0 },       // combined machine state
+	{ "",   "macs",_f0, 0, cm_print_macs, cm_get_macs, set_nul,(uint32_t *)&cs.null, 0 },       // raw machine state
+	{ "",   "cycs",_f0, 0, cm_print_cycs, cm_get_cycs, set_nul,(uint32_t *)&cs.null, 0 },       // cycle state
+	{ "",   "mots",_f0, 0, cm_print_mots, cm_get_mots, set_nul,(uint32_t *)&cs.null, 0 },       // motion state
+	{ "",   "hold",_f0, 0, cm_print_hold, cm_get_hold, set_nul,(uint32_t *)&cs.null, 0 },       // feedhold state
+	{ "",   "unit",_f0, 0, cm_print_unit, cm_get_unit, set_nul,(uint32_t *)&cs.null, 0 },       // units mode
+	{ "",   "coor",_f0, 0, cm_print_coor, cm_get_coor, set_nul,(uint32_t *)&cs.null, 0 },       // coordinate system
+	{ "",   "momo",_f0, 0, cm_print_momo, cm_get_momo, set_nul,(uint32_t *)&cs.null, 0 },       // motion mode
+	{ "",   "plan",_f0, 0, cm_print_plan, cm_get_plan, set_nul,(uint32_t *)&cs.null, 0 },       // plane select
+	{ "",   "path",_f0, 0, cm_print_path, cm_get_path, set_nul,(uint32_t *)&cs.null, 0 },       // path control mode
+	{ "",   "dist",_f0, 0, cm_print_dist, cm_get_dist, set_nul,(uint32_t *)&cs.null, 0 },       // distance mode
+	{ "",   "frmo",_f0, 0, cm_print_frmo, cm_get_frmo, set_nul,(uint32_t *)&cs.null, 0 },       // feed rate mode
+	{ "",   "tool",_f0, 0, cm_print_tool, cm_get_toolv,set_nul,(uint32_t *)&cs.null, 0 },       // active tool
 //	{ "",   "tick",_f0, 0, tx_print_int,  get_u32,     set_u32,(uint32_t *)&rtc.sys_ticks, 0 },	// tick count
 
 	{ "mpo","mpox",_ff, 3, cm_print_mpo, cm_get_mpo, set_nul,(uint32_t *)&cs.null, 0 },			// X machine position

@@ -146,7 +146,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 
     // now get down to the rest of the work setting up the arc for execution
 	cm.gm.motion_mode = motion_mode;
-	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
+	cm_set_work_offsets();					        // capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
 

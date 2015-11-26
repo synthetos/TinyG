@@ -178,10 +178,8 @@ void cm_set_motion_state(uint8_t motion_state)
 /***********************************
  * Model State Getters and Setters *
  ***********************************/
-
 /*	These getters and setters will work on any gm model with inputs:
  *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
- *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
  *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
@@ -207,16 +205,16 @@ void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcod
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
 
-void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
+void cm_set_absolute_override(uint8_t absolute_override)
 {
-	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
+	cm.gm.absolute_override = absolute_override;
+	cm_set_work_offsets();				    // must reset offsets if you change absolute override
 }
 
-void cm_set_model_linenum(uint32_t linenum)
+void cm_set_linenum(uint32_t linenum)
 {
 	cm.gm.linenum = linenum;				// you must first set the model line number,
-	nv_add_object((const char *)"n");	// then add the line number to the nv list
+	nv_add_object((const char *)"n");	    // then add the line number to the nv list
 }
 
 /***********************************************************************************
@@ -280,20 +278,13 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
 }
 
 /*
- * cm_set_work_offsets() - capture coord & tool offsets from the model into absolute values in the gcode_state
- *
- *	This function accepts as input:
- *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
- *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
- *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
- *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
+ * cm_set_work_offsets() - capture coord & tool offsets from the model into absolute values in the model
  */
 
-void cm_set_work_offsets(GCodeState_t *gcode_state)
+void cm_set_work_offsets()
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-//		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
-		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
+		cm.gm.work_offset[axis] = cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
 	}
 }
 
@@ -701,21 +692,7 @@ stat_t cm_set_coord_offsets(const uint8_t coord_system,
     }
     return (STAT_OK);
 }
-/*
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
-{
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
-		return (STAT_INPUT_VALUE_RANGE_ERROR);
-	}
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(flag[axis])) {
-			cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
-			cm.deferred_write_flag = true;								// persist offsets once machining cycle is over
-		}
-	}
-	return (STAT_OK);
-}
-*/
+
 /******************************************************************************************
  * Representation functions that affect gcode model and are queued to planner (synchronous)
  */
@@ -740,7 +717,7 @@ static void _exec_offset(float *value, float *flag)
 		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
-	cm_set_work_offsets(MODEL);								// set work offsets in the Gcode model
+	cm_set_work_offsets();								    // set work offsets in the Gcode model
 }
 
 /*
@@ -883,7 +860,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
         return (cm_soft_alarm(status, cs.saved_buf));
     }
 	// prep and plan the move
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
 	cm_finalize_move();
@@ -905,7 +882,7 @@ stat_t cm_set_g28_position(void)
 
 stat_t cm_goto_g28_position(float target[], float flags[])
 {
-	cm_set_absolute_override(MODEL, true);
+	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
@@ -920,7 +897,7 @@ stat_t cm_set_g30_position(void)
 
 stat_t cm_goto_g30_position(float target[], float flags[])
 {
-	cm_set_absolute_override(MODEL, true);
+	cm_set_absolute_override(true);
 	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
 	while (mp_get_planner_buffers_available() == 0); // make sure you have an available buffer
 	float f[] = {1,1,1,1,1,1};
@@ -982,7 +959,7 @@ stat_t cm_set_path_control(uint8_t mode)
  */
 stat_t cm_dwell(float seconds)
 {
-	cm.gm.parameter = seconds;
+//	cm.gm.parameter = seconds;
 	mp_dwell(seconds);
 	return (STAT_OK);
 }
@@ -1005,7 +982,7 @@ stat_t cm_straight_feed(float target[], float flags[])
         return (cm_soft_alarm(status, cs.saved_buf));
     }
 	// prep and plan the move
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
 	cm_finalize_move();

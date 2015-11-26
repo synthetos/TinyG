@@ -36,7 +36,7 @@
 /* Defines, Macros, and  Assorted Parameters */
 
 #define MODEL 	(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
-#define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+//#define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
@@ -85,9 +85,8 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
 	float feed_rate; 					// F - normalized to millimeters/minute or in inverse time mode
-
 	float spindle_speed;				// in RPM
-	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
+//	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
@@ -100,9 +99,9 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 
 	uint8_t tool;						// M6 tool change - moves "tool_select" to "tool"
 	uint8_t tool_select;				// T value - T sets this value
+	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	uint8_t mist_coolant;				// TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
-	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 
 } GCodeState_t;
 
@@ -544,13 +543,13 @@ void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
 void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
-void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override);
-void cm_set_model_linenum(uint32_t linenum);
+void cm_set_absolute_override(uint8_t absolute_override);
+void cm_set_linenum(uint32_t linenum);
 
 // Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);
 float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
-void cm_set_work_offsets(GCodeState_t *gcode_state);
+void cm_set_work_offsets(void);
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
 float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 
