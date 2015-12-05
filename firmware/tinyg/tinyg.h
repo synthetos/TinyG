@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - cycles
+#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - encoder, gpio, gcode parser, hardware
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

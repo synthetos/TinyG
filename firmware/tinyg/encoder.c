@@ -29,10 +29,6 @@
 #include "config.h"
 #include "encoder.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Allocate Structures ****/
 
 enEncoders_t en;
@@ -88,7 +84,7 @@ void en_set_encoder_steps(uint8_t motor, float steps)
  *	The stepper ISR count steps into steps_run(). These values are accumulated to
  *	encoder_position during LOAD (HI interrupt level). The encoder position is
  *	therefore always stable. But be advised: the position lags target and position
- *	valaues elsewherein the system becuase the sample is taken when the steps for
+ *	values elsewhere in the system because the sample is taken when the steps for
  *	that segment are complete.
  */
 
@@ -110,7 +106,3 @@ float en_read_encoder(uint8_t motor)
 #ifdef __TEXT_MODE
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

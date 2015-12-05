@@ -118,12 +118,12 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 	char *wr = str;				// write pointer
 
 	// Preset comments and messages to NUL string
-	// Not required if com and msg already point to NUL on entry
-//	for (rd = str; *rd != NUL; rd++) {
-//        if (*rd == NUL) {
-//            *com = rd; *msg = rd; rd = str;
-//        }
-//    }
+	// The following is only required if com and msg do not already point to NUL on entry
+    //	for (rd = str; *rd != NUL; rd++) {
+    //        if (*rd == NUL) {
+    //            *com = rd; *msg = rd; rd = str;
+    //        }
+    //    }
 
 	// mark block deletes
 	if (*rd == '/') { *block_delete_flag = true; }
@@ -359,7 +359,7 @@ static stat_t _parse_gcode_block(char *buf)
 				}
 				case 93: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, INVERSE_TIME_MODE);
 				case 94: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_MINUTE_MODE);
-//				case 95: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_REVOLUTION_MODE);
+//				case 95: SET_MODAL (MODAL_GROUP_G5, feed_rate_mode, UNITS_PER_REVOLUTION_MODE); // reserved
 				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 			}
 			break;
@@ -505,8 +505,6 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}							// G28.4
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
-
-//		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}

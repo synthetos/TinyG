@@ -162,8 +162,9 @@ void hw_hard_reset(void)			// software hard reset using the watchdog timer
 
 stat_t hw_hard_reset_handler(void)
 {
-	if (cs.hard_reset_requested == false)
+	if (cs.hard_reset_requested == false) {
         return (STAT_NOOP);
+    }
 	hw_hard_reset();				// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }
@@ -180,8 +181,9 @@ void hw_request_bootloader() { cs.bootloader_requested = true;}
 stat_t hw_bootloader_handler(void)
 {
 #ifdef __AVR
-	if (cs.bootloader_requested == false)
+	if (cs.bootloader_requested == false) {
         return (STAT_NOOP);
+    }
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 #endif
@@ -229,7 +231,6 @@ stat_t hw_set_hv(nvObj_t *nv)
 	set_flt(nv);					// record the hardware version
 	_port_bindings(nv->value_flt);	// reset port bindings
 	switch_init();					// re-initialize the GPIO ports
-//++++	gpio_init();				// re-initialize the GPIO ports
 	return (STAT_OK);
 }
 
@@ -245,13 +246,7 @@ static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
 static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%12d\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
-/*
-void hw_print_fb(nvObj_t *nv) { text_print_flt(nv, fmt_fb);}
-void hw_print_fv(nvObj_t *nv) { text_print_flt(nv, fmt_fv);}
-void hw_print_hp(nvObj_t *nv) { text_print_flt(nv, fmt_hp);}
-void hw_print_hv(nvObj_t *nv) { text_print_flt(nv, fmt_hv);}
-void hw_print_id(nvObj_t *nv) { text_print_str(nv, fmt_id);}
-*/
+
 void hw_print_fb(nvObj_t *nv) { text_print(nv, fmt_fb);}
 void hw_print_fv(nvObj_t *nv) { text_print(nv, fmt_fv);}
 void hw_print_hp(nvObj_t *nv) { text_print(nv, fmt_hp);}
