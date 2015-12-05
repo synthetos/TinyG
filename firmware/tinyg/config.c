@@ -144,8 +144,6 @@ void config_init()
 				nv_set(nv);
 			}
 		}
-        // +++++ Status Reports
-//	    sr_init_status_report(false);                // reset status reports
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
 	}
 #endif
@@ -176,8 +174,6 @@ static void _set_defa(nvObj_t *nv)
 			nv_persist(nv);
 		}
 	}
-    // +++++ Status Reports
-//	sr_init_status_report(true);                // reset status reports
     sr_init_status_report_P(SR_DEFAULTS);       // reset status reports for defaults
 	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
@@ -192,7 +188,7 @@ stat_t set_defaults(nvObj_t *nv)
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
 //	strncpy(nv->token, "defa", TOKEN_LEN);		// correct, but not required
-//	nv->index = nv_get_index("", nv->token);	    // correct, but not required
+//	nv->index = nv_get_index("", nv->token);	// correct, but not required
 	nv->valuetype = TYPE_INTEGER;
 	nv->value_int = 1;
 	return (STAT_OK);
@@ -302,21 +298,18 @@ stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
 stat_t set_ui8(nvObj_t *nv)
 {
 	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
-//	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_u16(nvObj_t *nv)
 {
 	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
-//	nv->valuetype = TYPE_INTEGER;
 	return(STAT_OK);
 }
 
 stat_t set_u32(nvObj_t *nv)
 {
     *((uint32_t *)GET_TABLE_WORD(target)) = (uint32_t )nv->value_int;
- //   nv->valuetype = TYPE_INTEGER;
     return(STAT_OK);
 }
 
@@ -768,8 +761,8 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);
-//		nv->valuetype = TYPE_INTEGER;
+//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
+//		nv->valuetype = TYPE_INTEGER;           // correct, but not required
         _add_object_helper(nv, token, TYPE_INTEGER);
 		nv->value_int = value;
 		return (nv);
@@ -787,8 +780,8 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 			}
 			continue;
 		}
-//		strcpy(nv->token, token);
-//		nv->valuetype = TYPE_DATA;
+//		strcpy(nv->token, token);           // correct, but not required
+//		nv->valuetype = TYPE_DATA;          // correct, but not required
         _add_object_helper(nv, token, TYPE_DATA);
 		float *v = (float*)&value;
 		nv->value_flt = *v;
@@ -807,8 +800,8 @@ nvObj_t *nv_add_float(const char *token, const float value)	// add a float objec
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);
-//		nv->valuetype = TYPE_FLOAT;
+//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
+//		nv->valuetype = TYPE_FLOAT;             // correct, but not required
         _add_object_helper(nv, token, TYPE_FLOAT);
 		nv->value_flt = value;
 		return (nv);
@@ -827,8 +820,8 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);
-//		nv->valuetype = TYPE_STRING;
+//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
+//		nv->valuetype = TYPE_STRING;            // correct, but not required
         _add_object_helper(nv, token, TYPE_STRING);
 		if (nv_copy_string(nv, string) != STAT_OK) {
             return (NULL);

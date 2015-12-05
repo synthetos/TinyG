@@ -2,7 +2,7 @@
  * config.h - configuration sub-system generic part (see config_app for application part)
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -300,7 +300,6 @@ extern nvStr_t nvStr;
 extern nvList_t nvl;
 extern const cfgItem_t cfgArray[];
 
-//nvObj_t *NV_BODY;                       // this is dynamic. Set by nv_reset_nv_list()
 #define NV_HEAD (&nvl.list[0])              // address of header element
 #define NV_BODY (&nvl.list[1])              // address of first body element
 #define NV_TID  (&nvl.list[NV_LIST_LEN-2])  // address of transaction ID

@@ -45,7 +45,7 @@
 #include "network.h"
 #include "xio.h"
 
-/*** structures ***/
+/*** structure allocation ***/
 
 cfgParameters_t cfg; 				// application specific configuration parameters
 
@@ -166,8 +166,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jog","jogy",_ff, 0, tx_print_nul, get_nul, cm_run_jogy, (uint32_t *)&cm.jogging_dest, 0},
 	{ "jog","jogz",_ff, 0, tx_print_nul, get_nul, cm_run_jogz, (uint32_t *)&cm.jogging_dest, 0},
 	{ "jog","joga",_ff, 0, tx_print_nul, get_nul, cm_run_joga, (uint32_t *)&cm.jogging_dest, 0},
-//	{ "jog","jogb",_f0, 0, tx_print_nul, get_nul, cm_run_jogb, (uint32_t *)&cm.jogging_dest, 0},
-//	{ "jog","jogc",_f0, 0, tx_print_nul, get_nul, cm_run_jogc, (uint32_t *)&cm.jogging_dest, 0},
+//	{ "jog","jogb",_f0, 0, tx_print_nul, get_nul, cm_run_jogb, (uint32_t *)&cm.jogging_dest, 0},    // FYI
+//	{ "jog","jogc",_f0, 0, tx_print_nul, get_nul, cm_run_jogc, (uint32_t *)&cm.jogging_dest, 0},    // FYI
 
 	{ "pwr","pwr1",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},	// motor power enable readouts
 	{ "pwr","pwr2",_f0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
@@ -467,11 +467,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "reset",_f0,0, tx_print_nul, cm_reset, cm_reset,(uint32_t *)&cs.null, 0 },
 
     // special functions
-//	{ "", "txt", _f0, 0, tx_print_nul, get_str, get_str,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)
 	{ "", "txt", _f0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_int, get_u32, set_u32,  (uint32_t *)&cs.txn_id, 0 }, // Transaction id
-//	{ "", "tid", _fi, 0, tx_print_str, get_str, set_nul,  (uint32_t *)&cs.txn_id, 0 }, // Transaction id
-
 	{ "", "test",_f0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_f0, 0, tx_print_nul, help_defa, set_defaults,(uint32_t *)&cs.null,0 },	// set/print defaults / help screen
 	{ "", "boot",_f0, 0, tx_print_nul, help_boot_loader,hw_run_boot, (uint32_t *)&cs.null,0 },
@@ -972,7 +969,6 @@ stat_t set_baud_callback(void)
 
 #ifdef __TEXT_MODE
 
-//static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF,2=RTS/CTS]\n";
