@@ -141,7 +141,6 @@ void switch_rtc_callback(void)
 		if (sw.count[i] == 0) {							// trigger point
 			sw.sw_num_thrown = i;						// record number of thrown switch
 			sw.debounce[i] = SW_LOCKOUT;
-//			sw_show_switch();							// only called if __DEBUG enabled
 
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();

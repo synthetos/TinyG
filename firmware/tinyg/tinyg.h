@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.11	// Removed __KAHAN references and code
+#define TINYG_FIRMWARE_BUILD        441.12	// Cleanup self-test code code; Removed __DEBUG support
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -67,7 +67,6 @@
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
 #define __CANNED_TESTS 						// enables $tests 		(~12Kb)
-//#define __TEST_99 							// enables diagnostic test 99 (independent of other tests)
 
 /****** DEVELOPMENT SETTINGS ******/
 

@@ -47,10 +47,6 @@
 
 #endif
 
-#ifdef __TEST_99
-#include "tests/test_099.h"					// diagnostic test file. used to diagnose specific issues
-#endif
-
 /*
  * run_test() - system tests from FLASH invoked by $test=n command
  *
@@ -80,9 +76,6 @@ uint8_t run_test(nvObj_t *nv)
 		case 50: { xio_open(XIO_DEV_PGM, PGMFILE(&test_mudflap),PGM_FLAGS); break;}
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
-#ifdef __TEST_99
-		case 99: { xio_open(XIO_DEV_PGM, PGMFILE(&test_99),PGM_FLAGS); break;}
-#endif
 		default: {
 			printf_P(PSTR("Test #%d not found\n"),nv->value_int);
 			return (STAT_ERROR);
@@ -104,12 +97,6 @@ void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 #ifdef __CANNED_STARTUP
 
     xio_queue_RX_string_usb("$test=51\n");		// run braid partial file (doesn't work if text mode is disabled)
-
-/* Run test 99 */
-//	xio_queue_RX_string_usb("$test=99\n");		// run test file (doesn't work if text mode is disabled)
-//	xio_queue_RX_string_usb("{\"test\":99}\n");	// run test file
-//	xio_queue_RX_string_usb("{test:98}\n");		// run test file
-//	xio_queue_RX_string_usb("{test:99}\n");		// run test file
 
 #endif // __CANNED_STARTUP
 }
