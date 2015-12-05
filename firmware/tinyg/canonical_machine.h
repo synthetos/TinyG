@@ -36,7 +36,6 @@
 /* Defines, Macros, and  Assorted Parameters */
 
 #define MODEL 	(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
-//#define PLANNER (GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
 #define RUNTIME (GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
 #define ACTIVE_MODEL cm.am					// active model pointer is maintained by state management
 
@@ -581,8 +580,7 @@ stat_t cm_reset(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-//stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
-stat_t cm_set_coord_offsets(const uint8_t coord_system,                         // G10
+stat_t cm_set_coord_offsets(const uint8_t coord_system,         // G10 L2, L20
                             const uint8_t L_word,
                             const float offset[], float flag[]);
 

@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.12	// Cleanup self-test code code; Removed __DEBUG support
+#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - canonical machine
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -73,10 +73,6 @@
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xxN) in config_app
 //#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
-
-//#ifndef WEAK
-//#define WEAK  __attribute__ ((weak))
-//#endif
 
 /************************************************************************************
  ***** PLATFORM COMPATIBILITY *******************************************************

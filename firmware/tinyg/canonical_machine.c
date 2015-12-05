@@ -325,7 +325,6 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
 	float position;
 
 	if (gcode_state == MODEL) {
-//		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
 		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
 	} else {
 		position = mp_get_runtime_work_position(axis);
@@ -504,11 +503,11 @@ stat_t cm_test_soft_limits(float target[])
 
 void canonical_machine_init()
 {
-// If you can assume all memory has been zeroed by a hard reset you don't need this code:
-//	memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
-	memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear all values, pointers and status
-	memset(&cm.gn, 0, sizeof(GCodeInput_t));
-	memset(&cm.gf, 0, sizeof(GCodeInput_t));
+// If you can assume all memory has been zeroed by a hard reset you don't need this memset code.
+// Do not reset canonicalMachineSingleton once it's been initialized - which would be: memset(&cm, 0, sizeof(cm));
+	memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear the Gcode MODEL of all values, pointers and status
+	memset(&cm.gn, 0, sizeof(GCodeInput_t));    // clear the Gcode new data struct
+	memset(&cm.gf, 0, sizeof(GCodeInput_t));    // clear the Gcode data flags struct
 
 	canonical_machine_init_assertions();		// establish assertions
 	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
@@ -1098,15 +1097,19 @@ static void _exec_mist_coolant_control(float *value, float *flag)
 	cm.gm.mist_coolant = (uint8_t)value[0];
 
 #ifdef __AVR
-	if (cm.gm.mist_coolant == true)
-		gpio_set_bit_on(MIST_COOLANT_BIT);	// if
-	gpio_set_bit_off(MIST_COOLANT_BIT);		// else
+	if (cm.gm.mist_coolant == true) {
+		gpio_set_bit_on(MIST_COOLANT_BIT);
+    } else {
+	    gpio_set_bit_off(MIST_COOLANT_BIT);
+    }
 #endif // __AVR
 
 #ifdef __ARM
-	if (cm.gm.mist_coolant == true)
-		coolant_enable_pin.set();	// if
-	coolant_enable_pin.clear();		// else
+	if (cm.gm.mist_coolant == true) {
+		coolant_enable_pin.set();
+    } else {
+	    coolant_enable_pin.clear();
+    }
 #endif // __ARM
 }
 
@@ -1176,7 +1179,6 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 {
 	cm.gmx.feed_rate_override_enable = flag;
 	cm.gmx.feed_rate_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, cm.gn.parameter);	// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1194,7 +1196,6 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 {
 	cm.gmx.traverse_override_enable = flag;
 	cm.gmx.traverse_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, cm.gn.parameter);	// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
@@ -1212,7 +1213,7 @@ stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 {
 	cm.gmx.spindle_override_enable = flag;
 	cm.gmx.spindle_override_factor = cm.gn.parameter;
-//	change spindle speed
+//	STUBBED: change spindle speed
 	return (STAT_OK);
 }
 
@@ -1328,7 +1329,6 @@ stat_t cm_queue_flush()
 #endif
 	mp_flush_planner();						// flush planner queue
 	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-//	rx_request_rx_report();
 
 	// Note: The following uses low-level mp calls for absolute position.
 	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
@@ -1394,7 +1394,7 @@ static void _exec_program_finalize(float *value, float *flag)
 		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
 		cm_select_plane(cm.select_plane);				// reset to default arc plane
 		cm_set_distance_mode(cm.distance_mode);
-//++++	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
+    //	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
 		cm_spindle_control(SPINDLE_OFF);				// M5
 		cm_flood_coolant_control(false);				// M9
 		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
@@ -1975,7 +1975,6 @@ const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
-//void cm_print_sl(nvObj_t *nv) { text_print_ui8(nv, fmt_sl);}
 void cm_print_sl(nvObj_t *nv) { text_print(nv, fmt_sl);}
 void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
