@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.08	// Fix bug in JSON reporting for double reports; changed status report initialization to use CSV list from program memory for defaults
+#define TINYG_FIRMWARE_BUILD        441.09	// Removed __NEW_SWITCHES references and code
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -64,7 +64,6 @@
 /****** COMPILE-TIME SETTINGS ******/
 
 #define __STEP_CORRECTION
-//#define __NEW_SWITCHES					// Using v9 style switch code
 //#define __JERK_EXEC						// Use computed jerk (versus forward difference based exec)
 //#define __KAHAN							// Use Kahan summation in aline exec functions
 
