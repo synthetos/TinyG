@@ -91,7 +91,6 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
-//	cs.config_version = TINYG_CONFIG_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
 
 #ifdef __AVR
@@ -307,7 +306,6 @@ static void _dispatch_kernel()
 	else {  // anything else is interpreted as Gcode
 
     	// this optimization bypasses the standard JSON parser and does what it needs directly
-//    	nvObj_t *nv = nv_reset_nv_list("r");                // get a fresh nvObj list
     	nvObj_t *nv = nv_reset_nv_list(NUL);                // get a fresh nvObj list
     	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
     	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
@@ -407,7 +405,6 @@ void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
- * _sync_to_time() - return eagain if planner is not ready for a new command
  */
 static stat_t _sync_to_tx_buffer()
 {
@@ -425,19 +422,6 @@ static stat_t _sync_to_planner()
 	return (STAT_OK);
 }
 
-/*
-static stat_t _sync_to_time()
-{
-	if (cs.sync_to_time_time == 0) {		// initial pass
-		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
-		return (STAT_OK);
-	}
-	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
-		return (STAT_EAGAIN);
-	}
-	return (STAT_OK);
-}
-*/
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */

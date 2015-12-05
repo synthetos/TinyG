@@ -155,7 +155,6 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
 	cm_request_cycle_start();
 
-#if 1
 	float ramp_dist = 2.0;
 	float steps = 0.0;
 	float max_steps = 25;
@@ -165,21 +164,11 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 		vect[axis] = jog.start_pos + offset * direction;
 		cm.gm.feed_rate = velocity;
 		ritorno(cm_straight_feed(vect, flags));
-
 		steps++;
 		float scale = pow(10.0, steps/max_steps) / 10.0;
 		velocity = jog.velocity_start + (jog.velocity_max - jog.velocity_start) * scale;
 		offset += ramp_dist * steps/max_steps;
 	}
-#else
-    // use a really slow jerk so we ramp up speed
-    // FIXME: need asymmetric accel/deaccel jerk for this to work...
-//	cm.a[axis].jerk_max = 25;
-	cm_set_axis_jerk(axis, 25);
-    //cm.a[axis].jerk_accel = 10;
-    //cm.a[axis].jerk_deaccel = 900;
-#endif
-
 	// final move
 	cm.gm.feed_rate = jog.velocity_max;
 	vect[axis] = jog.dest_pos;

@@ -90,8 +90,6 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
 void controller_run(void);
-//void controller_reset(void);
-
 void controller_reset_source(void);
 void controller_set_primary_source(uint8_t dev);
 void controller_set_secondary_source(uint8_t dev);

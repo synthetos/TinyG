@@ -155,13 +155,14 @@ static uint8_t _probing_init()
 	}
 
 	// error if the probe target is too close to the current position
-	if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL)
+	if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL) {
 		_probing_error_exit(-2);
-
+    }
 	// error if the probe target requires a move along the A/B/C axes
 	for ( uint8_t axis=AXIS_A; axis<AXES; axis++ ) {
-		if (fp_NE(pb.start_position[axis], pb.target[axis]))
+		if (fp_NE(pb.start_position[axis], pb.target[axis])) {
 			_probing_error_exit(axis);
+        }
 	}
 
 	// initialize the probe switch
@@ -219,17 +220,7 @@ static stat_t _probing_finish()
 		// store the probe results
 		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 	}
-
-	json_parser("{\"prb\":null}"); // TODO: verify that this is OK to do...
-	// printf_P(PSTR("{\"prb\":{\"e\":%i"), (int)cm.probe_state);
-	// if (pb.flags[AXIS_X]) printf_P(PSTR(",\"x\":%0.3f"), cm.probe_results[AXIS_X]);
-	// if (pb.flags[AXIS_Y]) printf_P(PSTR(",\"y\":%0.3f"), cm.probe_results[AXIS_Y]);
-	// if (pb.flags[AXIS_Z]) printf_P(PSTR(",\"z\":%0.3f"), cm.probe_results[AXIS_Z]);
-	// if (pb.flags[AXIS_A]) printf_P(PSTR(",\"a\":%0.3f"), cm.probe_results[AXIS_A]);
-	// if (pb.flags[AXIS_B]) printf_P(PSTR(",\"b\":%0.3f"), cm.probe_results[AXIS_B]);
-	// if (pb.flags[AXIS_C]) printf_P(PSTR(",\"c\":%0.3f"), cm.probe_results[AXIS_C]);
-	// printf_P(PSTR("}}\n"));
-
+	json_parser("{\"prb\":null}");
 	return (_set_pb_func(_probing_finalize_exit));
 }
 
@@ -248,9 +239,9 @@ static void _probe_restore_settings()
 	switch_init();								// re-init to pick up changes
 
 	// restore axis jerk
-	for( uint8_t axis=0; axis<AXES; axis++ )
+	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		cm_set_axis_jerk(axis, pb.saved_jerk[axis]);
-
+    }
 	// restore coordinate system and distance mode
 	cm_set_coord_system(pb.saved_coord_system);
 	cm_set_distance_mode(pb.saved_distance_mode);
@@ -271,7 +262,6 @@ static stat_t _probing_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the probing callback
 	// - and not the main controller - it requires its own display processing
-//	nv_reset_nv_list("r");
 	nv_reset_nv_list("");
 	if (axis == -2) {
 		nv_add_conditional_message_P(PSTR("Probing error - invalid probe destination"));

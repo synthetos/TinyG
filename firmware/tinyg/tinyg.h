@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - config.c/.h, config_app.c/.h
+#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - cycles
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

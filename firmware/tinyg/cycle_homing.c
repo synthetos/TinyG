@@ -215,10 +215,15 @@ static stat_t _homing_axis_start(int8_t axis)
 	cm.homed[axis] = false;
 
 	// trap axis mis-configurations
-	if (fp_ZERO(cm.a[axis].search_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
-	if (fp_ZERO(cm.a[axis].latch_velocity)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
-	if (cm.a[axis].latch_backoff < 0) return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
-
+	if (fp_ZERO(cm.a[axis].search_velocity)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_SEARCH_VELOCITY));
+    }
+	if (fp_ZERO(cm.a[axis].latch_velocity)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_ZERO_LATCH_VELOCITY));
+    }
+	if (cm.a[axis].latch_backoff < 0) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF));
+    }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
 	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
@@ -346,7 +351,6 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 {
 	// Generate the warning message. Since the error exit returns via the homing callback
 	// - and not the main controller - it requires its own display processing
-//	nv_reset_nv_list("r");
 	nv_reset_nv_list("");
 
 	if (axis == -2) {
@@ -398,21 +402,6 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 static int8_t _get_next_axis(int8_t axis)
 {
 #if (HOMING_AXES <= 4)
-//    uint8_t axis;
-//    for(axis = AXIS_X; axis < HOMING_AXES; axis++)
-//        if(fp_TRUE(cm.gf.target[axis])) break;
-//    if(axis >= HOMING_AXES) return -2;
-//    switch(axis) {
-//        case -1:        if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-//        case AXIS_Z:    if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-//        case AXIS_X:    if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-//        case AXIS_Y:    if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-//#if (HOMING_AXES > 4)
-//        case AXIS_A:    if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-//        case AXIS_B:    if (fp_True(cm.gf.target[AXIS_C])) return (AXIS_C);
-//#endif
-//        default:        return -1;
-//    }
 	if (axis == -1) {	// inelegant brute force solution
 		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
 		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
