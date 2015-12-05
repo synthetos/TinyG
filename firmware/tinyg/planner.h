@@ -233,13 +233,7 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float forward_diff_3;			// forward difference level 3
 	float forward_diff_4;			// forward difference level 4
 	float forward_diff_5;			// forward difference level 5
-#ifdef __KAHAN
-	float forward_diff_1_c;			// forward difference level 1 floating-point compensation
-	float forward_diff_2_c;			// forward difference level 2 floating-point compensation
-	float forward_diff_3_c;			// forward difference level 3 floating-point compensation
-	float forward_diff_4_c;			// forward difference level 4 floating-point compensation
-	float forward_diff_5_c;			// forward difference level 5 floating-point compensation
-#endif
+
 	GCodeState_t gm;				// gcode model state currently executing
 
 	magic_t magic_end;

@@ -362,14 +362,6 @@ static void _init_forward_diffs(float Vi, float Vt)
 	mr.forward_diff_2 = 300.0*Ah_5 + 24.0*Bh_4;
 	mr.forward_diff_1 = 120.0*Ah_5;
 
-#ifdef __KAHAN
-	mr.forward_diff_5_c = 0;
-	mr.forward_diff_4_c = 0;
-	mr.forward_diff_3_c = 0;
-	mr.forward_diff_2_c = 0;
-	mr.forward_diff_1_c = 0;
-#endif
-
 	// Calculate the initial velocity by calculating V(h/2)
 	float half_h = h/2.0;
 	float half_Ch_3 = C * half_h * half_h * half_h;
@@ -411,14 +403,7 @@ static stat_t _exec_aline_head()
 		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {						// SECOND HALF (convex part of accel curve)
-#ifndef __KAHAN
 		mr.segment_velocity += mr.forward_diff_5;
-#else	// Use Kahan summation algorithm to mitigate floating-point errors for the above
-		float y = mr.forward_diff_5 - mr.forward_diff_5_c;
-		float v = mr.segment_velocity + y;
-		mr.forward_diff_5_c = (v - mr.segment_velocity) - y;
-		mr.segment_velocity = v;
-#endif
 
 		if (_exec_aline_segment() == STAT_OK) { 					// set up for body
 			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length)))
@@ -426,36 +411,10 @@ static stat_t _exec_aline_head()
 			mr.section = SECTION_BODY;
 			mr.section_state = SECTION_NEW;
 		} else {
-#ifndef __KAHAN
 			mr.forward_diff_5 += mr.forward_diff_4;
 			mr.forward_diff_4 += mr.forward_diff_3;
 			mr.forward_diff_3 += mr.forward_diff_2;
 			mr.forward_diff_2 += mr.forward_diff_1;
-#else
-			//mr.forward_diff_5 += mr.forward_diff_4;
-			y = mr.forward_diff_4 - mr.forward_diff_4_c;
-			v = mr.forward_diff_5 + y;
-			mr.forward_diff_4_c = (v - mr.forward_diff_5) - y;
-			mr.forward_diff_5 = v;
-
-			//mr.forward_diff_4 += mr.forward_diff_3;
-			y = mr.forward_diff_3 - mr.forward_diff_3_c;
-			v = mr.forward_diff_4 + y;
-			mr.forward_diff_3_c = (v - mr.forward_diff_4) - y;
-			mr.forward_diff_4 = v;
-
-			//mr.forward_diff_3 += mr.forward_diff_2;
-			y = mr.forward_diff_2 - mr.forward_diff_2_c;
-			v = mr.forward_diff_3 + y;
-			mr.forward_diff_2_c = (v - mr.forward_diff_3) - y;
-			mr.forward_diff_3 = v;
-
-			//mr.forward_diff_2 += mr.forward_diff_1;
-			y = mr.forward_diff_1 - mr.forward_diff_1_c;
-			v = mr.forward_diff_2 + y;
-			mr.forward_diff_1_c = (v - mr.forward_diff_2) - y;
-			mr.forward_diff_2 = v;
-#endif
 		}
 	}
 	return(STAT_EAGAIN);
@@ -527,48 +486,15 @@ static stat_t _exec_aline_tail()
 		return(STAT_EAGAIN);
 	}
 	if (mr.section_state == SECTION_2nd_HALF) {						// SECOND HALF - concave part (period 5)
-#ifndef __KAHAN
 		mr.segment_velocity += mr.forward_diff_5;
-#else	// Use Kahan summation algorithm to mitigate floating-point errors for the above
-		float y = mr.forward_diff_5 - mr.forward_diff_5_c;
-		float v = mr.segment_velocity + y;
-		mr.forward_diff_5_c = (v - mr.segment_velocity) - y;
-		mr.segment_velocity = v;
-#endif
 
 		if (_exec_aline_segment() == STAT_OK) { 					// set up for body
 			return STAT_OK;
 		} else {
-#ifndef __KAHAN
 			mr.forward_diff_5 += mr.forward_diff_4;
 			mr.forward_diff_4 += mr.forward_diff_3;
 			mr.forward_diff_3 += mr.forward_diff_2;
 			mr.forward_diff_2 += mr.forward_diff_1;
-#else
-			//mr.forward_diff_5 += mr.forward_diff_4;
-			y = mr.forward_diff_4 - mr.forward_diff_4_c;
-			v = mr.forward_diff_5 + y;
-			mr.forward_diff_4_c = (v - mr.forward_diff_5) - y;
-			mr.forward_diff_5 = v;
-
-			//mr.forward_diff_4 += mr.forward_diff_3;
-			y = mr.forward_diff_3 - mr.forward_diff_3_c;
-			v = mr.forward_diff_4 + y;
-			mr.forward_diff_3_c = (v - mr.forward_diff_4) - y;
-			mr.forward_diff_4 = v;
-
-			//mr.forward_diff_3 += mr.forward_diff_2;
-			y = mr.forward_diff_2 - mr.forward_diff_2_c;
-			v = mr.forward_diff_3 + y;
-			mr.forward_diff_2_c = (v - mr.forward_diff_3) - y;
-			mr.forward_diff_3 = v;
-
-			//mr.forward_diff_2 += mr.forward_diff_1;
-			y = mr.forward_diff_1 - mr.forward_diff_1_c;
-			v = mr.forward_diff_2 + y;
-			mr.forward_diff_1_c = (v - mr.forward_diff_2) - y;
-			mr.forward_diff_2 = v;
-#endif
 		}
 	}
 	return(STAT_EAGAIN);									// should never get here

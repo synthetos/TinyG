@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.10	// Removed __JERK_EXEC references and code
+#define TINYG_FIRMWARE_BUILD        441.11	// Removed __KAHAN references and code
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -63,9 +63,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-#define __STEP_CORRECTION
-//#define __KAHAN							// Use Kahan summation in aline exec functions
-
+#define __STEP_CORRECTION                   // enables step correction feedback code (virtual encoders)
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
 #define __CANNED_TESTS 						// enables $tests 		(~12Kb)
