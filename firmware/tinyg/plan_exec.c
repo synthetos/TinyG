@@ -44,10 +44,7 @@ static stat_t _exec_aline_head(void);
 static stat_t _exec_aline_body(void);
 static stat_t _exec_aline_tail(void);
 static stat_t _exec_aline_segment(void);
-
-#ifndef __JERK_EXEC
 static void _init_forward_diffs(float Vi, float Vt);
-#endif
 
 /*************************************************************************
  * mp_exec_move() - execute runtime functions to prep move for steppers
@@ -178,9 +175,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_NEW;
 		mr.jerk = bf->jerk;
-#ifdef __JERK_EXEC
-		mr.jerk_div2 = bf->jerk/2;						// only needed by __JERK_EXEC
-#endif
 		mr.head_length = bf->head_length;
 		mr.body_length = bf->body_length;
 		mr.tail_length = bf->tail_length;
@@ -343,7 +337,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
  *
  *  Note that with our current control points, D and E are actually 0.
  */
-#ifndef __JERK_EXEC
 
 static void _init_forward_diffs(float Vi, float Vt)
 {
@@ -384,57 +377,10 @@ static void _init_forward_diffs(float Vi, float Vt)
 	float half_Ah_5 = C * half_h * half_h * half_h * half_h * half_h;
 	mr.segment_velocity = half_Ah_5 + half_Bh_4 + half_Ch_3 + Vi;
 }
-#endif
 
 /*********************************************************************************************
  * _exec_aline_head()
  */
-#ifdef __JERK_EXEC
-
-static stat_t _exec_aline_head()
-{
-	if (mr.section_state == SECTION_NEW) {							// initialize the move singleton (mr)
-		if (fp_ZERO(mr.head_length)) {
-			mr.section = SECTION_BODY;
-			return(_exec_aline_body());								// skip ahead to the body generator
-		}
-		mr.midpoint_velocity = (mr.entry_velocity + mr.cruise_velocity) / 2;
-		mr.gm.move_time = mr.head_length / mr.midpoint_velocity;	// time for entire accel region
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC)); // # of segments in *each half*
-		mr.segment_time = mr.gm.move_time / (2 * mr.segments);
-		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.entry_velocity) / mr.jerk);
-		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.entry_velocity) / mr.accel_time;
-		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);	// time to advance for each segment
-		mr.elapsed_accel_time = mr.segment_accel_time / 2;			// elapsed time starting point (offset)
-		mr.segment_count = (uint32_t)mr.segments;
-		if (mr.segment_time < MIN_SEGMENT_TIME)
-            return(STAT_MINIMUM_TIME_MOVE);                         // exit without advancing position
-		mr.section = SECTION_HEAD;
-		mr.section_state = SECTION_1st_HALF;
-	}
-	if (mr.section_state == SECTION_1st_HALF) {						// FIRST HALF (concave part of accel curve)
-		mr.segment_velocity = mr.entry_velocity + (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment() == STAT_OK) { 					// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = SECTION_2nd_HALF;
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;		// start time from midpoint of segment
-		}
-		return(STAT_EAGAIN);
-	}
-	if (mr.section_state == SECTION_2nd_HALF) {						// SECOND HAF (convex part of accel curve)
-		mr.segment_velocity = mr.midpoint_velocity +
-			(mr.elapsed_accel_time * mr.midpoint_acceleration) -
-			(square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment() == STAT_OK) {						// OK means this section is done
-			if ((fp_ZERO(mr.body_length)) && (fp_ZERO(mr.tail_length)))
-                return(STAT_OK);                                    // ends the move
-			mr.section = SECTION_BODY;
-			mr.section_state = SECTION_NEW;
-		}
-	}
-	return(STAT_EAGAIN);
-}
-#else // __ JERK_EXEC
 
 static stat_t _exec_aline_head()
 {
@@ -514,7 +460,6 @@ static stat_t _exec_aline_head()
 	}
 	return(STAT_EAGAIN);
 }
-#endif // __ JERK_EXEC
 
 /*********************************************************************************************
  * _exec_aline_body()
@@ -553,47 +498,6 @@ static stat_t _exec_aline_body()
 /*********************************************************************************************
  * _exec_aline_tail()
  */
-
-#ifdef __JERK_EXEC
-
-static stat_t _exec_aline_tail()
-{
-	if (mr.section_state == SECTION_NEW) {							// INITIALIZATION
-		if (fp_ZERO(mr.tail_length))
-            return(STAT_OK);			                            // end the move
-		mr.midpoint_velocity = (mr.cruise_velocity + mr.exit_velocity) / 2;
-		mr.gm.move_time = mr.tail_length / mr.midpoint_velocity;
-		mr.segments = ceil(uSec(mr.gm.move_time) / (2 * NOM_SEGMENT_USEC));// # of segments in *each half*
-		mr.segment_time = mr.gm.move_time / (2 * mr.segments);		// time to advance for each segment
-		mr.accel_time = 2 * sqrt((mr.cruise_velocity - mr.exit_velocity) / mr.jerk);
-		mr.midpoint_acceleration = 2 * (mr.cruise_velocity - mr.exit_velocity) / mr.accel_time;
-		mr.segment_accel_time = mr.accel_time / (2 * mr.segments);	// time to advance for each segment
-		mr.elapsed_accel_time = mr.segment_accel_time / 2;			//compute time from midpoint of segment
-		mr.segment_count = (uint32_t)mr.segments;
-		if (mr.segment_time < MIN_SEGMENT_TIME)
-            return(STAT_MINIMUM_TIME_MOVE);                         // exit without advancing position
-		mr.section = SECTION_TAIL;
-		mr.section_state = SECTION_1st_HALF;
-	}
-	if (mr.section_state == SECTION_1st_HALF) {						// FIRST HALF - convex part (period 4)
-		mr.segment_velocity = mr.cruise_velocity - (square(mr.elapsed_accel_time) * mr.jerk_div2);
-		if (_exec_aline_segment() == STAT_OK) {						// set up for second half
-			mr.segment_count = (uint32_t)mr.segments;
-			mr.section_state = SECTION_2nd_HALF;
-			mr.elapsed_accel_time = mr.segment_accel_time / 2;		// start time from midpoint of segment
-		}
-		return(STAT_EAGAIN);
-	}
-	if (mr.section_state == SECTION_2nd_HALF) {						// SECOND HALF - concave part (period 5)
-		mr.segment_velocity = mr.midpoint_velocity -
-			(mr.elapsed_accel_time * mr.midpoint_acceleration) +
-			(square(mr.elapsed_accel_time) * mr.jerk_div2);
-		return (_exec_aline_segment()); 							// ends the move or continues EAGAIN
-	}
-	return(STAT_EAGAIN);											// should never get here
-}
-
-#else // __JERK_EXEC -- run forward differencing math
 
 static stat_t _exec_aline_tail()
 {
@@ -669,7 +573,6 @@ static stat_t _exec_aline_tail()
 	}
 	return(STAT_EAGAIN);									// should never get here
 }
-#endif // __JERK_EXEC
 
 /*********************************************************************************************
  * _exec_aline_segment() - segment runner helper
@@ -732,9 +635,6 @@ static stat_t _exec_aline_segment()
 
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
-#ifdef __JERK_EXEC
-	mr.elapsed_accel_time += mr.segment_accel_time;			// this is needed by jerk-based exec (NB: ignored if running the body)
-#endif
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
