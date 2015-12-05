@@ -131,7 +131,6 @@ static void _application_init(void)
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
 	encoder_init();					// virtual encoders
 	switch_init();					// switches
-//	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
 
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()

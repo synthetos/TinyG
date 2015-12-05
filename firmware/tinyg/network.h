@@ -2,7 +2,7 @@
  * network.h - tinyg networking protocol
  * Part of TinyG project
  *
- * Copyright (c) 2011 - 2012 Alden S. Hart Jr.
+ * Copyright (c) 2011 - 2015 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -43,6 +43,5 @@ uint8_t net_test_rxtx(uint8_t c);
 uint8_t net_test_loopback(uint8_t c);
 
 #define XIO_DEV_NET XIO_DEV_RS485	// define the network channel
-//#define net_forward(c) (xio_putc(XIO_DEV_NET,c))
 
 #endif
