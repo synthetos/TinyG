@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - pwm, report, settings, spindle
+#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - stepper, switch
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -63,7 +63,7 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
-#define __STEP_CORRECTION                   // enables step correction feedback code (virtual encoders)
+#define __STEP_CORRECTION                   // enables step correction feedback code in stepper.c (virtual encoders)
 #define __TEXT_MODE							// enables text mode	(~10Kb)
 #define __HELP_SCREENS						// enables help screens (~3.5Kb)
 #define __CANNED_TESTS 						// enables $tests 		(~12Kb)

@@ -589,7 +589,6 @@ MOTATE_TIMER_INTERRUPT(dda_timer_num)
 		}
 
 	} else if (interrupt_cause == kInterruptOnMatchA) {
-//		dda_debug_pin2 = 1;
 		motor_1.step.clear();							// turn step bits off
 		motor_2.step.clear();
 		motor_3.step.clear();
@@ -602,9 +601,7 @@ MOTATE_TIMER_INTERRUPT(dda_timer_num)
 		// process end of segment
 		dda_timer.stop();								// turn it off or it will keep stepping out the last segment
 		_load_move();									// load the next move at the current interrupt level
-//		dda_debug_pin2 = 0;
 	}
-//    dda_debug_pin1 = 0;
 } // MOTATE_TIMER_INTERRUPT
 } // namespace Motate
 
