@@ -52,7 +52,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        441.13	// General cleanup - text_parser, util
+#define TINYG_FIRMWARE_BUILD        441.14	// Prep for edge push
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
