@@ -244,9 +244,7 @@ char fntoa(char *str, float n, uint8_t precision)
  * compute_checksum() - calculate the checksum for a string
  *
  *	Stops calculation on null termination or length value if non-zero.
- *
- * 	This is based on the the Java hashCode function.
- *	See http://en.wikipedia.org/wiki/Java_hashCode()
+ * 	This is based on the the Java hashCode function. See http://en.wikipedia.org/wiki/Java_hashCode()
  */
 #define HASHMASK 9999
 

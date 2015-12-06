@@ -115,7 +115,7 @@ static const char PROGMEM SR_DEFAULTS[] = "posx,posy,posz,posa,feed,vel,unit,coo
 //#include "settings/settings_othermill.h"				// OMC OtherMill
 //#include "settings/settings_probotixV90.h"			// Probotix Fireball V90
 #include "settings/settings_shapeoko2.h"				// Shapeoko2 - standard kit
-//#include "settings/settings_ultimaker.h"				// Ultimaker 3D printer
+//#include "settings/settings_Ultimaker.h"				// Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"				// Zen Toolworks 7x12
 
 /*** Handle optional modules that may not be in every machine ***/

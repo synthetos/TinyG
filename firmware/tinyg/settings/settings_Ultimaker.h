@@ -44,10 +44,6 @@
 #define JUNCTION_DEVIATION		0.05		// default value, in mm
 #define JUNCTION_ACCELERATION 	400000		// centripetal acceleration around corners
 
-#ifndef PI
-#define PI 3.14159628
-#endif
-
 // *** settings.h overrides ***
 
 #undef SWITCH_TYPE

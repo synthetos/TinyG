@@ -63,7 +63,6 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
 
 stat_t text_parser(char *str)
 {
-//	nvObj_t *nv = nv_reset_nv_list("r");			// returns first object in the body
 	nvObj_t *nv = nv_reset_nv_list(NUL);			// returns first object in the body
 	stat_t status = STAT_OK;
 
@@ -112,9 +111,9 @@ stat_t text_parser(char *str)
 
 static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 {
-	char *rd, *wr;								// read and write pointers
-//	char separators[] = {"="};					// STRICT: only separator allowed is = sign
-	char separators[] = {" =:|\t"};				// RELAXED: any separator someone might use
+	char *rd, *wr;								    // read and write pointers
+//	char separators[] = {"="};					    // STRICT: only separator allowed is = sign
+	char separators[] = {" =:|\t"};				    // RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
 //	nv_reset_nv(nv);								// initialize config object
@@ -192,19 +191,25 @@ void text_response(const stat_t status, char *buf)
  * text_print_inline_pairs()
  * text_print_inline_values()
  * text_print_multiline_formatted()
+ *
+ * NOTE: text_print_inline_pairs() and text_print_inline_values() are not currently
+ *       used so they are commented out of the case statement in text_print_list().
+ *       The functions themselves will drop out of the compile by the optimizer.
+ *       If you need these uncomment the line(s) you need.
  */
 
 void text_print_list(stat_t status, uint8_t flags)
 {
 	switch (flags) {
 		case TEXT_NO_PRINT: { break; }
-//		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
-//		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
-		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(NV_BODY);}
+//		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(NV_BODY); break; }    // SEE NOTE IN HEADER COMMENTS
+//		case TEXT_INLINE_VALUES: { text_print_inline_values(NV_BODY); break; }  // SEE NOTE IN HEADER COMMENTS
+        default: // TEXT_MULTILINE_FORMATTED
+		    { text_print_multiline_formatted(NV_BODY);}
 	}
 }
-/*
-void text_print_inline_pairs(nvObj_t *nv)
+
+void text_print_inline_pairs(nvObj_t *nv)   // SEE NOTE IN HEADER COMMENTS
 {
 	uint32_t *v = (uint32_t*)&nv->value_flt;
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
@@ -225,7 +230,7 @@ void text_print_inline_pairs(nvObj_t *nv)
 	}
 }
 
-void text_print_inline_values(nvObj_t *nv)
+void text_print_inline_values(nvObj_t *nv)  // SEE NOTE IN HEADER COMMENTS
 {
 	uint32_t *v = (uint32_t*)&nv->value_flt;
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
@@ -245,7 +250,7 @@ void text_print_inline_values(nvObj_t *nv)
 		if (nv->valuetype != TYPE_EMPTY) { printf_P(PSTR(","));}
 	}
 }
-*/
+
 void text_print_multiline_formatted(nvObj_t *nv)
 {
 	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
@@ -262,13 +267,11 @@ void text_print_multiline_formatted(nvObj_t *nv)
  * Text print primitives using generic formats
  */
 static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string message (with no formatting)
-static const char fmt_ui8[] PROGMEM = "%d\n";	// generic format for ui8s
 static const char fmt_int[] PROGMEM = "%lu\n";	// generic format for ui16's and ui32s
 static const char fmt_flt[] PROGMEM = "%f\n";	// generic format for floats
 
 void tx_print_nul(nvObj_t *nv) {}
 void tx_print_str(nvObj_t *nv) { text_print_str(nv, fmt_str);}
-void tx_print_ui8(nvObj_t *nv) { text_print_ui8(nv, fmt_ui8);}
 void tx_print_int(nvObj_t *nv) { text_print_int(nv, fmt_int);}
 void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
 
@@ -321,14 +324,7 @@ void text_print_str(nvObj_t *nv, const char *format)
     sprintf_P(msg, format, *nv->stringp);
     text_finalize_message(msg);
 }
-/*
-void text_print_ui8(nvObj_t *nv, const char *format)
-{
-    char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, (uint8_t)nv->value_int);
-    text_finalize_message(msg);
-}
-*/
+
 void text_print_int(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
@@ -363,9 +359,6 @@ void text_print(nvObj_t *nv, const char *format) {
  * Formatted print supporting the text parser
  */
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
-
-//void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
 void tx_print_tv(nvObj_t *nv) { text_print(nv, fmt_tv);}
-
 
 #endif // __TEXT_MODE
