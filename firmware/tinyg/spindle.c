@@ -33,10 +33,6 @@
 #include "hardware.h"
 #include "pwm.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 static void _exec_spindle_control(float *value, float *flag);
 static void _exec_spindle_speed(float *value, float *flag);
 
@@ -135,9 +131,9 @@ static void _exec_spindle_control(float *value, float *flag)
  */
 stat_t cm_set_spindle_speed(float speed)
 {
-//	if (speed > cfg.max_spindle speed)
+//	if (speed > cfg.max_spindle speed) {    // test not currently performed
 //        return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);
-
+//  }
 	float value[AXES] = { speed, 0,0,0,0,0 };
 	mp_queue_command(_exec_spindle_speed, value, value);
 	return (STAT_OK);
@@ -153,7 +149,3 @@ static void _exec_spindle_speed(float *value, float *flag)
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running
 }
-
-#ifdef __cplusplus
-}
-#endif

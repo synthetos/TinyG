@@ -317,9 +317,6 @@ stat_t sr_set_status_report(nvObj_t *nv)
 
     // process {sr:t}    restore SR settings to defaults
     if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == true)) {
-
-    // +++++ Status Reports
-//        sr_init_status_report(true);
         sr_init_status_report_P(SR_DEFAULTS);
         return (STAT_OK);
     }
@@ -527,27 +524,6 @@ static uint8_t _populate_filtered_status_report()
     		return (false);
 		}
 		has_data = true;
-
-/*
-		if (nv->value_int == sr.status_report_value[i]) {
-			if (nv->index != sr.stat_index) {
-				if (nv->value_int == COMBINED_PROGRAM_STOP) {
-					nv->valuetype = TYPE_EMPTY;
-					continue;
-				}
-			}
-			// report anything that has changed
-		} else {
-			strcpy(tmp, nv->group);		// flatten out groups - WARNING - you cannot use strncpy here...
-			strcat(tmp, nv->token);
-			strcpy(nv->token, tmp);		//...or here.
-			sr.status_report_value[i] = nv->value_int;
-			if ((nv = nv->nx) == NULL) {// should never be NULL unless SR length exceeds available buffer array
-                return (false);
-            }
-			has_data = true;
-		}
-*/
 	}
 	return (has_data);
 }

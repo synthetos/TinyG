@@ -2,7 +2,7 @@
  * pwm.h - pulse width modulation drivers
  * This file is part of the TinyG project
  *
- * Copyright (c) 2012 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,10 +27,6 @@
 
 #ifndef PWM_H_ONCE
 #define PWM_H_ONCE
-
-#ifdef __cplusplus
-extern "C"{
-#endif
 
 typedef struct pwmConfigChannel {
 	float frequency;				// base frequency for PWM driver, in Hz
@@ -92,9 +88,5 @@ stat_t pwm_set_duty(uint8_t channel, float duty);
 	#define pwm_print_p1pof tx_print_stub
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	// End of include guard: PWM_H_ONCE
