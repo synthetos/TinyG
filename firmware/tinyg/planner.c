@@ -61,11 +61,7 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
-/*
-#ifdef __cplusplus
-extern "C"{
-#endif
-*/
+
 // Allocate planner structures
 
 mpBufferPool_t mb;				// move buffer queue
@@ -394,8 +390,7 @@ mpBuf_t * mp_get_run_buffer()
 
 uint8_t mp_free_run_buffer()					// EMPTY current run buf & adv to next
 {
-	mp_clear_buffer(mb.r);						// clear it out (& reset replannable)
-//	mb.r->buffer_state = MP_BUFFER_EMPTY;		// redundant after the clear, above
+	mp_clear_buffer(mb.r);						// clear buffer and declare it MP_BUFFER_EMPTY
 	mb.r = mb.r->nx;							// advance to next run buffer
 	if (mb.r->buffer_state == MP_BUFFER_QUEUED) {// only if queued...
 		mb.r->buffer_state = MP_BUFFER_PENDING;	// pend next buffer
@@ -476,8 +471,3 @@ uint8_t mp_get_buffer_index(mpBuf_t *bf)
  * TEXT MODE SUPPORT
  * Functions to print variables from the cfgArray table
  ***********************************************************************************/
-/*
-#ifdef __cplusplus
-}
-#endif
-*/

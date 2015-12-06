@@ -341,7 +341,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 {
-//	return (Vi + Vf) * sqrt(fabs(Vf - Vi) * bf->recip_jerk);		// new formula
 	return (fabs(Vi-Vf) * sqrt(fabs(Vi-Vf) * bf->recip_jerk));		// old formula
 }
 

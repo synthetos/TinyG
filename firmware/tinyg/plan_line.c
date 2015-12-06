@@ -36,7 +36,6 @@
 #include "util.h"
 
 // aline planner routines / feedhold planning
-//static void _calc_move_times(GCodeState_t *gms, const float position[]);
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
@@ -86,12 +85,7 @@ uint8_t mp_get_runtime_busy()
  *	that are too short to move will accumulate and get executed once the accumulated error
  *	exceeds the minimums.
  */
-/*
-#define axis_length bf->body_length
-#define axis_velocity bf->cruise_velocity
-#define axis_tail bf->tail_length
-#define longest_tail bf->head_length
-*/
+
 stat_t mp_aline(GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
@@ -112,8 +106,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float length = sqrt(length_square);
 
 	if (fp_ZERO(length)) {
-//		sr_request_status_report();
-		return (STAT_OK);
+		return (STAT_OK);               // used to sr_request_status_report() before exiting
 	}
 
 	// If _calc_move_times() says the move will take less than the minimum move time
@@ -650,20 +643,6 @@ stat_t mp_plan_hold_callback()
 
 	// examine and process mr buffer
 	mr_available_length = get_axis_vector_length(mr.target, mr.position);
-
-/*	mr_available_length =
-		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
-			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
-			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
-			  square(mr.endpoint[AXIS_A] - mr.position[AXIS_A]) +
-			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
-			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
-
-*/
-
-	// compute next_segment velocity
-//	braking_velocity = mr.segment_velocity;
-//	if (mr.section != SECTION_BODY) { braking_velocity += mr.forward_diff_1;}
 	braking_velocity = _compute_next_segment_velocity();
 	braking_length = mp_get_target_length(braking_velocity, 0, bp); // bp is OK to use here
 
