@@ -21,11 +21,9 @@
 #define PLAN_ARC_H_ONCE
 
 // Arc radius tests. See http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G2-G3-Arc
-//#define ARC_RADIUS_ERROR_MAX    ((float)0.5)        // max allowable mm between start and end radius
-#define ARC_RADIUS_ERROR_MAX    ((float)1.0)        // max allowable mm between start and end radius
+#define ARC_RADIUS_ERROR_MAX    ((float)1.0)        // max allowable mm between start and end radius (can be 0.5)
 #define ARC_RADIUS_ERROR_MIN    ((float)0.005)      // min mm where 1% rule applies
-//#define ARC_RADIUS_TOLERANCE    ((float)0.001)      // 0.1% radius variance test (LinuxCNC standard)
-#define ARC_RADIUS_TOLERANCE    ((float)0.01)       // 1% radius variance test (relaxed standard)
+#define ARC_RADIUS_TOLERANCE    ((float)0.01)       // 1% radius variance test (relaxed standard, LinuxCNC uses 0.001)
 
 // See planner.h for MM_PER_ARC_SEGMENT and other arc setting #defines
 
@@ -59,10 +57,6 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	float center_1;				    // center of circle at plane axis 1 (e.g. Y for G17)
 
 	GCodeState_t gm;			    // Gcode state struct is passed for each arc segment. Usage:
-//	uint32_t linenum;			    // line number of the arc feed move - same for each segment
-//	float target[AXES];			    // arc segment target
-//	float work_offset[AXES];	    // offset from machine coord system for reporting (same for each segment)
-//	float move_time;			    // segment_time: constant time per aline segment
 
 	magic_t magic_end;
 } arc_t;

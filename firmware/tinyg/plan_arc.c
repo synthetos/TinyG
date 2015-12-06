@@ -36,7 +36,6 @@ arc_t arc;
 static stat_t _compute_arc(void);
 static stat_t _compute_arc_offsets_from_radius(void);
 static void _estimate_arc_time(void);
-//static stat_t _test_arc_soft_limits(void);
 
 /*****************************************************************************
  * Canonical Machining arc functions (arc prep for planning and runtime)
@@ -266,8 +265,7 @@ static stat_t _compute_arc()
 
     if ( (err > ARC_RADIUS_ERROR_MAX) ||
         ((err < ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
-//        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
-        return (STAT_ARC_SPECIFICATION_ERROR);
+        return (STAT_ARC_SPECIFICATION_ERROR);  // change to: STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT
     }
 
 	// Calculate the theta (angle) of the current point (position)
@@ -439,7 +437,7 @@ static stat_t _compute_arc_offsets_from_radius()
 	// of travel" (go figure!), even though it is advised against ever generating
 	// such circles in a single line of g-code. By inverting the sign of
 	// h_x2_div_d the center of the circles is placed on the opposite side of
-	// the line of travel and thus we get the unadvisably long arcs as prescribed.
+	// the line of travel and thus we get the inadvisably long arcs as prescribed.
 	if (arc.radius < 0) { h_x2_div_d = -h_x2_div_d; }
 
 	// Complete the operation by calculating the actual center of the arc
