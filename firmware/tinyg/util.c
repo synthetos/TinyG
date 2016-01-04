@@ -205,7 +205,7 @@ char *escape_string(char *dst, char *src)
 char *pstr2str(const char *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(global_string_buf, pgm_string, MESSAGE_LEN);
+	strncpy_P(global_string_buf, pgm_string, GLOBAL_STRING_LEN);
 	return (global_string_buf);
 #endif
 #ifdef __ARM

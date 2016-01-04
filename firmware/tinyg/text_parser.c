@@ -89,7 +89,7 @@ stat_t text_parser(char *str)
 		}
 	} else { 										// process SET and RUN commands
 		if (cm.machine_state == MACHINE_ALARM) {
-            return (STAT_MACHINE_ALARMED);
+            return (STAT_ALARMED);
         }
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {

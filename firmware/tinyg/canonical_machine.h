@@ -569,6 +569,7 @@ stat_t cm_soft_alarm(stat_t status, const char *msg);			// enter soft alarm stat
 stat_t cm_hard_alarm(stat_t status, const char *msg);			// enter hard alarm state. returns same status code
 stat_t cm_hard_alarm_P(stat_t status, const char *msg_P);		// enter hard alarm state. returns same status code
 stat_t cm_clear(nvObj_t *nv);
+stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
 
 stat_t cm_alarm(nvObj_t *nv);
 stat_t cm_pause(nvObj_t *nv);

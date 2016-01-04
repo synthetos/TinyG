@@ -214,7 +214,7 @@ stat_t config_test_assertions()
 	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
 	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
 	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if (global_string_buf[MESSAGE_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
+	if (global_string_buf[GLOBAL_STRING_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
 	return (STAT_OK);
 }
 
@@ -233,7 +233,7 @@ stat_t config_test_assertions()
 stat_t get_nul(nvObj_t *nv)
 {
 	nv->valuetype = TYPE_NULL;
-	return (STAT_PARAMETER_CANNOT_BE_READ);
+	return (STAT_NOOP);
 }
 
 stat_t get_str(nvObj_t *nv)
@@ -436,7 +436,7 @@ stat_t get_grp(nvObj_t *nv)
 stat_t set_grp(nvObj_t *nv)
 {
 	if (cs.comm_mode == TEXT_MODE) {
-        return (STAT_INVALID_OR_MALFORMED_COMMAND);
+        return (STAT_UNRECOGNIZED_NAME);
     }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv->nx) == NULL) break;

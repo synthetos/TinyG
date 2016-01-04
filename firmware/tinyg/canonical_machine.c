@@ -593,6 +593,18 @@ stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
 	return (STAT_OK);
 }
 
+/*
+ * cm_is_alarmed() - return alarm status code or OK if no alarms
+ */
+
+stat_t cm_is_alarmed()
+{
+    if (cm.machine_state == MACHINE_ALARM)    { return (STAT_COMMAND_REJECTED_BY_ALARM); }
+    if (cm.machine_state == MACHINE_SHUTDOWN) { return (STAT_COMMAND_REJECTED_BY_SHUTDOWN); }
+//    if (cm.machine_state == MACHINE_PANIC)    { return (STAT_COMMAND_REJECTED_BY_PANIC); }
+    return (STAT_OK);
+}
+
 stat_t cm_hard_alarm_P(stat_t status, const char *msg_P)
 {
     char msg[STATUS_MESSAGE_LEN];

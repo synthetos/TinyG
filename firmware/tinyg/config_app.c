@@ -743,6 +743,9 @@ stat_t set_flu(nvObj_t *nv)
 
 void preprocess_float(nvObj_t *nv)
 {
+    if (nv->valuetype != TYPE_FLOAT) {
+        return;
+    }
 	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) { // illegal float values
         return;
     }

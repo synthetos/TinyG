@@ -496,6 +496,7 @@ static uint8_t _populate_filtered_status_report()
         if (nv->index == sr.stat_index) {
             if ((nv->value_int == COMBINED_PROGRAM_STOP) || (nv->value_int == COMBINED_PROGRAM_END)) {
     			sr.status_report_value[i] = nv->value_int;
+                nv = nv->nx;
     			has_data = true;
                 continue;
             }
