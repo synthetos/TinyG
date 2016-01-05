@@ -68,6 +68,7 @@ char *get_status_message(stat_t status);
 /**********************
  **** STATUS CODES ****
  **********************/
+// status code revision level 100
 
 // OS, communications and low-level status (must align with XIO_xxxx codes in xio.h)
 #define	STAT_OK 0						// function completed OK
