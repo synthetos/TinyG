@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.01	// Aligning code structure with v0.98. Start with error.h
+#define TINYG_FIRMWARE_BUILD        445.02	// 
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

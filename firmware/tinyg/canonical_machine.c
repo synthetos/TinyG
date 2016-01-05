@@ -668,7 +668,7 @@ stat_t cm_set_distance_mode(uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - G10 L2 Pn (affects MODEL only)
+ * cm_set_coord_offsets() - G10 L2/L20 Pn (affects MODEL only)
  *
  *	This function applies the offset to the GM model but does not persist the offsets
  *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
@@ -676,6 +676,8 @@ stat_t cm_set_distance_mode(uint8_t mode)
  *
  *	It also does not reset the work_offsets which may be accomplished by calling
  *	cm_set_work_offsets() immediately afterwards.
+ *
+ *  Both L2 and L20 forms are supported
  */
 
 stat_t cm_set_coord_offsets(const uint8_t coord_system,

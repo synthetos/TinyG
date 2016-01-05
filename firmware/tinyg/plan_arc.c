@@ -265,7 +265,7 @@ static stat_t _compute_arc()
 
     if ( (err > ARC_RADIUS_ERROR_MAX) ||
         ((err < ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
-        return (STAT_ARC_SPECIFICATION_ERROR);  // change to: STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT
+        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
     }
 
 	// Calculate the theta (angle) of the current point (position)
