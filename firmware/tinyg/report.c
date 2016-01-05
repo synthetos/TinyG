@@ -393,6 +393,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
  *	Status reports are generally returned with minimal delay (from the controller callback),
  *	but will not be provided more frequently than the status report interval
  */
+
 stat_t sr_request_status_report(uint8_t request_type)
 {
 	if (request_type == SR_IMMEDIATE_REQUEST) {

@@ -608,6 +608,9 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 		if ((nv = nv->nx) == NULL) {                // end of the list
             break;
         }
+        if (nv->valuetype == TYPE_EMPTY) {          // another end-of-list condition
+            break;
+        }
 	}
 
     // test if sufficient space is left for closing curlies, newline and NUL termination
