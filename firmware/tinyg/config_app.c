@@ -42,7 +42,6 @@
 #include "test.h"
 #include "util.h"
 #include "help.h"
-#include "network.h"
 #include "xio.h"
 
 /*** structure allocation ***/
@@ -977,7 +976,6 @@ static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF,2=RTS/CTS]\n";
 static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=char_mode,1=line_mode]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
-static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
 void cfg_print_ec(nvObj_t *nv) { text_print(nv, fmt_ec);}
@@ -985,7 +983,6 @@ void cfg_print_ee(nvObj_t *nv) { text_print(nv, fmt_ee);}
 void cfg_print_ex(nvObj_t *nv) { text_print(nv, fmt_ex);}
 void cfg_print_rxm(nvObj_t *nv) { text_print(nv, fmt_rxm);}
 void cfg_print_baud(nvObj_t *nv) { text_print(nv, fmt_baud);}
-void cfg_print_net(nvObj_t *nv) { text_print(nv, fmt_net);}
 void cfg_print_rx(nvObj_t *nv) { text_print(nv, fmt_rx);}
 
 #endif // __TEXT_MODE

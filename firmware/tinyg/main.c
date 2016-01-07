@@ -30,7 +30,6 @@
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
-#include "network.h"
 #include "switch.h"
 #include "test.h"
 #include "pwm.h"
@@ -139,7 +138,6 @@ static void _application_init(void)
 
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
 	config_init();					// config records from eeprom 		- must be next app init
-	network_init();					// reset std devices if required	- must follow config_init()
 	planner_init();					// motion planning subsystem
 	canonical_machine_init();		// canonical machine				- must follow config_init()
 

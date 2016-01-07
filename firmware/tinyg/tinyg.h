@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.02	// fixed bug in JSON parser not terminating status report correctly under certain conditions 
+#define TINYG_FIRMWARE_BUILD        445.03	// removed network.c/.h
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

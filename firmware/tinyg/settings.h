@@ -55,7 +55,6 @@
 
 // Communications and reporting settings
 #define COMM_MODE					JSON_MODE				// one of: TEXT_MODE, JSON_MODE
-#define NETWORK_MODE				NETWORK_STANDALONE
 
 #define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
 //#define XIO_RX_MODE                 RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
