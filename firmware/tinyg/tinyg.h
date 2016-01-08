@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.03	// removed network.c/.h
+#define TINYG_FIRMWARE_BUILD        445.04	// ported in util.c changes from 0.98; fixed SR fb bug in sr_init
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

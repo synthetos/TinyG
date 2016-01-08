@@ -173,7 +173,7 @@
  ***********************************************************************************/
 
 // Sizing and footprints				// chose one based on # of elements in cfgArray
-typedef int16_t index_t;				// -1 is reserved for no find
+typedef int16_t index_t;				// -1 is reserved for no match (0xFFFF)
 
 										// defines allocated from stack (not-pre-allocated)
 #define NV_FORMAT_LEN 128				// print formatting string max length
@@ -258,7 +258,7 @@ typedef struct nvString {				// shared string object
 typedef struct nvObject {				// depending on use, not all elements may be populated
 	struct nvObject *pv;				// pointer to previous object or NULL if first object
 	struct nvObject *nx;				// pointer to next object or NULL if last object
-	index_t index;						// index of tokenized name, or -1 if no token (optional)
+	index_t index;						// index of tokenized name, or NO_MATCH (-1) if no token (optional)
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)

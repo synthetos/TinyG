@@ -43,6 +43,12 @@ using Motate::delay;
 using Motate::SysTickTimer;
 #endif
 
+/****** Global Scope Variables and Functions ******/
+
+extern bool FLAGS_NONE[];    // canned flag vector for convenience
+extern bool FLAGS_ONE[];     // canned flag vector for convenience
+extern bool FLAGS_ALL[];     // canned flag vector for convenience
+
 /* Convenient place to park this handy diagnostic pair
 #pragma GCC optimize ("O0")
 // insert function here
@@ -80,8 +86,10 @@ float max4(float x1, float x2, float x3, float x4);
 uint8_t isnumber(char c);
 char *escape_string(char *dst, char *src);
 char *pstr2str(const char *pgm_string);
+char inttoa(char *str, int n);
+char floattoa(char *buffer, float in, int precision);
 char fntoa(char *str, float n, uint8_t precision);
-uint16_t compute_checksum(char const *string, const uint16_t length);
+//uint16_t compute_checksum(char const *string, const uint16_t length);
 
 //*** other utilities ***
 

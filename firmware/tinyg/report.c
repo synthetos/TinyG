@@ -159,7 +159,7 @@ void rpt_print_system_ready_message(void)
  *		report in multi-line format. Additionally, a line starting with ? will put
  *		the system into text mode.
  *
- *	  - Automatic status reports in text mode return CSV format according to si setting
+ *	  - Automatic status reports in text mode return CSV format according to $si setting
  */
 static stat_t _populate_unfiltered_status_report(void);
 static uint8_t _populate_filtered_status_report(void);
@@ -175,41 +175,44 @@ static uint8_t _populate_filtered_status_report(void);
  *  sr_list_P is a comma-separate-value list in program memory. Spaces are not allowed
  */
 
-void sr_init_status_report_P(const char *sr_list_P)
+void sr_init_status_report_P(const char *sr_csv_P)
 {
-    char sr_list[ NV_STATUS_REPORT_LEN * (TOKEN_LEN+1) ]; strcpy_P(sr_list, sr_list_P);
-    char *wr = sr_list;     // pointer to write NULL terminations over commas
-    char *rd = sr_list;     // pointer to pass token
+    char sr_csv[ NV_STATUS_REPORT_LEN * (TOKEN_LEN+1) ]; strcpy_P(sr_csv, sr_csv_P);
+    char *wr = sr_csv;     // pointer to write NULL terminations over commas
+    char *rd = sr_csv;     // pointer to pass token
     uint8_t i=0;
 
-    nvObj_t *nv = nv_reset_nv_list(NUL);	// used for status report persistence locations
+    nvObj_t *nv = nv_reset_nv_list(NUL);	                // used for status report persistence locations
     sr.stat_index = nv_get_index("", "stat");               // set index of stat element
     nv->index = nv_get_index("", "se00");                   // set first SR persistence index
     nv->valuetype = TYPE_INTEGER;
 
-    // No SR list, load SR from NVram
-    if (*sr_list == NUL) {
+    // SR CSV list is NULL, load SR from NVram
+    if (*sr_csv == NUL) {
         for (; i<NV_STATUS_REPORT_LEN; i++) {
             read_persistent_value(nv);                      // read token index from NVram into nv->value_int element
             sr.status_report_list[i] = nv->value_int;       // load into the active SR list
             sr.status_report_value[i] = 8675309;            // pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
         }
-    // load the sr_list and persist it NVram
+    // load the sr_csv_P list provided as an arg and persist it NVram
     } else {
-        for (; i<NV_STATUS_REPORT_LEN; i++) {
-            while (true) {                                  // find the token to display
+    	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {            // initialize the SR list
+            sr.status_report_list[i] = NO_MATCH;
+        }
+        for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+            while (true) {                                  // find the next token to configure
                 if ((*wr == ',') || (*wr == NUL)) {
                     *wr = NUL;
                     break;
                 }
-                if (++wr > (sr_list + (NV_STATUS_REPORT_LEN * (TOKEN_LEN+1)))) { // if string was not terminated properly
+                if (++wr > (sr_csv + (NV_STATUS_REPORT_LEN * (TOKEN_LEN+1)))) { // quit if string was not terminated properly
                     return;
                 }
             }
             if ((nv->value_int = nv_get_index("", rd)) == NO_MATCH) {
-                strcpy_P(sr_list, sr_list_P);                           // reset the SR list RAM string
-                rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, sr_list); // trap mis-configured profile settings
+                strcpy_P(sr_csv, sr_csv_P);                             // reset the SR list RAM string
+                rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, sr_csv);  // trap mis-configured profile settings
                 return;
             }
             nv_set(nv);
@@ -218,46 +221,6 @@ void sr_init_status_report_P(const char *sr_list_P)
             nv->index++;                                    // increment SR NVM index
             rd = (++wr);                                    // set up to read next SR token
         }
-    }
-    sr.status_report_requested = false;
-}
-
-/*
- * sr_init_status_report()
- *
- *  SR settings are not initialized by reading NVram during the system load process. Instead they are
- *  loaded by running this function which reads the SR settings from NVram. If 'use_defaults' is true
- *  then SR settings will be reset from the profile and persisted back to NVram.
- */
-
-void sr_init_status_report(bool use_defaults)
-{
-    nvObj_t *nv = nv_reset_nv_list(NUL);	// used for status report persistence locations
-    char sr_defaults[NV_STATUS_REPORT_LEN][TOKEN_LEN+1] = { STATUS_REPORT_DEFAULTS };	// see settings.h
-    sr.stat_index = nv_get_index("", "stat");               // set index of stat element
-    nv->index = nv_get_index("", "se00");                   // set first SR persistence index
-    nv->valuetype = TYPE_INTEGER;
-
-    for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        if (!use_defaults) {
-            read_persistent_value(nv);                      // read NVram into nv->value_int element
-            sr.status_report_list[i] = nv->value_int;       // pre-load the stored SR list
-        } else {
-            if (sr_defaults[i][0] == NUL) {                 // load the index for the SR element
-                nv->value_int = NO_MATCH;                   // label as a blank spot
-            } else {                                        // set and persist the default value
-                if ((nv->value_int = nv_get_index((const char *)"", sr_defaults[i])) == NO_MATCH) {
-                    char msg[sizeof("mis-configured status report settings")];
-                    sprintf_P(msg, PSTR("mis-configured status report settings"));
-                    rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, msg); // trap mis-configured profile settings
-                    return;
-                }
-            }
-            nv_set(nv);
-            nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
-        }
-        sr.status_report_value[i] = 8675309;			    // pre-load SR values with an unlikely number
-        nv->index++;                                        // increment SR NVM index
     }
     sr.status_report_requested = false;
 }

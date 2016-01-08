@@ -174,7 +174,7 @@ static void _set_defa(nvObj_t *nv)
 			nv_persist(nv);
 		}
 	}
-    sr_init_status_report_P(SR_DEFAULTS);       // reset status reports for defaults
+    sr_init_status_report_P(SR_DEFAULTS);       // reset status reports to defaults
 	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
 
