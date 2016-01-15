@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.05	// status report initialization fixes; added rpt_exception_P(); report.c/h slight reorg
+#define TINYG_FIRMWARE_BUILD        445.06	// fixed response to defa command
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

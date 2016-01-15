@@ -682,7 +682,6 @@ void json_print_response(uint8_t status)
 	if (js.json_verbosity == JV_SILENT) {               // silent responses
         return;
     }
-
 	if (status == STAT_NO_DISPLAY) {                    // upstream function has already performed output
     	return;
 	}
