@@ -46,13 +46,21 @@ rxSingleton_t rx;
 #define SR_WORKING_LIST_LEN (2*(NV_STATUS_REPORT_LEN+1)) // supports full replacements
 
 /**** Exception Reports ************************************************************
- * rpt_exception() - generate an exception message - always in JSON format
+ *
+ * rpt_exception()   - generate an exception message - always in JSON format
+ * rpt_exception_P() - generate an exception message with message from program space
  *
  * Returns incoming status value
  *
  * WARNING: Do not call this function from MED or HI interrupts (LO is OK)
  *			or there is a potential for deadlock in the TX buffer.
  */
+
+stat_t rpt_exception_P(stat_t status, const char *msg_P)
+{
+    strcpy_P(global_string_buf, msg_P);
+    return(rpt_exception(status, global_string_buf));
+}
 
 stat_t rpt_exception(stat_t status, const char *msg)
 {
@@ -78,6 +86,7 @@ stat_t rpt_er(nvObj_t *nv)
     char msg[sizeof("bogus exception report")];
     sprintf_P(msg, PSTR("bogus exception report"));
 	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT, msg)); // bogus exception report for testing
+//	return(rpt_exception_P(STAT_GENERIC_EXCEPTION_REPORT, PSTR("bogus exception report"))); // bogus exception report for testing
 }
 
 /**** Application Messages *********************************************************
@@ -172,15 +181,14 @@ static uint8_t _populate_filtered_status_report(void);
  *    - If sr_list_P is present load the settings from sr_list and persist to NVram
  *    - If sr_list_P is not present load settings in NVram
  *
- *  sr_list_P is a comma-separate-value list in program memory. Spaces are not allowed
+ *  sr_list_P is a comma-separate-value list in program memory. Spaces are not allowed.
+ *  Will fail silently if SR string exceeds available space. Fills all slots then truncates.
  */
 
 void sr_init_status_report_P(const char *sr_csv_P)
 {
     char sr_csv[ NV_STATUS_REPORT_LEN * (TOKEN_LEN+1) ]; strcpy_P(sr_csv, sr_csv_P);
-    char *wr = sr_csv;     // pointer to write NULL terminations over commas
-    char *rd = sr_csv;     // pointer to pass token
-    uint8_t i=0;
+    uint8_t i;
 
     nvObj_t *nv = nv_reset_nv_list(NUL);	                // used for status report persistence locations
     sr.stat_index = nv_get_index("", "stat");               // set index of stat element
@@ -189,37 +197,31 @@ void sr_init_status_report_P(const char *sr_csv_P)
 
     // SR CSV list is NULL, load SR from NVram
     if (*sr_csv == NUL) {
-        for (; i<NV_STATUS_REPORT_LEN; i++) {
+        for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
             read_persistent_value(nv);                      // read token index from NVram into nv->value_int element
             sr.status_report_list[i] = nv->value_int;       // load into the active SR list
             sr.status_report_value[i] = 8675309;            // pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
         }
-    // load the sr_csv_P list provided as an arg and persist it NVram
-    } else {
+
+    } else { // load the sr_csv_P list provided as an arg and persist it NVram
+        char *rd = strtok(sr_csv, ",");                     // initialize strtok & get pointer for token parsing
     	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {            // initialize the SR list
-            sr.status_report_list[i] = NO_MATCH;
-        }
-        for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-            while (true) {                                  // find the next token to configure
-                if ((*wr == ',') || (*wr == NUL)) {
-                    *wr = NUL;
-                    break;
-                }
-                if (++wr > (sr_csv + (NV_STATUS_REPORT_LEN * (TOKEN_LEN+1)))) { // quit if string was not terminated properly
+            if (i>0) {
+                rd = strtok(NULL, ",");                     // subsequent strtok() calls
+            }
+            if (rd == NULL) {
+                nv->value_int = NO_MATCH;                   // ensures unused positions are disabled (-1)
+            } else {
+                if ((nv->value_int = nv_get_index("", rd)) == NO_MATCH) {
+                    rpt_exception_P(STAT_BAD_STATUS_REPORT_SETTING, sr_csv_P);  // trap mis-configured profile settings
                     return;
                 }
-            }
-            if ((nv->value_int = nv_get_index("", rd)) == NO_MATCH) {
-                strcpy_P(sr_csv, sr_csv_P);                             // reset the SR list RAM string
-                rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, sr_csv);  // trap mis-configured profile settings
-                return;
             }
             nv_set(nv);
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
             sr.status_report_value[i] = 8675309;			// pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
-            rd = (++wr);                                    // set up to read next SR token
         }
     }
     sr.status_report_requested = false;
@@ -635,27 +637,6 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 }
 
 /*
- * rx_request_rx_report() - request an update on usb serial buffer space available
- */
-void rx_request_rx_report(void) {
-    rx.rx_report_requested = true;
-    rx.space_available = xio_get_usb_rx_free();
-}
-
-/*
- * rx_report_callback() - send rx report if one has been requested
- */
-stat_t rx_report_callback(void) {
-    if (!rx.rx_report_requested) {
-        return (STAT_NOOP);
-    }
-    rx.rx_report_requested = false;
-
-    printf_P(PSTR("{\"rx\":%d}\n"), rx.space_available);
-    return (STAT_OK);
-}
-
-/*
  * Wrappers and Setters - for calling from cfgArray table
  *
  * qr_get() - run a queue report (as data)
@@ -684,6 +665,45 @@ stat_t qo_get(nvObj_t *nv)
 	qr.buffers_removed = 0;				// reset it
 	return (STAT_OK);
 }
+
+/*********************
+ * TEXT MODE SUPPORT *
+ *********************/
+#ifdef __TEXT_MODE
+
+static const char fmt_qr[] PROGMEM = "qr:%d\n";
+static const char fmt_qi[] PROGMEM = "qi:%d\n";
+static const char fmt_qo[] PROGMEM = "qo:%d\n";
+static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
+
+void qr_print_qr(nvObj_t *nv) { text_print(nv, fmt_qr);}
+void qr_print_qi(nvObj_t *nv) { text_print(nv, fmt_qi);}
+void qr_print_qo(nvObj_t *nv) { text_print(nv, fmt_qo);}
+void qr_print_qv(nvObj_t *nv) { text_print(nv, fmt_qv);}
+
+#endif // __TEXT_MODE
+
+/*****************************************************************************
+ * RX REPORTS
+ *
+ * rx_request_rx_report() - request an update on usb serial buffer space available
+ * rx_report_callback() - send rx report if one has been requested
+ */
+void rx_request_rx_report(void) {
+    rx.rx_report_requested = true;
+    rx.space_available = xio_get_usb_rx_free();
+}
+
+stat_t rx_report_callback(void) {
+    if (!rx.rx_report_requested) {
+        return (STAT_NOOP);
+    }
+    rx.rx_report_requested = false;
+
+    printf_P(PSTR("{\"rx\":%d}\n"), rx.space_available);
+    return (STAT_OK);
+}
+
 
 /*****************************************************************************
  * JOB ID REPORTS
@@ -757,19 +777,3 @@ stat_t job_get(nvObj_t *nv) { return (job_populate_job_report());}
 stat_t job_set(nvObj_t *nv) { return (job_set_job_report(nv));}
 void job_print_job(nvObj_t *nv) { job_populate_job_report();}
 
-/*********************
- * TEXT MODE SUPPORT *
- *********************/
-#ifdef __TEXT_MODE
-
-static const char fmt_qr[] PROGMEM = "qr:%d\n";
-static const char fmt_qi[] PROGMEM = "qi:%d\n";
-static const char fmt_qo[] PROGMEM = "qo:%d\n";
-static const char fmt_qv[] PROGMEM = "[qv]  queue report verbosity%7d [0=off,1=single,2=triple]\n";
-
-void qr_print_qr(nvObj_t *nv) { text_print(nv, fmt_qr);}
-void qr_print_qi(nvObj_t *nv) { text_print(nv, fmt_qi);}
-void qr_print_qo(nvObj_t *nv) { text_print(nv, fmt_qo);}
-void qr_print_qv(nvObj_t *nv) { text_print(nv, fmt_qv);}
-
-#endif // __TEXT_MODE

@@ -97,12 +97,13 @@ extern rxSingleton_t rx;
 
 /**** Function Prototypes ****/
 
-void rpt_print_message(char *msg);
+//void rpt_print_message(char *msg);
 stat_t rpt_exception(stat_t status, const char *msg);
-
+stat_t rpt_exception_P(stat_t status, const char *msg);
 stat_t rpt_er(nvObj_t *nv);
-void rpt_print_loading_configs_message(void);
+
 void rpt_print_initializing_message(void);
+void rpt_print_loading_configs_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report_P(const char *sr_csv_P);
@@ -119,15 +120,14 @@ void qr_init_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
 stat_t qr_queue_report_callback(void);
 
-void rx_request_rx_report(void);
-stat_t rx_report_callback(void);
-
 stat_t qr_get(nvObj_t *nv);
 stat_t qi_get(nvObj_t *nv);
 stat_t qo_get(nvObj_t *nv);
 
-#ifdef __TEXT_MODE
+void rx_request_rx_report(void);
+stat_t rx_report_callback(void);
 
+#ifdef __TEXT_MODE
 	void sr_print_sr(nvObj_t *nv);
 	void sr_print_si(nvObj_t *nv);
 	void sr_print_sv(nvObj_t *nv);

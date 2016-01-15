@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.04	// ported in util.c changes from 0.98; fixed SR fb bug in sr_init
+#define TINYG_FIRMWARE_BUILD        445.05	// status report initialization fixes; added rpt_exception_P(); report.c/h slight reorg
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
