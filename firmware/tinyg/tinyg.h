@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.06	// fixed response to defa command
+#define TINYG_FIRMWARE_BUILD        445.07	// Installed some rpt_exception_P's
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

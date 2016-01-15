@@ -88,11 +88,8 @@ stat_t read_persistent_value(nvObj_t *nv)
 stat_t write_persistent_value(nvObj_t *nv)
 {
 	if (cm.cycle_state != CYCLE_OFF) {
-        char msg[sizeof("Can't save when moving")];
-        sprintf_P(msg, PSTR("Can't save when moving"));
-        return(rpt_exception(STAT_COMMAND_NOT_ACCEPTED, msg));
+        return(rpt_exception_P(STAT_COMMAND_NOT_ACCEPTED, PSTR("Can't save when moving")));
     }
-
 	nvm.tmp_value = nv->value_int;
 	ritorno(read_persistent_value(nv));
 	if (nv->value_int != nvm.tmp_value) {

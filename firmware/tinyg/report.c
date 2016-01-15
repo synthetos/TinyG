@@ -83,10 +83,7 @@ stat_t rpt_exception(stat_t status, const char *msg)
  */
 stat_t rpt_er(nvObj_t *nv)
 {
-    char msg[sizeof("bogus exception report")];
-    sprintf_P(msg, PSTR("bogus exception report"));
-	return(rpt_exception(STAT_GENERIC_EXCEPTION_REPORT, msg)); // bogus exception report for testing
-//	return(rpt_exception_P(STAT_GENERIC_EXCEPTION_REPORT, PSTR("bogus exception report"))); // bogus exception report for testing
+	return(rpt_exception_P(STAT_GENERIC_EXCEPTION_REPORT, PSTR("bogus exception report"))); // bogus exception report for testing
 }
 
 /**** Application Messages *********************************************************
