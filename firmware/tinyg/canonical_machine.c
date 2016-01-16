@@ -332,12 +332,14 @@ void cm_set_work_offsets()
 
 float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
-	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
+	if (gcode_state == MODEL) {
+        return (cm.gmx.position[axis]);
+    }
 	return (mp_get_runtime_absolute_position(axis));
 }
 
 /*
- * cm_get_work_position() - return work position in externally displayable form
+ * cm_get_work_position() - return work position in external form
  *
  *	... that means in prevailing units (mm/inch) and with all coord & tool offsets applied
  *
@@ -360,7 +362,11 @@ float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
-	if (gcode_state->units_mode == INCHES) { position /= MM_PER_INCH; }
+    if (axis <= AXIS_Z) {
+        if (gcode_state->units_mode == INCHES) {
+            position /= MM_PER_INCH;
+        }
+    }
 	return (position);
 }
 
