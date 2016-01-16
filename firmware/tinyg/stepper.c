@@ -988,11 +988,11 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 {
 	// trap conditions that would prevent queueing the line
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_EXEC) {
-		return (cm_hard_alarm_P(STAT_INTERNAL_ERROR, PSTR("st_prep_line")));
+		return (cm_panic_P(STAT_INTERNAL_ERROR, PSTR("st_prep_line")));
 	} else if (isinf(segment_time)) {
-        return (cm_hard_alarm_P(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE, PSTR("st_prep_line")));	// never supposed to happen
+        return (cm_panic_P(STAT_PREP_LINE_MOVE_TIME_IS_INFINITE, PSTR("st_prep_line")));	// never supposed to happen
 	} else if (isnan(segment_time)) {
-        return (cm_hard_alarm_P(STAT_PREP_LINE_MOVE_TIME_IS_NAN, PSTR("st_prep_line")));		// never supposed to happen
+        return (cm_panic_P(STAT_PREP_LINE_MOVE_TIME_IS_NAN, PSTR("st_prep_line")));		// never supposed to happen
 	} else if (segment_time < EPSILON) {
         return (STAT_MINIMUM_TIME_MOVE);
 	}

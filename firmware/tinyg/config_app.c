@@ -448,7 +448,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","rxm", _fipn, 0, cfg_print_rxm, get_ui8,   set_01,     (uint32_t *)&xio.rx_mode,             XIO_RX_MODE },
 	{ "sys","baud",_fn,   0, cfg_print_baud,get_ui8,   set_baud,   (uint32_t *)&xio.usb_baud_rate,		 XIO_BAUD_115200 },
 
-    // Reports, tests, help, and messages
+    // Actions and reports
 	{ "", "sr",  _f0, 0, sr_print_sr,  sr_get,  sr_set,   (uint32_t *)&cs.null, 0 },	// status report object
 	{ "", "qr",  _f0, 0, qr_print_qr,  qr_get,  set_nul,  (uint32_t *)&cs.null, 0 },	// queue report - planner buffers available
 	{ "", "qi",  _f0, 0, qr_print_qi,  qi_get,  set_nul,  (uint32_t *)&cs.null, 0 },	// queue report - buffers added to queue
@@ -457,13 +457,16 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "", "qf",  _f0, 0, tx_print_nul, get_nul, cm_run_qf,(uint32_t *)&cs.null, 0 },	// queue flush
 	{ "", "rx",  _f0, 0, tx_print_int, get_rx,  set_nul,  (uint32_t *)&cs.null, 0 },	// bytes or lines in RX buffer
 	{ "", "msg", _f0, 0, tx_print_str, get_nul, set_nul,  (uint32_t *)&cs.null, 0 },	// string for generic messages
-	{ "", "clear",_f0,0, tx_print_nul, cm_clear, cm_clear,(uint32_t *)&cs.null, 0 },	// GET a clear to clear soft alarm
-	{ "", "alarm",_f0,0, tx_print_nul, cm_alarm, cm_alarm,(uint32_t *)&cs.null, 0 },
+    { "", "alarm",_f0,0, tx_print_nul, cm_alrm, cm_alrm,  (uint32_t *)&cs.null, 0 },    // trigger alarm
+    { "", "panic",_f0,0, tx_print_nul, cm_pnic, cm_pnic,  (uint32_t *)&cs.null, 0 },    // trigger panic
+    { "", "shutd",_f0,0, tx_print_nul, cm_shutd,cm_shutd, (uint32_t *)&cs.null, 0 },    // trigger shutdown
+    { "", "clear",_f0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // GET "clear" to clear alarm state
+    { "", "clr",  _f0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // synonym for "clear"
 
-	{ "", "pause",_f0,0, tx_print_nul, cm_pause, cm_pause,(uint32_t *)&cs.null, 0 },
-	{ "", "start",_f0,0, tx_print_nul, cm_start, cm_start,(uint32_t *)&cs.null, 0 },
-	{ "", "flush",_f0,0, tx_print_nul, cm_flush, cm_flush,(uint32_t *)&cs.null, 0 },
-	{ "", "reset",_f0,0, tx_print_nul, cm_reset, cm_reset,(uint32_t *)&cs.null, 0 },
+//	{ "", "pause",_f0,0, tx_print_nul, cm_pause, cm_pause,(uint32_t *)&cs.null, 0 },
+//	{ "", "start",_f0,0, tx_print_nul, cm_start, cm_start,(uint32_t *)&cs.null, 0 },
+//	{ "", "flush",_f0,0, tx_print_nul, cm_flush, cm_flush,(uint32_t *)&cs.null, 0 },
+//	{ "", "reset",_f0,0, tx_print_nul, cm_reset, cm_reset,(uint32_t *)&cs.null, 0 },
 
     // special functions
 	{ "", "txt", _f0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },   // Text wrapper (container)

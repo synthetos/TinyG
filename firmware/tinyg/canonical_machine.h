@@ -658,10 +658,11 @@ stat_t cm_test_soft_limits(float target[]);
 
 // Initialization and termination (4.3.2)
 void canonical_machine_init(void);
+void canonical_machine_reset(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-#if (0)
+#if (1)
 stat_t cm_alrm(nvObj_t *nv);                                    // trigger alarm from command input
 stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutdown from command input
 stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
@@ -672,7 +673,9 @@ stat_t cm_is_alarmed(void);                                     // return non-ze
 void cm_halt_all(void);                                         // halt motion, spindle and coolant
 void cm_halt_motion(void);                                      // halt motion (immediate stop) but not spindle & other IO
 stat_t cm_alarm(const stat_t status, const char *msg);          // enter alarm state - preserve Gcode state
+stat_t cm_alarm_P(const stat_t status, const char *msg_P);
 stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdown state - dump all state
+stat_t cm_panic_P(const stat_t status, const char *msg_P);
 stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
 #else

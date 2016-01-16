@@ -536,6 +536,7 @@ stat_t cm_test_soft_limits(float target[])
  ******************************************/
 /*
  * canonical_machine_init() - Config init cfg_init() must have been run beforehand
+ * canonical_machine_reset()
  */
 
 void canonical_machine_init()
@@ -548,7 +549,13 @@ void canonical_machine_init()
 
 	canonical_machine_init_assertions();		// establish assertions
 	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
+	// sub-system inits
+	cm_spindle_init();
+	cm_arc_init();
+}
 
+void canonical_machine_reset()
+{
 	// set gcode defaults
 	cm_set_units_mode(cm.default_units_mode);
 	cm_set_coord_system(cm.default_coord_system);
@@ -556,11 +563,9 @@ void canonical_machine_init()
 	cm_set_path_control(cm.default_path_control);
 	cm_set_distance_mode(cm.default_distance_mode);
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
+//    cm_reset_overrides();                           // set overrides to initial conditions
 
-	cm.gmx.block_delete_switch = true;
-
-	// never start a machine in a motion mode
-	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+    // NOTE: Should unhome axes here
 
 	// reset request flags
 	cm.feedhold_requested = false;
@@ -568,12 +573,13 @@ void canonical_machine_init()
 	cm.cycle_start_requested = false;
 
 	// signal that the machine is ready for action
+    cm.cycle_state = CYCLE_OFF;
+    cm.motion_state = MOTION_STOP;
+    cm.hold_state = FEEDHOLD_OFF;
+	cm.gmx.block_delete_switch = true;
+	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE; // never start a machine in a motion mode
 	cm.machine_state = MACHINE_READY;
 	cm.combined_state = COMBINED_READY;
-
-	// sub-system inits
-	cm_spindle_init();
-	cm_arc_init();
 }
 
 /*
@@ -599,35 +605,70 @@ stat_t canonical_machine_test_assertions(void)
 	return (STAT_OK);
 }
 
-/*
- * cm_soft_alarm()   - alarm state; send an exception report and stop processing input
- * cm_clear() 	     - clear soft alarm from command line or JSON
- * cm_alarm() 	     - invoke soft alarm  from command line or JSON
- * cm_hard_alarm()   - alarm state; send an exception report and shut down machine
- * cm_hard_alarm_P() - form of the above that accepts a FLASH string as the message
- */
+/**************************
+ * Alarms                 *
+ **************************/
 
-stat_t cm_alarm(nvObj_t *nv)
+/********************************************************************************
+ *  ALARM, SHUTDOWN, and PANIC are nested dolls.
+ *
+ * cm_alrm()  - invoke alarm from command
+ * cm_shutd() - invoke shutdown from command
+ * cm_pnic()  - invoke panic from command
+ * cm_clr()   - clear alarm or shutdown from command
+ *
+ * The alarm states can be invoked from the above commands for testing and clearing
+ */
+stat_t cm_alrm(nvObj_t *nv)               // invoke alarm from command
 {
-    cm_soft_alarm(STAT_ALARMED, cs.saved_buf);
+    cm_alarm(STAT_ALARM, "sent by host");
     return (STAT_OK);
 }
 
-stat_t cm_soft_alarm(stat_t status, const char *msg)
+stat_t cm_shutd(nvObj_t *nv)              // invoke shutdown from command
 {
-	rpt_exception(status, msg);				// send alarm message
-	cm.machine_state = MACHINE_ALARM;
-	return (status);						// NB: More efficient than inlining rpt_exception() call.
+    cm_shutdown(STAT_SHUTDOWN, "sent by host");
+    return (STAT_OK);
 }
 
-stat_t cm_clear(nvObj_t *nv)				// clear soft alarm
+stat_t cm_pnic(nvObj_t *nv)               // invoke panic from command
 {
-	if (cm.cycle_state == CYCLE_OFF) {
-		cm.machine_state = MACHINE_PROGRAM_STOP;
-	} else {
-		cm.machine_state = MACHINE_CYCLE;
-	}
-	return (STAT_OK);
+    cm_panic(STAT_PANIC, "sent by host");
+    return (STAT_OK);
+}
+
+stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from command line
+{
+    cm_clear();
+    return (STAT_OK);
+}
+
+/*
+ * cm_clear() - clear ALARM and SHUTDOWN states
+ * cm_parse_clear() - parse incoming gcode for M30 or M2 clears if in ALARM state
+ *
+ * Parse clear interprets an M30 or M2 PROGRAM_END as a $clear condition and clear ALARM
+ * but not SHUTDOWN or PANIC. Assumes Gcode string has no leading or embedded whitespace
+ */
+
+void cm_clear()
+{
+    if (cm.machine_state == MACHINE_ALARM) {
+        cm.machine_state = MACHINE_PROGRAM_STOP;
+    } else if (cm.machine_state == MACHINE_SHUTDOWN) {
+        cm.machine_state = MACHINE_READY;
+    }
+}
+
+void cm_parse_clear(const char *s)
+{
+    if (cm.machine_state == MACHINE_ALARM) {
+        if (toupper(s[0]) == 'M') {
+            if (( (s[1]=='3') && (s[2]=='0') && (s[3]==NUL)) || ((s[1]=='2') && (s[2]==NUL) )) {
+                cm_clear();
+            }
+        }
+    }
 }
 
 /*
@@ -638,38 +679,150 @@ stat_t cm_is_alarmed()
 {
     if (cm.machine_state == MACHINE_ALARM)    { return (STAT_COMMAND_REJECTED_BY_ALARM); }
     if (cm.machine_state == MACHINE_SHUTDOWN) { return (STAT_COMMAND_REJECTED_BY_SHUTDOWN); }
-//    if (cm.machine_state == MACHINE_PANIC)    { return (STAT_COMMAND_REJECTED_BY_PANIC); }
+    if (cm.machine_state == MACHINE_PANIC)    { return (STAT_COMMAND_REJECTED_BY_PANIC); }
     return (STAT_OK);
 }
 
-stat_t cm_hard_alarm_P(stat_t status, const char *msg_P)
+/*
+ * cm_halt_all() - stop, spindle and coolant immediately
+ * cm_halt_motion() - stop motion immediately. Does not affect spindle, coolant, or other IO
+ *
+ * Stop motors and reset all system states accordingly.
+ * Does not de-energize motors as in some cases the motors must remain energized
+ * in order to prevent an axis from crashing.
+ */
+
+void cm_halt_all(void)
 {
-    char msg[STATUS_MESSAGE_LEN];
-    sprintf_P(msg, msg_P);
-    return(cm_hard_alarm(status, msg));
+    cm_halt_motion();
+//	cm_spindle_off_immediate();
+//	cm_coolant_off_immediate();
 }
 
-stat_t cm_hard_alarm(stat_t status, const char *msg)
+void cm_halt_motion(void)
 {
-	// stop the motors and the spindle
-	stepper_init();							// hard stop
-	cm_spindle_control(SPINDLE_OFF);
+//    mp_halt_runtime();                  // stop the runtime. Do this immediately. (Reset is in cm_clear)
+    canonical_machine_reset();          // reset Gcode model
+	cm.cycle_state = CYCLE_OFF;         // Note: leaves machine_state alone
+	cm.motion_state = MOTION_STOP;
+	cm.hold_state = FEEDHOLD_OFF;
+}
 
-	// disable all MCode functions
-//	gpio_set_bit_off(SPINDLE_BIT);			//++++ this current stuff is temporary
-//	gpio_set_bit_off(SPINDLE_DIR);
-//	gpio_set_bit_off(SPINDLE_PWM);
-//	gpio_set_bit_off(MIST_COOLANT_BIT);		//++++ replace with exec function
-//	gpio_set_bit_off(FLOOD_COOLANT_BIT);	//++++ replace with exec function
+/*
+ * cm_alarm() - enter ALARM state
+ *
+ * An ALARM sets the ALARM machine state, starts a feedhold to stop motion, stops the
+ * spindle, turns off coolant, clears out queued planner moves and serial input,
+ * and rejects new action commands (gcode blocks, SET commands, and other actions)
+ * until the alarm is cleared.
+ *
+ * ALARM is typically entered by a soft limit or a limit switch being hit. In the
+ * limit switch case the INPUT_ACTION will override the feedhold - i.e. if the
+ * input action is "FAST_STOP" or "HALT" that setting will take precedence over
+ * the feedhold native to the alarm function.
+ *
+ * Gcode and machine state is preserved. It may be possible to recover the job from
+ * an alarm, but in many cases this is not possible. Since ALARM attempts to preserve
+ * Gcode and machine state it does not END the job.
+ *
+ * ALARM may also be invoked from the command line using {alarm:n} or $alarm
+ * ALARM can be manually cleared by entering: {clear:n}, {clr:n}, $clear, or $clr
+ * ALARMs will also clear on receipt of an M30 or M2 command if one is received
+ * while draining the host command queue.
+ */
 
-	rpt_exception(status, msg);				// send shutdown message
-	cm.machine_state = MACHINE_SHUTDOWN;
+stat_t cm_alarm_P(const stat_t status, const char *msg_P)
+{
+    strcpy_P(global_string_buf, msg_P);
+    return(cm_alarm(status, global_string_buf));
+}
+
+stat_t cm_alarm(const stat_t status, const char *msg)
+{
+    if ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
+        (cm.machine_state == MACHINE_PANIC)) {
+        return (STAT_OK);                       // don't alarm if already in an alarm state
+    }
+	cm.machine_state = MACHINE_ALARM;
+    cm_request_feedhold();                      // stop motion
+    cm_request_queue_flush();                   // do a queue flush once runtime is not busy
+
+//  TBD - these functions should probably be called - See cm_shutdown()
+//	cm_spindle_control_immediate(SPINDLE_OFF);
+//	cm_coolant_off_immediate();
+//	cm_spindle_optional_pause(spindle.pause_on_hold);
+//	cm_coolant_optional_pause(coolant.pause_on_hold);
+	rpt_exception(status, msg);	                // send alarm message
+    return (status);
+}
+/*
+ * cm_shutdown() - enter shutdown state
+ *
+ * SHUTDOWN stops all motion, spindle and coolant immediately, sets a SHUTDOWN machine
+ * state, clears out queued moves and serial input, and rejects new action commands
+ * (gcode blocks, SET commands, and some others).
+ *
+ * Shutdown is typically invoked as an electrical input signal sent to the board as
+ * part of an external emergency stop (Estop). Shutdown is meant to augment but not
+ * replace the external Estop functions that shut down power to motors, spindles and
+ * other moving parts.
+ *
+ * Shutdown may also be invoked from the command line using {shutd:n} or $shutd
+ * Shutdown must be manually cleared by entering: {clear:n}, {clr:n}, $clear, or $clr
+ * Shutdown does not clear on M30 or M2 Gcode commands
+ */
+
+stat_t cm_shutdown(const stat_t status, const char *msg)
+{
+    if ((cm.machine_state == MACHINE_SHUTDOWN) || (cm.machine_state == MACHINE_PANIC)) {
+        return (STAT_OK);                       // don't shutdown if shutdown or panic'd
+    }
+    cm_halt_motion();                           // halt motors (may have already been done from GPIO)
+//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+//    coolant_reset();                            // stop coolant immediately
+    cm_queue_flush();                           // flush all queues and reset positions
+
+    for (uint8_t i = 0; i < HOMING_AXES; i++) { // unhome axes and the machine
+        cm.homed[i] = false;
+    }
+    cm.homing_state = HOMING_NOT_HOMED;
+
+	cm.machine_state = MACHINE_SHUTDOWN;        // do this after all other activity
+	rpt_exception(status, msg);	                // send exception report
+    return (status);
+}
+
+/*
+ * cm_panic() - enter panic state
+ *
+ * PANIC occurs if the firmware has detected an unrecoverable internal error
+ * such as an assertion failure or a code condition that should never occur.
+ * It sets PANIC machine state, and leaves the system inspect able (if possible).
+ *
+ * PANIC can only be exited by a hardware reset or soft reset (^x)
+ */
+
+stat_t cm_panic_P(const stat_t status, const char *msg_P)
+{
+    strcpy_P(global_string_buf, msg_P);
+    return(cm_panic(status, global_string_buf));
+}
+
+stat_t cm_panic(const stat_t status, const char *msg)
+{
+    if (cm.machine_state == MACHINE_PANIC) {    // only do this once
+        return (STAT_OK);
+    }
+    cm_halt_motion();                           // halt motors (may have already been done from GPIO)
+//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
+//    coolant_reset();                            // stop coolant immediately
+    cm_queue_flush();                           // flush all queues and reset positions
+
+	cm.machine_state = MACHINE_PANIC;           // don't reset anything. Panics are not recoverable
+	rpt_exception(status, msg);			        // send panic report
 	return (status);
 }
-stat_t cm_pause(nvObj_t *nv) { cm_request_feedhold(); return (STAT_OK); }
-stat_t cm_start(nvObj_t *nv) { cm_request_cycle_start(); return (STAT_OK); }
-stat_t cm_flush(nvObj_t *nv) { cm_request_queue_flush(); return (STAT_OK); }
-stat_t cm_reset(nvObj_t *nv) { hw_request_hard_reset(); return (STAT_OK); }
+
 
 /**************************
  * Representation (4.3.3) *
@@ -907,7 +1060,7 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) {
-        return (cm_soft_alarm(status, cs.saved_buf));
+        return (cm_alarm(status, cs.saved_buf));
     }
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
@@ -1034,7 +1187,7 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
 	if (status != STAT_OK) {
-        return (cm_soft_alarm(status, cs.saved_buf));
+        return (cm_alarm(status, cs.saved_buf));
     }
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state

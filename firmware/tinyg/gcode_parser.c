@@ -422,7 +422,7 @@ static stat_t _parse_gcode_block(char *buf)
 		if(status != STAT_OK) break;
 	}
     if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
-    	return (cm_soft_alarm(status, cs.saved_buf));
+    	return (cm_alarm(status, cs.saved_buf));
     }
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);

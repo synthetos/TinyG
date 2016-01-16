@@ -89,8 +89,9 @@ char *get_status_message(stat_t status);
 #define	STAT_INITIALIZING 15			// initializing - not ready for use
 #define	STAT_ENTERING_BOOT_LOADER 16	// this code actually emitted from boot loader, not TinyG
 #define	STAT_FUNCTION_IS_STUBBED 17
-#define	STAT_NO_DISPLAY 18              // suppress results display - presumably handled upstream
-#define STAT_ERROR_19 19				// NOTE: XIO codes align to here
+#define	STAT_ALARM 18                   
+#define STAT_NO_DISPLAY 19				// suppress results display - presumably handled upstream
+// NOTE: XIO codes align to here
 
 // Internal errors and startup messages
 #define	STAT_INTERNAL_ERROR 20			// unrecoverable internal error
@@ -399,7 +400,7 @@ static const char stat_14[] PROGMEM = "Buffer full FATAL";
 static const char stat_15[] PROGMEM = "Initializing";
 static const char stat_16[] PROGMEM = "Entering boot loader";
 static const char stat_17[] PROGMEM = "Function is stubbed";
-static const char stat_18[] PROGMEM = "18";
+static const char stat_18[] PROGMEM = "System alarm";
 static const char stat_19[] PROGMEM = "19";
 
 static const char stat_20[] PROGMEM = "Internal error";

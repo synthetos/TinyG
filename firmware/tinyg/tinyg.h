@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.01	// prep work for 0.98 style alarm states
+#define TINYG_FIRMWARE_BUILD        446.02	// installed 0.98 style alarm states
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
