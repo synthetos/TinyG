@@ -37,9 +37,9 @@ static stat_t _validate_gcode_block(void);
 static stat_t _parse_gcode_block(char *line);	// Parse the block into the GN/GF structs
 static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
-#define SET_MODAL(m,parm,val) ({cm.gn.parm=val; cm.gf.parm=1; gp.modals[m]+=1; break;})
-#define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=1; break;})
-#define EXEC_FUNC(f,v) if((uint8_t)cm.gf.v != false) { status = f(cm.gn.v);}
+#define SET_MODAL(m,parm,val) ({cm.gn.parm=val; cm.gf.parm=true; cm.gf.modals[m]=true; break;})
+#define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=true; break;})
+#define EXEC_FUNC(f,v) if(cm.gf.v) { status=f(cm.gn.v);}
 
 /*
  * gc_gcode_parser() - parse a block (line) of gcode
@@ -272,7 +272,7 @@ static stat_t _parse_gcode_block(char *buf)
 
 	// set initial state for new move
 	memset(&gp, 0, sizeof(gp));						// clear all parser values
-	memset(&cm.gf, 0, sizeof(GCodeInput_t));		// clear all next-state flags
+	memset(&cm.gf, 0, sizeof(GCodeFlags_t));		// clear all next-state flags
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));		// clear all next-state values
 	cm.gn.motion_mode = cm_get_motion_mode(MODEL);	// get motion mode from previous block
 

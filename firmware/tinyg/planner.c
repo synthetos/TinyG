@@ -190,7 +190,7 @@ void mp_set_steps_to_runtime_position()
  *	and makes keeping the queue full much easier - therefore avoiding Q starvation
  */
 
-void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *flag)
+void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags)
 {
 	mpBuf_t *bf;
 
@@ -206,7 +206,7 @@ void mp_queue_command(void(*cm_exec)(float[], float[]), float *value, float *fla
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		bf->value_vector[axis] = value[axis];
-		bf->flag_vector[axis] = flag[axis];
+		bf->flag_vector[axis] = flags[axis];
 	}
 	mp_commit_write_buffer(MOVE_TYPE_COMMAND);			// must be final operation before exit
 }
