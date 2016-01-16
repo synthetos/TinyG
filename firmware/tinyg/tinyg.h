@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.09	// aligning enums to CM structs to 0.98
+#define TINYG_FIRMWARE_BUILD        445.10	// aligning CM functions to 0.98
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

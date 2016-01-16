@@ -546,7 +546,7 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
 
 	/**** Runtime variables (PRIVATE) ****/
 
-	uint8_t combined_state;				    // stat: combination of states for display purposes
+    cmCombinedState combined_state;
     cmMachineState machine_state;           // macs: machine/cycle/motion is the actual machine state
     cmCycleState cycle_state;               // cycs
     cmMotionState motion_state;             // momo
@@ -601,39 +601,40 @@ extern cmSingleton_t cm;				// canonical machine controller singleton
 /*--- Internal functions and helpers ---*/
 
 // Model state getters and setters
-uint8_t cm_get_combined_state(void);
-uint8_t cm_get_machine_state(void);
-uint8_t cm_get_cycle_state(void);
-uint8_t cm_get_motion_state(void);
-uint8_t cm_get_hold_state(void);
-uint8_t cm_get_homing_state(void);
+cmCombinedState cm_get_combined_state(void);
+cmMachineState cm_get_machine_state(void);
+cmCycleState cm_get_cycle_state(void);
+cmMotionState cm_get_motion_state(void);
+cmFeedholdState cm_get_hold_state(void);
+cmHomingState cm_get_homing_state(void);
 uint8_t cm_get_jogging_state(void);
+
 void cm_set_motion_state(uint8_t motion_state);
 float cm_get_axis_jerk(uint8_t axis);
 void cm_set_axis_jerk(uint8_t axis, float jerk);
 
-uint32_t cm_get_linenum(GCodeState_t *gcode_state);
-uint8_t cm_get_motion_mode(GCodeState_t *gcode_state);
-
-uint8_t cm_get_select_plane(GCodeState_t *gcode_state);
-uint8_t cm_get_units_mode(GCodeState_t *gcode_state);
-uint8_t cm_get_coord_system(GCodeState_t *gcode_state);
-uint8_t cm_get_path_control(GCodeState_t *gcode_state);
-uint8_t cm_get_distance_mode(GCodeState_t *gcode_state);
-uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state);
-
-uint8_t cm_get_tool(GCodeState_t *gcode_state);
-uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state);
+uint32_t cm_get_linenum(const GCodeState_t *gcode_state);
+uint8_t cm_get_motion_mode(const GCodeState_t *gcode_state);
+uint8_t cm_get_coord_system(const GCodeState_t *gcode_state);
+uint8_t cm_get_units_mode(const GCodeState_t *gcode_state);
+uint8_t cm_get_select_plane(const GCodeState_t *gcode_state);
+uint8_t cm_get_path_control(const GCodeState_t *gcode_state);
+uint8_t cm_get_distance_mode(const GCodeState_t *gcode_state);
+uint8_t cm_get_arc_distance_mode(const GCodeState_t *gcode_state);
+uint8_t cm_get_feed_rate_mode(const GCodeState_t *gcode_state);
+uint8_t cm_get_tool(const GCodeState_t *gcode_state);
 uint8_t	cm_get_block_delete_switch(void);
 uint8_t cm_get_runtime_busy(void);
-float cm_get_feed_rate(GCodeState_t *gcode_state);
+float cm_get_feed_rate(const GCodeState_t *gcode_state);
 
-void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode);
+void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode);
+void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool);
+void cm_set_absolute_override(const uint8_t absolute_override);
+void cm_set_model_linenum(const uint32_t linenum);
+
+uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state);
 void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
-void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool);
-void cm_set_absolute_override(uint8_t absolute_override);
-void cm_set_linenum(uint32_t linenum);
 
 // Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);

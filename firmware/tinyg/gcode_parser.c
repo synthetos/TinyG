@@ -474,7 +474,7 @@ static stat_t _execute_gcode_block()
 {
 	stat_t status = STAT_OK;
 
-	cm_set_linenum(cm.gn.linenum);
+	cm_set_model_linenum(cm.gn.linenum);
 	EXEC_FUNC(cm_set_feed_rate_mode, feed_rate_mode);
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
 	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);

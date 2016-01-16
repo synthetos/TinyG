@@ -88,9 +88,11 @@
 
 #include "tinyg.h"			// #1
 #include "config.h"			// #2
-#include "text_parser.h"
 #include "canonical_machine.h"
 #include "controller.h"
+//#include "json_parser.h"
+#include "text_parser.h"
+
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
@@ -129,9 +131,38 @@ static int8_t _get_axis_type(const index_t index);
  **** CODE *************************************************************************
  ***********************************************************************************/
 
-/********************************
- * Internal getters and setters *
- ********************************/
+/*************************************
+ * Internal getters and setters      *
+ * Canonical Machine State functions *
+ *************************************/
+/*
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+void cm_set_motion_state(uint8_t motion_state)
+{
+    cm.motion_state = motion_state;
+
+    switch (motion_state) {
+        case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
+        case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
+        case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
+    }
+}
+
+/*
+ * cm_get_machine_state()
+ * cm_get_motion_state()
+ * cm_get_cycle_state()
+ * cm_get_hold_state()
+ * cm_get_homing_state()
+ * cm_set_motion_state() - adjusts active model pointer as well
+ */
+ cmMachineState  cm_get_machine_state() { return cm.machine_state;}
+ cmCycleState    cm_get_cycle_state()   { return cm.cycle_state;}
+ cmMotionState   cm_get_motion_state()  { return cm.motion_state;}
+ cmFeedholdState cm_get_hold_state()    { return cm.hold_state;}
+ cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
+
 /*
  * Canonical Machine State functions
  *
@@ -143,7 +174,7 @@ static int8_t _get_axis_type(const index_t index);
  * cm_get_homing_state()
  * cm_set_motion_state() - adjusts active model pointer as well
  */
-uint8_t cm_get_combined_state()
+cmCombinedState cm_get_combined_state()
 {
 	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
 	else if (cm.cycle_state == CYCLE_PROBE) { cm.combined_state = COMBINED_PROBE;}
@@ -158,23 +189,6 @@ uint8_t cm_get_combined_state()
 	return cm.combined_state;
 }
 
-uint8_t cm_get_machine_state() { return cm.machine_state;}
-uint8_t cm_get_cycle_state() { return cm.cycle_state;}
-uint8_t cm_get_motion_state() { return cm.motion_state;}
-uint8_t cm_get_hold_state() { return cm.hold_state;}
-uint8_t cm_get_homing_state() { return cm.homing_state;}
-
-void cm_set_motion_state(uint8_t motion_state)
-{
-	cm.motion_state = motion_state;
-
-	switch (motion_state) {
-		case (MOTION_STOP): { ACTIVE_MODEL = MODEL; break; }
-		case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
-		case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
-	}
-}
-
 /***********************************
  * Model State Getters and Setters *
  ***********************************/
@@ -183,35 +197,49 @@ void cm_set_motion_state(uint8_t motion_state)
  *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
-uint32_t cm_get_linenum(GCodeState_t *gcode_state) { return gcode_state->linenum;}
-uint8_t cm_get_motion_mode(GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
-
-uint8_t cm_get_select_plane(GCodeState_t *gcode_state) { return gcode_state->select_plane;}
-uint8_t cm_get_units_mode(GCodeState_t *gcode_state) { return gcode_state->units_mode;}
-uint8_t cm_get_coord_system(GCodeState_t *gcode_state) { return gcode_state->coord_system;}
-uint8_t cm_get_path_control(GCodeState_t *gcode_state) { return gcode_state->path_control;}
-uint8_t cm_get_distance_mode(GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
-uint8_t cm_get_feed_rate_mode(GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
-
-uint8_t cm_get_tool(GCodeState_t *gcode_state) { return gcode_state->tool;}
-uint8_t cm_get_spindle_mode(GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
+uint32_t cm_get_linenum(const GCodeState_t *gcode_state) { return gcode_state->linenum;}
+uint8_t cm_get_motion_mode(const GCodeState_t *gcode_state) { return gcode_state->motion_mode;}
+uint8_t cm_get_coord_system(const GCodeState_t *gcode_state) { return gcode_state->coord_system;}
+uint8_t cm_get_units_mode(const GCodeState_t *gcode_state) { return gcode_state->units_mode;}
+uint8_t cm_get_select_plane(const GCodeState_t *gcode_state) { return gcode_state->select_plane;}
+uint8_t cm_get_path_control(const GCodeState_t *gcode_state) { return gcode_state->path_control;}
+uint8_t cm_get_distance_mode(const GCodeState_t *gcode_state) { return gcode_state->distance_mode;}
+uint8_t cm_get_arc_distance_mode(const GCodeState_t *gcode_state) { return gcode_state->arc_distance_mode;}
+uint8_t cm_get_feed_rate_mode(const GCodeState_t *gcode_state) { return gcode_state->feed_rate_mode;}
+uint8_t cm_get_tool(const GCodeState_t *gcode_state) { return gcode_state->tool;}
 uint8_t	cm_get_block_delete_switch() { return cm.gmx.block_delete_switch;}
 uint8_t cm_get_runtime_busy() { return (mp_get_runtime_busy());}
+float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
 
-float cm_get_feed_rate(GCodeState_t *gcode_state) { return gcode_state->feed_rate;}
+uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 
-void cm_set_motion_mode(GCodeState_t *gcode_state, uint8_t motion_mode) { gcode_state->motion_mode = motion_mode;}
-void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode) { gcode_state->spindle_mode = spindle_mode;}
-void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed) { gcode_state->spindle_speed = speed;}
-void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->tool = tool;}
+void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode) 
+{
+    gcode_state->motion_mode = (cmMotionMode)motion_mode;
+}
 
-void cm_set_absolute_override(uint8_t absolute_override)
+void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool) 
+{
+    gcode_state->tool = tool;
+}
+
+void cm_set_spindle_mode(GCodeState_t *gcode_state, const uint8_t spindle_mode) 
+{
+    gcode_state->spindle_mode = spindle_mode;
+}
+
+void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, const float speed)
+{
+    gcode_state->spindle_speed = speed;
+}
+
+void cm_set_absolute_override(const uint8_t absolute_override)
 {
 	cm.gm.absolute_override = absolute_override;
 	cm_set_work_offsets();				    // must reset offsets if you change absolute override
 }
 
-void cm_set_linenum(uint32_t linenum)
+void cm_set_model_linenum(const uint32_t linenum)
 {
 	cm.gm.linenum = linenum;				// you must first set the model line number,
 	nv_add_object((const char *)"n");	    // then add the line number to the nv list
