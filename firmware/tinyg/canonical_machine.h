@@ -613,10 +613,6 @@ cmFeedholdState cm_get_hold_state(void);
 cmHomingState cm_get_homing_state(void);
 uint8_t cm_get_jogging_state(void);
 
-//void cm_set_motion_state(uint8_t motion_state);
-//float cm_get_axis_jerk(uint8_t axis);
-//void cm_set_axis_jerk(uint8_t axis, float jerk);
-
 void cm_set_motion_state(const cmMotionState motion_state);
 float cm_get_axis_jerk(const uint8_t axis);
 void cm_set_axis_jerk(const uint8_t axis, const float jerk);
@@ -645,11 +641,11 @@ void cm_set_spindle_mode(GCodeState_t *gcode_state, uint8_t spindle_mode);
 void cm_set_spindle_speed_parameter(GCodeState_t *gcode_state, float speed);
 
 // Coordinate systems and offsets
-float cm_get_active_coord_offset(uint8_t axis);
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_active_coord_offset(const uint8_t axis);
+float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis);
 void cm_set_work_offsets(void);
-float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis);
+float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis);
 
 // Critical helpers
 void cm_update_model_position_from_runtime(void);
@@ -665,6 +661,21 @@ void canonical_machine_init(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
+#if (0)
+stat_t cm_alrm(nvObj_t *nv);                                    // trigger alarm from command input
+stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutdown from command input
+stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
+stat_t cm_clr(nvObj_t *nv);                                     // clear alarm and shutdown from command input
+void cm_clear(void);                                            // raw clear command
+void cm_parse_clear(const char *s);                             // parse gcode for M30 or M2 clear condition
+stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
+void cm_halt_all(void);                                         // halt motion, spindle and coolant
+void cm_halt_motion(void);                                      // halt motion (immediate stop) but not spindle & other IO
+stat_t cm_alarm(const stat_t status, const char *msg);          // enter alarm state - preserve Gcode state
+stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdown state - dump all state
+stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
+
+#else
 stat_t cm_soft_alarm(stat_t status, const char *msg);			// enter soft alarm state. returns same status code
 stat_t cm_hard_alarm(stat_t status, const char *msg);			// enter hard alarm state. returns same status code
 stat_t cm_hard_alarm_P(stat_t status, const char *msg_P);		// enter hard alarm state. returns same status code
@@ -676,6 +687,7 @@ stat_t cm_pause(nvObj_t *nv);
 stat_t cm_start(nvObj_t *nv);
 stat_t cm_flush(nvObj_t *nv);
 stat_t cm_reset(nvObj_t *nv);
+#endif
 
 // Representation (4.3.3)
 stat_t cm_select_plane(const uint8_t plane);                                // G17, G18, G19
@@ -797,6 +809,7 @@ stat_t cm_get_momo(nvObj_t *nv);		// get motion mode...
 stat_t cm_get_plan(nvObj_t *nv);		// get active plane...
 stat_t cm_get_path(nvObj_t *nv);		// get patch control mode...
 stat_t cm_get_dist(nvObj_t *nv);		// get distance mode...
+stat_t cm_get_admo(nvObj_t *nv);		// get arc offset mode...
 stat_t cm_get_frmo(nvObj_t *nv);		// get feedrate mode...
 stat_t cm_get_toolv(nvObj_t *nv);		// get tool (value)
 stat_t cm_get_pwr(nvObj_t *nv);			// get motor power enable state

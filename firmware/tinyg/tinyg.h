@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.13	// boolean Gcode model and enums, continued
+#define TINYG_FIRMWARE_BUILD        446.01	// 0.98 style alarm states
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

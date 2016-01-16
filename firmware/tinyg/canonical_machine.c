@@ -281,12 +281,15 @@ void cm_set_model_linenum(const uint32_t linenum)
  *	which merely returns what's in the work_offset[] array.
  */
 
-float cm_get_active_coord_offset(uint8_t axis)
+float cm_get_active_coord_offset(const uint8_t axis)
 {
-	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
+    if (cm.gm.absolute_override == ABSOLUTE_OVERRIDE_ON) {  // no offset if in absolute override mode
+        return (0.0);
+    }
 	float offset = cm.offset[cm.gm.coord_system][axis];
-	if (cm.gmx.origin_offset_enable == true)
+	if (cm.gmx.origin_offset_enable == true) {
 		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
+    }
 	return (offset);
 }
 
@@ -300,7 +303,7 @@ float cm_get_active_coord_offset(uint8_t axis)
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis)
 {
 	return (gcode_state->work_offset[axis]);
 }
@@ -327,7 +330,7 @@ void cm_set_work_offsets()
  *	NOTE: Machine position is always returned in mm mode. No units conversion is performed
  */
 
-float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
 	if (gcode_state == MODEL) return (cm.gmx.position[axis]);
 	return (mp_get_runtime_absolute_position(axis));
@@ -348,7 +351,7 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
 	float position;
 
@@ -1599,6 +1602,10 @@ static const char msg_g90[] PROGMEM = "G90 - absolute distance mode";
 static const char msg_g91[] PROGMEM = "G91 - incremental distance mode";
 static const char *const msg_dist[] PROGMEM = { msg_g90, msg_g91 };
 
+static const char msg_g901[] PROGMEM = "G90.1 - absolute distance mode";
+static const char msg_g911[] PROGMEM = "G91.1 - incremental distance mode (default mode)";
+static const char *const msg_admo[] PROGMEM = { msg_g901, msg_g911 };
+
 static const char msg_g93[] PROGMEM = "G93 - inverse time mode";
 static const char msg_g94[] PROGMEM = "G94 - units-per-minute mode (i.e. feedrate mode)";
 static const char msg_g95[] PROGMEM = "G95 - units-per-revolution mode";
@@ -1619,6 +1626,7 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 #define msg_plan NULL
 #define msg_path NULL
 #define msg_dist NULL
+#define msg_admo NULL
 #define msg_frmo NULL
 #define msg_am NULL
 
@@ -1712,6 +1720,7 @@ stat_t cm_get_momo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_momo, cm_get_mo
 stat_t cm_get_plan(nvObj_t *nv) { return(_get_msg_helper(nv, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
 stat_t cm_get_path(nvObj_t *nv) { return(_get_msg_helper(nv, msg_path, cm_get_path_control(ACTIVE_MODEL)));}
 stat_t cm_get_dist(nvObj_t *nv) { return(_get_msg_helper(nv, msg_dist, cm_get_distance_mode(ACTIVE_MODEL)));}
+stat_t cm_get_admo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_admo, cm_get_arc_distance_mode(ACTIVE_MODEL)));}
 stat_t cm_get_frmo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_frmo, cm_get_feed_rate_mode(ACTIVE_MODEL)));}
 
 stat_t cm_get_toolv(nvObj_t *nv)
