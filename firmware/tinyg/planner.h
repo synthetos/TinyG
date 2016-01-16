@@ -31,39 +31,58 @@
 
 #include "canonical_machine.h"	// used for GCodeState_t
 
-enum moveType {				// bf->move_type values
-	MOVE_TYPE_NULL = 0,		// null move - does a no-op
-	MOVE_TYPE_ALINE,		// acceleration planned line
-	MOVE_TYPE_DWELL,		// delay with no movement
-	MOVE_TYPE_COMMAND,		// general command
-	MOVE_TYPE_TOOL,			// T command
-	MOVE_TYPE_SPINDLE_SPEED,// S command
-	MOVE_TYPE_STOP,			// program stop
-	MOVE_TYPE_END			// program end
-};
+/*
+ * Enums and other type definitions
+ *
+ * All the enums that equal zero must be zero. Don't change them
+ */
 
-enum moveState {
-	MOVE_OFF = 0,			// move inactive (MUST BE ZERO)
-	MOVE_NEW,				// general value if you need an initialization
-	MOVE_RUN,				// general run state (for non-acceleration moves)
-	MOVE_SKIP_BLOCK			// mark a skipped block
-};
+typedef void (*cm_exec_t)(float[], bool[]);	// callback to canonical_machine execution function
 
-enum moveSection {
-	SECTION_HEAD = 0,		// acceleration
-	SECTION_BODY,			// cruise
-	SECTION_TAIL			// deceleration
-};
+typedef enum {				        // bf->buffer_state values
+    MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
+    MP_BUFFER_LOADING,				// being written ("checked out")
+    MP_BUFFER_QUEUED,				// in queue
+    MP_BUFFER_PENDING,				// marked as the next buffer to run
+    MP_BUFFER_RUNNING				// current running buffer
+} mpBufferState;
+
+typedef enum {				        // bf->move_type values
+	MOVE_TYPE_NULL = 0,		        // null move - does a no-op
+	MOVE_TYPE_ALINE,		        // acceleration planned line
+	MOVE_TYPE_DWELL,		        // delay with no movement
+	MOVE_TYPE_COMMAND,		        // general command
+	MOVE_TYPE_TOOL,			        // T command
+	MOVE_TYPE_SPINDLE_SPEED,        // S command
+	MOVE_TYPE_STOP,			        // program stop
+	MOVE_TYPE_END			        // program end
+} moveType;
+
+typedef enum {
+	MOVE_OFF = 0,			        // move inactive (MUST BE ZERO)
+	MOVE_NEW,				        // general value if you need an initialization
+	MOVE_RUN,				        // general run state (for non-acceleration moves)
+	MOVE_SKIP_BLOCK			        // mark a skipped block
+} moveState;
+
+typedef enum {
+	SECTION_HEAD = 0,		        // acceleration
+	SECTION_BODY,			        // cruise
+	SECTION_TAIL			        // deceleration
+} moveSection;
 #define SECTIONS 3
 
-enum sectionState {
-	SECTION_OFF = 0,		// section inactive
-	SECTION_NEW,			// uninitialized section
-	SECTION_1st_HALF,		// first half of S curve
-	SECTION_2nd_HALF		// second half of S curve or running a BODY (cruise)
-};
+typedef enum {
+	SECTION_OFF = 0,		        // section inactive
+	SECTION_NEW,			        // uninitialized section
+	SECTION_1st_HALF,		        // first half of S curve
+	SECTION_2nd_HALF		        // second half of S curve or running a BODY (cruise)
+} sectionState;
 
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
+
+#define PLANNER_BUFFER_POOL_SIZE 32
+#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
 
 #define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
 #define MIN_ARC_RADIUS          ((float)0.1)
@@ -83,22 +102,6 @@ enum sectionState {
 
 #define MIN_SEGMENT_TIME_PLUS_MARGIN ((MIN_SEGMENT_USEC+1) / MICROSECONDS_PER_MINUTE)
 
-/* PLANNER_STARTUP_DELAY_SECONDS
- *	Used to introduce a short dwell before planning an idle machine.
- *  If you don't do this the first block will always plan to zero as it will
- *	start executing before the next block arrives from the serial port.
- *	This causes the machine to stutter once on startup.
- */
-//#define PLANNER_STARTUP_DELAY_SECONDS ((float)0.05)	// in seconds
-
-/* PLANNER_BUFFER_POOL_SIZE
- *	Should be at least the number of buffers requires to support optimal
- *	planning in the case of very short lines or arc segments.
- *	Suggest 12 min. Limit is 255
- */
-#define PLANNER_BUFFER_POOL_SIZE 32
-#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
-
 /* Some parameters for _generate_trapezoid()
  * TRAPEZOID_ITERATION_MAX	 				Max iterations for convergence in the HT asymmetric case.
  * TRAPEZOID_ITERATION_ERROR_PERCENT		Error percentage for iteration convergence. As percent - 0.01 = 1%
@@ -111,24 +114,8 @@ enum sectionState {
 #define TRAPEZOID_VELOCITY_TOLERANCE		(max(2,bf->entry_velocity/100))
 
 /*
- *	Macros and typedefs
- */
-
-typedef void (*cm_exec_t)(float[], float[]);	// callback to canonical_machine execution function
-
-/*
  *	Planner structures
  */
-
-// All the enums that equal zero must be zero. Don't change this
-
-enum mpBufferState {				// bf->buffer_state values
-	MP_BUFFER_EMPTY = 0,			// struct is available for use (MUST BE 0)
-	MP_BUFFER_LOADING,				// being written ("checked out")
-	MP_BUFFER_QUEUED,				// in queue
-	MP_BUFFER_PENDING,				// marked as the next buffer to run
-	MP_BUFFER_RUNNING				// current running buffer
-};
 
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
@@ -145,6 +132,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	uint8_t replannable;			// TRUE if move can be re-planned
 
 	float unit[AXES];				// unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move & for command parameters
 
 	float length;					// total length of line or helix in mm
 	float head_length;

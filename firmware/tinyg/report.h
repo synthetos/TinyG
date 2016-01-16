@@ -36,22 +36,22 @@
 
 #define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
 
-enum srVerbosity {								// status report enable and verbosity
+typedef enum {								    // status report enable and verbosity
 	SR_OFF = 0,									// no reports
 	SR_FILTERED,								// reports only values that have changed from the last report
 	SR_VERBOSE									// reports all values specified
-};
+} srVerbosity;
 
-enum cmStatusReportRequest {
+typedef enum {
 	SR_TIMED_REQUEST = 0,						// request a status report at next timer interval
 	SR_IMMEDIATE_REQUEST						// request a status report ASAP
-};
+} cmStatusReportRequest;
 
-enum qrVerbosity {								// planner queue enable and verbosity
+typedef enum {								    // planner queue enable and verbosity
 	QR_OFF = 0,									// no response is provided
 	QR_SINGLE,									// queue depth reported
 	QR_TRIPLE									// queue depth reported for buffers, buffers added, buffered removed
-};
+} qrVerbosity;
 
 typedef struct srSingleton {
 

@@ -138,7 +138,7 @@ static int8_t _get_axis_type(const index_t index);
 /*
  * cm_set_motion_state() - adjusts active model pointer as well
  */
-void cm_set_motion_state(uint8_t motion_state)
+void cm_set_motion_state(const cmMotionState motion_state)
 {
     cm.motion_state = motion_state;
 
@@ -710,7 +710,7 @@ stat_t cm_set_distance_mode(const uint8_t mode)
 
 stat_t cm_set_coord_offsets(const uint8_t coord_system,
                             const uint8_t L_word,
-                            const float offset[], const float flag[])
+                            const float offset[], const bool flag[])
 {
     if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
         return (STAT_P_WORD_IS_INVALID);
@@ -1831,12 +1831,12 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
  *
  *	The axis_jerk() functions expect the jerk in divided-by 1,000,000 form
  */
-float cm_get_axis_jerk(uint8_t axis)
+float cm_get_axis_jerk(const uint8_t axis)
 {
 	return (cm.a[axis].jerk_max);
 }
 
-void cm_set_axis_jerk(uint8_t axis, float jerk)
+void cm_set_axis_jerk(const uint8_t axis, const float jerk)
 {
 	cm.a[axis].jerk_max = jerk;
 	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);

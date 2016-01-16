@@ -144,7 +144,7 @@ static stat_t _jogging_axis_start(int8_t axis)
 static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 {
 	float vect[] = {0,0,0,0,0,0};
-	float flags[] = {false, false, false, false, false, false};
+	bool flags[] = {false, false, false, false, false, false};
 	flags[axis] = true;
 
 	float velocity = jog.velocity_start;

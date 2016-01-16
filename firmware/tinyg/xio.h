@@ -69,7 +69,7 @@
 // Pre-allocated XIO devices (configured devices)
 // Unused devices are commented out. All this needs to line up.
 
-enum xioDevNum_t {		// TYPE:	DEVICE:
+typedef enum {		// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
 	XIO_DEV_SPI1,		// SPI		SPI channel #1
@@ -79,7 +79,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 	XIO_DEV_PGM,		// FILE		Program memory file  (read only)
 //	XIO_DEV_SD,			// FILE		SD card (not implemented)
 	XIO_DEV_COUNT		// total device count (must be last entry)
-};
+} xioDevNum_t;
 // If your change these ^, check these v
 
 #define XIO_DEV_USART_COUNT 	2       // # of USART devices
@@ -365,7 +365,7 @@ void xio_set_stderr(const uint8_t dev);
  * See signals.h for application specific signal defs and routines.
  */
 
-enum xioSignals {
+typedef enum {
 	XIO_SIG_OK,				// OK
 	XIO_SIG_EAGAIN,			// would block
 	XIO_SIG_EOL,			// end-of-line encountered (string has data)
@@ -378,7 +378,7 @@ enum xioSignals {
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
 	XIO_SIG_BELL,			// BELL character (BEL, ^g)
 	XIO_SIG_BOOTLOADER		// ESC character - start bootloader
-};
+} xioSignals;
 
 /* Some useful ASCII definitions */
 
@@ -418,7 +418,7 @@ enum xioSignals {
  * of making sure these lists are aligned. STAT_should be based on this list.
  */
 
-enum xioCodes {
+typedef enum {
 	XIO_OK = 0,				// OK - ALWAYS ZERO
 	XIO_ERR,				// generic error return (errors start here)
 	XIO_EAGAIN,				// function would block here (must be called again)
@@ -439,7 +439,7 @@ enum xioCodes {
 	XIO_ERROR_17,			// reserved
 	XIO_ERROR_18,			// reserved
 	XIO_ERROR_19			// NOTE: XIO codes align to here
-};
+} xioCodes;
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 
 

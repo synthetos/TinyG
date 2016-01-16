@@ -320,7 +320,7 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 {
 	float vect[] = {0,0,0,0,0,0};
-	float flags[] = {false, false, false, false, false, false};
+	bool flags[] = {false, false, false, false, false, false};
 
 	vect[axis] = target;
 	flags[axis] = true;

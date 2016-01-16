@@ -25,14 +25,14 @@
  **** APPLICATION_SPECIFIC DEFINITIONS AND SETTINGS ********************************
  ***********************************************************************************/
 
-enum nvType {						// classification of commands
+typedef enum {						// classification of commands
 	NV_TYPE_NULL = 0,
 	NV_TYPE_CONFIG,					// configuration commands
 	NV_TYPE_GCODE,					// gcode
 	NV_TYPE_REPORT,					// SR, QR and any other report
 	NV_TYPE_MESSAGE,				// nv object carries a message
 	NV_TYPE_LINENUM					// nv object carries a gcode line number
-};
+} nvType;
 
 /***********************************************************************************
  **** APPLICATION_SPECIFIC CONFIG STRUCTURE(S) *************************************

@@ -353,6 +353,8 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
 
+	uint8_t l_word;						// L word - used by G10s
+
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
 	float tool_offset[AXES];			// XYZABC tool length offsets. Typically only use Z or X
@@ -369,13 +371,11 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
-	uint8_t l_word;						// L word - used by G10s
+	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
+	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 	bool origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	bool block_delete_switch;		// set true to enable block deletes (true is default)
-
-	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
-	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
 // unimplemented gcode parameters
 //	float cutter_radius;				// D - cutter radius compensation (0 is off)
@@ -613,9 +613,13 @@ cmFeedholdState cm_get_hold_state(void);
 cmHomingState cm_get_homing_state(void);
 uint8_t cm_get_jogging_state(void);
 
-void cm_set_motion_state(uint8_t motion_state);
-float cm_get_axis_jerk(uint8_t axis);
-void cm_set_axis_jerk(uint8_t axis, float jerk);
+//void cm_set_motion_state(uint8_t motion_state);
+//float cm_get_axis_jerk(uint8_t axis);
+//void cm_set_axis_jerk(uint8_t axis, float jerk);
+
+void cm_set_motion_state(const cmMotionState motion_state);
+float cm_get_axis_jerk(const uint8_t axis);
+void cm_set_axis_jerk(const uint8_t axis, const float jerk);
 
 uint32_t cm_get_linenum(const GCodeState_t *gcode_state);
 uint8_t cm_get_motion_mode(const GCodeState_t *gcode_state);
@@ -680,7 +684,7 @@ stat_t cm_set_distance_mode(const uint8_t mode);                            // G
 stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
 stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
                             const uint8_t L_word,
-                            const float offset[], const float flag[]);
+                            const float offset[], const bool flag[]);
 
 void cm_set_position(const uint8_t axis, const float position);             // set absolute position - single axis
 stat_t cm_set_absolute_origin(const float origin[], bool flags[]);          // G28.3
@@ -703,13 +707,13 @@ stat_t cm_goto_g30_position(const float target[], const bool flags[]);      // G
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
 stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
-//stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);  // G61, G61.1, G64
+//stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode); // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(const float target[], const bool flags[]);		  // G1
+stat_t cm_straight_feed(const float target[], const bool flags[]);		    // G1
 stat_t cm_dwell(const float seconds);									    // G4, P parameter
 
-stat_t cm_arc_feed(	float target[], float flags[],              // G2, G3
+stat_t cm_arc_feed(	float target[], bool flags[],                           // G2, G3
                     float i, float j, float k,
                     float radius, uint8_t motion_mode);
 /*
@@ -734,15 +738,15 @@ stat_t cm_tool_offset_cancel();	                                            // G
 stat_t cm_mist_coolant_control(const uint8_t mist_coolant); 			    // M7
 stat_t cm_flood_coolant_control(const uint8_t flood_coolant);			    // M8, M9
 
-stat_t cm_override_enables(uint8_t flag); 						// M48, M49
-stat_t cm_feed_rate_override_enable(uint8_t flag); 				// M50
-stat_t cm_feed_rate_override_factor(uint8_t flag);				// M50.1
-stat_t cm_traverse_override_enable(uint8_t flag); 				// M50.2
-stat_t cm_traverse_override_factor(uint8_t flag);				// M50.3
-stat_t cm_spindle_override_enable(uint8_t flag); 				// M51
-stat_t cm_spindle_override_factor(uint8_t flag);				// M51.1
+stat_t cm_override_enables(uint8_t flag); 						            // M48, M49
+stat_t cm_feed_rate_override_enable(uint8_t flag); 				            // M50
+stat_t cm_feed_rate_override_factor(uint8_t flag);				            // M50.1
+stat_t cm_traverse_override_enable(uint8_t flag); 				            // M50.2
+stat_t cm_traverse_override_factor(uint8_t flag);				            // M50.3
+stat_t cm_spindle_override_enable(uint8_t flag); 				            // M51
+stat_t cm_spindle_override_factor(uint8_t flag);				            // M51.1
 
-void cm_message(char *message);								// msg to console (e.g. Gcode comments)
+void cm_message(char *message);								                // msg to console (e.g. Gcode comments)
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
@@ -767,7 +771,7 @@ stat_t cm_homing_cycle_start_no_set(void);						// G28.4
 stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
 
 // Probe cycles
-stat_t cm_straight_probe(float target[], float flags[]);		// G38.2
+stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
 stat_t cm_probe_callback(void);									// G38.2 main loop callback
 
 // Jogging cycle

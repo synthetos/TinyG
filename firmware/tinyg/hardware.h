@@ -50,7 +50,7 @@
 
 /*--- Hardware platform enumerations ---*/
 
-enum hwPlatform {
+typedef enum {
 	HM_PLATFORM_NONE = 0,
 
 	HW_PLATFORM_TINYG_XMEGA,	// TinyG code base on Xmega boards.
@@ -65,7 +65,7 @@ enum hwPlatform {
 								//  hwVersion 2 = v9f
 								//  hwVersion 3 = v9h
 								//  hwVersion 4 = v9i
-};
+} hwPlatform;
 
 #define HW_VERSION_TINYGV6		6
 #define HW_VERSION_TINYGV7		7
@@ -156,7 +156,7 @@ enum hwPlatform {
 #define MOTOR_PORT_DIR_gm 0x3F	// dir settings: lower 6 out, upper 2 in
 //#define MOTOR_PORT_DIR_gm 0x00	// dir settings: all inputs
 
-enum cfgPortBits {			// motor control port bit positions
+typedef enum {			    // motor control port bit positions
 	STEP_BIT_bp = 0,		// bit 0
 	DIRECTION_BIT_bp,		// bit 1
 	MOTOR_ENABLE_BIT_bp,	// bit 2
@@ -165,7 +165,7 @@ enum cfgPortBits {			// motor control port bit positions
 	GPIO1_OUT_BIT_bp,		// bit 5 (4 gpio1 output bits; 1 from each axis)
 	SW_MIN_BIT_bp,			// bit 6 (4 input bits for homing/limit switches)
 	SW_MAX_BIT_bp			// bit 7 (4 input bits for homing/limit switches)
-};
+} cfgPortBits;
 
 #define STEP_BIT_bm			(1<<STEP_BIT_bp)
 #define DIRECTION_BIT_bm	(1<<DIRECTION_BIT_bp)

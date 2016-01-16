@@ -38,25 +38,25 @@
 
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
-enum jsonVerbosity {
+typedef enum {
 	JV_SILENT = 0,					// no response is provided for any command
 	JV_FOOTER,						// returns footer only (no command echo, gcode blocks or messages)
 	JV_MESSAGES,					// returns footer, messages (exception and gcode messages)
 	JV_CONFIGS,						// returns footer, messages, config commands
 	JV_LINENUM,						// returns footer, messages, config commands, gcode line numbers if present
 	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
-};
+} jsonVerbosity;
 
-enum jsonFormats {					// json output print modes
+typedef enum {					    // json output print modes
 	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
 	JSON_OBJECT_FORMAT,				// print just the body as a json object
 	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
-};
+} jsonFormats;
 
-enum jsonSyntaxMode {
+typedef enum {
 	JSON_SYNTAX_RELAXED = 0,		// Does not require quotes on names
 	JSON_SYNTAX_STRICT				// requires quotes on names
-};
+} jsonSyntaxMode;
 
 typedef struct jsSingleton {
 

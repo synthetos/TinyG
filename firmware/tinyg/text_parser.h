@@ -28,17 +28,17 @@
 #ifndef TEXT_PARSER_H_ONCE
 #define TEXT_PARSER_H_ONCE
 
-enum textVerbosity {
+typedef enum {
 	TV_SILENT = 0,					// no response is provided
 	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
-};
+} textVerbosity;
 
-enum textFormats {					// text output print modes
+typedef enum {					    // text output print modes
 	TEXT_NO_PRINT = 0,				// don't print anything if you find yourself in TEXT mode
 	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
 	TEXT_INLINE_VALUES,				// print values as commas separated values
 	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
-};
+} textFormats;
 
 typedef struct txtSingleton {		// text mode data
 

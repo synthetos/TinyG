@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        445.12	// converted to boolean Gcode model flags
+#define TINYG_FIRMWARE_BUILD        445.13	// boolean Gcode model and enums, continued
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
