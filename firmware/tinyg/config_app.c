@@ -478,11 +478,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 
 	// NOTE: The ordering within the gcode defaults is important for token resolution
-	{ "sys","gpl", _fipn, 0, cm_print_gpl, get_ui8, set_012, (uint32_t *)&cm.select_plane,	GCODE_DEFAULT_PLANE },
-	{ "sys","gun", _fipn, 0, cm_print_gun, get_ui8, set_01,  (uint32_t *)&cm.units_mode,	GCODE_DEFAULT_UNITS },
-	{ "sys","gco", _fipn, 0, cm_print_gco, get_ui8, set_ui8, (uint32_t *)&cm.coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
-	{ "sys","gpa", _fipn, 0, cm_print_gpa, get_ui8, set_012, (uint32_t *)&cm.path_control,	GCODE_DEFAULT_PATH_CONTROL },
-	{ "sys","gdi", _fipn, 0, cm_print_gdi, get_ui8, set_01,  (uint32_t *)&cm.distance_mode,GCODE_DEFAULT_DISTANCE_MODE },
+	{ "sys","gpl", _fipn, 0, cm_print_gpl, get_ui8, set_012, (uint32_t *)&cm.default_select_plane,	GCODE_DEFAULT_PLANE },
+	{ "sys","gun", _fipn, 0, cm_print_gun, get_ui8, set_01,  (uint32_t *)&cm.default_units_mode,	GCODE_DEFAULT_UNITS },
+	{ "sys","gco", _fipn, 0, cm_print_gco, get_ui8, set_ui8, (uint32_t *)&cm.default_coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
+	{ "sys","gpa", _fipn, 0, cm_print_gpa, get_ui8, set_012, (uint32_t *)&cm.default_path_control,	GCODE_DEFAULT_PATH_CONTROL },
+	{ "sys","gdi", _fipn, 0, cm_print_gdi, get_ui8, set_01,  (uint32_t *)&cm.default_distance_mode, GCODE_DEFAULT_DISTANCE_MODE },
 	{ "",   "gc",  _f0,   0, tx_print_nul, gc_get_gc, gc_run_gc,(uint32_t *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// "hidden" parameters (not in system group)

@@ -513,11 +513,11 @@ void canonical_machine_init()
 	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
 
 	// set gcode defaults
-	cm_set_units_mode(cm.units_mode);
-	cm_set_coord_system(cm.coord_system);
-	cm_select_plane(cm.select_plane);
-	cm_set_path_control(cm.path_control);
-	cm_set_distance_mode(cm.distance_mode);
+	cm_set_units_mode(cm.default_units_mode);
+	cm_set_coord_system(cm.default_coord_system);
+	cm_select_plane(cm.default_select_plane);
+	cm_set_path_control(cm.default_path_control);
+	cm_set_distance_mode(cm.default_distance_mode);
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
 
 	cm.gmx.block_delete_switch = true;
@@ -1405,9 +1405,9 @@ static void _exec_program_finalize(float *value, float *flag)
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
 		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
 	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
-		cm_select_plane(cm.select_plane);				// reset to default arc plane
-		cm_set_distance_mode(cm.distance_mode);
+		cm_set_coord_system(cm.default_coord_system);	// reset to default coordinate system
+		cm_select_plane(cm.default_select_plane);		// reset to default arc plane
+		cm_set_distance_mode(cm.default_distance_mode);
     //	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
 		cm_spindle_control(SPINDLE_OFF);				// M5
 		cm_flood_coolant_control(false);				// M9
