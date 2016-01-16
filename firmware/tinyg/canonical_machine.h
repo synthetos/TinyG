@@ -647,7 +647,8 @@ float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
 stat_t cm_deferred_write_callback(void);
-void cm_set_model_target(float target[], float flag[]);
+void cm_set_model_target(const float target[], const float flag[]);
+//void cm_set_model_target(const float target[], const bool flags[]);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
@@ -670,54 +671,71 @@ stat_t cm_flush(nvObj_t *nv);
 stat_t cm_reset(nvObj_t *nv);
 
 // Representation (4.3.3)
-stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
-stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
-stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_coord_offsets(const uint8_t coord_system,         // G10 L2, L20
+stat_t cm_select_plane(const uint8_t plane);                                // G17, G18, G19
+stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
+stat_t cm_set_distance_mode(const uint8_t mode);                            // G90, G91
+stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
+stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
                             const uint8_t L_word,
-                            const float offset[], float flag[]);
+                            const float offset[], const float flag[]);
 
-void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
-stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
-void cm_set_axis_origin(uint8_t axis, const float position);	// G28.3 planner callback
+void cm_set_position(const uint8_t axis, const float position);             // set absolute position - single axis
+//stat_t cm_set_absolute_origin(const float origin[], const bool flags[]);    // G28.3
+stat_t cm_set_absolute_origin(const float origin[], float flag[]);          // G28.3
+void cm_set_axis_origin(uint8_t axis, const float position);                // G28.3 planner callback
 
-stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
-stat_t cm_reset_origin_offsets(void); 							// G92.1
-stat_t cm_suspend_origin_offsets(void); 						// G92.2
-stat_t cm_resume_origin_offsets(void);				 			// G92.3
+stat_t cm_set_coord_system(const uint8_t coord_system);                     // G54 - G59
+//stat_t cm_set_origin_offsets(const float offset[], const bool flags[]);     // G92
+stat_t cm_set_origin_offsets(const float offset[], float flag[]);           // G92
+stat_t cm_reset_origin_offsets(void);                                       // G92.1
+stat_t cm_suspend_origin_offsets(void);                                     // G92.2
+stat_t cm_resume_origin_offsets(void);                                      // G92.3
 
 // Free Space Motion (4.3.4)
-stat_t cm_straight_traverse(float target[], float flags[]);		// G0
-stat_t cm_set_g28_position(void);								// G28.1
-stat_t cm_goto_g28_position(float target[], float flags[]); 	// G28
-stat_t cm_set_g30_position(void);								// G30.1
-stat_t cm_goto_g30_position(float target[], float flags[]);		// G30
+stat_t cm_straight_traverse(const float target[], float flags[]);		    // G0
+//stat_t cm_straight_traverse(const float target[], const bool flags[]);      // G0
+stat_t cm_set_g28_position(void);								            // G28.1
+stat_t cm_goto_g28_position(const float target[], float flags[]); 	        // G28
+//stat_t cm_goto_g28_position(const float target[], const bool flags[]);      // G28
+stat_t cm_set_g30_position(void);								            // G30.1
+stat_t cm_goto_g30_position(const float target[], float flags[]);		    // G30
+//stat_t cm_goto_g30_position(const float target[], const bool flags[]);      // G30
 
 // Machining Attributes (4.3.5)
-stat_t cm_set_feed_rate(float feed_rate);						// F parameter
-stat_t cm_set_feed_rate_mode(uint8_t mode);						// G93, G94, (G95 unimplemented)
-stat_t cm_set_path_control(uint8_t mode);						// G61, G61.1, G64
+stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
+stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
+stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
+//stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode);  // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
-stat_t cm_straight_feed(float target[], float flags[]);		    // G1
+stat_t cm_straight_feed(const float target[], const float flags[]);		    // G1
+//stat_t cm_straight_feed(const float target[], const bool flags[]);		  // G1
+stat_t cm_dwell(const float seconds);									    // G4, P parameter
+
 stat_t cm_arc_feed(	float target[], float flags[],              // G2, G3
-					float i, float j, float k,
-					float radius, uint8_t motion_mode);
-stat_t cm_dwell(float seconds);									// G4, P parameter
+                    float i, float j, float k,
+                    float radius, uint8_t motion_mode);
+/*
+stat_t cm_arc_feed(const float target[], const bool target_f[],             // G2/G3 - target endpoint
+                   const float offset[], const bool offset_f[],             // IJK offsets
+                   const float radius, const bool radius_f,                 // radius if radius mode
+                   const float P_word, const bool P_word_f,                 // parameter
+                   const bool modal_g1_f,                                   // modal group flag for motion group
+                   const uint8_t motion_mode);                              // defined motion mode
+*/
 
 // Spindle Functions (4.3.7)
 // see spindle.h for spindle definitions - which would go right here
 
 // Tool Functions (4.3.8)
-stat_t cm_select_tool(uint8_t tool);							// T parameter
-stat_t cm_change_tool(uint8_t tool);							// M6
-stat_t cm_tool_offset_set(float target[], float flags[]);		// G43.1
-stat_t cm_tool_offset_cancel();	                                // G49
+stat_t cm_select_tool(const uint8_t tool);							        // T parameter
+stat_t cm_change_tool(const uint8_t tool);							        // M6
+stat_t cm_tool_offset_set(const float target[], const float flags[]);		// G43.1
+stat_t cm_tool_offset_cancel();	                                            // G49
 
 // Miscellaneous Functions (4.3.9)
-stat_t cm_mist_coolant_control(uint8_t mist_coolant); 			// M7
-stat_t cm_flood_coolant_control(uint8_t flood_coolant);			// M8, M9
+stat_t cm_mist_coolant_control(const uint8_t mist_coolant); 			    // M7
+stat_t cm_flood_coolant_control(const uint8_t flood_coolant);			    // M8, M9
 
 stat_t cm_override_enables(uint8_t flag); 						// M48, M49
 stat_t cm_feed_rate_override_enable(uint8_t flag); 				// M50
