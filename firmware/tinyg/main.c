@@ -122,9 +122,9 @@ void _system_init(void)
 
 static void _application_init_services(void)
 {
-    hardware_init();				// system hardware setup 			- must be first
-    persistence_init();				// set up EEPROM or other NVM		- must be second
-    xio_init();						// xtended io subsystem				- must be third
+    hardware_init();				// FIRST:  system hardware setup
+    persistence_init();				// SECOND: set up EEPROM or other NVM
+    xio_init();						// THIRD:  extended io subsystem
 #ifdef __AVR
     rtc_init();						// real time counter
 #endif
@@ -132,24 +132,23 @@ static void _application_init_services(void)
 
 static void _application_init_machine(void)
 {
-//	cli();
-
-	// do these next
-	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
+	stepper_init(); 				// stepper subsystem - must precede gpio_init()
 	encoder_init();					// virtual encoders
 	switch_init();					// switches
 //    gpio_init();                    // inputs and outputs
-	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
+	pwm_init();						// pulse width modulation drivers - must follow gpio_init()
 	planner_init();					// motion planning subsystem
-	canonical_machine_init();		// canonical machine				- must follow config_init()
+	canonical_machine_init();		// canonical machine
 }
 
 static void _application_init_startup(void)
 {
+	cli();
+
     // start the application
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // must be first app init; reqs xio_init()
-	config_init();					            // config records from eeprom 		- must be next app init
-	canonical_machine_reset();
+	config_init();					            // config records from eeprom - must be next app init
+	canonical_machine_reset();                  // must follow config_init
 
 	// now bring up the interrupts and get started
 	PMIC_SetVectorLocationToApplication();      // as opposed to boot ROM
