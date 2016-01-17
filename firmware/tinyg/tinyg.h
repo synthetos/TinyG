@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.02	// dynamic combined state
+#define TINYG_FIRMWARE_BUILD        446.03	// refactored main.c startup to align with 0.98
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

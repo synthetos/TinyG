@@ -114,40 +114,49 @@ void _system_init(void)
 }
 
 /*
- * _application_init()
+ * application_inits
+ *
+ * There are a lot of dependencies in the order of these inits.
+ * Don't change the ordering unless you understand this.
  */
 
-static void _application_init(void)
+static void _application_init_services(void)
 {
-	// There are a lot of dependencies in the order of these inits.
-	// Don't change the ordering unless you understand this.
+    hardware_init();				// system hardware setup 			- must be first
+    persistence_init();				// set up EEPROM or other NVM		- must be second
+    xio_init();						// xtended io subsystem				- must be third
+#ifdef __AVR
+    rtc_init();						// real time counter
+#endif
+}
 
-	cli();
-
-	// do these first
-	hardware_init();				// system hardware setup 			- must be first
-	persistence_init();				// set up EEPROM or other NVM		- must be second
-	rtc_init();						// real time counter
-	xio_init();						// eXtended IO subsystem
+static void _application_init_machine(void)
+{
+//	cli();
 
 	// do these next
 	stepper_init(); 				// stepper subsystem 				- must precede gpio_init()
 	encoder_init();					// virtual encoders
 	switch_init();					// switches
+//    gpio_init();                    // inputs and outputs
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
-
-	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
-	config_init();					// config records from eeprom 		- must be next app init
 	planner_init();					// motion planning subsystem
 	canonical_machine_init();		// canonical machine				- must follow config_init()
+}
+
+static void _application_init_startup(void)
+{
+    // start the application
+	controller_init(STD_IN, STD_OUT, STD_ERR);  // must be first app init; reqs xio_init()
+	config_init();					            // config records from eeprom 		- must be next app init
+	canonical_machine_reset();
 
 	// now bring up the interrupts and get started
-	PMIC_SetVectorLocationToApplication();// as opposed to boot ROM
-	PMIC_EnableHighLevel();			// all levels are used, so don't bother to abstract them
+	PMIC_SetVectorLocationToApplication();      // as opposed to boot ROM
+	PMIC_EnableHighLevel();			            // all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();
 	PMIC_EnableLowLevel();
-	sei();							// enable global interrupts
-//	rpt_print_system_ready_message();// (LAST) announce system is ready // Moved to controller init
+	sei();							            // enable global interrupts
 }
 
 /*
@@ -160,7 +169,9 @@ int main(void)
 	_system_init();
 
 	// TinyG application setup
-	_application_init();
+	_application_init_services();
+	_application_init_machine();
+	_application_init_startup();
 	run_canned_startup();			// run any pre-loaded commands
 
 	// main loop
