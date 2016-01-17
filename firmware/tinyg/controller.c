@@ -64,7 +64,10 @@ static void _controller_HSM(void);
 static stat_t _shutdown_idler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
-static stat_t _system_assertions(void);
+
+static void _init_assertions(void);
+static stat_t _test_system_assertions(void);
+
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
 
@@ -87,14 +90,14 @@ stat_t hardware_bootloader_handler(void);
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
 	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
-	controller_init_assertions();
+	_init_assertions();
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
+	cs.controller_state = CONTROLLER_STARTUP;		// ready to run startup lines
 
 #ifdef __AVR
-	cs.controller_state = CONTROLLER_STARTUP;		// ready to run startup lines
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
@@ -106,23 +109,6 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 	cs.controller_state = CONTROLLER_NOT_CONNECTED;	// find USB next
 	IndicatorLed.setFrequency(100000);
 #endif
-}
-
-/*
- * controller_init_assertions()
- * controller_test_assertions() - check memory integrity of controller
- */
-
-void controller_init_assertions()
-{
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
-}
-
-stat_t controller_test_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	return (STAT_OK);
 }
 
 /*
@@ -159,14 +145,14 @@ static void _controller_HSM()
 //
 //----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
-	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
-	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// 3. idle in shutdown state
-	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
+	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
+	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
+	DISPATCH(_shutdown_idler());				// idle in shutdown state
+	DISPATCH(_limit_switch_handler());			// limit switch has been thrown
 
-	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// 6b. plan a feedhold from line runtime
-	DISPATCH(_system_assertions());				// 7. system integrity assertions
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
+	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+	DISPATCH(_test_system_assertions());		// system integrity assertions
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
@@ -434,19 +420,36 @@ static stat_t _limit_switch_handler(void)
 	return (STAT_OK);
 }
 
-/*
- * _system_assertions() - check memory integrity and other assertions
- */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_alarm(status_code, ""));
 
-stat_t _system_assertions()
+/*
+ * _init_assertions() - initialize controller memory integrity assertions
+ * _test_assertions() - check controller memory integrity assertions
+ * _test_system_assertions() - check assertions for entire system
+ */
+
+static void _init_assertions()
 {
-	emergency___everybody_to_get_from_street(config_test_assertions());
-	emergency___everybody_to_get_from_street(controller_test_assertions());
-	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
-	emergency___everybody_to_get_from_street(planner_test_assertions());
-	emergency___everybody_to_get_from_street(stepper_test_assertions());
-	emergency___everybody_to_get_from_street(encoder_test_assertions());
-	emergency___everybody_to_get_from_street(xio_test_assertions());
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+}
+
+static stat_t _test_assertions()
+{
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
+        return(cm_panic_P(STAT_CONTROLLER_ASSERTION_FAILURE, PSTR("controller_test_assertions()")));
+    }
+	return (STAT_OK);
+}
+
+stat_t _test_system_assertions()
+{
+    // these functions will panic if an assertion fails
+	_test_assertions();                     // controller assertions (local)
+	config_test_assertions();
+	canonical_machine_test_assertions();
+	planner_test_assertions();
+	stepper_test_assertions();
+	encoder_test_assertions();
+	xio_test_assertions();
 	return (STAT_OK);
 }

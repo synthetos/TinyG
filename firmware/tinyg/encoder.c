@@ -28,6 +28,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "encoder.h"
+#include "canonical_machine.h"
 
 /**** Allocate Structures ****/
 
@@ -60,9 +61,10 @@ void encoder_init_assertions()
 
 stat_t encoder_test_assertions()
 {
-	if (en.magic_end   != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	if (en.magic_start != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(en.magic_start)) || (BAD_MAGIC(en.magic_end))) {
+        return(cm_panic_P(STAT_ENCODER_ASSERTION_FAILURE, PSTR("encoder_test_assertions()")));
+    }
+    return (STAT_OK);
 }
 
 /*

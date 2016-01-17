@@ -212,11 +212,16 @@ void config_init_assertions()
 
 stat_t config_test_assertions()
 {
-	if ((cfg.magic_start	!= MAGICNUM) || (cfg.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if ((nvl.magic_start	!= MAGICNUM) || (nvl.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if ((nvStr.magic_start	!= MAGICNUM) || (nvStr.magic_end != MAGICNUM)) return (STAT_CONFIG_ASSERTION_FAILURE);
-	if (global_string_buf[GLOBAL_STRING_LEN-1] != NUL) return (STAT_CONFIG_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(cfg.magic_start)) ||
+        (BAD_MAGIC(cfg.magic_end)) ||
+        (BAD_MAGIC(nvl.magic_start)) ||
+        (BAD_MAGIC(nvl.magic_end)) ||
+        (BAD_MAGIC(nvStr.magic_start)) ||
+        (BAD_MAGIC(nvStr.magic_end)) ||
+        (global_string_buf[GLOBAL_STRING_LEN-1] != NUL)) {
+        return(cm_panic_P(STAT_CONFIG_ASSERTION_FAILURE, PSTR("config_test_assertions()")));
+    }
+    return (STAT_OK);
 }
 
 /***** Generic Internal Functions *********************************************/

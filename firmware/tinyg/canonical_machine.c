@@ -211,19 +211,19 @@ cmCombinedState cm_get_combined_state()
                         case MOTION_RUN:      { return (COMBINED_RUN); }
                         case MOTION_HOLD:     { return (COMBINED_HOLD); }
                         default: {
-//                            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() mots bad");    // "mots has impossible value"
+                            cm_panic_P(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, PSTR("cm_get_combined_state() mots bad"));    // "mots has impossible value"
                             return (COMBINED_PANIC);
                         }
                     }
                 }
                 default: {
-//                    cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() cycs bad");    // "cycs has impossible value"
+                    cm_panic_P(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, PSTR("cm_get_combined_state() cycs bad"));    // "cycs has impossible value"
                     return (COMBINED_PANIC);
                 }
             }
         }
         default: {
-//            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
+            cm_panic_P(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, PSTR("cm_get_combined_state() macs bad"));    // "macs has impossible value"
             return (COMBINED_PANIC);
         }
     }
@@ -639,10 +639,12 @@ void canonical_machine_init_assertions(void)
 
 stat_t canonical_machine_test_assertions(void)
 {
-	if ((cm.magic_start 	!= MAGICNUM) || (cm.magic_end 	  != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((cm.gmx.magic_start != MAGICNUM) || (cm.gmx.magic_end != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	if ((arc.magic_start 	!= MAGICNUM) || (arc.magic_end    != MAGICNUM)) return (STAT_CANONICAL_MACHINE_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(cm.magic_start)) || (BAD_MAGIC(cm.magic_end)) ||
+        (BAD_MAGIC(cm.gmx.magic_start)) || (BAD_MAGIC(cm.gmx.magic_end)) ||
+        (BAD_MAGIC(arc.magic_start)) || (BAD_MAGIC(arc.magic_end))) {
+        return(cm_panic_P(STAT_CANONICAL_MACHINE_ASSERTION_FAILURE, PSTR("canonical_machine_test_assertions()")));
+    }
+    return (STAT_OK);
 }
 
 /**************************

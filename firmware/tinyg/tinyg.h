@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.04	// added anonymous union to fix filtered stats reports
+#define TINYG_FIRMWARE_BUILD        446.05	// new assertions style, with panics
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

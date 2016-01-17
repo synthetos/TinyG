@@ -83,6 +83,7 @@
 #include "controller.h"				// needed by init() for default source
 #include "report.h"
 #include "util.h"
+#include "canonical_machine.h"      // for assertions cm_panic
 
 static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
@@ -137,46 +138,18 @@ void xio_init()
  *		 not set up then it will fail in the assertions test. Need to fix this.
  */
 
-void xio_init_assertions()
-{
-    xio.magic_start = MAGICNUM;
-    xio.magic_end = MAGICNUM;
-    bm.magic_start = MAGICNUM;
-    bm.magic_end = MAGICNUM;
-    bufpool.magic_start = MAGICNUM;
-    bufpool.magic_end = MAGICNUM;
-}
+void xio_init_assertions() { return; }
 
 uint8_t xio_test_assertions()
 {
-	if (bm.magic_start					!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
-	if (bm.magic_end					!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
-	if (bufpool.magic_start				!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
-	if (bufpool.magic_end				!= MAGICNUM) return (STAT_MEMORY_ALLOCATION_ASSERTION_FAILURE);
-
-	if (xio.magic_start					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (xio.magic_end					!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-
-	if (ds[XIO_DEV_USB].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_USB].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-
-#ifdef XIO_DEV_RS485
-	if (ds[XIO_DEV_RS485].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-#endif
-#ifdef XIO_DEV_SPI1
-	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-#endif
-#ifdef XIO_DEV_SPI2
-	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-#endif
-
-//	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-//	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(ds[XIO_DEV_USB].magic_start)) ||   (BAD_MAGIC(ds[XIO_DEV_USB].magic_end)) ||
+        (BAD_MAGIC(ds[XIO_DEV_RS485].magic_start)) || (BAD_MAGIC(ds[XIO_DEV_RS485].magic_end)) ||
+        (BAD_MAGIC(ds[XIO_DEV_SPI1].magic_start)) ||  (BAD_MAGIC(ds[XIO_DEV_SPI1].magic_end)) ||
+//        (BAD_MAGIC(ds[XIO_DEV_SPI2].magic_start)) ||  (BAD_MAGIC(ds[XIO_DEV_SPI2].magic_end)) ||
+        (stderr != xio.stderr_shadow)) {
+        return(cm_panic_P(STAT_XIO_ASSERTION_FAILURE, PSTR("xio_test_assertions()")));
+    }
+    return (STAT_OK);
 }
 
 /*
