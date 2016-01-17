@@ -35,6 +35,7 @@
 //		- The status report defaults can be found in settings.h
 
 #define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
+#define SR_MATCH_PRECISION 0.001                // delta for floats to be declared equal for filtered status reports
 
 typedef enum {								    // status report enable and verbosity
 	SR_OFF = 0,									// no reports
@@ -64,8 +65,10 @@ typedef struct srSingleton {
 	uint32_t status_report_systick;						// SysTick value for next status report
 	index_t stat_index;									// table index value for stat - determined during initialization
 	index_t status_report_list[NV_STATUS_REPORT_LEN];	// status report elements to report
-	float status_report_value[NV_STATUS_REPORT_LEN];	// previous values for filtered reporting
-
+    union {
+        float value_flt[NV_STATUS_REPORT_LEN];          // storage for float values
+        uint32_t value_int[NV_STATUS_REPORT_LEN];       // storage for integer values
+    };
 } srSingleton_t;
 
 typedef struct qrSingleton {		// data for queue reports

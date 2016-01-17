@@ -197,7 +197,7 @@ void sr_init_status_report_P(const char *sr_csv_P)
         for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
             read_persistent_value(nv);                      // read token index from NVram into nv->value_int element
             sr.status_report_list[i] = nv->value_int;       // load into the active SR list
-            sr.status_report_value[i] = 8675309;            // pre-load SR values with an unlikely number
+            sr.value_int[i] = 8675309;                      // pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
         }
 
@@ -217,7 +217,7 @@ void sr_init_status_report_P(const char *sr_csv_P)
             }
             nv_set(nv);
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
-            sr.status_report_value[i] = 8675309;			// pre-load SR values with an unlikely number
+            sr.value_int[i] = 8675309;                      // pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
         }
     }
@@ -458,7 +458,7 @@ static uint8_t _populate_filtered_status_report()
 		// Special handling for stat values - always report the end conditions
         if (nv->index == sr.stat_index) {
             if ((nv->value_int == COMBINED_PROGRAM_STOP) || (nv->value_int == COMBINED_PROGRAM_END)) {
-    			sr.status_report_value[i] = nv->value_int;
+                sr.value_int[i] = nv->value_int;
                 nv = nv->nx;
     			has_data = true;
                 continue;
@@ -467,15 +467,17 @@ static uint8_t _populate_filtered_status_report()
 
 		// Only report values that have changed
         if (nv->valuetype == TYPE_INTEGER) {
-            if (nv->value_int == sr.status_report_value[i]) {
+            if (nv->value_int == sr.value_int[i]) {
                 nv->valuetype = TYPE_EMPTY;
                 continue;
             }
+		    sr.value_int[i] = nv->value_int;
         } else { // (nv->valuetype == TYPE_FLOAT)
-            if (fabs(nv->value_flt - sr.status_report_value[i]) < 0.0001) {
+            if (fabs(nv->value_flt - sr.value_flt[i]) < SR_MATCH_PRECISION) {
                 nv->valuetype = TYPE_EMPTY;
                 continue;
             }
+            sr.value_flt[i] = nv->value_flt;
         }
 
         // flatten out groups - WARNING - you cannot use strncpy here...
@@ -483,7 +485,6 @@ static uint8_t _populate_filtered_status_report()
 		strcat(tmp, nv->token);
 		strcpy(nv->token, tmp);		        //...or here.
 
-		sr.status_report_value[i] = nv->value_int;  // works for either int or float
 		if ((nv = nv->nx) == NULL) {        // should never be NULL unless SR length exceeds available buffer array
     		return (false);
 		}
