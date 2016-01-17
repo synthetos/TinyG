@@ -164,16 +164,6 @@ void cm_set_motion_state(const cmMotionState motion_state)
  cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
- * Canonical Machine State functions
- *
- * cm_get_combined_state() - combines raw states into something a user might want to see
- * cm_get_machine_state()
- * cm_get_motion_state()
- * cm_get_cycle_state()
- * cm_get_hold_state()
- * cm_get_homing_state()
- * cm_set_motion_state() - adjusts active model pointer as well
- */
 cmCombinedState cm_get_combined_state()
 {
 	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
@@ -187,6 +177,56 @@ cmCombinedState cm_get_combined_state()
 	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
 
 	return cm.combined_state;
+}
+*/
+/*
+ * cm_get_combined_state() - combines raw states into something a user might want to see
+ *
+ *  Note:
+ *  On issuing a gcode command we call cm_cycle_start() before the motion gets queued. We don't go
+ *  to MOTION_RUN until the command is executed by mp_exec_aline(), planned, queued, and started.
+ *  So MOTION_STOP must actually return COMBINED_RUN to address this case, even though under some
+ *  circumstances it might actually ne an exception case. Therefore this assertion isn't valid:
+ *      cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "mots2"));//"mots is stop but machine is in cycle"
+ *      return (COMBINED_PANIC);
+ */
+cmCombinedState cm_get_combined_state()
+{
+    if (cm.machine_state <= MACHINE_PROGRAM_END) {  // replaces first 5 cm.machine_state cases
+        return ((cmCombinedState)cm.machine_state); //...where MACHINE_xxx == COMBINED_xxx
+    }
+    switch(cm.machine_state) {
+        case MACHINE_INTERLOCK:     { return (COMBINED_INTERLOCK); }
+        case MACHINE_SHUTDOWN:      { return (COMBINED_SHUTDOWN); }
+        case MACHINE_PANIC:         { return (COMBINED_PANIC); }
+        case MACHINE_CYCLE: {
+            switch(cm.cycle_state) {
+                case CYCLE_HOMING:  { return (COMBINED_HOMING); }
+                case CYCLE_PROBE:   { return (COMBINED_PROBE); }
+                case CYCLE_JOG:     { return (COMBINED_JOG); }
+                case CYCLE_MACHINING: case CYCLE_OFF: {
+                    switch(cm.motion_state) {
+                        case MOTION_STOP:     { return (COMBINED_RUN); }    // See NOTE_1, above
+//                        case MOTION_PLANNING: { return (COMBINED_RUN); }
+                        case MOTION_RUN:      { return (COMBINED_RUN); }
+                        case MOTION_HOLD:     { return (COMBINED_HOLD); }
+                        default: {
+//                            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() mots bad");    // "mots has impossible value"
+                            return (COMBINED_PANIC);
+                        }
+                    }
+                }
+                default: {
+//                    cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() cycs bad");    // "cycs has impossible value"
+                    return (COMBINED_PANIC);
+                }
+            }
+        }
+        default: {
+//            cm_panic(STAT_STATE_MANAGEMENT_ASSERTION_FAILURE, "cm_get_combined_state() macs bad");    // "macs has impossible value"
+            return (COMBINED_PANIC);
+        }
+    }
 }
 
 /***********************************
@@ -543,15 +583,16 @@ void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this memset code.
 // Do not reset canonicalMachineSingleton once it's been initialized - which would be: memset(&cm, 0, sizeof(cm));
-	memset(&cm.gm, 0, sizeof(GCodeState_t));	// clear the Gcode MODEL of all values, pointers and status
-	memset(&cm.gn, 0, sizeof(GCodeInput_t));    // clear the Gcode new data struct
-	memset(&cm.gf, 0, sizeof(GCodeInput_t));    // clear the Gcode data flags struct
+	memset(&cm.gm, 0, sizeof(GCodeState_t));	    // clear the Gcode MODEL of all values, pointers and status
+	memset(&cm.gn, 0, sizeof(GCodeInput_t));        // clear the Gcode new data struct
+	memset(&cm.gf, 0, sizeof(GCodeInput_t));        // clear the Gcode data flags struct
 
-	canonical_machine_init_assertions();		// establish assertions
-	ACTIVE_MODEL = MODEL;						// setup initial Gcode model pointer
+	canonical_machine_init_assertions();		    // establish assertions
+	ACTIVE_MODEL = MODEL;						    // setup initial Gcode model pointer
 	// sub-system inits
 	cm_spindle_init();
 	cm_arc_init();
+    canonical_machine_reset();                      // always finish an init with reset
 }
 
 void canonical_machine_reset()
@@ -562,7 +603,7 @@ void canonical_machine_reset()
 	cm_select_plane(cm.default_select_plane);
 	cm_set_path_control(cm.default_path_control);
 	cm_set_distance_mode(cm.default_distance_mode);
-	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);// always the default
+	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);   // always the default
 //    cm_reset_overrides();                           // set overrides to initial conditions
 
     // NOTE: Should unhome axes here
@@ -579,7 +620,6 @@ void canonical_machine_reset()
 	cm.gmx.block_delete_switch = true;
 	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE; // never start a machine in a motion mode
 	cm.machine_state = MACHINE_READY;
-	cm.combined_state = COMBINED_READY;
 }
 
 /*

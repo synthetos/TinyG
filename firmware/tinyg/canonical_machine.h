@@ -550,7 +550,7 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
 
 	/**** Runtime variables (PRIVATE) ****/
 
-    cmCombinedState combined_state;
+//    cmCombinedState combined_state;
     cmMachineState machine_state;           // macs: machine/cycle/motion is the actual machine state
     cmCycleState cycle_state;               // cycs
     cmMotionState motion_state;             // momo
@@ -662,7 +662,6 @@ void canonical_machine_reset(void);
 void canonical_machine_init_assertions(void);
 stat_t canonical_machine_test_assertions(void);
 
-#if (1)
 stat_t cm_alrm(nvObj_t *nv);                                    // trigger alarm from command input
 stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutdown from command input
 stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
@@ -678,19 +677,11 @@ stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdow
 stat_t cm_panic_P(const stat_t status, const char *msg_P);
 stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
-#else
-stat_t cm_soft_alarm(stat_t status, const char *msg);			// enter soft alarm state. returns same status code
-stat_t cm_hard_alarm(stat_t status, const char *msg);			// enter hard alarm state. returns same status code
-stat_t cm_hard_alarm_P(stat_t status, const char *msg_P);		// enter hard alarm state. returns same status code
-stat_t cm_clear(nvObj_t *nv);
-stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
-
-stat_t cm_alarm(nvObj_t *nv);
-stat_t cm_pause(nvObj_t *nv);
-stat_t cm_start(nvObj_t *nv);
-stat_t cm_flush(nvObj_t *nv);
-stat_t cm_reset(nvObj_t *nv);
-#endif
+//stat_t cm_alarm(nvObj_t *nv);
+//stat_t cm_pause(nvObj_t *nv);
+//stat_t cm_start(nvObj_t *nv);
+//stat_t cm_flush(nvObj_t *nv);
+//stat_t cm_reset(nvObj_t *nv);
 
 // Representation (4.3.3)
 stat_t cm_select_plane(const uint8_t plane);                                // G17, G18, G19
