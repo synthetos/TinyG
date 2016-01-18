@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.09	// added admo report to config_app, but it breaks memory somehow - so it's commented out
+#define TINYG_FIRMWARE_BUILD        446.10	// fixed admo (dumb problem - did not update EEPROM); testing SR's
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

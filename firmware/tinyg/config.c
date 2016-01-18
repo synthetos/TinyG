@@ -524,13 +524,14 @@ index_t nv_get_index(const char *group, const char *token)
 
 uint8_t nv_get_type(nvObj_t *nv)
 {
-	if (nv->token[0] == NUL) return (NV_TYPE_NULL);
-	if (strcmp_P(PSTR("gc"), nv->token) == 0) { return (NV_TYPE_GCODE); }
-	if (strcmp_P(PSTR("sr"), nv->token) == 0) { return (NV_TYPE_REPORT); }
-	if (strcmp_P(PSTR("qr"), nv->token) == 0) { return (NV_TYPE_REPORT); }
-	if (strcmp_P(PSTR("msg"),nv->token) == 0) { return (NV_TYPE_MESSAGE); }
-	if (strcmp_P(PSTR("err"),nv->token) == 0) { return (NV_TYPE_MESSAGE); }  // errors are reported as messages
-	if (strcmp_P(PSTR("n"),  nv->token) == 0) { return (NV_TYPE_LINENUM); }
+	if (nv->token[0] == NUL) { return (NV_TYPE_NULL); }
+	if (strcmp_P(nv->token, PSTR("gc")) == 0) { return (NV_TYPE_GCODE); }
+	if (strcmp_P(nv->token, PSTR("sr")) == 0) { return (NV_TYPE_REPORT); }
+	if (strcmp_P(nv->token, PSTR("er")) == 0) { return (NV_TYPE_REPORT); }
+	if (strcmp_P(nv->token, PSTR("qr")) == 0) { return (NV_TYPE_REPORT); }
+	if (strcmp_P(nv->token, PSTR("n"))  == 0) { return (NV_TYPE_LINENUM); }
+	if (strcmp_P(nv->token, PSTR("msg")) == 0) { return (NV_TYPE_MESSAGE); }
+	if (strcmp_P(nv->token, PSTR("err")) == 0) { return (NV_TYPE_MESSAGE); }  // errors are reported as messages
 	return (NV_TYPE_CONFIG);
 }
 
@@ -596,6 +597,7 @@ void nv_populate_nvObj_by_index(nvObj_t *nv)
 			strcpy(nv->token, &nv->token[strlen(nv->group)]); // strip group from the token
 		}
 	}
+    // read the getter from program memory; run it to get the value into nv->value_int or nv->value_flt
 	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
 }
 

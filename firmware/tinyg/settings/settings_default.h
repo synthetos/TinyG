@@ -32,6 +32,11 @@
  *       are in hardware.h  Application settings that also shouldn't need
  *       to be changed are in tinyg.h
  */
+/* 
+ * NOTE: If you change this file be sure the either rev the build 
+ *       number or run {defa:1} or weird things will break.
+ */
+
 /***********************************************************************/
 /**** Default profile for screw driven machines ************************/
 /***********************************************************************/
@@ -75,8 +80,8 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-// each token must have a comma (or end) immediately following
-static const char PROGMEM SR_DEFAULTS[] = "line, posx, posy, posz, posa, feed, vel, unit, coor, dist, frmo, admo, momo, stat";
+// token must be a separated by commas & no spaces allowed
+static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,admo,frmo,momo,stat";
 // Alternate SR that reports in drawable units
 //static const char PROGMEM SR_DEFAULTS[] = "line,mpox,mpoy,mpoz,mpoa,coor,ofsa,ofsx,ofsy,ofsz,dist,unit,stat,homz,homy,homx,momo";
 

@@ -92,7 +92,7 @@ void json_parser(char *str)
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(&nv, str);
 	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-	sr_request_status_report(SR_IMMEDIATE_REQUEST); // generate incremental status report to show any changes
+	sr_request_status_report(SR_REQUEST_ASAP);      // generate incremental status report to show any changes
 }
 
 /*
@@ -703,7 +703,7 @@ void json_print_response(uint8_t status)
 
     // Filter the NV pairs down to the JSON verbosity reporting level
 	} else if (cm.machine_state != MACHINE_INITIALIZING) {	// always do full echo during startup
-		uint8_t nv_type;
+		nvType nv_type;
 		do {
             if (nv->valuetype == TYPE_EMPTY) {		        // find end of list
                 break;
@@ -716,8 +716,10 @@ void json_print_response(uint8_t status)
 
             // filter output according to JV setting
 			nv_type = nv_get_type(nv);
-			if (nv_type == NV_TYPE_GCODE) {
-				if (js.echo_json_gcode_block == false) {	// skip command echo if not enabled
+            if (nv_type == NV_TYPE_REPORT) {                // always display all of status, queue and exception reports
+                break;
+			} else if (nv_type == NV_TYPE_GCODE) {
+				if (!js.echo_json_gcode_block) {	        // skip command echo if not enabled
 					nv->valuetype = TYPE_SKIP;
 				}
 			} else if (nv_type == NV_TYPE_MESSAGE) {		// skip message echo if not enabled

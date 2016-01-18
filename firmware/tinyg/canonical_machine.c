@@ -1636,7 +1636,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
 		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
 	}
-	sr_request_status_report(SR_IMMEDIATE_REQUEST);		// request a final status report (not unfiltered)
+	sr_request_status_report(SR_REQUEST_ASAP);		    // request a final status report (not unfiltered)
 }
 
 void cm_cycle_start()

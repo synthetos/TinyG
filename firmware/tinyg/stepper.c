@@ -484,7 +484,7 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {
 				st_run.mot[m].power_state = MOTOR_IDLE;
 				_deenergize_motor(m);
-                sr_request_status_report(SR_TIMED_REQUEST);		// request a status report when motors shut down
+                sr_request_status_report(SR_REQUEST_TIMED);		// request a status report when motors shut down
 			}
 		}
 	}

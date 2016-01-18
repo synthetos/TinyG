@@ -120,7 +120,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "",   "plan",_f0, 0, cm_print_plan, cm_get_plan, set_nul,(uint32_t *)&cs.null, 0 },       // plane select
 	{ "",   "path",_f0, 0, cm_print_path, cm_get_path, set_nul,(uint32_t *)&cs.null, 0 },       // path control mode
 	{ "",   "dist",_f0, 0, cm_print_dist, cm_get_dist, set_nul,(uint32_t *)&cs.null, 0 },       // distance mode
-//	{ "",   "admo",_f0, 0, cm_print_admo, cm_get_admo, set_nul,(uint32_t *)&cs.null, 0 },       // arc distance mode
+	{ "",   "admo",_f0, 0, cm_print_admo, cm_get_admo, set_nul,(uint32_t *)&cs.null, 0 },       // arc distance mode
 	{ "",   "frmo",_f0, 0, cm_print_frmo, cm_get_frmo, set_nul,(uint32_t *)&cs.null, 0 },       // feed rate mode
 	{ "",   "tool",_f0, 0, cm_print_tool, cm_get_toolv,set_nul,(uint32_t *)&cs.null, 0 },       // active tool
 //	{ "",   "tick",_f0, 0, tx_print_int,  get_u32,     set_u32,(uint32_t *)&rtc.sys_ticks, 0 },	// tick count

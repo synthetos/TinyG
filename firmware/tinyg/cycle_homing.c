@@ -339,7 +339,7 @@ static stat_t _homing_abort(int8_t axis)
 {
 	cm_set_axis_jerk(axis, hm.saved_jerk);					// restore the max jerk value
 	_homing_finalize_exit(axis);
-	sr_request_status_report(SR_TIMED_REQUEST);
+	sr_request_status_report(SR_REQUEST_TIMED);
 	return (STAT_HOMING_CYCLE_FAILED);						// homing state remains HOMING_NOT_HOMED
 }
 

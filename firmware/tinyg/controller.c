@@ -298,7 +298,7 @@ static void _dispatch_kernel()
     	nv->valuetype = TYPE_STRING;
     	float status = gc_gcode_parser(cs.bufp);
     	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
-    	sr_request_status_report(SR_TIMED_REQUEST);         // generate incremental status report to show any changes
+    	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
 	}
 }
 

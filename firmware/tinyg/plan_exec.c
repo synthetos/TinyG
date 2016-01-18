@@ -209,7 +209,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if ((cm.hold_state == FEEDHOLD_DECEL) && (status == STAT_OK)) {
 		cm.hold_state = FEEDHOLD_HOLD;
 		cm_set_motion_state(MOTION_HOLD);
-		sr_request_status_report(SR_IMMEDIATE_REQUEST);
+		sr_request_status_report(SR_REQUEST_ASAP);
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
@@ -220,7 +220,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	//	  STAT_OK		MOVE_NEW			mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) {
-		sr_request_status_report(SR_TIMED_REQUEST);		// continue reporting mr buffer
+		sr_request_status_report(SR_REQUEST_TIMED);		// continue reporting mr buffer
 	} else {
 		mr.move_state = MOVE_OFF;						// reset mr buffer
 		mr.section_state = SECTION_OFF;
