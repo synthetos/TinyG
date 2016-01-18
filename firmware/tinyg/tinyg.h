@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.05	// new assertions style, with panics
+#define TINYG_FIRMWARE_BUILD        446.06	// ubergroup strtok style
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

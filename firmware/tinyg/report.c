@@ -204,9 +204,6 @@ void sr_init_status_report_P(const char *sr_csv_P)
     } else { // load the sr_csv_P list provided as an arg and persist it NVram
         char *rd = strtok(sr_csv, ",");                     // initialize strtok & get pointer for token parsing
     	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {            // initialize the SR list
-            if (i>0) {
-                rd = strtok(NULL, ",");                     // subsequent strtok() calls
-            }
             if (rd == NULL) {
                 nv->value_int = NO_MATCH;                   // ensures unused positions are disabled (-1)
             } else {
@@ -219,6 +216,7 @@ void sr_init_status_report_P(const char *sr_csv_P)
             nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
             sr.value_int[i] = 8675309;                      // pre-load SR values with an unlikely number
             nv->index++;                                    // increment SR NVM index
+            rd = strtok(NULL, ",");                         // next strtok() call
         }
     }
     sr.status_report_requested = false;

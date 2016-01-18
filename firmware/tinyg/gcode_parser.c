@@ -414,16 +414,17 @@ static stat_t _parse_gcode_block(char *buf)
 			case 'I': SET_NON_MODAL (arc_offset[0], value);
 			case 'J': SET_NON_MODAL (arc_offset[1], value);
 			case 'K': SET_NON_MODAL (arc_offset[2], value);
+            case 'L': SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
-			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);		// line number
-			case 'L': break;										// not used for anything
-			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
+			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
+//			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
+    	    default: return (cm_alarm(STAT_GCODE_COMMAND_UNSUPPORTED, cs.saved_buf));
 		}
 		if(status != STAT_OK) break;
 	}
-    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
-    	return (cm_alarm(status, cs.saved_buf));
-    }
+//    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
+//    	return (cm_alarm(status, cs.saved_buf));
+//    }
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);
     }

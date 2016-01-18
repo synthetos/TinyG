@@ -772,59 +772,41 @@ void preprocess_float(nvObj_t *nv)
  * _do_all()		- get and print all groups uber group
  */
 
- // helper to print multiple groups in a list
-#define GROUP_LIST_MAX 48
+// helper to print multiple groups in a list
+#define LONGEST_CSV_STRING sizeof("g54,g55,g56,g57,g58,g59,g92,g28,g30")+1
+
 static stat_t _do_group_csv_P(nvObj_t *nv, uint8_t items, const char *list_P)
 {
-    char list[GROUP_LIST_MAX]; strcpy_P(list, list_P);
-    char *wr = list;     // pointer to write NULL terminations over commas
-    char *rd = list;     // pointer to pass token
-
-	for (; items > 0; items--) {
-
-        // find the token to display
-        while (true) {
-            if ((*wr == ',') || (*wr == NUL)) {
-                *wr = NUL;
-                break;
-            }
-            if (++wr > (list + GROUP_LIST_MAX)) {
-                return (STAT_INTERNAL_RANGE_ERROR);
-            }
+    char list[LONGEST_CSV_STRING]; strcpy_P(list, list_P);
+    char *rd = strtok(list, ",");               // initialize strtok & get pointer for csv item parsing
+    for (uint8_t i=0; i<items; i++) {           // the list might be longer than the # of items to display
+        nv_reset_nv_list(NUL);
+        nv = NV_BODY;
+        strncpy(nv->token, rd, TOKEN_LEN);
+        nv->index = nv_get_index("", nv->token);
+//		nv->valuetype = TYPE_PARENT;            // left in for clarity. Not required
+        nv_populate_nvObj_by_index(nv);
+        nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
+        if ((rd = strtok(NULL, ",")) == NULL) { // the other break condition
+            break;
         }
-
-        // process the token
-		nv_reset_nv_list(NUL);
-		nv = NV_BODY;
-		strncpy(nv->token, rd, TOKEN_LEN);
-		nv->index = nv_get_index("", nv->token);
-//		nv->valuetype = TYPE_PARENT;        // left in for clarity. Not required
-		nv_populate_nvObj_by_index(nv);
-		nv_print_list(STAT_OK, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT);
-
-        // set up to display next token
-        rd = (++wr);
-	}
+    }
 	return (STAT_NO_DISPLAY);
 }
 
-static const char PROGMEM motor_list[] = "1,2,3,4,5,6";     // Note: spaces are not allowed
 static stat_t _do_motors(nvObj_t *nv)	// print parameters for all motor groups
 {
-    return(_do_group_csv_P(nv, MOTORS, motor_list));
+    return(_do_group_csv_P(nv, MOTORS, PSTR("1,2,3,4,5,6")));
 }
 
-static const char PROGMEM axis_list[] = "x,y,z,a,b,c";      // Note: spaces are not allowed
 static stat_t _do_axes(nvObj_t *nv)	// print parameters for all axis groups
 {
-    return(_do_group_csv_P(nv, AXES, axis_list));
-
+    return(_do_group_csv_P(nv, AXES, PSTR("x,y,z,a,b,c")));
 }
 
-static const char PROGMEM offset_list[] = "g54,g55,g56,g57,g58,g59,g92,g28,g30";    // Note: spaces are not allowed
 static stat_t _do_offsets(nvObj_t *nv)	// print offset parameters for G54-G59,G92, G28, G30
 {
-    return(_do_group_csv_P(nv, 9, offset_list));
+    return(_do_group_csv_P(nv, 9, PSTR("g54,g55,g56,g57,g58,g59,g92,g28,g30")));
 }
 
 static stat_t _do_all(nvObj_t *nv)	    // print all parameters
