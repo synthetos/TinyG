@@ -2167,6 +2167,7 @@ const char fmt_momo[] PROGMEM = "Motion mode:         %s\n";
 const char fmt_plan[] PROGMEM = "Plane:               %s\n";
 const char fmt_path[] PROGMEM = "Path Mode:           %s\n";
 const char fmt_dist[] PROGMEM = "Distance mode:       %s\n";
+const char fmt_admo[] PROGMEM = "Arc Distance mode:   %s\n";
 const char fmt_frmo[] PROGMEM = "Feed rate mode:      %s\n";
 const char fmt_tool[] PROGMEM = "Tool number          %d\n";
 
@@ -2196,6 +2197,7 @@ void cm_print_momo(nvObj_t *nv) { text_print_str(nv, fmt_momo);}
 void cm_print_plan(nvObj_t *nv) { text_print_str(nv, fmt_plan);}
 void cm_print_path(nvObj_t *nv) { text_print_str(nv, fmt_path);}
 void cm_print_dist(nvObj_t *nv) { text_print_str(nv, fmt_dist);}
+void cm_print_admo(nvObj_t *nv) { text_print_str(nv, fmt_admo);}
 void cm_print_frmo(nvObj_t *nv) { text_print_str(nv, fmt_frmo);}
 void cm_print_tool(nvObj_t *nv) { text_print_int(nv, fmt_tool);}
 

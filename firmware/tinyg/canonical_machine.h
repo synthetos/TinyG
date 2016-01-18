@@ -848,6 +848,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	void cm_print_plan(nvObj_t *nv);
 	void cm_print_path(nvObj_t *nv);
 	void cm_print_dist(nvObj_t *nv);
+	void cm_print_admo(nvObj_t *nv);
 	void cm_print_frmo(nvObj_t *nv);
 	void cm_print_tool(nvObj_t *nv);
 
@@ -905,6 +906,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 	#define cm_print_plan tx_print_stub
 	#define cm_print_path tx_print_stub
 	#define cm_print_dist tx_print_stub
+	#define cm_print_admo tx_print_stub
 	#define cm_print_frmo tx_print_stub
 	#define cm_print_tool tx_print_stub
 

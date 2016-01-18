@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.08	// changes to profile handling - no common settings
+#define TINYG_FIRMWARE_BUILD        446.09	// added admo report to config_app, but it breaks memory somehow - so it's commented out
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

@@ -76,7 +76,9 @@
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
 // each token must have a comma (or end) immediately following
-static const char PROGMEM SR_DEFAULTS[] = "line, posx, posy, posz, posa, feed, vel, unit, coor, dist, frmo, admo, momo, stat";
+//static const char PROGMEM SR_DEFAULTS[] = "line, posx, posy, posz, posa, feed, vel, unit, coor, dist, frmo, admo, momo, stat";
+//static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,frmo,admo,momo,stat";
+static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,frmo,momo,stat";
 // Alternate SR that reports in drawable units
 //static const char PROGMEM SR_DEFAULTS[] = "line,mpox,mpoy,mpoz,mpoa,coor,ofsa,ofsx,ofsy,ofsz,dist,unit,stat,homz,homy,homx,momo";
 
