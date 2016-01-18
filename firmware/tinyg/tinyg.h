@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.07	// minor fix to spindle init
+#define TINYG_FIRMWARE_BUILD        446.08	// changes to profile handling - no common settings
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

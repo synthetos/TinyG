@@ -164,22 +164,6 @@ void cm_set_motion_state(const cmMotionState motion_state)
  cmHomingState   cm_get_homing_state()  { return cm.homing_state;}
 
 /*
-cmCombinedState cm_get_combined_state()
-{
-	if (cm.cycle_state == CYCLE_OFF) { cm.combined_state = cm.machine_state;}
-	else if (cm.cycle_state == CYCLE_PROBE) { cm.combined_state = COMBINED_PROBE;}
-	else if (cm.cycle_state == CYCLE_HOMING) { cm.combined_state = COMBINED_HOMING;}
-	else if (cm.cycle_state == CYCLE_JOG) { cm.combined_state = COMBINED_JOG;}
-	else {
-		if (cm.motion_state == MOTION_RUN) cm.combined_state = COMBINED_RUN;
-		if (cm.motion_state == MOTION_HOLD) cm.combined_state = COMBINED_HOLD;
-	}
-	if (cm.machine_state == MACHINE_SHUTDOWN) { cm.combined_state = COMBINED_SHUTDOWN;}
-
-	return cm.combined_state;
-}
-*/
-/*
  * cm_get_combined_state() - combines raw states into something a user might want to see
  *
  *  Note:

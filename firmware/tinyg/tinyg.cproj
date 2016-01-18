@@ -290,9 +290,6 @@
     <Compile Include="settings\settings_default.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_openpnp.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="settings\settings_othermill.h">
       <SubType>compile</SubType>
     </Compile>
@@ -302,10 +299,7 @@
     <Compile Include="settings\settings_shapeoko2.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_test.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="settings\settings_Ultimaker.h">
+    <Compile Include="settings\settings_ultimaker.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_zen7x12.h">

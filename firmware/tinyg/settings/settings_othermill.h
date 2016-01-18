@@ -38,57 +38,55 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
-#define JERK_MAX					500			// 500 million mm/(min^3)
-#define JERK_HOMING					1000		// 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
-#define JUNCTION_DEVIATION			0.01		// default value, in mm
-#define JUNCTION_ACCELERATION		100000		// centripetal acceleration around corners
-#define LATCH_VELOCITY				25			// reeeeally slow for accuracy
+#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
+#define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
+#define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
 
-// *** settings.h overrides ***
-// Note: there are some commented test values below
+#define SPINDLE_ENABLE_POLARITY     1                       // 0=active low, 1=active high
+#define SPINDLE_DIR_POLARITY        0                       // 0=clockwise is low, 1=clockwise is high
+#define SPINDLE_PAUSE_ON_HOLD       true
+#define SPINDLE_DWELL_TIME          1.0
 
-#undef MOTOR_POWER_MODE
-#define MOTOR_POWER_MODE MOTOR_POWERED_IN_CYCLE
+#define COOLANT_MIST_POLARITY       1                       // 0=active low, 1=active high
+#define COOLANT_FLOOD_POLARITY      1                       // 0=active low, 1=active high
+#define COOLANT_PAUSE_ON_HOLD       false
 
-//#undef  STATUS_REPORT_DEFAULTS
-//#define STATUS_REPORT_DEFAULTS  "mpox","mpoy","mpoz","mpoa","ofsx","ofsy","ofsz","ofsa","unit","stat","coor","momo","dist","home","hold","macs","cycs","mots","plan","prbe"
+#define MOTOR_IDLE_TIMEOUT			2.00					// seconds to maintain motor at full power before idling
+#define MOTOR_POWER_LEVEL			0.25					// default motor power level (0,000 - 1.000, ARM only)
+#define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// one of: MOTOR_DISABLED, MOTOR_ALWAYS_POWERED,
+                                                            //         MOTOR_POWERED_IN_CYCLE, MOTOR_POWERED_ONLY_WHEN_MOVING
+#define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
 
-#undef	SWITCH_TYPE
-#define SWITCH_TYPE 				SW_TYPE_NORMALLY_CLOSED
+// Communications and reporting settings
 
-#undef	COMM_MODE
-#define COMM_MODE					JSON_MODE
+#define COMM_MODE                   JSON_MODE               // one of: TEXT_MODE, JSON_MODE
+#define TEXT_VERBOSITY              TV_VERBOSE              // one of: TV_SILENT, TV_VERBOSE
+#define JSON_VERBOSITY              JV_CONFIGS              // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_SYNTAX                 JSON_SYNTAX_STRICT      // one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 
-#undef	JSON_VERBOSITY
-#define JSON_VERBOSITY				JV_CONFIGS		// one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+#define XIO_ENABLE_FLOW_CONTROL     FLOW_CONTROL_XON        // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+#define XIO_EXPAND_CR               false                   // serial IO settings (AVR only)
+#define XIO_ENABLE_ECHO             false
 
-#undef  JSON_SYNTAX_MODE
-#define JSON_SYNTAX_MODE 			JSON_SYNTAX_STRICT
+#define STATUS_REPORT_VERBOSITY     SR_FILTERED             // one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-//#undef	QUEUE_REPORT_VERBOSITY
-//#define QUEUE_REPORT_VERBOSITY		QR_SINGLE
+static const char PROGMEM SR_DEFAULTS[] = "mpox, mpoy, mpoz, mpoa, ofsx, ofsy, ofsz, ofsa, unit, stat, coor, momo, dist, home, hold, macs, cycs, mots, plan, prbe";
 
-#undef	STATUS_REPORT_VERBOSITY
-#define STATUS_REPORT_VERBOSITY		SR_FILTERED
+#define QUEUE_REPORT_VERBOSITY		QR_SINGLE		        // one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
-#undef COM_ENABLE_FLOW_CONTROL
-#define COM_ENABLE_FLOW_CONTROL		FLOW_CONTROL_XON
-
-#undef GCODE_DEFAULT_COORD_SYSTEM
-#undef GCODE_DEFAULT_UNITS
-#undef GCODE_DEFAULT_PLANE
-#undef GCODE_DEFAULT_COORD_SYSTEM
-#undef GCODE_DEFAULT_PATH_CONTROL
-#undef GCODE_DEFAULT_DISTANCE_MODE
-
-#define GCODE_DEFAULT_UNITS			MILLIMETERS		// MILLIMETERS or INCHES
-#define GCODE_DEFAULT_PLANE			CANON_PLANE_XY	// CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
-#define GCODE_DEFAULT_COORD_SYSTEM	G55				// G54, G55, G56, G57, G58 or G59
-#define GCODE_DEFAULT_PATH_CONTROL 	PATH_CONTINUOUS
+// Gcode startup defaults
+#define GCODE_DEFAULT_UNITS         MILLIMETERS             // MILLIMETERS or INCHES
+#define GCODE_DEFAULT_PLANE         CANON_PLANE_XY          // CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
+#define GCODE_DEFAULT_COORD_SYSTEM  G55                     // G54, G55, G56, G57, G58 or G59
+#define GCODE_DEFAULT_PATH_CONTROL  PATH_CONTINUOUS
 #define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
 
-// *** motor settings ***
 
+// *** Motor settings ************************************************************************************
 /* WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
    newer machines use a stepper which has the same config as the other axes.
    The following settings should be used for can stack machines:
@@ -99,6 +97,12 @@
 
 #define SCREW_TRAVEL 5.08     // actual value
 //#define SCREW_TRAVEL 10.16      // value to make the machine handle 2x size for testing
+
+#define JERK_MAX			    500			        // 500 million mm/(min^3)
+#define JERK_HOMING				1000		        // 1000 million mm/(min^3)		// Jerk during homing needs to stop *fast*
+#define LATCH_VELOCITY			25			        // reeeeally slow for accuracy
+#define JUNCTION_DEVIATION		0.01		        // default value, in mm
+#define JUNCTION_ACCELERATION	100000		        // centripetal acceleration around corners
 
 #define M4_MOTOR_MAP 			AXIS_X				// 1ma
 #define M4_STEP_ANGLE 			1.8					// 1sa
@@ -253,7 +257,7 @@
 #define G54_B_OFFSET 0
 #define G54_C_OFFSET 0
 
-#define G55_X_OFFSET 0			// but the again, so is everyting else (at least for start)
+#define G55_X_OFFSET 0			// but the again, so is everything else (at least for start)
 #define G55_Y_OFFSET 0
 #define G55_Z_OFFSET 0
 #define G55_A_OFFSET 0
@@ -287,3 +291,22 @@
 #define G59_A_OFFSET 0
 #define G59_B_OFFSET 0
 #define G59_C_OFFSET 0
+
+/*** User-Defined Data Defaults ***/
+
+#define USER_DATA_A0	0
+#define USER_DATA_A1	0
+#define USER_DATA_A2	0
+#define USER_DATA_A3	0
+#define USER_DATA_B0	0
+#define USER_DATA_B1	0
+#define USER_DATA_B2	0
+#define USER_DATA_B3	0
+#define USER_DATA_C0	0
+#define USER_DATA_C1	0
+#define USER_DATA_C2	0
+#define USER_DATA_C3	0
+#define USER_DATA_D0	0
+#define USER_DATA_D1	0
+#define USER_DATA_D2	0
+#define USER_DATA_D3	0

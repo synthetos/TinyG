@@ -2,7 +2,7 @@
  * settings_shapeoko375.h - Shapeoko2 500mm table
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -25,14 +25,13 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /* Note: The values in this file are the default settings that are loaded
- * 		 into a virgin EEPROM, and can be changed using the config commands.
- *		 After initial load the EEPROM values (or changed values) are used.
+ *      into a virgin EEPROM, and can be changed using the config commands.
+ *      After initial load the EEPROM values (or changed values) are used.
  *
- *		 System and hardware settings that you shouldn't need to change
- *		 are in system.h  Application settings that also shouldn't need
- *		 to be changed are in tinyg.h
+ *      System and hardware settings that you shouldn't need to change
+ *      are in hardware.h  Application settings that also shouldn't need
+ *      to be changed are in tinyg.h
  */
-
 /***********************************************************************/
 /**** Shapeoko2 500mm profile ********************************************/
 /***********************************************************************/
@@ -40,21 +39,62 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Shapeoko2 500mm profile"
 
-#define JUNCTION_DEVIATION		0.01	// default value, in mm - smaller is faster
-#define JUNCTION_ACCELERATION	2000000	// 2 million - centripetal acceleration around corners
+#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
+#define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
+#define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
 
-// *** settings.h overrides ***
+#define SPINDLE_ENABLE_POLARITY     1                       // 0=active low, 1=active high
+#define SPINDLE_DIR_POLARITY        0                       // 0=clockwise is low, 1=clockwise is high
+#define SPINDLE_PAUSE_ON_HOLD       true
+#define SPINDLE_DWELL_TIME          1.0
 
-#undef COMM_MODE
-#define COMM_MODE				JSON_MODE
+#define COOLANT_MIST_POLARITY       1                       // 0=active low, 1=active high
+#define COOLANT_FLOOD_POLARITY      1                       // 0=active low, 1=active high
+#define COOLANT_PAUSE_ON_HOLD       false
 
-#undef JSON_VERBOSITY
-#define JSON_VERBOSITY 			JV_VERBOSE
+#define MOTOR_IDLE_TIMEOUT			2.00					// seconds to maintain motor at full power before idling
+#define MOTOR_POWER_LEVEL			0.25					// default motor power level (0,000 - 1.000, ARM only)
+#define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// one of: MOTOR_DISABLED, MOTOR_ALWAYS_POWERED,
+                                                            //         MOTOR_POWERED_IN_CYCLE, MOTOR_POWERED_ONLY_WHEN_MOVING
+#define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
 
-#undef SWITCH_TYPE
-#define SWITCH_TYPE 			SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+// Communications and reporting settings
 
-// *** motor settings ***
+#define COMM_MODE                   JSON_MODE               // one of: TEXT_MODE, JSON_MODE
+#define TEXT_VERBOSITY              TV_VERBOSE              // one of: TV_SILENT, TV_VERBOSE
+#define JSON_VERBOSITY              JV_MESSAGES             // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_SYNTAX                 JSON_SYNTAX_STRICT      // one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
+
+#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+#define XIO_ENABLE_FLOW_CONTROL     FLOW_CONTROL_XON        // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
+#define XIO_EXPAND_CR               false                   // serial IO settings (AVR only)
+#define XIO_ENABLE_ECHO             false
+
+#define STATUS_REPORT_VERBOSITY     SR_FILTERED             // one of: SR_OFF, SR_FILTERED, SR_VERBOSE
+#define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
+#define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
+
+// each token must have a comma (or end) immediately following
+static const char PROGMEM SR_DEFAULTS[] = "line, posx, posy, posz, posa, feed, vel, unit, coor, dist, frmo, admo, momo, stat";
+// Alternate SR that reports in drawable units
+//static const char PROGMEM SR_DEFAULTS[] = "line,mpox,mpoy,mpoz,mpoa,coor,ofsa,ofsx,ofsy,ofsz,dist,unit,stat,homz,homy,homx,momo";
+
+#define QUEUE_REPORT_VERBOSITY		QR_OFF		            // one of: QR_OFF, QR_SINGLE, QR_TRIPLE
+
+// Gcode startup defaults
+#define GCODE_DEFAULT_UNITS         MILLIMETERS             // MILLIMETERS or INCHES
+#define GCODE_DEFAULT_PLANE         CANON_PLANE_XY          // CANON_PLANE_XY, CANON_PLANE_XZ, or CANON_PLANE_YZ
+#define GCODE_DEFAULT_COORD_SYSTEM  G54                     // G54, G55, G56, G57, G58 or G59
+#define GCODE_DEFAULT_PATH_CONTROL  PATH_CONTINUOUS
+#define GCODE_DEFAULT_DISTANCE_MODE ABSOLUTE_MODE
+
+
+// *** Motor settings ************************************************************************************
+
+#define JUNCTION_DEVIATION		0.01	    // default value, in mm - smaller is faster
+#define JUNCTION_ACCELERATION	2000000	    // 2 million - centripetal acceleration around corners
+#define JUNCTION_AGGRESSION     0.75		// new cornering algorithm - between 0.05 and 1.00 (max)
 
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			1.8		// 1sa
@@ -232,6 +272,19 @@
 #define C_LATCH_BACKOFF			5
 #define C_ZERO_BACKOFF			2
 
+// *** PWM SPINDLE CONTROL ***
+
+#define P1_PWM_FREQUENCY        100					// in Hz
+#define P1_CW_SPEED_LO          1000				// in RPM (arbitrary units)
+#define P1_CW_SPEED_HI          2000
+#define P1_CW_PHASE_LO          0.125				// phase [0..1]
+#define P1_CW_PHASE_HI          0.2
+#define P1_CCW_SPEED_LO         1000
+#define P1_CCW_SPEED_HI         2000
+#define P1_CCW_PHASE_LO         0.125
+#define P1_CCW_PHASE_HI         0.2
+#define P1_PWM_PHASE_OFF        0.1
+
 // *** DEFAULT COORDINATE SYSTEM OFFSETS ***
 // Our convention is:
 //	- leave G54 in machine coordinates to act as a persistent absolute coordinate system
@@ -280,4 +333,22 @@
 #define G59_B_OFFSET 0
 #define G59_C_OFFSET 0
 
+/*** User-Defined Data Defaults ***/
+
+#define USER_DATA_A0	0
+#define USER_DATA_A1	0
+#define USER_DATA_A2	0
+#define USER_DATA_A3	0
+#define USER_DATA_B0	0
+#define USER_DATA_B1	0
+#define USER_DATA_B2	0
+#define USER_DATA_B3	0
+#define USER_DATA_C0	0
+#define USER_DATA_C1	0
+#define USER_DATA_C2	0
+#define USER_DATA_C3	0
+#define USER_DATA_D0	0
+#define USER_DATA_D1	0
+#define USER_DATA_D2	0
+#define USER_DATA_D3	0
 
