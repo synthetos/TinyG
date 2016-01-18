@@ -38,15 +38,21 @@ static void _exec_spindle_control(float *value, bool *flags);
 static void _exec_spindle_speed(float *value, bool *flags);
 
 /*
- * cm_spindle_init()
+ * spindle_init()
+ * spindle_reset()
  */
-void cm_spindle_init()
+void spindle_init()
 {
 	if( pwm.c[PWM_1].frequency < 0 )
 		pwm.c[PWM_1].frequency = 0;
 
     pwm_set_freq(PWM_1, pwm.c[PWM_1].frequency);
     pwm_set_duty(PWM_1, pwm.c[PWM_1].phase_off);
+}
+
+void spindle_reset()
+{
+    return;
 }
 
 /*

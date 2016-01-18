@@ -590,7 +590,7 @@ void canonical_machine_init()
 	canonical_machine_init_assertions();		    // establish assertions
 	ACTIVE_MODEL = MODEL;						    // setup initial Gcode model pointer
 	// sub-system inits
-	cm_spindle_init();
+	spindle_init();
 	cm_arc_init();
     canonical_machine_reset();                      // always finish an init with reset
 }

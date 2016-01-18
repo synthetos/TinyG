@@ -30,7 +30,9 @@
 #include "planner.h"
 #include "stepper.h"
 #include "encoder.h"
-#include "switch.h"
+#include "spindle.h"
+//#include "coolant.h"
+#include "switch.h"     // #include "gpio.h"
 #include "test.h"
 #include "pwm.h"
 #include "xio.h"
@@ -149,8 +151,8 @@ static void _application_init_startup(void)
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // FIRST:  depends on xio_init()
 	config_init();					            // SECOND: read config records from eeprom
 	canonical_machine_reset();                  // depends on config_init()
-//    spindle_init();                           // depends on config_init()
-//    spindle_reset();
+    spindle_init();                             // depends on config_init()
+    spindle_reset();
 
 #ifdef __AVR
 	// now bring up the interrupts and get started
@@ -171,7 +173,7 @@ static void _application_init_startup(void)
 int main(void)
 {
 #ifdef __AVR
-    cli();
+//    cli();
 #endif
 
 	// system initialization
