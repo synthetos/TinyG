@@ -548,64 +548,45 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
     // Serialize the list - Note: nv points to opening r{} or first usable object past continuation text
     do {
-        // opening and closing curlies, commas between elements
+        // opening and closing curlies, leading comma for the current NV pair
         if (nv->pv->valuetype == TYPE_PARENT) {     // cases where previous NV was a parent
             if (nv->depth <= prev_depth) {
                 while (nv->depth <= prev_depth--) {
                     *str++ = '}';                   // terminate parent with no children --> {}
                 }
-                *str++ = ',';                       // continuing comma for current NV pair
+                *str++ = ',';
             }
         } else if (nv->depth < prev_depth) {        // terminating a parent through 1 or more levels
             while (nv->depth < prev_depth--) {
                 *str++ = '}';                       // closing curly(s) for previous NV pair (might be the last)
             }
-            *str++ = ',';                           // leading comma for current NV pair
+            *str++ = ',';
         } else if (nv->depth == prev_depth) {
-            *str++ = ',';                           // leading comma for current NV pair
+            *str++ = ',';
         }
 
         // serialize name
 		if (js.json_syntax == JSON_SYNTAX_RELAXED) { // write name
-			str += sprintf_P((char *)str, PSTR("%s:"), nv->token);
+			str += sprintf_P(str, PSTR("%s:"), nv->token);
 		} else {
-			str += sprintf_P((char *)str, PSTR("\"%s\":"), nv->token);
+			str += sprintf_P(str, PSTR("\"%s\":"), nv->token);
 		}
 
 		// serialize value
-		if (nv->valuetype == TYPE_PARENT) {
-            *str++ = '{';
+
+        switch (nv->valuetype) {
+            case TYPE_NULL :    { str += sprintf_P(str, PSTR("null")); break; }
+            case TYPE_BOOL :    { if (nv->value_int) { str += sprintf_P(str, PSTR("true")); }
+    			                                else { str += sprintf_P(str, PSTR("false")); } break; }
+            case TYPE_INTEGER : { str += sprintf_P(str, PSTR("%lu"), nv->value_int); break; }
+            case TYPE_DATA :    { uint32_t *v = (uint32_t*)&nv->value_flt; str += sprintf_P(str, PSTR("\"0x%lx\""), *v); break; }
+            case TYPE_FLOAT :   { preprocess_float(nv); str += fntoa(str, nv->value_flt, nv->precision); break; }
+            case TYPE_STRING :  { if ((str + strlen(*nv->stringp)) >= out_max) { return (-1); }
+                                  str += sprintf_P(str, PSTR("\"%s\""), *nv->stringp); break; }
+            case TYPE_ARRAY :   { str += sprintf_P(str, PSTR("[%s]"), *nv->stringp); break; }
+            case TYPE_PARENT :  { *str++ = '{'; break; }
+            default : break;
         }
-		else if (nv->valuetype == TYPE_NULL)	{
-            str += sprintf_P(str, PSTR("null"));    // Note that that "" is NOT null.
-        }
-		else if (nv->valuetype == TYPE_INTEGER)	{
-			str += sprintf_P(str, PSTR("%lu"), nv->value_int);
-		}
-		else if (nv->valuetype == TYPE_DATA) {
-			uint32_t *v = (uint32_t*)&nv->value_flt;
-			str += sprintf_P(str, PSTR("\"0x%lx\""), *v);
-		}
-		else if (nv->valuetype == TYPE_STRING) {
-            if ((str + strlen(*nv->stringp)) >= out_max) {
-                return (-1);
-            }
-            str += sprintf_P(str, PSTR("\"%s\""), *nv->stringp);
-        }
-		else if (nv->valuetype == TYPE_ARRAY) {
-            str += sprintf_P(str, PSTR("[%s]"), *nv->stringp);
-        }
-		else if (nv->valuetype == TYPE_FLOAT) {
-            preprocess_float(nv);
-			str += fntoa(str, nv->value_flt, nv->precision);
-		}
-		else if (nv->valuetype == TYPE_BOOL) {
-			if (nv->value_int == true) {
-                str += sprintf_P(str, PSTR("true"));
-			} else {
-                str += sprintf_P(str, PSTR("false"));
-            }
-		}
 		if (str >= out_max) { return (-1);}         // test for buffer overrun
         prev_depth = nv->depth;
 	} while ((nv = nv->nx) != NULL);
