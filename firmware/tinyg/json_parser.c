@@ -548,21 +548,21 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
     // Serialize the list - Note: nv points to opening r{} or first usable object past continuation text
     do {
-        // write opening and closing curlies, commas between elements
-        if (nv->pv->valuetype == TYPE_PARENT) {     // DINK handling (parents w/no children)
-            while (nv->depth <= prev_depth) {       // changes previous depth so remaining statements execute correctly
-                *str++ = '}';                       // terminate parent with no children --> {}
-                prev_depth--;
+        // opening and closing curlies, commas between elements
+        if (nv->pv->valuetype == TYPE_PARENT) {     // cases where previous NV was a parent
+            if (nv->depth <= prev_depth) {
+                while (nv->depth <= prev_depth--) {
+                    *str++ = '}';                   // terminate parent with no children --> {}
+                }
+                *str++ = ',';                       // continuing comma for current NV pair
             }
-        }
-        if (nv->depth < prev_depth) {               // nv is higher than previous - write closing curlies
-            while (nv->depth < prev_depth) {
-                *str++ = '}';                       // write closing curly(s) for previous NV pair (might be the last)
-                prev_depth--;
+        } else if (nv->depth < prev_depth) {        // terminating a parent through 1 or more levels
+            while (nv->depth < prev_depth--) {
+                *str++ = '}';                       // closing curly(s) for previous NV pair (might be the last)
             }
-        }
-        if (nv->depth <= prev_depth) {
-            *str++ = ',';                           // write leading comma for this NV pair
+            *str++ = ',';                           // leading comma for current NV pair
+        } else if (nv->depth == prev_depth) {
+            *str++ = ',';                           // leading comma for current NV pair
         }
 
         // serialize name

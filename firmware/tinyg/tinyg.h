@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.14	// SR testing; further changes to JSON serializer
+#define TINYG_FIRMWARE_BUILD        446.15	// SR testing; more further changes to JSON serializer
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
