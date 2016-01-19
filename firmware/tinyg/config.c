@@ -693,7 +693,7 @@ nvObj_t *nv_relink_nv_list()
     hd = nv;                                // mark the head
     pv = nv;
 	for ( ; i<NV_LIST_LEN; i++, nv++) {
-        if (nv->valuetype < TYPE_NULL) {    // handle TYPE_EMPTY and TYPE_SKIP
+        if (nv->valuetype < TYPE_NULL) {    // skip over TYPE_EMPTY and TYPE_SKIP
             continue;
         }
         pv->nx = nv;                        // Note: the first pair is messed up but gets corrected

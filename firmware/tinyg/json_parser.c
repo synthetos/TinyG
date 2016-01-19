@@ -550,7 +550,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
         // close the previous pair (or write open curly for the first pair)
         if (nv->depth > prev_depth) {               // opening curly, parent opening curly (Note: no nesting if multiple depth level jump)
      		*str++ = '{';
- 		} else if (nv->depth == prev_depth) {       // comma if no depth change
+ 		} else if (nv->depth <= prev_depth) {       // close curly if <=, otherwise comma if no depth change
             if (nv->pv->valuetype == TYPE_PARENT) { // previous parent with no children
                 *str++ = '{'; *str++ = '}';
             }
@@ -595,10 +595,10 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 			str += fntoa(str, nv->value_flt, nv->precision);
 		}
 		else if (nv->valuetype == TYPE_BOOL) {
-			if (nv->value_int == false) {
-                str += sprintf_P(str, PSTR("false"));
-			} else {
+			if (nv->value_int == true) {
                 str += sprintf_P(str, PSTR("true"));
+			} else {
+                str += sprintf_P(str, PSTR("false"));
             }
 		}
 		if (str >= out_max) {                       // test for buffer overrun

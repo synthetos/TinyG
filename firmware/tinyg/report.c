@@ -272,6 +272,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
             sr.status_report_list[i] = NO_MATCH;
         }
         _persist_status_report_list(nv);
+        nv->valuetype = TYPE_PARENT;                // change to a parent to return a null set
         return (STAT_OK);
     }
 
