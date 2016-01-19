@@ -69,7 +69,7 @@
 
 #define COMM_MODE                   JSON_MODE               // one of: TEXT_MODE, JSON_MODE
 #define TEXT_VERBOSITY              TV_VERBOSE              // one of: TV_SILENT, TV_VERBOSE
-#define JSON_VERBOSITY              JV_MESSAGES             // one of: JV_SILENT, JV_FOOTER, JV_CONFIGS, JV_MESSAGES, JV_LINENUM, JV_VERBOSE
+#define JSON_VERBOSITY              JV_CONFIGS              // one of: JV_SILENT, JV_FOOTER, JV_MESSAGES, JV_CONFIGS, JV_LINENUM, JV_VERBOSE
 #define JSON_SYNTAX                 JSON_SYNTAX_STRICT      // one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 
 #define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE

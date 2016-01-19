@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.12	// fixes for _persist_status_report_list()
+#define TINYG_FIRMWARE_BUILD        446.13	// SR testing; reworked JSON parser - cleaner; revised JSON verbosity in profiles
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

@@ -544,22 +544,19 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
         prev_depth = 1;                             // text continuations are always at depth 1
     }
 
-    // Serialize the list - Note: nv points to opening r{} or to the first usable object past the continuation text
-	while (true) {
-
-        // close the previous pair (or write open curly for the first pair)
-        if (nv->depth > prev_depth) {               // opening curly, parent opening curly (Note: no nesting if multiple depth level jump)
-     		*str++ = '{';
- 		} else if (nv->depth <= prev_depth) {       // close curly if <=, otherwise comma if no depth change
-            if (nv->pv->valuetype == TYPE_PARENT) { // previous parent with no children
-                *str++ = '{'; *str++ = '}';
+    // Serialize the list - Note: nv points to opening r{} or first usable object past continuation text
+	do {
+        // write opening and closing curlies, commas between elements
+        while (nv->depth < prev_depth) {            // write closing curly(s) for previous NV pair (might be the last)
+            *str++ = '}';
+            prev_depth--;
+        }
+        if (nv->depth > prev_depth) {               // write opening curly(s)
+            while (nv->depth > prev_depth) {        // should never be more than 1, actually...
+         		*str++ = '{';                       //...but this keeps the JSON correct...
+                prev_depth++;                       //...in case multiple levels are skipped
             }
-            *str++ = ',';
-        } else {
-            while (nv->depth < prev_depth) {        // nested close curlies followed by a comma
-                prev_depth--;
-                *str++ = '}';
-            }
+        } else if (nv->pv->valuetype != TYPE_PARENT) {
             *str++ = ',';
         }
 
@@ -570,9 +567,13 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 			str += sprintf_P((char *)str, PSTR("\"%s\":"), nv->token);
 		}
 
-		// serialize value (Note: parent objects are handled implicitly by depth changes)
-		if (nv->valuetype == TYPE_NULL)	{
-            str += sprintf_P(str, PSTR("null"));        // Note that that "" is NOT null.
+		// serialize value
+		if (nv->valuetype == TYPE_PARENT) {
+            *str++ = '{';                           // opening curly for parent
+            prev_depth++;                           // adjust the depth to the child level
+        }
+		else if (nv->valuetype == TYPE_NULL)	{
+            str += sprintf_P(str, PSTR("null"));    // Note that that "" is NOT null.
         }
 		else if (nv->valuetype == TYPE_INTEGER)	{
 			str += sprintf_P(str, PSTR("%lu"), nv->value_int);
@@ -601,28 +602,17 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
                 str += sprintf_P(str, PSTR("false"));
             }
 		}
-		if (str >= out_max) {                       // test for buffer overrun
-            return (-1);
-        }
-        prev_depth = nv->depth;
-		if ((nv = nv->nx) == NULL) {                // end of the list
-            break;
-        }
-        if (nv->valuetype == TYPE_EMPTY) {          // another end-of-list condition
-            break;
-        }
-	}
+		if (str >= out_max) { return (-1);}         // test for buffer overrun
+	} while ((nv = nv->nx) != NULL);
 
-    // test if sufficient space is left for closing curlies, newline and NUL termination
-	if ((str + prev_depth - initial_depth + 2) > (out_buf + out_size)) {
+    // finish up string
+	if ((str + prev_depth - initial_depth + 2) > (out_buf + out_size)) { // test for space
         return (-1);
     }
-
-	// write final closing curlies and NEWLINE
-    while (prev_depth-- > initial_depth) {
+    while (prev_depth-- > initial_depth) {	        // write closing curlies
         *str++ = '}';
     }
-	str += sprintf(str, "}\n");	                    // using sprintf for this last one ensures a NUL termination
+	str += sprintf(str, "}\n");	                    // sprintf ensures a NUL termination
 	return (str - out_buf);
 }
 
@@ -722,10 +712,6 @@ void json_print_response(uint8_t status)
 				if (!js.echo_json_gcode_block) {	        // skip command echo if not enabled
 					nv->valuetype = TYPE_SKIP;
 				}
-			} else if (nv_type == NV_TYPE_MESSAGE) {		// skip message echo if not enabled
-				if (js.echo_json_messages == false) {
-					nv->valuetype = TYPE_SKIP;
-				}
 			} else if (nv_type == NV_TYPE_LINENUM) {		// skip line number echo if not enabled
 				if ((js.echo_json_linenum == false) || (nv->value_int == 0)) { // do not report line# 0
 					nv->valuetype = TYPE_SKIP;
@@ -734,6 +720,10 @@ void json_print_response(uint8_t status)
 		        if (js.echo_json_configs == false) {
 					nv->valuetype = TYPE_SKIP;
 				}
+			} else if (nv_type == NV_TYPE_MESSAGE) {		// skip message echo if not enabled
+			    if (js.echo_json_messages == false) {
+    			    nv->valuetype = TYPE_SKIP;
+			    }
             }
 		} while ((nv = nv->nx) != NULL);
 	}
