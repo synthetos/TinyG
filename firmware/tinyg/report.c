@@ -186,37 +186,36 @@ void sr_init_status_report_P(const char *sr_csv_P)
 {
     char sr_csv[ NV_STATUS_REPORT_LEN * (TOKEN_LEN+1) ]; strcpy_P(sr_csv, sr_csv_P);
     uint8_t i;
+    nvObj_t nv;
 
-    nvObj_t *nv = nv_reset_nv_list(NUL);	                // used for status report persistence locations
-    nv->index = nv_get_index("", "se00");                   // set first SR persistence index
-    nv->valuetype = TYPE_INTEGER;
+    nv.index = nv_get_index("", "se00");                    // set first SR persistence index
+    nv.valuetype = TYPE_INTEGER;
     sr.stat_index = nv_get_index("", "stat");               // set index of stat element
     sr.status_report_request = SR_OFF;                      // clear any current requests
 
     // SR CSV list is NULL, load SR from NVram
     if (*sr_csv == NUL) {
         for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-            read_persistent_value(nv);                      // read token index from NVram into nv->value_int element
-            sr.status_report_list[i] = nv->value_int;       // load into the active SR list
+            read_persistent_value(&nv);                     // read token index from NVram into nv->value_int element
+            sr.status_report_list[i] = nv.value_int;        // load into the active SR list
             sr.value_flt[i] = 8675309;                      // pre-load SR values with an unlikely number
-            nv->index++;                                    // increment SR NVM index
+            nv.index++;                                     // increment SR NVM index
         }
 
     } else { // load the sr_csv_P list provided as an arg and persist it NVram
         char *rd = strtok(sr_csv, ",");                     // initialize strtok & get pointer for token parsing
     	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {            // initialize the SR list
             if (rd == NULL) {
-                nv->value_int = NO_MATCH;                   // ensures unused positions are disabled (-1)
+                nv.value_int = NO_MATCH;                    // ensures unused positions are disabled (-1)
             } else {
-                if ((nv->value_int = nv_get_index("", rd)) == NO_MATCH) {
-                    rpt_exception_P(STAT_BAD_STATUS_REPORT_SETTING, sr_csv_P);  // trap mis-configured profile settings
-                    return;
+                if ((nv.value_int = nv_get_index("", rd)) == NO_MATCH) {
+                    rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, rd);  // trap mis-configured profile settings
                 }
             }
-            nv_set(nv);
-            nv_persist(nv);                                 // conditionally persist - automatic by nv_persist()
+            nv_set(&nv);
+            nv_persist(&nv);                                // conditionally persist - automatic by nv_persist()
             sr.value_flt[i] = 8675309;                      // pre-load SR values with an unlikely number
-            nv->index++;                                    // increment SR NVM index
+            nv.index++;                                     // increment SR NVM index
             rd = strtok(NULL, ",");                         // next strtok() call
         }
     }
@@ -270,7 +269,6 @@ stat_t sr_set_status_report(nvObj_t *nv)
             sr.status_report_list[i] = NO_MATCH;
         }
         _persist_status_report_list();
-        nv->valuetype = TYPE_PARENT;                // change to a parent to return a null set
         return (STAT_OK);
     }
 

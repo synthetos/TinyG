@@ -192,8 +192,8 @@ typedef int16_t index_t;				// -1 is reserved for no match (0xFFFF)
 #define NV_LIST_LEN (NV_BODY_LEN+2)		// +2 allows for a header and a footer
 #define NV_MAX_OBJECTS (NV_BODY_LEN-1)	// maximum number of objects in a body string
 #define NO_MATCH (index_t)0xFFFF
-#define NV_STATUS_REPORT_LEN NV_MAX_OBJECTS // max number of status report elements - see cfgArray
-											// **** must also line up in cfgArray, se00 - seXX ****
+#define NV_STATUS_REPORT_LEN 30         // *** must be less than NV_MAX_OBJECTS ***
+									    // **** must also line up in cfgArray, se00 - seXX ****
 
 typedef enum {
 	TEXT_MODE = 0,						// text command line mode
