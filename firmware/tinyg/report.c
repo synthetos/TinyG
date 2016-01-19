@@ -243,23 +243,21 @@ void sr_init_status_report_P(const char *sr_csv_P)
  *    - Malformed JSON fails as usual before this point
  */
 
-static void _persist_status_report_list(nvObj_t *nv)
+static void _persist_status_report_list()
 {
-    nv->index = nv_get_index("","se00");            // set first SR persistence index
-    nv->valuetype = TYPE_INTEGER;
+    nvObj_t nv;                             // local working object
+    nv.index = nv_get_index("","se00");     // set first SR persistence index
+    nv.valuetype = TYPE_INTEGER;
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
-        nv->value_int = sr.status_report_list[i];
-        nv_persist(nv);
-        nv->index++;                                // index of the next SR persistence location
+        nv.value_int = sr.status_report_list[i];
+        nv_persist(&nv);
+        nv.index++;                         // index of the next SR persistence location
     }
-    nv->valuetype = TYPE_BOOL;
 }
 
 stat_t sr_set_status_report(nvObj_t *nv)
 {
-    int8_t i;
-    int8_t j;
-    nvObj_t *nv_first_sr_child = nv->nx;            // save for later
+    int8_t i, j;
 
 	index_t working_list[SR_WORKING_LIST_LEN];      // init working list from the current SR list
 	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
@@ -271,7 +269,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
 	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
             sr.status_report_list[i] = NO_MATCH;
         }
-        _persist_status_report_list(nv);
+        _persist_status_report_list();
         nv->valuetype = TYPE_PARENT;                // change to a parent to return a null set
         return (STAT_OK);
     }
@@ -338,7 +336,7 @@ stat_t sr_set_status_report(nvObj_t *nv)
         return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
     }
 	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
-    _persist_status_report_list(nv_first_sr_child);
+    _persist_status_report_list();
     return (STAT_OK);
 }
 

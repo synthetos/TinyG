@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.11	// fixed {sr:f} response. JSON serializer bug
+#define TINYG_FIRMWARE_BUILD        446.12	// fixes for _persist_status_report_list()
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
