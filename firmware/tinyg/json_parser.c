@@ -526,38 +526,43 @@ static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)
 
 int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 {
-	char *str = out_buf;
-	char *out_max = out_buf + out_size - 16;        // 16 is a pad to allow value expansion & closing, but ...
+    char *str = out_buf;
+    char *out_max = out_buf + out_size - 16;        // 16 is a pad to allow value expansion & closing, but ...
                                                     //...does not need to account for strings which are sized separately
 
     if ((nv = nv_relink_nv_list()) == NULL) {       // remove TYPE_EMPTY and TYPE_SKIP pairs
         *str = NUL;
         return (0);
     }
-	int8_t initial_depth = nv->depth;
-	int8_t prev_depth = initial_depth - 1;          // forces open curly to write
+    int8_t initial_depth = nv->depth;
+    int8_t prev_depth = initial_depth - 1;          // forces open curly to write
 
     // JSON text continuation special handling.
     // See _json_parser_kernal() / _js_run_container_as_text()
     if (nv->valuetype == TYPE_TXT_CONTINUATION) {
         nv = nv->nx;                                // skip over head pair
         prev_depth = 1;                             // text continuations are always at depth 1
+    } else {
+        *str++ = '{';                               // first curly for new JSON object
     }
 
     // Serialize the list - Note: nv points to opening r{} or first usable object past continuation text
-	do {
+    do {
         // write opening and closing curlies, commas between elements
-        while (nv->depth < prev_depth) {            // write closing curly(s) for previous NV pair (might be the last)
-            *str++ = '}';
-            prev_depth--;
-        }
-        if (nv->depth > prev_depth) {               // write opening curly(s)
-            while (nv->depth > prev_depth) {        // should never be more than 1, actually...
-         		*str++ = '{';                       //...but this keeps the JSON correct...
-                prev_depth++;                       //...in case multiple levels are skipped
+        if (nv->pv->valuetype == TYPE_PARENT) {     // DINK handling (parents w/no children)
+            while (nv->depth <= prev_depth) {       // changes previous depth so remaining statements execute correctly
+                *str++ = '}';                       // terminate parent with no children --> {}
+                prev_depth--;
             }
-        } else if (nv->pv->valuetype != TYPE_PARENT) {
-            *str++ = ',';
+        }
+        if (nv->depth < prev_depth) {               // nv is higher than previous - write closing curlies
+            while (nv->depth < prev_depth) {
+                *str++ = '}';                       // write closing curly(s) for previous NV pair (might be the last)
+                prev_depth--;
+            }
+        }
+        if (nv->depth <= prev_depth) {
+            *str++ = ',';                           // write leading comma for this NV pair
         }
 
         // serialize name
@@ -569,8 +574,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
 		// serialize value
 		if (nv->valuetype == TYPE_PARENT) {
-            *str++ = '{';                           // opening curly for parent
-            prev_depth++;                           // adjust the depth to the child level
+            *str++ = '{';
         }
 		else if (nv->valuetype == TYPE_NULL)	{
             str += sprintf_P(str, PSTR("null"));    // Note that that "" is NOT null.
@@ -603,6 +607,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
             }
 		}
 		if (str >= out_max) { return (-1);}         // test for buffer overrun
+        prev_depth = nv->depth;
 	} while ((nv = nv->nx) != NULL);
 
     // finish up string

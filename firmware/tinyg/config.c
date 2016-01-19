@@ -603,7 +603,7 @@ void nv_populate_nvObj_by_index(nvObj_t *nv)
 
 nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 {                                           // depth and pointers are NOT affected
-	nv->valuetype = TYPE_EMPTY;				// selective clear is much faster than calling memset
+	nv->valuetype = TYPE_EMPTY;				// selective clear is actually faster than calling memset
 	nv->index = 0;
 	nv->value_int = 0;
 	nv->precision = 0;
@@ -640,13 +640,15 @@ nvObj_t *nv_reset_nv_list(char *parent)
 {
     // set up linked list and initialize elements
 	nvStr.wp = 0;							    // reset the shared string
+    uint8_t nv_num=0;
 	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
     uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
 		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
 		nv->nx = (nv+1);
-		nv->index = 0;
+        nv->nv_num = nv_num++;
 		nv->depth = depth;
+		nv->index = 0;
 		nv->precision = 0;
 		nv->valuetype = TYPE_EMPTY;
 		nv->token[0] = NUL;

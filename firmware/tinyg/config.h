@@ -258,8 +258,9 @@ typedef struct nvString {				// shared string object
 typedef struct nvObject {				// depending on use, not all elements may be populated
 	struct nvObject *pv;				// pointer to previous object or NULL if first object
 	struct nvObject *nx;				// pointer to next object or NULL if last object
-	index_t index;						// index of tokenized name, or NO_MATCH (-1) if no token (optional)
+    uint8_t nv_num;                     // handy diagnostic    
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
+	index_t index;						// index of tokenized name, or NO_MATCH (-1) if no token (optional)
 	valueType valuetype;				// see valueType enum
 	int8_t precision;					// decimal precision for reporting (JSON)
     union {

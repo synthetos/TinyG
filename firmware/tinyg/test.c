@@ -95,8 +95,6 @@ uint8_t run_test(nvObj_t *nv)
 void run_canned_startup()	// uncomment in tinyg.h if you want to run this
 {
 #ifdef __CANNED_STARTUP
-
     xio_queue_RX_string_usb("$test=51\n");		// run braid partial file (doesn't work if text mode is disabled)
-
-#endif // __CANNED_STARTUP
+#endif
 }

@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.13	// SR testing; reworked JSON parser - cleaner; revised JSON verbosity in profiles
+#define TINYG_FIRMWARE_BUILD        446.14	// SR testing; further changes to JSON serializer
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
@@ -82,7 +82,6 @@
 /****** DEVELOPMENT SETTINGS ******/
 
 #define __DIAGNOSTIC_PARAMETERS				// enables system diagnostic parameters (_xxN) in config_app
-//#define __DEBUG_SETTINGS					// special settings. See settings.h
 //#define __CANNED_STARTUP					// run any canned startup moves
 
 #ifdef __ARM
