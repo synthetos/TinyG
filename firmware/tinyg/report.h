@@ -63,7 +63,6 @@ typedef struct srSingleton {
 	uint32_t status_report_interval;					// in milliseconds
 
 	/*** runtime values (PRIVATE) ***/
-//	uint8_t status_report_requested;					// flag that SR has been requested
 	srVerbosity status_report_request;                  // flag that SR has been requested, and what type
 	uint32_t status_report_systick;						// SysTick value for next status report
 	index_t stat_index;									// table index value for stat - determined during initialization

@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.17	// testing SRs; adjusted SR persistence count - set to 30 items
+#define TINYG_FIRMWARE_BUILD        446.18	// testing SRs; changes to SR setting
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

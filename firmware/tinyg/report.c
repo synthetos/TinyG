@@ -295,13 +295,13 @@ stat_t sr_set_status_report(nvObj_t *nv)
 		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
     		return (STAT_INPUT_VALUE_RANGE_ERROR);
 		}
-	    if ((item = nv_get_index(nv->group,nv->token)) == NO_MATCH) {
+	    if ((item = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
     	    return(STAT_UNRECOGNIZED_NAME);         // trap non-existent tags
 	    }
         if (nv->value_int == false) {               // remove an item from the working list
             for (j=0; j<SR_WORKING_LIST_LEN; j++) {
                 if (working_list[j] == item) {      // item exists in working list
-                    working_list[j] = NO_MATCH;
+                    working_list[j] = -2;           // flag for deletion
                     break;
                 }
             }
@@ -317,23 +317,15 @@ stat_t sr_set_status_report(nvObj_t *nv)
             }
         }
 	}
-    // pack the list and copy it to the SR list
-    // i is the read pointer, j is the write pointer
-    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++, j++) {
-        if (working_list[i] == NO_MATCH) { i++; }
-        working_list[j] = working_list[i];
-    }
-    working_list[j] = NO_MATCH;                     // terminate the list
-
-    for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // test for overflow
-        if (working_list[i] == NO_MATCH) {
+    // copy the working list to the SR list - i is the read pointer, j is the write pointer
+    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
+        sr.value_flt[i] = 8675309;                  // reset all filter terms
+        if (working_list[i] == -2) { continue; }    // skip deleted elements
+        sr.status_report_list[j] = working_list[i];
+        if (++j >= NV_STATUS_REPORT_LEN) {
             break;
         }
     }
-    if (i > NV_STATUS_REPORT_LEN) {
-        return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
-    }
-	memcpy(sr.status_report_list, working_list, sizeof(sr.status_report_list));
     _persist_status_report_list();
     return (STAT_OK);
 }
