@@ -147,7 +147,7 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char *str)
 	char group[GROUP_LEN+1] = { NUL };              // group identifier - starts as NUL
     nvObj_t *nv_exec;                               // nv pair on which to start execution
 
-	ritorno(_normalize_json_string(str, JSON_OUTPUT_STRING_MAX)); // return if error
+	ritorno(_normalize_json_string(str, JSON_INPUT_STRING_MAX)); // return if error
 
 	//---- parse the JSON string into the nv list ----//
 
@@ -173,6 +173,9 @@ static stat_t _json_parser_kernal(nvObj_t **nv, char *str)
                 status = _get_nv_pair(*nv, &str, &depth);       // parse the child objects
                 if (status == STAT_NOOP) {
                     break;
+                }
+                if ((status != STAT_OK) && (status != STAT_EAGAIN)) { // token may have failed, or other failures
+                    return (status);
                 }
 		        if (*group != NUL) {
     		        strncpy((*nv)->group, group, GROUP_LEN);    // copy the parent's group to this child
@@ -328,7 +331,8 @@ static stat_t _normalize_json_string(char *str, uint16_t size)
  */
 
 #define MAX_PAD_CHARS 8
-#define MAX_NAME_CHARS 32
+//#define MAX_NAME_CHARS 32
+#define MAX_NAME_CHARS (TOKEN_LEN+1)
 #define MAX_STRING_CHARS RX_BUFFER_MIN_SIZE // inherit the size of the input buffer
 
 static stat_t _get_nv_pair(nvObj_t *nv, char **pstr, int8_t *depth)

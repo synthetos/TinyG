@@ -237,9 +237,9 @@ void sr_init_status_report_P(const char *sr_csv_P)
  *  Error conditions:
  *    - All failures leave original SR list untouched
  *    - An attempt to add an element that exceeds list max fails with STAT_INPUT_EXCEEDS_MAX_LENGTH
- *    - A token that is not recognized fails with STAT_UNRECOGNIZED_NAME
  *    - A value other than 't', or 'f' fails with STAT_INPUT_VALUE_RANGE_ERROR
- *    - Malformed JSON fails as usual before this point
+ *    - Malformed JSON fails upstream in the JSON parser, such as...
+ *    - Unrecognized tokens (keys) are fail in the JSON parser as STAT_UNRECOGNIZED_NAME
  */
 
 static void _persist_status_report_list()
@@ -258,33 +258,31 @@ stat_t sr_set_status_report(nvObj_t *nv)
 {
     int8_t i, j;
 
-	index_t working_list[SR_WORKING_LIST_LEN];      // init working list from the current SR list
-	for (i=0; i<SR_WORKING_LIST_LEN; i++) {         // first fill with -1's
-    	working_list[i] = NO_MATCH;
+    // process {sr:f} and {sr:t} cases
+	if (nv->valuetype == TYPE_BOOL) {
+        if (nv->value_int == false) {                // {sr:f}
+	        for (i=0; i<NV_STATUS_REPORT_LEN; i++) { // clear all SR settings
+                sr.status_report_list[i] = NO_MATCH;
+            }
+            _persist_status_report_list();
+        } else {                                     // {sr:t}
+            sr_init_status_report_P(SR_DEFAULTS);    // restore SR settings to defaults
+        }
+        return (STAT_OK);
+    }
+
+    // initialize the working list from the current SR list	
+    index_t working_list[SR_WORKING_LIST_LEN];
+	for (i=0; i<SR_WORKING_LIST_LEN; i++) {
+        if (i<NV_STATUS_REPORT_LEN) {
+        	working_list[i] = sr.status_report_list[i]; // copy in the current SR list
+        } else {
+    	    working_list[i] = NO_MATCH;                 //...then fill the rest with -1's
+        }
 	}
 
-    // process {sr:f}    clear all SR settings
-    if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == false)) {
-	    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-            sr.status_report_list[i] = NO_MATCH;
-        }
-        _persist_status_report_list();
-        return (STAT_OK);
-    }
-
-    // process {sr:t}    restore SR settings to defaults
-    if ((nv->valuetype == TYPE_BOOL) && (nv->value_int == true)) {
-        sr_init_status_report_P(SR_DEFAULTS);
-        return (STAT_OK);
-    }
-
-    // process {sr:{.... process one or more SR drop/adds
-	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {        // read in the current SR list
-        working_list[i] = sr.status_report_list[i];
-    }
-
-    // iterate the items in the nvlist
-    index_t item;                                   // status report item being worked on
+    // process {sr:{.... process one or more SR add/deletes
+    // (this is all so much easier in Python)
 	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if ((nv = nv->nx) == NULL) {                // advance to next element (past the "sr" parent)
             return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
@@ -293,31 +291,35 @@ stat_t sr_set_status_report(nvObj_t *nv)
             break;
         }
 		if (nv->valuetype != TYPE_BOOL) {           // unsupported type in request
-    		return (STAT_INPUT_VALUE_RANGE_ERROR);
+    		return (STAT_UNSUPPORTED_TYPE);
 		}
-	    if ((item = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
-    	    return(STAT_UNRECOGNIZED_NAME);         // trap non-existent tags
-	    }
         if (nv->value_int == false) {               // remove an item from the working list
             for (j=0; j<SR_WORKING_LIST_LEN; j++) {
-                if (working_list[j] == item) {      // item exists in working list
+                if (working_list[j] == nv->index) { // item exists in working list
                     working_list[j] = -2;           // flag for deletion
                     break;
                 }
             }
         } else {                                    // add an item to the working list
-	        for (j=0; j<SR_WORKING_LIST_LEN; j++) {
-    	        if (working_list[j] == item) {      // item already exists in working list
-                    break;
-    	        }
-    	        if (working_list[j] == NO_MATCH) {  // add the item to working list
-        	        working_list[j] = item;
+            int8_t slot = NO_MATCH;                 // index of first available slot
+            bool unique = true;                     // flag if item was not found (passed uniqueness)
+  	        for (j=0; j<SR_WORKING_LIST_LEN; j++) {
+                if ((slot == NO_MATCH) && (working_list[j] == NO_MATCH)) {
+                    slot = j;
+                    continue;
+                }
+    	        if (working_list[j] == nv->index) {
+                    unique = false;
                     break;
     	        }
             }
+            if (unique && (slot != NO_MATCH)) {
+                working_list[slot] = nv->index;           
+            }
         }
 	}
-    // copy the working list to the SR list - i is the read pointer, j is the write pointer
+
+    // copy the working list to the SR list; use i as read pointer, j as write pointer
     for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
         sr.value_flt[i] = 8675309;                  // reset all filter terms
         if (working_list[i] == -2) { continue; }    // skip deleted elements
