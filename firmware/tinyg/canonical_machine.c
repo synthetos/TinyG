@@ -2,8 +2,8 @@
  * canonical_machine.c - rs274/ngc canonical machine.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S Hart, Jr.
- * Copyright (c) 2014 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S Hart, Jr.
+ * Copyright (c) 2014 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -566,13 +566,15 @@ stat_t cm_test_soft_limits(float target[])
 void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this memset code.
-// Do not reset canonicalMachineSingleton once it's been initialized - which would be: memset(&cm, 0, sizeof(cm));
+// Do not reset canonicalMachineSingleton once it's been initialized - which would be:
+//	memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
 	memset(&cm.gm, 0, sizeof(GCodeState_t));	    // clear the Gcode MODEL of all values, pointers and status
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));        // clear the Gcode new data struct
 	memset(&cm.gf, 0, sizeof(GCodeInput_t));        // clear the Gcode data flags struct
 
 	canonical_machine_init_assertions();		    // establish assertions
 	ACTIVE_MODEL = MODEL;						    // setup initial Gcode model pointer
+
 	// sub-system inits
 	spindle_init();
 	cm_arc_init();
@@ -587,8 +589,9 @@ void canonical_machine_reset()
 	cm_select_plane(cm.default_select_plane);
 	cm_set_path_control(cm.default_path_control);
 	cm_set_distance_mode(cm.default_distance_mode);
+	cm_set_arc_distance_mode(INCREMENTAL_MODE);     // always the default
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);   // always the default
-//    cm_reset_overrides();                           // set overrides to initial conditions
+//    cm_reset_overrides();                         // set overrides to initial conditions
 
     // NOTE: Should unhome axes here
 
@@ -860,6 +863,7 @@ stat_t cm_panic(const stat_t status, const char *msg)
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
+ *  cm_set_arc_distance_mode()  - G90.1, G91.1
  *	cm_set_coord_offsets()		- G10 (delayed persistence)
  *
  *	These functions assume input validation occurred upstream.
@@ -881,6 +885,12 @@ stat_t cm_set_distance_mode(const uint8_t mode)
 {
 	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
 	return (STAT_OK);
+}
+
+stat_t cm_set_arc_distance_mode(const uint8_t mode)
+{
+    cm.gm.arc_distance_mode = (cmDistanceMode)mode;	// 0 = absolute mode, 1 = incremental
+    return (STAT_OK);
 }
 
 /*

@@ -2,7 +2,7 @@
  * gcode_parser.c - rs274/ngc Gcode parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -21,6 +21,7 @@
 #include "controller.h"
 #include "gcode_parser.h"
 #include "canonical_machine.h"
+#include "plan_arc.h"
 #include "spindle.h"
 #include "util.h"
 #include "xio.h"			// for char definitions
@@ -422,9 +423,9 @@ static stat_t _parse_gcode_block(char *buf)
 		}
 		if(status != STAT_OK) break;
 	}
-//    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
-//    	return (cm_alarm(status, cs.saved_buf));
-//    }
+    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
+    	return (cm_alarm(status, cs.saved_buf));
+    }
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);
     }
@@ -531,10 +532,15 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
-				case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
-					// gf.radius sets radius mode if radius was collected in gn
-					{ status = cm_arc_feed(cm.gn.target, cm.gf.target, cm.gn.arc_offset[0], cm.gn.arc_offset[1],
-										   cm.gn.arc_offset[2], cm.gn.arc_radius, cm.gn.motion_mode); break;}
+        		case MOTION_MODE_CW_ARC:                                                                            // G2
+        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     cm.gf.target,                    // G3
+            		cm.gn.arc_offset, cm.gf.arc_offset,
+            		cm.gn.arc_radius, cm.gf.arc_radius,
+            		cm.gn.parameter,  cm.gf.parameter,
+            		cm.gf.modals[MODAL_GROUP_G1],
+            		cm.gn.motion_mode);
+            		break;
+        		}
 			}
 		}
 	}
