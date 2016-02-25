@@ -2,7 +2,7 @@
  * settings_probotix.h - Probotix Fireball V90 machine profile
  * This file is part the TinyG project
  *
- * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -58,7 +58,7 @@
 #define MOTOR_IDLE_TIMEOUT			2.00					// seconds to maintain motor at full power before idling
 #define MOTOR_POWER_LEVEL			0.25					// default motor power level (0,000 - 1.000, ARM only)
 #define MOTOR_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// one of: MOTOR_DISABLED, MOTOR_ALWAYS_POWERED,
-//         MOTOR_POWERED_IN_CYCLE, MOTOR_POWERED_ONLY_WHEN_MOVING
+                                                            //         MOTOR_POWERED_IN_CYCLE, MOTOR_POWERED_ONLY_WHEN_MOVING
 #define CHORDAL_TOLERANCE           0.01					// chordal accuracy for arc drawing (in mm)
 
 // Communications and reporting settings

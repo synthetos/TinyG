@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        446.19	// testing SRs: some more work on sr setup
+#define TINYG_FIRMWARE_BUILD        446.20	// testing arc issue
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
