@@ -54,25 +54,25 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
     float planar_travel;
 	float linear_travel;		    // travel along linear axis of arc
 	uint8_t full_circle;		    // set true if full circle arcs specified
-	uint32_t rotations;			    // Number of full rotations for full circles (P value)
+	int32_t rotations;			    // Number of full rotations for full circles (P value)
 
-    cmAxes plane_axis_0;        // arc plane axis 0 - e.g. X for G17
-    cmAxes plane_axis_1;        // arc plane axis 1 - e.g. Y for G17
-    cmAxes linear_axis;         // linear axis (normal to plane)
+    cmAxes plane_axis_0;            // arc plane axis 0 - e.g. X for G17
+    cmAxes plane_axis_1;            // arc plane axis 1 - e.g. Y for G17
+    cmAxes linear_axis;             // linear axis (normal to plane)
 
-    float segments;             // number of segments in arc or blend
-    int32_t segment_count;      // count of running segments
-    float segment_theta;        // angular motion per segment
-    float segment_linear_travel;// linear motion per segment
-    float center_0;             // center of circle at plane axis 0 (e.g. X for G17)
-    float center_1;             // center of circle at plane axis 1 (e.g. Y for G17)
+    float segments;                 // number of segments in arc or blend
+    int32_t segment_count;          // count of running segments
+    float segment_theta;            // angular motion per segment
+    float segment_linear_travel;    // linear motion per segment
+    float center_0;                 // center of circle at plane axis 0 (e.g. X for G17)
+    float center_1;                 // center of circle at plane axis 1 (e.g. Y for G17)
 
 	GCodeState_t gm;			    // Gcode state struct is passed for each arc segment. Usage:
 //	Usage:
-//	uint32_t linenum;			// line number of the arc feed move - same for each segment
-//	float target[AXES];			// arc segment target
-//	float work_offset[AXES];	// offset from machine coord system for reporting (same for each segment)
-//	float move_time;			// segment_time: constant time per aline segment
+//	uint32_t linenum;			    // line number of the arc feed move - same for each segment
+//	float target[AXES];			    // arc segment target
+//	float work_offset[AXES];	    // offset from machine coord system for reporting (same for each segment)
+//	float move_time;			    // segment_time: constant time per aline segment
 
 	magic_t magic_end;
 } arc_t;
