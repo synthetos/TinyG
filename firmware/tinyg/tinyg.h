@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        447.01	// ported in g2 arc code; adds arc distance mode to Gcode (G90.1 / G91.1)
+#define TINYG_FIRMWARE_BUILD        448.01	// 
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
