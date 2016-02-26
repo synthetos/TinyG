@@ -32,12 +32,12 @@
 //
 // LinuxCNC values
 //#define ARC_RADIUS_ERROR_MAX    ((float)0.5)      // max allowable mm between start and end radius
-//#define ARC_RADIUS_ERROR_MIN    ((float)0.005)    // min mm where 1% rule applies
+//#define ARC_RADIUS_ERROR_MIN    ((float)0.005)    // min mm where 0.1% rule applies
 //#define ARC_RADIUS_TOLERANCE    ((float)0.001)    // 0.1% radius variance test
 //
-// Relaxed values - some CAM packages to not meet the LinuxCNC tests
+// Relaxed values - some CAM packages do not meet the LinuxCNC tests (Vectric 2D)
 #define ARC_RADIUS_ERROR_MAX    ((float)1.0)        // max allowable mm between start and end radius
-#define ARC_RADIUS_ERROR_MIN    ((float)0.005)      // min mm where 1% rule applies
+#define ARC_RADIUS_ERROR_MIN    ((float)0.005)      // min mm where 0.1% rule applies
 #define ARC_RADIUS_TOLERANCE    ((float)0.05)       // 0.1% radius variance test
 
 typedef struct arArcSingleton {	    // persistent planner and runtime variables
