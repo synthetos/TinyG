@@ -153,8 +153,8 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
     } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
-        arc.plane_axis_0 = AXIS_X;
-        arc.plane_axis_1 = AXIS_Z;
+        arc.plane_axis_0 = AXIS_Z;                      // reverse Z and X to get correct CW/CCW movement
+        arc.plane_axis_1 = AXIS_X;
         arc.linear_axis  = AXIS_Y;
     } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
         arc.plane_axis_0 = AXIS_Y;
@@ -276,6 +276,8 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
  *  Parts of this routine were informed by the grbl project.
  */
 
+#pragma GCC optimize ("O0")
+
 static stat_t _compute_arc(const bool radius_f)
 {
     // Compute IJK offsets and starting radius
@@ -362,6 +364,8 @@ static stat_t _compute_arc(const bool radius_f)
     arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
     return (STAT_OK);
 }
+
+#pragma GCC reset_options
 
 /*
  * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius.

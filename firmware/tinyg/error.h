@@ -534,8 +534,9 @@ static const char stat_139[] PROGMEM = "Axis target position invalid";
 static const char stat_140[] PROGMEM = "Selected plane missing";
 static const char stat_141[] PROGMEM = "Selected plane invalid";
 static const char stat_142[] PROGMEM = "Feedrate not specified";
-static const char stat_143[] PROGMEM = "Inverse time mode cannot be used with this command";
-static const char stat_144[] PROGMEM = "Rotary axes cannot be used with this command";
+//--------------------------------------1--------10--------20--------30--------40--------50--------60-64
+static const char stat_143[] PROGMEM = "Inverse time mode not valid for this command";
+static const char stat_144[] PROGMEM = "Rotary axes not valid for this command";
 static const char stat_145[] PROGMEM = "G0 or G1 must be active for G53";
 static const char stat_146[] PROGMEM = "Requested velocity exceeds limits";
 static const char stat_147[] PROGMEM = "Cutter compensation cannot be enabled";
@@ -546,13 +547,12 @@ static const char stat_150[] PROGMEM = "Spindle speed exceeded maximum";
 static const char stat_151[] PROGMEM = "Spindle must be off for this command";
 static const char stat_152[] PROGMEM = "Spindle must be turning for this command";
 static const char stat_153[] PROGMEM = "153";
-static const char stat_154[] PROGMEM = "Arc specification error - impossible center point";
+static const char stat_154[] PROGMEM = "Arc has impossible center point";
 static const char stat_155[] PROGMEM = "Arc specification error";
-static const char stat_156[] PROGMEM = "Arc specification error - missing axis(es)";
-static const char stat_157[] PROGMEM = "Arc specification error - missing offset(s)";
-//--------------------------------------1--------10--------20--------30--------40--------50--------60-64
-static const char stat_158[] PROGMEM = "Arc specification error - radius arc out of tolerance";
-static const char stat_159[] PROGMEM = "Arc specification error - endpoint is starting point";
+static const char stat_156[] PROGMEM = "Arc has missing axis(es)";
+static const char stat_157[] PROGMEM = "Arc has missing offset(s)";
+static const char stat_158[] PROGMEM = "Arc radius arc out of tolerance";
+static const char stat_159[] PROGMEM = "Arc endpoint is starting point";
 
 static const char stat_160[] PROGMEM = "P word missing";
 static const char stat_161[] PROGMEM = "P word invalid";
