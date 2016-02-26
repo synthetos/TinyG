@@ -40,6 +40,15 @@
 #define ARC_RADIUS_ERROR_MIN    ((float)0.005)      // min mm where 0.1% rule applies
 #define ARC_RADIUS_TOLERANCE    ((float)0.05)       // 0.1% radius variance test
 
+// ArcSingleton
+//
+// Note that the arc singleton is used both for arc setup and for arc execution.
+// This means that you cannot set up an arc while a previous arc is still running.
+// To avoid this the controller will not initiate a new arc while a previous arc is 
+// still active in the arc-callback. Once all lines have been let to the planner
+// then the new arc can begin. This does not starve the planner as it is still 
+// executing the last remaining lines from the previous arc.
+
 typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	magic_t magic_start;
 	uint8_t run_state;			    // runtime state machine sequence
@@ -68,11 +77,6 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
     float center_1;                 // center of circle at plane axis 1 (e.g. Y for G17)
 
 	GCodeState_t gm;			    // Gcode state struct is passed for each arc segment. Usage:
-//	Usage:
-//	uint32_t linenum;			    // line number of the arc feed move - same for each segment
-//	float target[AXES];			    // arc segment target
-//	float work_offset[AXES];	    // offset from machine coord system for reporting (same for each segment)
-//	float move_time;			    // segment_time: constant time per aline segment
 
 	magic_t magic_end;
 } arc_t;
