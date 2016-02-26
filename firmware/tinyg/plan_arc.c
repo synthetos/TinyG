@@ -153,8 +153,8 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
     } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
-        arc.plane_axis_0 = AXIS_Z;                      // reverse Z and X to get correct CW/CCW movement
-        arc.plane_axis_1 = AXIS_X;
+        arc.plane_axis_0 = AXIS_X;
+        arc.plane_axis_1 = AXIS_Z;
         arc.linear_axis  = AXIS_Y;
     } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
         arc.plane_axis_0 = AXIS_Y;
@@ -180,9 +180,8 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
         if (fabs(arc.radius) < MIN_ARC_RADIUS) {        // radius value must be > minimum radius
             return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
         }
-
-    // test that center format absolute distance mode arcs have both offsets specified
-    } else {
+    } 
+    else {  // test that center format absolute distance mode arcs have both offsets specified
         if (cm.gm.arc_distance_mode == ABSOLUTE_MODE) {
             if (!(offset_f[arc.plane_axis_0] && offset_f[arc.plane_axis_1])) {  // if one or both offsets are missing
                 return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
@@ -225,6 +224,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));  // copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);     // set initial arc position from gcode model
 
+    // setup offsets
     arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
     arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
     arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
@@ -317,17 +317,12 @@ static stat_t _compute_arc(const bool radius_f)
         } else {
             if (arc.angular_travel > 0)  { arc.angular_travel -= 2*M_PI; }
         }
-        // apply XZ plane (G18) correction
-        if (arc.gm.select_plane == CANON_PLANE_XZ) {
-            if (arc.angular_travel >= 0) { arc.angular_travel -= 2*M_PI; }
-            else                         { arc.angular_travel += 2*M_PI; }
-        }
         // add in travel for rotations
         if (arc.angular_travel >= 0) { arc.angular_travel += 2*M_PI * arc.rotations; }
         else                         { arc.angular_travel -= 2*M_PI * arc.rotations; }
-
+    }
     // Compute full-circle arcs
-    } else {
+    else {
         if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) { arc.rotations *= -1; }
         if (arc.gm.select_plane == CANON_PLANE_XZ)    { arc.rotations *= -1; }
         arc.angular_travel = 2 * M_PI * arc.rotations;
@@ -463,7 +458,8 @@ static void _compute_arc_offsets_from_radius()
 	float h_x2_div_d = (disc > 0) ? -sqrt(disc) / hypotf(x,y) : 0;
 
 	// Invert the sign of h_x2_div_d if circle is counter clockwise (see header notes)
-	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
+//	if (cm.gm.motion_mode == MOTION_MODE_CCW_ARC) {
+	if (arc.gm.motion_mode == MOTION_MODE_CCW_ARC) {
         h_x2_div_d = -h_x2_div_d;
     }
 
