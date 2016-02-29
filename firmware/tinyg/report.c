@@ -2,7 +2,7 @@
  * report.c - TinyG status report and other reporting functions.
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -379,7 +379,6 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
     if (SysTickTimer_getValue() < sr.status_report_systick) {
         return (STAT_NOOP);
     }
-    sr.status_report_request = SR_OFF;
     if (sr.status_report_request == SR_VERBOSE) {
         _populate_unfiltered_status_report();
     } else {
@@ -387,6 +386,7 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
             return (STAT_OK);
         }
     }
+    sr.status_report_request = SR_OFF;
     nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT_FORMAT);
     return (STAT_OK);
 }

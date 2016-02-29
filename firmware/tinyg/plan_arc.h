@@ -62,8 +62,8 @@ typedef struct arArcSingleton {	    // persistent planner and runtime variables
 	float angular_travel;		    // travel along the arc
     float planar_travel;
 	float linear_travel;		    // travel along linear axis of arc
-	uint8_t full_circle;		    // set true if full circle arcs specified
-	int32_t rotations;			    // Number of full rotations for full circles (P value)
+	bool full_circle;		        // set true if full circle arcs specified
+	float rotations;			    // Number of full rotations for full circles (P value)
 
     cmAxes plane_axis_0;            // arc plane axis 0 - e.g. X for G17
     cmAxes plane_axis_1;            // arc plane axis 1 - e.g. Y for G17

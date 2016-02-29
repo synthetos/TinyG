@@ -718,7 +718,6 @@ stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
 // Machining Functions (4.3.6)
 stat_t cm_straight_feed(const float target[], const bool flags[]);		    // G1
 stat_t cm_dwell(const float seconds);									    // G4, P parameter
-
 // see plan_arc.h for cm_arc_feed()                                         // G2/G3 arc feeds
 
 // Spindle Functions (4.3.7)

@@ -16,7 +16,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* This module actually contains some parts that belong ion the canonical machine,
+/* This module actually contains some parts that belong in the canonical machine,
  * and other parts that belong at the motion planner level, but the whole thing is
  * treated as if it were part of the motion planner.
  */
@@ -27,7 +27,6 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "util.h"
-
 
 #include "controller.h"     //+++++
 
@@ -276,8 +275,6 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
  *  Parts of this routine were informed by the grbl project.
  */
 
-#pragma GCC optimize ("O0")
-
 static stat_t _compute_arc(const bool radius_f)
 {
     // Compute IJK offsets and starting radius
@@ -358,8 +355,6 @@ static stat_t _compute_arc(const bool radius_f)
     arc.gm.target[arc.linear_axis] = arc.position[arc.linear_axis];	// initialize the linear target
     return (STAT_OK);
 }
-
-#pragma GCC reset_options
 
 /*
  * _compute_arc_offsets_from_radius() - compute arc center (offset) from radius.

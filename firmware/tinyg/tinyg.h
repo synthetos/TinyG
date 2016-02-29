@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        448.02	// corrections to G18 arc movement
+#define TINYG_FIRMWARE_BUILD        448.03	// fixed bug preventing verbose status reports
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
