@@ -2,8 +2,8 @@
  * error.h - TinyG status codes
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2010 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -50,15 +50,16 @@
 
 // **** Declarations, functions and macros. See main.cpp for implementation ****
 
+#define LINE_MSG_LEN       128  // space to allocate in local contexts for a message line
+#define TEXT_ITEM_LEN       64  // must be longer than longest text item
+#define STATUS_MSG_LEN      64  // must be longer than longest status message in stat_msg[]
+#define UNITS_MSG_LEN        6  // must be longer than text in msg_units[] array
+
 typedef uint8_t stat_t;         // !!! Do not exceed 255 without changing stat_t typedef
 extern stat_t status_code;
+extern char text_item[];
+extern char units_msg[];
 
-// GLOBAL_STRING_LEN should allow sufficient space for JSON responses and message strings
-// Note that the last byte must always be zero or an assertion failure will occur
-#define GLOBAL_STRING_LEN 256
-extern char global_string_buf[];
-
-#define STATUS_MESSAGE_LEN 64   // must be shorter than longest status message in stat_msg[] (below)
 char *get_status_message(stat_t status);
 
 // ritorno is a handy way to provide exception returns
@@ -89,7 +90,7 @@ char *get_status_message(stat_t status);
 #define	STAT_INITIALIZING 15			// initializing - not ready for use
 #define	STAT_ENTERING_BOOT_LOADER 16	// this code actually emitted from boot loader, not TinyG
 #define	STAT_FUNCTION_IS_STUBBED 17
-#define	STAT_ALARM 18                   
+#define	STAT_ALARM 18
 #define STAT_NO_DISPLAY 19				// suppress results display - presumably handled upstream
 // NOTE: XIO codes align to here
 
@@ -192,21 +193,21 @@ char *get_status_message(stat_t status);
 #define	STAT_INVALID_OR_MALFORMED_COMMAND 101	// malformed line to parser
 #define	STAT_BAD_NUMBER_FORMAT 102				// number format error
 #define	STAT_UNSUPPORTED_TYPE 103		        // an otherwise valid JSON type is not supported
-#define STAT_PARAMETER_IS_READ_ONLY 104         // input error: parameter cannot be set 
+#define STAT_PARAMETER_IS_READ_ONLY 104         // input error: parameter cannot be set
 #define STAT_PARAMETER_CANNOT_BE_READ 105       // input error: parameter cannot be returned
 #define	STAT_COMMAND_NOT_ACCEPTED 106			// input error: command cannot be accepted at this time
-#define STAT_INPUT_EXCEEDS_MAX_LENGTH 107       // input error: input string is too long 
+#define STAT_INPUT_EXCEEDS_MAX_LENGTH 107       // input error: input string is too long
 #define	STAT_INPUT_LESS_THAN_MIN_VALUE 108		// input error: value is under minimum
 #define	STAT_INPUT_EXCEEDS_MAX_VALUE 109		// input error: value is over maximum
 #define	STAT_INPUT_VALUE_RANGE_ERROR 110		// input error: value is out-of-range
 
 #define	STAT_JSON_SYNTAX_ERROR 111				// JSON input string is not well formed
 #define	STAT_JSON_TOO_MANY_PAIRS 112			// JSON input string has too many JSON pairs
-#define	STAT_JSON_TOO_LONG 113					// JSON output exceeds buffer size
-#define STAT_NESTED_JSON_CONTAINER 114          // JSON 'txt' fields cannot be nested
+#define	STAT_JSON_OUTPUT_TOO_LONG 113			// JSON output exceeds buffer size
+#define STAT_NESTED_TXT_CONTAINER 114           // JSON 'txt' fields cannot be nested
+#define	STAT_MAX_DEPTH_EXCEEDED 115             // JSON exceeded maximum nesting depth
+#define STAT_VALUE_TYPE_ERROR 116               // JSON value does not agree with variable type
 
-#define	STAT_ERROR_115 115
-#define	STAT_ERROR_116 116
 #define	STAT_ERROR_117 117
 #define	STAT_ERROR_118 118
 #define	STAT_ERROR_119 119
@@ -364,11 +365,11 @@ char *get_status_message(stat_t status);
 #define	STAT_ERROR_249 249
 
 #define	STAT_PROBE_CYCLE_FAILED 250						// probing cycle did not complete
-#define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 251
-#define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
+#define STAT_PROBE_TRAVEL_TOO_SMALL 251
+#define	STAT_NO_PROBE_SWITCH_CONFIGURED 252
+#define	STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED 253
+#define	STAT_PROBE_SWITCH_ON_ABC_AXIS 254
 
-#define	STAT_ERROR_253 253
-#define	STAT_ERROR_254 254
 #define	STAT_ERROR_255 255
 
 // ****** !!! Do not exceed 255 without also changing stat_t typedef ******
@@ -503,8 +504,8 @@ static const char stat_111[] PROGMEM = "JSON syntax error";
 static const char stat_112[] PROGMEM = "JSON has too many pairs";
 static const char stat_113[] PROGMEM = "JSON string too long";
 static const char stat_114[] PROGMEM = "JSON txt fields cannot be nested";
-static const char stat_115[] PROGMEM = "115";
-static const char stat_116[] PROGMEM = "116";
+static const char stat_115[] PROGMEM = "JSON maximum nesting depth exceeded";
+static const char stat_116[] PROGMEM = "JSON value does not agree with variable type";
 static const char stat_117[] PROGMEM = "117";
 static const char stat_118[] PROGMEM = "118";
 static const char stat_119[] PROGMEM = "119";
@@ -654,8 +655,11 @@ static const char stat_248[] PROGMEM = "248";
 static const char stat_249[] PROGMEM = "249";
 
 static const char stat_250[] PROGMEM = "Probe cycle failed";
-static const char stat_251[] PROGMEM = "Probe endpoint is starting point";
-static const char stat_252[] PROGMEM = "Jogging cycle failed";
+static const char stat_251[] PROGMEM = "Probe travel is too small";
+static const char stat_252[] PROGMEM = "No probe switch configured";
+static const char stat_253[] PROGMEM = "Multiple probe switches configured";
+static const char stat_254[] PROGMEM = "Probe switch configured on ABC axis";
+static const char stat_255[] PROGMEM = "255";
 
 static const char *const stat_msg[] PROGMEM = {
     stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -683,7 +687,7 @@ static const char *const stat_msg[] PROGMEM = {
     stat_220, stat_221, stat_222, stat_223, stat_224, stat_225, stat_226, stat_227, stat_228, stat_229,
     stat_230, stat_231, stat_232, stat_233, stat_234, stat_235, stat_236, stat_237, stat_238, stat_239,
     stat_240, stat_241, stat_242, stat_243, stat_244, stat_245, stat_246, stat_247, stat_248, stat_249,
-    stat_250, stat_251, stat_252
+    stat_250, stat_251, stat_252, stat_253, stat_254, stat_255
 };
 
 #endif // End of include guard: ERROR_H_ONCE

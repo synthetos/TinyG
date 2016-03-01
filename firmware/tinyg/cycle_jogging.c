@@ -152,8 +152,9 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	float delta = abs(jog.dest_pos - jog.start_pos);
 
 	cm.gm.feed_rate = velocity;
+    cm_request_end_hold();
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
+//	cm_request_cycle_start();
 
 	float ramp_dist = 2.0;
 	float steps = 0.0;
@@ -186,7 +187,7 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_distance_mode(jog.saved_distance_mode);
 	cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
 	cm.gm.feed_rate = jog.saved_feed_rate;
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 

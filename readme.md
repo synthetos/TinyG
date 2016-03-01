@@ -23,13 +23,37 @@ See these links for more details.
 
 * MASTER is the current production code. This is not updated very frequently.
 
-* EDGE branch is the work-in-process for the next stable release. Depending on the velocity of changes it's somewhere between alpha and beta. An attempt is made to keep everything working and usable, but there are no guarantees for edge. Generally speaking, the edge branch should not be used for production uses - use the master branch instead.
+* EDGE branches are work-in-process for the next Master releases. Depending on the velocity of changes they will be somewhere between alpha and beta. An attempt is made to keep everything working and usable, but there are no guarantees for edge branches. Generally speaking, edge branches should not be used for production uses - use the master branch instead.
+
+* Edge-0.97 is designed to be (mostly) backwards compatible with Master 440.xx. Changes are new features and additions that do not break current processing. However, there are a few changes that affect communication and other behaviors. These are listed below as Changes Affecting Migration from Master 440.xx to Edge-0.97.
+
+* Edge-0.98 ports-in functionality available in the g2 code base. There are many changes that affect migration from Master 440.xx or edge-0.98. Please refer the the edge-0.98 readme or wiki for details.
+
+#### SUMMARY OF CHANGES
+Features added:
+* `G10 L20` support
+* `G43/G48` Tool Length Offset
+* `ENQ` and `{enq:n}` behaviors for clear board connect sequence
+* Linemode serial tranmission `{rxm:1}`
+* Switch state readers `{inN:null}`
+* JSON transaction IDs `{tid:NNNNN}`
+* JSON text containers `{txt:"...."}`
+* Incremental status report configuration `{srs:...}`
+*
+
+#### CHANGES AFFECTING MIGRATION FROM MASTER TO EDGE-0.97
+The following are changes between Master build 440.xx and Edge-0.97 that directly affect communications or operation:
+
+* Revised the footer array and removed checksum from the response footer. See Line mode.
+* Status code changes (error.h)
+* Default flow control is now RTS/CTS, not XON/OFF
+
 
 #### EDGE VERSION CHANGES
 CHanges relative to master 440.20<br>
 Many of these features are still in test, and some are still in development. See STATUS bullets for details.
 
-* [Line mode (packet mode)](https://github.com/synthetos/TinyG/wiki/Sending-Data-to-TinyG-using-RX-Packet-Mode)
+* [Line mode ](https://github.com/synthetos/TinyG/wiki/Sending-Data-to-TinyG-using-RX-Packet-Mode)
   * Line mode permits buffer management on a per-line basis, significantly simplifying synchronization of tinyg with the host
   * {rxm:0} selects character mode, {rxm:1} selects line mode operation
   * STATUS: relatively stable

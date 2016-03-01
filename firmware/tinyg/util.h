@@ -2,7 +2,7 @@
  * util.h - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -84,12 +84,24 @@ float max4(float x1, float x2, float x3, float x4);
 //#endif
 
 uint8_t isnumber(char c);
-char *escape_string(char *dst, char *src);
+char *str_escape(char *dst, const char *src);
+char *str_unescape(char *str);
+char *str_asciify(char *str);
+
+char *strcat_string(char *str, const char *src);
+char *strcat_string_P(char *str, const char *src);
+char *strcat_literal_P(char *str, const char *src);
+char *strcat_integer(char *str, const uint32_t value);
+char *strcat_signed(char *str, const int32_t value);
+char *strcat_float(char *str, const float value, const uint8_t precision);
+
+stat_t str2float(const char *str, float *value);
+stat_t str2long(const char *str, uint32_t *value);
 char *pstr2str(const char *pgm_string);
+
 char inttoa(char *str, int n);
 char floattoa(char *buffer, float in, int precision);
 char fntoa(char *str, float n, uint8_t precision);
-//uint16_t compute_checksum(char const *string, const uint16_t length);
 
 //*** other utilities ***
 

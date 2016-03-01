@@ -2,7 +2,7 @@
  * switch.c - switch handling functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,17 +45,35 @@
 #include "config.h"
 #include "switch.h"
 #include "hardware.h"
+#include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
+#include "report.h"
 
-static void _switch_isr_helper(uint8_t sw_num);
+static bool _read_raw_switch(const uint8_t sw_num);
+static void _dispatch_switch(const uint8_t sw_num);
 
 /*
- * switch_init() - initialize homing/limit switches
+ * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
+ * If you change axis port assignments you need to change these, too.
  *
- *	This function assumes sys_init() and st_init() have been run previously to
- *	bind the ports and set bit IO directions, repsectively. See system.h for details
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)	// can't be hi
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn't be low
  */
+#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+
+// port assignments for vectors
+// WARNING: THis may not be correct for v6 and earlier boards due to the port assignment shift
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in hardware.h
+#define Y_MIN_ISR_vect PORTD_INT0_vect
+#define Z_MIN_ISR_vect PORTE_INT0_vect
+#define A_MIN_ISR_vect PORTF_INT0_vect
+#define X_MAX_ISR_vect PORTA_INT1_vect
+#define Y_MAX_ISR_vect PORTD_INT1_vect
+#define Z_MAX_ISR_vect PORTE_INT1_vect
+#define A_MAX_ISR_vect PORTF_INT1_vect
+
 /* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
  *	v6 and earlier use internal pullups only. Internal pullups are set
  *	regardless of board type but are extraneous for v7 boards.
@@ -63,21 +81,29 @@ static void _switch_isr_helper(uint8_t sw_num);
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
 
+/*
+ * switch_init()    - initialize homing/limit switches
+ * reset_switches() - reset all switches
+ *
+ *	switch_init() assumes sys_init() and st_init() have been run previously to
+ *	bind the ports and set bit IO directions, respectively
+ *
+ * Here's some old code from when switches fired on one edge or the other:
+ *   uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
+ */
+
 void switch_init(void)
 {
 	for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
-		// old code from when switches fired on one edge or the other:
-		//	uint8_t int_mode = (sw.switch_type == SW_TYPE_NORMALLY_OPEN) ? PORT_ISC_FALLING_gc : PORT_ISC_RISING_gc;
-
 		// setup input bits and interrupts (previously set to inputs by st_init())
-		if (sw.mode[MIN_SWITCH(i)] != SW_MODE_DISABLED) {
+		if (sw.s[MIN_SWITCH(i)].mode != SW_MODE_DISABLED) {
 			hw.sw_port[i]->DIRCLR = SW_MIN_BIT_bm;		 	// set min input - see 13.14.14
 			hw.sw_port[i]->PIN6CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
 			hw.sw_port[i]->INT0MASK = SW_MIN_BIT_bm;	 	// interrupt on min switch
 		} else {
 			hw.sw_port[i]->INT0MASK = 0;	 				// disable interrupt
 		}
-		if (sw.mode[MAX_SWITCH(i)] != SW_MODE_DISABLED) {
+		if (sw.s[MAX_SWITCH(i)].mode != SW_MODE_DISABLED) {
 			hw.sw_port[i]->DIRCLR = SW_MAX_BIT_bm;		 	// set max input - see 13.14.14
 			hw.sw_port[i]->PIN7CTRL = (PIN_MODE | PORT_ISC_BOTHEDGES_gc);
 			hw.sw_port[i]->INT1MASK = SW_MAX_BIT_bm;		// max on INT1
@@ -90,120 +116,170 @@ void switch_init(void)
 	reset_switches();
 }
 
-/*
- * Switch closure processing routines
- *
- * ISRs 				 - switch interrupt handler vectors
- * _isr_helper()		 - common code for all switch ISRs
- * switch_rtc_callback() - called from RTC for each RTC tick.
- *
- *	These functions interact with each other to process switch closures and firing.
- *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
- *	When a switch closure is DETECTED the count increments for each RTC tick.
- *	When the count reaches zero the switch is tripped and action occurs.
- *	The counter continues to increment positive until the lockout is exceeded.
- */
-
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
-
-static void _switch_isr_helper(uint8_t sw_num)
-{
-	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
-	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
-	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
-	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-	read_switch(sw_num);							// sets the state value in the struct
-}
-
-void switch_rtc_callback(void)
-{
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
-            continue;
-
-		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
-			sw.debounce[i] = SW_IDLE;
-            // check if the state has changed while we were in lockout...
-            uint8_t old_state = sw.state[i];
-            if(old_state != read_switch(i)) {
-                sw.debounce[i] = SW_DEGLITCHING;
-                sw.count[i] = -SW_DEGLITCH_TICKS;
-            }
-            continue;
-		}
-		if (sw.count[i] == 0) {							// trigger point
-			sw.sw_num_thrown = i;						// record number of thrown switch
-			sw.debounce[i] = SW_LOCKOUT;
-
-			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
-				cm_request_feedhold();
-			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
-				sw.limit_flag = true;					// triggers an emergency shutdown
-			}
-		}
-	}
-}
-
-/*
- * get_switch_mode()  - return switch mode setting
- * get_limit_thrown() - return true if a limit was tripped
- * get_switch_num()   - return switch number most recently thrown
- */
-
-uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
-uint8_t get_limit_switch_thrown(void) { return(sw.limit_flag);}
-uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
-
-
-// global switch type
-void set_switch_type( uint8_t switch_type ) { sw.switch_type = switch_type; }
-uint8_t get_switch_type() { return sw.switch_type; }
-
-/*
- * reset_switches() - reset all switches and reset limit flag
- */
-
 void reset_switches()
 {
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.debounce[i] = SW_IDLE;
-        read_switch(i);
+    for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+        if (sw.s[i].mode == SW_MODE_DISABLED) {
+            sw.s[i].state = SW_DISABLED;
+            sw.s[i].edge = SW_EDGE_NONE;
+            continue;
+        }
+        if (sw.s[i].mode == SW_MODE_PROBE) {
+            sw.s[i].type = SW_ACTIVE_LO;            // This is a hack. Not all probes are NO
+        }
+        else {
+            sw.s[i].type = sw.switch_type;          // switches inherit global switch type
+        }
+        sw.s[i].state = _read_raw_switch(i);        // set initial conditions
+        sw.s[i].edge = SW_EDGE_NONE;
+        sw.s[i].lockout_ms = SW_LOCKOUT_MS;
+        Timeout_clear(&sw.s[i].timeout);            // clear lockout timer
 	}
-	sw.limit_flag = false;
 }
 
 /*
- * read_switch() - read a switch directly with no interrupts or deglitching
+ * get_switch_mode() - return switch mode setting
  */
-uint8_t read_switch(uint8_t sw_num)
-{
-	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
 
-	uint8_t read = 0;
+uint8_t get_switch_mode(const uint8_t sw_num) { return (sw.s[sw_num].mode);}
+
+/*
+ * Switch processing routines
+ *
+ * ISRs (Interrupt Service Routines)
+ * _read_raw_switch() - primitive to read and sense correct input
+ * _dispatch_switch() - process a switch interrupt
+ */
+
+ISR(X_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_X);}
+ISR(Y_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_Y);}
+ISR(Z_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_Z);}
+ISR(A_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_A);}
+ISR(X_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_X);}
+ISR(Y_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Y);}
+ISR(Z_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Z);}
+ISR(A_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_A);}
+
+static bool _read_raw_switch(const uint8_t sw_num)
+{
+	uint8_t raw;    // raw is a naked bit, like 0b01000000 or 0b00000000
 	switch (sw_num) {
-		case SW_MIN_X: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_X: { raw = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { raw = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { raw = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { raw = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { raw = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { raw = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+        default: { return (false); }    // ERROR
 	}
-	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
-		return (sw.state[sw_num]);
-	} else {
-		sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);
-		return (sw.state[sw_num]);
+    return ((bool)raw ^ !(bool)sw.s[sw_num].type);	    // XOR to correct for ACTIVE mode. Casts to bool.
+}
+
+static void _dispatch_switch(const uint8_t sw_num)
+{
+    //*** process 'no action' conditions ***//
+	if (sw.s[sw_num].mode == SW_MODE_DISABLED) {        // input is disabled (not supposed to happen)
+        return;
+    }
+    if ((Timeout_isSet(&sw.s[sw_num].timeout)) &&
+        (!Timeout_isPast(&sw.s[sw_num].timeout))) {     // input is in lockout period
+        return;
+    }
+	bool raw_switch = _read_raw_switch(sw_num);         // no change in state (not supposed to happen)
+    if (sw.s[sw_num].state == raw_switch) {
+        return;
+    }
+
+    // read the switch, set edges and start lockout timer
+    sw.s[sw_num].state = raw_switch;                    // 1 = switch hit, 0 = switch unhit
+    sw.s[sw_num].edge = raw_switch;                     // 1 = leading edge, 0 = trailing edge
+    Timeout_set(&sw.s[sw_num].timeout, sw.s[sw_num].lockout_ms);
+
+    //*** execute the functions ***/
+
+	sr_request_status_report(SR_REQUEST_ASAP);          // generate incremental status report to show any changes
+
+    // functions that trigger on either edge
+	if (cm.cycle_state == CYCLE_HOMING) {
+    	cm_request_feedhold();
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+        return;
+    }
+
+    // functions that only trigger on the LEADING_EDGE
+    if (sw.s[sw_num].edge == SW_EDGE_TRAILING) {
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+        return;
+    } else {
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+    }
+
+	if (cm.cycle_state == CYCLE_PROBE) {
+    	cm_request_feedhold();
+        return;
+    }
+	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
+    	controller_assert_limit_condition(sw_num+1);
 	}
+}
+
+/*
+ * read_switch() - read, store and return current state of switch
+ */
+
+swState read_switch(const uint8_t sw_num)
+{
+    if (sw.s[sw_num].mode == SW_MODE_DISABLED) {
+        return (SW_DISABLED);
+    }
+    sw.s[sw_num].state = _read_raw_switch(sw_num);    // read pin
+    return (sw.s[sw_num].state);
+}
+
+/*
+ * find_probe_switch() - return probe switch number or error
+ *
+ *  Probes are only supported on XYZ axes (no rotaries)
+ *
+ *  Returns
+ *      0-N - number of switch configured for PROBE
+ *      -1  - no probe switch found on XYZ
+ *      -2  - multiple probe switches found
+ *      -3  - probe switch found on ABC axes
+ */
+
+int8_t find_probe_switch()
+{
+    uint8_t axis;
+    int8_t probe = -1;          // probe switch
+
+    // test for probe input on rotary axes
+    // This is a hack that assumes there are no inputs mapped to B or C axes. OK for now.
+    if ((sw.s[SW_MIN_A].mode == SW_MODE_PROBE) ||
+        (sw.s[SW_MAX_A].mode == SW_MODE_PROBE)) {
+        return (-3);
+    }
+
+    // test for one and only one probe input on XYZ axes
+	for (axis=AXIS_X; axis<AXIS_A; axis++ ) {
+    	if (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) {
+            if (probe == -1) {
+                probe = MIN_SWITCH(axis);
+            } else {
+                return (-2);    // multiple probe switches were found
+            }
+    	}
+    	if (sw.s[MAX_SWITCH(axis)].mode == SW_MODE_PROBE) {
+        	if (probe == -1) {
+            	probe = MAX_SWITCH(axis);
+            } else {
+                return (-2);    // multiple probe switches were found
+            }
+    	}
+    }
+    return (probe);
 }
 
 /***********************************************************************************
@@ -238,5 +314,8 @@ stat_t sw_set_sw(nvObj_t *nv)			// switch setting
 
 static const char fmt_st[] PROGMEM = "[st]  switch type%18d [0=NO,1=NC]\n";
 void sw_print_st(nvObj_t *nv) { text_print(nv, fmt_st);}
+
+static const char fmt_in[] PROGMEM = "Input %s state:    %2d\n";
+void sw_print_in(nvObj_t *nv) { printf_P(fmt_in, nv->token, (int8_t)nv->value_int); }
 
 #endif

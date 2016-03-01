@@ -2,8 +2,8 @@
  * stepper.h - stepper motor interface
  * This file is part of TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -339,10 +339,11 @@ typedef enum {
 
 typedef struct cfgMotor {				// per-motor configs
 	// public
-	uint8_t	motor_map;					// map motor to axis
-	uint32_t microsteps;				// microsteps to apply for each axis (ex: 8)
-	uint8_t polarity;					// 0=normal polarity, 1=reverse motor direction
-	uint8_t power_mode;					// See cmMotorPowerMode for enum
+	uint8_t	motor_map;                  // map motor to axis
+	uint32_t microsteps;                // microsteps to apply for each axis (ex: 8)
+	uint8_t polarity;                   // 0=normal polarity, 1=reverse motor direction
+	cmMotorPowerMode power_mode;        // See cmMotorPowerMode for enum
+
 	float power_level;					// set 0.000 to 1.000 for PMW vref setting
 	float step_angle;					// degrees per whole step (ex: 1.8)
 	float travel_rev;					// mm or deg of travel per motor revolution
@@ -363,7 +364,7 @@ typedef struct stConfig {				// stepper configs
 typedef struct stRunMotor {				// one per controlled motor
 	uint32_t substep_increment;			// total steps in axis times substeps factor
 	int32_t substep_accumulator;		// DDA phase angle accumulator
-	uint8_t power_state;				// state machine for managing motor power
+	motorPowerState power_state;        // state machine for managing motor power
 	uint32_t power_systick;				// sys_tick for next motor power state transition
 	float power_level_dynamic;			// power level for this segment of idle (ARM only)
 } stRunMotor_t;
@@ -402,7 +403,7 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;				// magic number to test memory integrity
 	volatile uint8_t buffer_state;		// prep buffer state - owned by exec or loader
 	struct mpBuffer *bf;				// static pointer to relevant buffer
-	uint8_t move_type;					// move type
+    uint8_t block_type;
 
 	uint16_t dda_period;				// DDA or dwell clock period setting
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
@@ -417,11 +418,11 @@ extern stPrepSingleton_t st_pre;		// only used by config_app diagnostics
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_reset(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 
 uint8_t st_runtime_isbusy(void);
-void st_reset(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
 stat_t st_clc(nvObj_t *nv);

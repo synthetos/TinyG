@@ -33,12 +33,10 @@ typedef enum {
 	TV_VERBOSE						// response is provided. Error responses ech message and failed commands
 } textVerbosity;
 
-typedef enum {					    // text output print modes
-	TEXT_NO_PRINT = 0,				// don't print anything if you find yourself in TEXT mode
-	TEXT_INLINE_PAIRS,				// print key:value pairs as comma separated pairs
-	TEXT_INLINE_VALUES,				// print values as commas separated values
-	TEXT_MULTILINE_FORMATTED		// print formatted values on separate lines with formatted print per line
-} textFormats;
+typedef enum {					    // text output display modes
+	TEXT_NO_DISPLAY = 0,			// don't print anything if you find yourself in TEXT mode
+	TEXT_RESPONSE		            // print formatted values on separate lines with formatted print per line
+} textDisplays;
 
 typedef struct txtSingleton {		// text mode data
 

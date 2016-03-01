@@ -2,7 +2,7 @@
  * json_parser.h - JSON parser and JSON support for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -39,6 +39,9 @@
 #define JSON_INPUT_STRING_MAX 128   // set an arbitrary max
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
+#define JSON_DEPTH_MAX 4            // maximum nesting level
+#define JSON_PAIRS_MAX NV_LIST_LEN  // maximum number of total pairs allowed
+
 typedef enum {
 	JV_SILENT = 0,					// no response is provided for any command
 	JV_FOOTER,						// returns footer only (no command echo, gcode blocks or messages)
@@ -48,29 +51,53 @@ typedef enum {
 	JV_VERBOSE						// returns footer, messages, config commands, gcode blocks
 } jsonVerbosity;
 
-typedef enum {					    // json output print modes
-	JSON_NO_PRINT = 0,				// don't print anything if you find yourself in JSON mode
-	JSON_OBJECT_FORMAT,				// print just the body as a json object
-	JSON_RESPONSE_FORMAT			// print the header/body/footer as a response object
-} jsonFormats;
+typedef enum {                      // json output display modes
+	JSON_NO_DISPLAY = 0,            // don't print anything if you find yourself in JSON mode
+	JSON_OBJECT,                    // print just the body as a json object
+	JSON_RESPONSE                   // print the header/body/footer as a response object
+} jsonDisplays;
 
 typedef enum {
 	JSON_SYNTAX_RELAXED = 0,		// Does not require quotes on names
 	JSON_SYNTAX_STRICT				// requires quotes on names
 } jsonSyntax;
 
+typedef enum {                      // JSON tokenization state machine
+    JTSM_START = 0,                 // normalization start
+    JTSM_KEY,                       // in a key
+    JTSM_VALUE,                     // in a value
+    JTSM_STRING_VALUE,              // in a value string
+    JTSM_ARRAY_VALUE                // in an array
+} jsonTokenizationState;
+
+#define JTOK_FLAG    0x80           // flag char as a token
+#define JTOK_DEPTH   0x70           // mask to extract depth
+#define JTOK_DMASK   0x07           // mask for down-shifted depth value
+#define JTOK_DSHIFT  4              // number of bits to shift depth value
+#define JTOK_KEY     0x08           // key flag:   1=key, 0=value
+#define JTOK_PARENT  0x04           // parent flag. Key is parent
+#define JTOK_ARRAY   0x04           // array flag: 1=value is array value, 0=not
+#define JTOK_TMASK   0x03           // mask to extract jsonToken enum
+
 typedef struct jsSingleton {
 
 	/*** config values (PUBLIC) ***/
 	jsonVerbosity json_verbosity;   // see enum in this file for settings
-	jsonSyntax json_syntax;			// 0=relaxed syntax, 1=strict syntax
+	jsonSyntax json_syntax;         // 0=relaxed syntax, 1=strict syntax
 
-	bool echo_json_footer;		    // flags for JSON responses serialization
-	bool echo_json_messages;
-	bool echo_json_configs;
-	bool echo_json_linenum;
-	bool echo_json_gcode_block;
-
+#ifdef __BITFIELDS
+	bool echo_json_footer       : 1 ;   // flags for JSON responses serialization
+	bool echo_json_messages     : 1 ;
+	bool echo_json_configs      : 1 ;
+	bool echo_json_linenum      : 1 ;
+	bool echo_json_gcode_block  : 1 ;
+#else
+	bool echo_json_footer       ;   // flags for JSON responses serialization
+	bool echo_json_messages     ;
+	bool echo_json_configs      ;
+	bool echo_json_linenum      ;
+	bool echo_json_gcode_block  ;
+#endif
 	/*** runtime values (PRIVATE) ***/
 
 } jsSingleton_t;
@@ -82,10 +109,13 @@ extern jsSingleton_t js;
 /**** Function Prototypes ****/
 
 void json_parser(char *str);
+//void json_parser(char *str, nvObj_t *nv, bool display);
+
 int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size);
-void json_print_object(nvObj_t *nv);
 void json_print_response(uint8_t status);
 void json_print_list(stat_t status, uint8_t flags);
+void json_print_object(nvObj_t *nv);
+char *json_relax(char *str);
 
 stat_t json_set_jv(nvObj_t *nv);
 

@@ -2,8 +2,8 @@
  * planner.h - cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2013 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,25 +45,24 @@ typedef enum {				        // bf->buffer_state values
     MP_BUFFER_QUEUED,				// in queue
     MP_BUFFER_PENDING,				// marked as the next buffer to run
     MP_BUFFER_RUNNING				// current running buffer
-} mpBufferState;
+} bufferState;
 
-typedef enum {				        // bf->move_type values
-	MOVE_TYPE_NULL = 0,		        // null move - does a no-op
-	MOVE_TYPE_ALINE,		        // acceleration planned line
-	MOVE_TYPE_DWELL,		        // delay with no movement
-	MOVE_TYPE_COMMAND,		        // general command
-	MOVE_TYPE_TOOL,			        // T command
-	MOVE_TYPE_SPINDLE_SPEED,        // S command
-	MOVE_TYPE_STOP,			        // program stop
-	MOVE_TYPE_END			        // program end
-} moveType;
+typedef enum {				        // bf->block_type values
+	BLOCK_TYPE_NULL = 0,		    // null move - does a no-op
+	BLOCK_TYPE_ALINE,		        // acceleration planned line
+	BLOCK_TYPE_DWELL,		        // delay with no movement
+	BLOCK_TYPE_COMMAND,		        // general command
+	BLOCK_TYPE_TOOL,                // T command
+	BLOCK_TYPE_SPINDLE_SPEED,       // S command
+	BLOCK_TYPE_STOP,                // program stop
+	BLOCK_TYPE_END                  // program end
+} blockType;
 
 typedef enum {
-	MOVE_OFF = 0,			        // move inactive (MUST BE ZERO)
-	MOVE_NEW,				        // general value if you need an initialization
-	MOVE_RUN,				        // general run state (for non-acceleration moves)
-	MOVE_SKIP_BLOCK			        // mark a skipped block
-} moveState;
+    BLOCK_IDLE = 0,                 // block is inactive (MUST BE ZERO)
+    BLOCK_INITIALIZING,             // uninitialized run state
+    BLOCK_RUNNING                   // block is in run state
+} blockState;
 
 typedef enum {
 	SECTION_HEAD = 0,		        // acceleration
@@ -125,14 +124,24 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 
 	float naiive_move_time;
 
-	uint8_t buffer_state;			// used to manage queuing/dequeuing
-	uint8_t move_type;				// used to dispatch to run routine
-	uint8_t move_code;				// byte that can be used by used exec functions
-	uint8_t move_state;				// move state machine sequence
-	uint8_t replannable;			// TRUE if move can be re-planned
+#ifdef __BITFIELDS
+    bufferState buffer_state : 3 ;  // used to manage queuing/dequeuing
+    blockType block_type     : 3 ;  // used to dispatch to run routine
+    blockState block_state   : 2 ;  // move state machine sequence
+	uint8_t replannable      : 1 ;  // TRUE if move can be re-planned
+	uint8_t jerk_axis        : 3 ;  // rate limiting axis used to compute jerk for the move
+#else
+    bufferState buffer_state ;  // used to manage queuing/dequeuing
+    blockType block_type     ;  // used to dispatch to run routine
+    blockState block_state   ;  // move state machine sequence
+    uint8_t replannable      ;  // TRUE if move can be re-planned
+    uint8_t jerk_axis        ;  // rate limiting axis used to compute jerk for the move
+#endif
+
+//	uint8_t block_code;				// byte that can be used by used exec functions
 
 	float unit[AXES];				// unit vector for axis scaling & planning
-    bool axis_flags[AXES];              // set true for axes participating in the move & for command parameters
+    bool axis_flags[AXES];          // set true for axes participating in the move & for command parameters
 
 	float length;					// total length of line or helix in mm
 	float head_length;
@@ -149,7 +158,6 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float delta_vmax;				// max velocity difference for this move
 	float braking_velocity;			// current value for braking velocity
 
-	uint8_t jerk_axis;				// rate limiting axis used to compute jerk for the move
 	float jerk;						// maximum linear jerk term for this move
 	float recip_jerk;				// 1/Jm used for planning (computed and cached)
 	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
@@ -181,24 +189,24 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t move_state;				// state of the overall move
-	uint8_t section;				// what section is the move in?
-	uint8_t section_state;			// state within a move section
+	magic_t magic_start;                // magic number to test memory integrity
+	blockState block_state;             // state of the overall move
+	moveSection section;                // what section is the move in?
+	sectionState section_state;         // state within a move section
 
-	float unit[AXES];				// unit vector for axis scaling & planning
-	float target[AXES];				// final target for bf (used to correct rounding errors)
-	float position[AXES];			// current move position
-	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
-	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
+	float unit[AXES];                   // unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move
+	float target[AXES];                 // final target for bf (used to correct rounding errors)
+	float position[AXES];               // current move position
+	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
 
-	float target_steps[MOTORS];		// current MR target (absolute target as steps)
-	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
-	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
+	float target_steps[MOTORS];         // current MR target (absolute target as steps)
+	float position_steps[MOTORS];       // current MR position (target from previous segment)
+	float commanded_steps[MOTORS];      // will align with next encoder sample (target from 2nd previous segment)
+	float encoder_steps[MOTORS];        // encoder position in steps - ideally the same as commanded_steps
+	float following_error[MOTORS];      // difference between encoder_steps and commanded steps
 
-	float head_length;				// copies of bf variables of same name
+	float head_length;                  // copies of bf variables of same name
 	float body_length;
 	float tail_length;
 
@@ -206,19 +214,18 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float cruise_velocity;
 	float exit_velocity;
 
-	float segments;					// number of segments in line (also used by arc generation)
-	uint32_t segment_count;			// count of running segments
-	float segment_velocity;			// computed velocity for aline segment
-	float segment_time;				// actual time increment per aline segment
-	float jerk;						// max linear jerk
+	float segments;                     // number of segments in line (also used by arc generation)
+	uint32_t segment_count;             // count of running segments
+	float segment_velocity;             // computed velocity for aline segment
+	float segment_time;                 // actual time increment per aline segment
 
-	float forward_diff_1;			// forward difference level 1
-	float forward_diff_2;			// forward difference level 2
-	float forward_diff_3;			// forward difference level 3
-	float forward_diff_4;			// forward difference level 4
-	float forward_diff_5;			// forward difference level 5
+	float forward_diff_1;               // forward difference level 1
+	float forward_diff_2;               // forward difference level 2
+	float forward_diff_3;               // forward difference level 3
+	float forward_diff_4;               // forward difference level 4
+	float forward_diff_5;               // forward difference level 5
 
-	GCodeState_t gm;				// gcode model state currently executing
+	GCodeState_t gm;                    // gcode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;
@@ -233,9 +240,11 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
  */
 
 void planner_init(void);
+void planner_reset(void);
 void planner_init_assertions(void);
 stat_t planner_test_assertions(void);
 
+void mp_halt_runtime(void);
 void mp_flush_planner(void);
 void mp_set_planner_position(uint8_t axis, const float position);
 void mp_set_runtime_position(uint8_t axis, const float position);
@@ -246,41 +255,50 @@ stat_t mp_runtime_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
+//void mp_request_out_of_band_dwell(float seconds);
+//stat_t mp_exec_out_of_band_dwell(void);
 
-stat_t mp_aline(GCodeState_t *gm_in);
-
-stat_t mp_plan_hold_callback(void);
-stat_t mp_end_hold(void);
-stat_t mp_feed_rate_override(uint8_t flag, float parameter);
-
-// planner buffer handlers
+// planner functions and helpers
 uint8_t mp_get_planner_buffers_available(void);
-void mp_init_buffers(void);
-mpBuf_t * mp_get_write_buffer(void);
-void mp_unget_write_buffer(void);
-void mp_commit_write_buffer(const uint8_t move_type);
+bool mp_planner_is_full(void);
+bool mp_has_runnable_buffer(void);
+//bool mp_is_phat_city_time(void);
 
-mpBuf_t * mp_get_run_buffer(void);
-uint8_t mp_free_run_buffer(void);
-mpBuf_t * mp_get_first_buffer(void);
-mpBuf_t * mp_get_last_buffer(void);
+// planner buffer primitives
+void mp_init_buffers(void);
 
 //mpBuf_t * mp_get_prev_buffer(const mpBuf_t *bf);	// use the macro instead
 //mpBuf_t * mp_get_next_buffer(const mpBuf_t *bf);
 #define mp_get_prev_buffer(b) ((mpBuf_t *)(b->pv))
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
+mpBuf_t * mp_get_write_buffer(void);
+void mp_commit_write_buffer(const uint8_t block_type);
+mpBuf_t * mp_get_run_buffer(void);
+uint8_t mp_free_run_buffer(void);
+
+mpBuf_t * mp_get_first_buffer(void);
+mpBuf_t * mp_get_last_buffer(void);
+
+//void mp_unget_write_buffer(void);
 void mp_clear_buffer(mpBuf_t *bf);
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
 // plan_line.c functions
-float mp_get_runtime_velocity(void);
-float mp_get_runtime_work_position(uint8_t axis);
-float mp_get_runtime_absolute_position(uint8_t axis);
-void mp_set_runtime_work_offset(float offset[]);
 void mp_zero_segment_velocity(void);
-uint8_t mp_get_runtime_busy(void);
+float mp_get_runtime_velocity(void);
+float mp_get_runtime_absolute_position(uint8_t axis);
+float mp_get_runtime_work_position(uint8_t axis);
+void mp_set_runtime_work_offset(float offset[]);
 float* mp_get_planner_position_vector(void);
+bool mp_get_runtime_busy(void);
+bool mp_runtime_is_idle(void);
+
+stat_t mp_aline(GCodeState_t *gm_in);
+stat_t mp_plan_hold_callback(void);
+
+stat_t mp_end_hold(void);
+//stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // plan_zoid.c functions
 void mp_calculate_trapezoid(mpBuf_t *bf);
@@ -290,5 +308,6 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 // plan_exec.c functions
 stat_t mp_exec_move(void);
 stat_t mp_exec_aline(mpBuf_t *bf);
+void mp_exit_hold_state(void);
 
 #endif	// End of include Guard: PLANNER_H_ONCE

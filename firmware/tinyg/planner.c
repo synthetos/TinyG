@@ -2,8 +2,8 @@
  * planner.c - Cartesian trajectory planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2015 Rob Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2016 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -81,7 +81,9 @@ static stat_t _exec_command(mpBuf_t *bf);
 
 /*
  * planner_init()
+ * planner_reset()
  */
+
 void planner_init()
 {
 // If you know all memory has been zeroed by a hard reset you don't need these next 2 lines
@@ -89,6 +91,11 @@ void planner_init()
 	memset(&mm, 0, sizeof(mm));	// clear all values, pointers and status
 	planner_init_assertions();
 	mp_init_buffers();
+}
+
+void planner_reset()
+{
+    planner_init();
 }
 
 /*
@@ -114,17 +121,27 @@ stat_t planner_test_assertions()
 }
 
 /*
+ * mp_halt_runtime() - stop runtime movement immediately
+ */
+void mp_halt_runtime()
+{
+    stepper_reset();                // stop the steppers and dwells
+    planner_reset();                // reset the planner queues
+}
+
+/*
  * mp_flush_planner() - flush all moves in the planner and all arcs
  *
- *	Does not affect the move currently running in mr.
- *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
  *	This function should not generally be called; call cm_queue_flush() instead
+ *	Does not affect the move currently running in mr (which was stopped by the feedhold code)
+ *	Does not affect mm or gm model positions
  */
 void mp_flush_planner()
 {
 	cm_abort_arc();
 	mp_init_buffers();
+//    mr.block_state = BLOCK_IDLE;                // prevent MR from re-running
 	cm_set_motion_state(MOTION_STOP);
 }
 
@@ -157,12 +174,12 @@ void mp_set_runtime_position(uint8_t axis, const float position) { mr.position[a
 void mp_set_steps_to_runtime_position()
 {
 	float step_position[MOTORS];
-	ik_kinematics(mr.position, step_position);				// convert lengths to steps in floating point
+	kn_inverse_kinematics(mr.position, step_position);          // convert lengths to steps in floating point
 	for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 		mr.target_steps[motor] = step_position[motor];
 		mr.position_steps[motor] = step_position[motor];
 		mr.commanded_steps[motor] = step_position[motor];
-		en_set_encoder_steps(motor, step_position[motor]);	// write steps to encoder register
+		en_set_encoder_steps(motor, step_position[motor]);      // write steps to encoder register
 
 		// These must be zero:
 		mr.following_error[motor] = 0;
@@ -201,7 +218,7 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 		return;
 	}
 
-	bf->move_type = MOVE_TYPE_COMMAND;
+	bf->block_type = BLOCK_TYPE_COMMAND;
 	bf->bf_func = _exec_command;						// callback to planner queue exec function
 	bf->cm_func = cm_exec;								// callback to canonical machine exec function
 
@@ -209,7 +226,7 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 		bf->value_vector[axis] = value[axis];
 		bf->axis_flags[axis] = flags[axis];
 	}
-	mp_commit_write_buffer(MOVE_TYPE_COMMAND);			// must be final operation before exit
+	mp_commit_write_buffer(BLOCK_TYPE_COMMAND);			// must be final operation before exit
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
@@ -243,8 +260,8 @@ stat_t mp_dwell(float seconds)
     }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes
-	bf->move_state = MOVE_NEW;
-	mp_commit_write_buffer(MOVE_TYPE_DWELL);			// must be final operation before exit
+	bf->block_state = BLOCK_INITIALIZING;
+	mp_commit_write_buffer(BLOCK_TYPE_DWELL);			// must be final operation before exit
 	return (STAT_OK);
 }
 
@@ -254,6 +271,40 @@ static stat_t _exec_dwell(mpBuf_t *bf)
 	if (mp_free_run_buffer()) cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
 	return (STAT_OK);
 }
+
+/**********************************************************************************
+ * Planner helpers
+ *
+ * mp_get_planner_buffers()   - return # of available planner buffers
+ * mp_planner_is_full()       - true if planner has no room for a new block
+ * mp_has_runnable_buffer()   - true if next buffer is runnable, indicating motion has not stopped.
+ * mp_is_it_phat_city_time() - test if there is time for non-essential processes
+ */
+
+uint8_t mp_get_planner_buffers()
+{
+    return (mb.buffers_available);
+}
+
+bool mp_planner_is_full()
+{
+    return (mb.buffers_available < PLANNER_BUFFER_HEADROOM);
+}
+
+bool mp_has_runnable_buffer()
+{
+    return (mb.r->buffer_state);    // anything other than MP_BUFFER_EMPTY returns true
+}
+
+/*
+bool mp_is_phat_city_time()
+{
+	if(cm.hold_state == FEEDHOLD_HOLD) {
+    	return true;
+	}
+    return ((mb.time_in_plan <= 0) || (PHAT_CITY_TIME < mb.time_in_plan));
+}
+*/
 
 /**** PLANNER BUFFERS *****************************************************
  *
@@ -352,19 +403,20 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 
 void mp_unget_write_buffer()
 {
-	mb.w = mb.w->pv;							// queued --> write
-	mb.w->buffer_state = MP_BUFFER_EMPTY; 		// not loading anymore
-	mb.buffers_available++;
+    if (mb.w->buffer_state != MP_BUFFER_EMPTY) {  // safety. Can't unget an empty buffer
+        mb.w->buffer_state = MP_BUFFER_EMPTY;
+        mb.buffers_available++;
+    }
 }
 
 /*** WARNING: The routine calling mp_commit_write_buffer() must not use the write buffer
 			  once it has been queued. Action may start on the buffer immediately,
 			  invalidating its contents ***/
 
-void mp_commit_write_buffer(const uint8_t move_type)
+void mp_commit_write_buffer(const uint8_t block_type)
 {
-	mb.q->move_type = move_type;
-	mb.q->move_state = MOVE_NEW;
+	mb.q->block_type = block_type;
+	mb.q->block_state = BLOCK_INITIALIZING;
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
 	qr_request_queue_report(+1);				// request a QR and add to the "added buffers" count
@@ -401,7 +453,7 @@ uint8_t mp_free_run_buffer()					// EMPTY current run buf & adv to next
 
 mpBuf_t * mp_get_first_buffer(void)
 {
-	return(mp_get_run_buffer());	// returns buffer or NULL if nothing's running
+	return(mp_get_run_buffer());	            // returns buffer or NULL if nothing's running
 }
 
 mpBuf_t * mp_get_last_buffer(void)
@@ -412,7 +464,7 @@ mpBuf_t * mp_get_last_buffer(void)
 	if (bf == NULL) return(NULL);
 
 	do {
-		if ((bp->nx->move_state == MOVE_OFF) || (bp->nx == bf)) {
+		if ((bp->nx->block_state == BLOCK_IDLE) || (bp->nx == bf)) {
 			return (bp);
 		}
 	} while ((bp = mp_get_next_buffer(bp)) != bf);

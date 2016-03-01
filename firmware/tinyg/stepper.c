@@ -2,8 +2,8 @@
  * stepper.c - stepper motor controls
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -233,8 +233,7 @@ void stepper_init()
 	TIMER_EXEC.INTCTRLA = TIMER_EXEC_INTLVL;	// interrupt mode
 	TIMER_EXEC.PER = EXEC_TIMER_PERIOD;			// set period
 
-	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;
-	st_reset();									// reset steppers to known state
+	stepper_reset();                            // reset steppers to known state
 #endif // __AVR
 
 #ifdef __ARM
@@ -260,6 +259,29 @@ void stepper_init()
 //	motor_1.vref = 0.25; // example of how to set vref duty cycle directly. Freq already set to 500000 Hz.
 #endif // __ARM
 }
+
+/*
+ * stepper_reset() - reset stepper internals
+ */
+
+void stepper_reset()
+{
+#ifdef __ARM
+    dda_timer.stop();                                   // stop all movement
+    dwell_timer.stop();
+#endif
+
+    st_run.dda_ticks_downcount = 0;                     // signal the runtime is not busy
+    st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;    // set to EXEC or it won't restart
+
+	for (uint8_t motor=0; motor<MOTORS; motor++) {
+//		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
+		st_run.mot[motor].substep_accumulator = 0;      // will become max negative during per-motor setup;
+		st_pre.mot[motor].corrected_steps = 0;          // diagnostic only - no action effect
+	}
+ 	mp_set_steps_to_runtime_position();                 // reset encoder to agree with the above
+}
+
 
 /*
  * stepper_init_assertions() - test assertions, return error code if violation exists
@@ -301,26 +323,12 @@ uint8_t st_runtime_isbusy()
 }
 
 /*
- * st_reset() - reset stepper internals
- */
-
-void st_reset()
-{
-	for (uint8_t motor=0; motor<MOTORS; motor++) {
-		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
-		st_run.mot[motor].substep_accumulator = 0;	// will become max negative during per-motor setup;
-		st_pre.mot[motor].corrected_steps = 0;		// diagnostic only - no action effect
-	}
-	mp_set_steps_to_runtime_position();
-}
-
-/*
  * st_clc() - clear counters
  */
 
 stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
 {
-	st_reset();
+	stepper_reset();
 	return(STAT_OK);
 }
 
@@ -470,14 +478,14 @@ stat_t st_motor_power_callback() 	// called by controller
 		}
 
 		// do not process countdown if in a feedhold
-		if (cm_get_combined_state() == COMBINED_HOLD) {
+		if (cm_get_motion_state() == MOTION_HOLD) {
 			continue;
 		}
 
 		// do not process countdown if in a feedhold
-		if (cm_get_combined_state() == COMBINED_HOLD) {
-			continue;
-		}
+//		if (cm_get_combined_state() == COMBINED_HOLD) {
+//			continue;
+//		}
 
 		// run the countdown if you are in a countdown
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
@@ -760,7 +768,7 @@ static void _load_move()
 		return;
 	}
 	// handle aline loads first (most common case)
-	if (st_pre.move_type == MOVE_TYPE_ALINE) {
+	if (st_pre.block_type == BLOCK_TYPE_ALINE) {
 
 		//**** setup the new segment ****
 
@@ -945,18 +953,18 @@ static void _load_move()
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;			// enable the DDA timer
 
 	// handle dwells
-	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
+	} else if (st_pre.block_type == BLOCK_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;			// load dwell timer period
 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;			// enable the dwell timer
 
 	// handle synchronous commands
-	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
+	} else if (st_pre.block_type == BLOCK_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
-	st_pre.move_type = MOVE_TYPE_NULL;
+	st_pre.block_type = BLOCK_TYPE_NULL;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
 	st_request_exec_move();								// exec and prep next move
 }
@@ -1061,7 +1069,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
-	st_pre.move_type = MOVE_TYPE_ALINE;
+	st_pre.block_type = BLOCK_TYPE_ALINE;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 	return (STAT_OK);
 }
@@ -1072,7 +1080,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 void st_prep_null()
 {
-	st_pre.move_type = MOVE_TYPE_NULL;
+	st_pre.block_type = BLOCK_TYPE_NULL;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// signal that prep buffer is empty
 }
 
@@ -1082,7 +1090,7 @@ void st_prep_null()
 
 void st_prep_command(void *bf)
 {
-	st_pre.move_type = MOVE_TYPE_COMMAND;
+	st_pre.block_type = BLOCK_TYPE_COMMAND;
 	st_pre.bf = (mpBuf_t *)bf;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
@@ -1093,7 +1101,7 @@ void st_prep_command(void *bf)
 
 void st_prep_dwell(float microseconds)
 {
-	st_pre.move_type = MOVE_TYPE_DWELL;
+	st_pre.block_type = BLOCK_TYPE_DWELL;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
@@ -1160,7 +1168,7 @@ static void _set_motor_steps_per_unit(nvObj_t *nv)
 	uint8_t m = _get_motor(nv);
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
     st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
-	st_reset();
+	stepper_reset();
 }
 
 /* PER-MOTOR FUNCTIONS
@@ -1189,7 +1197,7 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
     uint32_t mi = nv->value_int;
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
-		nv_add_conditional_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
+		nv_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
 	set_u32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
 	_set_motor_steps_per_unit(nv);

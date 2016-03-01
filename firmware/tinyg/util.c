@@ -2,7 +2,7 @@
  * util.c - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -159,21 +159,12 @@ float max4(float x1, float x2, float x3, float x4)
 
 
 /**** String utilities ****
- * strcpy_U() 	   - strcpy workalike to get around initial NUL for blank string - possibly wrong
- * isnumber() 	   - isdigit that also accepts plus, minus, and decimal point
- * escape_string() - add escapes to a string - currently for quotes only
+ * isnumber() 	  - isdigit that also accepts plus, minus, and decimal point
+ * str_escape()   - add escapes to a string - currently for quotes only
+ * str_unescape() - remove escaped quotes from a string. Also remove leading "'s if any
+ * str_concat()   - concatenate src to dst string and return pointer to NUL of dst string
+ * str_asciify()  - turn string into good old American 7 but ASCII - obliterate smart quotes
  */
-
-/*
-uint8_t * strcpy_U( uint8_t * dst, const uint8_t * src )
-{
-	uint16_t index = 0;
-	do {
-		dst[index] = src[index];
-	} while (src[index++] != 0);
-	return dst;
-}
-*/
 
 uint8_t isnumber(char c)
 {
@@ -183,7 +174,7 @@ uint8_t isnumber(char c)
 	return (isdigit(c));
 }
 
-char *escape_string(char *dst, char *src)
+char *str_escape(char *dst, const char *src)
 {
 	char c;
 	char *start_dst = dst;
@@ -193,6 +184,69 @@ char *escape_string(char *dst, char *src)
 		*(dst++) = c;
 	}
 	return (start_dst);
+}
+
+char *str_unescape(char *str)
+{
+    char c;
+    char *wr = str;  // write pointer
+	char *start_str = str;
+
+    if (*str == '"') { str++; }     // skip leading quote in string
+
+    while ((c = *(str++)) != 0) {	// NUL
+        if ((c == '\\') && (*str == '"')) { 
+            str++;
+        }
+        *wr++ = c;
+    }
+    wr--;                        // back up to last char before the NUL
+    if (*wr == '"') { *wr = 0; }    // re-terminate
+    return (start_str);
+}
+
+// remove or replace any 8-bit characters with good old American 7 bit ASCII
+char *str_asciify(char *str)
+{
+    char *wr = str;                                     // write pointer
+	char *start_str = str;
+
+    do {
+        if ((*str == 0xE2) && (*(str+1) == 0x80)) {     // replace so-called "smart" quotes everywhere
+            str += 2;
+            if ((*str == 0x9C) || (*str == 0x9D)) {
+                *wr++ = '\"';
+            }
+        }
+        *str = *str & 0x7F;         // should not be seeing any MSBs in ASCII. Make sure
+    } while (str++, *str != 0);     // NUL
+    return (start_str);
+}
+
+/*
+ * str2float() - wrapped version of strtod with additional error checking
+ * str2long()  - wrapped version of strtol with additional error checking
+ */
+// 
+stat_t str2float(const char *str, float *value)
+{ 
+    char *end;
+    *value = (float)strtod(str, &end);
+    if (end == str) { return (STAT_BAD_NUMBER_FORMAT); } // failed to convert
+    if (*end != 0) { return (STAT_BAD_NUMBER_FORMAT); }  // nonsense following float string
+    if (isnan(*value)) { *value = 0; return (STAT_FLOAT_IS_NAN); }
+    if (isinf(*value)) { *value = 0; return (STAT_FLOAT_IS_INFINITE); }
+    return (STAT_OK);
+}
+
+stat_t str2long(const char *str, uint32_t *value)
+{
+    if (strchr(str, (int)'.') != NULL) { return (STAT_VALUE_TYPE_ERROR); } // is float
+    char *end;
+    *value = strtol(str, &end, 0);
+    if (end == str) { return (STAT_BAD_NUMBER_FORMAT); } // failed to convert
+    if (*end != 0) { return (STAT_BAD_NUMBER_FORMAT); }  // nonsense following int string
+    return (STAT_OK);
 }
 
 /*
@@ -209,13 +263,86 @@ char *escape_string(char *dst, char *src)
 char *pstr2str(const char *pgm_string)
 {
 #ifdef __AVR
-	strncpy_P(global_string_buf, pgm_string, GLOBAL_STRING_LEN);
-	return (global_string_buf);
+	strncpy_P(text_item, pgm_string, TEXT_ITEM_LEN);
+	return (text_item);
 #endif
 #ifdef __ARM
 	return ((char *)pgm_string);
 #endif
 }
+
+/*
+ * adapted string concatenation functions
+ *
+ *  strcat_string()    - add a string to a base string with opening/closing quotes
+ *  strcat_string_P()  - add a PSTR string to a base string w/quotes
+ *  strcat_literal_P() - add a PSTR string to a base string with no opening / closing quotes
+ *  strcat_integer()   - add an unsigned integer value to a string
+ *  strcat_signed()    - add a signed integer value to a string
+ *  strcat_float()     - add a floating point valu to a string with defined precision digits
+ *
+ *  All the above perform the same basic function:
+ *    - add an element to a base string defined as the dst. 
+ *    - terminate the string with NUL
+ *    - return a pointer to the terminating NUL
+ *    - numeric routines perform the approriate conversion
+ *    _ _P routines accept PSTR strings as input
+ */
+
+char *strcat_string(char *str, const char *src)
+{
+    *str++ = '"';
+    while (*src != 0) {
+        *str++ = *src++;
+    }
+    *str++ = '"';
+    return (str);
+}
+
+char *strcat_string_P(char *str, const char *src)
+{
+    return (str);   //++++ STUBBED
+}
+
+char *strcat_literal_P(char *str, const char *src)
+{
+#ifdef __AVR
+    strcpy_P(str, src);
+    while (*str++ != 0);
+    return (--str);
+#endif
+#ifdef __ARM
+    strcpy(str, src);
+    while (*str++ != 0);
+    return (--str);
+#endif
+}
+
+char *strcat_integer(char *str, const uint32_t value)
+{
+//    inttoa(str, value);
+//    while (*str++ != 0);
+//    return (--str);
+
+// The above inttoa() function adds ~1700 bytes to the FLASH footprint. 
+// If that matters more that execution speed use the following code instead:
+    str += sprintf_P(str, PSTR("%lu"), value);
+    return (str);
+}
+
+char *strcat_signed(char *str, const int32_t value)
+{
+    str += sprintf_P(str, PSTR("%l"), value);
+    return (str);   //++++ STUBBED
+}
+
+char *strcat_float(char *str, const float value, const uint8_t precision)
+{
+    fntoa(str, value, precision);
+    while (*str++ != 0);
+    return (--str);
+}
+
 
 /*
  * fntoa() - return ASCII string given a float and a decimal precision value
@@ -250,8 +377,8 @@ char fntoa(char *str, float n, uint8_t precision)
  *	Stops calculation on null termination or length value if non-zero.
  * 	This is based on the the Java hashCode function. See http://en.wikipedia.org/wiki/Java_hashCode()
  */
+/*
 #define HASHMASK 9999
-
 uint16_t compute_checksum(char const *string, const uint16_t length)
 {
 	uint32_t h = 0;
@@ -262,7 +389,7 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
     }
     return (h % HASHMASK);
 }
-
+*/
 /*
  * SysTickTimer_getValue() - this is a hack to get around some compatibility problems
  */

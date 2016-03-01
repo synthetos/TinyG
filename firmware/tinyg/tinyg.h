@@ -2,7 +2,7 @@
  * tinyg.h - tinyg main header
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,17 +28,14 @@
  * and the lower one to \winavr\utils\bin\make.exe  (C:\WinAVR-20100110\utils\bin\make.exe)"
  */
 /*
- *  txt handling notes (still to go)
- *    - handle ill-formed wrapped JSON (currently fails silently)
- *    - handle non-quoted txt: values (error handling fails silently)
- *    - handle {sr:n} case properly
- *    - CANcel for ^x
- */
-/*
- *  0.97/0.98 alignment notes
- *  Add 0.98 state management to 0.97
- *  Add 0.97 JSON nesting / linemode enhancements to 0.98
- *
+ * NOTES:
+ *  - Fix group count in master 440.21 - is 33, should be 34
+ *  - change pstr2str to accept the starting point of the target string as a 2nd argument
+ *  - problem where PARENT (sr, depth 1) followed by EMPTY (depth 2) does not close properly
+ *  - problem in SR clear that causes the above to occur: {srs:{clear:t}} fails
+ *  - verify non-quoted txt: values (error handling fails silently)
+ *  - CANcel for ^x (huh?)
+ *  - drop linemode to 10 or 12 buffers, reduce RX buffer size and max line length
  */
 
 #ifndef TINYG_H_ONCE
@@ -53,19 +50,9 @@
 #include <string.h>
 #include <math.h>
 
-/****** DEFINITIONS THAT MAY ULTIMATELY BE PROVIDED BY THE MAKEFILE ******/
-
-//#define __ARCHITECTURE  __AVR               // or __ARM
-#define __PLATFORM      __ATMEL_XMEGA       // unused for now
-#define __PROCESSOR     __XMEGA192A         // unused for now
-#define __BOARD         __TINYG_V8          // unused for now
-
 /****** REVISIONS ******/
 
-#ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        448.03	// fixed bug preventing verbose status reports
-#endif
-
+#define TINYG_FIRMWARE_BUILD        448.30	// testing probing and fixing a few bugs
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
 #define TINYG_CONFIG_VERSION		5							// CV values start at 5 for backwards compatibility
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	    // see hardware.h
@@ -74,9 +61,9 @@
 
 /****** COMPILE-TIME SETTINGS ******/
 
+#define __BITFIELDS
 #define __STEP_CORRECTION                   // enables step correction feedback code in stepper.c (virtual encoders)
 #define __TEXT_MODE							// enables text mode	(~10Kb)
-#define __HELP_SCREENS						// enables help screens (~3.5Kb)
 #define __CANNED_TESTS 						// enables $tests 		(~12Kb)
 
 /****** DEVELOPMENT SETTINGS ******/
@@ -92,9 +79,9 @@
  ***** TINYG APPLICATION DEFINITIONS ******************************************
  ******************************************************************************/
 
-typedef uint16_t magic_t;		// magic number size
-#define MAGICNUM 0x12EF			// used for memory integrity assertions
-#define BAD_MAGIC(a) (a != MAGICNUM)    // simple assertion test
+typedef uint16_t magic_t;                   // magic number size
+#define MAGICNUM 0x12EF                     // used for memory integrity assertions
+#define BAD_MAGIC(a) (a != MAGICNUM)        // simple assertion test
 
 /***** Axes, motors & PWM channels used by the application *****/
 // Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used
@@ -153,19 +140,18 @@ typedef enum {
 
 #include <avr/pgmspace.h>		// defines PROGMEM and PSTR
 																	// gets rely on nv->index having been set
-#define GET_TABLE_BYTE(a)  pgm_read_byte(&cfgArray[nv->index].a)	// get byte value from cfgArray
+#define GET_TOKEN_BYTE(a)  (char)pgm_read_byte(&cfgArray[i].a)	    // get token byte value from cfgArray
 #define GET_TABLE_WORD(a)  pgm_read_word(&cfgArray[nv->index].a)	// get word value from cfgArray
 #define GET_TABLE_FLOAT(a) pgm_read_float(&cfgArray[nv->index].a)	// get float value from cfgArray
-#define GET_TOKEN_BYTE(a)  (char)pgm_read_byte(&cfgArray[i].a)	    // get token byte value from cfgArray
 
 // populate the shared buffer with the token string given the index
-#define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
+//#define GET_TOKEN_STRING(i,a) strcpy_P(a, (char *)&cfgArray[(index_t)i].token);
 
 // get text from an array of strings in PGM and convert to RAM string
-#define GET_TEXT_ITEM(b,a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&b[a]), GLOBAL_STRING_LEN-1)
+#define GET_TEXT_ITEM(b,a) strncpy_P(text_item,(const char *)pgm_read_word(&b[a]), TEXT_ITEM_LEN-1)
 
 // get units from array of strings in PGM and convert to RAM string
-#define GET_UNITS(a) strncpy_P(global_string_buf,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), GLOBAL_STRING_LEN-1)
+#define GET_UNITS(a) strncpy_P(units_msg,(const char *)pgm_read_word(&msg_units[cm_get_units_mode(a)]), UNITS_MSG_LEN-1)
 
 // IO settings
 #define STD_IN 	XIO_DEV_USB		// default IO settings
@@ -186,12 +172,11 @@ typedef enum {
 #define PSTR (const char *)		// AVR macro is: PSTR(s) ((const PROGMEM char *)(s))
 
 													// gets rely on nv->index having been set
-#define GET_TABLE_BYTE(a)  cfgArray[nv->index].a	// get byte value from cfgArray
+#define GET_TOKEN_BYTE(i,a) (char)cfgArray[i].a	    // get token byte value from cfgArray
 #define GET_TABLE_WORD(a)  cfgArray[nv->index].a	// get word value from cfgArray
 #define GET_TABLE_FLOAT(a) cfgArray[nv->index].a	// get FP value from cfgArray
-#define GET_TOKEN_BYTE(i,a) (char)cfgArray[i].a	    // get token byte value from cfgArray
 
-#define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a
+//#define GET_TOKEN_STRING(i,a) cfgArray[(index_t)i].a
 //#define GET_TOKEN_STRING(i,a) (char)cfgArray[i].token)// populate the token string given the index
 
 #define GET_TEXT_ITEM(b,a) b[a]						// get text from an array of strings in flash

@@ -36,6 +36,7 @@
 
 #define MIN_ARC_QR_INTERVAL 200					// minimum interval between QRs during arc generation (in system ticks)
 #define SR_MATCH_PRECISION 0.001                // delta for floats to be declared equal for filtered status reports
+#define SR_WORKING_LIST_LEN (2*(NV_STATUS_REPORT_LEN+1)) // supports full replacements
 
 typedef enum {								    // status report enable and verbosity
 	SR_OFF = 0,									// no reports
@@ -112,13 +113,15 @@ void rpt_print_loading_configs_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report_P(const char *sr_csv_P);
-stat_t sr_set_status_report(nvObj_t *nv);
+//stat_t sr_set_status_report(nvObj_t *nv);
 stat_t sr_request_status_report(uint8_t request_type);
 stat_t sr_status_report_callback(void);
 stat_t sr_run_text_status_report(void);
 
 stat_t sr_get(nvObj_t *nv);
 stat_t sr_set(nvObj_t *nv);
+stat_t srs_get(nvObj_t *nv);
+stat_t srs_set(nvObj_t *nv);
 stat_t sr_set_si(nvObj_t *nv);
 
 void qr_init_queue_report(void);

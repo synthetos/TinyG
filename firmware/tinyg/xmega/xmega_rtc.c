@@ -2,7 +2,7 @@
  * xmega_rtc.h - real-time counter/clock
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -73,7 +73,30 @@ void rtc_init()
 ISR(RTC_COMP_vect)
 {
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
-
-	// callbacks to whatever you need to happen on each RTC tick go here:
-	switch_rtc_callback();					// switch debouncing
 }
+
+/*
+ * Timeout object functions
+ */
+
+bool Timeout_isSet(Timeout_t *this) {
+    return (this->_start > 0);
+}
+
+bool Timeout_isPast(Timeout_t *this) {
+    if (!Timeout_isSet(this)) {
+        return (false);
+    }
+    return ((rtc.sys_ticks - this->_start) > this->_delay);
+}
+
+void Timeout_set(Timeout_t *this, uint32_t delay) {
+    this->_start = rtc.sys_ticks;
+    this->_delay = delay;
+}
+
+void Timeout_clear(Timeout_t *this) {
+    this->_start = 0;
+    this->_delay = 0;
+}
+

@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -151,9 +151,13 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		cm_request_queue_flush();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		cm_request_cycle_start();
+	if (c == CHAR_END_HOLD) {				    // trap cycle start signal
+		cm_request_end_hold();
 		return;
+	}
+	if (c == CHAR_ENQUIRY) {				    // trap ENC request
+    	controller_request_enquiry();
+    	return;
 	}
 	if (USB.flag_xoff) {
 		if (c == XOFF) {						// trap incoming XON/XOFF signals
@@ -166,10 +170,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			return;
 		}
 	}
-
-	// filter out CRs and LFs if they are to be ignored
-//	if ((c == CR) && (USB.flag_ignorecr)) return;	// REMOVED IGNORE_CR and IGNORE LF handling
-//	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);

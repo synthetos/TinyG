@@ -2,7 +2,7 @@
  * config.c - application independent configuration handling
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -94,7 +94,7 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 	if (nv_index_lt_groups(nv->index) == false) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	if (GET_TABLE_BYTE(flags) & F_PERSIST) {
+	if (cfg_has_flag(nv->index, F_PERSIST)) {
         return(write_persistent_value(nv));
     }
 	return (STAT_OK);
@@ -133,10 +133,10 @@ void config_init()
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
-			if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
+            if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
 				read_persistent_value(nv);
-                if (GET_TABLE_BYTE(flags) & F_FLOAT) {
+                if (cfg_is_type(nv->index) == TYPE_FLOAT) {
                     nv->valuetype = TYPE_FLOAT;
                 } else {
                     nv->valuetype = TYPE_INTEGER;
@@ -147,9 +147,6 @@ void config_init()
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
 	}
 #endif
-
-    nvl.container_index = nv_get_index("", "txt");  // cache the index of the txt container
-    nvl.tid_index = nv_get_index("", "tid");        // cache the index of the tid
 }
 
 /*
@@ -161,9 +158,9 @@ static void _set_defa(nvObj_t *nv)
 {
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
-		if (GET_TABLE_BYTE(flags) & F_INITIALIZE) {
+        if (cfg_has_flag(nv->index, F_INITIALIZE)) {
     		nv->value_flt = GET_TABLE_FLOAT(default_value); // get default as float
-            if (!(GET_TABLE_BYTE(flags) & F_FLOAT)) {
+            if (cfg_is_type(nv->index) != TYPE_FLOAT) {
                 nv->value_int = (uint32_t)nv->value_flt;    // cast in place to int if required
                 nv->valuetype = TYPE_INTEGER;
             } else {
@@ -187,7 +184,7 @@ stat_t set_defaults(nvObj_t *nv)
 	_set_defa(nv);
 
 	// The values in nv are now garbage. Mark the nv as $defa so it displays nicely.
-    nv_reset_nv_list("r"); 
+    nv_reset_nv_list("r");
 	strncpy(nv->token, "defa", TOKEN_LEN);
 	nv->index = nv_get_index("", nv->token);	// correct, but not required
 	nv->valuetype = TYPE_INTEGER;
@@ -217,24 +214,46 @@ stat_t config_test_assertions()
         (BAD_MAGIC(nvl.magic_start)) ||
         (BAD_MAGIC(nvl.magic_end)) ||
         (BAD_MAGIC(nvStr.magic_start)) ||
-        (BAD_MAGIC(nvStr.magic_end)) ||
-        (global_string_buf[GLOBAL_STRING_LEN-1] != NUL)) {
+        (BAD_MAGIC(nvStr.magic_end)) ) {
+
         return(cm_panic_P(STAT_CONFIG_ASSERTION_FAILURE, PSTR("config_test_assertions()")));
     }
     return (STAT_OK);
 }
 
-/***** Generic Internal Functions *********************************************/
+/***** Generic Internal Functions *********************************************
+ *
+ * cfg_has_flag() - test for flag set in cfgArray table
+ * cfg_is_type()  - return data type of config item
+ */
+
+bool cfg_has_flag(index_t index, uint8_t bitmask)
+{
+#ifdef __AVR
+    return (pgm_read_byte(&cfgArray[index].flags) & bitmask);
+#else
+    return (cfgArray[index].flags) & bitmask);
+#endif
+}
+
+valueType cfg_is_type(index_t index)
+{
+#ifdef __AVR
+    return (pgm_read_byte(&cfgArray[index].flags) & F_TYPE_MASK);
+#else
+    return (cfgArray[index].flags) & F_TYPE_MASK);
+#endif
+}
 
 /* Generic gets()
  *	get_nul()  - get nothing (returns STAT_PARAMETER_CANNOT_BE_READ)
- *  get_str()  - get value from stringp[] (no action required)
+ *  get_str()  - get value from str (no action required)
  *	get_ui8()  - get value as uint8_t
  *	get_u16()  - get value as uint16_t
  *	get_u32()  - get value as uint32_t
- *	get_data() - get value as 32 bit integer blind cast
+ *  get_int()  - get value as a signed integer (up to 32 bits)
  *	get_flt()  - get value as float
- *	get_format() - internal accessor for printf() format string
+ *	get_data() - get value as 32 bit integer blind cast
  */
 stat_t get_nul(nvObj_t *nv)
 {
@@ -277,6 +296,14 @@ stat_t get_data(nvObj_t *nv)
 	return (STAT_OK);
 }
 
+stat_t get_int(nvObj_t *nv)
+{
+//	nv->value_int = *((int32_t *)GET_TABLE_WORD(target));
+	nv->value_int = *((int8_t *)GET_TABLE_WORD(target));
+	nv->valuetype = TYPE_SIGNED;
+	return (STAT_OK);
+}
+
 stat_t get_flt(nvObj_t *nv)
 {
 	nv->value_flt = *((float *)GET_TABLE_WORD(target));
@@ -296,6 +323,7 @@ stat_t get_flt(nvObj_t *nv)
  *	set_0123()  - set a 0, 1, 2 or 3 uint8_t value with validation
  *	set_data()  - set value as 32 bit integer blind cast
  *	set_flt()   - set value as float
+ *  set_str()   - set string value - just for test, performs no action
  */
 stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
 
@@ -359,6 +387,11 @@ stat_t set_flt(nvObj_t *nv)
 	return(STAT_OK);
 }
 
+stat_t set_str(nvObj_t *nv)
+{
+    return (STAT_OK);
+}
+
 /************************************************************************************
  * Group operations
  *
@@ -375,12 +408,12 @@ stat_t set_flt(nvObj_t *nv)
  *	  $<grp>				get any named group from the above lists
  *
  *	In JSON groups are carried as parent / child objects & can get and set elements:
- *	  {"x":""}						get all X axis parameters
- *	  {"x":{"vm":""}}				get X axis velocity max
- *	  {"x":{"vm":1000}}				set X axis velocity max
- *	  {"x":{"vm":"","fr":""}}		get X axis velocity max and feed rate
- *	  {"x":{"vm":1000,"fr";900}}	set X axis velocity max and feed rate
- *	  {"x":{"am":1,"fr":800,....}}	set multiple or all X axis parameters
+ *	  {"x":n}                       get all X axis parameters
+ *	  {"x":{"vm":n}}                get X axis velocity max
+ *	  {"x":{"vm":1000}}             set X axis velocity max
+ *	  {"x":{"vm":n,"fr":n}}         get X axis velocity max and feed rate
+ *	  {"x":{"vm":1000,"fr";900}}    set X axis velocity max and feed rate
+ *	  {"x":{"am":1,"fr":800,....}}  set multiple or all X axis parameters
  */
 
 /*
@@ -389,7 +422,7 @@ stat_t set_flt(nvObj_t *nv)
  *	get_grp() is a group expansion function that expands the parent group and returns
  *	the values of all the children in that group. It expects the first nvObj in the
  *	nvBody to have a valid group name in the token field. This first object will be set
- *	to a TYPE_PARENT. The group field is left nul - as the group field refers to a parent
+ *	to a TYPE_PARENT. The group field is left NUL - as the group field refers to a parent
  *	group, which this group has none.
  *
  *	All subsequent nvObjs in the body will be populated with their values (unless there
@@ -398,6 +431,8 @@ stat_t set_flt(nvObj_t *nv)
  *
  *	The sys group is an exception where the children carry a blank group field, even though
  *	the sys parent is labeled as a TYPE_PARENT.
+ *
+ *  Example: {x:n}
  */
 
 stat_t get_grp(nvObj_t *nv)
@@ -416,14 +451,13 @@ stat_t get_grp(nvObj_t *nv)
             continue;
         }
         nv_tmp = nv;
-        if ((nv = nv_get_next_nvObj(nv)) == NULL) { // get next nvObj or fail
+        if ((nv = nv_next(nv)) == NULL) {           // get next nvObj or fail
             do {                                    // undo the group expansion
                 nv_reset_nv(nv_tmp);
             } while (--nv_tmp >= nv_parent);
             return (STAT_JSON_TOO_MANY_PAIRS);
         }
-		nv->index = i;
-		nv_populate_nvObj_by_index(nv);
+		nv_populate_nv_by_index(nv, i);
         nv->depth = child_depth;
 	}
 	return (STAT_OK);
@@ -436,6 +470,10 @@ stat_t get_grp(nvObj_t *nv)
  *	a setter. It iterates the group children and either gets the value or sets
  *	the value for each depending on the nv->valuetype.
  *
+ *    SET example:   {x:{vm:10000, fr:8000}}
+ *    GET example:   {x:{vm:n, fr:n}}
+ *    Mixed example: {x:{vm:10000, fr:n}}
+ *
  *	This function serves JSON mode only as text mode shouldn't call it.
  */
 
@@ -445,7 +483,7 @@ stat_t set_grp(nvObj_t *nv)
         return (STAT_UNRECOGNIZED_NAME);
     }
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
-		if ((nv = nv->nx) == NULL) break;
+		if ((nv = nv_next(nv)) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
 		else if (nv->valuetype == TYPE_NULL)		// NULL means GET the value
 			nv_get(nv);
@@ -459,24 +497,33 @@ stat_t set_grp(nvObj_t *nv)
 
 /*
  * nv_group_is_prefixed() - hack
+ * nv_group_is_typesafe() - hack
  *
- *	This little function deals with the exception cases that some groups don't use
- *	the parent token as a prefix to the child elements; SR being a good example.
+ *	These little functions deal with exception cases for some groups.
+ *  It would be better put flags on these cfg items directly and remove these
+ *  functions, which we will probably do once we bump the flags byte to 16 bits.
+ *
+ *  nv_group_is_prefixed() returns false if the member of the group does not
+ *  use the parent token as a prefix to the child elements. SYS is a good example.
+ *
+ *  nv_group_is_typesafe() returns false if JSON type checking should be disabled
+ *  when collecting children for this group.
  */
-uint8_t nv_group_is_prefixed(char *group)
+
+bool nv_group_is_prefixed(char *group)
 {
-	if (strcmp_P(PSTR("sr"), group) == 0) { return (false); }
-	if (strcmp_P(PSTR("sys"), group) == 0) { return (false); }
+	if ((strcmp_P(group, PSTR("sys"))) == 0) { return (false); }
+	if ((strcmp_P(group, PSTR("set"))) == 0) { return (false); }
+	if ((strcmp_P(group, PSTR("srs"))) == 0) { return (false); }
+	if ((strcmp_P(group, PSTR("sr"))) == 0)  { return (false); }
 	return (true);
 }
 
-/*
- * nv_index_is_container() - return true if the NV object is a container (txt)
- */
-
-bool nv_index_is_container(index_t index)
+bool nv_group_is_typesafe(char *group)
 {
-    return (nvl.container_index == index);
+    if ((strcmp_P(group, PSTR("set"))) == 0) { return (false); }
+    if ((strcmp_P(group, PSTR("sr"))) == 0)  { return (false); }
+    return (true);
 }
 
 /***********************************************************************************
@@ -526,7 +573,16 @@ uint8_t nv_get_type(nvObj_t *nv)
 {
 	if (nv->token[0] == NUL) { return (NV_TYPE_NULL); }
 	if (strcmp_P(nv->token, PSTR("gc")) == 0) { return (NV_TYPE_GCODE); }
+
 	if (strcmp_P(nv->token, PSTR("sr")) == 0) { return (NV_TYPE_REPORT); }
+//	if (strcmp_P(nv->token, PSTR("sr")) == 0) {
+//        if (nv->valuetype == TYPE_PARENT) {
+//            return (NV_TYPE_REPORT);            // actual SR{}s
+//        } else {
+//	        return (NV_TYPE_CONFIG);            // (sr:f} and {sr:t}
+//        }
+//    }
+
 	if (strcmp_P(nv->token, PSTR("er")) == 0) { return (NV_TYPE_REPORT); }
 	if (strcmp_P(nv->token, PSTR("qr")) == 0) { return (NV_TYPE_REPORT); }
 	if (strcmp_P(nv->token, PSTR("n"))  == 0) { return (NV_TYPE_LINENUM); }
@@ -537,17 +593,23 @@ uint8_t nv_get_type(nvObj_t *nv)
 
 /******************************************************************************
  * nvObj low-level object and list operations
- * nv_get_next_nvObj()  - get the next available nvObj, or NULL if none available
- * nv_populate_nvObj_by_index() - setup a nv object by providing the index
+ *
+ * nv_prev()            - return pointer to previous NV or NULL if at start
+ * nv_next()            - return pointer to next NV or NULL if at end
+ * nv_next_empty()      - return pointer to next empty NV or NULL if none
+ *
  * nv_reset_nv()		- quick clear for a new nv object
  * nv_reset_nv_list()	- clear entire header, body and footer for a new use
  * nv_relink_nv_list()  - relink nx and pv pointers removing EMPTY and SKIP
+ * nv_populate_nvObj_by_index() - setup a nv object by providing the index
+ *
  * nv_copy_string()		- used to write a string to shared string storage and link it
  * nv_add_object()		- write contents of parameter to  first free object in the body
  * nv_add_integer()		- add an integer value to end of nv body (Note 1)
  * nv_add_float()		- add a floating point value to end of nv body
  * nv_add_string()		- add a string object to end of nv body
- * nv_add_conditional_message() - add a message to nv body if messages are enabled
+ * nv_add_message()     - add a message to NV body if messages are enabled
+ * nv_add_message_P()   - add a PSTR message to NV body if messages are enabled
  *
  *	Note: Functions that return a nv pointer point to the object that was modified or
  *	a NULL pointer if there was an error.
@@ -557,7 +619,7 @@ uint8_t nv_get_type(nvObj_t *nv)
  *	all you want to do is display it.
  *
  *	Note: A trick is to cast all string constants for nv_copy_string(), nv_add_object(),
- *	nv_add_string() and nv_add_conditional_message() to (const char *). Examples:
+ *	nv_add_string() and nv_add_message() to (const char *). Examples:
  *
  *		nv_add_string((const char *)"msg", string);
  *
@@ -566,50 +628,31 @@ uint8_t nv_get_type(nvObj_t *nv)
  *	On the ARM (however) this will put the string into flash and skip RAM allocation.
  */
 
-nvObj_t *nv_get_next_nvObj(nvObj_t *nv)
-{
-    if (++nv >= NV_TID) {
-        return ((nvObj_t *)NULL);
-    }
-    return nv;
-}
-
 /*
- * nv_populate_nvObj_by_index() - fill in details of an nvObj given the index field
+ * Wrappers for nx/pv allowing later substitution w/more space efficient methods
+ * Return pointer to next or previous NV object or NULL it at end or beginning
  */
+nvObj_t *nv_prev(nvObj_t *nv) { return (nv->pv); }
+nvObj_t *nv_next(nvObj_t *nv) { return (nv->nx); }
 
-void nv_populate_nvObj_by_index(nvObj_t *nv)
-{
-	if (nv->index >= nv_index_max()) { return; }	// sanity
-
-	index_t tmp = nv->index;
-	nv_reset_nv(nv);
-	nv->index = tmp;
-
-	strcpy_P(nv->token, cfgArray[nv->index].token); // token field is always terminated
-	strcpy_P(nv->group, cfgArray[nv->index].group); // group field is always terminated
-
-	// special processing for system groups and stripping tokens for groups
-	if (nv->group[0] != NUL) {
-		if (GET_TABLE_BYTE(flags) & F_NOSTRIP) {
-			nv->group[0] = NUL;
-		} else {
-			strcpy(nv->token, &nv->token[strlen(nv->group)]); // strip group from the token
-		}
-	}
-    // read the getter from program memory; run it to get the value into nv->value_int or nv->value_flt
-	((fptrCmd)GET_TABLE_WORD(get))(nv);		// populate the value
+nvObj_t *nv_next_empty(nvObj_t *nv) {
+    do {
+        if (nv->valuetype == TYPE_EMPTY) {
+            return (nv);
+        }
+    } while ((nv = nv->nx) != NULL);
+    return (NULL);
 }
 
 nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
 {                                           // depth and pointers are NOT affected
-	nv->valuetype = TYPE_EMPTY;				// selective clear is actually faster than calling memset
-	nv->index = 0;
-	nv->value_int = 0;
+	nv->valuetype = TYPE_EMPTY;				// selective clear is actually faster than calling memset()
+	nv->index = NO_MATCH;
+	nv->value_int = 0xFFFFFFFF;
 	nv->precision = 0;
 	nv->token[0] = NUL;
 	nv->group[0] = NUL;
-	nv->stringp = NULL;
+	nv->str = NULL;
 	return (nv);							// return pointer to nv as a convenience to callers
 }
 
@@ -684,10 +727,16 @@ nvObj_t *nv_relink_nv_list()
 
     // skip past empty/skip leading elements
     for ( ; j<NV_LIST_LEN; j++, i++) {
-        if (nv->valuetype >= TYPE_NULL) {
-            break;
+//        if (nv->valuetype >= TYPE_NULL) {
+//            break;
+//        }
+//        nv = nv_next(nv);                   // skip over TYPE_EMPTY and TYPE_SKIP
+
+        if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) {
+            nv = nv_next(nv);
+            continue;
         }
-        nv = nv->nx;                        // skip over TYPE_EMPTY and TYPE_SKIP
+        break;
     }
     if (j == NV_LIST_LEN) {                 // empty list
         return (NULL);
@@ -695,7 +744,9 @@ nvObj_t *nv_relink_nv_list()
     hd = nv;                                // mark the head
     pv = nv;
 	for ( ; i<NV_LIST_LEN; i++, nv++) {
-        if (nv->valuetype < TYPE_NULL) {    // skip over TYPE_EMPTY and TYPE_SKIP
+        // skip over TYPE_EMPTY and TYPE_SKIP
+//        if (nv->valuetype < TYPE_NULL) {
+        if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) { // skip past
             continue;
         }
         pv->nx = nv;                        // Note: the first pair is messed up but gets corrected
@@ -708,18 +759,44 @@ nvObj_t *nv_relink_nv_list()
 }
 
 /*
- * nv_copy_string() - copy srouce string to the string allocation buffer and set pointer in NV obj
+ * nv_populate_nv_by_index() - fill in details of an nvObj given the index field
+ */
+
+void nv_populate_nv_by_index(nvObj_t *nv, index_t index)
+{
+	if (index >= nv_index_max()) { return; } // sanity
+
+	nv->str = NULL;
+	nv->index = index;
+    nv->valuetype = cfg_is_type(index);
+    if (nv->valuetype == TYPE_FLOAT) {
+       	nv->precision = (int8_t)GET_TABLE_WORD(precision);
+    }
+	strcpy_P(nv->token, cfgArray[nv->index].token);         // NB: token field is always NUL terminated
+
+    if (cfg_has_flag(nv->index, F_NOSTRIP)) {
+        nv->group[0] = NUL;                                 // don't carry the group
+    } else {
+	    strcpy_P(nv->group, cfgArray[nv->index].group);     // NB: group string is always NUL terminated
+        strcpy(nv->token, &nv->token[strlen(nv->group)]);   // strip group from the token
+    }
+    // read the getter from program memory; run it to get the value into nv->value_int or nv->value_flt
+	((fptrCmd)GET_TABLE_WORD(get))(nv);		                // populate the value
+}
+
+/*
+ * nv_copy_string() - copy source string to the string allocation buffer and set pointer in NV obj
  */
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
-	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN)
+	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN) {
         return (STAT_BUFFER_FULL);
-
-	char *dst = &nvStr.string[nvStr.wp];
+    }
+	char *dst = &(nvStr.string[nvStr.wp]);
 	strcpy(dst, src);						// copy string to current head position
 											// string has already been tested for overflow, above
 	nvStr.wp += strlen(src)+1;				// advance head for next string
-	nv->stringp = (char (*)[])dst;
+	nv->str = dst;
 	return (STAT_OK);
 }
 
@@ -736,10 +813,11 @@ static void _add_object_helper(nvObj_t *nv, const char *token, valueType valuety
 {
 	nv->valuetype = valuetype;
 	strncpy(nv->token, token, TOKEN_LEN);
-    if (nv->pv->valuetype == TYPE_PARENT) {
-        nv->depth = nv->pv->depth + 1;
+
+    if ((nv_prev(nv))->valuetype == TYPE_PARENT) {
+        nv->depth = (nv_prev(nv))->depth + 1;
     } else {
-        nv->depth = nv->pv->depth;
+        nv->depth = (nv_prev(nv))->depth;
     }
 }
 
@@ -748,31 +826,29 @@ nvObj_t *nv_add_object(const char *token)  // add an object to the body using a 
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) {
+			if ((nv = nv_next(nv)) == NULL) {
                 return (NULL);               // not supposed to find a NULL; here for safety
             }
 			continue;
 		}
 		// load the index from the token or die trying
 		if ((nv->index = nv_get_index((const char *)"",token)) == NO_MATCH) { return (NULL);}
-		nv_populate_nvObj_by_index(nv);
+		nv_populate_nv_by_index(nv, nv->index);
 		return (nv);
 	}
 	return (NULL);
 }
 
-nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add TYPE_INTEGER object to the body
 {
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) {
+			if ((nv = nv_next(nv)) == NULL) {
     			return (NULL);               // not supposed to find a NULL; here for safety
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
-//		nv->valuetype = TYPE_INTEGER;           // correct, but not required
         _add_object_helper(nv, token, TYPE_INTEGER);
 		nv->value_int = value;
 		return (nv);
@@ -780,18 +856,16 @@ nvObj_t *nv_add_integer(const char *token, const uint32_t value)// add an intege
 	return (NULL);
 }
 
-nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer object to the body
+nvObj_t *nv_add_data(const char *token, const uint32_t value)// add TYPE_DATA object to the body
 {
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) {
+			if ((nv = nv_next(nv)) == NULL) {
     			return (NULL);               // not supposed to find a NULL; here for safety
 			}
 			continue;
 		}
-//		strcpy(nv->token, token);           // correct, but not required
-//		nv->valuetype = TYPE_DATA;          // correct, but not required
         _add_object_helper(nv, token, TYPE_DATA);
 		float *v = (float*)&value;
 		nv->value_flt = *v;
@@ -800,18 +874,16 @@ nvObj_t *nv_add_data(const char *token, const uint32_t value)// add an integer o
 	return (NULL);
 }
 
-nvObj_t *nv_add_float(const char *token, const float value)	// add a float object to the body
+nvObj_t *nv_add_float(const char *token, const float value)	// add TYPE_FLOAT object to the body
 {
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) {
+			if ((nv = nv_next(nv)) == NULL) {
     			return (NULL);               // not supposed to find a NULL; here for safety
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
-//		nv->valuetype = TYPE_FLOAT;             // correct, but not required
         _add_object_helper(nv, token, TYPE_FLOAT);
 		nv->value_flt = value;
 		return (nv);
@@ -825,13 +897,11 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 	nvObj_t *nv = NV_BODY;
 	for (uint8_t i=0; i<NV_BODY_LEN; i++) {
 		if (nv->valuetype != TYPE_EMPTY) {
-			if ((nv = nv->nx) == NULL) {
+			if ((nv = nv_next(nv)) == NULL) {
     			return (NULL);               // not supposed to find a NULL; here for safety
 			}
 			continue;
 		}
-//		strncpy(nv->token, token, TOKEN_LEN);   // correct, but not required
-//		nv->valuetype = TYPE_STRING;            // correct, but not required
         _add_object_helper(nv, token, TYPE_STRING);
 		if (nv_copy_string(nv, string) != STAT_OK) {
             return (NULL);
@@ -843,23 +913,24 @@ nvObj_t *nv_add_string(const char *token, const char *string) // add a string ob
 }
 
 /*
- * nv_add_conditional_message() - queue a RAM string as a message in the response (conditionally)
- * nv_add_conditional_message_P()
+ * nv_add_message() - queue a RAM string as a message in the response (conditionally)
+ * nv_add_message_P()
  *
+ *  Adds a message to the NV list if in JSON mode and messages are enabled for display
  *	Note: If you need to post a FLASH string use pstr2str to convert it to a RAM string
  */
 
-nvObj_t *nv_add_conditional_message_P(const char *msg_P)// conditionally add a FLASH message object to the body
-{
-    char msg[STATUS_MESSAGE_LEN];
-    sprintf_P(msg, msg_P);
-    return(nv_add_conditional_message(msg));
-}
-
-nvObj_t *nv_add_conditional_message(const char *msg)	// conditionally add a message object to the body
+nvObj_t *nv_add_message(const char *msg)
 {
 	if ((cs.comm_mode == JSON_MODE) && (js.echo_json_messages != true)) { return (NULL);}
 	return(nv_add_string((const char *)"msg", msg));
+}
+
+nvObj_t *nv_add_message_P(const char *msg_P)
+{
+    char msg[LINE_MSG_LEN];
+    strcpy_P(msg, msg_P);
+    return(nv_add_message(msg));
 }
 
 /**** nv_print_list() - print nv_array as JSON or text **********************
@@ -884,21 +955,4 @@ void nv_print_list(stat_t status, uint8_t text_flags, uint8_t json_flags)
 	} else {
 		text_print_list(status, text_flags);
 	}
-}
-
-/****************************************************************************
- ***** Diagnostics **********************************************************
- ****************************************************************************/
-
-void nv_dump_nv(nvObj_t *nv)
-{
-	printf_P (PSTR("i:%d, d:%d, t:%d, p:%d, v:%f, g:%s, t:%s, s:%s\n"),
-			 nv->index,
-			 nv->depth,
-			 nv->valuetype,
-			 nv->precision,
-			 (double)nv->value_flt,
-			 nv->group,
-			 nv->token,
-			 (char *)nv->stringp);
 }

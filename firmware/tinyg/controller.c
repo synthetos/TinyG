@@ -2,8 +2,8 @@
  * controller.c - tinyg controller and top level parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -61,7 +61,7 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-static stat_t _shutdown_idler(void);
+static stat_t _shutdown_handler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
 
@@ -147,12 +147,14 @@ static void _controller_HSM()
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// idle in shutdown state
-	DISPATCH(_limit_switch_handler());			// limit switch has been thrown
 
-	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
+    DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
+// 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
+ 	DISPATCH(_limit_switch_handler());          // invoke limit switch
+    DISPATCH(_controller_state());              // controller state management
 	DISPATCH(_test_system_assertions());		// system integrity assertions
+	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
@@ -161,24 +163,19 @@ static void _controller_HSM()
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
 
-	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
-
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
-	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
+	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
-#ifdef __AVR
-	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
-#endif
-	DISPATCH(_controller_state());				// controller state management
+	DISPATCH(set_baud_callback());				// (AVR only) perform baud rate update (must be after TX sync)
 	DISPATCH(_dispatch_command());				// read and execute next command
-	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
 /*****************************************************************************************
@@ -207,12 +204,14 @@ static stat_t _controller_state()
  * _dispatch_command - entry point for control and data dispatches
  * _dispatch_control - entry point for control-0nly dispatches
  * _dispatch_kernel - core dispatch routines
+ * controller_dispatch_text_container() - specialized dispatcher for 'txt' elements
  *
  *	Reads next command line and dispatches to relevant parser or action
  */
+
+#ifdef __AVR
 static stat_t _dispatch_command()
 {
-#ifdef __AVR
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
@@ -222,18 +221,10 @@ static stat_t _dispatch_command()
         _dispatch_kernel();
     }
 	return (STAT_OK);
-
-#endif
-#ifdef __ARM
-	devflags_t flags = DEV_IS_BOTH;
-	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
-	return (STAT_OK);
-#endif
 }
 
 static stat_t _dispatch_control()
 {
-#ifdef __AVR
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
 	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
@@ -243,14 +234,28 @@ static stat_t _dispatch_control()
     	_dispatch_kernel();
 	}
 	return (STAT_OK);
-
-#endif
-#ifdef __ARM
-	devflags_t flags = DEV_IS_CTRL;
-	if ((cs.bufp = readline(flags, cs.linelen)) != NULL) _dispatch_kernel();
-	return (STAT_OK);
-#endif
 }
+#endif // __AVR
+
+#ifdef __ARM
+static stat_t _dispatch_command()
+{
+    devflags_t flags = DEV_IS_BOTH;
+	cs.bufp = readline(flags, cs.linelen);
+    if (cs.bufp != (char *)NULL) {          // process the command
+        _dispatch_kernel();
+    }
+    return (STAT_OK);
+}
+static stat_t _dispatch_control()
+{
+    devflags_t flags = DEV_IS_CTRL;
+    if ((cs.bufp = readline(flags, cs.linelen)) != NULL) {
+        _dispatch_kernel();
+    }
+    return (STAT_OK);
+}
+#endif // __ARM
 
 static void _dispatch_kernel()
 {
@@ -259,7 +264,6 @@ static void _dispatch_kernel()
         cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
-    cs.txn_id = 0;                                          // reset the transaction ID
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
@@ -268,8 +272,9 @@ static void _dispatch_kernel()
     }
 	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
 	else if (*cs.bufp == '!') { cm_request_feedhold(); }
+	else if (*cs.bufp == '~') { cm_request_end_hold(); }
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
-	else if (*cs.bufp == '~') { cm_request_cycle_start(); }
+	else if (*cs.bufp == ENQ) { controller_request_enquiry(); }
 
     // this is a hack until we can figure out how a buffer might obtain a leading '?'
     else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
@@ -278,6 +283,7 @@ static void _dispatch_kernel()
 
 	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode
+//		json_parser(cs.bufp, NV_BODY, true);
 		json_parser(cs.bufp);
     }
 #ifdef __TEXT_MODE
@@ -297,15 +303,49 @@ static void _dispatch_kernel()
     	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
     	nv->valuetype = TYPE_STRING;
     	float status = gc_gcode_parser(cs.bufp);
-    	nv_print_list(status, TEXT_NO_PRINT, JSON_RESPONSE_FORMAT);
+    	nv_print_list(status, TEXT_NO_DISPLAY, JSON_RESPONSE);
     	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
 	}
 }
 
+/*
+ * controller_dispatch_txt_container - callout from JSON parser kernal to run text commands
+ *
+ *	For text-mode commands this starts a JSON response then runs the text command
+ *  in a 'msg' element. Text lines are escaped with JSON-friendly line ends
+ *  (e,g \n instead of LF). The text response string is closed, then
+ *  json_continuation is set so that the JSON response is properly completed.
+ *
+ *  Gcode is simply wrapped in a JSON gc tag and processed.
+ */
+
+void controller_dispatch_txt_container (nvObj_t *nv, char *str)
+{
+    // process pure text-mode commands
+    if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
+        if (js.json_syntax == JSON_SYNTAX_RELAXED) {// opening JSON
+            printf_P(PSTR("{r:{txt:\""));
+        } else {
+            printf_P(PSTR("{\"r\":{\"txt\":\""));
+        }
+        cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
+        text_parser(str);
+        cs.comm_mode = JSON_MODE;                   // restore JSON mode
+        printf_P(PSTR("\""));                       // close quote
+        nv_reset_nv_list(NUL);                      // reset the list to start at the head
+        NV_HEAD->valuetype = TYPE_TXTCON;           // label the list as a text container
+    }
+    // process gcode
+    else {
+        strcpy(nv->token,"gc");
+        text_response(gc_gcode_parser(str), cs.saved_buf);
+    }
+}
 
 /**** Local Utilities ********************************************************/
 /*
- * _shutdown_idler() - blink rapidly and prevent further activity from occurring
+ * _shutdown_handler() - put system into shutdown state
+ * _limit_switch_handler() - alarm system if limit switch fired
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
  *	Shutdown idler flashes indicator LED rapidly to show everything is not OK.
@@ -314,7 +354,7 @@ static void _dispatch_kernel()
  *	(ctrl-x) or bootloader request can be processed.
  */
 
-static stat_t _shutdown_idler()
+static stat_t _shutdown_handler()
 {
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
 
@@ -325,52 +365,42 @@ static stat_t _shutdown_idler()
 	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
 }
 
+/*
+ * _limit_switch_handler() - shut down system if limit switch fired
+ */
+
+void controller_assert_limit_condition(uint8_t input)
+{
+    cs.limit_switch_asserted = input;
+}
+
+static stat_t _limit_switch_handler(void)
+{
+    if ((cm.machine_state == MACHINE_ALARM) ||
+        (cm.machine_state == MACHINE_PANIC) ||
+        (cm.machine_state == MACHINE_SHUTDOWN)) {
+        return (STAT_NOOP);                             // don't test limits if already in an alarm state
+    }
+
+    if (cs.limit_switch_asserted == 0) {
+        return(STAT_NOOP);
+    }
+    char msg[12];
+    sprintf_P(msg, PSTR("input %d"), cs.limit_switch_asserted);
+    cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+    cs.limit_switch_asserted = 0;
+
+    return (STAT_OK);
+}
+
 static stat_t _normal_idler()
 {
-#ifdef __ARM
-	/*
-	 * S-curve heartbeat code. Uses forward-differencing math from the stepper code.
-	 * See plan_line.cpp for explanations.
-	 * Here, the "velocity" goes from 0.0 to 1.0, then back.
-	 * t0 = 0, t1 = 0, t2 = 0.5, and we'll complete the S in 100 segments.
-	 */
-
-	// These are statics, and the assignments will only evaluate once.
-	static float indicator_led_value = 0.0;
-	static float indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-	static float indicator_led_forward_diff_2 = indicator_led_forward_diff_1 * 2.0;
-
-
-	if (SysTickTimer.getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer.getValue() + LED_NORMAL_TIMER / 100;
-
-		indicator_led_value += indicator_led_forward_diff_1;
-		if (indicator_led_value > 100.0)
-			indicator_led_value = 100.0;
-
-		if ((indicator_led_forward_diff_2 > 0.0 && indicator_led_value >= 50.0) || (indicator_led_forward_diff_2 < 0.0 && indicator_led_value <= 50.0)) {
-			indicator_led_forward_diff_2 = -indicator_led_forward_diff_2;
-		}
-		else if (indicator_led_value <= 0.0) {
-			indicator_led_value = 0.0;
-
-			// Reset to account for rounding errors
-			indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-		} else {
-			indicator_led_forward_diff_1 += indicator_led_forward_diff_2;
-		}
-
-		IndicatorLed = indicator_led_value/100.0;
-	}
-#endif
-#ifdef __AVR
 /*
 	if (SysTickTimer_getValue() > cs.led_timer) {
 		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
 //		IndicatorLed_toggle();
 	}
 */
-#endif
 	return (STAT_OK);
 }
 
@@ -387,6 +417,7 @@ static stat_t _normal_idler()
 void controller_reset_source() { controller_set_primary_source(xio.default_src);}
 void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
 void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
+void controller_request_enquiry() { printf_P(PSTR("{\"ack\":true}\n")); }
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
@@ -405,18 +436,6 @@ static stat_t _sync_to_planner()
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (STAT_EAGAIN);
 	}
-	return (STAT_OK);
-}
-
-/*
- * _limit_switch_handler() - shut down system if limit switch fired
- */
-static stat_t _limit_switch_handler(void)
-{
-	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
-
-	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-	return(cm_alarm(STAT_LIMIT_SWITCH_HIT, ""));
 	return (STAT_OK);
 }
 

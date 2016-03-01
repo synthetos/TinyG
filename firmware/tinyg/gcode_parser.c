@@ -56,9 +56,9 @@ stat_t gc_gcode_parser(char *block)
 	uint8_t block_delete_flag;
 
 	// don't process Gcode blocks if in alarmed state
-//	if (cm.machine_state == MACHINE_ALARM) {
-//        return (STAT_MACHINE_ALARMED);
-//    }
+	if (cm.machine_state == MACHINE_ALARM) {
+        return (STAT_COMMAND_REJECTED_BY_ALARM);
+    }
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
 
 	// queue a "(MSG" response
@@ -71,7 +71,7 @@ stat_t gc_gcode_parser(char *block)
 	}
 
     // Trap M30 and M2 as $clear conditions. This has no effect it not in ALARM or SHUTDOWN
-//    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
+    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
     ritorno(cm_is_alarmed());               // return error status if in alarm, shutdown or panic
 
 	// Block delete omits the line if a / char is present in the first space
@@ -80,12 +80,6 @@ stat_t gc_gcode_parser(char *block)
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
-/*
-	// queue a "(MSG" response
-	if (*msg != NUL) {
-		(void)cm_message(msg);				// queue the message
-	}
-*/
 	return(_parse_gcode_block(block));
 }
 
@@ -168,13 +162,6 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 	if (**com != NUL) {
 		rd = *com;
 		while (isspace(*rd)) { rd++; }		// skip any leading spaces before first character
-
-        // look for JSON active comment
-        if (*rd == '{') {                   // look for a transaction ID (hack hack)
-		    if ((tolower(*(rd+1)) == 't') && (tolower(*(rd+2)) == 'i') && (tolower(*(rd+3)) == 'd')) {
-	            cs.txn_id = atoi(rd+5);
-		    }
-        }
 
         // Look for MSG active comment
 		if ((tolower(*rd) == 'm') && (tolower(*(rd+1)) == 's') && (tolower(*(rd+2)) == 'g')) {
@@ -344,7 +331,7 @@ static stat_t _parse_gcode_block(char *buf)
 					break;
 				}
 				case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
-				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL_MOTION_MODE);
+				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL);
 				case 90: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
@@ -418,7 +405,6 @@ static stat_t _parse_gcode_block(char *buf)
             case 'L': SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
-//			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
     	    default: return (cm_alarm(STAT_GCODE_COMMAND_UNSUPPORTED, cs.saved_buf));
 		}
 		if(status != STAT_OK) break;
@@ -510,37 +496,37 @@ static stat_t _execute_gcode_block()
 	//--> set retract mode goes here
 
 	switch (cm.gn.next_action) {
-		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}								// G28.1
-		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}	// G28
-		case NEXT_ACTION_SET_G30_POSITION:  { status = cm_set_g30_position(); break;}								// G30.1
-		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(cm.gn.target, cm.gf.target); break;}	// G30
+		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}                               // G28.1
+		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}    // G28
+		case NEXT_ACTION_SET_G30_POSITION:  { status = cm_set_g30_position(); break;}                               // G30.1
+		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(cm.gn.target, cm.gf.target); break;}    // G30
 
-		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}									// G28.2
+		case NEXT_ACTION_SEARCH_HOME:         { status = cm_homing_cycle_start(); break;}                           // G28.2
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(cm.gn.target, cm.gf.target); break;}// G28.3
-		case NEXT_ACTION_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}							// G28.4
+		case NEXT_ACTION_HOMING_NO_SET:       { status = cm_homing_cycle_start_no_set(); break;}                    // G28.4
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
+
+		case NEXT_ACTION_SET_ORIGIN_OFFSETS:     { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_RESET_ORIGIN_OFFSETS:   { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
-		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS:  { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: {
 			cm_set_absolute_override(cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
-				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
+				case MOTION_MODE_CANCEL:            { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
-				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
+				case MOTION_MODE_STRAIGHT_FEED:     { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
+
         		case MOTION_MODE_CW_ARC:                                                                            // G2
-        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     cm.gf.target,                    // G3
-            		cm.gn.arc_offset, cm.gf.arc_offset,
-            		cm.gn.arc_radius, cm.gf.arc_radius,
-            		cm.gn.parameter,  cm.gf.parameter,
-            		cm.gf.modals[MODAL_GROUP_G1],
-            		cm.gn.motion_mode);
-            		break;
-        		}
+        		case MOTION_MODE_CCW_ARC:           { status = cm_arc_feed(cm.gn.target, cm.gf.target,              // G3
+                		                                                   cm.gn.arc_offset, cm.gf.arc_offset,
+            		                                                       cm.gn.arc_radius, cm.gf.arc_radius,
+            		                                                       cm.gn.parameter,  cm.gf.parameter,
+            		                                                       cm.gf.modals[MODAL_GROUP_G1],
+            		                                                       cm.gn.motion_mode); break; }
 			}
 		}
 	}
@@ -563,16 +549,9 @@ static stat_t _execute_gcode_block()
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
-stat_t gc_get_gc(nvObj_t *nv)
-{
-	ritorno(nv_copy_string(nv, cs.saved_buf));
-	nv->valuetype = TYPE_STRING;
-	return (STAT_OK);
-}
-
 stat_t gc_run_gc(nvObj_t *nv)
 {
-	return(gc_gcode_parser(*nv->stringp));
+	return(gc_gcode_parser(nv->str));
 }
 
 /***********************************************************************************
@@ -585,3 +564,7 @@ stat_t gc_run_gc(nvObj_t *nv)
 // no text mode functions here. Move along
 
 #endif // __TEXT_MODE
+
+#undef SET_MODAL
+#undef SET_NON_MODAL
+#undef EXEC_FUNC

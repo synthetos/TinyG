@@ -2,7 +2,7 @@
  * text_parser.c - text parser for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -96,7 +96,7 @@ stat_t text_parser(char *str)
 			nv_persist(nv);							// conditionally persist depending on flags in array
 		}
 	}
-	nv_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
+	nv_print_list(status, TEXT_RESPONSE, JSON_RESPONSE); // print the results
 	return (status);
 }
 
@@ -106,7 +106,7 @@ stat_t text_parser(char *str)
  *    - nv->index       - validates name token in the process
  *    - nv->valuetype   - can only be TYPE_FLOAT or TYPE_INTEGER)
  *    - nv->value_int or nv->value_flt
- *    - nv-stringp      - receives a copy of the input string for use in later reporting
+ *    - nv-str          - receives a copy of the input string for use in later reporting
  */
 
 static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
@@ -138,8 +138,8 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
     	    return (STAT_UNRECOGNIZED_NAME);
 	    }
-	    if (GET_TABLE_BYTE(flags) & F_FLOAT) {      // copy value as float
-		    str = ++rd;
+        if (cfg_is_type(nv->index) == TYPE_FLOAT) { // copy value as a float
+  		    str = ++rd;
 		    nv->value_flt = strtof(str, &rd);       // rd used as end pointer
 		    nv->valuetype = TYPE_FLOAT;
 	    } else {                                    // copy value as integer
@@ -168,7 +168,7 @@ static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
 void text_response(const stat_t status, char *buf)
 {
-	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
+	if (txt.text_verbosity == TV_SILENT) { return; } // skip all this
 
 	char units[] = "inch";
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
@@ -181,86 +181,28 @@ void text_response(const stat_t status, char *buf)
 	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		printf(*nv->stringp);
+		printf(nv->str);
 	}
 	printf_P(PSTR("\n"));
 }
 
-/***** PRINT FUNCTIONS ********************************************************
- * json_print_list() - command to select and produce a JSON formatted output
- * text_print_inline_pairs()
- * text_print_inline_values()
- * text_print_multiline_formatted()
- *
- * NOTE: text_print_inline_pairs() and text_print_inline_values() are not currently
- *       used so they are commented out of the case statement in text_print_list().
- *       The functions themselves will drop out of the compile by the optimizer.
- *       If you need these uncomment the line(s) you need.
+/*
+ * text_print_list() - produce text formatted output from an NV list
  */
 
 void text_print_list(stat_t status, uint8_t flags)
 {
-	switch (flags) {
-		case TEXT_NO_PRINT: { break; }
-//		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(NV_BODY); break; }    // SEE NOTE IN HEADER COMMENTS
-//		case TEXT_INLINE_VALUES: { text_print_inline_values(NV_BODY); break; }  // SEE NOTE IN HEADER COMMENTS
-        default: // TEXT_MULTILINE_FORMATTED
-		    { text_print_multiline_formatted(NV_BODY);}
-	}
-}
+    if (flags == TEXT_NO_DISPLAY) { return; }
 
-void text_print_inline_pairs(nvObj_t *nv)   // SEE NOTE IN HEADER COMMENTS
-{
-	uint32_t *v = (uint32_t*)&nv->value_flt;
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		switch (nv->valuetype) {
-			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value_flt, nv->precision);
-								  printf_P(PSTR("%s:%s"), nv->token, global_string_buf) ; break;
-								}
-			case TYPE_INTEGER:	{ printf_P(PSTR("%s:%lu"), nv->token, nv->value_int); break;}
-			case TYPE_DATA:	    { printf_P(PSTR("%s:%lu"), nv->token, *v); break;}
-			case TYPE_STRING:	{ printf_P(PSTR("%s:%s"), nv->token, *nv->stringp); break;}
-			case TYPE_EMPTY:	{ printf_P(PSTR("\n")); return; }
-            default:            { return; }
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { printf_P(PSTR(","));}
-	}
-}
-
-void text_print_inline_values(nvObj_t *nv)  // SEE NOTE IN HEADER COMMENTS
-{
-	uint32_t *v = (uint32_t*)&nv->value_flt;
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		switch (nv->valuetype) {
-			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value_flt, nv->precision);
-								  printf_P(PSTR("%s"), global_string_buf) ; break;
-								}
-			case TYPE_INTEGER:	{ printf_P(PSTR("%lu"), nv->value_int); break;}
-			case TYPE_DATA:	    { printf_P(PSTR("%lu"), *v); break;}
-			case TYPE_STRING:	{ printf_P(PSTR("%s"), *nv->stringp); break;}
-			case TYPE_EMPTY:	{ printf_P(PSTR("\n")); return; }
-            default:            { return; }
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { printf_P(PSTR(","));}
-	}
-}
-
-void text_print_multiline_formatted(nvObj_t *nv)
-{
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		if (nv->valuetype != TYPE_PARENT) {
-			preprocess_float(nv);
-			nv_print(nv);
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype == TYPE_EMPTY) break;
-	}
+    nvObj_t *nv = NV_BODY;
+    for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
+        if (nv->valuetype != TYPE_PARENT) {
+            prep_float(nv);
+            nv_print(nv);
+        }
+		if ((nv = nv_next(nv)) == NULL) { return; }
+        if (nv->valuetype == TYPE_EMPTY) { break; }
+    }
 }
 
 /*
@@ -321,7 +263,7 @@ void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format s
 void text_print_str(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, *nv->stringp);
+    sprintf_P(msg, format, nv->str);
     text_finalize_message(msg);
 }
 

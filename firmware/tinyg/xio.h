@@ -2,7 +2,7 @@
  * xio.h - Xmega IO devices - common header file
  * Part of TinyG project (g1)
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -95,6 +95,10 @@ typedef enum {		// TYPE:	DEVICE:
 #define USB ds[XIO_DEV_USB]
 #define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
 
+// Aliases
+
+#define xio_flush_read      xio_reset_usb_rx_buffers    // allows v8 code to use same call as g2
+
 //*** Device flags ***
 typedef uint16_t devflags_t;
 
@@ -157,22 +161,40 @@ typedef struct xioDEVICE {						// common device struct (one per dev)
 	int (*x_putc)(char, FILE *);				// write char (stdio compatible)
 	void (*x_flow)(struct xioDEVICE *d);		// flow control callback function
 
+#ifdef __BITFIELDS
 	// device configuration flags
-	uint8_t flag_block;
-	uint8_t flag_echo;
-	uint8_t flag_crlf;
-	uint8_t flag_ignorecr;
-	uint8_t flag_ignorelf;
-	uint8_t flag_linemode;
-	uint8_t flag_xoff;							// xon/xoff enabled
+	uint8_t flag_block      : 1 ;
+	uint8_t flag_echo       : 1 ;
+	uint8_t flag_crlf       : 1 ;
+	uint8_t flag_ignorecr   : 1 ;
+	uint8_t flag_ignorelf   : 1 ;
+	uint8_t flag_linemode   : 1 ;
+	uint8_t flag_xoff       : 1 ;               // xon/xoff enabled
 
 	// private working data and runtime flags
+	uint8_t flag_in_line    : 1 ;               // used as a state variable for line reads
+	uint8_t flag_eol        : 1 ;               // end of line detected
+	uint8_t flag_eof        : 1 ;               // end of file detected
+	uint8_t signal          : 4 ;               // signal value
+#else
+	// device configuration flags
+	uint8_t flag_block      ;
+	uint8_t flag_echo       ;
+	uint8_t flag_crlf       ;
+	uint8_t flag_ignorecr   ;
+	uint8_t flag_ignorelf   ;
+	uint8_t flag_linemode   ;
+	uint8_t flag_xoff       ;               // xon/xoff enabled
+
+	// private working data and runtime flags
+	uint8_t flag_in_line    ;               // used as a state variable for line reads
+	uint8_t flag_eol        ;               // end of line detected
+	uint8_t flag_eof        ;               // end of file detected
+	uint8_t signal          ;               // signal value
+#endif
+
 	int size;									// text buffer length (dynamic)
 	uint8_t len;								// chars read so far (buf array index)
-	uint8_t signal;								// signal value
-	uint8_t flag_in_line;						// used as a state variable for line reads
-	uint8_t flag_eol;							// end of line detected
-	uint8_t flag_eof;							// end of file detected
 	char *buf;									// text buffer binding (can be dynamic)
 	uint16_t magic_end;
 } xioDev_t;
@@ -189,11 +211,14 @@ typedef void (*x_flow_t)(xioDev_t *d);
  * Readline Buffer Management
  */
 
+#define RX_HEADERS                12        // buffer headers in the list
+#define RX_BUFFER_MIN_SIZE       200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_POOL_SIZE     1000        // total size of RX buffer memory pool
+/*
 #define RX_HEADERS                26        // buffer headers in the list
 #define RX_BUFFER_MIN_SIZE       256        // minimum requested buffer size (they are usually larger)
-//#define RX_BUFFER_POOL_SIZE     2000        // total size of RX buffer memory pool
 #define RX_BUFFER_POOL_SIZE     1500        // total size of RX buffer memory pool
-
+*/
 typedef enum {                              // readline() buffer and slot states
     BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
     BUFFER_FRAGMENT,                        // buffer is free but in the middle of the list
@@ -405,8 +430,9 @@ typedef enum {
 /* Signal character mappings */
 
 #define CHAR_RESET CAN
+#define CHAR_ENQUIRY ENQ
 #define CHAR_FEEDHOLD (char)'!'
-#define CHAR_CYCLE_START (char)'~'
+#define CHAR_END_HOLD (char)'~'
 #define CHAR_QUEUE_FLUSH (char)'%'
 //#define CHAR_BOOTLOADER ESC
 

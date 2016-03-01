@@ -2,8 +2,8 @@
  * config_app.h - application-specific part of configuration sub-system
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -56,6 +56,8 @@ extern cfgParameters_t cfg;
  * Functions to get and set variables from the cfgArray table
  ***********************************************************************************/
 
+stat_t set_flu(nvObj_t *nv);        // set floating point number with G20/G21 units conversion
+bool prep_float(nvObj_t *nv);       // pre-process float values for units and illegal values
 stat_t set_baud_callback(void);
 
 // job config

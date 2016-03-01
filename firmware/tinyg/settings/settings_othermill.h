@@ -30,8 +30,8 @@
  *		 are in hardware.h  Application settings that also shouldn't need
  *		 to be changed are in tinyg.h
  */
-/* 
- * NOTE: If you change this file be sure the either rev the build 
+/*
+ * NOTE: If you change this file be sure the either rev the build
  *       number or run {defa:1} or weird things will break.
  */
 
@@ -42,7 +42,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
-#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE                 SW_ACTIVE_HI	        // one of: SW_ACTIVE_LO (no), SW_ACTIVE_HI (nc)
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
 #define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
@@ -78,7 +78,8 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,ofsa,unit,stat,coor,momo,dist,home,hold,macs,cycs,mots,plan,prbe";
+//static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,ofsa,unit,stat,coor,momo,dist,home,hold,macs,cycs,mots,plan,prbe";
+static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,admo,frmo,momo,stat";
 
 #define QUEUE_REPORT_VERBOSITY		QR_SINGLE		        // one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
@@ -91,13 +92,6 @@ static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,of
 
 
 // *** Motor settings ************************************************************************************
-/* WARNING: Older Othermill machines use a 15deg can stack for their Z axis.
-   newer machines use a stepper which has the same config as the other axes.
-   The following settings should be used for can stack machines:
-#define M2_STEP_ANGLE 			15          // motor setting
-#define M2_TRAVEL_PER_REV 		1.27254     // motor setting
-#define Z_VELOCITY_MAX 			1000        // axis setting
-*/
 
 #define SCREW_TRAVEL 5.08     // actual value
 //#define SCREW_TRAVEL 10.16      // value to make the machine handle 2x size for testing
@@ -182,7 +176,7 @@ static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,of
 #define Z_TRAVEL_MAX 			0
 #define Z_JERK_MAX 				JERK_MAX			// 200 million
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MIN		SW_MODE_PROBE
 #define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		(Z_FEEDRATE_MAX/3)
 #define Z_LATCH_VELOCITY 		LATCH_VELOCITY

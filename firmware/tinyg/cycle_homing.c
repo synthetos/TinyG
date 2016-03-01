@@ -2,7 +2,7 @@
  * cycle_homing.c - homing cycle extension to canonical_machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,7 +45,6 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 
 	int8_t homing_switch;			// homing switch for current axis (index into switch flag table)
 	int8_t limit_switch;			// limit switch for current axis, or -1 if none
-	void (*switch_saved_on_trailing)(struct swSwitch *s);
 
 	uint8_t homing_closed;			// 0=open, 1=closed
 	uint8_t limit_closed;			// 0=open, 1=closed
@@ -189,9 +188,13 @@ stat_t cm_homing_cycle_start_no_set(void)
 
 stat_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (hm.func(hm.axis));									// execute the current homing move
+	if (cm.cycle_state != CYCLE_HOMING) {  	    // exit if not in a homing cycle
+        return (STAT_NOOP);
+    }
+	if (cm_get_runtime_busy() == true) {        // sync to planner move ends
+        return (STAT_EAGAIN);
+    }
+	return (hm.func(hm.axis));                  // execute the current homing move
 }
 
 static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
@@ -203,8 +206,8 @@ static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
-	if ((axis = _get_next_axis(axis)) < 0) { 				// axes are done or error
-		if (axis == -1) {									// -1 is done
+	if ((axis = _get_next_axis(axis)) < 0) {    // axes are done or error
+		if (axis == -1) {						// -1 is done
 			cm.homing_state = HOMING_HOMED;
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
@@ -226,7 +229,9 @@ static stat_t _homing_axis_start(int8_t axis)
     }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
-	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+	if (fp_ZERO(travel_distance)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+    }
 
 	// determine the switch setup and that config is OK
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
@@ -246,9 +251,9 @@ static stat_t _homing_axis_start(int8_t axis)
 		hm.search_travel = -travel_distance;				// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
-
+    }
 	// setup parameters for positive travel (homing to the maximum switch)
-	} else {
+	else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
 		hm.search_travel = travel_distance;					// search travels in positive direction
@@ -262,8 +267,9 @@ static stat_t _homing_axis_start(int8_t axis)
 		return (_set_homing_func(_homing_axis_start));
 	}
 	// disable the limit switch parameter if there is no limit switch
-	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) hm.limit_switch = -1;
-
+	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) {
+        hm.limit_switch = -1;
+    }
 	hm.saved_jerk = cm_get_axis_jerk(axis);					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
@@ -272,9 +278,9 @@ static stat_t _homing_axis_start(int8_t axis)
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-	if (sw.state[hm.homing_switch] == SW_CLOSED) {
+	if (sw.s[hm.homing_switch].state == SW_ACTIVE) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (sw.state[hm.limit_switch] == SW_CLOSED) {
+	} else if (sw.s[hm.limit_switch].state == SW_ACTIVE) {
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
 	return (_set_homing_func(_homing_axis_search));
@@ -291,7 +297,7 @@ static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	// verify assumption that we arrived here because of homing switch closure
 	// rather than user-initiated feedhold or other disruption
-	if (sw.state[hm.homing_switch] != SW_CLOSED) {
+	if (sw.s[hm.homing_switch].state != SW_ACTIVE) {
 		return (_set_homing_func(_homing_abort));
     }
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);
@@ -322,11 +328,12 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	float vect[] = {0,0,0,0,0,0};
 	bool flags[] = {false, false, false, false, false, false};
 
+    cm_queue_flush();                   // flush queue, reset model position, end hold state
+
+    // queue the next move
 	vect[axis] = target;
 	flags[axis] = true;
 	cm.gm.feed_rate = velocity;
-	mp_flush_planner();										// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vect, flags));
 	return (STAT_EAGAIN);
 }
@@ -354,13 +361,13 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 	nv_reset_nv_list("");
 
 	if (axis == -2) {
-		nv_add_conditional_message_P(PSTR("Homing error - Bad or no axis(es) specified"));
+		nv_add_message_P(PSTR("Homing error - Bad or no axis(es) specified"));
 	} else {
 		char message[NV_MESSAGE_LEN];
 		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
-		nv_add_conditional_message((char *)message);
+		nv_add_message((char *)message);
 	}
-	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_INLINE_VALUES, JSON_RESPONSE_FORMAT);
+	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_RESPONSE, JSON_RESPONSE);
 
 	_homing_finalize_exit(axis);
 	return (STAT_HOMING_CYCLE_FAILED);						// homing state remains HOMING_NOT_HOMED
@@ -380,7 +387,7 @@ static stat_t _homing_finalize_exit(int8_t axis)			// third part of return to ho
 	cm_set_distance_mode(hm.saved_distance_mode);
 	cm_set_feed_rate_mode(hm.saved_feed_rate_mode);
 	cm.gm.feed_rate = hm.saved_feed_rate;
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 	return (STAT_OK);
@@ -403,53 +410,53 @@ static int8_t _get_next_axis(int8_t axis)
 {
 #if (HOMING_AXES <= 4)
 	if (axis == -1) {	// inelegant brute force solution
-		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+		if (cm.gf.target[AXIS_Z]) return (AXIS_Z);
+		if (cm.gf.target[AXIS_X]) return (AXIS_X);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
 		return (-2);	// error
 	} else if (axis == AXIS_Z) {
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+		if (cm.gf.target[AXIS_X]) return (AXIS_X);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
 	} else if (axis == AXIS_X) {
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
 	} else if (axis == AXIS_Y) {
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
 	}
 	return (-1);	// done
 
 #else
 
 	if (axis == -1) {
-		if (fp_TRUE(cm.gf.target[AXIS_Z])) return (AXIS_Z);
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_Z]) return (AXIS_Z);
+		if (cm.gf.target[AXIS_X]) return (AXIS_X);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
+		if (cm.gf.target[AXIS_B]) return (AXIS_B);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 		return (-2);	// error
 	} else if (axis == AXIS_Z) {
-		if (fp_TRUE(cm.gf.target[AXIS_X])) return (AXIS_X);
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_X]) return (AXIS_X);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
+		if (cm.gf.target[AXIS_B]) return (AXIS_B);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 	} else if (axis == AXIS_X) {
-		if (fp_TRUE(cm.gf.target[AXIS_Y])) return (AXIS_Y);
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_Y]) return (AXIS_Y);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
+		if (cm.gf.target[AXIS_B]) return (AXIS_B);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 	} else if (axis == AXIS_Y) {
-		if (fp_TRUE(cm.gf.target[AXIS_A])) return (AXIS_A);
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_A]) return (AXIS_A);
+		if (cm.gf.target[AXIS_B]) return (AXIS_B);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 	} else if (axis == AXIS_A) {
-		if (fp_TRUE(cm.gf.target[AXIS_B])) return (AXIS_B);
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_B]) return (AXIS_B);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 	} else if (axis == AXIS_B) {
-		if (fp_TRUE(cm.gf.target[AXIS_C])) return (AXIS_C);
+		if (cm.gf.target[AXIS_C]) return (AXIS_C);
 	}
 	return (-1);	// done
 

@@ -2,8 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -30,7 +30,7 @@
 
 #define SAVED_BUFFER_LEN 128            // saved buffer size (for reporting only)
 #define OUTPUT_BUFFER_LEN 512           // buffer for serialized JSON output & text output
-// see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
+// see also: error.h STATUS_MESSAGE_LEN and config.h NV_ lengths
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
@@ -65,12 +65,11 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
-	uint8_t hard_reset_requested;		// flag to perform a hard reset
-	uint8_t bootloader_requested;		// flag to enter the bootloader
-	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
+	uint8_t limit_switch_asserted;      // non-zero input number indicates limit condition
+	bool hard_reset_requested;		    // flag to perform a hard reset
+	bool bootloader_requested;		    // flag to enter the bootloader
 
 	int32_t job_id[4];					// uuid to identify the job
-    uint32_t txn_id;
 
 	// controller serial buffers
 	char *bufp;                         // pointer to primary or secondary input buffer
@@ -88,9 +87,13 @@ extern controller_t cs;					// controller state structure
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
+
 void controller_run(void);
+void controller_dispatch_txt_container (nvObj_t *nv, char *str);
 void controller_reset_source(void);
 void controller_set_primary_source(uint8_t dev);
 void controller_set_secondary_source(uint8_t dev);
+void controller_assert_limit_condition(uint8_t input);
+void controller_request_enquiry(void);
 
 #endif // End of include guard: CONTROLLER_H_ONCE

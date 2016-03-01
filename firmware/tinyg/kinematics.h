@@ -2,7 +2,7 @@
  * kinematics.h - inverse kinematics routines
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,6 +28,7 @@
 #ifndef KINEMATICS_H_ONCE
 #define KINEMATICS_H_ONCE
 
-void ik_kinematics(const float travel[], float steps[]);
+void kn_inverse_kinematics(const float travel[], float steps[]);
+void kn_forward_kinematics(const float steps[], float travel[]);
 
 #endif // End of include Guard: KINEMATICS_H_ONCE

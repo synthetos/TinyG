@@ -67,7 +67,7 @@ void cm_arc_init()
 
 void cm_abort_arc()
 {
-	arc.run_state = MOVE_OFF;
+	arc.run_state = BLOCK_IDLE;
 }
 
 /*
@@ -81,7 +81,7 @@ void cm_abort_arc()
 
 stat_t cm_arc_callback()
 {
-	if (arc.run_state == MOVE_OFF) {
+	if (arc.run_state == BLOCK_IDLE) {
         return (STAT_NOOP);
     }
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
@@ -98,7 +98,7 @@ stat_t cm_arc_callback()
 	if (--arc.segment_count > 0) {
         return (STAT_EAGAIN);
     }
-	arc.run_state = MOVE_OFF;
+	arc.run_state = BLOCK_IDLE;
 	return (STAT_OK);
 }
 
@@ -160,7 +160,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
         arc.plane_axis_1 = AXIS_Z;
         arc.linear_axis  = AXIS_X;
     } else {
-        return(cm_panic(STAT_GCODE_ACTIVE_PLANE_IS_MISSING, "no plane axis")); // plane axis has impossible value
+        return(cm_panic_P(STAT_GCODE_ACTIVE_PLANE_IS_MISSING, PSTR("no plane axis"))); // plane axis has impossible value
     }
 
     // test if no endpoints are specified in the selected plane
@@ -213,7 +213,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
         if ((fp_EQ(cm.gmx.position[AXIS_X], cm.gm.target[AXIS_X])) &&
             (fp_EQ(cm.gmx.position[AXIS_Y], cm.gm.target[AXIS_Y])) &&
             (fp_EQ(cm.gmx.position[AXIS_Z], cm.gm.target[AXIS_Z]))) {
-            return (cm_alarm(STAT_ARC_ENDPOINT_IS_STARTING_POINT, "arc start end end point cannot be the same in a radius arc"));
+            return (cm_alarm_P(STAT_ARC_ENDPOINT_IS_STARTING_POINT, PSTR("arc start end end point cannot be the same in a radius arc")));
         }
     }
 
@@ -237,7 +237,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     if ((fp_ZERO(arc.offset[OFS_I])) &&             // it's an error if no offsets are provided
         (fp_ZERO(arc.offset[OFS_J])) &&
         (fp_ZERO(arc.offset[OFS_K]))) {
-        return (cm_alarm(STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE, "arc offsets missing or zero"));
+        return (cm_alarm_P(STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE, PSTR("arc offsets missing or zero")));
     }
 
 	// compute arc runtime values
@@ -246,13 +246,13 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	// test arc soft limits
 	stat_t status = _test_arc_soft_limits();
 	if (status != STAT_OK) {
-    	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+    	cm.gm.motion_mode = MOTION_MODE_CANCEL;
     	copy_vector(cm.gm.target, arc.position);		// reset model position
-	    return (cm_alarm(status, "arc soft_limits"));   // throw an alarm
+	    return (cm_alarm_P(status, PSTR("arc soft_limits")));   // throw an alarm
 	}
 
-	cm_cycle_start();						        // if not already started
-	arc.run_state = MOVE_RUN;				        // enable arc to be run from the callback
+	cm_cycle_start();						            // if not already started
+	arc.run_state = BLOCK_RUNNING;				        // enable arc to be run from the callback
 	cm_finalize_move();
 	return (STAT_OK);
 }
@@ -296,7 +296,7 @@ static stat_t _compute_arc(const bool radius_f)
     float err = fabs(hypotf(end_0, end_1) - arc.radius);   // end radius - start radius
     if ((err > ARC_RADIUS_ERROR_MAX) ||
        ((err > ARC_RADIUS_ERROR_MIN) && (err > arc.radius * ARC_RADIUS_TOLERANCE))) {
-        return (cm_alarm(STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT, "arc center point error exceeds limits"));
+        return (cm_alarm_P(STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT, PSTR("arc center point error exceeds limits")));
     }
 
     // Compute the angular travel
@@ -326,7 +326,7 @@ static stat_t _compute_arc(const bool radius_f)
 
     // Trap zero movement arcs
     if (fp_ZERO(arc.angular_travel)) {
-        return (cm_alarm(STAT_ARC_ENDPOINT_IS_STARTING_POINT, "arc has no movement - identical start and end points"));
+        return (cm_alarm_P(STAT_ARC_ENDPOINT_IS_STARTING_POINT, PSTR("arc has no movement - identical start and end points")));
     }
 
     // Calculate travel in the plane and the depth axis of the helix

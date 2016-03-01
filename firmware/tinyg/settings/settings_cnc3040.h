@@ -2,7 +2,7 @@
  * settings_cnc3020_generic.h - generic CNC3020 Chinese engraving machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2014 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2014 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -32,15 +32,15 @@
  *       are in hardware.h  Application settings that also shouldn't need
  *       to be changed are in tinyg.h
  */
-/* 
- * NOTE: If you change this file be sure the either rev the build 
+/*
+ * NOTE: If you change this file be sure the either rev the build
  *       number or run {defa:1} or weird things will break.
  */
 
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to CNC3020 generic settings"
 
-#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE                 SW_ACTIVE_HI	        // one of: SW_ACTIVE_LO (no), SW_ACTIVE_HI (nc)
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
 #define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
@@ -185,7 +185,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define Z_JERK_MAX 				100
 #define Z_JERK_HOMING			Z_JERK_MAX
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MIN		SW_MODE_PROBE
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		4007
 #define Z_LATCH_VELOCITY 		100
