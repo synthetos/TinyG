@@ -155,7 +155,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define X_TRAVEL_MAX 			400					// xtm		maximum travel - used by soft limits and homing
 #define X_JERK_MAX				100			        // xjm
 #define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MIN 		SW_MODE_LIMIT		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY		1000				// xsv		move in negative direction
 #define X_LATCH_VELOCITY		100					// xlv		mm/min

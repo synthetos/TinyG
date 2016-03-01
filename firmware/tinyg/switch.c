@@ -2,7 +2,7 @@
  * switch.c - switch handling functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -145,7 +145,7 @@ void switch_rtc_callback(void)
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
-				sw.limit_flag = true;					// triggers an emergency shutdown
+			    sw.limit_thrown = i+1;				    // triggers an alarm
 			}
 		}
 	}
@@ -153,17 +153,21 @@ void switch_rtc_callback(void)
 
 /*
  * get_switch_mode()  - return switch mode setting
+ * get_switch_thrown() - return switch number most recently thrown
  * get_limit_thrown() - return true if a limit was tripped
- * get_switch_num()   - return switch number most recently thrown
  */
 
 uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
-uint8_t get_limit_switch_thrown(void) { return(sw.limit_flag);}
 uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
 
+uint8_t get_limit_switch_thrown(void) { 
+    uint8_t limit_thrown = sw.limit_thrown;             // might actually be zero (not thrown)
+    sw.limit_thrown = 0;                                // reset local limit condition
+    return (limit_thrown);
+}
 
 // global switch type
-void set_switch_type( uint8_t switch_type ) { sw.switch_type = switch_type; }
+void set_switch_type(uint8_t switch_type) { sw.switch_type = switch_type; }
 uint8_t get_switch_type() { return sw.switch_type; }
 
 /*
@@ -176,7 +180,7 @@ void reset_switches()
 		sw.debounce[i] = SW_IDLE;
         read_switch(i);
 	}
-	sw.limit_flag = false;
+	sw.limit_thrown = 0;
 }
 
 /*
@@ -184,7 +188,7 @@ void reset_switches()
  */
 uint8_t read_switch(uint8_t sw_num)
 {
-	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) return (SW_DISABLED);
+	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) { return (SW_DISABLED); }
 
 	uint8_t read = 0;
 	switch (sw_num) {

@@ -2,7 +2,7 @@
  * switch.h - switch handling functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2013 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -139,7 +139,7 @@ typedef enum {
  */
 struct swStruct {								// switch state
 	uint8_t switch_type;						// 0=NO, 1=NC - applies to all switches
-	uint8_t limit_flag;							// 1=limit switch thrown - do a lockout
+	uint8_t limit_thrown;						// 0=no limit thrown, N=# of limit switch thrown - do a lockout
 	uint8_t sw_num_thrown;						// number of switch that was just thrown
 	uint8_t state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
 	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
@@ -180,12 +180,13 @@ uint8_t read_switch(uint8_t sw_num);
 uint8_t get_switch_mode(uint8_t sw_num);
 
 void switch_rtc_callback(void);
+
 uint8_t get_limit_switch_thrown(void);
 uint8_t get_switch_thrown(void);
 void reset_switches(void);
 void sw_show_switch(void);
 
-void set_switch_type( uint8_t switch_type );
+void set_switch_type(uint8_t switch_type);
 uint8_t get_switch_type();
 
 /*

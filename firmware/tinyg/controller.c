@@ -2,8 +2,8 @@
  * controller.c - tinyg controller and top level parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -61,7 +61,7 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-static stat_t _shutdown_idler(void);
+static stat_t _shutdown_handler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
 
@@ -147,8 +147,9 @@ static void _controller_HSM()
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// idle in shutdown state
-	DISPATCH(_limit_switch_handler());			// limit switch has been thrown
+    DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
+// 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
+ 	DISPATCH(_limit_switch_handler());          // invoke limit switch
 
 	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
@@ -305,7 +306,8 @@ static void _dispatch_kernel()
 
 /**** Local Utilities ********************************************************/
 /*
- * _shutdown_idler() - blink rapidly and prevent further activity from occurring
+ * _shutdown_handler() - put system into shutdown state
+ * _limit_switch_handler() - alarm system if limit switch fired
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
  *	Shutdown idler flashes indicator LED rapidly to show everything is not OK.
@@ -314,7 +316,7 @@ static void _dispatch_kernel()
  *	(ctrl-x) or bootloader request can be processed.
  */
 
-static stat_t _shutdown_idler()
+static stat_t _shutdown_handler()
 {
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
 
@@ -323,6 +325,27 @@ static stat_t _shutdown_idler()
 		IndicatorLed_toggle();
 	}
 	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
+}
+
+/*
+ * _limit_switch_handler() - shut down system if limit switch fired
+ */
+static stat_t _limit_switch_handler(void)
+{
+    if ((cm.machine_state == MACHINE_ALARM) || 
+        (cm.machine_state == MACHINE_PANIC) ||
+        (cm.machine_state == MACHINE_SHUTDOWN)) {
+        return (STAT_NOOP);                             // don't test limits if already in an alarm state
+    }
+
+    uint8_t limit_thrown = get_limit_switch_thrown();   // also clears limit condition
+	if (limit_thrown == 0) { 
+        return(STAT_NOOP);
+    } 
+    char msg[10];
+    sprintf_P(msg, PSTR("input %d"), (int)limit_thrown);
+    cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+    return (STAT_OK);
 }
 
 static stat_t _normal_idler()
@@ -405,18 +428,6 @@ static stat_t _sync_to_planner()
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) { // allow up to N planner buffers for this line
 		return (STAT_EAGAIN);
 	}
-	return (STAT_OK);
-}
-
-/*
- * _limit_switch_handler() - shut down system if limit switch fired
- */
-static stat_t _limit_switch_handler(void)
-{
-	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
-
-	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-	return(cm_alarm(STAT_LIMIT_SWITCH_HIT, ""));
 	return (STAT_OK);
 }
 

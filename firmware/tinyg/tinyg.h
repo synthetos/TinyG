@@ -63,7 +63,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        448.03	// fixed bug preventing verbose status reports
+#define TINYG_FIRMWARE_BUILD        448.04	// fixed bug in limit switch handling
 #endif
 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version

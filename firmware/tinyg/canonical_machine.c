@@ -768,8 +768,9 @@ stat_t cm_alarm_P(const stat_t status, const char *msg_P)
 
 stat_t cm_alarm(const stat_t status, const char *msg)
 {
-    if ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
-        (cm.machine_state == MACHINE_PANIC)) {
+    if ((cm.machine_state == MACHINE_ALARM) ||
+        (cm.machine_state == MACHINE_PANIC) ||
+        (cm.machine_state == MACHINE_SHUTDOWN)) {
         return (STAT_OK);                       // don't alarm if already in an alarm state
     }
 	cm.machine_state = MACHINE_ALARM;

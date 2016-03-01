@@ -418,7 +418,6 @@ static stat_t _parse_gcode_block(char *buf)
             case 'L': SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
-//			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
     	    default: return (cm_alarm(STAT_GCODE_COMMAND_UNSUPPORTED, cs.saved_buf));
 		}
 		if(status != STAT_OK) break;
