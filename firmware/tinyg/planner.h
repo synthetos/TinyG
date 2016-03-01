@@ -61,8 +61,8 @@ typedef enum {				        // bf->move_type values
 typedef enum {
 	MOVE_OFF = 0,			        // move inactive (MUST BE ZERO)
 	MOVE_NEW,				        // general value if you need an initialization
-	MOVE_RUN,				        // general run state (for non-acceleration moves)
-	MOVE_SKIP_BLOCK			        // mark a skipped block
+	MOVE_RUN				        // general run state (for non-acceleration moves)
+//	MOVE_SKIP_BLOCK			        // mark a skipped block
 } moveState;
 
 typedef enum {
@@ -181,24 +181,24 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
-	magic_t magic_start;			// magic number to test memory integrity
-	uint8_t move_state;				// state of the overall move
-	uint8_t section;				// what section is the move in?
-	uint8_t section_state;			// state within a move section
+	magic_t magic_start;                // magic number to test memory integrity
+	uint8_t move_state;                 // state of the overall move
+	uint8_t section;                    // what section is the move in?
+	uint8_t section_state;              // state within a move section
 
-	float unit[AXES];				// unit vector for axis scaling & planning
-	float target[AXES];				// final target for bf (used to correct rounding errors)
-	float position[AXES];			// current move position
-	float position_c[AXES];			// for Kahan summation in _exec_aline_segment()
-	float waypoint[SECTIONS][AXES];	// head/body/tail endpoints for correction
+	float unit[AXES];                   // unit vector for axis scaling & planning
+    bool axis_flags[AXES];              // set true for axes participating in the move
+	float target[AXES];                 // final target for bf (used to correct rounding errors)
+	float position[AXES];               // current move position
+	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
 
-	float target_steps[MOTORS];		// current MR target (absolute target as steps)
-	float position_steps[MOTORS];	// current MR position (target from previous segment)
-	float commanded_steps[MOTORS];	// will align with next encoder sample (target from 2nd previous segment)
-	float encoder_steps[MOTORS];	// encoder position in steps - ideally the same as commanded_steps
-	float following_error[MOTORS];	// difference between encoder_steps and commanded steps
+	float target_steps[MOTORS];         // current MR target (absolute target as steps)
+	float position_steps[MOTORS];       // current MR position (target from previous segment)
+	float commanded_steps[MOTORS];      // will align with next encoder sample (target from 2nd previous segment)
+	float encoder_steps[MOTORS];        // encoder position in steps - ideally the same as commanded_steps
+	float following_error[MOTORS];      // difference between encoder_steps and commanded steps
 
-	float head_length;				// copies of bf variables of same name
+	float head_length;                  // copies of bf variables of same name
 	float body_length;
 	float tail_length;
 
@@ -206,19 +206,19 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float cruise_velocity;
 	float exit_velocity;
 
-	float segments;					// number of segments in line (also used by arc generation)
-	uint32_t segment_count;			// count of running segments
-	float segment_velocity;			// computed velocity for aline segment
-	float segment_time;				// actual time increment per aline segment
-	float jerk;						// max linear jerk
+	float segments;                     // number of segments in line (also used by arc generation)
+	uint32_t segment_count;             // count of running segments
+	float segment_velocity;             // computed velocity for aline segment
+	float segment_time;                 // actual time increment per aline segment
+	float jerk;                         // max linear jerk
 
-	float forward_diff_1;			// forward difference level 1
-	float forward_diff_2;			// forward difference level 2
-	float forward_diff_3;			// forward difference level 3
-	float forward_diff_4;			// forward difference level 4
-	float forward_diff_5;			// forward difference level 5
+	float forward_diff_1;               // forward difference level 1
+	float forward_diff_2;               // forward difference level 2
+	float forward_diff_3;               // forward difference level 3
+	float forward_diff_4;               // forward difference level 4
+	float forward_diff_5;               // forward difference level 5
 
-	GCodeState_t gm;				// gcode model state currently executing
+	GCodeState_t gm;                    // gcode model state currently executing
 
 	magic_t magic_end;
 } mpMoveRuntimeSingleton_t;

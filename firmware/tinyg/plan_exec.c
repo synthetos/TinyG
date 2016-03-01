@@ -2,8 +2,8 @@
  * plan_exec.c - execution function for acceleration managed lines
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2015 Rob Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2016 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -57,9 +57,15 @@ stat_t mp_exec_move()
 		st_prep_null();
 		return (STAT_NOOP);
 	}
-	// Manage cycle and motion state transitions
+//	// Manage cycle and motion state transitions
+//	if (bf->move_type == MOVE_TYPE_ALINE) { 			// cycle auto-start for lines only
+//		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
+//	}
+	// Manage motion state transitions
 	if (bf->move_type == MOVE_TYPE_ALINE) { 			// cycle auto-start for lines only
-		if (cm.motion_state == MOTION_STOP) cm_set_motion_state(MOTION_RUN);
+    	if ((cm.motion_state != MOTION_RUN) && (cm.motion_state != MOTION_HOLD)) {
+        	cm_set_motion_state(MOTION_RUN);
+    	}
 	}
 	if (bf->bf_func == NULL) {
         return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_move"))); // never supposed to get here
@@ -139,10 +145,24 @@ stat_t mp_exec_move()
  *	 _NEW - trigger initialization
  *	 _RUN1 - run the first part
  *	 _RUN2 - run the second part
- *
- *	Note: For a direct math implementation see build 357.xx or earlier
- *		  Builds 358 onward have only forward difference code
  */
+/*	Note:
+ *	For a version of these routines that execute using the original equation-of-motion
+ *	math (as opposed to the forward difference math) please refer to build 444.01 or earlier.
+ *	The Kahan corrections have also been removed in 445.01 as they were not needed.
+ */
+
+/**** NOTICE ** NOTICE ** NOTICE ****
+ **
+ **    mp_exec_aline() is called in
+ **     --INTERRUPT CONTEXT!!--
+ **
+ **    Things we MUST NOT do (even indirectly):
+ **       mp_plan_buffer()
+ **       mp_plan_block_list()
+ **       printf()
+ **
+ **** NOTICE ** NOTICE ** NOTICE ****/
 
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
@@ -151,8 +171,17 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 	// start a new move by setting up local context (singleton)
 	if (mr.move_state == MOVE_OFF) {
+
+        // too short lines have already been removed...
+        // so is the following code is no longer needed ++++ ash
+        // But let's still alert the condition should it ever occur
+        if (fp_ZERO(bf->length)) {						// ...looks for an actual zero here
+            rpt_exception(STAT_PLANNER_ASSERTION_FAILURE, "mp_exec_aline() zero length move");
+        }
+
+        // stops here if holding
 		if (cm.hold_state == FEEDHOLD_HOLD)
-            return (STAT_NOOP);	                        // stops here if holding
+            return (STAT_NOOP);
 
 		// initialization to process the new incoming bf buffer (Gcode block)
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));// copy in the gcode model state
@@ -181,6 +210,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
+        copy_vector(mr.axis_flags, bf->axis_flags);
 
 		// generate the waypoints for position correction at section ends
 		for (uint8_t axis=0; axis<AXES; axis++) {
@@ -195,9 +225,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	stat_t status = STAT_OK;
 	if (mr.section == SECTION_HEAD) { status = _exec_aline_head();} else
 	if (mr.section == SECTION_BODY) { status = _exec_aline_body();} else
-	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else
-	if (mr.move_state == MOVE_SKIP_BLOCK) { status = STAT_OK;}
-	else { 	// never supposed to get here
+	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else 
+	{ 	// never supposed to get here
         return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_aline")));
     }
 
@@ -362,7 +391,7 @@ static void _init_forward_diffs(float Vi, float Vt)
 	float half_h = h/2.0;
 	float half_Ch_3 = C * half_h * half_h * half_h;
 	float half_Bh_4 = B * half_h * half_h * half_h * half_h;
-	float half_Ah_5 = C * half_h * half_h * half_h * half_h * half_h;
+	float half_Ah_5 = A * half_h * half_h * half_h * half_h * half_h;
 	mr.segment_velocity = half_Ah_5 + half_Bh_4 + half_Ch_3 + Vi;
 }
 
