@@ -532,7 +532,7 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
         		case MOTION_MODE_CW_ARC:                                                                            // G2
-        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target,     cm.gf.target,                    // G3
+        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target, cm.gf.target,                        // G3
             		cm.gn.arc_offset, cm.gf.arc_offset,
             		cm.gn.arc_radius, cm.gf.arc_radius,
             		cm.gn.parameter,  cm.gf.parameter,

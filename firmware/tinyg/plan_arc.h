@@ -20,10 +20,6 @@
 #ifndef PLAN_ARC_H_ONCE
 #define PLAN_ARC_H_ONCE
 
-#define MIN_ARC_RADIUS          ((float)0.1)        // min radius that can be executed
-#define MIN_ARC_SEGMENT_LENGTH  ((float)0.05)       // Arc segment size (mm).(0.03)
-#define MIN_ARC_SEGMENT_USEC    ((float)10000)      // minimum arc segment time
-
 // Arc radius tests. See http://linuxcnc.org/docs/html/gcode/g-code.html#gcode:g2-g3
 // which reads: "When the arc is projected on the selected plane, the distance from
 //               the current point to the center differs from the distance from the

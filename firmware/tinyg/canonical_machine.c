@@ -1651,6 +1651,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 	}
 	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
 	cm.cycle_start_requested = false;					// cancel any pending cycle start request
+//    cm.end_hold_requested = false;					    // cancel any pending end hold request
 	mp_zero_segment_velocity();							// for reporting purposes
 
 	// perform the following resets if it's a program END
@@ -1747,10 +1748,13 @@ static const char msg_stat7[] PROGMEM = "Probe";
 static const char msg_stat8[] PROGMEM = "Cycle";
 static const char msg_stat9[] PROGMEM = "Homing";
 static const char msg_stat10[] PROGMEM = "Jog";
-static const char msg_stat11[] PROGMEM = "Shutdown";
+static const char msg_stat11[] PROGMEM = "Interlock";
+static const char msg_stat12[] PROGMEM = "Shutdown";
+static const char msg_stat13[] PROGMEM = "Panic";
 static const char *const msg_stat[] PROGMEM = { msg_stat0, msg_stat1, msg_stat2, msg_stat3,
-												msg_stat4, msg_stat5, msg_stat6, msg_stat7,
-												msg_stat8, msg_stat9, msg_stat10, msg_stat11 };
+                                                msg_stat4, msg_stat5, msg_stat6, msg_stat7,
+                                                msg_stat8, msg_stat9, msg_stat10, msg_stat11,
+                                                msg_stat12, msg_stat13 };
 
 static const char msg_macs0[] PROGMEM = "Initializing";
 static const char msg_macs1[] PROGMEM = "Ready";
@@ -1758,14 +1762,17 @@ static const char msg_macs2[] PROGMEM = "Alarm";
 static const char msg_macs3[] PROGMEM = "Stop";
 static const char msg_macs4[] PROGMEM = "End";
 static const char msg_macs5[] PROGMEM = "Cycle";
-static const char msg_macs6[] PROGMEM = "Shutdown";
+static const char msg_macs6[] PROGMEM = "Interlock";
+static const char msg_macs7[] PROGMEM = "SHUTDOWN";
+static const char msg_macs8[] PROGMEM = "PANIC";
 static const char *const msg_macs[] PROGMEM = { msg_macs0, msg_macs1, msg_macs2, msg_macs3,
-												msg_macs4, msg_macs5, msg_macs6 };
+                                                msg_macs4, msg_macs5, msg_macs6, msg_macs7,
+                                                msg_macs8 };
 
 static const char msg_cycs0[] PROGMEM = "Off";
 static const char msg_cycs1[] PROGMEM = "Machining";
-static const char msg_cycs2[] PROGMEM = "Probe";
-static const char msg_cycs3[] PROGMEM = "Homing";
+static const char msg_cycs2[] PROGMEM = "Homing";
+static const char msg_cycs3[] PROGMEM = "Probe";
 static const char msg_cycs4[] PROGMEM = "Jog";
 static const char *const msg_cycs[] PROGMEM = { msg_cycs0, msg_cycs1, msg_cycs2, msg_cycs3,  msg_cycs4 };
 
@@ -1797,7 +1804,7 @@ static const char msg_g58[] PROGMEM = "G58 - coordinate system 5";
 static const char msg_g59[] PROGMEM = "G59 - coordinate system 6";
 static const char *const msg_coor[] PROGMEM = { msg_g53, msg_g54, msg_g55, msg_g56, msg_g57, msg_g58, msg_g59 };
 
-static const char msg_g00[] PROGMEM = "G0  - linear traverse (seek)";
+static const char msg_g00[] PROGMEM = "G0  - linear traverse";
 static const char msg_g01[] PROGMEM = "G1  - linear feed";
 static const char msg_g02[] PROGMEM = "G2  - clockwise arc feed";
 static const char msg_g03[] PROGMEM = "G3  - counter clockwise arc feed";
@@ -2131,6 +2138,7 @@ stat_t cm_dam(nvObj_t *nv)
 	cm_print_plan(nv);
 	cm_print_path(nv);
 	cm_print_dist(nv);
+	cm_print_admo(nv);
 	cm_print_frmo(nv);
 	cm_print_tool(nv);
 
@@ -2243,16 +2251,10 @@ void cm_print_gdi(nvObj_t *nv) { text_print_int(nv, fmt_gdi);}
 const char fmt_ja[] PROGMEM = "[ja]  junction acceleration%8.0f%s\n";
 const char fmt_ct[] PROGMEM = "[ct]  chordal tolerance%17.4f%s\n";
 const char fmt_sl[] PROGMEM = "[sl]  soft limit enable%12d\n";
-const char fmt_ml[] PROGMEM = "[ml]  min line segment%17.3f%s\n";
-const char fmt_ma[] PROGMEM = "[ma]  min arc segment%18.3f%s\n";
-const char fmt_ms[] PROGMEM = "[ms]  min segment time%13.0f uSec\n";
 
 void cm_print_ja(nvObj_t *nv) { text_print_flt_units(nv, fmt_ja, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_ct(nvObj_t *nv) { text_print_flt_units(nv, fmt_ct, GET_UNITS(ACTIVE_MODEL));}
 void cm_print_sl(nvObj_t *nv) { text_print(nv, fmt_sl);}
-void cm_print_ml(nvObj_t *nv) { text_print_flt_units(nv, fmt_ml, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ma(nvObj_t *nv) { text_print_flt_units(nv, fmt_ma, GET_UNITS(ACTIVE_MODEL));}
-void cm_print_ms(nvObj_t *nv) { text_print_flt_units(nv, fmt_ms, GET_UNITS(ACTIVE_MODEL));}
 
 /*
  * axis print functions

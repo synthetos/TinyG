@@ -489,9 +489,6 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","gdi", _fipn, 0, cm_print_gdi, get_ui8, set_01,  (uint32_t *)&cm.default_distance_mode, GCODE_DEFAULT_DISTANCE_MODE },
 	{ "",   "gc",  _f0,   0, tx_print_nul, gc_get_gc, gc_run_gc,(uint32_t *)&cs.null, 0 }, // gcode block - must be last in this group
 
-	// "hidden" parameters (not in system group)
-	{ "",   "ma",  _fipcf,4, cm_print_ma,  get_flt, set_flu, (uint32_t *)&cm.arc_segment_len,	ARC_SEGMENT_LENGTH },
-
 	// User defined data groups
 	{ "uda","uda0", _fip, 0, tx_print_int, get_data, set_data,(uint32_t *)&cfg.user_data_a[0], USER_DATA_A0 },
 	{ "uda","uda1", _fip, 0, tx_print_int, get_data, set_data,(uint32_t *)&cfg.user_data_a[1], USER_DATA_A1 },
