@@ -567,10 +567,10 @@ void canonical_machine_init()
 {
 // If you can assume all memory has been zeroed by a hard reset you don't need this memset code.
 // Do not reset canonicalMachineSingleton once it's been initialized - which would be:
-//	memset(&cm, 0, sizeof(cm));					// do not reset canonicalMachineSingleton once it's been initialized
+//	memset(&cm, 0, sizeof(cm));	                    // do not reset canonicalMachineSingleton once it's been initialized
 	memset(&cm.gm, 0, sizeof(GCodeState_t));	    // clear the Gcode MODEL of all values, pointers and status
 	memset(&cm.gn, 0, sizeof(GCodeInput_t));        // clear the Gcode new data struct
-	memset(&cm.gf, 0, sizeof(GCodeInput_t));        // clear the Gcode data flags struct
+	memset(&cm.gf, 0, sizeof(GCodeFlags_t));        // clear the Gcode data flags struct
 
 	canonical_machine_init_assertions();		    // establish assertions
 	ACTIVE_MODEL = MODEL;						    // setup initial Gcode model pointer
@@ -596,9 +596,16 @@ void canonical_machine_reset()
     // NOTE: Should unhome axes here
 
 	// reset request flags
-	cm.feedhold_requested = false;
-	cm.queue_flush_requested = false;
-	cm.cycle_start_requested = false;
+	cm.feedhold_requested = false;                  //+++++ TO BE REMOVED
+	cm.queue_flush_requested = false;               //+++++ TO BE REMOVED
+	cm.cycle_start_requested = false;               //+++++ TO BE REMOVED
+
+    cm.queue_flush_state = FLUSH_OFF;
+    cm.end_hold_requested = false;
+    cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
+    cm.safety_interlock_disengaged = 0;         // ditto
+    cm.safety_interlock_reengaged = 0;          // ditto
+    cm.shutdown_requested = 0;                  // ditto
 
 	// signal that the machine is ready for action
     cm.cycle_state = CYCLE_OFF;
@@ -872,20 +879,20 @@ stat_t cm_panic(const stat_t status, const char *msg)
 
 stat_t cm_select_plane(const uint8_t plane)
 {
-	cm.gm.select_plane = plane;
-	return (STAT_OK);
+    cm.gm.select_plane = (cmCanonicalPlane)plane;
+    return (STAT_OK);
 }
 
 stat_t cm_set_units_mode(const uint8_t mode)
 {
-	cm.gm.units_mode = mode;		// 0 = inches, 1 = mm.
-	return(STAT_OK);
+    cm.gm.units_mode = (cmUnitsMode)mode;		    // 0 = inches, 1 = mm.
+    return(STAT_OK);
 }
 
 stat_t cm_set_distance_mode(const uint8_t mode)
 {
-	cm.gm.distance_mode = mode;		// 0 = absolute mode, 1 = incremental
-	return (STAT_OK);
+    cm.gm.distance_mode = (cmDistanceMode)mode;		// 0 = absolute mode, 1 = incremental
+    return (STAT_OK);
 }
 
 stat_t cm_set_arc_distance_mode(const uint8_t mode)
@@ -914,14 +921,14 @@ stat_t cm_set_coord_offsets(const uint8_t coord_system,
     if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
         return (STAT_P_WORD_IS_INVALID);
     }
-    if (fp_FALSE(cm.gf.L_word)) {
+    if (!cm.gf.L_word) {
         return (STAT_L_WORD_IS_MISSING);
     }
     if ((L_word != 2) && (L_word != 20)) {
         return (STAT_L_WORD_IS_INVALID);
     }
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-        if (fp_TRUE(flag[axis])) {
+        if (flag[axis]) {
             if (L_word == 2) {
                 cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
             } else {
@@ -1092,6 +1099,13 @@ stat_t cm_resume_origin_offsets()
 stat_t cm_straight_traverse(const float target[], const bool flags[])
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
+
+    // it's legal for a G0 to have no axis words but we don't want to process it
+    if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z] ||
+          flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
+        return(STAT_OK);
+    }
+
 	cm_set_model_target(target, flags);
 
 	// test soft limits
@@ -1219,6 +1233,12 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
+
+    // it's legal for a G1 to have no axis words but we don't want to process it
+    if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z] ||
+          flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
+        return(STAT_OK);
+    }
 	cm_set_model_target(target, flags);
 
 	// test soft limits
@@ -1413,7 +1433,7 @@ stat_t cm_override_enables(uint8_t flag)			// M48, M49
 
 stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.feed_rate_override_enable = false;
 	} else {
 		cm.gmx.feed_rate_override_enable = true;
@@ -1430,7 +1450,7 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 
 stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.traverse_override_enable = false;
 	} else {
 		cm.gmx.traverse_override_enable = true;
@@ -1447,7 +1467,7 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 
 stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.spindle_override_enable = false;
 	} else {
 		cm.gmx.spindle_override_enable = true;
