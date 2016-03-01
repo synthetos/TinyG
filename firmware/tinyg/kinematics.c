@@ -2,7 +2,7 @@
  * kinematics.c - inverse kinematics routines
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -30,11 +30,12 @@
 #include "canonical_machine.h"
 #include "stepper.h"
 #include "kinematics.h"
+#include "util.h"
 
-//static void _inverse_kinematics(float travel[], float joint[]);
+static void _inverse_kinematics(const float travel[], float joint[]);
 
 /*
- * ik_kinematics() - wrapper routine for inverse kinematics
+ * kn_inverse_kinematics() - wrapper routine for inverse kinematics
  *
  *	Calls kinematics function(s).
  *	Performs axis mapping & conversion of length units to steps (and deals with inhibited axes)
@@ -45,57 +46,86 @@
  *	as floats and converted to fixed-point binary during queue loading. See stepper.c for details.
  */
 
-void ik_kinematics(const float travel[], float steps[])
+void kn_inverse_kinematics(const float travel[], float steps[])
 {
 	float joint[AXES];
 
-//	_inverse_kinematics(travel, joint);				// you can insert inverse kinematics transformations here
-	memcpy(joint, travel, sizeof(float)*AXES);		//...or just do a memcpy for Cartesian machines
+    _inverse_kinematics(travel, joint);				// insert inverse kinematics transformations here
 
 	// Map motors to axes and convert length units to steps
 	// Most of the conversion math has already been done in during config in steps_per_unit()
 	// which takes axis travel, step angle and microsteps into account.
 	for (uint8_t axis=0; axis<AXES; axis++) {
 		if (cm.a[axis].axis_mode == AXIS_INHIBITED) { joint[axis] = 0;}
-		if (st_cfg.mot[MOTOR_1].motor_map == axis) { steps[MOTOR_1] = joint[axis] * st_cfg.mot[MOTOR_1].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_2].motor_map == axis) { steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_3].motor_map == axis) { steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;}
-		if (st_cfg.mot[MOTOR_4].motor_map == axis) { steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_1].motor_map == axis) {
+            steps[MOTOR_1] = joint[axis] * st_cfg.mot[MOTOR_1].steps_per_unit;
+        }
+        if (st_cfg.mot[MOTOR_2].motor_map == axis) {
+            steps[MOTOR_2] = joint[axis] * st_cfg.mot[MOTOR_2].steps_per_unit;
+        }
+        if (st_cfg.mot[MOTOR_3].motor_map == axis) {
+            steps[MOTOR_3] = joint[axis] * st_cfg.mot[MOTOR_3].steps_per_unit;
+        }
+		if (st_cfg.mot[MOTOR_4].motor_map == axis) {
+            steps[MOTOR_4] = joint[axis] * st_cfg.mot[MOTOR_4].steps_per_unit;
+        }
 #if (MOTORS >= 5)
-		if (st_cfg.mot[MOTOR_5].motor_map == axis) { steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_5].motor_map == axis) {
+            steps[MOTOR_5] = joint[axis] * st_cfg.mot[MOTOR_5].steps_per_unit;
+        }
 #endif
 #if (MOTORS >= 6)
-		if (st_cfg.mot[MOTOR_6].motor_map == axis) { steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;}
+		if (st_cfg.mot[MOTOR_6].motor_map == axis) {
+            steps[MOTOR_6] = joint[axis] * st_cfg.mot[MOTOR_6].steps_per_unit;
+        }
 #endif
 	}
 
-/* The above is a loop unrolled version of this:
-	for (uint8_t axis=0; axis<AXES; axis++) {
-		for (uint8_t motor=0; motor<MOTORS; motor++) {
-			if (st_cfg.mot[motor].motor_map == axis) {
-				steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
-			}
-		}
-	}
-*/
+    /* The above is a loop unrolled version of this:
+	    for (uint8_t axis=0; axis<AXES; axis++) {
+		    for (uint8_t motor=0; motor<MOTORS; motor++) {
+			    if (st_cfg.mot[motor].motor_map == axis) {
+				    steps[motor] = joint[axis] * st_cfg.mot[motor].steps_per_unit;
+			    }
+		    }
+	    }
+        I'm really not sure it it's worth manually loop unrolling this sort of thing */
 }
 
 /*
  * _inverse_kinematics() - inverse kinematics - example is for a cartesian machine
  *
- *	You can glue in inverse kinematics here, but be aware of time budget constrants.
+ *	You can glue in inverse kinematics here, but be aware of time budget constraints.
  *	This function is run during the _exec() portion of the cycle and will therefore
  *	be run once per interpolation segment. The total time for the segment load,
  *	including the inverse kinematics transformation cannot exceed the segment time,
  *	and ideally should be no more than 25-50% of the segment time. Currently segments
- *	run avery 5 ms, but this might be lowered. To profile this time look at the
+ *	run every 1.5 ms, but this might be lowered. To profile this time look at the
  *	time it takes to complete the mp_exec_move() function.
+ *
+ *	Note: the compiler will  inline trivial functions (like memcpy) so there is no
+ *	size or performance penalty for breaking this out
  */
+static void _inverse_kinematics(const float travel[], float joint[])
+{
+	memcpy(joint, travel, sizeof(float)*AXES);		// just do a memcpy for Cartesian machines
+
+//	for (uint8_t i=0; i<AXES; i++) {
+//		joint[i] = travel[i];
+//	}
+}
+
 /*
-static void _inverse_kinematics(float travel[], float joint[])
+ * kn_forward_kinematics() - forward kinematics for a cartesian machine
+ */
+
+void kn_forward_kinematics(const float steps[], float travel[])
 {
 	for (uint8_t i=0; i<AXES; i++) {
-		joint[i] = travel[i];
+		travel[i] = 0;
 	}
+    for (uint8_t motor=0; motor<MOTORS; motor++) {
+        travel[st_cfg.mot[motor].motor_map] = steps[motor] * st_cfg.mot[motor].units_per_step;
+    }
 }
-*/
+
