@@ -70,7 +70,7 @@ bool mp_get_runtime_busy()
         return (false);
     }
     if ((st_runtime_isbusy() == true) ||
-        (mr.move_state == MOVE_RUN)) {
+        (mr.block_state == BLOCK_RUNNING)) {
         return (true);
     }
     return (false);
@@ -252,7 +252,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
 	copy_vector(mm.position, bf->gm.target);	// set the planner position
-	mp_commit_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
+	mp_commit_write_buffer(BLOCK_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }
 
@@ -379,7 +379,7 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
  *
  *	  bf (function arg)		- end of block list (last block in time)
  *	  bf->replannable		- start of block list set by last FALSE value [Note 1]
- *	  bf->move_type			- typically MOVE_TYPE_ALINE. Other move_types should be set to
+ *	  bf->block_type		- typically BLOCK_TYPE_ALINE. Other block_types should be set to
  *							  length=0, entry_vmax=0 and exit_vmax=0 and are treated
  *							  as a momentary stop (plan to zero and from zero).
  *

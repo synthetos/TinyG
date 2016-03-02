@@ -217,7 +217,7 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 		return;
 	}
 
-	bf->move_type = MOVE_TYPE_COMMAND;
+	bf->block_type = BLOCK_TYPE_COMMAND;
 	bf->bf_func = _exec_command;						// callback to planner queue exec function
 	bf->cm_func = cm_exec;								// callback to canonical machine exec function
 
@@ -225,7 +225,7 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 		bf->value_vector[axis] = value[axis];
 		bf->axis_flags[axis] = flags[axis];
 	}
-	mp_commit_write_buffer(MOVE_TYPE_COMMAND);			// must be final operation before exit
+	mp_commit_write_buffer(BLOCK_TYPE_COMMAND);			// must be final operation before exit
 }
 
 static stat_t _exec_command(mpBuf_t *bf)
@@ -259,8 +259,8 @@ stat_t mp_dwell(float seconds)
     }
 	bf->bf_func = _exec_dwell;							// register callback to dwell start
 	bf->gm.move_time = seconds;							// in seconds, not minutes
-	bf->move_state = MOVE_NEW;
-	mp_commit_write_buffer(MOVE_TYPE_DWELL);			// must be final operation before exit
+	bf->block_state = BLOCK_INITIALIZING;
+	mp_commit_write_buffer(BLOCK_TYPE_DWELL);			// must be final operation before exit
 	return (STAT_OK);
 }
 
@@ -412,10 +412,10 @@ void mp_unget_write_buffer()
 			  once it has been queued. Action may start on the buffer immediately,
 			  invalidating its contents ***/
 
-void mp_commit_write_buffer(const uint8_t move_type)
+void mp_commit_write_buffer(const uint8_t block_type)
 {
-	mb.q->move_type = move_type;
-	mb.q->move_state = MOVE_NEW;
+	mb.q->block_type = block_type;
+	mb.q->block_state = BLOCK_INITIALIZING;
 	mb.q->buffer_state = MP_BUFFER_QUEUED;
 	mb.q = mb.q->nx;							// advance the queued buffer pointer
 	qr_request_queue_report(+1);				// request a QR and add to the "added buffers" count
@@ -463,7 +463,7 @@ mpBuf_t * mp_get_last_buffer(void)
 	if (bf == NULL) return(NULL);
 
 	do {
-		if ((bp->nx->move_state == MOVE_OFF) || (bp->nx == bf)) {
+		if ((bp->nx->block_state == BLOCK_IDLE) || (bp->nx == bf)) {
 			return (bp);
 		}
 	} while ((bp = mp_get_next_buffer(bp)) != bf);

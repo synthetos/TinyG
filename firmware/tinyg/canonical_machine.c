@@ -1660,12 +1660,12 @@ void cm_queue_flush()
             cm_end_hold();
         }
         cm.queue_flush_state = FLUSH_OFF;
-	    float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	    _exec_program_finalize(value, FLAGS_ONE);   // finalize now, not later
-
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }
+
+//	    float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
+//	    _exec_program_finalize(value, FLAGS_ONE);   // finalize now, not later
 
 /* */
 /*

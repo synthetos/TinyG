@@ -59,7 +59,7 @@ stat_t mp_exec_move()
 		return (STAT_NOOP);
 	}
 	// Manage motion state transitions
-	if (bf->move_type == MOVE_TYPE_ALINE) { 			// cycle auto-start for lines only
+	if (bf->block_type == BLOCK_TYPE_ALINE) { 			// cycle auto-start for lines only
     	if ((cm.motion_state != MOTION_RUN) && (cm.motion_state != MOTION_HOLD)) {
         	cm_set_motion_state(MOTION_RUN);
     	}
@@ -163,13 +163,13 @@ stat_t mp_exec_move()
 
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
-	if (bf->move_state == MOVE_OFF) {
+	if (bf->block_state == BLOCK_IDLE) {
         return (STAT_NOOP);
     }
 
     // Initialize all new blocks, regardless of normal or feedhold operation
 
-	if (mr.move_state == MOVE_OFF) {
+	if (mr.block_state == BLOCK_IDLE) {
 
         // too short lines have already been removed...
         // so is the following code is no longer needed ++++ ash
@@ -181,8 +181,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Start a new move by setting up the runtime singleton (mr)
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));    // copy in the gcode model state
 //		bf->replannable = false;
-		bf->move_state = MOVE_RUN;
-		mr.move_state = MOVE_NEW;
+		bf->block_state = BLOCK_RUNNING;
+		mr.block_state = BLOCK_INITIALIZING;
 		mr.section = SECTION_HEAD;
 		mr.section_state = SECTION_NEW;
 		mr.jerk = bf->jerk;
@@ -244,8 +244,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Case (5) - decelerated to zero
         // Update the run buffer then force a replan of the whole planner queue
         if (cm.hold_state == FEEDHOLD_DECEL_END) {
-            mr.move_state = MOVE_OFF;	                                // invalidate mr buffer to reset the new move
-            bf->move_state = MOVE_NEW;                                  // tell _exec to re-use the bf buffer
+            mr.block_state = BLOCK_IDLE;	                        // invalidate mr buffer to reset the new move
+            bf->block_state = BLOCK_INITIALIZING;                         // tell _exec to re-use the bf buffer
             bf->length = get_axis_vector_length(mr.target, mr.position);// reset length
             bf->entry_vmax = 0;                                         // set bp+0 as hold point
             cm.hold_state = FEEDHOLD_PENDING;
@@ -255,7 +255,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Cases (1a, 1b), Case (2), Case (4)
         // Build a tail-only move from here. Decelerate as fast as possible in the space we have.
         if ((cm.hold_state == FEEDHOLD_SYNC) ||
-        ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.move_state == MOVE_NEW))) {
+        ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
             if (mr.section == SECTION_TAIL) {   // if already in a tail don't decelerate. You already are
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
@@ -293,7 +293,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
             }
         }
     }
-    mr.move_state = MOVE_RUN;
+    mr.block_state = BLOCK_RUNNING;
 
     // NB: from this point on the contents of the bf buffer do not affect execution
 
@@ -307,7 +307,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	// Feedhold Case (5): Look for the end of the deceleration to go into HOLD state
 	if ((cm.hold_state == FEEDHOLD_DECEL_TO_ZERO) && (status == STAT_OK)) {
     	cm.hold_state = FEEDHOLD_DECEL_END;
-    	bf->move_state = MOVE_NEW;                      // reset bf so it can restart the rest of the move
+    	bf->block_state = BLOCK_INITIALIZING;   // reset bf so it can restart the rest of the move
 	}
 
 	// There are 4 things that can happen here depending on return conditions:
@@ -319,12 +319,12 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	//  There is no fourth thing. Nobody expects the Spanish Inquisition
 
 	if (status == STAT_EAGAIN) {
-    	sr_request_status_report(SR_REQUEST_TIMED);		// continue reporting mr buffer
+    	sr_request_status_report(SR_REQUEST_TIMED);     // continue reporting mr buffer
 	} else {
-    	mr.move_state = MOVE_OFF;						// invalidate mr buffer (reset)
+    	mr.block_state = BLOCK_IDLE;                // invalidate mr buffer (reset)
     	mr.section_state = SECTION_OFF;
 
-    	if (bf->move_state == MOVE_RUN) {
+    	if (bf->block_state == BLOCK_RUNNING) {
         	if (mp_free_run_buffer() && cm.hold_state == FEEDHOLD_OFF) {
             	cm_cycle_end();	// free buffer & end cycle if planner is empty
         	}

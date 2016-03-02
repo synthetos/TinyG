@@ -45,25 +45,24 @@ typedef enum {				        // bf->buffer_state values
     MP_BUFFER_QUEUED,				// in queue
     MP_BUFFER_PENDING,				// marked as the next buffer to run
     MP_BUFFER_RUNNING				// current running buffer
-} mpBufferState;
+} bufferState;
 
-typedef enum {				        // bf->move_type values
-	MOVE_TYPE_NULL = 0,		        // null move - does a no-op
-	MOVE_TYPE_ALINE,		        // acceleration planned line
-	MOVE_TYPE_DWELL,		        // delay with no movement
-	MOVE_TYPE_COMMAND,		        // general command
-	MOVE_TYPE_TOOL,			        // T command
-	MOVE_TYPE_SPINDLE_SPEED,        // S command
-	MOVE_TYPE_STOP,			        // program stop
-	MOVE_TYPE_END			        // program end
-} moveType;
+typedef enum {				        // bf->block_type values
+	BLOCK_TYPE_NULL = 0,		    // null move - does a no-op
+	BLOCK_TYPE_ALINE,		        // acceleration planned line
+	BLOCK_TYPE_DWELL,		        // delay with no movement
+	BLOCK_TYPE_COMMAND,		        // general command
+	BLOCK_TYPE_TOOL,                // T command
+	BLOCK_TYPE_SPINDLE_SPEED,       // S command
+	BLOCK_TYPE_STOP,                // program stop
+	BLOCK_TYPE_END                  // program end
+} blockType;
 
 typedef enum {
-	MOVE_OFF = 0,			        // move inactive (MUST BE ZERO)
-	MOVE_NEW,				        // general value if you need an initialization
-	MOVE_RUN				        // general run state (for non-acceleration moves)
-//	MOVE_SKIP_BLOCK			        // mark a skipped block
-} moveState;
+    BLOCK_IDLE = 0,                 // block is inactive (MUST BE ZERO)
+    BLOCK_INITIALIZING,             // uninitialized run state
+    BLOCK_RUNNING                   // block is in run state
+} blockState;
 
 typedef enum {
 	SECTION_HEAD = 0,		        // acceleration
@@ -125,10 +124,15 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 
 	float naiive_move_time;
 
-	uint8_t buffer_state;			// used to manage queuing/dequeuing
-	uint8_t move_type;				// used to dispatch to run routine
-	uint8_t move_code;				// byte that can be used by used exec functions
-	uint8_t move_state;				// move state machine sequence
+    bufferState buffer_state;       // used to manage queuing/dequeuing
+    blockType block_type;           // used to dispatch to run routine
+    blockState block_state;         // move state machine sequence
+	uint8_t block_code;				// byte that can be used by used exec functions
+
+//	uint8_t move_type;				// used to dispatch to run routine
+//	uint8_t move_code;				// byte that can be used by used exec functions
+//	uint8_t move_state;				// move state machine sequence
+
 	uint8_t replannable;			// TRUE if move can be re-planned
 
 	float unit[AXES];				// unit vector for axis scaling & planning
@@ -182,9 +186,9 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 //	uint8_t (*run_move)(struct mpMoveRuntimeSingleton *m); // currently running move - left in for reference
 	magic_t magic_start;                // magic number to test memory integrity
-	uint8_t move_state;                 // state of the overall move
-	uint8_t section;                    // what section is the move in?
-	uint8_t section_state;              // state within a move section
+	blockState block_state;             // state of the overall move
+	moveSection section;                // what section is the move in?
+	sectionState section_state;         // state within a move section
 
 	float unit[AXES];                   // unit vector for axis scaling & planning
     bool axis_flags[AXES];              // set true for axes participating in the move
@@ -266,7 +270,7 @@ void mp_init_buffers(void);
 #define mp_get_next_buffer(b) ((mpBuf_t *)(b->nx))
 
 mpBuf_t * mp_get_write_buffer(void);
-void mp_commit_write_buffer(const uint8_t move_type);
+void mp_commit_write_buffer(const uint8_t block_type);
 mpBuf_t * mp_get_run_buffer(void);
 uint8_t mp_free_run_buffer(void);
 

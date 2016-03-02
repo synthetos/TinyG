@@ -768,7 +768,7 @@ static void _load_move()
 		return;
 	}
 	// handle aline loads first (most common case)
-	if (st_pre.move_type == MOVE_TYPE_ALINE) {
+	if (st_pre.block_type == BLOCK_TYPE_ALINE) {
 
 		//**** setup the new segment ****
 
@@ -953,18 +953,18 @@ static void _load_move()
 		TIMER_DDA.CTRLA = STEP_TIMER_ENABLE;			// enable the DDA timer
 
 	// handle dwells
-	} else if (st_pre.move_type == MOVE_TYPE_DWELL) {
+	} else if (st_pre.block_type == BLOCK_TYPE_DWELL) {
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;			// load dwell timer period
 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;			// enable the dwell timer
 
 	// handle synchronous commands
-	} else if (st_pre.move_type == MOVE_TYPE_COMMAND) {
+	} else if (st_pre.block_type == BLOCK_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)
-	st_pre.move_type = MOVE_TYPE_NULL;
+	st_pre.block_type = BLOCK_TYPE_NULL;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// we are done with the prep buffer - flip the flag back
 	st_request_exec_move();								// exec and prep next move
 }
@@ -1069,7 +1069,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
-	st_pre.move_type = MOVE_TYPE_ALINE;
+	st_pre.block_type = BLOCK_TYPE_ALINE;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 	return (STAT_OK);
 }
@@ -1080,7 +1080,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 void st_prep_null()
 {
-	st_pre.move_type = MOVE_TYPE_NULL;
+	st_pre.block_type = BLOCK_TYPE_NULL;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;	// signal that prep buffer is empty
 }
 
@@ -1090,7 +1090,7 @@ void st_prep_null()
 
 void st_prep_command(void *bf)
 {
-	st_pre.move_type = MOVE_TYPE_COMMAND;
+	st_pre.block_type = BLOCK_TYPE_COMMAND;
 	st_pre.bf = (mpBuf_t *)bf;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
@@ -1101,7 +1101,7 @@ void st_prep_command(void *bf)
 
 void st_prep_dwell(float microseconds)
 {
-	st_pre.move_type = MOVE_TYPE_DWELL;
+	st_pre.block_type = BLOCK_TYPE_DWELL;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready

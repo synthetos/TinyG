@@ -402,7 +402,8 @@ typedef struct stPrepSingleton {
 	uint16_t magic_start;				// magic number to test memory integrity
 	volatile uint8_t buffer_state;		// prep buffer state - owned by exec or loader
 	struct mpBuffer *bf;				// static pointer to relevant buffer
-	uint8_t move_type;					// move type
+//	uint8_t move_type;					// move type
+    uint8_t block_type;
 
 	uint16_t dda_period;				// DDA or dwell clock period setting
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
