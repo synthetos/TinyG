@@ -2,7 +2,7 @@
  * xio.h - Xmega IO devices - common header file
  * Part of TinyG project (g1)
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -406,7 +406,7 @@ typedef enum {
 
 #define CHAR_RESET CAN
 #define CHAR_FEEDHOLD (char)'!'
-#define CHAR_CYCLE_START (char)'~'
+#define CHAR_END_HOLD (char)'~'
 #define CHAR_QUEUE_FLUSH (char)'%'
 //#define CHAR_BOOTLOADER ESC
 

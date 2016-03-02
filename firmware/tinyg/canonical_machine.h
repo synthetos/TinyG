@@ -101,13 +101,15 @@ typedef enum {
 	MOTION_HOLD						// feedhold in progress
 } cmMotionState;
 
-typedef enum {				        // feedhold_state machine
-	FEEDHOLD_OFF = 0,				// no feedhold in effect
-	FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
-	FEEDHOLD_PLAN, 					// replan blocks for feedhold
-	FEEDHOLD_DECEL,					// decelerate to hold point
-	FEEDHOLD_HOLD,					// holding
-	FEEDHOLD_END_HOLD				// end hold (transient state to OFF)
+typedef enum {				        // feedhold state machine
+    FEEDHOLD_OFF = 0,				// no feedhold in effect
+    FEEDHOLD_REQUESTED,             // feedhold has been requested but not started yet
+    FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
+    FEEDHOLD_DECEL_CONTINUE,        // in deceleration that will not end at zero
+    FEEDHOLD_DECEL_TO_ZERO,         // in deceleration that will go to zero
+    FEEDHOLD_DECEL_END,             // end the deceleration
+    FEEDHOLD_PENDING,               // waiting to finalize the deceleration once motion stops
+    FEEDHOLD_HOLD					// holding
 } cmFeedholdState;
 
 typedef enum {				        // feed override state machine
@@ -578,10 +580,6 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
     uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
 
-	uint8_t feedhold_requested;			// feedhold character has been received
-	uint8_t queue_flush_requested;		// queue flush character has been received
-	uint8_t cycle_start_requested;		// cycle start character has been received (flag to end feedhold)
-
 	/**** Model states ****/
 	GCodeState_t *am;				        // active Gcode model is maintained by state management
 	GCodeState_t  gm;					    // core gcode model state
@@ -745,15 +743,20 @@ void cm_message(char *message);								                // msg to console (e.g. G
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
+void cm_request_end_hold(void);
 void cm_request_queue_flush(void);
-void cm_request_cycle_start(void);
-
+void cm_request_end_queue_flush(void);
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
-stat_t cm_queue_flush(void);									// flush serial and planner queues with coordinate resets
+
+bool cm_has_hold(void);
+void cm_start_hold(void);
+void cm_end_hold(void);
+
+void cm_queue_flush(void);									    // flush serial and planner queues with coordinate resets
+void cm_end_queue_flush(void);
 
 void cm_cycle_start(void);										// (no Gcode)
 void cm_cycle_end(void); 										// (no Gcode)
-void cm_feedhold(void);											// (no Gcode)
 void cm_program_stop(void);										// M0
 void cm_optional_program_stop(void);							// M1
 void cm_program_end(void);										// M2
@@ -798,7 +801,7 @@ stat_t cm_get_toolv(nvObj_t *nv);		// get tool (value)
 stat_t cm_get_pwr(nvObj_t *nv);			// get motor power enable state
 
 stat_t cm_get_vel(nvObj_t *nv);			// get runtime velocity...
-stat_t cm_get_feed(nvObj_t *nv);
+stat_t cm_get_feed(nvObj_t *nv);		// get feed rate, converted to units
 stat_t cm_get_pos(nvObj_t *nv);			// get runtime work position...
 stat_t cm_get_mpo(nvObj_t *nv);			// get runtime machine position...
 stat_t cm_get_ofs(nvObj_t *nv);			// get runtime work offset...

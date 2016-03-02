@@ -2,7 +2,7 @@
  * cycle_homing.c - homing cycle extension to canonical_machine
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -325,8 +325,9 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	vect[axis] = target;
 	flags[axis] = true;
 	cm.gm.feed_rate = velocity;
+    cm_request_end_hold();
 	mp_flush_planner();										// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
+//	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vect, flags));
 	return (STAT_EAGAIN);
 }

@@ -147,13 +147,14 @@ static void _controller_HSM()
 												// Order is important:
 	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
+
+	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
     DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
  	DISPATCH(_limit_switch_handler());          // invoke limit switch
-
-	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// plan a feedhold from line runtime
+    DISPATCH(_controller_state());              // controller state management
 	DISPATCH(_test_system_assertions());		// system integrity assertions
+	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
@@ -162,24 +163,19 @@ static void _controller_HSM()
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
 
-	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
-
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
-	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
+	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
-#ifdef __AVR
-	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
-#endif
-	DISPATCH(_controller_state());				// controller state management
+	DISPATCH(set_baud_callback());				// (AVR only) perform baud rate update (must be after TX sync)
 	DISPATCH(_dispatch_command());				// read and execute next command
-	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
 }
 
 /*****************************************************************************************
@@ -269,8 +265,8 @@ static void _dispatch_kernel()
     }
 	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
 	else if (*cs.bufp == '!') { cm_request_feedhold(); }
+	else if (*cs.bufp == '~') { cm_request_end_hold(); }
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
-	else if (*cs.bufp == '~') { cm_request_cycle_start(); }
 
     // this is a hack until we can figure out how a buffer might obtain a leading '?'
     else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
