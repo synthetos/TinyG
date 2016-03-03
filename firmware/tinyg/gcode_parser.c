@@ -56,9 +56,9 @@ stat_t gc_gcode_parser(char *block)
 	uint8_t block_delete_flag;
 
 	// don't process Gcode blocks if in alarmed state
-//	if (cm.machine_state == MACHINE_ALARM) {
-//        return (STAT_MACHINE_ALARMED);
-//    }
+	if (cm.machine_state == MACHINE_ALARM) {
+        return (STAT_COMMAND_REJECTED_BY_ALARM);
+    }
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
 
 	// queue a "(MSG" response
@@ -71,7 +71,7 @@ stat_t gc_gcode_parser(char *block)
 	}
 
     // Trap M30 and M2 as $clear conditions. This has no effect it not in ALARM or SHUTDOWN
-//    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
+    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
     ritorno(cm_is_alarmed());               // return error status if in alarm, shutdown or panic
 
 	// Block delete omits the line if a / char is present in the first space
@@ -509,17 +509,18 @@ static stat_t _execute_gcode_block()
 	//--> set retract mode goes here
 
 	switch (cm.gn.next_action) {
-		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}								// G28.1
-		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}	// G28
-		case NEXT_ACTION_SET_G30_POSITION:  { status = cm_set_g30_position(); break;}								// G30.1
-		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(cm.gn.target, cm.gf.target); break;}	// G30
+		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}                               // G28.1
+		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}    // G28
+		case NEXT_ACTION_SET_G30_POSITION:  { status = cm_set_g30_position(); break;}                               // G30.1
+		case NEXT_ACTION_GOTO_G30_POSITION: { status = cm_goto_g30_position(cm.gn.target, cm.gf.target); break;}    // G30
 
-		case NEXT_ACTION_SEARCH_HOME: { status = cm_homing_cycle_start(); break;}									// G28.2
+		case NEXT_ACTION_SEARCH_HOME:         { status = cm_homing_cycle_start(); break;}                           // G28.2
 		case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: { status = cm_set_absolute_origin(cm.gn.target, cm.gf.target); break;}// G28.3
-		case NEXT_ACTION_HOMING_NO_SET: { status = cm_homing_cycle_start_no_set(); break;}							// G28.4
+		case NEXT_ACTION_HOMING_NO_SET:       { status = cm_homing_cycle_start_no_set(); break;}                    // G28.4
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
+
 		case NEXT_ACTION_SET_ORIGIN_OFFSETS:     { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS:   { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
@@ -531,8 +532,9 @@ static stat_t _execute_gcode_block()
 				case MOTION_MODE_CANCEL:            { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED:     { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
+
         		case MOTION_MODE_CW_ARC:                                                                            // G2
-        		case MOTION_MODE_CCW_ARC:           { status = cm_arc_feed(cm.gn.target, cm.gf.target,                        // G3
+        		case MOTION_MODE_CCW_ARC:           { status = cm_arc_feed(cm.gn.target, cm.gf.target,              // G3
                 		                                                   cm.gn.arc_offset, cm.gf.arc_offset,
             		                                                       cm.gn.arc_radius, cm.gf.arc_radius,
             		                                                       cm.gn.parameter,  cm.gf.parameter,

@@ -44,7 +44,6 @@
 #define JOGGING_START_VELOCITY ((float)10.0)
 #define DISABLE_SOFT_LIMIT (-1000000)
 
-
 /*****************************************************************************
  * MACHINE STATE MODEL
  *
@@ -107,7 +106,7 @@ typedef enum {
     FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment
     FEEDHOLD_DECEL_CONTINUE,        // in deceleration that will not end at zero
     FEEDHOLD_DECEL_TO_ZERO,         // in deceleration that will go to zero
-    FEEDHOLD_DECEL_END,             // end the deceleration
+//    FEEDHOLD_DECEL_END,             // end the deceleration
     FEEDHOLD_PENDING,               // waiting to finalize the deceleration once motion stops
     FEEDHOLD_HOLD					// holding
 } cmFeedholdState;
