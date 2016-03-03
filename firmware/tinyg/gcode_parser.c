@@ -344,7 +344,7 @@ static stat_t _parse_gcode_block(char *buf)
 					break;
 				}
 				case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
-				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL_MOTION_MODE);
+				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL);
 				case 90: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
@@ -520,26 +520,24 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 		case NEXT_ACTION_SET_COORD_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
+		case NEXT_ACTION_SET_ORIGIN_OFFSETS:     { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_RESET_ORIGIN_OFFSETS:   { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
-		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS:  { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: {
 			cm_set_absolute_override(cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
-				case MOTION_MODE_CANCEL_MOTION_MODE: { cm.gm.motion_mode = cm.gn.motion_mode; break;}
+				case MOTION_MODE_CANCEL:            { cm.gm.motion_mode = cm.gn.motion_mode; break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
-				case MOTION_MODE_STRAIGHT_FEED: { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
+				case MOTION_MODE_STRAIGHT_FEED:     { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
         		case MOTION_MODE_CW_ARC:                                                                            // G2
-        		case MOTION_MODE_CCW_ARC: { status = cm_arc_feed(cm.gn.target, cm.gf.target,                        // G3
-            		cm.gn.arc_offset, cm.gf.arc_offset,
-            		cm.gn.arc_radius, cm.gf.arc_radius,
-            		cm.gn.parameter,  cm.gf.parameter,
-            		cm.gf.modals[MODAL_GROUP_G1],
-            		cm.gn.motion_mode);
-            		break;
-        		}
+        		case MOTION_MODE_CCW_ARC:           { status = cm_arc_feed(cm.gn.target, cm.gf.target,                        // G3
+                		                                                   cm.gn.arc_offset, cm.gf.arc_offset,
+            		                                                       cm.gn.arc_radius, cm.gf.arc_radius,
+            		                                                       cm.gn.parameter,  cm.gf.parameter,
+            		                                                       cm.gf.modals[MODAL_GROUP_G1],
+            		                                                       cm.gn.motion_mode); break; }
 			}
 		}
 	}

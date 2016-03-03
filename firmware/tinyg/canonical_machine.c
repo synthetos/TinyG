@@ -612,7 +612,7 @@ void canonical_machine_reset()
     cm.motion_state = MOTION_STOP;
     cm.hold_state = FEEDHOLD_OFF;
 	cm.gmx.block_delete_switch = true;
-	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE; // never start a machine in a motion mode
+	cm.gm.motion_mode = MOTION_MODE_CANCEL;     // never start a machine in a motion mode
 	cm.machine_state = MACHINE_READY;
 }
 
@@ -1675,7 +1675,6 @@ void cm_end_hold()
  *    empty before writing it to the control channel.
  */
 
-/* g2 version */
 void cm_queue_flush()
 {
     if (mp_runtime_is_idle()) {                     // can't flush planner during movement
@@ -1691,54 +1690,6 @@ void cm_queue_flush()
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }
-
-//	    float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-//	    _exec_program_finalize(value, FLAGS_ONE);   // finalize now, not later
-/*
-void cm_queue_flush()
-{
-	if (cm_get_runtime_busy() == true)
-        return (STAT_COMMAND_NOT_ACCEPTED);
-
-#ifdef __AVR
-	xio_reset_usb_rx_buffers();				// flush serial queues
-#endif
-	mp_flush_planner();						// flush planner queue
-	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-//	rx_request_rx_report();
-
-	// Note: The following uses low-level mp calls for absolute position.
-	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
-	}
-	float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
-	_exec_program_finalize(value, FLAGS_ONE);	// finalize now, not later
-}
-*/
-/*
-stat_t cm_queue_flush()
-{
-	if (cm_get_runtime_busy() == true)
-        return (STAT_COMMAND_NOT_ACCEPTED);
-
-#ifdef __AVR
-	xio_reset_usb_rx_buffers();				// flush serial queues
-    xio_reset_readline_linemode();          // flush linemode readline
-#endif
-	mp_flush_planner();						// flush planner queue
-	qr_request_queue_report(0);				// request a queue report, since we've changed the number of buffers available
-
-	// Note: The following uses low-level mp calls for absolute position.
-	//		 It could also use cm_get_absolute_position(RUNTIME, axis);
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		cm_set_position(axis, mp_get_runtime_absolute_position(axis)); // set mm from mr
-	}
-	float value[] = { (float)MACHINE_PROGRAM_STOP };
-	_exec_program_finalize(value, FLAGS_ONE); // finalize now, not later
-	return (STAT_OK);
-}
-*/
 
 /******************************
  * Program Functions (4.3.10) *
@@ -1767,7 +1718,8 @@ stat_t cm_queue_flush()
  *
  * cm_program_end() is a stop that also resets the machine to initial state.
  * The END behaviors are defined by NIST 3.6.1 are:
- *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
+ *	1. Axis offsets are set to zero (like G92.2) and...
+ *  1a. Origin offsets are set to the default (like G54)
  *	2. Selected plane is set to CANON_PLANE_XY (like G17)
  *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
  *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
@@ -1779,7 +1731,7 @@ stat_t cm_queue_flush()
  *
  * cm_program_end() performs things slightly differently than NIST:
  *	1. Axis offsets are set to G92.1 CANCEL offsets (instead of using G92.2 SUSPEND Offsets)
- *	   Set default coordinate system (uses $gco, not G54)
+ *	1a. Set default coordinate system (uses $gco, not G54)
  *	2. Selected plane is set to default plane ($gpl) (instead of setting it to G54)
  *	3. Distance mode is set to MODE_ABSOLUTE (like G90)
  *	4. Feed rate mode is set to UNITS_PER_MINUTE (like G94)
@@ -1788,12 +1740,12 @@ stat_t cm_queue_flush()
  *	7. The spindle is stopped (like M5)
  *	8. Motion mode is canceled like G80 (not set to G1)
  *	9. Coolant is turned off (like M9)
- *	+  Default INCHES or MM units mode is restored ($gun)
+ *	10 Default INCHES or MM units mode is restored ($gun)
  */
 
 static void _exec_program_finalize(float *value, bool *flags)
 {
-	cm.machine_state = (uint8_t)value[0];
+	cm.machine_state = (uint8_t)value[0];               // set to one of STOP or END
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
 		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
@@ -1804,17 +1756,17 @@ static void _exec_program_finalize(float *value, bool *flags)
 
 	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
-		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
-	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
-		cm_set_coord_system(cm.default_coord_system);	// reset to default coordinate system
-		cm_select_plane(cm.default_select_plane);		// reset to default arc plane
-		cm_set_distance_mode(cm.default_distance_mode);
-    //	cm_set_units_mode(cm.units_mode);				// reset to default units mode +++ REMOVED +++
-		cm_spindle_control(SPINDLE_OFF);				// M5
-		cm_flood_coolant_control(false);				// M9
-		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// G94
-	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// NIST specifies G1, but we cancel motion mode. Safer.
-		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+		cm_reset_origin_offsets();						// 1.  G92.1 - we do G91.1 instead of G92.2
+	//	cm_suspend_origin_offsets();					// 1.  G92.2 - as per NIST
+		cm_set_coord_system(cm.default_coord_system);	// 1a. reset to default coordinate system
+		cm_select_plane(cm.default_select_plane);		// 2.  reset to default arc plane
+		cm_set_distance_mode(cm.default_distance_mode); // 3.  reset to default distance mode
+		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// 4.  G94
+		cm_spindle_control(SPINDLE_OFF);				// 7.  M5
+	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// 8.  NIST specifies G1...
+		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);  // 8.  but we cancel motion mode. Safer.
+		cm_flood_coolant_control(false);				// 9.  M9
+    //	cm_set_units_mode(cm.units_mode);				// 10. reset to default units mode +++ REMOVED +++
 	}
 	sr_request_status_report(SR_REQUEST_ASAP);		    // request a final status report (not unfiltered)
 }

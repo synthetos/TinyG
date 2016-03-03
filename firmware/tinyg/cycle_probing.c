@@ -247,7 +247,7 @@ static void _probe_restore_settings()
 	cm_set_distance_mode(pb.saved_distance_mode);
 
 	// update the model with actual position
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 }

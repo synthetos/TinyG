@@ -246,7 +246,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	// test arc soft limits
 	stat_t status = _test_arc_soft_limits();
 	if (status != STAT_OK) {
-    	cm.gm.motion_mode = MOTION_MODE_CANCEL_MOTION_MODE;
+    	cm.gm.motion_mode = MOTION_MODE_CANCEL;
     	copy_vector(cm.gm.target, arc.position);		// reset model position
 	    return (cm_alarm(status, "arc soft_limits"));   // throw an alarm
 	}

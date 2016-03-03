@@ -168,7 +168,7 @@ typedef enum {						    // G Modal Group 1
 	MOTION_MODE_STRAIGHT_FEED,			// G1 - straight feed
 	MOTION_MODE_CW_ARC,					// G2 - clockwise arc feed
 	MOTION_MODE_CCW_ARC,				// G3 - counter-clockwise arc feed
-	MOTION_MODE_CANCEL_MOTION_MODE,		// G80
+	MOTION_MODE_CANCEL,		            // G80 - cancel motion mode
 	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
 	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
 	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell

@@ -187,7 +187,7 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_distance_mode(jog.saved_distance_mode);
 	cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
 	cm.gm.feed_rate = jog.saved_feed_rate;
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 
