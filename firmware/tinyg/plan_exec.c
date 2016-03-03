@@ -166,20 +166,21 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         return (STAT_NOOP);
     }
 
-    // Initialize all new blocks, regardless of normal or feedhold operation
+    // Initialize new blocks
 
-	if (mr.block_state == BLOCK_IDLE) {
+	if ((mr.block_state == BLOCK_IDLE) && (cm.motion_state != MOTION_HOLD)) {
 
         // too short lines have already been removed...
         // so is the following code is no longer needed ++++ ash
         // But let's still alert the condition should it ever occur
         if (fp_ZERO(bf->length)) {						    // ...looks for an actual zero here
+            //++++ Dangerous call. Could lock up the processor. Remove for production.
             rpt_exception(STAT_PLANNER_ASSERTION_FAILURE, "mp_exec_aline() zero length move");
         }
 
         // Start a new move by setting up the runtime singleton (mr)
 		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));    // copy in the gcode model state
-//		bf->replannable = false;
+		bf->replannable = false;
 		bf->block_state = BLOCK_RUNNING;
 		mr.block_state = BLOCK_INITIALIZING;
 		mr.section = SECTION_HEAD;
@@ -217,8 +218,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
     //  (5) - We have decelerated a block to zero velocity
     //  (6) - We have finished all the runtime work now we have to wait for the steppers to stop
     //  (7) - The steppers have stopped. No motion should occur
-    //  (8) - We are removing the hold state and there is queued motion (handled outside this routine)
-    //  (9) - We are removing the hold state and there is no queued motion (also handled outside this routine)
+    //  (8) - We are removing the hold state and there is queued motion (see mp_exit_hold_state)
+    //  (9) - We are removing the hold state and there is no queued motion (see mp_exit_hold_state)
 
     if (cm.motion_state == MOTION_HOLD) {
 
@@ -229,7 +230,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
             return (STAT_NOOP);                 // VERY IMPORTANT to exit as a NOOP. No more movement
         }
 
-        // Case (6) - wait for the steppers to stop
+        // Case (6) - wait for the steppers to stop; transition to final HOLD state
         if (cm.hold_state == FEEDHOLD_PENDING) {
             if (mp_runtime_is_idle()) {                                 // wait for the steppers to actually clear out
                 cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
@@ -241,7 +242,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         }
 
         // Case (5) - decelerated to zero
-        // Update the run buffer then force a replan of the whole planner queue
+        // Case (5) code also runs after the _exec_aline_tail() call
+        // That code ultimately sets mr.block_state = BLOCK_IDLE and 
+        //                           bf->block_state = BLOCK_INITIALIZING
         if (cm.hold_state == FEEDHOLD_DECEL_END) {
 //            mr.block_state = BLOCK_IDLE;	                            // invalidate mr buffer to reset the new move
 //            bf->block_state = BLOCK_INITIALIZING;                       // tell _exec to re-use the bf buffer
@@ -254,7 +257,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Cases (1a, 1b), Case (2), Case (4)
         // Build a tail-only move from here. Decelerate as fast as possible in the space we have.
         if ((cm.hold_state == FEEDHOLD_SYNC) ||
-        ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
+            ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
             if (mr.section == SECTION_TAIL) {   // if already in a tail don't decelerate. You already are
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
@@ -301,7 +304,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if (mr.section == SECTION_HEAD) { status = _exec_aline_head();} else
 	if (mr.section == SECTION_BODY) { status = _exec_aline_body();} else
 	if (mr.section == SECTION_TAIL) { status = _exec_aline_tail();} else 
-	{  return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_aline"))); }  // never supposed to get here
+	{ return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_aline"))); }  // never supposed to get here
 
 	// Feedhold Case (5): Look for the end of the deceleration to go into HOLD state
 	if ((cm.hold_state == FEEDHOLD_DECEL_TO_ZERO) && (status == STAT_OK)) {
@@ -311,15 +314,16 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	}
 
 	// There are 3 things that can happen here depending on return conditions:
-	//  status       bf->move_state       Description
-	//  -----------	 --------------       ----------------------------------------
-	//  STAT_EAGAIN  <don't care>         mr buffer has more segments to run
-	//  STAT_OK      BLOCK_RUNNING        mr and bf buffers are done
-	//  STAT_OK      BLOCK_INITIALIZING   mr done; bf must be run again (it's been reused)
+	//  status        bf->block_state      Description
+	//  -----------	  --------------       ----------------------------------------
+	//  STAT_EAGAIN   <don't care>         mr buffer has more segments to run
+	//  STAT_OK       BLOCK_RUNNING        mr and bf buffers are done
+	//  STAT_OK       BLOCK_INITIALIZING   mr done; bf must be run again (reuse it)
 
 	if (status == STAT_EAGAIN) {
     	sr_request_status_report(SR_REQUEST_TIMED);     // continue reporting mr buffer
-	} else {
+	} 
+    else { // status == STAT_OK
     	mr.block_state = BLOCK_IDLE;                    // invalidate mr buffer (reset)
     	mr.section_state = SECTION_OFF;
 
