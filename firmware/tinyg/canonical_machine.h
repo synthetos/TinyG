@@ -98,10 +98,10 @@ typedef enum {
 typedef enum {
 	MOTION_STOP = 0,				// motion has stopped
 	MOTION_RUN,						// machine is in motion
-	MOTION_HOLD						// feedhold in progress
+	MOTION_HOLD						// feedhold in progress (cmFeedholdState is sub-state machine)
 } cmMotionState;
 
-typedef enum {				        // feedhold state machine
+typedef enum {
     FEEDHOLD_OFF = 0,				// no feedhold in effect
     FEEDHOLD_REQUESTED,             // feedhold has been requested but not started yet
     FEEDHOLD_SYNC, 					// start hold - sync to latest aline segment

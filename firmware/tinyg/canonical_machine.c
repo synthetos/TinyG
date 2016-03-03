@@ -1494,60 +1494,51 @@ void cm_message(char *message)
 	nv_add_string((const char *)"msg", message);	// add message to the response object
 }
 
-/******************************
- * Program Functions (4.3.10) *
- ******************************/
+/**************************************************
+ * Feedhold and Related Functions (no NIST ref #) *
+ **************************************************/
 /*
- * This group implements stop, start, end, and hold.
- * It is extended beyond the NIST spec to handle various situations.
+ * Feedholds, queue flushes and end_holds are all related. The request functions change
+ * states to "_____REQUESTED". The sequencing callback interprets the flags as so:
  *
- *	_exec_program_finalize()
- *	cm_cycle_start()			(no Gcode)  Do a cycle start right now
- *	cm_cycle_end()				(no Gcode)	Do a cycle end right now
- *	cm_feedhold()				(no Gcode)	Initiate a feedhold right now
- *	cm_program_stop()			(M0, M60)	Queue a program stop
- *	cm_optional_program_stop()	(M1)
- *	cm_program_end()			(M2, M30)
- *	cm_machine_ready()			puts machine into a READY state
+ *    - A feedhold request received during motion should be honored
+ *    - A feedhold request received during a feedhold should be ignored
+ *    - A feedhold request received during a motion stop should be ignored
  *
- * cm_program_stop and cm_optional_program_stop are synchronous Gcode
- * commands that are received through the interpreter. They cause all motion
- * to stop at the end of the current command, including spindle motion.
+ *    - A queue flush request received during a motion stop should be honored
+ *    - A queue flush request received during a feedhold should be honored.
+ *      A request received during a feedhold should be deferred until cmFeedholdState 
+ *      enters FEEDHOLD_HOLD (i.e. until deceleration is complete and motors stop).
  *
- * Note that the stop occurs at the end of the immediately preceding command
- * (i.e. the stop is queued behind the last command).
+ *    - An end_hold (cycle start) request should only be honored while in a feedhold
+ *    - Said end_hold request received during a feedhold should be deferred until the
+ *      feedhold enters a HOLD state (i.e. until deceleration is complete).
+ *      If a queue flush request is also present the queue flush should be done first
  *
- * cm_program_end is a stop that also resets the machine to initial state
+ *	Below the request level, feedholds work like this:
+ *
+ *    - The hold is initiated by calling cm_start_hold()
+ *      cm.hold_state is set to FEEDHOLD_SYNC, motion_state is set to MOTION_HOLD
+ *      The spindle is turned off (if it is on)
+ *      The remainder of feedhold processing occurs in plan_exec.c / mp_exec_aline()
+ *
+ *	  - MOTION_HOLD and FEEDHOLD_SYNC tells mp_exec_aline() to begin feedhold processing
+ *      after the current move segment is finished (< 5 ms later). 
+ *      See plan_exec.c for details of how feedholds are handled. In short:
+ *
+ *      - FEEDHOLD_SYNC causes the current move in mr to be replanned into a deceleration.
+ *        If the distance remaining in the mr move is sufficient for a full deceleration
+ *        then motion will stop in the current block. Otherwise the deceleration phase
+ *        will extend across as many blocks necessary until one will stop.
+ *
+ *      - Once deceleration is complete hold_state transitions to FEEDHOLD_HOLD and the
+ *        distance remaining in the bf last block is replanned up from zero velocity.
+ *        The move in the bf block is NOT released (unlike normal operation), as it
+ *        will be used again to restart from hold.
+ *
+ *      - When cm_end_hold() is called it releases the hold, restarts the move and restarts
+ *        the spindle if the spindle is active.
  */
-
-/*
- * cm_request_feedhold()
- * cm_request_queue_flush()
- * cm_request_cycle_start()
- * cm_feedhold_sequencing_callback() - process feedholds, cycle starts & queue flushes
- * cm_flush_planner() - Flush planner queue and correct model positions
- *
- * Feedholds, queue flushes and cycles starts are all related. The request functions set
- *	flags for these. The sequencing callback interprets the flags according to the
- *	following rules:
- *
- *	A feedhold request received during motion should be honored
- *	A feedhold request received during a feedhold should be ignored and reset
- *	A feedhold request received during a motion stop should be ignored and reset
- *
- *	A queue flush request received during motion should be ignored but not reset
- *	A queue flush request received during a feedhold should be deferred until
- *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
- *	A queue flush request received during a motion stop should be honored
- *
- *	A cycle start request received during motion should be ignored and reset
- *	A cycle start request received during a feedhold should be deferred until
- *		the feedhold enters a HOLD state (i.e. until deceleration is complete)
- *		If a queue flush request is also present the queue flush should be done first
- *	A cycle start request received during a motion stop should be honored and
- *		should start to run anything in the planner queue
- */
-
 /*
  * cm_request_feedhold()
  * cm_request_end_hold() - cycle restart
@@ -1604,7 +1595,6 @@ stat_t cm_feedhold_sequencing_callback()
  * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
  * cm_start_hold() - start a feedhhold by signalling the exec
  * cm_end_hold()   - end a feedhold by returning the system to normal operation
- * cm_queue_flush() - Flush planner queue and correct model positions
  */
 
 bool cm_has_hold()
@@ -1647,6 +1637,44 @@ void cm_end_hold()
     }
 }
 
+/*
+ * cm_queue_flush() - Flush planner queue and correct model positions
+ *
+ * This one's complicated. See here first:
+ * https://github.com/synthetos/g2/wiki/Alarm-Processing
+ * https://github.com/synthetos/g2/wiki/Job-Exception-Handling
+ *
+ * We want to use queue flush for a few different use cases, as per the above wiki pages.
+ * The % behavior implements Exception Handling cases 1 and 2 - Stop a Single Move and
+ * Stop Multiple Moves. This is complicated further by the processing in single USB and
+ * dual USB being different. Also, the state handling is located in xio.cpp / readline(),
+ * controller.cpp _dispatch_kernel() and cm_request_queue_flush(), below.
+ * So it's documented here.
+ *
+ * Single or Dual USB Channels:
+ *  - If a % is received outside of a feed hold or ALARM state, ignore it.
+ *      Change the % to a ; comment symbol (xio)
+ *      This behavior supports % as file beginnings and ends, and Inkscape comments.
+ *
+ * Single USB Channel Operation (TinyG v8's only mode)
+ *  - Enter a feedhold (!)
+ *  - Receive a queue flush (%) Both dispatch it and store a marker (ACK) in the input
+ *      buffer in place of the the % (xio)
+ *  - Execute the feedhold to a hold condition (plan_exec)
+ *  - Execute the dispatched % to flush queues (canonical_machine)
+ *  - Silently reject any commands up to the % in the input queue (controller)
+ *  - When ETX is encountered transition to STOP state (controller/canonical_machine)
+ *
+ * Dual USB Channel Operation (Available on g2 only)
+ *  - Same as above except that we expect the % to arrive on the control channel
+ *  - The system will read and dump all commands in the data channel until either a
+ *    clear is encountered ({clear:n} or $clear), or an ETX is encountered on either
+ *    channel, but it really should be on the data channel to ensure all queued commands
+ *    are dumped. It is the host's responsibility to both write the clear (or ETX), and
+ *    to ensure that it either arrives on the data channel or that the data channel is
+ *    empty before writing it to the control channel.
+ */
+
 /* g2 version */
 void cm_queue_flush()
 {
@@ -1666,8 +1694,6 @@ void cm_queue_flush()
 
 //	    float value[AXES] = { (float)MACHINE_PROGRAM_STOP, 0,0,0,0,0 };
 //	    _exec_program_finalize(value, FLAGS_ONE);   // finalize now, not later
-
-/* */
 /*
 void cm_queue_flush()
 {
@@ -1714,17 +1740,32 @@ stat_t cm_queue_flush()
 }
 */
 
+/******************************
+ * Program Functions (4.3.10) *
+ ******************************/
+/* This group implements stop, start, and end functions.
+ * It is extended beyond the NIST spec to handle various situations.
+ *
+ * _exec_program_finalize()     - helper
+ * cm_cycle_start()
+ * cm_cycle_end()
+ * cm_program_stop()            - M0
+ * cm_optional_program_stop()   - M1
+ * cm_program_end()             - M2, M30
+ */
 /*
  * Program and cycle state functions
  *
- * _exec_program_finalize() 	- helper
- * cm_cycle_start()
- * cm_cycle_end()
- * cm_program_stop()			- M0
- * cm_optional_program_stop()	- M1
- * cm_program_end()				- M2, M30
+ * cm_program_stop() and cm_optional_program_stop() are synchronous Gcode commands
+ * that are received through the interpreter. They cause all motion to stop
+ * at the end of the current command, including spindle motion. All Gcode state
+ * is otherwise left intact.
  *
- * cm_program_end() implements M2 and M30
+ * Note that the stop actually occurs at the end of the immediately preceding 
+ * block - i.e. the stop is queued behind the last executing block.
+ *
+ *
+ * cm_program_end() is a stop that also resets the machine to initial state.
  * The END behaviors are defined by NIST 3.6.1 are:
  *	1. Axis offsets are set to zero (like G92.2) and origin offsets are set to the default (like G54)
  *	2. Selected plane is set to CANON_PLANE_XY (like G17)
@@ -1736,7 +1777,7 @@ stat_t cm_queue_flush()
  *	8. The current motion mode is set to G_1 (like G1)
  *	9. Coolant is turned off (like M9)
  *
- * cm_program_end() implments things slightly differently:
+ * cm_program_end() performs things slightly differently than NIST:
  *	1. Axis offsets are set to G92.1 CANCEL offsets (instead of using G92.2 SUSPEND Offsets)
  *	   Set default coordinate system (uses $gco, not G54)
  *	2. Selected plane is set to default plane ($gpl) (instead of setting it to G54)

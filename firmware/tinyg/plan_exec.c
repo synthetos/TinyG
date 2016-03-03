@@ -155,9 +155,8 @@ stat_t mp_exec_move()
  **     --INTERRUPT CONTEXT!!--
  **
  **    Things we MUST NOT do (even indirectly):
- **       mp_plan_buffer()
- **       mp_plan_block_list()
  **       printf()
+ **       rpt_exception()    (which calls printf)
  **
  **** NOTICE ** NOTICE ** NOTICE ****/
 
