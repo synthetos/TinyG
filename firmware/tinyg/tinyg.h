@@ -36,9 +36,7 @@
  */
 /*
  *  0.97/0.98 alignment notes
- *  Add 0.98 state management to 0.97
  *  Add 0.97 JSON nesting / linemode enhancements to 0.98
- *
  */
 
 #ifndef TINYG_H_ONCE
@@ -62,7 +60,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD        448.07	// Testing 0.98 feedhold code
+#define TINYG_FIRMWARE_BUILD        448.08	// Testing 0.98 feedhold code; 
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
 #define TINYG_CONFIG_VERSION		5							// CV values start at 5 for backwards compatibility
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	    // see hardware.h

@@ -233,7 +233,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Case (6) - wait for the steppers to stop
         if (cm.hold_state == FEEDHOLD_PENDING) {
             if (mp_runtime_is_idle()) {                                 // wait for the steppers to actually clear out
-                cm.hold_state = FEEDHOLD_HOLD;
+                cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
                 mp_zero_segment_velocity();                             // for reporting purposes
                 sr_request_status_report(SR_REQUEST_ASAP);
                 cs.controller_state = CONTROLLER_READY;                 // remove controller readline() PAUSE
@@ -244,8 +244,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Case (5) - decelerated to zero
         // Update the run buffer then force a replan of the whole planner queue
         if (cm.hold_state == FEEDHOLD_DECEL_END) {
-            mr.block_state = BLOCK_IDLE;	                        // invalidate mr buffer to reset the new move
-            bf->block_state = BLOCK_INITIALIZING;                         // tell _exec to re-use the bf buffer
+//            mr.block_state = BLOCK_IDLE;	                            // invalidate mr buffer to reset the new move
+//            bf->block_state = BLOCK_INITIALIZING;                       // tell _exec to re-use the bf buffer
             bf->length = get_axis_vector_length(mr.target, mr.position);// reset length
             bf->entry_vmax = 0;                                         // set bp+0 as hold point
             cm.hold_state = FEEDHOLD_PENDING;
@@ -308,20 +308,20 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	if ((cm.hold_state == FEEDHOLD_DECEL_TO_ZERO) && (status == STAT_OK)) {
     	cm.hold_state = FEEDHOLD_DECEL_END;
     	bf->block_state = BLOCK_INITIALIZING;   // reset bf so it can restart the rest of the move
+                                                // will also cause mr to go IDLE in code immediately below
 	}
 
-	// There are 4 things that can happen here depending on return conditions:
-	//  status       bf->move_state   Description
-	//  -----------	 --------------   ----------------------------------------
-	//  STAT_EAGAIN  <don't care>     mr buffer has more segments to run
-	//  STAT_OK       MOVE_RUN        mr and bf buffers are done
-	//  STAT_OK       MOVE_NEW        mr done; bf must be run again (it's been reused)
-	//  There is no fourth thing. Nobody expects the Spanish Inquisition
+	// There are 3 things that can happen here depending on return conditions:
+	//  status       bf->move_state       Description
+	//  -----------	 --------------       ----------------------------------------
+	//  STAT_EAGAIN  <don't care>         mr buffer has more segments to run
+	//  STAT_OK      BLOCK_RUNNING        mr and bf buffers are done
+	//  STAT_OK      BLOCK_INITIALIZING   mr done; bf must be run again (it's been reused)
 
 	if (status == STAT_EAGAIN) {
     	sr_request_status_report(SR_REQUEST_TIMED);     // continue reporting mr buffer
 	} else {
-    	mr.block_state = BLOCK_IDLE;                // invalidate mr buffer (reset)
+    	mr.block_state = BLOCK_IDLE;                    // invalidate mr buffer (reset)
     	mr.section_state = SECTION_OFF;
 
     	if (bf->block_state == BLOCK_RUNNING) {
@@ -332,7 +332,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 	}
 	return (status);
 }
-
 
 /*
  * mp_exit_hold_state() - end a feedhold

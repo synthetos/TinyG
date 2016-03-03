@@ -129,10 +129,6 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
     blockState block_state;         // move state machine sequence
 	uint8_t block_code;				// byte that can be used by used exec functions
 
-//	uint8_t move_type;				// used to dispatch to run routine
-//	uint8_t move_code;				// byte that can be used by used exec functions
-//	uint8_t move_state;				// move state machine sequence
-
 	uint8_t replannable;			// TRUE if move can be re-planned
 
 	float unit[AXES];				// unit vector for axis scaling & planning

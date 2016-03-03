@@ -132,15 +132,16 @@ void mp_halt_runtime()
 /*
  * mp_flush_planner() - flush all moves in the planner and all arcs
  *
- *	Does not affect the move currently running in mr.
- *	Does not affect mm or gm model positions
  *	This function is designed to be called during a hold to reset the planner
  *	This function should not generally be called; call cm_queue_flush() instead
+ *	Does not affect the move currently running in mr (which was stopped by the feedhold code)
+ *	Does not affect mm or gm model positions
  */
 void mp_flush_planner()
 {
 	cm_abort_arc();
 	mp_init_buffers();
+//    mr.block_state = BLOCK_IDLE;                // prevent MR from re-running
 	cm_set_motion_state(MOTION_STOP);
 }
 
