@@ -65,9 +65,9 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
-	uint8_t hard_reset_requested;		// flag to perform a hard reset
-	uint8_t bootloader_requested;		// flag to enter the bootloader
-	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
+	uint8_t limit_asserted_on_input;    // non-zero input number throws limit condition
+	bool hard_reset_requested;		    // flag to perform a hard reset
+	bool bootloader_requested;		    // flag to enter the bootloader
 
 	int32_t job_id[4];					// uuid to identify the job
     uint32_t txn_id;
@@ -92,5 +92,6 @@ void controller_run(void);
 void controller_reset_source(void);
 void controller_set_primary_source(uint8_t dev);
 void controller_set_secondary_source(uint8_t dev);
+void controller_assert_limit_condition(uint8_t input);
 
 #endif // End of include guard: CONTROLLER_H_ONCE

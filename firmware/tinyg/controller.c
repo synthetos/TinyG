@@ -326,6 +326,12 @@ static stat_t _shutdown_handler()
 /*
  * _limit_switch_handler() - shut down system if limit switch fired
  */
+
+void controller_assert_limit_condition(uint8_t input)
+{
+    cs.limit_asserted_on_input = input;
+}
+
 static stat_t _limit_switch_handler(void)
 {
     if ((cm.machine_state == MACHINE_ALARM) || 
@@ -334,14 +340,14 @@ static stat_t _limit_switch_handler(void)
         return (STAT_NOOP);                             // don't test limits if already in an alarm state
     }
 
-    int limit_thrown = get_limit_switch_thrown();       // also clears limit condition
-	if (limit_thrown == 0) { 
+    if (!cs.limit_asserted_on_input) {
         return(STAT_NOOP);
     }
 
     char msg[10];
-    sprintf_P(msg, PSTR("input %d"), limit_thrown);
+    sprintf_P(msg, PSTR("input %d"), cs.limit_asserted_on_input);
     cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+    cs.limit_asserted_on_input = 0;
     return (STAT_OK);
 }
 

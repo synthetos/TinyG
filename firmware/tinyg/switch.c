@@ -45,6 +45,7 @@
 #include "config.h"
 #include "switch.h"
 #include "hardware.h"
+#include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
 
@@ -91,6 +92,19 @@ void switch_init(void)
 }
 
 /*
+ * reset_switches() - reset all switches and reset limit flag
+ */
+
+void reset_switches()
+{
+	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+		sw.debounce[i] = SW_IDLE;
+        read_switch(i);
+	}
+//	sw.limit_thrown = 0;
+}
+
+/*
  * Switch closure processing routines
  *
  * ISRs 				 - switch interrupt handler vectors
@@ -115,11 +129,11 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_num)
 {
-	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;    // this is never supposed to happen
-	if (sw.debounce[sw_num] == SW_LOCKOUT) return;      // exit if switch is in lockout
-	sw.debounce[sw_num] = SW_DEGLITCHING;               // either transitions state from IDLE or overwrites it
-	sw.count[sw_num] = -SW_DEGLITCH_TICKS;              // reset deglitch count regardless of entry state
-	read_switch(sw_num);                                // sets the state value in the struct
+	if (sw.mode[sw_num] == SW_MODE_DISABLED) { return; } // this is never supposed to happen
+	if (sw.debounce[sw_num] == SW_LOCKOUT) { return; }   // exit if switch is in lockout
+	sw.debounce[sw_num] = SW_DEGLITCHING;                // either transitions state from IDLE or overwrites it
+	sw.count[sw_num] = -SW_DEGLITCH_TICKS;               // reset deglitch count regardless of entry state
+	read_switch(sw_num);                                 // sets the state value in the struct
 }
 
 void switch_rtc_callback(void)
@@ -145,43 +159,25 @@ void switch_rtc_callback(void)
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
-			    sw.limit_thrown = i+1;                  // triggers an alarm
+//			    sw.limit_thrown = i+1;                  // triggers an alarm
+//                cm_alarm(STAT_LIMIT_SWITCH_HIT, "TEST");
+                controller_assert_limit_condition(i+1);
 			}
 		}
 	}
 }
 
 /*
- * get_switch_mode()  - return switch mode setting
- * get_switch_thrown() - return switch number most recently thrown
- * get_limit_thrown() - return true if a limit was tripped
+ * get_switch_mode()    - return switch mode setting
+ * get_switch_thrown()  - return switch number most recently thrown
+ * set_switch_type()    - set global switch type
+ * get_switch_type()    - return glgobal switch type
  */
 
 uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
 uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
-
-uint8_t get_limit_switch_thrown(void) { 
-    uint8_t limit_thrown = sw.limit_thrown;             // might actually be zero (not thrown)
-    sw.limit_thrown = 0;                                // reset local limit condition
-    return (limit_thrown);
-}
-
-// global switch type
 void set_switch_type(uint8_t switch_type) { sw.switch_type = switch_type; }
 uint8_t get_switch_type() { return sw.switch_type; }
-
-/*
- * reset_switches() - reset all switches and reset limit flag
- */
-
-void reset_switches()
-{
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.debounce[i] = SW_IDLE;
-        read_switch(i);
-	}
-	sw.limit_thrown = 0;
-}
 
 /*
  * read_switch() - read a switch directly with no interrupts or deglitching

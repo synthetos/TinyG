@@ -134,66 +134,39 @@ typedef enum {
 
 /*
  * Switch control structures
-// Note 1: The term "thrown" is used because switches could be normally-open
-//		   or normally-closed. "Thrown" means activated or hit.
+ *
+ * Note: The term "thrown" is used because switches could be active low (normally-open)
+ *		 or active high (normally-closed). "Thrown" means activated or hit.
  */
 struct swStruct {								// switch state
 	swType switch_type;						    // 0=NO, 1=NC - applies to all switches
-	uint8_t limit_thrown;						// 0=no limit thrown, N=# of limit switch thrown - do a lockout
 	uint8_t sw_num_thrown;						// number of switch that was just thrown
 	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
 
-	uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
-    int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
-	swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
+//    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
+//    int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
+//    swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
 
-//	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-//	volatile uint8_t debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
-//	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
+	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
+	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
+	volatile swDebounce debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
 };
 struct swStruct sw;
-
-//*** Structures from new-style switch code --- NOT YET FOLDED IN ***//
-/*
-typedef struct swSwitch {						// one struct per switch
-	// public
-	swType type;								// swType: 0=NO, 1=NC
-	uint8_t mode;								// 0=disabled, 1=homing, 2=limit, 3=homing+limit
-	uint8_t state;								// set true if switch is closed
-
-	// private
-	swEdge edge;								// keeps a transient record of edges for immediate inquiry
-	uint16_t debounce_ticks;					// number of millisecond ticks for debounce lockout
-	uint32_t debounce_timeout;					// time to expire current debounce lockout, or 0 if no lockout
-	void (*when_open)(struct swSwitch *s);		// callback to action function when sw is open - passes *s, returns void
-	void (*when_closed)(struct swSwitch *s);	// callback to action function when closed
-	void (*on_leading)(struct swSwitch *s);		// callback to action function for leading edge onset
-	void (*on_trailing)(struct swSwitch *s);	// callback to action function for trailing edge
-} switch_t;
-typedef void (*sw_callback)(switch_t *s);		// typedef for switch action callback
-
-typedef struct swSwitchArray {					// array of switches
-	uint8_t type;								// switch type for entire array (default)
-	switch_t s[SW_PAIRS][SW_POSITIONS];
-} switches_t;
-*/
 
 /****************************************************************************************
  * Function prototypes
  */
 void switch_init(void);
-uint8_t read_switch(uint8_t sw_num);
-uint8_t get_switch_mode(uint8_t sw_num);
+void reset_switches(void);
 
 void switch_rtc_callback(void);
 
-uint8_t get_limit_switch_thrown(void);
+uint8_t get_switch_mode(uint8_t sw_num);
 uint8_t get_switch_thrown(void);
-void reset_switches(void);
-void sw_show_switch(void);
-
 void set_switch_type(uint8_t switch_type);
 uint8_t get_switch_type();
+
+uint8_t read_switch(uint8_t sw_num);
 
 /*
  * Switch config accessors and text functions
