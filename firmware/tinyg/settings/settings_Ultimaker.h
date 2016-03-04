@@ -2,8 +2,8 @@
  * settings_Ultimaker.h - Ultimaker motion demo
  * This file is part of the the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2010 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -45,7 +45,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs 
 #define INIT_MESSAGE "Initializing configs to Ultimaker profile"
 
-#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE                 SW_ACTIVE_HI	        // one of: SW_ACTIVE_LO (no), SW_ACTIVE_HI (nc)
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
 #define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on

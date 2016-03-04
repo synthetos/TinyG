@@ -42,7 +42,7 @@
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to OMC OtherMill settings"
 
-#define SWITCH_TYPE                 SW_TYPE_NORMALLY_CLOSED	// one of: SW_TYPE_NORMALLY_OPEN, SW_TYPE_NORMALLY_CLOSED
+#define SWITCH_TYPE                 SW_ACTIVE_HI	        // one of: SW_ACTIVE_LO (no), SW_ACTIVE_HI (nc)
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
 #define HARD_LIMIT_ENABLE           1						// 0=off, 1=on
 #define SAFETY_INTERLOCK_ENABLE     1						// 0=off, 1=on
