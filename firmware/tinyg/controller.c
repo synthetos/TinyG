@@ -334,12 +334,13 @@ static stat_t _limit_switch_handler(void)
         return (STAT_NOOP);                             // don't test limits if already in an alarm state
     }
 
-    uint8_t limit_thrown = get_limit_switch_thrown();   // also clears limit condition
+    int limit_thrown = get_limit_switch_thrown();       // also clears limit condition
 	if (limit_thrown == 0) { 
         return(STAT_NOOP);
-    } 
+    }
+
     char msg[10];
-    sprintf_P(msg, PSTR("input %d"), (int)limit_thrown);
+    sprintf_P(msg, PSTR("input %d"), limit_thrown);
     cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
     return (STAT_OK);
 }

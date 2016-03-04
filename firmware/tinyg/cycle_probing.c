@@ -176,7 +176,7 @@ static uint8_t _probing_init()
 
 	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
 	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
-	sw.switch_type = SW_TYPE_NORMALLY_OPEN;							// contact probes are NO switches... usually
+	sw.switch_type = SW_ACTIVE_LO;							        // contact probes are NO switches... usually
 	switch_init();													// re-init to pick up new switch settings
 
 	// probe in absolute machine coords

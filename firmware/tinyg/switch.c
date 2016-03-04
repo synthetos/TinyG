@@ -115,11 +115,11 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_num)
 {
-	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;	// this is never supposed to happen
-	if (sw.debounce[sw_num] == SW_LOCKOUT) return;		// exit if switch is in lockout
-	sw.debounce[sw_num] = SW_DEGLITCHING;				// either transitions state from IDLE or overwrites it
-	sw.count[sw_num] = -SW_DEGLITCH_TICKS;				// reset deglitch count regardless of entry state
-	read_switch(sw_num);							// sets the state value in the struct
+	if (sw.mode[sw_num] == SW_MODE_DISABLED) return;    // this is never supposed to happen
+	if (sw.debounce[sw_num] == SW_LOCKOUT) return;      // exit if switch is in lockout
+	sw.debounce[sw_num] = SW_DEGLITCHING;               // either transitions state from IDLE or overwrites it
+	sw.count[sw_num] = -SW_DEGLITCH_TICKS;              // reset deglitch count regardless of entry state
+	read_switch(sw_num);                                // sets the state value in the struct
 }
 
 void switch_rtc_callback(void)
@@ -128,7 +128,7 @@ void switch_rtc_callback(void)
 		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
             continue;
 
-		if (++sw.count[i] == SW_LOCKOUT_TICKS) {		// state is either lockout or deglitching
+		if (++sw.count[i] == SW_LOCKOUT_TICKS) {        // state is either lockout or deglitching
 			sw.debounce[i] = SW_IDLE;
             // check if the state has changed while we were in lockout...
             uint8_t old_state = sw.state[i];
@@ -138,14 +138,14 @@ void switch_rtc_callback(void)
             }
             continue;
 		}
-		if (sw.count[i] == 0) {							// trigger point
-			sw.sw_num_thrown = i;						// record number of thrown switch
+		if (sw.count[i] == 0) {                         // trigger point
+			sw.sw_num_thrown = i;                       // record number of thrown switch
 			sw.debounce[i] = SW_LOCKOUT;
 
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
-			} else if (sw.mode[i] & SW_LIMIT_BIT) {		// should be a limit switch, so fire it.
-			    sw.limit_thrown = i+1;				    // triggers an alarm
+			} else if (sw.mode[i] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
+			    sw.limit_thrown = i+1;                  // triggers an alarm
 			}
 		}
 	}
@@ -201,8 +201,8 @@ uint8_t read_switch(uint8_t sw_num)
 		case SW_MIN_A: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
 		case SW_MAX_A: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
 	}
-	if (sw.switch_type == SW_TYPE_NORMALLY_OPEN) {
-		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN);// confusing. An NO switch drives the pin LO when thrown
+	if (sw.switch_type == SW_ACTIVE_LO) {                       // Typically Normally Open
+		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN); // confusing. An NO switch drives the pin LO when thrown
 		return (sw.state[sw_num]);
 	} else {
 		sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);

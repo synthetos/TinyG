@@ -648,10 +648,10 @@ stat_t canonical_machine_test_assertions(void)
 /********************************************************************************
  *  ALARM, SHUTDOWN, and PANIC are nested dolls.
  *
- * cm_alrm()  - invoke alarm from command
- * cm_shutd() - invoke shutdown from command
- * cm_pnic()  - invoke panic from command
- * cm_clr()   - clear alarm or shutdown from command
+ * cm_alrm()  - command-line wrapper for alarm
+ * cm_shutd() - command-line wrapper for shutdown from command
+ * cm_pnic()  - command-line wrapper for panic from command
+ * cm_clr()   - command-line wrapper for clear alarm or shutdown
  *
  * The alarm states can be invoked from the above commands for testing and clearing
  */
@@ -681,10 +681,10 @@ stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from comman
 
 /*
  * cm_clear() - clear ALARM and SHUTDOWN states
- * cm_parse_clear() - parse incoming gcode for M30 or M2 clears if in ALARM state
+ * cm_parse_clear() - parse incoming gcode for M30 or M2 - clears if in ALARM state
  *
- * Parse clear interprets an M30 or M2 PROGRAM_END as a $clear condition and clear ALARM
- * but not SHUTDOWN or PANIC. Assumes Gcode string has no leading or embedded whitespace
+ * cm_parse_clear() parses an M30 or M2 PROGRAM_END and will clear an ALARM, but not
+ * SHUTDOWN or PANIC. Assumes Gcode string has no leading or embedded whitespace
  */
 
 void cm_clear()
@@ -714,8 +714,8 @@ void cm_parse_clear(const char *s)
 stat_t cm_is_alarmed()
 {
     if (cm.machine_state == MACHINE_ALARM)    { return (STAT_COMMAND_REJECTED_BY_ALARM); }
-    if (cm.machine_state == MACHINE_SHUTDOWN) { return (STAT_COMMAND_REJECTED_BY_SHUTDOWN); }
     if (cm.machine_state == MACHINE_PANIC)    { return (STAT_COMMAND_REJECTED_BY_PANIC); }
+    if (cm.machine_state == MACHINE_SHUTDOWN) { return (STAT_COMMAND_REJECTED_BY_SHUTDOWN); }
     return (STAT_OK);
 }
 
@@ -737,7 +737,7 @@ void cm_halt_all(void)
 
 void cm_halt_motion(void)
 {
-//    mp_halt_runtime();                  // stop the runtime. Do this immediately. (Reset is in cm_clear)
+    mp_halt_runtime();                  // stop the runtime. Do this immediately. (Reset is in cm_clear)
     canonical_machine_reset();          // reset Gcode model
 	cm.cycle_state = CYCLE_OFF;         // Note: leaves machine_state alone
 	cm.motion_state = MOTION_STOP;
@@ -745,7 +745,8 @@ void cm_halt_motion(void)
 }
 
 /*
- * cm_alarm() - enter ALARM state
+ * cm_alarm()   - enter ALARM state
+ * cm_alarm_P() - enter ALARM state - accepts message as program string
  *
  * An ALARM sets the ALARM machine state, starts a feedhold to stop motion, stops the
  * spindle, turns off coolant, clears out queued planner moves and serial input,
@@ -789,6 +790,7 @@ stat_t cm_alarm(const stat_t status, const char *msg)
 //	cm_coolant_off_immediate();
 //	cm_spindle_optional_pause(spindle.pause_on_hold);
 //	cm_coolant_optional_pause(coolant.pause_on_hold);
+
 	rpt_exception(status, msg);	                // send alarm message
     return (status);
 }
@@ -830,7 +832,8 @@ stat_t cm_shutdown(const stat_t status, const char *msg)
 }
 
 /*
- * cm_panic() - enter panic state
+ * cm_panic()   - enter PANIC state
+ * cm_panic_P() - enter PANIC state - accepts message as program string
  *
  * PANIC occurs if the firmware has detected an unrecoverable internal error
  * such as an assertion failure or a code condition that should never occur.
@@ -1592,15 +1595,10 @@ stat_t cm_feedhold_sequencing_callback()
 }
 
 /*
- * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
  * cm_start_hold() - start a feedhhold by signalling the exec
  * cm_end_hold()   - end a feedhold by returning the system to normal operation
+ * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
  */
-
-bool cm_has_hold()
-{
-    return (cm.hold_state != FEEDHOLD_OFF);
-}
 
 void cm_start_hold()
 {
@@ -1636,6 +1634,12 @@ void cm_end_hold()
         }
     }
 }
+
+bool cm_has_hold()
+{
+    return (cm.hold_state != FEEDHOLD_OFF);
+}
+
 
 /*
  * cm_queue_flush() - Flush planner queue and correct model positions
