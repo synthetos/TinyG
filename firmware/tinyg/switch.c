@@ -53,18 +53,39 @@ static void _switch_isr_helper(uint8_t sw_num);
 static bool _read_input_corrected(const uint8_t sw_num);
 
 /*
- * switch_init()    - initialize homing/limit switches
- * reset_switches() - reset all switches
+ * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
+ * If you change axis port assignments you need to change these, too.
  *
- *	switch_init() assumes sys_init() and st_init() have been run previously to
- *	bind the ports and set bit IO directions, respectively
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)	// can't be hi
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+ *  #define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn't be low
  */
+#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
+
+// port assignments for vectors
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
+#define Y_MIN_ISR_vect PORTD_INT0_vect
+#define Z_MIN_ISR_vect PORTE_INT0_vect
+#define A_MIN_ISR_vect PORTF_INT0_vect
+#define X_MAX_ISR_vect PORTA_INT1_vect
+#define Y_MAX_ISR_vect PORTD_INT1_vect
+#define Z_MAX_ISR_vect PORTE_INT1_vect
+#define A_MAX_ISR_vect PORTF_INT1_vect
+
 /* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
  *	v6 and earlier use internal pullups only. Internal pullups are set
  *	regardless of board type but are extraneous for v7 boards.
  */
 #define PIN_MODE PORT_OPC_PULLUP_gc				// pin mode. see iox192a3.h for details
 //#define PIN_MODE PORT_OPC_TOTEM_gc			// alternate pin mode for v7 boards
+
+/*
+ * switch_init()    - initialize homing/limit switches
+ * reset_switches() - reset all switches
+ *
+ *	switch_init() assumes sys_init() and st_init() have been run previously to
+ *	bind the ports and set bit IO directions, respectively
+ */
 
 void switch_init(void)
 {
@@ -157,11 +178,6 @@ void switch_rtc_callback(void)
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
                 controller_assert_limit_condition(i+1); // This is supposed to work fromn the main loop
-
-//                char msg[12];                           //...but it doesn't. So we are doing this here
-//                sprintf_P(msg, PSTR("input %d"), i+1);
-//                cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
-
 			}
 		}
 	}

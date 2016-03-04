@@ -49,8 +49,8 @@
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 #define SW_DEGLITCH_TICKS 3					// 3=30ms
 
-#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
-#define SW_DEGLITCH_MS 30					// Note: RTC ticks only have 10 ms resolution
+//#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
+//#define SW_DEGLITCH_MS 30					// Note: RTC ticks only have 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -72,9 +72,6 @@ typedef enum {
 	SW_ACTIVE                       // also reads as 'true' , aka switch is "closed"
 } swState;
 
-/*
- * Defines for old switch handling code
- */
 // macros for finding the index into the switch table give the axis number
 #define MIN_SWITCH(axis) (axis*2)
 #define MAX_SWITCH(axis) (axis*2+1)
@@ -100,44 +97,6 @@ typedef enum {	 			        // indexes into switch arrays
 #define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
 
 /*
- * Defines for new switch handling code
- */
-/*
-// switch array configuration / sizing
-#define SW_PAIRS				HOMING_AXES	// number of axes that can have switches
-#define SW_POSITIONS			2			// swPosition is either SW_MIN or SW)MAX
-
-typedef enum {
-	SW_MIN = 0,
-	SW_MAX
-} swPosition;
-
-typedef enum {
-	SW_EDGE_NONE = 0,
-	SW_EDGE_LEADING,
-	SW_EDGE_TRAILING
-} swEdge;
-*/
-/*
- * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
- * If you change axis port assignments you need to change these, too.
- */
-// Interrupt level: pick one:
-//#define GPIO1_INTLVL (PORT_INT0LVL_HI_gc|PORT_INT1LVL_HI_gc)	// can't be hi
-#define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
-//#define GPIO1_INTLVL (PORT_INT0LVL_LO_gc|PORT_INT1LVL_LO_gc)	// shouldn;t be low
-
-// port assignments for vectors
-#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
-#define Y_MIN_ISR_vect PORTD_INT0_vect
-#define Z_MIN_ISR_vect PORTE_INT0_vect
-#define A_MIN_ISR_vect PORTF_INT0_vect
-#define X_MAX_ISR_vect PORTA_INT1_vect
-#define Y_MAX_ISR_vect PORTD_INT1_vect
-#define Z_MAX_ISR_vect PORTE_INT1_vect
-#define A_MAX_ISR_vect PORTF_INT1_vect
-
-/*
  * Switch control structures
  *
  * Note: The term "thrown" is used because switches could be active low (normally-open)
@@ -152,10 +111,6 @@ struct swStruct {								// switch state
     int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
     swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
     Timeout_t timeout[NUM_SWITCHES];            // deglitching and lockout timer
-
-//	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-//	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
-//	volatile swDebounce debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
 };
 struct swStruct sw;
 
