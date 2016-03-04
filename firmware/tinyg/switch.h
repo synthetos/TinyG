@@ -40,12 +40,17 @@
 #ifndef SWITCH_H_ONCE
 #define SWITCH_H_ONCE
 
+#include "xmega/xmega_rtc.h"
+
 /*
  * Common variables and settings
  */
 											// timer for debouncing switches
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 #define SW_DEGLITCH_TICKS 3					// 3=30ms
+
+#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
+#define SW_DEGLITCH_MS 30					// Note: RTC ticks only have 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -63,8 +68,8 @@ typedef enum {
 
 typedef enum {
 	SW_DISABLED = -1,
-	SW_OPEN = 0,					// also reads as 'false'
-	SW_CLOSED						// also reads as 'true'
+	SW_INACTIVE = 0,                // also reads as 'false', aka switch is "open"
+	SW_ACTIVE                       // also reads as 'true' , aka switch is "closed"
 } swState;
 
 /*
@@ -97,7 +102,7 @@ typedef enum {	 			        // indexes into switch arrays
 /*
  * Defines for new switch handling code
  */
-
+/*
 // switch array configuration / sizing
 #define SW_PAIRS				HOMING_AXES	// number of axes that can have switches
 #define SW_POSITIONS			2			// swPosition is either SW_MIN or SW)MAX
@@ -108,11 +113,11 @@ typedef enum {
 } swPosition;
 
 typedef enum {
-	SW_NO_EDGE = 0,
-	SW_LEADING,
-	SW_TRAILING,
+	SW_EDGE_NONE = 0,
+	SW_EDGE_LEADING,
+	SW_EDGE_TRAILING
 } swEdge;
-
+*/
 /*
  * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
  * If you change axis port assignments you need to change these, too.
@@ -143,13 +148,14 @@ struct swStruct {								// switch state
 	uint8_t sw_num_thrown;						// number of switch that was just thrown
 	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
 
-//    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
-//    int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
-//    swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
+    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
+    int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
+    swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
+    Timeout_t timeout[NUM_SWITCHES];            // deglitching and lockout timer
 
-	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
-	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
-	volatile swDebounce debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
+//	volatile uint8_t mode[NUM_SWITCHES];		// 0=disabled, 1=homing, 2=homing+limit, 3=limit
+//	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
+//	volatile swDebounce debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
 };
 struct swStruct sw;
 
@@ -165,8 +171,6 @@ uint8_t get_switch_mode(uint8_t sw_num);
 uint8_t get_switch_thrown(void);
 void set_switch_type(uint8_t switch_type);
 uint8_t get_switch_type();
-
-uint8_t read_switch(uint8_t sw_num);
 
 /*
  * Switch config accessors and text functions

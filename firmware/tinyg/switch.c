@@ -50,12 +50,14 @@
 #include "text_parser.h"
 
 static void _switch_isr_helper(uint8_t sw_num);
+static bool _read_input_corrected(const uint8_t sw_num);
 
 /*
- * switch_init() - initialize homing/limit switches
+ * switch_init()    - initialize homing/limit switches
+ * reset_switches() - reset all switches
  *
- *	This function assumes sys_init() and st_init() have been run previously to
- *	bind the ports and set bit IO directions, repsectively. See system.h for details
+ *	switch_init() assumes sys_init() and st_init() have been run previously to
+ *	bind the ports and set bit IO directions, respectively
  */
 /* Note: v7 boards have external strong pullups on GPIO2 pins (2.7K ohm).
  *	v6 and earlier use internal pullups only. Internal pullups are set
@@ -91,17 +93,12 @@ void switch_init(void)
 	reset_switches();
 }
 
-/*
- * reset_switches() - reset all switches and reset limit flag
- */
-
 void reset_switches()
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
 		sw.debounce[i] = SW_IDLE;
-        read_switch(i);
+        _read_input_corrected(i);                           // sets the switch state value in the struct
 	}
-//	sw.limit_thrown = 0;
 }
 
 /*
@@ -133,7 +130,7 @@ static void _switch_isr_helper(uint8_t sw_num)
 	if (sw.debounce[sw_num] == SW_LOCKOUT) { return; }   // exit if switch is in lockout
 	sw.debounce[sw_num] = SW_DEGLITCHING;                // either transitions state from IDLE or overwrites it
 	sw.count[sw_num] = -SW_DEGLITCH_TICKS;               // reset deglitch count regardless of entry state
-	read_switch(sw_num);                                 // sets the state value in the struct
+	_read_input_corrected(sw_num);                       // sets the state value in the struct
 }
 
 void switch_rtc_callback(void)
@@ -146,7 +143,7 @@ void switch_rtc_callback(void)
 			sw.debounce[i] = SW_IDLE;
             // check if the state has changed while we were in lockout...
             uint8_t old_state = sw.state[i];
-            if(old_state != read_switch(i)) {
+            if(old_state != _read_input_corrected(i)) {
                 sw.debounce[i] = SW_DEGLITCHING;
                 sw.count[i] = -SW_DEGLITCH_TICKS;
             }
@@ -159,9 +156,12 @@ void switch_rtc_callback(void)
 			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
 				cm_request_feedhold();
 			} else if (sw.mode[i] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
-//			    sw.limit_thrown = i+1;                  // triggers an alarm
-//                cm_alarm(STAT_LIMIT_SWITCH_HIT, "TEST");
-                controller_assert_limit_condition(i+1);
+                controller_assert_limit_condition(i+1); // This is supposed to work fromn the main loop
+
+//                char msg[12];                           //...but it doesn't. So we are doing this here
+//                sprintf_P(msg, PSTR("input %d"), i+1);
+//                cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+
 			}
 		}
 	}
@@ -180,13 +180,14 @@ void set_switch_type(uint8_t switch_type) { sw.switch_type = switch_type; }
 uint8_t get_switch_type() { return sw.switch_type; }
 
 /*
- * read_switch() - read a switch directly with no interrupts or deglitching
+ * _read_input_corrected() - primitive to read an input pin without any conditioning
  */
-uint8_t read_switch(uint8_t sw_num)
+static bool _read_input_corrected(const uint8_t sw_num)
 {
-	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) { return (SW_DISABLED); }
-
-	uint8_t read = 0;
+	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) { 
+        return (SW_DISABLED); 
+    }
+	uint8_t read;
 	switch (sw_num) {
 		case SW_MIN_X: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
 		case SW_MAX_X: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
@@ -197,13 +198,8 @@ uint8_t read_switch(uint8_t sw_num)
 		case SW_MIN_A: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
 		case SW_MAX_A: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
 	}
-	if (sw.switch_type == SW_ACTIVE_LO) {                       // Typically Normally Open
-		sw.state[sw_num] = ((read == 0) ? SW_CLOSED : SW_OPEN); // confusing. An NO switch drives the pin LO when thrown
-		return (sw.state[sw_num]);
-	} else {
-		sw.state[sw_num] = ((read != 0) ? SW_CLOSED : SW_OPEN);
-		return (sw.state[sw_num]);
-	}
+    sw.state[sw_num] = (read ^ (sw.switch_type ^ 1));	// correct for ACTIVE mode
+    return (sw.state[sw_num]);
 }
 
 /***********************************************************************************

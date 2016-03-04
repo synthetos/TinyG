@@ -27,12 +27,29 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
+
 // Note: sys_ticks is in ms but is only accurate to 10 ms as it's derived from rtc_ticks
+
 typedef struct rtClock {
 	uint32_t rtc_ticks;								// RTC tick counter, 10 uSec each
 	uint32_t sys_ticks;								// system tick counter, 1 ms each
 	uint16_t magic_end;								// magic number is read directly
 } rtClock_t;
+
+
+// Timeout object
+
+typedef struct Timeout {
+    uint32_t _start, _delay;
+} Timeout_t;
+
+bool Timeout_isSet(Timeout_t *this);
+bool Timeout_isPast(Timeout_t *this);
+void Timeout_set(Timeout_t *this, uint32_t delay);
+void Timeout_clear(Timeout_t *this);
+
+ 
+// Other stuff
 
 extern rtClock_t rtc;
 

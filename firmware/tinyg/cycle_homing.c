@@ -271,9 +271,9 @@ static stat_t _homing_axis_start(int8_t axis)
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-	if (sw.state[hm.homing_switch] == SW_CLOSED) {
+	if (sw.state[hm.homing_switch] == SW_ACTIVE) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (sw.state[hm.limit_switch] == SW_CLOSED) {
+	} else if (sw.state[hm.limit_switch] == SW_ACTIVE) {
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
 	return (_set_homing_func(_homing_axis_search));
@@ -290,7 +290,7 @@ static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	// verify assumption that we arrived here because of homing switch closure
 	// rather than user-initiated feedhold or other disruption
-	if (sw.state[hm.homing_switch] != SW_CLOSED) {
+	if (sw.state[hm.homing_switch] != SW_ACTIVE) {
 		return (_set_homing_func(_homing_abort));
     }
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);

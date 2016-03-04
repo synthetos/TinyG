@@ -77,3 +77,29 @@ ISR(RTC_COMP_vect)
 	// callbacks to whatever you need to happen on each RTC tick go here:
 	switch_rtc_callback();					// switch debouncing
 }
+
+/*
+ * Timeout object
+ */
+
+bool Timeout_isSet(Timeout_t *this) {
+    return (this->_start > 0);
+}
+
+bool Timeout_isPast(Timeout_t *this) {
+    if (!Timeout_isSet(this)) {
+        return (false);
+    }
+    return ((rtc.sys_ticks - this->_start) > this->_delay);
+};
+
+void Timeout_set(Timeout_t *this, uint32_t delay) {
+    this->_start = rtc.sys_ticks;
+    this->_delay = delay;
+};
+
+void Timeout_clear(Timeout_t *this) {
+    this->_start = 0;
+    this->_delay = 0;
+}
+

@@ -343,11 +343,11 @@ static stat_t _limit_switch_handler(void)
     if (!cs.limit_asserted_on_input) {
         return(STAT_NOOP);
     }
-
-    char msg[10];
+    char msg[12];
     sprintf_P(msg, PSTR("input %d"), cs.limit_asserted_on_input);
     cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
     cs.limit_asserted_on_input = 0;
+
     return (STAT_OK);
 }
 
