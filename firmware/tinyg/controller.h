@@ -65,7 +65,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
-	uint8_t limit_asserted_on_input;    // non-zero input number throws limit condition
+	uint8_t limit_switch_asserted;      // non-zero input number indicates limit condition
 	bool hard_reset_requested;		    // flag to perform a hard reset
 	bool bootloader_requested;		    // flag to enter the bootloader
 

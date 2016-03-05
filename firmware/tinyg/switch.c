@@ -49,9 +49,6 @@
 #include "canonical_machine.h"
 #include "text_parser.h"
 
-//static void _switch_isr_helper(uint8_t sw_num);
-//static bool _read_input_corrected(const uint8_t sw_num);
-//static void _read_input_corrected(const uint8_t sw_num);
 static bool _read_raw_switch(const uint8_t sw_num);
 static void _dispatch_switch(const uint8_t sw_num);
 
@@ -120,34 +117,30 @@ void switch_init(void)
 void reset_switches()
 {
     for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-        Timeout_clear(&sw.timeout[i]);          // clear all debounce timers
-        sw.state[i] = _read_raw_switch(i);      // set initial conditions
+        if (sw.mode[i] == SW_MODE_DISABLED) {
+            sw.state[i] = SW_DISABLED;
+        } else {
+            sw.state[i] = _read_raw_switch(i);      // set initial conditions
+            sw.edge[i] = SW_EDGE_NONE;
+            sw.lockout_ms[i] = SW_LOCKOUT_MS;
+            Timeout_clear(&sw.timeout[i]);          // clear lockout timer
+        }
 	}
 }
 
 /*
- * Switch closure processing routines
+ * get_switch_mode() - return switch mode setting
  */
-/*
-ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
-ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
-ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
-ISR(A_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_A);}
-ISR(X_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_X);}
-ISR(Y_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Y);}
-ISR(Z_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_Z);}
-ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
-static void _switch_isr_helper(uint8_t sw_num)
-{
-//	if (sw.mode[sw_num] == SW_MODE_DISABLED) { return; } // this is never supposed to happen
-//	if (sw.debounce[sw_num] == SW_LOCKOUT) { return; }   // exit if switch is in lockout
-//	sw.debounce[sw_num] = SW_DEGLITCHING;                // either transitions state from IDLE or overwrites it
-//	sw.count[sw_num] = -SW_DEGLITCH_TICKS;               // reset deglitch count regardless of entry state
-    _dispatch_switch(sw_num);
-//	_read_input_corrected(sw_num);                       // sets the state value in the struct
-}
-*/
+uint8_t get_switch_mode(const uint8_t sw_num) { return (sw.mode[sw_num]);}
+
+/*
+ * Switch processing routines
+ *
+ * ISRs (Interrupt Service Routines)
+ * _read_raw_switch() - primitive to read and sense correct input
+ * _dispatch_switch() - process a switch interrupt
+ */
 
 ISR(X_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_X);}
 ISR(Y_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_Y);}
@@ -157,12 +150,6 @@ ISR(X_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_X);}
 ISR(Y_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Y);}
 ISR(Z_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Z);}
 ISR(A_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_A);}
-
-/*
- * _read_raw_switch() - primitive to read input
- *
- * Read raw switch input and sense-correct for ACTIVE_LO / HI
- */
 
 static bool _read_raw_switch(const uint8_t sw_num)
 {
@@ -178,21 +165,14 @@ static bool _read_raw_switch(const uint8_t sw_num)
 		case SW_MAX_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
         default: { return (false); }    // ERROR
 	}
-    return (raw ^ sw.switch_type);	// XOR to correct for ACTIVE mode. Casts to bool.
-//    return (read ^ (sw.switch_type ^ 1));	// correct for ACTIVE mode
+    return (raw ^ !sw.switch_type);	// XOR to correct for ACTIVE mode. Casts to bool.
 }
-
-/*
- * _dispatch_switch() - process a switch interrupt
- *
- * Read raw switch input and sense-correct for ACTIVE_LO / HI
- */
 
 static void _dispatch_switch(const uint8_t sw_num)
 {
     // process conditions for return with no action
 	if (sw.mode[sw_num] == SW_MODE_DISABLED) {      // input is disabled (not supposed to happen)
-        return; 
+        return;
     }
     if (Timeout_isSet(&sw.timeout[sw_num])) {       // input is in lockout period (take no action)
         return;
@@ -205,7 +185,7 @@ static void _dispatch_switch(const uint8_t sw_num)
     // read the switch, set edges and start lockout timer
     sw.state[sw_num] = raw_switch;                  // 1 = switch hit, 0 = switch unhit
     sw.edge[sw_num] = raw_switch;                   // 1 = leading edge, 0 = trailing edge
-    Timeout_set(&sw.timeout[sw_num], SW_LOCKOUT_MS);
+    Timeout_set(&sw.timeout[sw_num], sw.lockout_ms[sw_num]);
 
     // execute the functions
 	if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) { // regardless of switch type
@@ -214,49 +194,6 @@ static void _dispatch_switch(const uint8_t sw_num)
     	controller_assert_limit_condition(sw_num+1);
 	}
 }
-/*
-void switch_rtc_callback(void)
-{
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		if (sw.mode[i] == SW_MODE_DISABLED || sw.debounce[i] == SW_IDLE)
-            continue;
-
-		if (++sw.count[i] == SW_LOCKOUT_TICKS) {        // state is either lockout or deglitching
-			sw.debounce[i] = SW_IDLE;
-            // check if the state has changed while we were in lockout...
-            uint8_t old_state = sw.state[i];
-            if(old_state != _read_input_corrected(i)) {
-                sw.debounce[i] = SW_DEGLITCHING;
-                sw.count[i] = -SW_DEGLITCH_TICKS;
-            }
-            continue;
-		}
-		if (sw.count[i] == 0) {                         // trigger point
-			sw.sw_num_thrown = i;                       // record number of thrown switch
-			sw.debounce[i] = SW_LOCKOUT;
-
-			if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) {		// regardless of switch type
-				cm_request_feedhold();
-			} else if (sw.mode[i] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
-                controller_assert_limit_condition(i+1); // This is supposed to work fromn the main loop
-			}
-		}
-	}
-}
-*/
-
-/*
- * set_switch_type()    - set global switch type
- * get_switch_type()    - return glgobal switch type
- * get_switch_mode()    - return switch mode setting
- * get_switch_thrown()  - return switch number most recently thrown
- */
-
-void set_switch_type(uint8_t switch_type) { sw.switch_type = switch_type; }
-uint8_t get_switch_type() { return sw.switch_type; }
-uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
-uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
-
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS

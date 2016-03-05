@@ -2,7 +2,7 @@
  * config.h - configuration sub-system generic part (see config_app for application part)
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -209,14 +209,14 @@ typedef enum {
 
 typedef enum {						    // value typing for config and JSON
     TYPE_SKIP = -2,                     // do not serialize this object (used for filtering)
-	TYPE_EMPTY = -1,					    // value struct is empty (which is not the same as "NULL")
-	TYPE_NULL = 0,						// value is 'null' (meaning the JSON null value)
-	TYPE_BOOL,							// value is "true" (1) or "false"(0)
-	TYPE_INTEGER,						// value is a uint32_t
-	TYPE_DATA,							// value is blind cast to uint32_t
-	TYPE_FLOAT,							// value is a floating point number
-	TYPE_STRING,						// value is in string field
-	TYPE_ARRAY,							// value is array element count, values are CSV ASCII in string field
+	TYPE_EMPTY = -1,                    // value struct is empty (which is not the same as "NULL")
+	TYPE_NULL = 0,                      // value is 'null' (meaning the JSON null value)
+	TYPE_BOOL,                          // value is "true" (1) or "false"(0)
+	TYPE_INTEGER,                       // value is a uint32_t
+	TYPE_DATA,                          // value is blind cast to uint32_t
+	TYPE_FLOAT,                         // value is a floating point number
+	TYPE_STRING,                        // value is in string field
+	TYPE_ARRAY,                         // value is array element count, values are CSV ASCII in string field
     TYPE_TID,                           // special type for transaction ID
 	TYPE_PARENT,				        // object is a parent to a sub-object (may also be a txt container)
     TYPE_TXT_CONTINUATION               // NV pair was filled in by _js_run_container_as_text()
@@ -258,7 +258,7 @@ typedef struct nvString {				// shared string object
 typedef struct nvObject {				// depending on use, not all elements may be populated
 	struct nvObject *pv;				// pointer to previous object or NULL if first object
 	struct nvObject *nx;				// pointer to next object or NULL if last object
-    uint8_t nv_num;                     // handy diagnostic    
+    uint8_t nv_num;                     // handy diagnostic
 	int8_t depth;						// depth of object in the tree. 0 is root (-1 is invalid)
 	index_t index;						// index of tokenized name, or NO_MATCH (-1) if no token (optional)
 	valueType valuetype;				// see valueType enum

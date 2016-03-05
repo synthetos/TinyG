@@ -2,7 +2,7 @@
  * xmega_rtc.h - general purpose real-time clock
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2013 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -22,21 +22,21 @@
 
 #define RTC_MILLISECONDS 10							// interrupt on every 10 RTC ticks (~10 ms)
 
-// Interrupt level: pick one
-#define	RTC_COMPINTLVL RTC_COMPINTLVL_LO_gc;		// lo interrupt on compare
-//#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
-//#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
-
-// Note: sys_ticks is in ms but is only accurate to 10 ms as it's derived from rtc_ticks
+/* Interrupt level: pick one
+ *  #define RTC_COMPINTLVL RTC_COMPINTLVL_LO_gc;    // lo interrupt on compare
+ *  #define RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;   // med interrupt on compare
+ *  #define RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;    // hi interrupt on compare
+ */
+#define	RTC_COMPINTLVL RTC_COMPINTLVL_LO_gc;
 
 typedef struct rtClock {
-	uint32_t rtc_ticks;								// RTC tick counter, 10 uSec each
-	uint32_t sys_ticks;								// system tick counter, 1 ms each
-	uint16_t magic_end;								// magic number is read directly
+	uint32_t rtc_ticks;     // RTC tick counter, 10 MS each tick
+	uint32_t sys_ticks;     // system tick counter, 1 MS each (note: only accurate to 10 ms)
+	uint16_t magic_end;     // magic number is read directly
 } rtClock_t;
 
 
-// Timeout object struct and functions
+// Timeout object struct and functions. See switch.c for example of use
 
 typedef struct Timeout {
     uint32_t _start, _delay;
@@ -47,7 +47,7 @@ bool Timeout_isPast(Timeout_t *this);
 void Timeout_set(Timeout_t *this, uint32_t delay);
 void Timeout_clear(Timeout_t *this);
 
- 
+
 // Other stuff
 
 extern rtClock_t rtc;

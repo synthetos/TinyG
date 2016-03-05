@@ -45,12 +45,8 @@
 /*
  * Common variables and settings
  */
-											// timer for debouncing switches
-#define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
-#define SW_DEGLITCH_TICKS 3					// 3=30ms
 
-#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
-//#define SW_DEGLITCH_MS 30					// Note: RTC ticks only have 10 ms resolution
+#define SW_LOCKOUT_MS 250       // timer for debouncing switches - Note: only haa 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -72,7 +68,7 @@ typedef enum {
 	SW_ACTIVE = 1                   // also reads as 'true' , aka switch is "closed"
 } swState;
 
-typedef enum {
+typedef enum {                      // Note: Do not change ordering of these values
     SW_EDGE_NONE = -1,              // no edge detected or edge flag reset (must be zero)
     SW_EDGE_TRAILING = 0,           // flag is set when trailing edge is detected
     SW_EDGE_LEADING = 1             // flag is set when leading edge is detected
@@ -110,11 +106,12 @@ typedef enum {	 			        // indexes into switch arrays
  */
 struct swStruct {								// switch state
 	swType switch_type;						    // 0=NO, 1=NC - applies to all switches
-	uint8_t sw_num_thrown;						// number of switch that was just thrown
+//	uint8_t sw_num_thrown;						// number of switch that was just thrown
     uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
 	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
     swEdge edge[NUM_SWITCHES];
     Timeout_t timeout[NUM_SWITCHES];            // lockout timer
+    uint16_t lockout_ms[NUM_SWITCHES];          // lockout time in ms
 
     int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
     swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
@@ -127,14 +124,9 @@ struct swStruct sw;
 void switch_init(void);
 void reset_switches(void);
 
-void set_switch_type(uint8_t switch_type);
-uint8_t get_switch_type();
-uint8_t get_switch_mode(uint8_t sw_num);
-uint8_t get_switch_thrown(void);
+uint8_t get_switch_mode(const uint8_t sw_num);
 
-/*
- * Switch config accessors and text functions
- */
+// Switch config accessors and text functions
 stat_t sw_set_st(nvObj_t *nv);
 stat_t sw_set_sw(nvObj_t *nv);
 
@@ -142,6 +134,6 @@ stat_t sw_set_sw(nvObj_t *nv);
 	void sw_print_st(nvObj_t *nv);
 #else
 	#define sw_print_st tx_print_stub
-#endif // __TEXT_MODE
+#endif
 
 #endif // End of include guard: SWITCH_H_ONCE

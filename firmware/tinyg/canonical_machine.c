@@ -237,17 +237,17 @@ float cm_get_feed_rate(const GCodeState_t *gcode_state) { return gcode_state->fe
 
 uint8_t cm_get_spindle_mode(const GCodeState_t *gcode_state) { return gcode_state->spindle_mode;}
 
-void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode) 
+void cm_set_motion_mode(GCodeState_t *gcode_state, const uint8_t motion_mode)
 {
     gcode_state->motion_mode = (cmMotionMode)motion_mode;
 }
 
-void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool) 
+void cm_set_tool_number(GCodeState_t *gcode_state, const uint8_t tool)
 {
     gcode_state->tool = tool;
 }
 
-void cm_set_spindle_mode(GCodeState_t *gcode_state, const uint8_t spindle_mode) 
+void cm_set_spindle_mode(GCodeState_t *gcode_state, const uint8_t spindle_mode)
 {
     gcode_state->spindle_mode = spindle_mode;
 }
@@ -794,6 +794,7 @@ stat_t cm_alarm(const stat_t status, const char *msg)
 	rpt_exception(status, msg);	                // send alarm message
     return (status);
 }
+
 /*
  * cm_shutdown() - enter shutdown state
  *
@@ -1510,7 +1511,7 @@ void cm_message(char *message)
  *
  *    - A queue flush request received during a motion stop should be honored
  *    - A queue flush request received during a feedhold should be honored.
- *      A request received during a feedhold should be deferred until cmFeedholdState 
+ *      A request received during a feedhold should be deferred until cmFeedholdState
  *      enters FEEDHOLD_HOLD (i.e. until deceleration is complete and motors stop).
  *
  *    - An end_hold (cycle start) request should only be honored while in a feedhold
@@ -1526,7 +1527,7 @@ void cm_message(char *message)
  *      The remainder of feedhold processing occurs in plan_exec.c / mp_exec_aline()
  *
  *	  - MOTION_HOLD and FEEDHOLD_SYNC tells mp_exec_aline() to begin feedhold processing
- *      after the current move segment is finished (< 5 ms later). 
+ *      after the current move segment is finished (< 5 ms later).
  *      See plan_exec.c for details of how feedholds are handled. In short:
  *
  *      - FEEDHOLD_SYNC causes the current move in mr to be replanned into a deceleration.
@@ -1716,7 +1717,7 @@ void cm_queue_flush()
  * at the end of the current command, including spindle motion. All Gcode state
  * is otherwise left intact.
  *
- * Note that the stop actually occurs at the end of the immediately preceding 
+ * Note that the stop actually occurs at the end of the immediately preceding
  * block - i.e. the stop is queued behind the last executing block.
  *
  *

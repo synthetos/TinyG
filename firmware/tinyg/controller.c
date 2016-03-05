@@ -329,24 +329,24 @@ static stat_t _shutdown_handler()
 
 void controller_assert_limit_condition(uint8_t input)
 {
-    cs.limit_asserted_on_input = input;
+    cs.limit_switch_asserted = input;
 }
 
 static stat_t _limit_switch_handler(void)
 {
-    if ((cm.machine_state == MACHINE_ALARM) || 
+    if ((cm.machine_state == MACHINE_ALARM) ||
         (cm.machine_state == MACHINE_PANIC) ||
         (cm.machine_state == MACHINE_SHUTDOWN)) {
         return (STAT_NOOP);                             // don't test limits if already in an alarm state
     }
 
-    if (!cs.limit_asserted_on_input) {
+    if (cs.limit_switch_asserted == 0) {
         return(STAT_NOOP);
     }
     char msg[12];
-    sprintf_P(msg, PSTR("input %d"), cs.limit_asserted_on_input);
+    sprintf_P(msg, PSTR("input %d"), cs.limit_switch_asserted);
     cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
-    cs.limit_asserted_on_input = 0;
+    cs.limit_switch_asserted = 0;
 
     return (STAT_OK);
 }
