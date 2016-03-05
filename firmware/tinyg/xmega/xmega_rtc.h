@@ -27,7 +27,6 @@
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_MED_gc;	// med interrupt on compare
 //#define	RTC_COMPINTLVL RTC_COMPINTLVL_HI_gc;	// hi interrupt on compare
 
-
 // Note: sys_ticks is in ms but is only accurate to 10 ms as it's derived from rtc_ticks
 
 typedef struct rtClock {
@@ -37,7 +36,7 @@ typedef struct rtClock {
 } rtClock_t;
 
 
-// Timeout object
+// Timeout object struct and functions
 
 typedef struct Timeout {
     uint32_t _start, _delay;

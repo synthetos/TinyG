@@ -49,7 +49,7 @@
 #define SW_LOCKOUT_TICKS 25					// 25=250ms. RTC ticks are ~10ms each
 #define SW_DEGLITCH_TICKS 3					// 3=30ms
 
-//#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
+#define SW_LOCKOUT_MS 250					// Note: RTC ticks only have 10 ms resolution
 //#define SW_DEGLITCH_MS 30					// Note: RTC ticks only have 10 ms resolution
 
 // switch modes
@@ -69,8 +69,14 @@ typedef enum {
 typedef enum {
 	SW_DISABLED = -1,
 	SW_INACTIVE = 0,                // also reads as 'false', aka switch is "open"
-	SW_ACTIVE                       // also reads as 'true' , aka switch is "closed"
+	SW_ACTIVE = 1                   // also reads as 'true' , aka switch is "closed"
 } swState;
+
+typedef enum {
+    SW_EDGE_NONE = -1,              // no edge detected or edge flag reset (must be zero)
+    SW_EDGE_TRAILING = 0,           // flag is set when trailing edge is detected
+    SW_EDGE_LEADING = 1             // flag is set when leading edge is detected
+} swEdge;
 
 // macros for finding the index into the switch table give the axis number
 #define MIN_SWITCH(axis) (axis*2)
@@ -105,12 +111,13 @@ typedef enum {	 			        // indexes into switch arrays
 struct swStruct {								// switch state
 	swType switch_type;						    // 0=NO, 1=NC - applies to all switches
 	uint8_t sw_num_thrown;						// number of switch that was just thrown
-	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
-
     uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
+	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
+    swEdge edge[NUM_SWITCHES];
+    Timeout_t timeout[NUM_SWITCHES];            // lockout timer
+
     int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
     swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
-    Timeout_t timeout[NUM_SWITCHES];            // deglitching and lockout timer
 };
 struct swStruct sw;
 
@@ -120,12 +127,10 @@ struct swStruct sw;
 void switch_init(void);
 void reset_switches(void);
 
-void switch_rtc_callback(void);
-
-uint8_t get_switch_mode(uint8_t sw_num);
-uint8_t get_switch_thrown(void);
 void set_switch_type(uint8_t switch_type);
 uint8_t get_switch_type();
+uint8_t get_switch_mode(uint8_t sw_num);
+uint8_t get_switch_thrown(void);
 
 /*
  * Switch config accessors and text functions

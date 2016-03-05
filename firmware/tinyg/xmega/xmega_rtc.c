@@ -73,13 +73,10 @@ void rtc_init()
 ISR(RTC_COMP_vect)
 {
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
-
-	// callbacks to whatever you need to happen on each RTC tick go here:
-	switch_rtc_callback();					// switch debouncing
 }
 
 /*
- * Timeout object
+ * Timeout object functions
  */
 
 bool Timeout_isSet(Timeout_t *this) {

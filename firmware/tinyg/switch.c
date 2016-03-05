@@ -49,8 +49,11 @@
 #include "canonical_machine.h"
 #include "text_parser.h"
 
-static void _switch_isr_helper(uint8_t sw_num);
-static bool _read_input_corrected(const uint8_t sw_num);
+//static void _switch_isr_helper(uint8_t sw_num);
+//static bool _read_input_corrected(const uint8_t sw_num);
+//static void _read_input_corrected(const uint8_t sw_num);
+static bool _read_raw_switch(const uint8_t sw_num);
+static void _dispatch_switch(const uint8_t sw_num);
 
 /*
  * Interrupt levels and vectors - The vectors are hard-wired to xmega ports
@@ -116,26 +119,16 @@ void switch_init(void)
 
 void reset_switches()
 {
-	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
-		sw.debounce[i] = SW_IDLE;
-        _read_input_corrected(i);                           // sets the switch state value in the struct
+    for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+        Timeout_clear(&sw.timeout[i]);          // clear all debounce timers
+        sw.state[i] = _read_raw_switch(i);      // set initial conditions
 	}
 }
 
 /*
  * Switch closure processing routines
- *
- * ISRs 				 - switch interrupt handler vectors
- * _isr_helper()		 - common code for all switch ISRs
- * switch_rtc_callback() - called from RTC for each RTC tick.
- *
- *	These functions interact with each other to process switch closures and firing.
- *	Each switch has a counter which is initially set to negative SW_DEGLITCH_TICKS.
- *	When a switch closure is DETECTED the count increments for each RTC tick.
- *	When the count reaches zero the switch is tripped and action occurs.
- *	The counter continues to increment positive until the lockout is exceeded.
  */
-
+/*
 ISR(X_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_X);}
 ISR(Y_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Y);}
 ISR(Z_MIN_ISR_vect)	{ _switch_isr_helper(SW_MIN_Z);}
@@ -147,13 +140,81 @@ ISR(A_MAX_ISR_vect)	{ _switch_isr_helper(SW_MAX_A);}
 
 static void _switch_isr_helper(uint8_t sw_num)
 {
-	if (sw.mode[sw_num] == SW_MODE_DISABLED) { return; } // this is never supposed to happen
-	if (sw.debounce[sw_num] == SW_LOCKOUT) { return; }   // exit if switch is in lockout
-	sw.debounce[sw_num] = SW_DEGLITCHING;                // either transitions state from IDLE or overwrites it
-	sw.count[sw_num] = -SW_DEGLITCH_TICKS;               // reset deglitch count regardless of entry state
-	_read_input_corrected(sw_num);                       // sets the state value in the struct
+//	if (sw.mode[sw_num] == SW_MODE_DISABLED) { return; } // this is never supposed to happen
+//	if (sw.debounce[sw_num] == SW_LOCKOUT) { return; }   // exit if switch is in lockout
+//	sw.debounce[sw_num] = SW_DEGLITCHING;                // either transitions state from IDLE or overwrites it
+//	sw.count[sw_num] = -SW_DEGLITCH_TICKS;               // reset deglitch count regardless of entry state
+    _dispatch_switch(sw_num);
+//	_read_input_corrected(sw_num);                       // sets the state value in the struct
+}
+*/
+
+ISR(X_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_X);}
+ISR(Y_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_Y);}
+ISR(Z_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_Z);}
+ISR(A_MIN_ISR_vect)	{ _dispatch_switch(SW_MIN_A);}
+ISR(X_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_X);}
+ISR(Y_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Y);}
+ISR(Z_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_Z);}
+ISR(A_MAX_ISR_vect)	{ _dispatch_switch(SW_MAX_A);}
+
+/*
+ * _read_raw_switch() - primitive to read input
+ *
+ * Read raw switch input and sense-correct for ACTIVE_LO / HI
+ */
+
+static bool _read_raw_switch(const uint8_t sw_num)
+{
+	uint8_t raw;    // raw is a naked bit, like 0b01000000 or 0b00000000
+	switch (sw_num) {
+		case SW_MIN_X: { raw = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_X: { raw = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Y: { raw = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Y: { raw = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_Z: { raw = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_Z: { raw = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
+		case SW_MIN_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
+		case SW_MAX_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
+        default: { return (false); }    // ERROR
+	}
+    return (raw ^ sw.switch_type);	// XOR to correct for ACTIVE mode. Casts to bool.
+//    return (read ^ (sw.switch_type ^ 1));	// correct for ACTIVE mode
 }
 
+/*
+ * _dispatch_switch() - process a switch interrupt
+ *
+ * Read raw switch input and sense-correct for ACTIVE_LO / HI
+ */
+
+static void _dispatch_switch(const uint8_t sw_num)
+{
+    // process conditions for return with no action
+	if (sw.mode[sw_num] == SW_MODE_DISABLED) {      // input is disabled (not supposed to happen)
+        return; 
+    }
+    if (Timeout_isSet(&sw.timeout[sw_num])) {       // input is in lockout period (take no action)
+        return;
+    }
+	bool raw_switch = _read_raw_switch(sw_num);     // no change in state (not supposed to happen)
+    if (sw.state[sw_num] == raw_switch) {
+        return;
+    }
+
+    // read the switch, set edges and start lockout timer
+    sw.state[sw_num] = raw_switch;                  // 1 = switch hit, 0 = switch unhit
+    sw.edge[sw_num] = raw_switch;                   // 1 = leading edge, 0 = trailing edge
+    Timeout_set(&sw.timeout[sw_num], SW_LOCKOUT_MS);
+
+    // execute the functions
+	if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) { // regardless of switch type
+    	cm_request_feedhold();
+	} else if (sw.mode[sw_num] & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
+    	controller_assert_limit_condition(sw_num+1);
+	}
+}
+/*
 void switch_rtc_callback(void)
 {
 	for (uint8_t i=0; i < NUM_SWITCHES; i++) {
@@ -182,41 +243,20 @@ void switch_rtc_callback(void)
 		}
 	}
 }
+*/
 
 /*
- * get_switch_mode()    - return switch mode setting
- * get_switch_thrown()  - return switch number most recently thrown
  * set_switch_type()    - set global switch type
  * get_switch_type()    - return glgobal switch type
+ * get_switch_mode()    - return switch mode setting
+ * get_switch_thrown()  - return switch number most recently thrown
  */
 
-uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
-uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
 void set_switch_type(uint8_t switch_type) { sw.switch_type = switch_type; }
 uint8_t get_switch_type() { return sw.switch_type; }
+uint8_t get_switch_mode(uint8_t sw_num) { return (sw.mode[sw_num]);}
+uint8_t get_switch_thrown(void) { return(sw.sw_num_thrown);}
 
-/*
- * _read_input_corrected() - primitive to read an input pin without any conditioning
- */
-static bool _read_input_corrected(const uint8_t sw_num)
-{
-	if ((sw_num < 0) || (sw_num >= NUM_SWITCHES)) { 
-        return (SW_DISABLED); 
-    }
-	uint8_t read;
-	switch (sw_num) {
-		case SW_MIN_X: { read = hw.sw_port[AXIS_X]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_X: { read = hw.sw_port[AXIS_X]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Y: { read = hw.sw_port[AXIS_Y]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_Z: { read = hw.sw_port[AXIS_Z]->IN & SW_MAX_BIT_bm; break;}
-		case SW_MIN_A: { read = hw.sw_port[AXIS_A]->IN & SW_MIN_BIT_bm; break;}
-		case SW_MAX_A: { read = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
-	}
-    sw.state[sw_num] = (read ^ (sw.switch_type ^ 1));	// correct for ACTIVE mode
-    return (sw.state[sw_num]);
-}
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS
