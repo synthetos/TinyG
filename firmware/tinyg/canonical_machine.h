@@ -549,8 +549,7 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
 	cfgAxis_t a[AXES];
 
 	/**** Runtime variables (PRIVATE) ****/
-
-//    cmCombinedState combined_state;
+                                            // Note: combined_state is synthetic. See cm_get_combined_state()
     cmMachineState machine_state;           // macs: machine/cycle/motion is the actual machine state
     cmCycleState cycle_state;               // cycs
     cmMotionState motion_state;             // momo

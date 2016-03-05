@@ -188,9 +188,13 @@ stat_t cm_homing_cycle_start_no_set(void)
 
 stat_t cm_homing_callback(void)
 {
-	if (cm.cycle_state != CYCLE_HOMING) { return (STAT_NOOP);} 	// exit if not in a homing cycle
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (hm.func(hm.axis));									// execute the current homing move
+	if (cm.cycle_state != CYCLE_HOMING) {  	    // exit if not in a homing cycle
+        return (STAT_NOOP);
+    }
+	if (cm_get_runtime_busy() == true) {        // sync to planner move ends
+        return (STAT_EAGAIN);
+    }
+	return (hm.func(hm.axis));                  // execute the current homing move
 }
 
 static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
@@ -202,8 +206,8 @@ static stat_t _set_homing_func(stat_t (*func)(int8_t axis))
 static stat_t _homing_axis_start(int8_t axis)
 {
 	// get the first or next axis
-	if ((axis = _get_next_axis(axis)) < 0) { 				// axes are done or error
-		if (axis == -1) {									// -1 is done
+	if ((axis = _get_next_axis(axis)) < 0) {    // axes are done or error
+		if (axis == -1) {						// -1 is done
 			cm.homing_state = HOMING_HOMED;
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
@@ -271,9 +275,9 @@ static stat_t _homing_axis_start(int8_t axis)
 // NOTE: Relies on independent switches per axis (not shared)
 static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
-	if (sw.state[hm.homing_switch] == SW_ACTIVE) {
+	if (sw.s[hm.homing_switch].state == SW_ACTIVE) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (sw.state[hm.limit_switch] == SW_ACTIVE) {
+	} else if (sw.s[hm.limit_switch].state == SW_ACTIVE) {
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
 	return (_set_homing_func(_homing_axis_search));
@@ -290,7 +294,7 @@ static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 {
 	// verify assumption that we arrived here because of homing switch closure
 	// rather than user-initiated feedhold or other disruption
-	if (sw.state[hm.homing_switch] != SW_ACTIVE) {
+	if (sw.s[hm.homing_switch].state != SW_ACTIVE) {
 		return (_set_homing_func(_homing_abort));
     }
 	_homing_axis_move(axis, hm.latch_backoff, hm.latch_velocity);

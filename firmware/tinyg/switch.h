@@ -42,11 +42,7 @@
 
 #include "xmega/xmega_rtc.h"
 
-/*
- * Common variables and settings
- */
-
-#define SW_LOCKOUT_MS 250       // timer for debouncing switches - Note: only haa 10 ms resolution
+#define SW_LOCKOUT_MS 250       // timer for debouncing switches - Note: only has 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -104,19 +100,28 @@ typedef enum {	 			        // indexes into switch arrays
  * Note: The term "thrown" is used because switches could be active low (normally-open)
  *		 or active high (normally-closed). "Thrown" means activated or hit.
  */
-struct swStruct {								// switch state
-	swType switch_type;						    // 0=NO, 1=NC - applies to all switches
-//	uint8_t sw_num_thrown;						// number of switch that was just thrown
-    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
-	swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
-    swEdge edge[NUM_SWITCHES];
-    Timeout_t timeout[NUM_SWITCHES];            // lockout timer
-    uint16_t lockout_ms[NUM_SWITCHES];          // lockout time in ms
 
-    int8_t count[NUM_SWITCHES];		            // deglitching and lockout counter
-    swDebounce debounce[NUM_SWITCHES];	        // switch debouncer state machine
-};
-struct swStruct sw;
+typedef struct swSwitch {
+    uint8_t mode;		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
+    swType type;
+    swState state;
+    swEdge edge;
+    Timeout_t timeout;              // lockout timer
+    uint16_t lockout_ms;            // lockout time in ms
+} switch_t;
+
+typedef struct swSingleton {
+	swType switch_type;             // global setting for switch type
+    switch_t s[NUM_SWITCHES];       // switch objects
+
+//    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
+//    swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
+//    swEdge edge[NUM_SWITCHES];
+//    Timeout_t timeout[NUM_SWITCHES];            // lockout timer
+//    uint16_t lockout_ms[NUM_SWITCHES];          // lockout time in ms
+
+} switches_t;
+switches_t sw;
 
 /****************************************************************************************
  * Function prototypes

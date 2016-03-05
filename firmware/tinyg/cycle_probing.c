@@ -172,9 +172,9 @@ static uint8_t _probing_init()
 	// Can't because switch mode is global and our probe is NO, not NC.
 
 	pb.probe_switch = SW_MIN_Z;										// FIXME: hardcoded...
-	pb.saved_switch_mode = sw.mode[pb.probe_switch];
+	pb.saved_switch_mode = sw.s[pb.probe_switch].mode;
 
-	sw.mode[pb.probe_switch] = SW_MODE_HOMING;
+	sw.s[pb.probe_switch].mode = SW_MODE_HOMING;
 	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
 	sw.switch_type = SW_ACTIVE_LO;							        // contact probes are NO switches... usually
 	switch_init();													// re-init to pick up new switch settings
@@ -196,7 +196,7 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
 	// initial probe state, don't probe if we're already contacted!
-	int8_t probe = sw.state[pb.probe_switch];
+	int8_t probe = sw.s[pb.probe_switch].state;
 
     if( probe == SW_INACTIVE ) {
         ritorno(cm_straight_feed(pb.target, pb.flags));
@@ -210,7 +210,7 @@ static stat_t _probing_start()
 
 static stat_t _probing_finish()
 {
-	int8_t probe = sw.state[pb.probe_switch];
+	int8_t probe = sw.s[pb.probe_switch].state;
 	cm.probe_state = (probe == SW_ACTIVE) ? PROBE_SUCCEEDED : PROBE_FAILED;
 
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
@@ -235,7 +235,7 @@ static void _probe_restore_settings()
 	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
 
 	sw.switch_type = pb.saved_switch_type;
-	sw.mode[pb.probe_switch] = pb.saved_switch_mode;
+	sw.s[pb.probe_switch].mode = pb.saved_switch_mode;
 	switch_init();								// re-init to pick up changes
 
 	// restore axis jerk
