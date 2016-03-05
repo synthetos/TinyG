@@ -24,8 +24,8 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*	The values referenced by this file are the default settings that are loaded into a 
- *  virgin EEPROM, and can be changed using the config commands. After initial load 
+/*	The values referenced by this file are the default settings that are loaded into a
+ *  virgin EEPROM, and can be changed using the config commands. After initial load
  *  the EEPROM values (or changed values) are used.
  *
  *	System and hardware settings that you shouldn't need to change are in hardware.h
@@ -51,8 +51,8 @@
 //#include "settings/settings_default.h"        // Default settings for release
 //#include "settings/settings_cnc3040.h"        // Generic CNC3040 machine
 //#include "settings/settings_othermill.h"      // OMC OtherMill
-#include "settings/settings_probotixV90.h"    // Probotix Fireball V90
-//#include "settings/settings_shapeoko2.h"        // Shapeoko2 - standard kit
+//#include "settings/settings_probotixV90.h"    // Probotix Fireball V90
+#include "settings/settings_shapeoko2.h"        // Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"      // Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"        // Zen Toolworks 7x12
 #endif

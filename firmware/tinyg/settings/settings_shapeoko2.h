@@ -33,7 +33,7 @@
  *       to be changed are in tinyg.h
  */
 /*
- * NOTE: If you change this file be sure the either rev the build 
+ * NOTE: If you change this file be sure the either rev the build
  *       number or run {defa:1} or weird things will break.
  */
 /***********************************************************************/
@@ -98,34 +98,34 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 
 #define JUNCTION_DEVIATION		0.01	    // default value, in mm - smaller is faster
 #define JUNCTION_ACCELERATION	2000000	    // 2 million - centripetal acceleration around corners
-#define JUNCTION_AGGRESSION     0.75		// new cornering algorithm - between 0.05 and 1.00 (max)
+//#define JUNCTION_AGGRESSION     0.75		// new cornering algorithm - between 0.25 and 2.00 (max)
 
 #define M1_MOTOR_MAP 			AXIS_X	// 1ma
 #define M1_STEP_ANGLE			1.8		// 1sa
 #define M1_TRAVEL_PER_REV		40.00	// 1tr
 #define M1_MICROSTEPS			8		// 1mi		1,2,4,8
-#define M1_POLARITY				1		// 1po		0=normal, 1=reversed
+#define M1_POLARITY				0		// 1po		0=normal, 1=reversed
 #define M1_POWER_MODE			2		// 1pm		TRUE=low power idle enabled
 
 #define M2_MOTOR_MAP			AXIS_Y  // Y1 - left side of machine
 #define M2_STEP_ANGLE			1.8
 #define M2_TRAVEL_PER_REV		40.00
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				1
+#define M2_POLARITY				0
 #define M2_POWER_MODE			2
 
 #define M3_MOTOR_MAP			AXIS_Y  // Y2 - right sif of machine
 #define M3_STEP_ANGLE			1.8
 #define M3_TRAVEL_PER_REV		40.00
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				0
+#define M3_POLARITY				1
 #define M3_POWER_MODE			2
 
 #define M4_MOTOR_MAP			AXIS_Z
 #define M4_STEP_ANGLE			1.8
 #define M4_TRAVEL_PER_REV		2.1166
 #define M4_MICROSTEPS			8
-#define M4_POLARITY				1
+#define M4_POLARITY				0
 #define M4_POWER_MODE			2
 
 #define M5_MOTOR_MAP			AXIS_DISABLED
@@ -146,20 +146,20 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 
 // These are relative conservative values for a well-tuned Shapeoko2 or similar XY belt / Z screw machine
 
-#define X_AXIS_MODE				AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX			16000 				// xvm		G0 max velocity in mm/min
-#define X_FEEDRATE_MAX			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
-#define X_TRAVEL_MIN			0					// xtn		minimum travel
-#define X_TRAVEL_MAX			290					// xtm		maximum travel (travel between switches or crashes)
-#define X_JERK_MAX				5000				// xjm		yes, that's "5 billion" mm/(min^3)
-#define X_JERK_HOMING			10000				// xjh
-#define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION	// xjd
-#define X_SWITCH_MODE_MIN		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
-#define X_SEARCH_VELOCITY		3000				// xsv		minus means move to minimum switch
-#define X_LATCH_VELOCITY		100					// xlv		mm/min
-#define X_LATCH_BACKOFF			10					// xlb		mm
-#define X_ZERO_BACKOFF			2					// xzb		mm
+#define X_AXIS_MODE				AXIS_STANDARD           // xam		see canonical_machine.h cmAxisMode for valid values
+#define X_VELOCITY_MAX			16000                   // xvm		G0 max velocity in mm/min
+#define X_FEEDRATE_MAX			X_VELOCITY_MAX          // xfr 		G1 max feed rate in mm/min
+#define X_TRAVEL_MIN			0                       // xtn		minimum travel
+#define X_TRAVEL_MAX			290                     // xtm		maximum travel (travel between switches or crashes)
+#define X_JERK_MAX				5000                    // xjm		yes, that's "5 billion" mm/(min^3)
+#define X_JERK_HOMING			10000                   // xjh
+#define X_JUNCTION_DEVIATION	JUNCTION_DEVIATION      // xjd
+#define X_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT    // xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SWITCH_MODE_MAX 		SW_MODE_LIMIT           // xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
+#define X_SEARCH_VELOCITY		3000                    // xsv		minus means move to minimum switch
+#define X_LATCH_VELOCITY		100                     // xlv		mm/min
+#define X_LATCH_BACKOFF			10                      // xlb		mm
+#define X_ZERO_BACKOFF			2                       // xzb		mm
 
 #define Y_AXIS_MODE				AXIS_STANDARD
 #define Y_VELOCITY_MAX			16000
@@ -169,8 +169,8 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define Y_JERK_MAX				5000
 #define Y_JERK_HOMING			10000				// xjh
 #define Y_JUNCTION_DEVIATION	JUNCTION_DEVIATION
-#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING
-#define Y_SWITCH_MODE_MAX		SW_MODE_DISABLED
+#define Y_SWITCH_MODE_MIN		SW_MODE_HOMING_LIMIT
+#define Y_SWITCH_MODE_MAX		SW_MODE_LIMIT
 #define Y_SEARCH_VELOCITY		3000
 #define Y_LATCH_VELOCITY		100
 #define Y_LATCH_BACKOFF			10
@@ -186,7 +186,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define Z_JERK_HOMING			1000
 #define Z_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_DISABLED
-#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING
+#define Z_SWITCH_MODE_MAX		SW_MODE_HOMING_LIMIT
 #define Z_SEARCH_VELOCITY		Z_VELOCITY_MAX
 #define Z_LATCH_VELOCITY		100
 #define Z_LATCH_BACKOFF			10
@@ -222,7 +222,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
                                                     // c=2*pi*r, r=5.30516476972984, d=c/360, s=((1000*60)/d)
 #define A_JERK_HOMING			A_JERK_MAX
 #define A_JUNCTION_DEVIATION	0.1
-#define A_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define A_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define A_SWITCH_MODE_MAX		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY 		2000
 #define A_LATCH_VELOCITY 		2000
@@ -236,7 +236,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define A_JERK_MAX				24000				// yes, 24 billion
 #define A_JERK_HOMING			A_JERK_MAX
 #define A_RADIUS				1.0
-#define A_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define A_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define A_SWITCH_MODE_MAX		SW_MODE_DISABLED
 #define A_SEARCH_VELOCITY		6000
 #define A_LATCH_VELOCITY		1000
@@ -253,7 +253,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define B_JERK_HOMING			B_JERK_MAX
 #define B_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define B_RADIUS				1
-#define B_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define B_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define B_SWITCH_MODE_MAX		SW_MODE_DISABLED
 #define B_SEARCH_VELOCITY		6000
 #define B_LATCH_VELOCITY		1000
@@ -269,7 +269,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define C_JERK_HOMING			C_JERK_MAX
 #define C_JUNCTION_DEVIATION	JUNCTION_DEVIATION
 #define C_RADIUS				1
-#define C_SWITCH_MODE_MIN		SW_MODE_HOMING
+#define C_SWITCH_MODE_MIN		SW_MODE_DISABLED
 #define C_SWITCH_MODE_MAX		SW_MODE_DISABLED
 #define C_SEARCH_VELOCITY		6000
 #define C_LATCH_VELOCITY		1000
