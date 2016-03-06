@@ -70,7 +70,7 @@ typedef enum {                      // Note: Do not change ordering of these val
     SW_EDGE_LEADING = 1             // flag is set when leading edge is detected
 } swEdge;
 
-// macros for finding the index into the switch table give the axis number
+// macros for finding the index into the switch table given the axis number
 #define MIN_SWITCH(axis) (axis*2)
 #define MAX_SWITCH(axis) (axis*2+1)
 

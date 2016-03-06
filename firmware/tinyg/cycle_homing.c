@@ -229,7 +229,9 @@ static stat_t _homing_axis_start(int8_t axis)
     }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
-	if (fp_ZERO(travel_distance)) return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+	if (fp_ZERO(travel_distance)) {
+        return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
+    }
 
 	// determine the switch setup and that config is OK
 	hm.min_mode = get_switch_mode(MIN_SWITCH(axis));
@@ -249,9 +251,9 @@ static stat_t _homing_axis_start(int8_t axis)
 		hm.search_travel = -travel_distance;				// search travels in negative direction
 		hm.latch_backoff = cm.a[axis].latch_backoff;		// latch travels in positive direction
 		hm.zero_backoff = cm.a[axis].zero_backoff;
-
+    }
 	// setup parameters for positive travel (homing to the maximum switch)
-	} else {
+	else {
 		hm.homing_switch = MAX_SWITCH(axis);				// the max is the homing switch
 		hm.limit_switch = MIN_SWITCH(axis);					// the min would be the limit switch
 		hm.search_travel = travel_distance;					// search travels in positive direction
@@ -265,8 +267,9 @@ static stat_t _homing_axis_start(int8_t axis)
 		return (_set_homing_func(_homing_axis_start));
 	}
 	// disable the limit switch parameter if there is no limit switch
-	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) hm.limit_switch = -1;
-
+	if (get_switch_mode(hm.limit_switch) == SW_MODE_DISABLED) {
+        hm.limit_switch = -1;
+    }
 	hm.saved_jerk = cm_get_axis_jerk(axis);					// save the max jerk value
 	return (_set_homing_func(_homing_axis_clear));			// start the clear
 }
@@ -325,12 +328,12 @@ static stat_t _homing_axis_move(int8_t axis, float target, float velocity)
 	float vect[] = {0,0,0,0,0,0};
 	bool flags[] = {false, false, false, false, false, false};
 
+    cm_queue_flush();                   // flush queue, reset model position, end hold state
+
+    // queue the next move
 	vect[axis] = target;
 	flags[axis] = true;
 	cm.gm.feed_rate = velocity;
-    cm_request_end_hold();
-	mp_flush_planner();										// don't use cm_request_queue_flush() here
-//	cm_request_cycle_start();
 	ritorno(cm_straight_feed(vect, flags));
 	return (STAT_EAGAIN);
 }
