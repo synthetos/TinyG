@@ -42,7 +42,7 @@
 
 #include "xmega/xmega_rtc.h"
 
-#define SW_LOCKOUT_MS 250       // timer for debouncing switches - Note: only has 10 ms resolution
+#define SW_LOCKOUT_MS 30       // timer for debouncing switches - Note: only has 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -113,13 +113,6 @@ typedef struct swSwitch {
 typedef struct swSingleton {
 	swType switch_type;             // global setting for switch type
     switch_t s[NUM_SWITCHES];       // switch objects
-
-//    uint8_t mode[NUM_SWITCHES];		            // 0=disabled, 1=homing, 2=homing+limit, 3=limit
-//    swState state[NUM_SWITCHES];				// 0=OPEN, 1=CLOSED (depends on switch type)
-//    swEdge edge[NUM_SWITCHES];
-//    Timeout_t timeout[NUM_SWITCHES];            // lockout timer
-//    uint16_t lockout_ms[NUM_SWITCHES];          // lockout time in ms
-
 } switches_t;
 switches_t sw;
 

@@ -63,7 +63,8 @@ static void _dispatch_switch(const uint8_t sw_num);
 #define GPIO1_INTLVL (PORT_INT0LVL_MED_gc|PORT_INT1LVL_MED_gc)
 
 // port assignments for vectors
-#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in system.h
+// WARNING: THis may not be correct for v6 and earlier boards due to the port assignment shift
+#define X_MIN_ISR_vect PORTA_INT0_vect	// these must line up with the SWITCH assignments in hardware.h
 #define Y_MIN_ISR_vect PORTD_INT0_vect
 #define Z_MIN_ISR_vect PORTE_INT0_vect
 #define A_MIN_ISR_vect PORTF_INT0_vect
@@ -120,10 +121,11 @@ void reset_switches()
         if (sw.s[i].mode == SW_MODE_DISABLED) {
             sw.s[i].state = SW_DISABLED;
         } else {
-            sw.s[i].state = _read_raw_switch(i);      // set initial conditions
+            sw.s[i].type = sw.switch_type;          // all switches inherit global switch type
+            sw.s[i].state = _read_raw_switch(i);    // set initial conditions
             sw.s[i].edge = SW_EDGE_NONE;
             sw.s[i].lockout_ms = SW_LOCKOUT_MS;
-            Timeout_clear(&sw.s[i].timeout);          // clear lockout timer
+            Timeout_clear(&sw.s[i].timeout);        // clear lockout timer
         }
 	}
 }
@@ -165,32 +167,51 @@ static bool _read_raw_switch(const uint8_t sw_num)
 		case SW_MAX_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
         default: { return (false); }    // ERROR
 	}
-    return (raw ^ !sw.switch_type);	// XOR to correct for ACTIVE mode. Casts to bool.
+    return (raw ^ !sw.s[sw_num].type);	// XOR to correct for ACTIVE mode. Casts to bool.
 }
 
 static void _dispatch_switch(const uint8_t sw_num)
 {
-    // process conditions for return with no action
-	if (sw.s[sw_num].mode == SW_MODE_DISABLED) {      // input is disabled (not supposed to happen)
+    //*** process 'no action' conditions ***//
+	if (sw.s[sw_num].mode == SW_MODE_DISABLED) {        // input is disabled (not supposed to happen)
         return;
     }
-    if (Timeout_isSet(&sw.s[sw_num].timeout)) {       // input is in lockout period (take no action)
+    if ((Timeout_isSet(&sw.s[sw_num].timeout)) &&
+        (!Timeout_isPast(&sw.s[sw_num].timeout))) {     // input is in lockout period (take no action)
         return;
     }
-	bool raw_switch = _read_raw_switch(sw_num);     // no change in state (not supposed to happen)
+	bool raw_switch = _read_raw_switch(sw_num);         // no change in state (not supposed to happen)
     if (sw.s[sw_num].state == raw_switch) {
         return;
     }
 
     // read the switch, set edges and start lockout timer
-    sw.s[sw_num].state = raw_switch;                  // 1 = switch hit, 0 = switch unhit
-    sw.s[sw_num].edge = raw_switch;                   // 1 = leading edge, 0 = trailing edge
+    sw.s[sw_num].state = raw_switch;                    // 1 = switch hit, 0 = switch unhit
+    sw.s[sw_num].edge = raw_switch;                     // 1 = leading edge, 0 = trailing edge
     Timeout_set(&sw.s[sw_num].timeout, sw.s[sw_num].lockout_ms);
 
-    // execute the functions
-	if ((cm.cycle_state == CYCLE_HOMING) || (cm.cycle_state == CYCLE_PROBE)) { // regardless of switch type
+    //*** execute the functions ***/
+
+    // functions that trigger on either edge
+	if (cm.cycle_state == CYCLE_HOMING) {
     	cm_request_feedhold();
-	} else if (sw.s[sw_num].mode & SW_LIMIT_BIT) {     // should be a limit switch, so fire it.
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+        return;
+    }
+
+    // functions that only trigger on the LEADING_EDGE
+    if (sw.s[sw_num].edge == SW_EDGE_TRAILING) {
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+        return;
+    } else {
+        sw.s[sw_num].edge = SW_EDGE_NONE;
+    }
+
+	if (cm.cycle_state == CYCLE_PROBE) {
+    	cm_request_feedhold();
+        return;
+    }
+	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
     	controller_assert_limit_condition(sw_num+1);
 	}
 }
