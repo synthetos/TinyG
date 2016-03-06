@@ -177,7 +177,7 @@ static void _dispatch_switch(const uint8_t sw_num)
         return;
     }
     if ((Timeout_isSet(&sw.s[sw_num].timeout)) &&
-        (!Timeout_isPast(&sw.s[sw_num].timeout))) {     // input is in lockout period (take no action)
+        (!Timeout_isPast(&sw.s[sw_num].timeout))) {     // input is in lockout period
         return;
     }
 	bool raw_switch = _read_raw_switch(sw_num);         // no change in state (not supposed to happen)

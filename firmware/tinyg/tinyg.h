@@ -59,7 +59,7 @@
 
 /****** REVISIONS ******/
 
-#define TINYG_FIRMWARE_BUILD        448.10	// Testing alarm setting and clearing
+#define TINYG_FIRMWARE_BUILD        448.11	// Tested switches, alarms and homing
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
 #define TINYG_CONFIG_VERSION		5							// CV values start at 5 for backwards compatibility
 #define TINYG_HARDWARE_PLATFORM		HW_PLATFORM_TINYG_XMEGA	    // see hardware.h
