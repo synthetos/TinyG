@@ -99,16 +99,25 @@ uint8_t _set_pb_func(uint8_t (*func)())
  *	to cm_get_runtime_busy() is about.
  */
 
-uint8_t cm_straight_probe(float target[], bool flags[])
+uint8_t cm_straight_probe(const float target[], const bool flags[])
 {
-	// trap zero feed rate condition
+	// trap feed rate errors
+    if (!cm.gf.feed_rate) {
+        return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+    }
 	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
 
-	// trap no axes specified
-	if (fp_NOT_ZERO(flags[AXIS_X]) && fp_NOT_ZERO(flags[AXIS_Y]) && fp_NOT_ZERO(flags[AXIS_Z]))
+	// trap missing XYZ axes
+    if (!(flags[AXIS_X] || flags[AXIS_Y] || flags[AXIS_Z])) {
 		return (STAT_GCODE_AXIS_IS_MISSING);
+    }
+
+	// trap ABC axes
+    if (flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C]) {
+        return(STAT_GCODE_AXIS_CANNOT_BE_PRESENT);
+    }
 
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint
@@ -126,15 +135,17 @@ uint8_t cm_probe_callback(void)
 	if ((cm.cycle_state != CYCLE_PROBE) && (cm.probe_state != PROBE_WAITING)) {
 		return (STAT_NOOP);				// exit if not in a probe cycle or waiting for one
 	}
-	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (pb.func());                                         // execute the current homing move
+	if (cm_get_runtime_busy()) {        // sync to planner move ends
+        return (STAT_EAGAIN);
+    }
+	return (pb.func());                 // execute the current homing move
 }
 
 /*
  * _probing_init()	- G38.2 homing cycle using limit switches
  *
  *	These initializations are required before starting the probing cycle.
- *	They must be done after the planner has exhasted all current CYCLE moves as
+ *	They must be done after the planner has exhausted all current CYCLE moves as
  *	they affect the runtime (specifically the switch modes). Side effects would
  *	include limit switches initiating probe actions instead of just killing movement
  */
@@ -158,32 +169,29 @@ static uint8_t _probing_init()
 	if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL) {
 		_probing_error_exit(-2);
     }
-	// error if the probe target requires a move along the A/B/C axes
-	for ( uint8_t axis=AXIS_A; axis<AXES; axis++ ) {
-		if (fp_NE(pb.start_position[axis], pb.target[axis])) {
-			_probing_error_exit(axis);
-        }
-	}
 
 	// initialize the probe switch
 
-    // switch the switch type mode for the probe
-    // FIXME: we should be able to use the homing switch at this point too,
-	// Can't because switch mode is global and our probe is NO, not NC.
+    // Swap the switch type mode for the probe
+    // FIXME: we should be able to use any switch at this point too,
 
-	pb.probe_switch = SW_MIN_Z;										// FIXME: hardcoded...
-	pb.saved_switch_mode = sw.s[pb.probe_switch].mode;
+	pb.probe_switch = SW_MIN_Z;                                     // FIXME: hardcoded...
+//	pb.saved_switch_mode = sw.s[pb.probe_switch].mode;
+//	sw.s[pb.probe_switch].mode = SW_MODE_HOMING;
+	pb.saved_switch_type = sw.s[pb.probe_switch].type;              // save the switch type for recovery later.
 
-	sw.s[pb.probe_switch].mode = SW_MODE_HOMING;
-	pb.saved_switch_type = sw.switch_type;							// save the switch type for recovery later.
-	sw.switch_type = SW_ACTIVE_LO;							        // contact probes are NO switches... usually
-	switch_init();													// re-init to pick up new switch settings
+//	sw.s[pb.probe_switch].mode = SW_MODE_PROBE;
+//	sw.s[pb.probe_switch].type = SW_ACTIVE_LO;                      // contact probes are NO switches... usually
+//	sw.s[pb.probe_switch].state = SW_INACTIVE;                      // contact probes are NO switches... usually
 
-	// probe in absolute machine coords
-	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
+//    read_switch(pb.probe_switch);                                   // set initial switch state
+//	switch_init();													// re-init to pick up new switch settings
+
+	// probe in workspace coordinate system, absolute distance
+//	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
-	cm_set_coord_system(ABSOLUTE_COORDS);
+//	cm_set_coord_system(ABSOLUTE_COORDS);
 
 	cm_spindle_control(SPINDLE_OFF);
 	return (_set_pb_func(_probing_start));							// start the move
@@ -196,9 +204,7 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
 	// initial probe state, don't probe if we're already contacted!
-	int8_t probe = sw.s[pb.probe_switch].state;
-
-    if( probe == SW_INACTIVE ) {
+    if (read_switch(pb.probe_switch) == SW_INACTIVE) {              // reads and sets initial switch state
         ritorno(cm_straight_feed(pb.target, pb.flags));
     }
 	return (_set_pb_func(_probing_finish));
@@ -243,7 +249,7 @@ static void _probe_restore_settings()
 		cm_set_axis_jerk(axis, pb.saved_jerk[axis]);
     }
 	// restore coordinate system and distance mode
-	cm_set_coord_system(pb.saved_coord_system);
+//	cm_set_coord_system(pb.saved_coord_system);
 	cm_set_distance_mode(pb.saved_distance_mode);
 
 	// update the model with actual position

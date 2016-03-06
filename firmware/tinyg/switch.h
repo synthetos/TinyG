@@ -39,11 +39,13 @@
 // switch modes
 #define SW_HOMING_BIT 0x01
 #define SW_LIMIT_BIT 0x02
+#define SW_PROBE_BIT 0x04
 #define SW_MODE_DISABLED 		0								// disabled for all operations
 #define SW_MODE_HOMING 			SW_HOMING_BIT					// enable switch for homing only
 #define SW_MODE_LIMIT 			SW_LIMIT_BIT					// enable switch for limits only
 #define SW_MODE_HOMING_LIMIT   (SW_HOMING_BIT | SW_LIMIT_BIT)	// homing and limits
-#define SW_MODE_MAX_VALUE 		SW_MODE_HOMING_LIMIT
+#define SW_MODE_PROBE           SW_PROBE_BIT
+#define SW_MODE_MAX_VALUE 		SW_MODE_PROBE
 
 typedef enum {
 	SW_ACTIVE_LO = 0,               // SW_TYPE_NORMALLY_OPEN = 0,
@@ -101,7 +103,7 @@ switches_t sw;
  */
 void switch_init(void);
 void reset_switches(void);
-
+swState read_switch (const uint8_t sw_num);
 uint8_t get_switch_mode(const uint8_t sw_num);
 
 // Switch config accessors and text functions

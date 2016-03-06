@@ -120,13 +120,19 @@ void reset_switches()
     for (uint8_t i=0; i < NUM_SWITCHES; i++) {
         if (sw.s[i].mode == SW_MODE_DISABLED) {
             sw.s[i].state = SW_DISABLED;
-        } else {
-            sw.s[i].type = sw.switch_type;          // all switches inherit global switch type
-            sw.s[i].state = _read_raw_switch(i);    // set initial conditions
             sw.s[i].edge = SW_EDGE_NONE;
-            sw.s[i].lockout_ms = SW_LOCKOUT_MS;
-            Timeout_clear(&sw.s[i].timeout);        // clear lockout timer
+            continue;
         }
+        if (sw.s[i].mode == SW_MODE_PROBE) {
+            sw.s[i].type = SW_ACTIVE_LO;            // This is a hack. Not all probes are NO
+        }
+        else {
+            sw.s[i].type = sw.switch_type;          // switches inherit global switch type
+        }
+        sw.s[i].state = _read_raw_switch(i);        // set initial conditions
+        sw.s[i].edge = SW_EDGE_NONE;
+        sw.s[i].lockout_ms = SW_LOCKOUT_MS;
+        Timeout_clear(&sw.s[i].timeout);            // clear lockout timer
 	}
 }
 
@@ -167,7 +173,7 @@ static bool _read_raw_switch(const uint8_t sw_num)
 		case SW_MAX_A: { raw = hw.sw_port[AXIS_A]->IN & SW_MAX_BIT_bm; break;}
         default: { return (false); }    // ERROR
 	}
-    return (raw ^ !sw.s[sw_num].type);	// XOR to correct for ACTIVE mode. Casts to bool.
+    return ((bool)raw ^ !(bool)sw.s[sw_num].type);	    // XOR to correct for ACTIVE mode. Casts to bool.
 }
 
 static void _dispatch_switch(const uint8_t sw_num)
@@ -214,6 +220,15 @@ static void _dispatch_switch(const uint8_t sw_num)
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
     	controller_assert_limit_condition(sw_num+1);
 	}
+}
+
+swState read_switch (const uint8_t sw_num)
+{
+    if (sw.s[sw_num].mode == SW_MODE_DISABLED) {
+        return (SW_DISABLED);
+    }
+    sw.s[sw_num].state = _read_raw_switch(sw_num);    // read pin
+    return (sw.s[sw_num].state);
 }
 
 /***********************************************************************************

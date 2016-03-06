@@ -672,12 +672,6 @@ stat_t cm_shutdown(const stat_t status, const char *msg);       // enter shutdow
 stat_t cm_panic_P(const stat_t status, const char *msg_P);
 stat_t cm_panic(const stat_t status, const char *msg);          // enter panic state - needs RESET
 
-//stat_t cm_alarm(nvObj_t *nv);
-//stat_t cm_pause(nvObj_t *nv);
-//stat_t cm_start(nvObj_t *nv);
-//stat_t cm_flush(nvObj_t *nv);
-//stat_t cm_reset(nvObj_t *nv);
-
 // Representation (4.3.3)
 stat_t cm_select_plane(const uint8_t plane);                                // G17, G18, G19
 stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
@@ -761,13 +755,13 @@ void cm_program_end(void);										// M2
 /*--- Cycles ---*/
 
 // Homing cycles
-stat_t cm_homing_cycle_start(void);								// G28.2
-stat_t cm_homing_cycle_start_no_set(void);						// G28.4
-stat_t cm_homing_callback(void);								// G28.2/.4 main loop callback
+stat_t cm_homing_cycle_start(void);                             // G28.2
+stat_t cm_homing_cycle_start_no_set(void);                      // G28.4
+stat_t cm_homing_callback(void);                                // G28.2/.4 main loop callback
 
 // Probe cycles
-stat_t cm_straight_probe(float target[], bool flags[]);		    // G38.2
-stat_t cm_probe_callback(void);									// G38.2 main loop callback
+stat_t cm_straight_probe(const float target[], const bool flags[]);	// G38.2
+stat_t cm_probe_callback(void);                                 // G38.2 main loop callback
 
 // Jogging cycle
 stat_t cm_jogging_callback(void);								// jogging cycle main loop
