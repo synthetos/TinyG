@@ -24,25 +24,17 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/* Switch processing functions under Motate
- *
- *	Switch processing turns pin transitions into reliable switch states.
- *	There are 2 main operations:
- *
- *	  - read pin		get raw data from a pin
- *	  - read switch		return processed switch closures
- *
- *	Read pin may be a polled operation or an interrupt on pin change. If interrupts
- *	are used they must be provided for both leading and trailing edge transitions.
- *
- *	Read switch contains the results of read pin and manages edges and debouncing.
- */
 #ifndef SWITCH_H_ONCE
 #define SWITCH_H_ONCE
 
-#include "xmega/xmega_rtc.h"
+#include "xmega/xmega_rtc.h"    // needed for Timeout function
 
-#define SW_LOCKOUT_MS 30       // timer for debouncing switches - Note: only has 10 ms resolution
+/*
+ * Switch defines
+ */
+//--- change as required for board and switch hardware ---//
+
+#define SW_LOCKOUT_MS 50       // timer for debouncing switches - Note: only has 10 ms resolution
 
 // switch modes
 #define SW_HOMING_BIT 0x01
@@ -70,16 +62,6 @@ typedef enum {                      // Note: Do not change ordering of these val
     SW_EDGE_LEADING = 1             // flag is set when leading edge is detected
 } swEdge;
 
-// macros for finding the index into the switch table given the axis number
-#define MIN_SWITCH(axis) (axis*2)
-#define MAX_SWITCH(axis) (axis*2+1)
-
-typedef enum {						// state machine for managing debouncing and lockout
-	SW_IDLE = 0,
-	SW_DEGLITCHING,
-	SW_LOCKOUT
-} swDebounce;
-
 typedef enum {	 			        // indexes into switch arrays
 	SW_MIN_X = 0,
 	SW_MAX_X,
@@ -91,14 +73,12 @@ typedef enum {	 			        // indexes into switch arrays
 	SW_MAX_A,
 	NUM_SWITCHES 			        // must be last one. Used for array sizing and for loops
 }swNums;
-#define SW_OFFSET SW_MAX_X	        // offset between MIN and MAX switches
 #define NUM_SWITCH_PAIRS (NUM_SWITCHES/2)
+#define MIN_SWITCH(axis) (axis*2)   // macros for finding index into switch table given axis number
+#define MAX_SWITCH(axis) (axis*2+1)
 
 /*
  * Switch control structures
- *
- * Note: The term "thrown" is used because switches could be active low (normally-open)
- *		 or active high (normally-closed). "Thrown" means activated or hit.
  */
 
 typedef struct swSwitch {
