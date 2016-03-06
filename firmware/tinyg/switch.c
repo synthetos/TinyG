@@ -222,13 +222,51 @@ static void _dispatch_switch(const uint8_t sw_num)
 	}
 }
 
-swState read_switch (const uint8_t sw_num)
+/*
+ * read_switch() - read, store and return current state of switch
+ */
+
+swState read_switch(const uint8_t sw_num)
 {
     if (sw.s[sw_num].mode == SW_MODE_DISABLED) {
         return (SW_DISABLED);
     }
     sw.s[sw_num].state = _read_raw_switch(sw_num);    // read pin
     return (sw.s[sw_num].state);
+}
+
+/*
+ * find_probe_switch() - return probe switch number or error
+ *
+ *  Probes are only supported on XYZ axes (no rotaries)
+ *
+ *  Returns
+ *      0-N - number of switch configured for PROBE
+ *      -1  - no probe switch found on XYZ
+ *      -2  - multiple probe switches found
+ */
+
+int8_t find_probe_switch()
+{
+    int8_t probe = -1;          // probe switch
+
+	for (uint8_t axis=AXIS_X; axis<AXIS_A; axis++ ) {
+    	if (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) {
+            if (probe == -1) {
+                probe = MIN_SWITCH(axis);
+            } else {
+                return (-2);    // multiple probe switches were found
+            }
+    	}
+    	if (sw.s[MAX_SWITCH(axis)].mode == SW_MODE_PROBE) {
+        	if (probe == -1) {
+            	probe = MAX_SWITCH(axis);
+            } else {
+                return (-2);    // multiple probe switches were found
+            }
+    	}
+    }
+    return (probe);
 }
 
 /***********************************************************************************

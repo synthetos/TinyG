@@ -89,7 +89,7 @@ char *get_status_message(stat_t status);
 #define	STAT_INITIALIZING 15			// initializing - not ready for use
 #define	STAT_ENTERING_BOOT_LOADER 16	// this code actually emitted from boot loader, not TinyG
 #define	STAT_FUNCTION_IS_STUBBED 17
-#define	STAT_ALARM 18                   
+#define	STAT_ALARM 18
 #define STAT_NO_DISPLAY 19				// suppress results display - presumably handled upstream
 // NOTE: XIO codes align to here
 
@@ -192,10 +192,10 @@ char *get_status_message(stat_t status);
 #define	STAT_INVALID_OR_MALFORMED_COMMAND 101	// malformed line to parser
 #define	STAT_BAD_NUMBER_FORMAT 102				// number format error
 #define	STAT_UNSUPPORTED_TYPE 103		        // an otherwise valid JSON type is not supported
-#define STAT_PARAMETER_IS_READ_ONLY 104         // input error: parameter cannot be set 
+#define STAT_PARAMETER_IS_READ_ONLY 104         // input error: parameter cannot be set
 #define STAT_PARAMETER_CANNOT_BE_READ 105       // input error: parameter cannot be returned
 #define	STAT_COMMAND_NOT_ACCEPTED 106			// input error: command cannot be accepted at this time
-#define STAT_INPUT_EXCEEDS_MAX_LENGTH 107       // input error: input string is too long 
+#define STAT_INPUT_EXCEEDS_MAX_LENGTH 107       // input error: input string is too long
 #define	STAT_INPUT_LESS_THAN_MIN_VALUE 108		// input error: value is under minimum
 #define	STAT_INPUT_EXCEEDS_MAX_VALUE 109		// input error: value is over maximum
 #define	STAT_INPUT_VALUE_RANGE_ERROR 110		// input error: value is out-of-range
@@ -360,11 +360,12 @@ char *get_status_message(stat_t status);
 #define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 245
 #define	STAT_HOMING_ERROR_HOMING_INPUT_MISCONFIGURED 246
 #define	STAT_HOMING_ERROR_MUST_CLEAR_SWITCHES_BEFORE_HOMING 247
-#define	STAT_ERROR_248 248
-#define	STAT_ERROR_249 249
 
+#define	STAT_NO_PROBE_SWITCH_CONFIGURED 248
+#define	STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED 249
 #define	STAT_PROBE_CYCLE_FAILED 250						// probing cycle did not complete
 #define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 251
+
 #define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
 
 #define	STAT_ERROR_253 253
@@ -650,8 +651,8 @@ static const char stat_244[] PROGMEM = "Homing Err - Travel min & max are the sa
 static const char stat_245[] PROGMEM = "245";
 static const char stat_246[] PROGMEM = "Homing Err - Homing input is misconfigured";
 static const char stat_247[] PROGMEM = "Homing Err - Must clear switches before homing";
-static const char stat_248[] PROGMEM = "248";
-static const char stat_249[] PROGMEM = "249";
+static const char stat_248[] PROGMEM = "No probe switch configured";
+static const char stat_249[] PROGMEM = "Multiple probe switches configured";
 
 static const char stat_250[] PROGMEM = "Probe cycle failed";
 static const char stat_251[] PROGMEM = "Probe endpoint is starting point";

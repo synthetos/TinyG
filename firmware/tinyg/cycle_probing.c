@@ -44,12 +44,9 @@ struct pbProbingSingleton {						// persistent probing runtime variables
 
 	// switch configuration
 	uint8_t probe_switch;						// which switch should we check?
-	uint8_t saved_switch_type;					// saved switch type NO/NC
-	uint8_t saved_switch_mode;	                // save the probe switch's original settings
 
 	// state saved from gcode model
 	uint8_t saved_distance_mode;				// G90,G91 global setting
-	uint8_t saved_coord_system;					// G54 - G59 setting
 	float saved_jerk[AXES];						// saved and restored for each axis
 
 	// probe destination
@@ -119,6 +116,15 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
         return(STAT_GCODE_AXIS_CANNOT_BE_PRESENT);
     }
 
+    // locate the probe switch
+    pb.probe_switch = find_probe_switch();
+    if (pb.probe_switch == -1) {
+        return(STAT_NO_PROBE_SWITCH_CONFIGURED);
+    }
+    if (pb.probe_switch == -2) {
+        return(STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED);
+    }
+
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint
 	copy_vector(pb.flags, flags);		// set axes involved on the move
@@ -170,29 +176,9 @@ static uint8_t _probing_init()
 		_probing_error_exit(-2);
     }
 
-	// initialize the probe switch
-
-    // Swap the switch type mode for the probe
-    // FIXME: we should be able to use any switch at this point too,
-
-	pb.probe_switch = SW_MIN_Z;                                     // FIXME: hardcoded...
-//	pb.saved_switch_mode = sw.s[pb.probe_switch].mode;
-//	sw.s[pb.probe_switch].mode = SW_MODE_HOMING;
-	pb.saved_switch_type = sw.s[pb.probe_switch].type;              // save the switch type for recovery later.
-
-//	sw.s[pb.probe_switch].mode = SW_MODE_PROBE;
-//	sw.s[pb.probe_switch].type = SW_ACTIVE_LO;                      // contact probes are NO switches... usually
-//	sw.s[pb.probe_switch].state = SW_INACTIVE;                      // contact probes are NO switches... usually
-
-//    read_switch(pb.probe_switch);                                   // set initial switch state
-//	switch_init();													// re-init to pick up new switch settings
-
 	// probe in workspace coordinate system, absolute distance
-//	pb.saved_coord_system = cm_get_coord_system(ACTIVE_MODEL);     //cm.gm.coord_system;
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
-//	cm_set_coord_system(ABSOLUTE_COORDS);
-
 	cm_spindle_control(SPINDLE_OFF);
 	return (_set_pb_func(_probing_start));							// start the move
 }
@@ -239,17 +225,12 @@ static stat_t _probing_finish()
 static void _probe_restore_settings()
 {
 	mp_flush_planner(); 						// we should be stopped now, but in case of switch closure
-
-	sw.switch_type = pb.saved_switch_type;
-	sw.s[pb.probe_switch].mode = pb.saved_switch_mode;
-	switch_init();								// re-init to pick up changes
+//    cm_queue_flush();       // flush queue, set position, end hold
 
 	// restore axis jerk
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		cm_set_axis_jerk(axis, pb.saved_jerk[axis]);
     }
-	// restore coordinate system and distance mode
-//	cm_set_coord_system(pb.saved_coord_system);
 	cm_set_distance_mode(pb.saved_distance_mode);
 
 	// update the model with actual position

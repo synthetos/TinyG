@@ -105,6 +105,7 @@ void switch_init(void);
 void reset_switches(void);
 swState read_switch (const uint8_t sw_num);
 uint8_t get_switch_mode(const uint8_t sw_num);
+int8_t find_probe_switch(void);
 
 // Switch config accessors and text functions
 stat_t sw_set_st(nvObj_t *nv);
