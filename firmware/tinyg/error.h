@@ -360,16 +360,15 @@ char *get_status_message(stat_t status);
 #define	STAT_HOMING_ERROR_NEGATIVE_LATCH_BACKOFF 245
 #define	STAT_HOMING_ERROR_HOMING_INPUT_MISCONFIGURED 246
 #define	STAT_HOMING_ERROR_MUST_CLEAR_SWITCHES_BEFORE_HOMING 247
+#define	STAT_ERROR_248 248
+#define	STAT_ERROR_249 249
 
-#define	STAT_NO_PROBE_SWITCH_CONFIGURED 248
-#define	STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED 249
 #define	STAT_PROBE_CYCLE_FAILED 250						// probing cycle did not complete
-#define STAT_PROBE_ENDPOINT_IS_STARTING_POINT 251
+#define STAT_PROBE_TRAVEL_TOO_SMALL 251
+#define	STAT_NO_PROBE_SWITCH_CONFIGURED 252
+#define	STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED 253
+#define	STAT_PROBE_SWITCH_ON_ABC_AXIS 254
 
-#define	STAT_JOGGING_CYCLE_FAILED 252					// jogging cycle did not complete
-
-#define	STAT_ERROR_253 253
-#define	STAT_ERROR_254 254
 #define	STAT_ERROR_255 255
 
 // ****** !!! Do not exceed 255 without also changing stat_t typedef ******
@@ -651,12 +650,15 @@ static const char stat_244[] PROGMEM = "Homing Err - Travel min & max are the sa
 static const char stat_245[] PROGMEM = "245";
 static const char stat_246[] PROGMEM = "Homing Err - Homing input is misconfigured";
 static const char stat_247[] PROGMEM = "Homing Err - Must clear switches before homing";
-static const char stat_248[] PROGMEM = "No probe switch configured";
-static const char stat_249[] PROGMEM = "Multiple probe switches configured";
+static const char stat_248[] PROGMEM = "248";
+static const char stat_249[] PROGMEM = "249";
 
 static const char stat_250[] PROGMEM = "Probe cycle failed";
 static const char stat_251[] PROGMEM = "Probe endpoint is starting point";
-static const char stat_252[] PROGMEM = "Jogging cycle failed";
+static const char stat_252[] PROGMEM = "No probe switch configured";
+static const char stat_253[] PROGMEM = "Multiple probe switches configured";
+static const char stat_254[] PROGMEM = "Probe switch configured on ABC axis";
+static const char stat_255[] PROGMEM = "255";
 
 static const char *const stat_msg[] PROGMEM = {
     stat_00, stat_01, stat_02, stat_03, stat_04, stat_05, stat_06, stat_07, stat_08, stat_09,
@@ -684,7 +686,7 @@ static const char *const stat_msg[] PROGMEM = {
     stat_220, stat_221, stat_222, stat_223, stat_224, stat_225, stat_226, stat_227, stat_228, stat_229,
     stat_230, stat_231, stat_232, stat_233, stat_234, stat_235, stat_236, stat_237, stat_238, stat_239,
     stat_240, stat_241, stat_242, stat_243, stat_244, stat_245, stat_246, stat_247, stat_248, stat_249,
-    stat_250, stat_251, stat_252
+    stat_250, stat_251, stat_252, stat_253, stat_254, stat_255
 };
 
 #endif // End of include guard: ERROR_H_ONCE

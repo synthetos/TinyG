@@ -32,8 +32,8 @@
  *       are in hardware.h  Application settings that also shouldn't need
  *       to be changed are in tinyg.h
  */
-/* 
- * NOTE: If you change this file be sure the either rev the build 
+/*
+ * NOTE: If you change this file be sure the either rev the build
  *       number or run {defa:1} or weird things will break.
  */
 
@@ -190,7 +190,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define Z_JERK_MAX 				JERK_MAX
 #define Z_JERK_HOMING			(Z_JERK_MAX * 2)
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MIN		SW_MODE_PROBE
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100

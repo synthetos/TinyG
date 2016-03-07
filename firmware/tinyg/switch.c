@@ -244,13 +244,21 @@ swState read_switch(const uint8_t sw_num)
  *      0-N - number of switch configured for PROBE
  *      -1  - no probe switch found on XYZ
  *      -2  - multiple probe switches found
+ *      -3  - probe switch found on ABC axes
  */
 
 int8_t find_probe_switch()
 {
+    uint8_t axis;
     int8_t probe = -1;          // probe switch
 
-	for (uint8_t axis=AXIS_X; axis<AXIS_A; axis++ ) {
+	for (axis=AXIS_A; axis<AXES; axis++ ) {
+    	if ((sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) ||
+            (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE)) {
+            return (-3);
+        }
+    }
+	for (axis=AXIS_X; axis<AXIS_A; axis++ ) {
     	if (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) {
             if (probe == -1) {
                 probe = MIN_SWITCH(axis);

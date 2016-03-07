@@ -118,13 +118,22 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
 
     // locate the probe switch
     pb.probe_switch = find_probe_switch();
+    switch (pb.probe_switch) {
+        case (-1): { return(STAT_NO_PROBE_SWITCH_CONFIGURED); }
+        case (-2): { return(STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED); }
+        case (-3): { return(STAT_PROBE_SWITCH_ON_ABC_AXIS); }
+    }
+/*
     if (pb.probe_switch == -1) {
         return(STAT_NO_PROBE_SWITCH_CONFIGURED);
     }
     if (pb.probe_switch == -2) {
         return(STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED);
     }
-
+    if (pb.probe_switch == -3) {
+        return(STAT_PROBE_SWITCH_ON_ABC_AXIS);
+    }
+*/
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint
 	copy_vector(pb.flags, flags);		// set axes involved on the move

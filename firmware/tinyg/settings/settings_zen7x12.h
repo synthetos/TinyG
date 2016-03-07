@@ -28,8 +28,8 @@
  * 		 into a virgin EEPROM, and can be changed using the config commands.
  *		 After initial load the EEPROM values (or changed values) are used.
  */
-/* 
- * NOTE: If you change this file be sure the either rev the build 
+/*
+ * NOTE: If you change this file be sure the either rev the build
  *       number or run {defa:1} or weird things will break.
  */
 
@@ -187,7 +187,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 #define Z_TRAVEL_MAX 			75
 #define Z_JERK_MAX 				JERK_MAX_LINEAR
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
-#define Z_SWITCH_MODE_MIN 		SW_MODE_DISABLED
+#define Z_SWITCH_MODE_MIN		SW_MODE_PROBE
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100
