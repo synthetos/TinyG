@@ -1887,13 +1887,14 @@ static const char msg_mots2[] PROGMEM = "Hold";
 static const char *const msg_mots[] PROGMEM = { msg_mots0, msg_mots1, msg_mots2 };
 
 static const char msg_hold0[] PROGMEM = "Off";
-static const char msg_hold1[] PROGMEM = "Sync";
-static const char msg_hold2[] PROGMEM = "Plan";
-static const char msg_hold3[] PROGMEM = "Decel";
-static const char msg_hold4[] PROGMEM = "Hold";
-static const char msg_hold5[] PROGMEM = "End Hold";
+static const char msg_hold1[] PROGMEM = "Requested";
+static const char msg_hold2[] PROGMEM = "Sync";
+static const char msg_hold3[] PROGMEM = "Decel-Continue";
+static const char msg_hold4[] PROGMEM = "Decel-To-Zero";
+static const char msg_hold5[] PROGMEM = "Pending";
+static const char msg_hold6[] PROGMEM = "Hold";
 static const char *const msg_hold[] PROGMEM = { msg_hold0, msg_hold1, msg_hold2, msg_hold3,
-												msg_hold4,  msg_hold5 };
+												msg_hold4, msg_hold5, msg_hold6 };
 
 static const char msg_home0[] PROGMEM = "Not Homed";
 static const char msg_home1[] PROGMEM = "Homed";

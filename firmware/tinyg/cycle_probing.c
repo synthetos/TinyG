@@ -42,11 +42,8 @@
 struct pbProbingSingleton {						// persistent probing runtime variables
 	stat_t (*func)();							// binding for callback function state machine
 
-	// switch configuration
-	uint8_t probe_switch;						// which switch should we check?
-
-	// state saved from gcode model
-	uint8_t saved_distance_mode;				// G90,G91 global setting
+	int8_t probe_switch;						// which switch should we check?
+	uint8_t saved_distance_mode;				// save and restore G90,G91 setting
 	float saved_jerk[AXES];						// saved and restored for each axis
 
 	// probe destination
@@ -64,36 +61,25 @@ static stat_t _probing_finish();
 static stat_t _probing_finalize_exit();
 static stat_t _probing_error_exit(int8_t axis);
 
-
-/**** HELPERS ***************************************************************************
- * _set_pb_func() - a convenience for setting the next dispatch vector and exiting
- */
-
-uint8_t _set_pb_func(uint8_t (*func)())
-{
-	pb.func = func;
-	return (STAT_EAGAIN);
-}
-
 /****************************************************************************************
+ *
  * cm_probing_cycle_start()	- G38.2 homing cycle using limit switches
  * cm_probing_callback() 	- main loop callback for running the homing cycle
  *
  *	--- Some further details ---
  *
  *	All cm_probe_cycle_start does is prevent any new commands from queueing to the
- *	planner so that the planner can move to a sop and report MACHINE_PROGRAM_STOP.
- *	OK, it also queues the function that's called once motion has stopped.
+ *	planner so that the planner can move to a stop and report MACHINE_PROGRAM_STOP.
+ *	It also queues the function that's called once motion has stopped.
  *
  *	Note: When coding a cycle (like this one) you get to perform one queued move per
  *	entry into the continuation, then you must exit.
  *
- *	Another Note: When coding a cycle (like this one) you must wait until
- *	the last move has actually been queued (or has finished) before declaring
- *	the cycle to be done. Otherwise there is a nasty race condition in the
- *	tg_controller() that will accept the next command before the position of
- *	the final move has been recorded in the Gcode model. That's what the call
- *	to cm_get_runtime_busy() is about.
+ *	Another Note: When coding a cycle (like this one) you must wait until the last
+ *	move has actually been queued (or has finished) before declaring the cycle done.
+ *  Otherwise there is a nasty race condition in the controller() that will accept
+ *  the next command before the position of the final move has been recorded in the
+ *  Gcode model. That's what the call to cm_get_runtime_busy() is about.
  */
 
 uint8_t cm_straight_probe(const float target[], const bool flags[])
@@ -116,24 +102,14 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
         return(STAT_GCODE_AXIS_CANNOT_BE_PRESENT);
     }
 
-    // locate the probe switch
+    // locate the probe switch or declare an error
     pb.probe_switch = find_probe_switch();
     switch (pb.probe_switch) {
         case (-1): { return(STAT_NO_PROBE_SWITCH_CONFIGURED); }
         case (-2): { return(STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED); }
         case (-3): { return(STAT_PROBE_SWITCH_ON_ABC_AXIS); }
     }
-/*
-    if (pb.probe_switch == -1) {
-        return(STAT_NO_PROBE_SWITCH_CONFIGURED);
-    }
-    if (pb.probe_switch == -2) {
-        return(STAT_MULTIPLE_PROBE_SWITCHES_CONFIGURED);
-    }
-    if (pb.probe_switch == -3) {
-        return(STAT_PROBE_SWITCH_ON_ABC_AXIS);
-    }
-*/
+
 	// set probe move endpoint
 	copy_vector(pb.target, target);		// set probe move endpoint
 	copy_vector(pb.flags, flags);		// set axes involved on the move
@@ -157,7 +133,17 @@ uint8_t cm_probe_callback(void)
 }
 
 /*
- * _probing_init()	- G38.2 homing cycle using limit switches
+ * _set_pb_func() - helper for setting the next dispatch vector and exiting
+ */
+
+uint8_t _set_pb_func(uint8_t (*func)())
+{
+    pb.func = func;
+    return (STAT_EAGAIN);
+}
+
+/*
+ * _probing_init() - G38.2 homing cycle using limit switches
  *
  *	These initializations are required before starting the probing cycle.
  *	They must be done after the planner has exhausted all current CYCLE moves as
