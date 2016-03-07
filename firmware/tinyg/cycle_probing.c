@@ -59,7 +59,7 @@ static stat_t _probing_init();
 static stat_t _probing_start();
 static stat_t _probing_finish();
 static stat_t _probing_finalize_exit();
-static stat_t _probing_error_exit(int8_t axis);
+//static stat_t _probing_error_exit(int8_t axis);
 
 /****************************************************************************************
  *
@@ -116,6 +116,18 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
 	clear_vector(cm.probe_results);		// clear the old probe position.
 										// NOTE: relying on probe_result will not detect a probe to 0,0,0.
 
+    // setup more probing variables and test travel distance
+	for (uint8_t axis=0; axis<AXES; axis++) {
+//    	pb.saved_jerk[axis] = cm_get_axis_jerk(axis);
+//    	cm_set_axis_jerk(axis, cm.a[axis].jerk_homing); // use the high jerk for probe
+    	pb.start_position[axis] = cm_get_absolute_position(MODEL, axis);
+	}
+
+	// error if the probe target is too close to the current position
+	if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL) {
+        return(STAT_PROBE_TRAVEL_TOO_SMALL);
+	}
+
 	cm.probe_state = PROBE_WAITING;		// wait until planner queue empties before completing initialization
 	pb.func = _probing_init; 			// bind probing initialization function
 	return (STAT_OK);
@@ -161,16 +173,16 @@ static uint8_t _probing_init()
 
 	// initialize the axes - save the jerk settings & switch to the jerk_homing settings
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
-		pb.saved_jerk[axis] = cm_get_axis_jerk(axis);	// save the max jerk value
-		cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);	// use the homing jerk for probe
-		pb.start_position[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
+		pb.saved_jerk[axis] = cm_get_axis_jerk(axis);	            // save the max jerk value
+		cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);	            // use the homing jerk for probe
+//		pb.start_position[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
 	}
-
+/*
 	// error if the probe target is too close to the current position
 	if (get_axis_vector_length(pb.start_position, pb.target) < MINIMUM_PROBE_TRAVEL) {
 		_probing_error_exit(-2);
     }
-
+*/
 	// probe in workspace coordinate system, absolute distance
 	pb.saved_distance_mode = cm_get_distance_mode(ACTIVE_MODEL);   //cm.gm.distance_mode;
 	cm_set_distance_mode(ABSOLUTE_MODE);
@@ -240,6 +252,7 @@ static stat_t _probing_finalize_exit()
 	return (STAT_OK);
 }
 
+/*
 static stat_t _probing_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the probing callback
@@ -258,3 +271,4 @@ static stat_t _probing_error_exit(int8_t axis)
 	_probe_restore_settings();
 	return (STAT_PROBE_CYCLE_FAILED);
 }
+*/

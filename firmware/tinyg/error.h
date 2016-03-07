@@ -654,7 +654,7 @@ static const char stat_248[] PROGMEM = "248";
 static const char stat_249[] PROGMEM = "249";
 
 static const char stat_250[] PROGMEM = "Probe cycle failed";
-static const char stat_251[] PROGMEM = "Probe endpoint is starting point";
+static const char stat_251[] PROGMEM = "Probe travel is too small";
 static const char stat_252[] PROGMEM = "No probe switch configured";
 static const char stat_253[] PROGMEM = "Multiple probe switches configured";
 static const char stat_254[] PROGMEM = "Probe switch configured on ABC axis";

@@ -39,12 +39,11 @@
 // switch modes
 #define SW_HOMING_BIT 0x01
 #define SW_LIMIT_BIT 0x02
-#define SW_PROBE_BIT 0x04
 #define SW_MODE_DISABLED 		0								// disabled for all operations
 #define SW_MODE_HOMING 			SW_HOMING_BIT					// enable switch for homing only
 #define SW_MODE_LIMIT 			SW_LIMIT_BIT					// enable switch for limits only
 #define SW_MODE_HOMING_LIMIT   (SW_HOMING_BIT | SW_LIMIT_BIT)	// homing and limits
-#define SW_MODE_PROBE           SW_PROBE_BIT
+#define SW_MODE_PROBE           4
 #define SW_MODE_MAX_VALUE 		SW_MODE_PROBE
 
 typedef enum {

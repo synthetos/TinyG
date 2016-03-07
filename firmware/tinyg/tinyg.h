@@ -86,9 +86,9 @@
  ***** TINYG APPLICATION DEFINITIONS ******************************************
  ******************************************************************************/
 
-typedef uint16_t magic_t;		// magic number size
-#define MAGICNUM 0x12EF			// used for memory integrity assertions
-#define BAD_MAGIC(a) (a != MAGICNUM)    // simple assertion test
+typedef uint16_t magic_t;                   // magic number size
+#define MAGICNUM 0x12EF                     // used for memory integrity assertions
+#define BAD_MAGIC(a) (a != MAGICNUM)        // simple assertion test
 
 /***** Axes, motors & PWM channels used by the application *****/
 // Axes, motors & PWM channels must be defines (not enums) so #ifdef <value> can be used

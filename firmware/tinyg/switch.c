@@ -252,12 +252,14 @@ int8_t find_probe_switch()
     uint8_t axis;
     int8_t probe = -1;          // probe switch
 
-	for (axis=AXIS_A; axis<AXES; axis++ ) {
-    	if ((sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) ||
-            (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE)) {
-            return (-3);
-        }
+    // test for probe input on rotary axes
+    // THis is a hack that assumes there are no inputs mapped to B or C axes. OK for now.
+    if ((sw.s[SW_MIN_A].mode == SW_MODE_PROBE) ||
+        (sw.s[SW_MAX_A].mode == SW_MODE_PROBE)) {
+        return (-3);
     }
+
+    // test for one and only one probe input on XYZ axes
 	for (axis=AXIS_X; axis<AXIS_A; axis++ ) {
     	if (sw.s[MIN_SWITCH(axis)].mode == SW_MODE_PROBE) {
             if (probe == -1) {
