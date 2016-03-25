@@ -31,11 +31,7 @@
  * NOTES:
  *  - Fix group count in master 440.21 - is 33, should be 34
  *  - change pstr2str to accept the starting point of the target string as a 2nd argument
- *  - problem where PARENT (sr, depth 1) followed by EMPTY (depth 2) does not close properly
- *  - problem in SR clear that causes the above to occur: {srs:{clear:t}} fails
  *  - verify non-quoted txt: values (error handling fails silently)
- *  - CANcel for ^x (huh?)
- *  - drop linemode to 10 or 12 buffers, reduce RX buffer size and max line length
  */
 
 #ifndef TINYG_H_ONCE

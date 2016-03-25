@@ -1549,7 +1549,6 @@ void cm_message(char *message)
  * cm_request_end_hold() - cycle restart
  * cm_request_queue_flush()
  */
-
 void cm_request_feedhold(void) {
     // honor request if not already in a feedhold and you are moving
     if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
@@ -1638,7 +1637,6 @@ bool cm_has_hold()
 {
     return (cm.hold_state != FEEDHOLD_OFF);
 }
-
 
 /*
  * cm_queue_flush() - Flush planner queue and correct model positions

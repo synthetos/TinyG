@@ -233,3 +233,4 @@ static stat_t _probing_finalize_exit()
 
 	return (STAT_OK);
 }
+

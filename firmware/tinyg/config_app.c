@@ -317,6 +317,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","bjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
 	{ "b","bjd",_fip,  0, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fipc, 3, cm_print_ra, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].radius,			B_RADIUS },
+
 #ifdef __ARM	// B axis extended parameters
 	{ "b","asn",_iip,  0, cm_print_sn, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_B][SW_MIN].mode,	B_SWITCH_MODE_MIN },
 	{ "b","asx",_iip,  0, cm_print_sx, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_B][SW_MAX].mode,	B_SWITCH_MODE_MAX },

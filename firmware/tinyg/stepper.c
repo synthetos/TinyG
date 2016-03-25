@@ -274,8 +274,7 @@ void stepper_reset()
     st_run.dda_ticks_downcount = 0;                     // signal the runtime is not busy
     st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;    // set to EXEC or it won't restart
 
-	for (uint8_t motor=0; motor<MOTORS; motor++) {
-//		st_pre.mot[motor].prev_direction = STEP_INITIAL_DIRECTION;
+	for (uint8_t motor=0; motor<MOTORS; motor++) {      // Note: do not initialize prev_direction
 		st_run.mot[motor].substep_accumulator = 0;      // will become max negative during per-motor setup;
 		st_pre.mot[motor].corrected_steps = 0;          // diagnostic only - no action effect
 	}
