@@ -167,16 +167,17 @@ typedef enum {						    // G Modal Group 1
 	MOTION_MODE_CW_ARC,					// G2 - clockwise arc feed
 	MOTION_MODE_CCW_ARC,				// G3 - counter-clockwise arc feed
 	MOTION_MODE_CANCEL,		            // G80 - cancel motion mode
-	MOTION_MODE_STRAIGHT_PROBE,			// G38.2
-	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
-	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
-	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
-	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
-	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
-	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
-	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
-	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
-	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
+	MOTION_MODE_STRAIGHT_PROBE			// G38.2
+
+//	MOTION_MODE_CANNED_CYCLE_81,		// G81 - drilling
+//	MOTION_MODE_CANNED_CYCLE_82,		// G82 - drilling with dwell
+//	MOTION_MODE_CANNED_CYCLE_83,		// G83 - peck drilling
+//	MOTION_MODE_CANNED_CYCLE_84,		// G84 - right hand tapping
+//	MOTION_MODE_CANNED_CYCLE_85,		// G85 - boring, no dwell, feed out
+//	MOTION_MODE_CANNED_CYCLE_86,		// G86 - boring, spindle stop, rapid out
+//	MOTION_MODE_CANNED_CYCLE_87,		// G87 - back boring
+//	MOTION_MODE_CANNED_CYCLE_88,		// G88 - boring, spindle stop, manual out
+//	MOTION_MODE_CANNED_CYCLE_89			// G89 - boring, dwell, feed out
 } cmMotionMode;
 
 typedef enum {						    // Used for detecting gcode errors. See NIST section 3.4
@@ -318,17 +319,15 @@ typedef enum {					    // axis modes (ordered: see _cm_get_feed_time())
  */
 typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
 	uint32_t linenum;					// Gcode block line number
-	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
-										// G82, G83 G84, G85, G86, G87, G88, G89
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
-
     float feed_rate;                    // F - normalized to millimeters/minute or in inverse time mode
     float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
 #ifdef __BITFIELDS
     // keep all bitfields together
     uint8_t :0;  // alignment
+	cmMotionMode motion_mode             : 3 ;  // Group1: G0, G1, G2, G3, G38.2, G80 - G89
     cmFeedRateMode feed_rate_mode        : 2 ;  // See cmFeedRateMode for settings
     cmCanonicalPlane select_plane        : 2 ;  // G17,G18,G19 - values to set plane to
     cmUnitsMode units_mode               : 2 ;  // G20,G21 - 0=inches (G20), 1 = mm (G21)
@@ -337,8 +336,8 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
     cmDistanceMode arc_distance_mode     : 1 ;  // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
     cmAbsoluteOverride absolute_override : 1 ;  // G53 TRUE = move using machine coordinates - this block only
     cmCoordSystem coord_system           : 3 ;  // G54-G59 - select coordinate system 1-6
-    uint8_t tool                         : 6 ;  // M6 tool change - moves "tool_select" to "tool"
-    uint8_t tool_select                  : 6 ;  // T value - T sets this value
+    uint8_t tool                         : 5 ;  // M6 tool change - moves "tool_select" to "tool"
+    uint8_t tool_select                  : 5 ;  // T value - T sets this value
 
 	uint8_t spindle_mode                 : 2 ;  // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	uint8_t mist_coolant                 : 1 ;  // TRUE = mist on (M7), FALSE = off (M9)
@@ -346,20 +345,21 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 #else 
     // keep all bitfields together
 //    uint8_t :0;  // alignment
-    cmFeedRateMode feed_rate_mode        ;   // See cmFeedRateMode for settings
-    cmCanonicalPlane select_plane        ;   // G17,G18,G19 - values to set plane to
-    cmUnitsMode units_mode               ;   // G20,G21 - 0=inches (G20), 1 = mm (G21)
-    cmPathControl path_control           ;   // G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
-    cmDistanceMode distance_mode         ;   // G90=use absolute coords, G91=incremental movement
-    cmDistanceMode arc_distance_mode     ;   // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
-    cmAbsoluteOverride absolute_override ;   // G53 TRUE = move using machine coordinates - this block only
-    cmCoordSystem coord_system           ;   // G54-G59 - select coordinate system 1-6
-    uint8_t tool                         ;   // M6 tool change - moves "tool_select" to "tool"
-    uint8_t tool_select                  ;   // T value - T sets this value
+	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80 - G89
+    cmFeedRateMode feed_rate_mode;      // See cmFeedRateMode for settings
+    cmCanonicalPlane select_plane;      // G17,G18,G19 - values to set plane to
+    cmUnitsMode units_mode;             // G20,G21 - 0=inches (G20), 1 = mm (G21)
+    cmPathControl path_control;         // G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
+    cmDistanceMode distance_mode;       // G90=use absolute coords, G91=incremental movement
+    cmDistanceMode arc_distance_mode;   // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
+    cmAbsoluteOverride absolute_override; // G53 TRUE = move using machine coordinates - this block only
+    cmCoordSystem coord_system;         // G54-G59 - select coordinate system 1-6
+    uint8_t tool;                       // M6 tool change - moves "tool_select" to "tool"
+    uint8_t tool_select;                // T value - T sets this value
 
-    uint8_t spindle_mode                 ;  // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-    uint8_t mist_coolant                 ;  // TRUE = mist on (M7), FALSE = off (M9)
-    uint8_t flood_coolant                ;  // TRUE = flood on (M8), FALSE = off (M9)
+    uint8_t spindle_mode;               // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
+    uint8_t mist_coolant;               // TRUE = mist on (M7), FALSE = off (M9)
+    uint8_t flood_coolant;              // TRUE = flood on (M8), FALSE = off (M9)
 #endif
 
 	float spindle_speed;				// in RPM
@@ -716,6 +716,7 @@ stat_t cm_resume_origin_offsets(void);                                      // G
 
 // Free Space Motion (4.3.4)
 stat_t cm_straight_traverse(const float target[], const bool flags[]);      // G0
+stat_t cm_cancel_motion_mode(void);                                         // G80
 stat_t cm_set_g28_position(void);								            // G28.1
 stat_t cm_goto_g28_position(const float target[], const bool flags[]);      // G28
 stat_t cm_set_g30_position(void);								            // G30.1
@@ -725,7 +726,6 @@ stat_t cm_goto_g30_position(const float target[], const bool flags[]);      // G
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
 stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
-//stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode); // G61, G61.1, G64
 
 // Machining Functions (4.3.6)
 stat_t cm_straight_feed(const float target[], const bool flags[]);		    // G1

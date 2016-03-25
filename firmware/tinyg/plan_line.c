@@ -117,7 +117,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float length = sqrt(length_square);
 
 	if (fp_ZERO(length)) {
-		return (STAT_OK);               // used to sr_request_status_report() before exiting
+		return (STAT_MINIMUM_LENGTH_MOVE);
 	}
 
 	// If _calc_move_times() says the move will take less than the minimum move time
@@ -147,7 +147,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 
 	// get a cleared buffer and setup move variables
 	if ((bf = mp_get_write_buffer()) == NULL) {
-        return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));             // never supposed to fail
+        return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
     }
 	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
 	bf->length = length;

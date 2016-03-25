@@ -118,8 +118,8 @@ void config_init()
 	config_init_assertions();
 
 #ifdef __ARM
-// ++++ The following code is offered until persistence is implemented.
-// ++++ Then you can use the AVR code (or something like it)
+// The following code is offered until persistence is implemented.
+// Then you can use the AVR code (or something like it)
 	cfg.comm_mode = JSON_MODE;					// initial value until EEPROM is read
 	_set_defa(nv);
 #endif
@@ -156,6 +156,10 @@ void config_init()
 
 static void _set_defa(nvObj_t *nv)
 {
+	if (cm.cycle_state != CYCLE_OFF) {
+    	rpt_exception_P(STAT_COMMAND_NOT_ACCEPTED, PSTR("Cannot reset to defaults when moving"));
+        return;
+	}
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
         if (cfg_has_flag(nv->index, F_INITIALIZE)) {
@@ -727,11 +731,6 @@ nvObj_t *nv_relink_nv_list()
 
     // skip past empty/skip leading elements
     for ( ; j<NV_LIST_LEN; j++, i++) {
-//        if (nv->valuetype >= TYPE_NULL) {
-//            break;
-//        }
-//        nv = nv_next(nv);                   // skip over TYPE_EMPTY and TYPE_SKIP
-
         if ((nv->valuetype == TYPE_EMPTY) || (nv->valuetype == TYPE_SKIP)) {
             nv = nv_next(nv);
             continue;

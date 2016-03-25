@@ -516,7 +516,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_DEFAULT: {
 			cm_set_absolute_override(cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
-				case MOTION_MODE_CANCEL:            { cm.gm.motion_mode = cm.gn.motion_mode; break;}
+				case MOTION_MODE_CANCEL:            { status = cm_cancel_motion_mode(); break;}
 				case MOTION_MODE_STRAIGHT_TRAVERSE: { status = cm_straight_traverse(cm.gn.target, cm.gf.target); break;}
 				case MOTION_MODE_STRAIGHT_FEED:     { status = cm_straight_feed(cm.gn.target, cm.gf.target); break;}
 

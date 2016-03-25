@@ -52,9 +52,11 @@
 //#include "settings/settings_cnc3040.h"        // Generic CNC3040 machine
 #include "settings/settings_othermill.h"      // OMC OtherMill
 //#include "settings/settings_probotixV90.h"    // Probotix Fireball V90
-//#include "settings/settings_shapeoko2.h"        // Shapeoko2 - standard kit
+//#include "settings/settings_shapeoko2.h"      // Shapeoko2 - standard kit
 //#include "settings/settings_ultimaker.h"      // Ultimaker 3D printer
 //#include "settings/settings_zen7x12.h"        // Zen Toolworks 7x12
+
+//#include "settings/settings_test_001.h"       // test settings
 #endif
 
 #endif // End of include guard: SETTINGS_H_ONCE

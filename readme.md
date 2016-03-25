@@ -39,7 +39,7 @@ Features added:
 * JSON transaction IDs `{tid:NNNNN}`
 * JSON text containers `{txt:"...."}`
 * Incremental status report configuration `{srs:...}`
-*
+* Minimum length moves and minimum time moves are accepted and not reported as errors
 
 #### CHANGES AFFECTING MIGRATION FROM MASTER TO EDGE-0.97
 The following are changes between Master build 440.xx and Edge-0.97 that directly affect communications or operation:

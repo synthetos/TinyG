@@ -1120,10 +1120,21 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
-	cm_cycle_start();							// required for homing & other cycles
-	mp_aline(&cm.gm);							// send the move to the planner
-	cm_finalize_move();
-	return (STAT_OK);
+    status = mp_aline(&cm.gm);                  // send the move to the planner
+    if ((status != STAT_MINIMUM_LENGTH_MOVE) && 
+        (status != STAT_MINIMUM_TIME_MOVE)) {
+        cm_cycle_start();                       // required for homing & other cycles
+        status = STAT_OK;                       // don't report these conditions to the UI
+    }
+    cm_finalize_move();
+	return (status);
+}
+
+stat_t cm_cancel_motion_mode()
+{
+	cm.gm.motion_mode = MOTION_MODE_CANCEL;
+    cm_cycle_end();
+    return (STAT_OK);
 }
 
 /*
@@ -1252,9 +1263,13 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
         return (cm_alarm(status, cs.saved_buf));
     }
 	// prep and plan the move
-	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
-	cm_cycle_start();							// required for homing & other cycles
-	status = mp_aline(&cm.gm);					// send the move to the planner
+	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
+    status = mp_aline(&cm.gm);
+    if ((status != STAT_MINIMUM_LENGTH_MOVE) && 
+        (status != STAT_MINIMUM_TIME_MOVE)) {   // send the move to the planner
+        cm_cycle_start();                       // required for homing & other cycles
+        status = STAT_OK;                       // don't report these conditions to the UI
+    }
 	cm_finalize_move();
 	return (status);
 }

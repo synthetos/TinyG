@@ -299,6 +299,9 @@
     <Compile Include="settings\settings_shapeoko2.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="settings\settings_test_001.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings\settings_ultimaker.h">
       <SubType>compile</SubType>
     </Compile>
