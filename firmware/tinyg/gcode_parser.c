@@ -32,6 +32,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 
 // local helper functions and macros
 static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *block_delete_flag);
+static void _parse_clear(const char *str);
 static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value);
 static stat_t _point(float value);
 static stat_t _validate_gcode_block(void);
@@ -55,28 +56,24 @@ stat_t gc_gcode_parser(char *block)
 	char *msg = &none;					// gcode message or NUL string
 	uint8_t block_delete_flag;
 
-	// don't process Gcode blocks if in alarmed state
-	if (cm.machine_state == MACHINE_ALARM) {
-        return (STAT_COMMAND_REJECTED_BY_ALARM);
-    }
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
-
-	// queue a "(MSG" response
-	if (*msg != NUL) {
-    	(void)cm_message(msg);				// queue the message
-	}
 
 	if (str[0] == NUL) {                    // normalization returned null string
     	return (STAT_OK);                   // most likely a comment line
 	}
 
+	// queue a "(MSG" response
+	if (*msg != NUL) {
+    	(void)cm_message(msg);
+	}
+
     // Trap M30 and M2 as $clear conditions. This has no effect it not in ALARM or SHUTDOWN
-    cm_parse_clear(str);                    // parse Gcode and clear alarms if M30 or M2 is found
+    _parse_clear(str);                      // parse Gcode and clear alarms if M30 or M2 is found
     ritorno(cm_is_alarmed());               // return error status if in alarm, shutdown or panic
 
 	// Block delete omits the line if a / char is present in the first space
 	// For now this is unconditional and will always delete
-//	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {
+//	if ((block_delete_flag == true) && (cm_get_block_delete_switch() == true)) {    // FUTURE
 	if (block_delete_flag == true) {
 		return (STAT_NOOP);
 	}
@@ -87,7 +84,7 @@ stat_t gc_gcode_parser(char *block)
  * _normalize_gcode_block() - normalize a block (line) of gcode in place
  *
  *	Normalization functions:
- *   - convert all letters to upper case
+ *   - convert all letters to UPPER case
  *	 - remove white space, control and other invalid characters
  *	 - remove (erroneous) leading zeros that might be taken to mean Octal
  *	 - identify and return start of comments and messages
@@ -171,6 +168,24 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 			if (*rd == ')') *rd = NUL;		// NUL terminate on trailing parenthesis, if any
 		}
 	}
+}
+
+/*
+ * _parse_clear() - parse incoming gcode for M30 or M2 - clear if in ALARM state
+ *
+ *  If M30 or M2 PROGRAM_END is found clear an ALARM, but not SHUTDOWN or PANIC. 
+ *  Assumes Gcode string has been normalized and has no leading or embedded whitespace.
+ */
+static void _parse_clear(const char *str)
+{
+    if (cm.machine_state == MACHINE_ALARM) {
+        if (str[0] == 'M') {
+            if ( ((str[1]=='3') && (str[2]=='0') && (str[3]==NUL)) ||   // M30
+                 ((str[1]=='2') && (str[2]==NUL) )) {                   // M2
+                cm_clear();
+            }
+        }
+    }
 }
 
 /*

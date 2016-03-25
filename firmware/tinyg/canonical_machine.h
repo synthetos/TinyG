@@ -685,7 +685,6 @@ stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutd
 stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
 stat_t cm_clr(nvObj_t *nv);                                     // clear alarm and shutdown from command input
 void cm_clear(void);                                            // raw clear command
-void cm_parse_clear(const char *s);                             // parse gcode for M30 or M2 clear condition
 stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
 void cm_halt_all(void);                                         // halt motion, spindle and coolant
 void cm_halt_motion(void);                                      // halt motion (immediate stop) but not spindle & other IO

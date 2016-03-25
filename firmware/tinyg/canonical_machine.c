@@ -680,10 +680,6 @@ stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from comman
 
 /*
  * cm_clear() - clear ALARM and SHUTDOWN states
- * cm_parse_clear() - parse incoming gcode for M30 or M2 - clears if in ALARM state
- *
- * cm_parse_clear() parses an M30 or M2 PROGRAM_END and will clear an ALARM, but not
- * SHUTDOWN or PANIC. Assumes Gcode string has no leading or embedded whitespace
  */
 
 void cm_clear()
@@ -692,17 +688,6 @@ void cm_clear()
         cm.machine_state = MACHINE_PROGRAM_STOP;
     } else if (cm.machine_state == MACHINE_SHUTDOWN) {
         cm.machine_state = MACHINE_READY;
-    }
-}
-
-void cm_parse_clear(const char *s)
-{
-    if (cm.machine_state == MACHINE_ALARM) {
-        if (toupper(s[0]) == 'M') {
-            if (( (s[1]=='3') && (s[2]=='0') && (s[3]==NUL)) || ((s[1]=='2') && (s[2]==NUL) )) {
-                cm_clear();
-            }
-        }
     }
 }
 
@@ -1110,7 +1095,6 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
-
 	cm_set_model_target(target, flags);
 
 	// test soft limits
@@ -1120,11 +1104,12 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
+
     status = mp_aline(&cm.gm);                  // send the move to the planner
-    if ((status != STAT_MINIMUM_LENGTH_MOVE) && 
-        (status != STAT_MINIMUM_TIME_MOVE)) {
-        cm_cycle_start();                       // required for homing & other cycles
-        status = STAT_OK;                       // don't report these conditions to the UI
+    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
+        status = STAT_OK;
+    } else {
+        cm_cycle_start();
     }
     cm_finalize_move();
 	return (status);
@@ -1265,10 +1250,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
     status = mp_aline(&cm.gm);
-    if ((status != STAT_MINIMUM_LENGTH_MOVE) && 
-        (status != STAT_MINIMUM_TIME_MOVE)) {   // send the move to the planner
-        cm_cycle_start();                       // required for homing & other cycles
-        status = STAT_OK;                       // don't report these conditions to the UI
+    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
+        status = STAT_OK;
+    } else {
+        cm_cycle_start();
     }
 	cm_finalize_move();
 	return (status);
