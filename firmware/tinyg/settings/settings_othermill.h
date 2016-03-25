@@ -78,8 +78,8 @@
 #define STATUS_REPORT_MIN_MS        100                     // milliseconds - enforces a viable minimum
 #define STATUS_REPORT_INTERVAL_MS   250                     // milliseconds - set $SV=0 to disable
 
-//static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,ofsa,unit,stat,coor,momo,dist,home,hold,macs,cycs,mots,plan,prbe";
-static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,admo,frmo,momo,stat";
+static const char PROGMEM SR_DEFAULTS[] = "mpox,mpoy,mpoz,mpoa,ofsx,ofsy,ofsz,ofsa,unit,stat,coor,momo,dist,home,hold,macs,cycs,mots,plan,prbe";
+//static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,unit,coor,dist,admo,frmo,momo,stat";
 
 #define QUEUE_REPORT_VERBOSITY		QR_SINGLE		        // one of: QR_OFF, QR_SINGLE, QR_TRIPLE
 
