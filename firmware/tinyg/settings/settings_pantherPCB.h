@@ -37,6 +37,24 @@
 /**** Panther PCB CNC Mill  ***************************************/
 /***********************************************************************/
 
+/* Machine Details
+Travel X
+
+ 8.26" (210mm)
+
+Travel Y	 6.7" (170mm)
+Travel Z	 2.95" (75mm)
+Table Size	 9.84" x 12.6"  (250 x320 mm)
+Linear Ball Bearing size	 X Axis:13mm   Y Axis:16mm   Z Axis:12mm
+Lead screws	 M10x1.5 pitch (mm)
+Feed Speed	 1800mm/min   (1500mm/min  recommend)
+Repeat  accuracy	Better Than 0.05mm
+Machine Size	 385 x380x390 mm
+Packing  Size	 430 x420 x420 mm
+Machine weight	 28.6 pounds(13kg)
+Shipping weight	 33 pounds(15kg)
+*/
+
 // ***> NOTE: The init message must be a single line with no CRs or LFs
 #define INIT_MESSAGE "Initializing configs to Panther  8.25\"x6.7\"  profile"
 
