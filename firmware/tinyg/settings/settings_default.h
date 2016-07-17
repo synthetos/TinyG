@@ -71,7 +71,7 @@
 #define JSON_VERBOSITY              JV_CONFIGS              // one of: JV_SILENT, JV_FOOTER, JV_MESSAGES, JV_CONFIGS, JV_LINENUM, JV_VERBOSE
 #define JSON_SYNTAX                 JSON_SYNTAX_STRICT      // one of JSON_SYNTAX_RELAXED, JSON_SYNTAX_STRICT
 
-#define XIO_RX_MODE                 RX_MODE_LINE            // one of: RX_MODE_CHAR, RX_MODE_LINE
+#define XIO_RX_MODE                 RX_MODE_CHAR            // one of: RX_MODE_CHAR, RX_MODE_LINE
 #define XIO_ENABLE_FLOW_CONTROL     FLOW_CONTROL_XON        // FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS
 #define XIO_EXPAND_CR               false                   // serial IO settings (AVR only)
 #define XIO_ENABLE_ECHO             false
