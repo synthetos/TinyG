@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -31,7 +31,6 @@
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
 #include "../config.h"					// needed to find flow control setting
-#include "../network.h"
 #include "../hardware.h"
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
@@ -80,7 +79,7 @@ int xio_putc_usb(const char c, FILE *stream)
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
-	if ((cfg.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
+	if ((xio.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
 		return;
 	}
@@ -139,9 +138,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	char c = USBu.usart->DATA;					// can only read DATA once
 
-	if (cs.network_mode == NETWORK_MASTER) {	// forward character if you are a master
-		net_forward(c);
-	}
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
 		hw_request_hard_reset();
@@ -155,9 +151,13 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		cm_request_queue_flush();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {				// trap cycle start signal
-		cm_request_cycle_start();
+	if (c == CHAR_END_HOLD) {				    // trap cycle start signal
+		cm_request_end_hold();
 		return;
+	}
+	if (c == CHAR_ENQUIRY) {				    // trap ENC request
+    	controller_request_enquiry();
+    	return;
 	}
 	if (USB.flag_xoff) {
 		if (c == XOFF) {						// trap incoming XON/XOFF signals
@@ -170,10 +170,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			return;
 		}
 	}
-
-	// filter out CRs and LFs if they are to be ignored
-//	if ((c == CR) && (USB.flag_ignorecr)) return;	// REMOVED IGNORE_CR and IGNORE LF handling
-//	if ((c == LF) && (USB.flag_ignorelf)) return;
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);

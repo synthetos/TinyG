@@ -2,8 +2,8 @@
  * plan_zoid.c - acceleration managed line planning and motion execution - trapezoid planner
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2015 Rob Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2016 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -238,7 +238,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 		// Asymmetric HT' rate-limited case. This is relatively expensive but it's not called very often
 		// iteration trap: uint8_t i=0;
-		// iteration trap: if (++i > TRAPEZOID_ITERATION_MAX) { fprintf_P(stderr,PSTR("_calculate_trapezoid() failed to converge"));}
+		// iteration trap: if (++i > TRAPEZOID_ITERATION_MAX) { printf_P(PSTR("_calculate_trapezoid() failed to converge"));}
 
 		float computed_velocity = bf->cruise_vmax;
 		do {
@@ -341,7 +341,6 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 {
-//	return (Vi + Vf) * sqrt(fabs(Vf - Vi) * bf->recip_jerk);		// new formula
 	return (fabs(Vi-Vf) * sqrt(fabs(Vi-Vf) * bf->recip_jerk));		// old formula
 }
 

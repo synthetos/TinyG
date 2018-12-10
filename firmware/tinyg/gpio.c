@@ -53,7 +53,6 @@
 #include "config.h"
 #include "controller.h"
 #include "hardware.h"
-//#include "switch.h"
 #include "gpio.h"
 #include "canonical_machine.h"
 #include "xio.h"						// signals
@@ -97,11 +96,6 @@ void IndicatorLed_toggle()
 
 void gpio_led_on(uint8_t led)
 {
-//	if (led == 0) return (gpio_set_bit_on(0x08));
-//	if (led == 1) return (gpio_set_bit_on(0x04));
-//	if (led == 2) return (gpio_set_bit_on(0x02));
-//	if (led == 3) return (gpio_set_bit_on(0x01));
-
 	if (led == 0) gpio_set_bit_on(0x08); else
 	if (led == 1) gpio_set_bit_on(0x04); else
 	if (led == 2) gpio_set_bit_on(0x02); else
@@ -110,11 +104,6 @@ void gpio_led_on(uint8_t led)
 
 void gpio_led_off(uint8_t led)
 {
-//	if (led == 0) return (gpio_set_bit_off(0x08));
-//	if (led == 1) return (gpio_set_bit_off(0x04));
-//	if (led == 2) return (gpio_set_bit_off(0x02));
-//	if (led == 3) return (gpio_set_bit_off(0x01));
-
 	if (led == 0) gpio_set_bit_off(0x08); else
 	if (led == 1) gpio_set_bit_off(0x04); else
 	if (led == 2) gpio_set_bit_off(0x02); else

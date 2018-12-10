@@ -2,7 +2,7 @@
  * gcode_parser.h - rs274/ngc Gcode parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -20,19 +20,10 @@
 #ifndef GCODE_PARSER_H_ONCE
 #define GCODE_PARSER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*
  * Global Scope Functions
  */
-stat_t gc_gcode_parser(char_t *block);
-stat_t gc_get_gc(nvObj_t *nv);
+stat_t gc_gcode_parser(char *block);
 stat_t gc_run_gc(nvObj_t *nv);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // End of include guard: GCODE_PARSER_H_ONCE

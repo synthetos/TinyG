@@ -93,7 +93,7 @@ static struct cfgUSART const cfgUsart[] PROGMEM = {
  * FUNCTIONS
  ******************************************************************************/
 
-static int _gets_helper(xioDev_t *d, xioUsart_t *dx);
+//static int _gets_helper(xioDev_t *d, xioUsart_t *dx);
 
 /*
  *	xio_init_usart() - general purpose USART initialization (shared)
@@ -165,14 +165,14 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 {
 	dx->usart->BAUDCTRLA = (uint8_t)pgm_read_byte(&bsel[baud]);
 	dx->usart->BAUDCTRLB = (uint8_t)pgm_read_byte(&bscale[baud]);
-	cfg.usb_baud_rate = baud;
+	xio.usb_baud_rate = baud;
 }
 
 /*
  * USART flow control functions and helpers
  *
- * xio_xoff_usart() - send XOFF flow control for USART devices
- * xio_xon_usart()  - send XON flow control for USART devices
+ * xio_xoff_usart() - send XOFF or RTS-off flow control for USART devices
+ * xio_xon_usart() - send XON or RTS-on  flow control for USART devices
  * xio_fc_usart() - Usart device flow control callback
  * xio_get_tx_bufcount_usart() - returns number of chars in TX buffer
  * xio_get_rx_bufcount_usart() - returns number of chars in RX buffer
@@ -186,14 +186,14 @@ void xio_xoff_usart(xioUsart_t *dx)
 		dx->fc_state_rx = FC_IN_XOFF;
 
 		// If using XON/XOFF flow control
-		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+		if (xio.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char_rx = XOFF;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
 		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 1 means we're NOT ready for more data.
-		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+		if (xio.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTSET = USB_RTS_bm;
 		}
 	}
@@ -205,14 +205,14 @@ void xio_xon_usart(xioUsart_t *dx)
 		dx->fc_state_rx = FC_IN_XON;
 
 		// If using XON/XOFF flow control
-		if (cfg.enable_flow_control == FLOW_CONTROL_XON) {
+		if (xio.enable_flow_control == FLOW_CONTROL_XON) {
 			dx->fc_char_rx = XON;
 			dx->usart->CTRLA = CTRLA_RXON_TXON;		// force a TX interrupt
 		}
 
 		// If using hardware flow control. The CTS pin on the *FTDI* is our RTS.
 		// Logic 0 means we're ready for more data.
-		if (cfg.enable_flow_control == FLOW_CONTROL_RTS) {
+		if (xio.enable_flow_control == FLOW_CONTROL_RTS) {
 			dx->port->OUTCLR = USB_RTS_bm;
 		}
 	}
@@ -237,7 +237,6 @@ buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx)
 
 buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 {
-//	return (dx->rx_buf_count);
 	if (dx->rx_buf_head <= dx->rx_buf_tail) {
 		return (dx->rx_buf_tail - dx->rx_buf_head);
 	} else {
@@ -260,6 +259,41 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
  *	Note: LINEMODE flag in device struct is ignored. It's ALWAYS LINEMODE here.
  *	Note: This function assumes ignore CR and ignore LF handled upstream before the RX buffer
  */
+
+static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
+{
+    char c = NUL;
+
+    if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+        dx->rx_buf_count = 0;					// reset count for good measure
+        return(XIO_BUFFER_EMPTY);				// stop reading
+    }
+    advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
+    dx->rx_buf_count--;
+    d->x_flow(d);								// run flow control
+	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
+//    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
+    if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
+
+    if (d->len >= d->size) {                    // handle buffer overruns
+        d->buf[d->size-1] = NUL;                // terminate line (d->size is zero based)
+        d->signal = XIO_SIG_EOL;
+        d->flag_in_line = false;                // reset in-line state
+        d->len = 0;                             // reset length counter
+        return (XIO_BUFFER_FULL);
+    }
+    if ((c == CR) || (c == LF)) {				// handle CR, LF termination
+        d->buf[(d->len)++] = NUL;
+        d->signal = XIO_SIG_EOL;
+        d->flag_in_line = false;				// clear in-line state (reset)
+        return (XIO_EOL);						// return for end-of-line
+    }
+    //	d->buf[(d->len)++] = c;						// write character to buffer
+    d->buf[d->len] = c;						    // write character to buffer
+    d->len++;
+    return (XIO_EAGAIN);
+}
+
 int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 {
 	xioUsart_t *dx = d->x;						// USART pointer
@@ -273,43 +307,13 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 	}
 	while (true) {
 		switch (_gets_helper(d,dx)) {
-			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN); // empty condition
-			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);// overrun err
-			case (XIO_EOL): return (XIO_OK);			  // got complete line
-			case (XIO_EAGAIN): break;					  // loop for next character
+			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);       // empty condition
+			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);   // overrun err
+			case (XIO_EOL): return (XIO_OK);                    // got complete line
+			case (XIO_EAGAIN): break;                           // loop for next character
 		}
 	}
 	return (XIO_OK);
-}
-
-static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
-{
-	char c = NUL;
-
-	if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
-		dx->rx_buf_count = 0;					// reset count for good measure
-		return(XIO_BUFFER_EMPTY);				// stop reading
-	}
-	advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
-	dx->rx_buf_count--;
-	d->x_flow(d);								// run flow control
-//	c = dx->rx_buf[dx->rx_buf_tail];			// get char from RX Q
-	c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-	if (d->flag_echo) d->x_putc(c, stdout);		// conditional echo regardless of character
-
-	if (d->len >= d->size) {					// handle buffer overruns
-		d->buf[d->size] = NUL;					// terminate line (d->size is zero based)
-		d->signal = XIO_SIG_EOL;
-		return (XIO_BUFFER_FULL);
-	}
-	if ((c == CR) || (c == LF)) {				// handle CR, LF termination
-		d->buf[(d->len)++] = NUL;
-		d->signal = XIO_SIG_EOL;
-		d->flag_in_line = false;				// clear in-line state (reset)
-		return (XIO_EOL);						// return for end-of-line
-	}
-	d->buf[(d->len)++] = c;						// write character to buffer
-	return (XIO_EAGAIN);
 }
 
 /*

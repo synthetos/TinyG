@@ -40,10 +40,6 @@
 #include "xmega/xmega_rtc.h"
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*
  * _port_bindings  - bind XMEGA ports to hardware - these changed at board revision 7
  * hardware_init() - lowest level hardware init
@@ -67,7 +63,7 @@ static void _port_bindings(float hw_version)
 		hw.out_port[1] = &PORT_OUT_V7_Y;
 		hw.out_port[2] = &PORT_OUT_V7_Z;
 		hw.out_port[3] = &PORT_OUT_V7_A;
-		} else {
+	} else {
 		hw.out_port[0] = &PORT_OUT_V6_X;
 		hw.out_port[1] = &PORT_OUT_V6_Y;
 		hw.out_port[2] = &PORT_OUT_V6_Z;
@@ -124,10 +120,10 @@ enum {
 	COORDY1,    // Wafer Coordinate Y Byte 1
 };
 
-static void _get_id(char_t *id)
+static void _get_id(char *id)
 {
 #ifdef __AVR
-	char printable[33] = {"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"};
+	char printable[33]; strcpy_P(printable, PSTR("ABCDEFGHJKLMNPQRSTUVWXYZ23456789"));
 	uint8_t i;
 
 	NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc; 	// Load NVM Command register to read the calibration row
@@ -166,8 +162,9 @@ void hw_hard_reset(void)			// software hard reset using the watchdog timer
 
 stat_t hw_hard_reset_handler(void)
 {
-	if (cs.hard_reset_requested == false)
+	if (cs.hard_reset_requested == false) {
         return (STAT_NOOP);
+    }
 	hw_hard_reset();				// hard reset - identical to hitting RESET button
 	return (STAT_EAGAIN);
 }
@@ -184,8 +181,9 @@ void hw_request_bootloader() { cs.bootloader_requested = true;}
 stat_t hw_bootloader_handler(void)
 {
 #ifdef __AVR
-	if (cs.bootloader_requested == false)
+	if (cs.bootloader_requested == false) {
         return (STAT_NOOP);
+    }
 	cli();
 	CCPWrite(&RST.CTRL, RST_SWRST_bm);  // fire a software reset
 #endif
@@ -206,7 +204,7 @@ stat_t hw_bootloader_handler(void)
 
 stat_t hw_get_id(nvObj_t *nv)
 {
-	char_t tmp[SYS_ID_LEN];
+	char tmp[SYS_ID_LEN];
 	_get_id(tmp);
 	nv->valuetype = TYPE_STRING;
 	ritorno(nv_copy_string(nv, tmp));
@@ -227,12 +225,12 @@ stat_t hw_run_boot(nvObj_t *nv)
  */
 stat_t hw_set_hv(nvObj_t *nv)
 {
-	if (nv->value > TINYG_HARDWARE_VERSION_MAX)
+	if (nv->value_flt > TINYG_HARDWARE_VERSION_MAX) {
         return (STAT_INPUT_EXCEEDS_MAX_VALUE);
+    }
 	set_flt(nv);					// record the hardware version
-	_port_bindings(nv->value);		// reset port bindings
+	_port_bindings(nv->value_flt);	// reset port bindings
 	switch_init();					// re-initialize the GPIO ports
-//++++	gpio_init();				// re-initialize the GPIO ports
 	return (STAT_OK);
 }
 
@@ -245,18 +243,14 @@ stat_t hw_set_hv(nvObj_t *nv)
 
 static const char fmt_fb[] PROGMEM = "[fb]  firmware build%18.2f\n";
 static const char fmt_fv[] PROGMEM = "[fv]  firmware version%16.2f\n";
-static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%15.2f\n";
+static const char fmt_hp[] PROGMEM = "[hp]  hardware platform%12d\n";
 static const char fmt_hv[] PROGMEM = "[hv]  hardware version%16.2f\n";
 static const char fmt_id[] PROGMEM = "[id]  TinyG ID%30s\n";
 
-void hw_print_fb(nvObj_t *nv) { text_print_flt(nv, fmt_fb);}
-void hw_print_fv(nvObj_t *nv) { text_print_flt(nv, fmt_fv);}
-void hw_print_hp(nvObj_t *nv) { text_print_flt(nv, fmt_hp);}
-void hw_print_hv(nvObj_t *nv) { text_print_flt(nv, fmt_hv);}
-void hw_print_id(nvObj_t *nv) { text_print_str(nv, fmt_id);}
+void hw_print_fb(nvObj_t *nv) { text_print(nv, fmt_fb);}
+void hw_print_fv(nvObj_t *nv) { text_print(nv, fmt_fv);}
+void hw_print_hp(nvObj_t *nv) { text_print(nv, fmt_hp);}
+void hw_print_hv(nvObj_t *nv) { text_print(nv, fmt_hv);}
+void hw_print_id(nvObj_t *nv) { text_print(nv, fmt_id);}
 
 #endif //__TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

@@ -2,7 +2,7 @@
  * util.h - a random assortment of useful functions
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -43,9 +43,17 @@ using Motate::delay;
 using Motate::SysTickTimer;
 #endif
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+/****** Global Scope Variables and Functions ******/
+
+extern bool FLAGS_NONE[];    // canned flag vector for convenience
+extern bool FLAGS_ONE[];     // canned flag vector for convenience
+extern bool FLAGS_ALL[];     // canned flag vector for convenience
+
+/* Convenient place to park this handy diagnostic pair
+#pragma GCC optimize ("O0")
+// insert function here
+#pragma GCC reset_options
+*/
 
 /****** Global Scope Variables and Functions ******/
 
@@ -72,14 +80,28 @@ float max4(float x1, float x2, float x3, float x4);
 //*** string utilities ***
 
 //#ifdef __ARM
-//char_t * strcpy_U( char_t * dst, const char_t * src );
+//char * strcpy_U( char * dst, const char * src );
 //#endif
 
-uint8_t isnumber(char_t c);
-char_t *escape_string(char_t *dst, char_t *src);
-char_t *pstr2str(const char *pgm_string);
-char_t fntoa(char_t *str, float n, uint8_t precision);
-uint16_t compute_checksum(char_t const *string, const uint16_t length);
+uint8_t isnumber(char c);
+char *str_escape(char *dst, const char *src);
+char *str_unescape(char *str);
+char *str_asciify(char *str);
+
+char *strcat_string(char *str, const char *src);
+char *strcat_string_P(char *str, const char *src);
+char *strcat_literal_P(char *str, const char *src);
+char *strcat_integer(char *str, const uint32_t value);
+char *strcat_signed(char *str, const int32_t value);
+char *strcat_float(char *str, const float value, const uint8_t precision);
+
+stat_t str2float(const char *str, float *value);
+stat_t str2long(const char *str, uint32_t *value);
+char *pstr2str(const char *pgm_string);
+
+char inttoa(char *str, int n);
+char floattoa(char *buffer, float in, int precision);
+char fntoa(char *str, float n, uint8_t precision);
 
 //*** other utilities ***
 
@@ -112,7 +134,6 @@ uint32_t SysTickTimer_getValue(void);
 
 #ifndef EPSILON
 #define EPSILON		((float)0.00001)		// allowable rounding error for floats
-//#define EPSILON 	((float)0.000001)		// allowable rounding error for floats
 #endif
 
 #ifndef fp_EQ
@@ -147,10 +168,6 @@ uint32_t SysTickTimer_getValue(void);
 //		M_SQRT2 is radical2 as defined in math.h
 #ifndef M_SQRT3
 #define M_SQRT3 (1.73205080756888)
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif	// End of include guard: UTIL_H_ONCE

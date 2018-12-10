@@ -2,7 +2,7 @@
  * text_parser.c - text parser for TinyG
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -27,6 +27,7 @@
 
 #include "tinyg.h"
 #include "config.h"
+#include "controller.h"
 #include "canonical_machine.h"
 #include "text_parser.h"
 #include "json_parser.h"
@@ -35,22 +36,18 @@
 #include "util.h"
 #include "xio.h"					// for ASCII char definitions
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 txtSingleton_t txt;					// declare the singleton for either __TEXT_MODE setting
 
 #ifndef __TEXT_MODE
 
-stat_t text_parser_stub(char_t *str) {return (STAT_OK);}
-void text_response_stub(const stat_t status, char_t *buf) {}
+stat_t text_parser_stub(char *str) {return (STAT_OK);}
+void text_response_stub(const stat_t status, char *buf) {}
 void text_print_list_stub (stat_t status, uint8_t flags) {}
 void tx_print_stub(nvObj_t *nv) {}
 
 #else // __TEXT_MODE
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv);
 
 /******************************************************************************
  * text_parser() 		 - update a config setting from a text block (text mode)
@@ -63,9 +60,10 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv);
  *	- $x			display a group
  *	- ?				generate a status report (multiline format)
  */
-stat_t text_parser(char_t *str)
+
+stat_t text_parser(char *str)
 {
-	nvObj_t *nv = nv_reset_nv_list();				// returns first object in the body
+	nvObj_t *nv = nv_reset_nv_list(NUL);			// returns first object in the body
 	stat_t status = STAT_OK;
 
 	// trap special displays
@@ -86,26 +84,36 @@ stat_t text_parser(char_t *str)
 	// parse and execute the command (only processes 1 command per line)
 	ritorno(_text_parser_kernal(str, nv));			// run the parser to decode the command
 	if ((nv->valuetype == TYPE_NULL) || (nv->valuetype == TYPE_PARENT)) {
-		if (nv_get(nv) == STAT_COMPLETE){			// populate value, group values, or run uber-group displays
+		if (nv_get(nv) == STAT_NO_DISPLAY) {        // populate value, group values, or run uber-group displays
 			return (STAT_OK);						// return for uber-group displays so they don't print twice
 		}
 	} else { 										// process SET and RUN commands
-		if (cm.machine_state == MACHINE_ALARM)
-            return (STAT_MACHINE_ALARMED);
+		if (cm.machine_state == MACHINE_ALARM) {
+            return (STAT_ALARMED);
+        }
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array
 		}
 	}
-	nv_print_list(status, TEXT_MULTILINE_FORMATTED, JSON_RESPONSE_FORMAT); // print the results
+	nv_print_list(status, TEXT_RESPONSE, JSON_RESPONSE); // print the results
 	return (status);
 }
 
-static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
+/*	_text_parser_kernal() - Parse the next statement and populate the command object (nvObj) with:
+ *    - nv->token
+ *    - nv->group       - group is captured if the token belogs to a group
+ *    - nv->index       - validates name token in the process
+ *    - nv->valuetype   - can only be TYPE_FLOAT or TYPE_INTEGER)
+ *    - nv->value_int or nv->value_flt
+ *    - nv-str          - receives a copy of the input string for use in later reporting
+ */
+
+static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 {
-	char_t *rd, *wr;								// read and write pointers
-//	char_t separators[] = {"="};					// STRICT: only separator allowed is = sign
-	char_t separators[] = {" =:|\t"};				// RELAXED: any separator someone might use
+	char *rd, *wr;								    // read and write pointers
+//	char separators[] = {"="};					    // STRICT: only separator allowed is = sign
+	char separators[] = {" =:|\t"};				    // RELAXED: any separator someone might use
 
 	// pre-process and normalize the string
 //	nv_reset_nv(nv);								// initialize config object
@@ -115,30 +123,35 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 		*wr = tolower(*rd);							// convert string to lower case
 		if (*rd == ',') { *wr = *(++rd);}			// skip over commas
 	}
-	*wr = NUL;										// terminate the string
+	*wr = NUL;										// terminate the name string
 
 	// parse fields into the nv struct
-	nv->valuetype = TYPE_NULL;
 	if ((rd = strpbrk(str, separators)) == NULL) {	// no value part
 		strncpy(nv->token, str, TOKEN_LEN);
+	    nv->valuetype = TYPE_NULL;
+	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
+    	    return (STAT_UNRECOGNIZED_NAME);
+	    }
 	} else {
-		*rd = NUL;									// terminate at end of name
-		strncpy(nv->token, str, TOKEN_LEN);
-		str = ++rd;
-		nv->value = strtof(str, &rd);				// rd used as end pointer
-		if (rd != str) {
-			nv->valuetype = TYPE_FLOAT;
-		}
+	    *rd = NUL;									// terminate at end of name
+	    strncpy(nv->token, str, TOKEN_LEN);         // write to token
+	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
+    	    return (STAT_UNRECOGNIZED_NAME);
+	    }
+        if (cfg_is_type(nv->index) == TYPE_FLOAT) { // copy value as a float
+  		    str = ++rd;
+		    nv->value_flt = strtof(str, &rd);       // rd used as end pointer
+		    nv->valuetype = TYPE_FLOAT;
+	    } else {                                    // copy value as integer
+		    str = ++rd;
+            nv->value_int = atol(str);
+    		nv->valuetype = TYPE_INTEGER;
+        }
 	}
 
-	// validate and post-process the token
-	if ((nv->index = nv_get_index((const char_t *)"", nv->token)) == NO_MATCH) { // get index or fail it
-		return (STAT_UNRECOGNIZED_NAME);
-	}
+	// post-process the token
 	strcpy_P(nv->group, cfgArray[nv->index].group);	// capture the group string if there is one
-
-	// see if you need to strip the token
-	if (nv->group[0] != NUL) {
+	if (nv->group[0] != NUL) {	                    // see if you need to strip the token
 		wr = nv->token;
 		rd = nv->token + strlen(nv->group);
 		while (*rd != NUL) { *(wr)++ = *(rd)++;}
@@ -153,108 +166,65 @@ static stat_t _text_parser_kernal(char_t *str, nvObj_t *nv)
 static const char prompt_ok[] PROGMEM = "tinyg [%s] ok> ";
 static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 
-void text_response(const stat_t status, char_t *buf)
+void text_response(const stat_t status, char *buf)
 {
-	if (txt.text_verbosity == TV_SILENT) return;	// skip all this
+	if (txt.text_verbosity == TV_SILENT) { return; } // skip all this
 
 	char units[] = "inch";
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
-		fprintf_P(stderr, prompt_ok, units);
+		printf_P(prompt_ok, units);
 	} else {
-		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
+		printf_P(prompt_err, units, get_status_message(status), buf);
 	}
-	nvObj_t *nv = nv_body+1;
+	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		fprintf(stderr, (char *)*nv->stringp);
+		printf(nv->str);
 	}
-	fprintf(stderr, "\n");
+	printf_P(PSTR("\n"));
 }
 
-/***** PRINT FUNCTIONS ********************************************************
- * json_print_list() - command to select and produce a JSON formatted output
- * text_print_inline_pairs()
- * text_print_inline_values()
- * text_print_multiline_formatted()
+/*
+ * text_print_list() - produce text formatted output from an NV list
  */
 
 void text_print_list(stat_t status, uint8_t flags)
 {
-	switch (flags) {
-		case TEXT_NO_PRINT: { break; }
-		case TEXT_INLINE_PAIRS: { text_print_inline_pairs(nv_body); break; }
-		case TEXT_INLINE_VALUES: { text_print_inline_values(nv_body); break; }
-		case TEXT_MULTILINE_FORMATTED: { text_print_multiline_formatted(nv_body);}
-	}
-}
+    if (flags == TEXT_NO_DISPLAY) { return; }
 
-void text_print_inline_pairs(nvObj_t *nv)
-{
-	uint32_t *v = (uint32_t*)&nv->value;
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		switch (nv->valuetype) {
-			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value, nv->precision);
-								  fprintf_P(stderr,PSTR("%s:%s"), nv->token, global_string_buf) ; break;
-								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%s:%1.0f"), nv->token, nv->value); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%s:%lu"), nv->token, *v); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s:%s"), nv->token, *nv->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
-	}
-}
-
-void text_print_inline_values(nvObj_t *nv)
-{
-	uint32_t *v = (uint32_t*)&nv->value;
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		switch (nv->valuetype) {
-			case TYPE_PARENT: 	{ if ((nv = nv->nx) == NULL) return; continue;} // NULL means parent with no child
-			case TYPE_FLOAT:	{ preprocess_float(nv);
-								  fntoa(global_string_buf, nv->value, nv->precision);
-								  fprintf_P(stderr,PSTR("%s"), global_string_buf) ; break;
-								}
-			case TYPE_INTEGER:	{ fprintf_P(stderr,PSTR("%1.0f"), nv->value); break;}
-			case TYPE_DATA:	    { fprintf_P(stderr,PSTR("%lu"), *v); break;}
-			case TYPE_STRING:	{ fprintf_P(stderr,PSTR("%s"), *nv->stringp); break;}
-			case TYPE_EMPTY:	{ fprintf_P(stderr,PSTR("\n")); return; }
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype != TYPE_EMPTY) { fprintf_P(stderr,PSTR(","));}
-	}
-}
-
-void text_print_multiline_formatted(nvObj_t *nv)
-{
-	for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
-		if (nv->valuetype != TYPE_PARENT) {
-			preprocess_float(nv);
-			nv_print(nv);
-		}
-		if ((nv = nv->nx) == NULL) return;
-		if (nv->valuetype == TYPE_EMPTY) break;
-	}
+    nvObj_t *nv = NV_BODY;
+    for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
+        if (nv->valuetype != TYPE_PARENT) {
+            prep_float(nv);
+            nv_print(nv);
+        }
+		if ((nv = nv_next(nv)) == NULL) { return; }
+        if (nv->valuetype == TYPE_EMPTY) { break; }
+    }
 }
 
 /*
  * Text print primitives using generic formats
  */
 static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string message (with no formatting)
-static const char fmt_ui8[] PROGMEM = "%d\n";	// generic format for ui8s
 static const char fmt_int[] PROGMEM = "%lu\n";	// generic format for ui16's and ui32s
 static const char fmt_flt[] PROGMEM = "%f\n";	// generic format for floats
 
 void tx_print_nul(nvObj_t *nv) {}
 void tx_print_str(nvObj_t *nv) { text_print_str(nv, fmt_str);}
-void tx_print_ui8(nvObj_t *nv) { text_print_ui8(nv, fmt_ui8);}
 void tx_print_int(nvObj_t *nv) { text_print_int(nv, fmt_int);}
 void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
+
+void tx_print(nvObj_t *nv) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_FLOAT:   { text_print_flt(nv, fmt_flt); break;}
+        case TYPE_INTEGER: { text_print_int(nv, fmt_int); break;}
+        case TYPE_STRING:  { text_print_str(nv, fmt_str); break;}
+        //   TYPE_NULL is not needed in this list as it does nothing
+    }
+}
 
 /*
  * Text print primitives using external formats
@@ -262,27 +232,75 @@ void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
  *	NOTE: format's are passed in as flash strings (PROGMEM)
  */
 
-void text_print_nul(nvObj_t *nv, const char *format) { fprintf_P(stderr, format);}	// just print the format string
-void text_print_str(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, *nv->stringp);}
-void text_print_ui8(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint8_t)nv->value);}
-void text_print_int(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, (uint32_t)nv->value);}
-void text_print_flt(nvObj_t *nv, const char *format) { fprintf_P(stderr, format, nv->value);}
+void text_finalize_message(char *msg)
+{
+    char *start = msg;
+
+    // if running text strings in JSON mode do JSON escaping
+    if (cs.comm_mode == JSON_MODE_TXT_OVERRIDE) {
+        while (*msg != NUL) {
+
+            // substitute \n for LFs (and exit)
+            if (*msg == LF) {
+                *msg = '\\';
+                *(++msg) = 'n';
+                *(++msg) = NUL;
+                break;
+            }
+            msg++;
+        }
+    }
+    printf(start);
+}
+
+void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format);
+    text_finalize_message(msg);
+}
+
+void text_print_str(nvObj_t *nv, const char *format)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->str);
+    text_finalize_message(msg);
+}
+
+void text_print_int(nvObj_t *nv, const char *format)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, (uint32_t)nv->value_int);
+    text_finalize_message(msg);
+}
+
+void text_print_flt(nvObj_t *nv, const char *format)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->value_flt);
+    text_finalize_message(msg);
+}
 
 void text_print_flt_units(nvObj_t *nv, const char *format, const char *units)
 {
-	fprintf_P(stderr, format, nv->value, units);
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->value_flt, units);
+    text_finalize_message(msg);
+}
+
+void text_print(nvObj_t *nv, const char *format) {
+    switch ((int8_t)nv->valuetype) {
+        case TYPE_NULL:    { text_print_nul(nv, format); break;}
+        case TYPE_FLOAT:   { text_print_flt(nv, format); break;}
+        case TYPE_INTEGER: { text_print_int(nv, format); break;}
+        case TYPE_STRING:  { text_print_str(nv, format); break;}
+    }
 }
 
 /*
  * Formatted print supporting the text parser
  */
 static const char fmt_tv[] PROGMEM = "[tv]  text verbosity%15d [0=silent,1=verbose]\n";
-
-void tx_print_tv(nvObj_t *nv) { text_print_ui8(nv, fmt_tv);}
-
+void tx_print_tv(nvObj_t *nv) { text_print(nv, fmt_tv);}
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus

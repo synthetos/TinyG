@@ -2,8 +2,8 @@
  * plan_line.c - acceleration managed line planning and motion execution
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2012 - 2015 Rob Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2012 - 2016 Rob Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -36,11 +36,9 @@
 #include "util.h"
 
 // aline planner routines / feedhold planning
-//static void _calc_move_times(GCodeState_t *gms, const float position[]);
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
-static void _reset_replannable_list(void);
 
 /* Runtime-specific setters and getters
  *
@@ -59,16 +57,28 @@ void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset,
 float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
 /*
- * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
+ * mp_get_runtime_busy() - returns TRUE if motion control busy (i.e. robot is moving)
+ * mp_runtime_is_idle() - returns TRUE is steppers are not actively moving
  *
- *	Use this function to sync to the queue. If you wait until it returns
+ *	Use mp_get_runtime_busy() to sync to the queue. If you wait until it returns
  *	FALSE you know the queue is empty and the motors have stopped.
  */
 
-uint8_t mp_get_runtime_busy()
+bool mp_get_runtime_busy()
 {
-	if ((st_runtime_isbusy() == true) || (mr.move_state == MOVE_RUN)) return (true);
-	return (false);
+    if (cm.cycle_state == CYCLE_OFF) {
+        return (false);
+    }
+    if ((st_runtime_isbusy() == true) ||
+        (mr.block_state == BLOCK_RUNNING)) {
+        return (true);
+    }
+    return (false);
+}
+
+bool mp_runtime_is_idle()
+{
+    return (!st_runtime_isbusy());
 }
 
 /****************************************************************************************
@@ -86,12 +96,7 @@ uint8_t mp_get_runtime_busy()
  *	that are too short to move will accumulate and get executed once the accumulated error
  *	exceeds the minimums.
  */
-/*
-#define axis_length bf->body_length
-#define axis_velocity bf->cruise_velocity
-#define axis_tail bf->tail_length
-#define longest_tail bf->head_length
-*/
+
 stat_t mp_aline(GCodeState_t *gm_in)
 {
 	mpBuf_t *bf; 						// current move pointer
@@ -112,8 +117,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float length = sqrt(length_square);
 
 	if (fp_ZERO(length)) {
-//		sr_request_status_report();
-		return (STAT_OK);
+		return (STAT_MINIMUM_LENGTH_MOVE);
 	}
 
 	// If _calc_move_times() says the move will take less than the minimum move time
@@ -142,8 +146,9 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	}
 
 	// get a cleared buffer and setup move variables
-	if ((bf = mp_get_write_buffer()) == NULL)
-        return(cm_hard_alarm(STAT_BUFFER_FULL_FATAL));                  // never supposed to fail
+	if ((bf = mp_get_write_buffer()) == NULL) {
+        return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
+    }
 	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
 	bf->length = length;
 	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
@@ -247,7 +252,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
 	_plan_block_list(bf, &mr_flag);				// replan block list
 	copy_vector(mm.position, bf->gm.target);	// set the planner position
-	mp_commit_write_buffer(MOVE_TYPE_ALINE); 	// commit current block (must follow the position update)
+	mp_commit_write_buffer(BLOCK_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }
 
@@ -374,7 +379,7 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
  *
  *	  bf (function arg)		- end of block list (last block in time)
  *	  bf->replannable		- start of block list set by last FALSE value [Note 1]
- *	  bf->move_type			- typically MOVE_TYPE_ALINE. Other move_types should be set to
+ *	  bf->block_type		- typically BLOCK_TYPE_ALINE. Other block_types should be set to
  *							  length=0, entry_vmax=0 and exit_vmax=0 and are treated
  *							  as a momentary stop (plan to zero and from zero).
  *
@@ -469,15 +474,17 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
  */
+/*
 static void _reset_replannable_list()
 {
 	mpBuf_t *bf = mp_get_first_buffer();
-	if (bf == NULL) return;
+	if (bf == NULL) { return; }
 	mpBuf_t *bp = bf;
 	do {
 		bp->replannable = true;
 	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_OFF));
 }
+*/
 
 /*
  * _get_junction_vmax() - Sonny's algorithm - simple
@@ -568,199 +575,5 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
 	float velocity = sqrt(radius * cm.junction_acceleration);
-//	printf ("v:%f\n", velocity);	//+++++
 	return (velocity);
-}
-
-/*************************************************************************
- * feedholds - functions for performing holds
- *
- * mp_plan_hold_callback() - replan block list to execute hold
- * mp_end_hold() 		   - release the hold and restart block list
- *
- *	Feedhold is executed as cm.hold_state transitions executed inside
- *	_exec_aline() and main loop callbacks to these functions:
- *	mp_plan_hold_callback() and mp_end_hold().
- */
-/*	Holds work like this:
- *
- * 	  - Hold is asserted by calling cm_feedhold() (usually invoked via a ! char)
- *		If hold_state is OFF and motion_state is RUNning it sets
- *		hold_state to SYNC and motion_state to HOLD.
- *
- *	  - Hold state == SYNC tells the aline exec routine to execute the next aline
- *		segment then set hold_state to PLAN. This gives the planner sufficient
- *		time to replan the block list for the hold before the next aline segment
- *		needs to be processed.
- *
- *	  - Hold state == PLAN tells the planner to replan the mr buffer, the current
- *		run buffer (bf), and any subsequent bf buffers as necessary to execute a
- *		hold. Hold planning replans the planner buffer queue down to zero and then
- *		back up from zero. Hold state is set to DECEL when planning is complete.
- *
- *	  - Hold state == DECEL persists until the aline execution runs to zero
- *		velocity, at which point hold state transitions to HOLD.
- *
- *	  - Hold state == HOLD persists until the cycle is restarted. A cycle start
- *		is an asynchronous event that sets the cycle_start_flag TRUE. It can
- *		occur any time after the hold is requested - either before or after
- *		motion stops.
- *
- *	  - mp_end_hold() is executed from cm_feedhold_sequencing_callback() once the
- *		hold state == HOLD and a cycle_start has been requested.This sets the hold
- *		state to OFF which enables _exec_aline() to continue processing. Move
- *		execution begins with the first buffer after the hold.
- *
- *	Terms used:
- *	 - mr is the runtime buffer. It was initially loaded from the bf buffer
- *	 - bp+0 is the "companion" bf buffer to the mr buffer.
- *	 - bp+1 is the bf buffer following bp+0. This runs through bp+N
- *	 - bp (by itself) just refers to the current buffer being adjusted / replanned
- *
- *	Details: Planning re-uses bp+0 as an "extra" buffer. Normally bp+0 is returned
- *		to the buffer pool as it is redundant once mr is loaded. Use the extra
- *		buffer to split the move in two where the hold decelerates to zero. Use
- *		one buffer to go to zero, the other to replan up from zero. All buffers past
- *		that point are unaffected other than that they need to be replanned for velocity.
- *
- *	Note: There are multiple opportunities for more efficient organization of
- *		  code in this module, but the code is so complicated I just left it
- *		  organized for clarity and hoped for the best from compiler optimization.
- */
-
-static float _compute_next_segment_velocity()
-{
-	if (mr.section == SECTION_BODY) return (mr.segment_velocity);
-#ifdef __JERK_EXEC
-	return (mr.segment_velocity);	// an approximation
-#else
-	return (mr.segment_velocity + mr.forward_diff_5);
-#endif
-}
-
-stat_t mp_plan_hold_callback()
-{
-	if (cm.hold_state != FEEDHOLD_PLAN)
-        return (STAT_NOOP);                     // not planning a feedhold
-
-	mpBuf_t *bp; 				                // working buffer pointer
-	if ((bp = mp_get_run_buffer()) == NULL)
-        return (STAT_NOOP);                     // Oops! nothing's running
-
-	uint8_t mr_flag = true;                     // used to tell replan to account for mr buffer Vx
-	float mr_available_length;                  // available length left in mr buffer for deceleration
-	float braking_velocity;                     // velocity left to shed to brake to zero
-	float braking_length;                       // distance required to brake to zero from braking_velocity
-
-	// examine and process mr buffer
-	mr_available_length = get_axis_vector_length(mr.target, mr.position);
-
-/*	mr_available_length =
-		(sqrt(square(mr.endpoint[AXIS_X] - mr.position[AXIS_X]) +
-			  square(mr.endpoint[AXIS_Y] - mr.position[AXIS_Y]) +
-			  square(mr.endpoint[AXIS_Z] - mr.position[AXIS_Z]) +
-			  square(mr.endpoint[AXIS_A] - mr.position[AXIS_A]) +
-			  square(mr.endpoint[AXIS_B] - mr.position[AXIS_B]) +
-			  square(mr.endpoint[AXIS_C] - mr.position[AXIS_C])));
-
-*/
-
-	// compute next_segment velocity
-//	braking_velocity = mr.segment_velocity;
-//	if (mr.section != SECTION_BODY) { braking_velocity += mr.forward_diff_1;}
-	braking_velocity = _compute_next_segment_velocity();
-	braking_length = mp_get_target_length(braking_velocity, 0, bp); // bp is OK to use here
-
-	// Hack to prevent Case 2 moves for perfect-fit decels. Happens in homing situations
-	// The real fix: The braking velocity cannot simply be the mr.segment_velocity as this
-	// is the velocity of the last segment, not the one that's going to be executed next.
-	// The braking_velocity needs to be the velocity of the next segment that has not yet
-	// been computed. In the mean time, this hack will work.
-	if ((braking_length > mr_available_length) && (fp_ZERO(bp->exit_velocity))) {
-		braking_length = mr_available_length;
-	}
-
-	// Case 1: deceleration fits entirely into the length remaining in mr buffer
-	if (braking_length <= mr_available_length) {
-		// set mr to a tail to perform the deceleration
-		mr.exit_velocity = 0;
-		mr.tail_length = braking_length;
-		mr.cruise_velocity = braking_velocity;
-		mr.section = SECTION_TAIL;
-		mr.section_state = SECTION_NEW;
-
-		// re-use bp+0 to be the hold point and to run the remaining block length
-		bp->length = mr_available_length - braking_length;
-		bp->delta_vmax = mp_get_target_velocity(0, bp->length, bp);
-		bp->entry_vmax = 0;						// set bp+0 as hold point
-		bp->move_state = MOVE_NEW;				// tell _exec to re-use the bf buffer
-
-		_reset_replannable_list();				// make it replan all the blocks
-		_plan_block_list(mp_get_last_buffer(), &mr_flag);
-		cm.hold_state = FEEDHOLD_DECEL;			// set state to decelerate and exit
-		return (STAT_OK);
-	}
-
-	// Case 2: deceleration exceeds length remaining in mr buffer
-	// First, replan mr to minimum (but non-zero) exit velocity
-
-	mr.section = SECTION_TAIL;
-	mr.section_state = SECTION_NEW;
-	mr.tail_length = mr_available_length;
-	mr.cruise_velocity = braking_velocity;
-	mr.exit_velocity = braking_velocity - mp_get_target_velocity(0, mr_available_length, bp);
-
-	// Find the point where deceleration reaches zero. This could span multiple buffers.
-	braking_velocity = mr.exit_velocity;		// adjust braking velocity downward
-	bp->move_state = MOVE_NEW;					// tell _exec to re-use buffer
-	for (uint8_t i=0; i<PLANNER_BUFFER_POOL_SIZE; i++) {// a safety to avoid wraparound
-		mp_copy_buffer(bp, bp->nx);				// copy bp+1 into bp+0 (and onward...)
-		if (bp->move_type != MOVE_TYPE_ALINE) {	// skip any non-move buffers
-			bp = mp_get_next_buffer(bp);		// point to next buffer
-			continue;
-		}
-		bp->entry_vmax = braking_velocity;		// velocity we need to shed
-		braking_length = mp_get_target_length(braking_velocity, 0, bp);
-
-		if (braking_length > bp->length) {		// decel does not fit in bp buffer
-			bp->exit_vmax = braking_velocity - mp_get_target_velocity(0, bp->length, bp);
-			braking_velocity = bp->exit_vmax;	// braking velocity for next buffer
-			bp = mp_get_next_buffer(bp);		// point to next buffer
-			continue;
-		}
-		break;
-	}
-	// Deceleration now fits in the current bp buffer
-	// Plan the first buffer of the pair as the decel, the second as the accel
-	bp->length = braking_length;
-	bp->exit_vmax = 0;
-
-	bp = mp_get_next_buffer(bp);				// point to the acceleration buffer
-	bp->entry_vmax = 0;
-	bp->length -= braking_length;				// the buffers were identical (and hence their lengths)
-	bp->delta_vmax = mp_get_target_velocity(0, bp->length, bp);
-	bp->exit_vmax = bp->delta_vmax;
-
-	_reset_replannable_list();					// make it replan all the blocks
-	_plan_block_list(mp_get_last_buffer(), &mr_flag);
-	cm.hold_state = FEEDHOLD_DECEL;				// set state to decelerate and exit
-	return (STAT_OK);
-}
-
-/*
- * mp_end_hold() - end a feedhold
- */
-stat_t mp_end_hold()
-{
-	if (cm.hold_state == FEEDHOLD_END_HOLD) {
-		cm.hold_state = FEEDHOLD_OFF;
-		mpBuf_t *bf;
-		if ((bf = mp_get_run_buffer()) == NULL) {	// NULL means nothing's running
-			cm_set_motion_state(MOTION_STOP);
-			return (STAT_NOOP);
-		}
-		cm.motion_state = MOTION_RUN;
-		st_request_exec_move();					// restart the steppers
-	}
-	return (STAT_OK);
 }

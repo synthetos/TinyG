@@ -28,10 +28,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "encoder.h"
-
-#ifdef __cplusplus
-extern "C"{
-#endif
+#include "canonical_machine.h"
 
 /**** Allocate Structures ****/
 
@@ -64,9 +61,10 @@ void encoder_init_assertions()
 
 stat_t encoder_test_assertions()
 {
-	if (en.magic_end   != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	if (en.magic_start != MAGICNUM) return (STAT_ENCODER_ASSERTION_FAILURE);
-	return (STAT_OK);
+    if ((BAD_MAGIC(en.magic_start)) || (BAD_MAGIC(en.magic_end))) {
+        return(cm_panic_P(STAT_ENCODER_ASSERTION_FAILURE, PSTR("encoder_test_assertions()")));
+    }
+    return (STAT_OK);
 }
 
 /*
@@ -88,7 +86,7 @@ void en_set_encoder_steps(uint8_t motor, float steps)
  *	The stepper ISR count steps into steps_run(). These values are accumulated to
  *	encoder_position during LOAD (HI interrupt level). The encoder position is
  *	therefore always stable. But be advised: the position lags target and position
- *	valaues elsewherein the system becuase the sample is taken when the steps for
+ *	values elsewhere in the system because the sample is taken when the steps for
  *	that segment are complete.
  */
 
@@ -110,7 +108,3 @@ float en_read_encoder(uint8_t motor)
 #ifdef __TEXT_MODE
 
 #endif // __TEXT_MODE
-
-#ifdef __cplusplus
-}
-#endif

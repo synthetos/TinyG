@@ -1,8 +1,8 @@
 /*
- * settings_zen7x12.h - Zen Toolworks 7x12 machine profile
+ * settings_panther.h - Zen Toolworks 7x12 machine profile
  * This file is part of the TinyG project
  *
- * Copyright (c) 2011 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2011 - 2016 Alden S. Hart, Jr. , Riley Porter
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -34,11 +34,29 @@
  */
 
 /***********************************************************************/
-/**** Zen Toolworks 7x12 profile ***************************************/
+/**** Panther PCB CNC Mill  ***************************************/
 /***********************************************************************/
 
+/* Machine Details
+Travel X
+
+ 8.26" (210mm)
+
+Travel Y	 6.7" (170mm)
+Travel Z	 2.95" (75mm)
+Table Size	 9.84" x 12.6"  (250 x320 mm)
+Linear Ball Bearing size	 X Axis:13mm   Y Axis:16mm   Z Axis:12mm
+Lead screws	 M10x1.5 pitch (mm)
+Feed Speed	 1800mm/min   (1500mm/min  recommend)
+Repeat  accuracy	Better Than 0.05mm
+Machine Size	 385 x380x390 mm
+Packing  Size	 430 x420 x420 mm
+Machine weight	 28.6 pounds(13kg)
+Shipping weight	 33 pounds(15kg)
+*/
+
 // ***> NOTE: The init message must be a single line with no CRs or LFs
-#define INIT_MESSAGE "Initializing configs to Zen Toolworks 7x12 profile"
+#define INIT_MESSAGE "Initializing configs to Panther  8.25\"x6.7\"  profile"
 
 #define SWITCH_TYPE                 SW_ACTIVE_HI	        // one of: SW_ACTIVE_LO (no), SW_ACTIVE_HI (nc)
 #define SOFT_LIMIT_ENABLE           0						// 0=off, 1=on
@@ -100,7 +118,7 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 
 #define M1_MOTOR_MAP 			AXIS_X					// 1ma
 #define M1_STEP_ANGLE 			1.8						// 1sa
-#define M1_TRAVEL_PER_REV		1.25					// 1tr
+#define M1_TRAVEL_PER_REV		1.5					// 1tr
 #define M1_MICROSTEPS			8						// 1mi		1,2,4,8
 #define M1_POLARITY				1						// REVERSE// 1po		0=normal, 1=reverse
 #define M1_POWER_MODE			MOTOR_POWERED_IN_CYCLE	// 1pm		standard
@@ -108,17 +126,17 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 
 #define M2_MOTOR_MAP	 		AXIS_Y
 #define M2_STEP_ANGLE			1.8
-#define M2_TRAVEL_PER_REV		1.25
+#define M2_TRAVEL_PER_REV		1.5
 #define M2_MICROSTEPS			8
-#define M2_POLARITY				0
+#define M2_POLARITY				1
 #define M2_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 #define M2_POWER_LEVEL			MOTOR_POWER_LEVEL
 
 #define M3_MOTOR_MAP			AXIS_Z
 #define M3_STEP_ANGLE			1.8
-#define M3_TRAVEL_PER_REV		1.25
+#define M3_TRAVEL_PER_REV		1.5
 #define M3_MICROSTEPS			8
-#define M3_POLARITY				1			// REVERSE
+#define M3_POLARITY				0			// REVERSE
 #define M3_POWER_MODE			MOTOR_POWERED_IN_CYCLE
 #define M3_POWER_LEVEL			MOTOR_POWER_LEVEL
 
@@ -149,10 +167,10 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 // *** axis settings ***
 
 #define X_AXIS_MODE 			AXIS_STANDARD		// xam		see canonical_machine.h cmAxisMode for valid values
-#define X_VELOCITY_MAX 			600 				// xvm		G0 max velocity in mm/min
+#define X_VELOCITY_MAX 			2000 				// xvm		G0 max velocity in mm/min
 #define X_FEEDRATE_MAX 			X_VELOCITY_MAX		// xfr 		G1 max feed rate in mm/min
 #define X_TRAVEL_MIN			0					// xtn		minimum travel - used by soft limits and homing
-#define X_TRAVEL_MAX 			475					// xtm		maximum travel - used by soft limits and homing
+#define X_TRAVEL_MAX 			210					// xtm		maximum travel - used by soft limits and homing
 #define X_JERK_MAX 				JERK_MAX_LINEAR		// xjm
 #define X_JUNCTION_DEVIATION 	JUNCTION_DEVIATION	// xjd
 #define X_SWITCH_MODE_MIN 		SW_MODE_HOMING		// xsn		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
@@ -160,15 +178,15 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 //#define X_SWITCH_MODE_MAX 		SW_MODE_DISABLED	// xsx		SW_MODE_DISABLED, SW_MODE_HOMING, SW_MODE_LIMIT, SW_MODE_HOMING_LIMIT
 #define X_SEARCH_VELOCITY 		500					// xsv		move in negative direction
 #define X_LATCH_VELOCITY 		100					// xlv		mm/min
-#define X_LATCH_BACKOFF 		2					// xlb		mm
+#define X_LATCH_BACKOFF 		5					// xlb		mm
 #define X_ZERO_BACKOFF 			1					// xzb		mm
 #define X_JERK_HOMING			X_JERK_MAX			// xjh
 
 #define Y_AXIS_MODE 			AXIS_STANDARD
-#define Y_VELOCITY_MAX 			600
+#define Y_VELOCITY_MAX 			2000
 #define Y_FEEDRATE_MAX 			Y_VELOCITY_MAX
 #define Y_TRAVEL_MIN			0
-#define Y_TRAVEL_MAX 			200
+#define Y_TRAVEL_MAX 			170
 #define Y_JERK_MAX 				JERK_MAX_LINEAR
 #define Y_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Y_SWITCH_MODE_MIN 		SW_MODE_HOMING
@@ -176,22 +194,22 @@ static const char PROGMEM SR_DEFAULTS[] = "line,posx,posy,posz,posa,feed,vel,uni
 //#define Y_SWITCH_MODE_MAX 		SW_MODE_DISABLED
 #define Y_SEARCH_VELOCITY 		500
 #define Y_LATCH_VELOCITY 		100
-#define Y_LATCH_BACKOFF 		2
+#define Y_LATCH_BACKOFF 		5
 #define Y_ZERO_BACKOFF 			1
 #define Y_JERK_HOMING			Y_JERK_MAX
 
 #define Z_AXIS_MODE 			AXIS_STANDARD
-#define Z_VELOCITY_MAX 			500
+#define Z_VELOCITY_MAX 			2000
 #define Z_FEEDRATE_MAX 			Z_VELOCITY_MAX
 #define Z_TRAVEL_MIN			0
-#define Z_TRAVEL_MAX 			75
+#define Z_TRAVEL_MAX 			80
 #define Z_JERK_MAX 				JERK_MAX_LINEAR
 #define Z_JUNCTION_DEVIATION 	JUNCTION_DEVIATION
 #define Z_SWITCH_MODE_MIN		SW_MODE_PROBE
 #define Z_SWITCH_MODE_MAX 		SW_MODE_HOMING
 #define Z_SEARCH_VELOCITY 		400
 #define Z_LATCH_VELOCITY 		100
-#define Z_LATCH_BACKOFF 		2
+#define Z_LATCH_BACKOFF 		5
 #define Z_ZERO_BACKOFF 			1
 #define Z_JERK_HOMING			Z_JERK_MAX
 

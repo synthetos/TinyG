@@ -4,7 +4,7 @@
  *
  * Part of TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -166,8 +166,8 @@ ISR(RS485_RX_ISR_vect)	//ISR(USARTC1_RXC_vect)		// serial port C0 RX isr
 		cm_request_feedhold();
 		return;
 	}
-	if (c == CHAR_CYCLE_START) {					// trap end_feedhold signal
-		cm_request_cycle_start();
+	if (c == CHAR_END_HOLD) {					    // trap end_feedhold signal
+		cm_request_end_hold();
 		return;
 	}
 	// filter out CRs and LFs if they are to be ignored

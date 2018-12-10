@@ -32,10 +32,6 @@
 #include "planner.h"
 #include "util.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Jogging singleton structure ****/
 
 struct jmJoggingSingleton {			// persistent jogging runtime variables
@@ -78,7 +74,7 @@ static stat_t _jogging_finalize_exit(int8_t axis);
  *	Another Note: When coding a cycle (like this one) you must wait until
  *	the last move has actually been queued (or has finished) before declaring
  *	the cycle to be done. Otherwise there is a nasty race condition in the
- *	tg_controller() that will accept the next command before the position of
+ *	controller() that will accept the next command before the position of
  *	the final move has been recorded in the Gcode model. That's what the call
  *	to cm_isbusy() is about.
  */
@@ -148,7 +144,7 @@ static stat_t _jogging_axis_start(int8_t axis)
 static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 {
 	float vect[] = {0,0,0,0,0,0};
-	float flags[] = {false, false, false, false, false, false};
+	bool flags[] = {false, false, false, false, false, false};
 	flags[axis] = true;
 
 	float velocity = jog.velocity_start;
@@ -156,10 +152,10 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 	float delta = abs(jog.dest_pos - jog.start_pos);
 
 	cm.gm.feed_rate = velocity;
+    cm_request_end_hold();
 	mp_flush_planner();									// don't use cm_request_queue_flush() here
-	cm_request_cycle_start();
+//	cm_request_cycle_start();
 
-#if 1
 	float ramp_dist = 2.0;
 	float steps = 0.0;
 	float max_steps = 25;
@@ -169,21 +165,11 @@ static stat_t _jogging_axis_jog(int8_t axis)			// run the jog move
 		vect[axis] = jog.start_pos + offset * direction;
 		cm.gm.feed_rate = velocity;
 		ritorno(cm_straight_feed(vect, flags));
-
 		steps++;
 		float scale = pow(10.0, steps/max_steps) / 10.0;
 		velocity = jog.velocity_start + (jog.velocity_max - jog.velocity_start) * scale;
 		offset += ramp_dist * steps/max_steps;
 	}
-#else
-    // use a really slow jerk so we ramp up speed
-    // FIXME: need asymmetric accel/deaccel jerk for this to work...
-//	cm.a[axis].jerk_max = 25;
-	cm_set_axis_jerk(axis, 25);
-    //cm.a[axis].jerk_accel = 10;
-    //cm.a[axis].jerk_deaccel = 900;
-#endif
-
 	// final move
 	cm.gm.feed_rate = jog.velocity_max;
 	vect[axis] = jog.dest_pos;
@@ -201,11 +187,11 @@ static stat_t _jogging_finalize_exit(int8_t axis)	// finish a jog
 	cm_set_distance_mode(jog.saved_distance_mode);
 	cm_set_feed_rate_mode(jog.saved_feed_rate_mode);
 	cm.gm.feed_rate = jog.saved_feed_rate;
-	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL_MOTION_MODE);
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 
-	printf("{\"jog\":0}\n");
+	printf_P(PSTR("{\"jog\":0}\n"));
 	return (STAT_OK);
 }
 
@@ -214,12 +200,8 @@ static stat_t _jogging_error_exit(int8_t axis)
 {
 	// Generate the warning message. Since the error exit returns via the jogging callback
 	// - and not the main controller - it requires its own display processing
-//	nv_reset_nv_list();
+//	nv_reset_nv_list(NUL);
 	_jogging_finalize_exit(axis);					// clean up
 	return (STAT_JOGGING_CYCLE_FAILED);				// jogging state
 }
 */
-
-#ifdef __cplusplus
-}
-#endif

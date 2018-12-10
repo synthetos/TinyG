@@ -2,7 +2,7 @@
  * encoder.h - encoder interface
  * This file is part of TinyG project
  *
- * Copyright (c) 2013 - 2014 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Alden S. Hart, Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -88,10 +88,6 @@
 #ifndef ENCODER_H_ONCE
 #define ENCODER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /**** Configs and Constants ****/
 
 /**** Macros ****/
@@ -128,7 +124,3 @@ void en_set_encoder_steps(uint8_t motor, float steps);
 float en_read_encoder(uint8_t motor);
 
 #endif	// End of include guard: ENCODER_H_ONCE
-
-#ifdef __cplusplus
-}
-#endif

@@ -2,8 +2,8 @@
  * controller.h - tinyg controller and main dispatch loop
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2014 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -28,81 +28,72 @@
 #ifndef CONTROLLER_H_ONCE
 #define CONTROLLER_H_ONCE
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
-#define INPUT_BUFFER_LEN 255			// text buffer size (255 max)
-#define SAVED_BUFFER_LEN 100			// saved buffer size (for reporting only)
-#define OUTPUT_BUFFER_LEN 512			// text buffer size
-// see also: tinyg.h MESSAGE_LEN and config.h NV_ lengths
+#define SAVED_BUFFER_LEN 128            // saved buffer size (for reporting only)
+#define OUTPUT_BUFFER_LEN 512           // buffer for serialized JSON output & text output
+// see also: error.h STATUS_MESSAGE_LEN and config.h NV_ lengths
 
 #define LED_NORMAL_TIMER 1000			// blink rate for normal operation (in ms)
 #define LED_ALARM_TIMER 100				// blink rate for alarm state (in ms)
 
+typedef enum {				            // manages startup lines
+    CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
+    CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
+    CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
+    CONTROLLER_STARTUP,					// controller is running startup messages and lines
+    CONTROLLER_READY					// controller is active and ready for use
+} cmControllerState;
+
 typedef struct controllerSingleton {	// main TG controller struct
 	magic_t magic_start;				// magic number to test memory integrity
-	uint8_t state;						// controller state
-	float null;							// dumping ground for items with no target
+	uint32_t null;						// dumping ground for items with no target
+
+	// system identification values
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
-	float hw_platform;					// tinyg hardware compatibility - platform type
-	float hw_version;					// tinyg hardware compatibility - platform revision
+	uint8_t hw_platform;                // tinyg hardware compatibility - platform type
+	uint8_t hw_version;                 // tinyg hardware compatibility - platform revision
 
 	// communications state variables
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
-	uint8_t network_mode;				// 0=master, 1=repeater, 2=slave
 
-	uint16_t linelen;					// length of currently processing line
-	uint16_t read_index;				// length of line being read
+    uint8_t comm_mode;					// 0=text mode, 1=JSON mode, 2=JSON in txt override
 
 	// system state variables
+	cmControllerState controller_state;
 	uint8_t led_state;		// LEGACY	// 0=off, 1=on
 	int32_t led_counter;	// LEGACY	// a convenience for flashing an LED
 	uint32_t led_timer;					// used by idlers to flash indicator LED
-	uint8_t hard_reset_requested;		// flag to perform a hard reset
-	uint8_t bootloader_requested;		// flag to enter the bootloader
-	uint8_t shared_buf_overrun;			// flag for shared string buffer overrun condition
-
-//	uint8_t sync_to_time_state;
-//	uint32_t sync_to_time_time;
+	uint8_t limit_switch_asserted;      // non-zero input number indicates limit condition
+	bool hard_reset_requested;		    // flag to perform a hard reset
+	bool bootloader_requested;		    // flag to enter the bootloader
 
 	int32_t job_id[4];					// uuid to identify the job
 
 	// controller serial buffers
-	char_t *bufp;						// pointer to primary or secondary in buffer
-	char_t in_buf[INPUT_BUFFER_LEN];	// primary input buffer
-	char_t out_buf[OUTPUT_BUFFER_LEN];	// output buffer
-	char_t saved_buf[SAVED_BUFFER_LEN];	// save the input buffer
+	char *bufp;                         // pointer to primary or secondary input buffer
+	uint16_t linelen;					// length of currently processing line
+	char out_buf[OUTPUT_BUFFER_LEN];	// output buffer for serialized JSON and text output
+	char saved_buf[SAVED_BUFFER_LEN];	// buffer for saving the input buffer (reporting only)
+
 	magic_t magic_end;
 } controller_t;
 
 extern controller_t cs;					// controller state structure
-
-enum cmControllerState {				// manages startup lines
-	CONTROLLER_INITIALIZING = 0,		// controller is initializing - not ready for use
-	CONTROLLER_NOT_CONNECTED,			// controller has not yet detected connection to USB (or other comm channel)
-	CONTROLLER_CONNECTED,				// controller has connected to USB (or other comm channel)
-	CONTROLLER_STARTUP,					// controller is running startup messages and lines
-	CONTROLLER_READY					// controller is active and ready for use
-};
 
 /**** function prototypes ****/
 
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err);
 void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
+
 void controller_run(void);
-//void controller_reset(void);
-
-void tg_reset_source(void);
-void tg_set_primary_source(uint8_t dev);
-void tg_set_secondary_source(uint8_t dev);
-
-#ifdef __cplusplus
-}
-#endif
+void controller_dispatch_txt_container (nvObj_t *nv, char *str);
+void controller_reset_source(void);
+void controller_set_primary_source(uint8_t dev);
+void controller_set_secondary_source(uint8_t dev);
+void controller_assert_limit_condition(uint8_t input);
+void controller_request_enquiry(void);
 
 #endif // End of include guard: CONTROLLER_H_ONCE

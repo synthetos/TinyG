@@ -62,6 +62,7 @@ void persistence_init()
  * read_persistent_value()	- return value (as float) by index
  * write_persistent_value() - write to NVM by index, but only if the value has changed
  *
+ *  All persistence occurs in uint32_t (not float)
  *	It's the responsibility of the caller to make sure the index does not exceed range
  */
 
@@ -70,7 +71,7 @@ stat_t read_persistent_value(nvObj_t *nv)
 {
 	nvm.address = nvm.profile_base + (nv->index * NVM_VALUE_LEN);
 	(void)EEPROM_ReadBytes(nvm.address, nvm.byte_array, NVM_VALUE_LEN);
-	memcpy(&nv->value, &nvm.byte_array, NVM_VALUE_LEN);
+	memcpy(&nv->value_int, &nvm.byte_array, NVM_VALUE_LEN);
 	return (STAT_OK);
 }
 #endif // __AVR
@@ -78,7 +79,7 @@ stat_t read_persistent_value(nvObj_t *nv)
 #ifdef __ARM
 stat_t read_persistent_value(nvObj_t *nv)
 {
-	nv->value = 0;
+	nv->value_int = 0;
 	return (STAT_OK);
 }
 #endif // __ARM
@@ -86,23 +87,17 @@ stat_t read_persistent_value(nvObj_t *nv)
 #ifdef __AVR
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF)
-        return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-
-/* not needed
-	if (nv->valuetype == TYPE_FLOAT) {
-		if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
-		if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
-	}
-*/
-	nvm.tmp_value = nv->value;
+	if (cm.cycle_state != CYCLE_OFF) {
+        return(rpt_exception_P(STAT_COMMAND_NOT_ACCEPTED, PSTR("Can't save when moving")));
+    }
+	nvm.tmp_value = nv->value_int;
 	ritorno(read_persistent_value(nv));
-	if ((isnan((double)nv->value)) || (isinf((double)nv->value)) || (fp_NE(nv->value, nvm.tmp_value))) {
-		memcpy(&nvm.byte_array, &nvm.tmp_value, NVM_VALUE_LEN);
-		nvm.address = nvm.profile_base + (nv->index * NVM_VALUE_LEN);
-		(void)EEPROM_WriteBytes(nvm.address, nvm.byte_array, NVM_VALUE_LEN);
+	if (nv->value_int != nvm.tmp_value) {
+    	memcpy(&nvm.byte_array, &nvm.tmp_value, NVM_VALUE_LEN);
+    	nvm.address = nvm.profile_base + (nv->index * NVM_VALUE_LEN);
+    	(void)EEPROM_WriteBytes(nvm.address, nvm.byte_array, NVM_VALUE_LEN);
 	}
-	nv->value =nvm.tmp_value;		// always restore value
+	nv->value_int =nvm.tmp_value;		// always restore value
 	return (STAT_OK);
 }
 #endif // __AVR
@@ -110,20 +105,9 @@ stat_t write_persistent_value(nvObj_t *nv)
 #ifdef __ARM
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF)
-        return(rpt_exception(STAT_FILE_NOT_OPEN));	// can't write when machine is moving
-
-/* not needed
-	if (nv->valuetype == TYPE_FLOAT) {
-		if (isnan((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_NAN));		// bad floating point value
-		if (isinf((double)nv->value)) return(rpt_exception(STAT_FLOAT_IS_INFINITE));// bad floating point value
-	}
-*/
+	if (cm.cycle_state != CYCLE_OFF) {
+        return(rpt_exception(STAT_COMMAND_NOT_ACCEPTED));	// can't write when machine is moving
+    }
 	return (STAT_OK);
 }
 #endif // __ARM
-
-#ifdef __cplusplus
-}
-#endif
-

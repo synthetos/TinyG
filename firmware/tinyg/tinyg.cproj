@@ -32,6 +32,12 @@
         <port>49159</port>
         <ssl>False</ssl>
       </Channel>
+      <ToolOptions>
+        <InterfaceProperties>
+        </InterfaceProperties>
+        <InterfaceName>
+        </InterfaceName>
+      </ToolOptions>
     </com_atmel_avrdbg_tool_simulator>
     <AsfFrameworkConfig>
       <framework-data>
@@ -194,6 +200,9 @@
     <Compile Include="encoder.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="error.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="gcode_parser.c">
       <SubType>compile</SubType>
     </Compile>
@@ -231,12 +240,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="network.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="network.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="persistence.c">
@@ -287,9 +290,6 @@
     <Compile Include="settings\settings_default.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_openpnp.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="settings\settings_othermill.h">
       <SubType>compile</SubType>
     </Compile>
@@ -299,10 +299,10 @@
     <Compile Include="settings\settings_shapeoko2.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_test.h">
+    <Compile Include="settings\settings_test_001.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="settings\settings_Ultimaker.h">
+    <Compile Include="settings\settings_ultimaker.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="settings\settings_zen7x12.h">

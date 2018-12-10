@@ -1,8 +1,8 @@
 /*
  * xio.h - Xmega IO devices - common header file
- * Part of TinyG project
+ * Part of TinyG project (g1)
  *
- * Copyright (c) 2010 - 2014 Alden S. Hart Jr.
+ * Copyright (c) 2010 - 2016 Alden S. Hart Jr.
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -69,31 +69,61 @@
 // Pre-allocated XIO devices (configured devices)
 // Unused devices are commented out. All this needs to line up.
 
-enum xioDevNum_t {		// TYPE:	DEVICE:
+typedef enum {		// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
 	XIO_DEV_SPI1,		// SPI		SPI channel #1
-	XIO_DEV_SPI2,		// SPI		SPI channel #2
+//	XIO_DEV_SPI2,		// SPI		SPI channel #2
 //	XIO_DEV_SPI3,		// SPI		SPI channel #3
 //	XIO_DEV_SPI4,		// SPI		SPI channel #4
 	XIO_DEV_PGM,		// FILE		Program memory file  (read only)
 //	XIO_DEV_SD,			// FILE		SD card (not implemented)
 	XIO_DEV_COUNT		// total device count (must be last entry)
-};
+} xioDevNum_t;
 // If your change these ^, check these v
 
-#define XIO_DEV_USART_COUNT 	2 				// # of USART devices
-#define XIO_DEV_USART_OFFSET	0				// offset for computing indices
+#define XIO_DEV_USART_COUNT 	2       // # of USART devices
+#define XIO_DEV_USART_OFFSET	0       // offset for computing indices
 
-#define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
+#define XIO_DEV_SPI_COUNT 		1       // # of SPI devices
 #define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
-#define XIO_DEV_FILE_COUNT		1				// # of FILE devices
+#define XIO_DEV_FILE_COUNT		1       // # of FILE devices
 #define XIO_DEV_FILE_OFFSET		(XIO_DEV_USART_COUNT + XIO_DEV_SPI_COUNT) // index into FILES
 
 // Fast accessors
 #define USB ds[XIO_DEV_USB]
 #define USBu us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]
+
+// Aliases
+
+#define xio_flush_read      xio_reset_usb_rx_buffers    // allows v8 code to use same call as g2
+
+//*** Device flags ***
+typedef uint16_t devflags_t;
+
+// device capabilities flags
+#define DEV_CAN_BE_CTRL		(0x0001)    // device can be a control channel
+#define DEV_CAN_BE_DATA		(0x0002)    // device can be a data channel
+#define DEV_CAN_READ		(0x0010)
+#define DEV_CAN_WRITE		(0x0020)
+
+// channel type
+#define DEV_IS_NONE			(0x0000)    // None of the following
+#define DEV_IS_CTRL			(0x0001)    // device is set as a control channel
+#define DEV_IS_DATA			(0x0002)    // device is set as a data channel
+#define DEV_IS_PRIMARY		(0x0004)    // device is the primary control channel
+#define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
+
+// device connection state
+#define DEV_IS_DISCONNECTED	(0x0010)    // device just disconnected (transient state)
+#define DEV_IS_CONNECTED	(0x0020)    // device is connected (e.g. USB)
+#define DEV_IS_READY		(0x0040)    // device is ready for use
+#define DEV_IS_ACTIVE		(0x0080)    // device is active
+
+// device exception flags
+#define DEV_THROW_EOF		(0x0100)    // end of file encountered
+
 
 /******************************************************************************
  * Device structures
@@ -111,6 +141,11 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 
 #define flags_t uint16_t
 
+typedef enum {
+    RX_MODE_CHAR = 0,                            // character mode input (streaming)
+    RX_MODE_LINE                                 // line mode input (packet)
+} xioRXMode;
+
 typedef struct xioDEVICE {						// common device struct (one per dev)
 	// references and self references
 	uint16_t magic_start;						// memory integrity check
@@ -126,22 +161,40 @@ typedef struct xioDEVICE {						// common device struct (one per dev)
 	int (*x_putc)(char, FILE *);				// write char (stdio compatible)
 	void (*x_flow)(struct xioDEVICE *d);		// flow control callback function
 
+#ifdef __BITFIELDS
 	// device configuration flags
-	uint8_t flag_block;
-	uint8_t flag_echo;
-	uint8_t flag_crlf;
-	uint8_t flag_ignorecr;
-	uint8_t flag_ignorelf;
-	uint8_t flag_linemode;
-	uint8_t flag_xoff;							// xon/xoff enabled
+	uint8_t flag_block      : 1 ;
+	uint8_t flag_echo       : 1 ;
+	uint8_t flag_crlf       : 1 ;
+	uint8_t flag_ignorecr   : 1 ;
+	uint8_t flag_ignorelf   : 1 ;
+	uint8_t flag_linemode   : 1 ;
+	uint8_t flag_xoff       : 1 ;               // xon/xoff enabled
 
 	// private working data and runtime flags
+	uint8_t flag_in_line    : 1 ;               // used as a state variable for line reads
+	uint8_t flag_eol        : 1 ;               // end of line detected
+	uint8_t flag_eof        : 1 ;               // end of file detected
+	uint8_t signal          : 4 ;               // signal value
+#else
+	// device configuration flags
+	uint8_t flag_block      ;
+	uint8_t flag_echo       ;
+	uint8_t flag_crlf       ;
+	uint8_t flag_ignorecr   ;
+	uint8_t flag_ignorelf   ;
+	uint8_t flag_linemode   ;
+	uint8_t flag_xoff       ;               // xon/xoff enabled
+
+	// private working data and runtime flags
+	uint8_t flag_in_line    ;               // used as a state variable for line reads
+	uint8_t flag_eol        ;               // end of line detected
+	uint8_t flag_eof        ;               // end of file detected
+	uint8_t signal          ;               // signal value
+#endif
+
 	int size;									// text buffer length (dynamic)
 	uint8_t len;								// chars read so far (buf array index)
-	uint8_t signal;								// signal value
-	uint8_t flag_in_line;						// used as a state variable for line reads
-	uint8_t flag_eol;							// end of line detected
-	uint8_t flag_eof;							// end of file detected
 	char *buf;									// text buffer binding (can be dynamic)
 	uint16_t magic_end;
 } xioDev_t;
@@ -152,6 +205,99 @@ typedef int (*x_gets_t)(xioDev_t *d, char *buf, const int size);
 typedef int (*x_getc_t)(FILE *);
 typedef int (*x_putc_t)(char, FILE *);
 typedef void (*x_flow_t)(xioDev_t *d);
+
+
+/******************************************************************************
+ * Readline Buffer Management
+ */
+
+#define RX_HEADERS                12        // buffer headers in the list
+#define RX_BUFFER_MIN_SIZE       200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_POOL_SIZE     1000        // total size of RX buffer memory pool
+/*
+#define RX_HEADERS                26        // buffer headers in the list
+#define RX_BUFFER_MIN_SIZE       256        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_POOL_SIZE     1500        // total size of RX buffer memory pool
+*/
+typedef enum {                              // readline() buffer and slot states
+    BUFFER_FREE = 0,                        // buffer (slot) is available (must be 0)
+    BUFFER_FRAGMENT,                        // buffer is free but in the middle of the list
+    BUFFER_FILLING,                         // buffer is partially loaded
+    BUFFER_FULL,                            // buffer contains a full line
+    BUFFER_PROCESSING                       // buffer is in use by the caller
+} cmBufferState;
+
+/* and now for some ASCII art: Buffer pool viewed from top to bottom
+ * ----- pool_top (char * address)
+ * -----
+ * ----- free - free space at the top of the filling buffer
+ * -----      - (filling) currently open buffer for filling
+ * -----      - (control or data) full buffer N
+ * -----      - (control or data) ....
+ * -----      - (control or data) full buffer 2
+ * -----      - (control or data) full buffer 1
+ * ----- used - (processing) buffer being processed by controller
+ * -----
+ * ----- pool_base  (char * address)
+ */
+
+typedef struct bufHdr {                 // buffer header (NB: It's not actually IN the allocated memory block)
+    uint8_t bufnum;                     //+++++ DIAGNOSTIC. Can be removed
+    struct bufHdr *pv;                  // pointer to previous header block
+    struct bufHdr *nx;                  // pointer to next header block
+    cmBufferState state;                // header state: see cmBufferState
+    uint8_t flags;                      // DEV_IS_CTRL, DEV_IS_DATA, DEV_IS_NONE
+    uint16_t size;                      // buffer size in bytes
+    char *bufp;                         // pointer to char buffer start (finally!)
+} buf_hdr_t;
+
+typedef struct bufMgr {                 // structure to manage a buffer pool
+    uint16_t magic_start;
+    buf_hdr_t *used_base;               // start of used headers: may be filling, ctrl, data, processing
+    buf_hdr_t *used_top;                // end of used headers
+    uint16_t requested_size;            // minimum size for requested buffer size (user configurable)
+    uint8_t fragments;                  // used to track header fragmentation
+    uint8_t free_headers;               // running count of free buffers
+    uint8_t out_of_ram;                 // true if allocation failure occurs
+    char *pool_base;                    // starting address of buffer pool
+    char *pool_top;                     // ending address of buffer pool
+    buf_hdr_t buf[RX_HEADERS];          // circular linked list of header structs
+    uint16_t magic_end;
+} buf_mgr_t;
+buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
+
+typedef struct bufPool {
+    uint16_t magic_start;
+    char rx_pool[RX_BUFFER_POOL_SIZE];  // statically allocated buffer pool with guard bands
+    uint16_t magic_end;
+} buf_pool_t;
+buf_pool_t bufpool;
+
+typedef struct xioSingleton {
+    uint16_t magic_start;
+    FILE * stderr_shadow;				// used for stack overflow / memory integrity checking
+
+    // communications settings
+    uint8_t primary_src;				// primary input source device
+    uint8_t secondary_src;				// secondary input source device
+    uint8_t default_src;				// default source device
+
+    uint8_t usb_baud_rate;				// see xio_usart.h for XIO_BAUD values
+    uint8_t usb_baud_flag;				// technically this belongs in the controller singleton
+
+    uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO ctrl bits)
+    uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO ctrl bits)
+    uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
+    xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
+
+    // character mode reader
+    uint16_t buf_size;					// persistent size variable
+    uint8_t buf_state;					// holds CTRL or DATA once this is known
+    char *bufp;                         // pointer to input buffer
+
+    uint16_t magic_end;
+} xioSingleton_t;
+xioSingleton_t xio;
 
 /*************************************************************************
  *	Sub-Includes and static allocations
@@ -181,6 +327,11 @@ void xio_init(void);
 void xio_init_assertions(void);
 uint8_t xio_test_assertions(void);
 uint8_t xio_isbusy(void);
+
+char *readline(devflags_t *flags, uint16_t *size);
+void xio_reset_readline_linemode(void);
+uint8_t xio_get_line_buffers_available(void);
+//uint8_t xio_is_control(char *str);
 
 void xio_reset_working_flags(xioDev_t *d);
 FILE *xio_open(const uint8_t dev, const char *addr, const flags_t flags);
@@ -239,7 +390,7 @@ void xio_set_stderr(const uint8_t dev);
  * See signals.h for application specific signal defs and routines.
  */
 
-enum xioSignals {
+typedef enum {
 	XIO_SIG_OK,				// OK
 	XIO_SIG_EAGAIN,			// would block
 	XIO_SIG_EOL,			// end-of-line encountered (string has data)
@@ -252,7 +403,7 @@ enum xioSignals {
 	XIO_SIG_DELETE,			// backspace or delete character (BS, DEL)
 	XIO_SIG_BELL,			// BELL character (BEL, ^g)
 	XIO_SIG_BOOTLOADER		// ESC character - start bootloader
-};
+} xioSignals;
 
 /* Some useful ASCII definitions */
 
@@ -271,7 +422,7 @@ enum xioSignals {
 #define SYN (char)0x16		// ^v - SYN - Used for queue flush
 #define CAN (char)0x18		// ^x - Cancel, abort
 #define ESC (char)0x1B		// ^[ - ESC(ape)
-//#define SP  (char)0x20		// ' '  Space character		// defined externally
+#define SPC  (char)0x20		// ' '  Space character	// NB: SP is defined externally
 #define DEL (char)0x7F		//  DEL(ete)
 
 #define Q_EMPTY (char)0xFF	// signal no character
@@ -279,8 +430,9 @@ enum xioSignals {
 /* Signal character mappings */
 
 #define CHAR_RESET CAN
+#define CHAR_ENQUIRY ENQ
 #define CHAR_FEEDHOLD (char)'!'
-#define CHAR_CYCLE_START (char)'~'
+#define CHAR_END_HOLD (char)'~'
 #define CHAR_QUEUE_FLUSH (char)'%'
 //#define CHAR_BOOTLOADER ESC
 
@@ -292,7 +444,7 @@ enum xioSignals {
  * of making sure these lists are aligned. STAT_should be based on this list.
  */
 
-enum xioCodes {
+typedef enum {
 	XIO_OK = 0,				// OK - ALWAYS ZERO
 	XIO_ERR,				// generic error return (errors start here)
 	XIO_EAGAIN,				// function would block here (must be called again)
@@ -313,7 +465,7 @@ enum xioCodes {
 	XIO_ERROR_17,			// reserved
 	XIO_ERROR_18,			// reserved
 	XIO_ERROR_19			// NOTE: XIO codes align to here
-};
+} xioCodes;
 #define XIO_ERRNO_MAX XIO_BUFFER_FULL_NON_FATAL
 
 

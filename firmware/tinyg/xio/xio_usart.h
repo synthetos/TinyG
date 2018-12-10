@@ -51,10 +51,8 @@
 //#define buffer_t uint16_t						// larger buffers
 
 // Must reserve 2 bytes for buffer management
-#define RX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
-#define TX_BUFFER_SIZE (buffer_t)254			// buffer_t can be 8 bits
-//#define RX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
-//#define TX_BUFFER_SIZE (buffer_t)255			// buffer_t can be 8 bits
+#define RX_BUFFER_SIZE (buffer_t)250			// buffer_t can be 8 bits
+#define TX_BUFFER_SIZE (buffer_t)250			// buffer_t can be 8 bits
 
 // Alternates for larger buffers - mostly for debugging
 //#define buffer_t uint16_t						// slower, but larger buffers
@@ -78,7 +76,8 @@
 //NOTE: XIO_BLOCK / XIO_NOBLOCK affects reads only. Writes always block. (see xio.h)
 
 #define USB_BAUD  XIO_BAUD_115200
-#define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )
+//#define USB_FLAGS (XIO_BLOCK |  XIO_ECHO | XIO_XOFF | XIO_LINEMODE )  // blocking character reads
+#define USB_FLAGS (XIO_ECHO | XIO_XOFF | XIO_LINEMODE )                 // non-blocking character reads
 
 #define USB_USART USARTC0						// USB usart
 #define USB_RX_ISR_vect USARTC0_RXC_vect	 	// (RX) reception complete IRQ
@@ -135,7 +134,7 @@
 // Baud rate configuration
 #define	XIO_BAUD_DEFAULT XIO_BAUD_115200
 
-enum xioBAUDRATES {         		// BSEL	  BSCALE
+typedef enum {         		        // BSEL	  BSCALE
 		XIO_BAUD_UNSPECIFIED = 0,	//	0		0	  // use default value
 		XIO_BAUD_9600,				//	207		0
 		XIO_BAUD_19200,				//	103		0
@@ -147,13 +146,13 @@ enum xioBAUDRATES {         		// BSEL	  BSCALE
 		XIO_BAUD_921600,			//	19		(-4<<4)
 		XIO_BAUD_500000,			//	1		(1<<4)
 		XIO_BAUD_1000000			//	1		0
-};
+} xioBAUDRATES;
 
-enum xioFCState {
+typedef enum {
 		FC_DISABLED = 0,			// flow control is disabled
 		FC_IN_XON,					// normal, un-flow-controlled state
 		FC_IN_XOFF					// flow controlled state
-};
+} xioFCState;
 
 /******************************************************************************
  * STRUCTURES

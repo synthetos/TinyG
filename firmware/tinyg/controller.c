@@ -2,8 +2,8 @@
  * controller.c - tinyg controller and top level parser
  * This file is part of the TinyG project
  *
- * Copyright (c) 2010 - 2015 Alden S. Hart, Jr.
- * Copyright (c) 2013 - 2015 Robert Giseburt
+ * Copyright (c) 2010 - 2016 Alden S. Hart, Jr.
+ * Copyright (c) 2013 - 2016 Robert Giseburt
  *
  * This file ("the software") is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 as published by the
@@ -61,13 +61,20 @@ controller_t cs;		// controller state structure
  ***********************************************************************************/
 
 static void _controller_HSM(void);
-static stat_t _shutdown_idler(void);
+static stat_t _shutdown_handler(void);
 static stat_t _normal_idler(void);
 static stat_t _limit_switch_handler(void);
-static stat_t _system_assertions(void);
+
+static void _init_assertions(void);
+static stat_t _test_system_assertions(void);
+
 static stat_t _sync_to_planner(void);
 static stat_t _sync_to_tx_buffer(void);
-static stat_t _command_dispatch(void);
+
+static stat_t _controller_state(void);
+static stat_t _dispatch_command(void);
+static stat_t _dispatch_control(void);
+static void _dispatch_kernel(void);
 
 // prep for export to other modules:
 stat_t hardware_hard_reset_handler(void);
@@ -83,42 +90,25 @@ stat_t hardware_bootloader_handler(void);
 void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
 	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
-	controller_init_assertions();
+	_init_assertions();
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
 	cs.hw_platform = TINYG_HARDWARE_PLATFORM;		// NB: HW version is set from EEPROM
+	cs.controller_state = CONTROLLER_STARTUP;		// ready to run startup lines
 
 #ifdef __AVR
-	cs.state = CONTROLLER_STARTUP;					// ready to run startup lines
 	xio_set_stdin(std_in);
 	xio_set_stdout(std_out);
 	xio_set_stderr(std_err);
-	cs.default_src = std_in;
-	tg_set_primary_source(cs.default_src);
+	xio.default_src = std_in;
+	controller_set_primary_source(xio.default_src);
 #endif
 
 #ifdef __ARM
-	cs.state = CONTROLLER_NOT_CONNECTED;			// find USB next
+	cs.controller_state = CONTROLLER_NOT_CONNECTED;	// find USB next
 	IndicatorLed.setFrequency(100000);
 #endif
-}
-
-/*
- * controller_init_assertions()
- * controller_test_assertions() - check memory integrity of controller
- */
-
-void controller_init_assertions()
-{
-	cs.magic_start = MAGICNUM;
-	cs.magic_end = MAGICNUM;
-}
-
-stat_t controller_test_assertions()
-{
-	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) return (STAT_CONTROLLER_ASSERTION_FAILURE);
-	return (STAT_OK);
 }
 
 /*
@@ -155,142 +145,207 @@ static void _controller_HSM()
 //
 //----- kernel level ISR handlers ----(flags are set in ISRs)------------------------//
 												// Order is important:
-	DISPATCH(hw_hard_reset_handler());			// 1. handle hard reset requests
-	DISPATCH(hw_bootloader_handler());			// 2. handle requests to enter bootloader
-	DISPATCH(_shutdown_idler());				// 3. idle in shutdown state
-//	DISPATCH( poll_switches());					// 4. run a switch polling cycle
-	DISPATCH(_limit_switch_handler());			// 5. limit switch has been thrown
+	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
+	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
 
-	DISPATCH(cm_feedhold_sequencing_callback());// 6a. feedhold state machine runner
-	DISPATCH(mp_plan_hold_callback());			// 6b. plan a feedhold from line runtime
-	DISPATCH(_system_assertions());				// 7. system integrity assertions
+	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
+    DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
+// 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
+ 	DISPATCH(_limit_switch_handler());          // invoke limit switch
+    DISPATCH(_controller_state());              // controller state management
+	DISPATCH(_test_system_assertions());		// system integrity assertions
+	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 
 	DISPATCH(st_motor_power_callback());		// stepper motor power sequencing
-//	DISPATCH(switch_debounce_callback());		// debounce switches
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
+
+	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
-	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
+	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
 
 //----- command readers and parsers --------------------------------------------------//
 
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
+	DISPATCH(set_baud_callback());				// (AVR only) perform baud rate update (must be after TX sync)
+	DISPATCH(_dispatch_command());				// read and execute next command
+}
+
+/*****************************************************************************************
+ * _controller_state() - manage conrtroller connection, startup, and other state changes
+ */
+static stat_t _controller_state()
+{
 #ifdef __AVR
-	DISPATCH(set_baud_callback());				// perform baud rate update (must be after TX sync)
-#endif
-	DISPATCH(_command_dispatch());				// read and execute next command
-	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
+	if (cs.controller_state <= CONTROLLER_STARTUP) {		// first time through after reset
+		cs.controller_state = CONTROLLER_READY;
+		cm_request_queue_flush();
+		rpt_print_system_ready_message();
+	}
+	return (STAT_OK);
+#endif // __AVR
+
+#ifdef __ARM
+	// detect USB connection and transition to disconnected state if it disconnected
+	//	if (SerialUSB.isConnected() == false) cs.state = CONTROLLER_NOT_CONNECTED;
+	return (xio_callback());					// manages state changes in the XIO system
+#endif // __ARM
 }
 
 /*****************************************************************************
- * _command_dispatch() - dispatch line received from active input device
+ * command dispatchers
+ * _dispatch_command - entry point for control and data dispatches
+ * _dispatch_control - entry point for control-0nly dispatches
+ * _dispatch_kernel - core dispatch routines
+ * controller_dispatch_text_container() - specialized dispatcher for 'txt' elements
  *
  *	Reads next command line and dispatches to relevant parser or action
- *	Accepts commands if the move queue has room - EAGAINS if it doesn't
- *	Manages cutback to serial input from file devices (EOF)
- *	Also responsible for prompts and for flow control
  */
 
-static stat_t _command_dispatch()
-{
 #ifdef __AVR
-	stat_t status;
-
-	// read input line or return if not a completed line
-	// xio_gets() is a non-blocking workalike of fgets()
-	while (true) {
-		if ((status = xio_gets(cs.primary_src, cs.in_buf, sizeof(cs.in_buf))) == STAT_OK) {
-			cs.bufp = cs.in_buf;
-			break;
-		}
-		// handle end-of-file from file devices
-		if (status == STAT_EOF) {						// EOF can come from file devices only
-			if (cfg.comm_mode == TEXT_MODE) {
-				fprintf_P(stderr, PSTR("End of command file\n"));
-			} else {
-				rpt_exception(STAT_EOF);				// not really an exception
-			}
-			tg_reset_source();							// reset to default source
-		}
-		return (status);								// Note: STAT_EAGAIN, errors, etc. will drop through
-	}
-#endif // __AVR
-#ifdef __ARM
-	// detect USB connection and transition to disconnected state if it disconnected
-	if (SerialUSB.isConnected() == false) cs.state = CONTROLLER_NOT_CONNECTED;
-
-	// read input line and return if not a completed line
-	if (cs.state == CONTROLLER_READY) {
-		if (read_line(cs.in_buf, &cs.read_index, sizeof(cs.in_buf)) != STAT_OK) {
-			cs.bufp = cs.in_buf;
-			return (STAT_OK);	// This is an exception: returns OK for anything NOT OK, so the idler always runs
-		}
-	} else if (cs.state == CONTROLLER_NOT_CONNECTED) {
-		if (SerialUSB.isConnected() == false) return (STAT_OK);
-		cm_request_queue_flush();
-		rpt_print_system_ready_message();
-		cs.state = CONTROLLER_STARTUP;
-
-	} else if (cs.state == CONTROLLER_STARTUP) {		// run startup code
-		cs.state = CONTROLLER_READY;
-
-	} else {
-		return (STAT_OK);
-	}
-	cs.read_index = 0;
-#endif // __ARM
-
-	// set up the buffers
-	cs.linelen = strlen(cs.in_buf)+1;					// linelen only tracks primary input
-	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);	// save input buffer for reporting
-
-	// dispatch the new text line
-	switch (toupper(*cs.bufp)) {						// first char
-
-		case '!': { cm_request_feedhold(); break; }		// include for AVR diagnostics and ARM serial
-		case '%': { cm_request_queue_flush(); break; }
-		case '~': { cm_request_cycle_start(); break; }
-
-		case NUL: { 									// blank line (just a CR)
-			if (cfg.comm_mode != JSON_MODE) {
-				text_response(STAT_OK, cs.saved_buf);
-			}
-			break;
-		}
-		case '$': case '?': case 'H': { 				// text mode input
-			cfg.comm_mode = TEXT_MODE;
-			text_response(text_parser(cs.bufp), cs.saved_buf);
-			break;
-		}
-		case '{': { 									// JSON input
-			cfg.comm_mode = JSON_MODE;
-			json_parser(cs.bufp);
-			break;
-		}
-		default: {										// anything else must be Gcode
-			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
-				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
-				json_parser(cs.bufp);
-			} else {									//...or run it as text
-				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
-			}
-		}
-	}
+static stat_t _dispatch_command()
+{
+	devflags_t flags = DEV_IS_BOTH;
+	cs.bufp = readline(&flags, &cs.linelen);
+    if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
+        return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
+    }
+    if (cs.bufp != (char *)NULL) {          // process the command
+        _dispatch_kernel();
+    }
 	return (STAT_OK);
 }
 
+static stat_t _dispatch_control()
+{
+	devflags_t flags = DEV_IS_CTRL;
+	cs.bufp = readline(&flags, &cs.linelen);
+	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
+    	return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
+	}
+	if (cs.bufp != (char *)NULL) {          // process the command
+    	_dispatch_kernel();
+	}
+	return (STAT_OK);
+}
+#endif // __AVR
+
+#ifdef __ARM
+static stat_t _dispatch_command()
+{
+    devflags_t flags = DEV_IS_BOTH;
+	cs.bufp = readline(flags, cs.linelen);
+    if (cs.bufp != (char *)NULL) {          // process the command
+        _dispatch_kernel();
+    }
+    return (STAT_OK);
+}
+static stat_t _dispatch_control()
+{
+    devflags_t flags = DEV_IS_CTRL;
+    if ((cs.bufp = readline(flags, cs.linelen)) != NULL) {
+        _dispatch_kernel();
+    }
+    return (STAT_OK);
+}
+#endif // __ARM
+
+static void _dispatch_kernel()
+{
+    // skip leading whitespace & quotes
+	while ((*cs.bufp == SPC) || (*cs.bufp == TAB) || (*cs.bufp == '"')) {
+        cs.bufp++;
+    }
+	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+
+	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
+		if (cs.comm_mode == TEXT_MODE) {
+			text_response(STAT_OK, cs.saved_buf);
+		}
+    }
+	// included for AVR diagnostics and ARM serial (which does not trap these characters immediately on RX)
+	else if (*cs.bufp == '!') { cm_request_feedhold(); }
+	else if (*cs.bufp == '~') { cm_request_end_hold(); }
+	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
+	else if (*cs.bufp == ENQ) { controller_request_enquiry(); }
+
+    // this is a hack until we can figure out how a buffer might obtain a leading '?'
+    else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
+        cs.bufp++;
+    }
+
+	else if (*cs.bufp == '{') {							    // process as JSON mode
+		cs.comm_mode = JSON_MODE;							// switch to JSON mode
+//		json_parser(cs.bufp, NV_BODY, true);
+		json_parser(cs.bufp);
+    }
+#ifdef __TEXT_MODE
+	else if (strchr("$?Hh", *cs.bufp) != NULL) {			// process as text mode
+		cs.comm_mode = TEXT_MODE;							// switch to text mode
+		text_response(text_parser(cs.bufp), cs.saved_buf);
+    }
+	else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
+		text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
+    }
+#endif
+	else {  // anything else is interpreted as Gcode
+
+    	// this optimization bypasses the standard JSON parser and does what it needs directly
+    	nvObj_t *nv = nv_reset_nv_list(NUL);                // get a fresh nvObj list
+    	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
+    	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
+    	nv->valuetype = TYPE_STRING;
+    	float status = gc_gcode_parser(cs.bufp);
+    	nv_print_list(status, TEXT_NO_DISPLAY, JSON_RESPONSE);
+    	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
+	}
+}
+
+/*
+ * controller_dispatch_txt_container - callout from JSON parser kernal to run text commands
+ *
+ *	For text-mode commands this starts a JSON response then runs the text command
+ *  in a 'msg' element. Text lines are escaped with JSON-friendly line ends
+ *  (e,g \n instead of LF). The text response string is closed, then
+ *  json_continuation is set so that the JSON response is properly completed.
+ *
+ *  Gcode is simply wrapped in a JSON gc tag and processed.
+ */
+
+void controller_dispatch_txt_container (nvObj_t *nv, char *str)
+{
+    // process pure text-mode commands
+    if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
+        if (js.json_syntax == JSON_SYNTAX_RELAXED) {// opening JSON
+            printf_P(PSTR("{r:{txt:\""));
+        } else {
+            printf_P(PSTR("{\"r\":{\"txt\":\""));
+        }
+        cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
+        text_parser(str);
+        cs.comm_mode = JSON_MODE;                   // restore JSON mode
+        printf_P(PSTR("\""));                       // close quote
+        nv_reset_nv_list(NUL);                      // reset the list to start at the head
+        NV_HEAD->valuetype = TYPE_TXTCON;           // label the list as a text container
+    }
+    // process gcode
+    else {
+        strcpy(nv->token,"gc");
+        text_response(gc_gcode_parser(str), cs.saved_buf);
+    }
+}
 
 /**** Local Utilities ********************************************************/
 /*
- * _shutdown_idler() - blink rapidly and prevent further activity from occurring
+ * _shutdown_handler() - put system into shutdown state
+ * _limit_switch_handler() - alarm system if limit switch fired
  * _normal_idler() - blink Indicator LED slowly to show everything is OK
  *
  *	Shutdown idler flashes indicator LED rapidly to show everything is not OK.
@@ -299,7 +354,7 @@ static stat_t _command_dispatch()
  *	(ctrl-x) or bootloader request can be processed.
  */
 
-static stat_t _shutdown_idler()
+static stat_t _shutdown_handler()
 {
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
 
@@ -310,73 +365,63 @@ static stat_t _shutdown_idler()
 	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
 }
 
+/*
+ * _limit_switch_handler() - shut down system if limit switch fired
+ */
+
+void controller_assert_limit_condition(uint8_t input)
+{
+    cs.limit_switch_asserted = input;
+}
+
+static stat_t _limit_switch_handler(void)
+{
+    if ((cm.machine_state == MACHINE_ALARM) ||
+        (cm.machine_state == MACHINE_PANIC) ||
+        (cm.machine_state == MACHINE_SHUTDOWN)) {
+        return (STAT_NOOP);                             // don't test limits if already in an alarm state
+    }
+
+    if (cs.limit_switch_asserted == 0) {
+        return(STAT_NOOP);
+    }
+    char msg[12];
+    sprintf_P(msg, PSTR("input %d"), cs.limit_switch_asserted);
+    cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
+    cs.limit_switch_asserted = 0;
+
+    return (STAT_OK);
+}
+
 static stat_t _normal_idler()
 {
-#ifdef __ARM
-	/*
-	 * S-curve heartbeat code. Uses forward-differencing math from the stepper code.
-	 * See plan_line.cpp for explanations.
-	 * Here, the "velocity" goes from 0.0 to 1.0, then back.
-	 * t0 = 0, t1 = 0, t2 = 0.5, and we'll complete the S in 100 segments.
-	 */
-
-	// These are statics, and the assignments will only evaluate once.
-	static float indicator_led_value = 0.0;
-	static float indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-	static float indicator_led_forward_diff_2 = indicator_led_forward_diff_1 * 2.0;
-
-
-	if (SysTickTimer.getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer.getValue() + LED_NORMAL_TIMER / 100;
-
-		indicator_led_value += indicator_led_forward_diff_1;
-		if (indicator_led_value > 100.0)
-			indicator_led_value = 100.0;
-
-		if ((indicator_led_forward_diff_2 > 0.0 && indicator_led_value >= 50.0) || (indicator_led_forward_diff_2 < 0.0 && indicator_led_value <= 50.0)) {
-			indicator_led_forward_diff_2 = -indicator_led_forward_diff_2;
-		}
-		else if (indicator_led_value <= 0.0) {
-			indicator_led_value = 0.0;
-
-			// Reset to account for rounding errors
-			indicator_led_forward_diff_1 = 50.0 * square(1.0/100.0);
-		} else {
-			indicator_led_forward_diff_1 += indicator_led_forward_diff_2;
-		}
-
-		IndicatorLed = indicator_led_value/100.0;
-	}
-#endif
-#ifdef __AVR
 /*
 	if (SysTickTimer_getValue() > cs.led_timer) {
 		cs.led_timer = SysTickTimer_getValue() + LED_NORMAL_TIMER;
 //		IndicatorLed_toggle();
 	}
 */
-#endif
 	return (STAT_OK);
 }
 
 /*
- * tg_reset_source() 		 - reset source to default input device (see note)
- * tg_set_primary_source() 	 - set current primary input source
- * tg_set_secondary_source() - set current primary input source
+ * controller_reset_source() 		 - reset source to default input device (see note)
+ * controller_set_primary_source() 	 - set current primary input source
+ * controller_set_secondary_source() - set current primary input source
  *
  * Note: Once multiple serial devices are supported reset_source() should
  * be expanded to also set the stdout/stderr console device so the prompt
  * and other messages are sent to the active device.
  */
 
-void tg_reset_source() { tg_set_primary_source(cs.default_src);}
-void tg_set_primary_source(uint8_t dev) { cs.primary_src = dev;}
-void tg_set_secondary_source(uint8_t dev) { cs.secondary_src = dev;}
+void controller_reset_source() { controller_set_primary_source(xio.default_src);}
+void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
+void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
+void controller_request_enquiry() { printf_P(PSTR("{\"ack\":true}\n")); }
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
  * _sync_to_planner() - return eagain if planner is not ready for a new command
- * _sync_to_time() - return eagain if planner is not ready for a new command
  */
 static stat_t _sync_to_tx_buffer()
 {
@@ -394,44 +439,36 @@ static stat_t _sync_to_planner()
 	return (STAT_OK);
 }
 
-/*
-static stat_t _sync_to_time()
-{
-	if (cs.sync_to_time_time == 0) {		// initial pass
-		cs.sync_to_time_time = SysTickTimer_getValue() + 100; //ms
-		return (STAT_OK);
-	}
-	if (SysTickTimer_getValue() < cs.sync_to_time_time) {
-		return (STAT_EAGAIN);
-	}
-	return (STAT_OK);
-}
-*/
-/*
- * _limit_switch_handler() - shut down system if limit switch fired
- */
-static stat_t _limit_switch_handler(void)
-{
-	if (cm_get_machine_state() == MACHINE_ALARM) { return (STAT_NOOP);}
 
-	if (get_limit_switch_thrown() == false) return (STAT_NOOP);
-	return(cm_hard_alarm(STAT_LIMIT_SWITCH_HIT));
+/*
+ * _init_assertions() - initialize controller memory integrity assertions
+ * _test_assertions() - check controller memory integrity assertions
+ * _test_system_assertions() - check assertions for entire system
+ */
+
+static void _init_assertions()
+{
+	cs.magic_start = MAGICNUM;
+	cs.magic_end = MAGICNUM;
+}
+
+static stat_t _test_assertions()
+{
+	if ((cs.magic_start != MAGICNUM) || (cs.magic_end != MAGICNUM)) {
+        return(cm_panic_P(STAT_CONTROLLER_ASSERTION_FAILURE, PSTR("controller_test_assertions()")));
+    }
 	return (STAT_OK);
 }
 
-/*
- * _system_assertions() - check memory integrity and other assertions
- */
-#define emergency___everybody_to_get_from_street(a) if((status_code=a) != STAT_OK) return (cm_hard_alarm(status_code));
-
-stat_t _system_assertions()
+stat_t _test_system_assertions()
 {
-	emergency___everybody_to_get_from_street(config_test_assertions());
-	emergency___everybody_to_get_from_street(controller_test_assertions());
-	emergency___everybody_to_get_from_street(canonical_machine_test_assertions());
-	emergency___everybody_to_get_from_street(planner_test_assertions());
-	emergency___everybody_to_get_from_street(stepper_test_assertions());
-	emergency___everybody_to_get_from_street(encoder_test_assertions());
-	emergency___everybody_to_get_from_street(xio_test_assertions());
+    // these functions will panic if an assertion fails
+	_test_assertions();                     // controller assertions (local)
+	config_test_assertions();
+	canonical_machine_test_assertions();
+	planner_test_assertions();
+	stepper_test_assertions();
+	encoder_test_assertions();
+	xio_test_assertions();
 	return (STAT_OK);
 }
