@@ -125,6 +125,11 @@ typedef enum {				        // master queue flush state machine
     FLUSH_REQUESTED,                // flush has been requested but not started yet
 } cmQueueFlushState;
 
+typedef enum {				        // buffers drain state machine
+    DRAIN_OFF = 0,				    // no buffers drain in effect
+    DRAIN_REQUESTED,                // drain has not completed yet
+} cmBuffersDrainState;
+
 typedef enum {				        // applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1,				// machine is homed (1=true)
@@ -162,7 +167,11 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_GET_POSITION,			// M114
+	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_WAIT_FOR_COMPLETION		// M400
+
 } cmNextAction;
 
 typedef enum {						    // G Modal Group 1
@@ -535,6 +544,7 @@ typedef struct cmSingleton {                // struct to manage cm globals and c
     cmFeedholdState hold_state;             // hold: feedhold state machine
     cmOverrideState mfo_state;              // feed override state machine
     cmQueueFlushState queue_flush_state;    // master queue flush state machine
+    cmBuffersDrainState buffers_drain_state; // buffers drain state machine
 
     uint8_t safety_interlock_disengaged;    // set non-zero to start interlock processing (value is input number)
     uint8_t safety_interlock_reengaged;     // set non-zero to end interlock processing (value is input number)
