@@ -349,7 +349,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 			break;
 
 			case 'M':
-			switch((uint8_t)value) {
+			switch((uint16_t)value) {
 				case 0: case 1: case 60:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
 				case 2: case 30:
@@ -365,6 +365,9 @@ static stat_t _parse_gcode_block(char_t *buf)
 				case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
 				case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
 				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
+				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
+				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
+				case 400: SET_NON_MODAL (next_action, NEXT_ACTION_WAIT_FOR_COMPLETION);
 				default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
 			}
 			break;
@@ -486,6 +489,30 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+		case NEXT_ACTION_GET_POSITION: {
+				// M114: Get current position, see https://www.reprap.org/wiki/G-code#M114:_Get_Current_Position
+				size_t len = 0;
+				for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+					float position = cm.gm.target[axis] - cm_get_active_coord_offset(axis);
+					len += sprintf(global_string_buf + len, "%c:%0.4f ", "XYZABC"[axis], position);
+				}
+				// Replace last trailing space with newline.
+				global_string_buf[len-1] = '\n';
+				fprintf(stderr, global_string_buf);
+				break;
+			}
+		case NEXT_ACTION_GET_FIRMWARE: {
+				// M115: Get Firmware Version and Capabilities, see https://www.reprap.org/wiki/G-code#M115:_Get_Firmware_Version_and_Capabilities.
+				static const char m115_response[] PROGMEM = "FIRMWARE_NAME:TinyG, FIRMWARE_URL:https%%3A//github.com/synthetos/TinyG, FIRMWARE_VERSION:%0.2f, FIRMWARE_BUILD:%0.2f, HARDWARE_PLATFORM:%0.2f, HARDWARE_VERSION:%0.2f\n";
+				fprintf_P(stderr, m115_response, cs.fw_version, cs.fw_build, cs.hw_platform, cs.hw_version);
+				break;
+			}
+		case NEXT_ACTION_WAIT_FOR_COMPLETION: {
+				// M400: Wait for current moves to finish, see https://www.reprap.org/wiki/G-code#M400:_Wait_for_current_moves_to_finish
+				// Wait for all buffers to be drained, before accepting the next command.
+				cm_set_buffer_drain_state(DRAIN_REQUESTED); 
+				break;
+			}
 
 		case NEXT_ACTION_DEFAULT: {
 			cm_set_absolute_override(MODEL, cm.gn.absolute_override);	// apply override setting to gm struct

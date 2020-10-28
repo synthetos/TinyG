@@ -166,6 +166,7 @@ uint8_t cm_get_cycle_state() { return cm.cycle_state;}
 uint8_t cm_get_motion_state() { return cm.motion_state;}
 uint8_t cm_get_hold_state() { return cm.hold_state;}
 uint8_t cm_get_homing_state() { return cm.homing_state;}
+uint8_t cm_get_buffer_drain_state() { return cm.buffer_drain_state;}
 
 void cm_set_motion_state(uint8_t motion_state)
 {
@@ -176,6 +177,11 @@ void cm_set_motion_state(uint8_t motion_state)
 		case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
 		case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
 	}
+}
+
+void cm_set_buffer_drain_state(uint8_t buffer_drain_state)
+{
+	cm.buffer_drain_state = buffer_drain_state;
 }
 
 /***********************************
