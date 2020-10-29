@@ -90,6 +90,7 @@
 #include "config.h"			// #2
 #include "text_parser.h"
 #include "canonical_machine.h"
+#include "controller.h"
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
@@ -818,6 +819,51 @@ stat_t cm_resume_origin_offsets()
 	cm.gmx.origin_offset_enable = 1;
 	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
+	return (STAT_OK);
+}
+
+stat_t cm_get_position() 
+{
+	// M114: Get current position, see https://www.reprap.org/wiki/G-code#M114:_Get_Current_Position
+	size_t len = 0;
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		float position = cm.gm.target[axis] - cm_get_active_coord_offset(axis);
+		len += sprintf(global_string_buf + len, "%c:%0.4f ", "XYZABC"[axis], position);
+	}
+	// Replace last trailing space with newline.
+	global_string_buf[len-1] = '\n';
+	fprintf(stderr, global_string_buf);
+	return (STAT_OK);
+}
+
+stat_t cm_get_firmware()
+{
+	// M115: Get Firmware Version and Capabilities, see https://www.reprap.org/wiki/G-code#M115:_Get_Firmware_Version_and_Capabilities.
+	static const char m115_response[] PROGMEM = "FIRMWARE_NAME:TinyG, FIRMWARE_URL:https%%3A//github.com/synthetos/TinyG, FIRMWARE_VERSION:%0.2f, FIRMWARE_BUILD:%0.2f, HARDWARE_PLATFORM:%0.2f, HARDWARE_VERSION:%0.2f\n";
+	fprintf_P(stderr, m115_response, cs.fw_version, cs.fw_build, cs.hw_platform, cs.hw_version);
+	return (STAT_OK);
+}
+
+stat_t cm_set_jerk(float offset[], float flag[])
+{
+	// M204.3: Set axes jerk limits, transiently.
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (fp_TRUE(flag[axis])) {
+			// convert from unit/s^3 to unit/min^3 and divide by the multiplier.
+			cm_set_axis_jerk(axis, max(1, _to_millimeters(offset[axis])*(60.f*60.f*60.f)/JERK_MULTIPLIER));
+		}
+	}
+	return (STAT_OK);
+}
+
+stat_t cm_wait_for_completion() 
+{
+	// M400: Wait for current moves to finish, see https://www.reprap.org/wiki/G-code#M400:_Wait_for_current_moves_to_finish
+	// Wait for all buffers to be drained, before accepting the next command.
+	cm_set_buffer_drain_state(DRAIN_REQUESTED);
+	// Suppress the status message, if in text mode. A prompt will be issued when drained.
+	if (cfg.comm_mode == TEXT_MODE)
+		return (STAT_EAGAIN);
 	return (STAT_OK);
 }
 

@@ -392,6 +392,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_SET_JERK,				// M204.3
 	NEXT_ACTION_WAIT_FOR_COMPLETION		// M400
 
 };
@@ -597,6 +598,11 @@ stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
 stat_t cm_reset_origin_offsets(void); 							// G92.1
 stat_t cm_suspend_origin_offsets(void); 						// G92.2
 stat_t cm_resume_origin_offsets(void);				 			// G92.3
+
+stat_t cm_get_position(void);									// M114
+stat_t cm_get_firmware(void);									// M115
+stat_t cm_set_jerk(float offset[], float flag[]);				// M204.3
+stat_t cm_wait_for_completion(void);							// M400
 
 // Free Space Motion (4.3.4)
 stat_t cm_straight_traverse(float target[], float flags[]);		// G0

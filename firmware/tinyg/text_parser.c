@@ -161,6 +161,9 @@ void text_response(const stat_t status, char_t *buf)
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
 
 	if ((status == STAT_OK) || (status == STAT_EAGAIN) || (status == STAT_NOOP)) {
+		if (cm_get_buffer_drain_state() == DRAIN_REQUESTED) {
+			return;	// postpone prompt
+		}
 		fprintf_P(stderr, prompt_ok, units);
 	} else {
 		fprintf_P(stderr, prompt_err, units, get_status_message(status), buf);
