@@ -846,7 +846,7 @@ stat_t cm_get_firmware()
 
 stat_t cm_set_jerk(float offset[], float flag[])
 {
-	// M204.3: Set axes jerk limits, transiently.
+	// M201.3: Set axes jerk limits, transiently.
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			// convert from unit/s^3 to unit/min^3 and divide by the multiplier.
