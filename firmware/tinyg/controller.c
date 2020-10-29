@@ -389,12 +389,14 @@ static stat_t _sync_to_tx_buffer()
 static stat_t _sync_to_planner()
 {
 	if (cm_get_buffer_drain_state() == DRAIN_REQUESTED) {
-		if (mp_get_planner_buffers_available() < PLANNER_BUFFER_POOL_SIZE) { // need to drain it
+		if (mp_get_planner_buffers_available() < PLANNER_BUFFER_POOL_SIZE) { // need to drain it first
 			return (STAT_EAGAIN);
 		}
 		else {
 			cm_set_buffer_drain_state(DRAIN_OFF);
-			return (STAT_COMPLETE);
+			if (cfg.comm_mode == TEXT_MODE)
+				text_response(STAT_OK, (char_t *)"");   // prompt
+			return (STAT_OK);
 		}
 	}
 	else {

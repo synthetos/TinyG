@@ -511,6 +511,9 @@ static stat_t _execute_gcode_block()
 				// M400: Wait for current moves to finish, see https://www.reprap.org/wiki/G-code#M400:_Wait_for_current_moves_to_finish
 				// Wait for all buffers to be drained, before accepting the next command.
 				cm_set_buffer_drain_state(DRAIN_REQUESTED); 
+				// Suppress the status message, if in text mode. A prompt will be issued when drained.
+				if (cfg.comm_mode == TEXT_MODE)
+					status = STAT_EAGAIN;
 				break;
 			}
 
