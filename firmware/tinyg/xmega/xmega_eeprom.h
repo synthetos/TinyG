@@ -19,7 +19,8 @@
  * Notes:
  *      See AVR1315: Accessing the XMEGA EEPROM + Code eeprom_driver.c /.h
  *
- * Author: * \author
+ * Author:
+ * \author
  *      Original Author: Atmel Corporation: http://www.atmel.com \n
  *		Adapted by: Alden S. Hart Jr; 04/02/2010
  *
@@ -47,7 +48,7 @@
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- * STRICT LIABILITY, OR FART (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  * POSSIBILITY OF SUCH DAMAGE.
  ************************************************************************/
