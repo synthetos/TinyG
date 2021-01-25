@@ -39,6 +39,7 @@
 #ifdef __AVR
 #include <avr/interrupt.h>
 #include "xmega/xmega_interrupts.h"
+#include "xmega/xmega_adc.h"
 #endif // __AVR
 
 #ifdef __ARM
@@ -127,6 +128,7 @@ static void _application_init(void)
 	switch_init();					// switches
 //	gpio_init();					// parallel IO
 	pwm_init();						// pulse width modulation drivers	- must follow gpio_init()
+	adc_init();
 
 	controller_init(STD_IN, STD_OUT, STD_ERR);// must be first app init; reqs xio_init()
 	config_init();					// config records from eeprom 		- must be next app init

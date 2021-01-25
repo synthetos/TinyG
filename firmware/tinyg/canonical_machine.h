@@ -390,6 +390,7 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_GET_ADC,				// M105
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
 	NEXT_ACTION_SET_JERK,				// M201.3
@@ -600,6 +601,7 @@ stat_t cm_suspend_origin_offsets(void); 						// G92.2
 stat_t cm_resume_origin_offsets(void);				 			// G92.3
 
 stat_t cm_get_position(void);									// M114
+stat_t cm_get_adc(void);									    // M105
 stat_t cm_get_firmware(void);									// M115
 stat_t cm_set_jerk(float offset[], float flag[]);				// M201.3
 stat_t cm_wait_for_completion(void);							// M400

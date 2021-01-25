@@ -76,6 +76,8 @@ xio\xio_usart.c
 
 xio\xio_usb.c
 
+xmega\xmega_adc.c
+
 xmega\xmega_eeprom.c
 
 xmega\xmega_init.c

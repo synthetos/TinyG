@@ -108,7 +108,8 @@ void xio_init()
 	xio_open(XIO_DEV_USB,  0, USB_FLAGS);
 	xio_open(XIO_DEV_RS485,0, RS485_FLAGS);
 	xio_open(XIO_DEV_SPI1, 0, SPI_FLAGS);
-	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
+// Used for ADC
+//	xio_open(XIO_DEV_SPI2, 0, SPI_FLAGS);
 
 	xio_init_assertions();
 }
@@ -132,8 +133,8 @@ uint8_t xio_test_assertions()
 	if (ds[XIO_DEV_RS485].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_SPI1].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (ds[XIO_DEV_SPI1].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
-	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+//	if (ds[XIO_DEV_SPI2].magic_start	!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
+//	if (ds[XIO_DEV_SPI2].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 //	if (ds[XIO_DEV_PGM].magic_start		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 //	if (ds[XIO_DEV_PGM].magic_end		!= MAGICNUM) return (STAT_XIO_ASSERTION_FAILURE);
 	if (stderr != xio.stderr_shadow) 				 return (STAT_XIO_ASSERTION_FAILURE);

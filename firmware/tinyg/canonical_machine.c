@@ -102,6 +102,7 @@
 #include "hardware.h"
 #include "util.h"
 #include "xio.h"			// for serial queue flush
+#include "xmega/xmega_adc.h"
 /*
 #ifdef __cplusplus
 extern "C"{
@@ -833,6 +834,16 @@ stat_t cm_get_position()
 	// Replace last trailing space with newline.
 	global_string_buf[len-1] = '\n';
 	fprintf(stderr, global_string_buf);
+	return (STAT_OK);
+}
+
+stat_t cm_get_adc()
+{
+	// M105: Get ADC values (thermistor readings), see https://www.reprap.org/wiki/G-code#M105:_Get_Extruder_Temperature
+	// Currently only one channel is implemented.
+	static const char m105_response[] PROGMEM = "ok T:%d\n";
+	uint16_t val = adc_read();
+	fprintf_P(stderr, m105_response, (int)val);
 	return (STAT_OK);
 }
 

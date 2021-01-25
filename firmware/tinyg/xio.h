@@ -73,7 +73,7 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 	XIO_DEV_USB,		// USART	USB device
 	XIO_DEV_RS485,		// USART	RS485 device
 	XIO_DEV_SPI1,		// SPI		SPI channel #1
-	XIO_DEV_SPI2,		// SPI		SPI channel #2
+//	XIO_DEV_SPI2,		// SPI		SPI channel #2
 //	XIO_DEV_SPI3,		// SPI		SPI channel #3
 //	XIO_DEV_SPI4,		// SPI		SPI channel #4
 	XIO_DEV_PGM,		// FILE		Program memory file  (read only)
@@ -85,7 +85,9 @@ enum xioDevNum_t {		// TYPE:	DEVICE:
 #define XIO_DEV_USART_COUNT 	2 				// # of USART devices
 #define XIO_DEV_USART_OFFSET	0				// offset for computing indices
 
-#define XIO_DEV_SPI_COUNT 		2 				// # of SPI devices
+// changed spi count to 1 from 2 so that !SS2 will not be used and can be used
+// for the ADC input instead
+#define XIO_DEV_SPI_COUNT 		1 				// # of SPI devices 
 #define XIO_DEV_SPI_OFFSET		XIO_DEV_USART_COUNT	// offset for computing indicies
 
 #define XIO_DEV_FILE_COUNT		1				// # of FILE devices

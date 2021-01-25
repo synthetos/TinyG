@@ -431,6 +431,12 @@
     <Compile Include="xio\xio_usb.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="xmega\xmega_adc.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="xmega\xmega_adc.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="xmega\xmega_eeprom.c">
       <SubType>compile</SubType>
     </Compile>

@@ -78,6 +78,7 @@ C_SRCS +=  \
 ../xio/xio_spi.c \
 ../xio/xio_usart.c \
 ../xio/xio_usb.c \
+../xmega/xmega_adc.c \
 ../xmega/xmega_eeprom.c \
 ../xmega/xmega_init.c \
 ../xmega/xmega_interrupts.c \
@@ -128,6 +129,7 @@ xio/xio_rs485.o \
 xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
+xmega/xmega_adc.o \
 xmega/xmega_eeprom.o \
 xmega/xmega_init.o \
 xmega/xmega_interrupts.o \
@@ -171,6 +173,7 @@ xio/xio_rs485.o \
 xio/xio_spi.o \
 xio/xio_usart.o \
 xio/xio_usb.o \
+xmega/xmega_adc.o \
 xmega/xmega_eeprom.o \
 xmega/xmega_init.o \
 xmega/xmega_interrupts.o \
@@ -214,6 +217,7 @@ xio/xio_rs485.d \
 xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
+xmega/xmega_adc.d \
 xmega/xmega_eeprom.d \
 xmega/xmega_init.d \
 xmega/xmega_interrupts.d \
@@ -257,6 +261,7 @@ xio/xio_rs485.d \
 xio/xio_spi.d \
 xio/xio_usart.d \
 xio/xio_usb.d \
+xmega/xmega_adc.d \
 xmega/xmega_eeprom.d \
 xmega/xmega_init.d \
 xmega/xmega_interrupts.d \
@@ -276,6 +281,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

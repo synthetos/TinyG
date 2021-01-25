@@ -365,6 +365,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 				case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
 				case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
 				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
+				case 105: SET_NON_MODAL (next_action, NEXT_ACTION_GET_ADC);
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
 				case 201: {
@@ -496,6 +497,7 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+		case NEXT_ACTION_GET_ADC: { status = cm_get_adc(); break; }
 		case NEXT_ACTION_GET_POSITION: { status = cm_get_position(); break; }
 		case NEXT_ACTION_GET_FIRMWARE: { status = cm_get_firmware(); break; }
 		case NEXT_ACTION_SET_JERK: { status = cm_set_jerk(cm.gn.target, cm.gf.target); break; }
