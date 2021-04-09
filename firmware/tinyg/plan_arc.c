@@ -77,7 +77,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 
     // set radius mode flag and do simple test(s)
 	bool radius_f = fp_NOT_ZERO(cm.gf.arc_radius);			    // set true if radius arc
-    if ((radius_f) && (cm.gn.arc_radius < MIN_ARC_RADIUS)) {    // radius value must be + and > minimum radius
+    if ((radius_f) && (fabs(cm.gn.arc_radius) < MIN_ARC_RADIUS)) {    // radius value must > minimum radius
         return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
     }
 
@@ -433,12 +433,16 @@ static stat_t _compute_arc_offsets_from_radius()
 	// such circles in a single line of g-code. By inverting the sign of
 	// h_x2_div_d the center of the circles is placed on the opposite side of
 	// the line of travel and thus we get the unadvisably long arcs as prescribed.
-	if (arc.radius < 0) { h_x2_div_d = -h_x2_div_d; }
+	if (arc.radius < 0) {
+        h_x2_div_d = -h_x2_div_d;
+        arc.radius *= -1;
+    }
 
 	// Complete the operation by calculating the actual center of the arc
 	arc.offset[arc.plane_axis_0] = (x-(y*h_x2_div_d))/2;
 	arc.offset[arc.plane_axis_1] = (y+(x*h_x2_div_d))/2;
 	arc.offset[arc.linear_axis] = 0;
+        
 	return (STAT_OK);
 }
 
