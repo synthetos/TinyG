@@ -244,6 +244,7 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	uint8_t motion_state;				// momo
 	uint8_t hold_state;					// hold: feedhold sub-state machine
 	uint8_t homing_state;				// home: homing cycle sub-state machine
+	uint8_t buffer_drain_state;			// M400: buffer drain state	
 	uint8_t homed[AXES];				// individual axis homing flags
 
 	uint8_t probe_state;				// 1==success, 0==failed
@@ -351,6 +352,11 @@ enum cmFeedholdState {				// feedhold_state machine
 	FEEDHOLD_END_HOLD				// end hold (transient state to OFF)
 };
 
+typedef enum {				        // buffers drain state machine
+    DRAIN_OFF = 0,				    // no buffers drain in effect
+    DRAIN_REQUESTED,                // drain has not completed yet
+} cmBuffersDrainState;
+
 enum cmHomingState {				// applies to cm.homing_state
 	HOMING_NOT_HOMED = 0,			// machine is not homed (0=false)
 	HOMING_HOMED = 1,				// machine is homed (1=true)
@@ -383,7 +389,12 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_GET_POSITION,			// M114
+	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_SET_JERK,				// M201.3
+	NEXT_ACTION_WAIT_FOR_COMPLETION		// M400
+
 };
 
 enum cmMotionMode {						// G Modal Group 1
@@ -519,8 +530,10 @@ uint8_t cm_get_cycle_state(void);
 uint8_t cm_get_motion_state(void);
 uint8_t cm_get_hold_state(void);
 uint8_t cm_get_homing_state(void);
+uint8_t cm_get_buffer_drain_state(void);
 uint8_t cm_get_jogging_state(void);
 void cm_set_motion_state(uint8_t motion_state);
+void cm_set_buffer_drain_state(uint8_t buffer_drain_state);
 float cm_get_axis_jerk(uint8_t axis);
 void cm_set_axis_jerk(uint8_t axis, float jerk);
 
@@ -585,6 +598,11 @@ stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
 stat_t cm_reset_origin_offsets(void); 							// G92.1
 stat_t cm_suspend_origin_offsets(void); 						// G92.2
 stat_t cm_resume_origin_offsets(void);				 			// G92.3
+
+stat_t cm_get_position(void);									// M114
+stat_t cm_get_firmware(void);									// M115
+stat_t cm_set_jerk(float offset[], float flag[]);				// M201.3
+stat_t cm_wait_for_completion(void);							// M400
 
 // Free Space Motion (4.3.4)
 stat_t cm_straight_traverse(float target[], float flags[]);		// G0
