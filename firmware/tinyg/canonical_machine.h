@@ -113,6 +113,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint16_t magic_start;				// magic number to test memory integrity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
+	int32_t last_line_number;           // used with line checksums
 
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
 	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
@@ -123,7 +124,8 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
-	uint8_t l_word;						// L word - used by G10s
+	uint8_t l_word;						// L word - Specification of what register to edit using G10
+	uint8_t H_word;						// H word - used by G43s
 
 	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
@@ -375,21 +377,21 @@ enum cmProbeState {					// applies to cm.probe_state
  */
 
 enum cmNextAction {						// these are in order to optimized CASE statement
-	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
+	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)	
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_SET_G10_DATA,			// G10
+	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
-	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates
-	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
-	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
-	NEXT_ACTION_SET_COORD_DATA,			// G10
+	NEXT_ACTION_SET_G30_POSITION,		// G30.1
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
 	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
-	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
 	NEXT_ACTION_SET_JERK,				// M201.3
@@ -587,7 +589,9 @@ stat_t cm_clear(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,             // G10
+                       const uint8_t L_word, const bool L_flag,
+                       const float offset[], const bool flag[]);
 
 void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
