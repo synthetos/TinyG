@@ -253,7 +253,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 	cm.gn.motion_mode = cm_get_motion_mode(MODEL);	// get motion mode from previous block
 
 	// extract commands and parameters
-	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
+	while((status = _get_next_gcode_word(&pstr, &letter, &value, &value_int)) == STAT_OK) {
 		switch(letter) {
 			case 'G':
 			switch((uint8_t)value) {
@@ -392,12 +392,14 @@ static stat_t _parse_gcode_block(char_t *buf)
 		//	case 'U': SET_NON_MODAL (target[AXIS_U], value);		// reserved
 		//	case 'V': SET_NON_MODAL (target[AXIS_V], value);		// reserved
 		//	case 'W': SET_NON_MODAL (target[AXIS_W], value);		// reserved
+			case 'H': SET_NON_MODAL (H_word, value);		
 			case 'I': SET_NON_MODAL (arc_offset[0], value);
 			case 'J': SET_NON_MODAL (arc_offset[1], value);
 			case 'K': SET_NON_MODAL (arc_offset[2], value);
+			case 'L': SET_NON_MODAL (L_word, value);				// Specification of what register to edit using G10
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);		// line number
-			case 'L': break;										// not used for anything
+
 			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 		}
 		if(status != STAT_OK) break;

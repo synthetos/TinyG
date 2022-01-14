@@ -625,7 +625,7 @@ stat_t cm_hard_alarm(stat_t status)
  *	cm_select_plane()			- G17,G18,G19 select axis plane
  *	cm_set_units_mode()			- G20, G21
  *	cm_set_distance_mode()		- G90, G91
- *	cm_set_coord_offsets()		- G10 (delayed persistence)
+ *	cm_set_g10_data()		- G10 (delayed persistence)
  *
  *	These functions assume input validation occurred upstream.
  */
@@ -648,29 +648,65 @@ stat_t cm_set_distance_mode(uint8_t mode)
 	return (STAT_OK);
 }
 
-/*
- * cm_set_coord_offsets() - G10 L2 Pn (affects MODEL only)
+/****************************************************************************************
+ * cm_set_g10_data() - G10 L1/L2/L10/L20 Pn (affects MODEL only)
  *
- *	This function applies the offset to the GM model but does not persist the offsets
- *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
- *	has ended. You can also use $g54x - $g59c config functions to change offsets.
- *
- *	It also does not reset the work_offsets which may be accomplished by calling
- *	cm_set_work_offsets() immediately afterwards.
+ *  This function applies the offset to the GM model but does not persist the offsets
+ *  during the Gcode cycle. The persist flag is used to persist offsets once the cycle
+ *  has ended. You can also use $g54x - $g59c config functions to change offsets.
+ *  It also does resets the display offsets to reflect the new values.
  */
 
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[])
+stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,
+                       const uint8_t L_word, const bool L_flag,
+                       const float offset[], const bool flag[])
 {
-	if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
-		return (STAT_INPUT_VALUE_RANGE_ERROR);
-	}
-	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		if (fp_TRUE(flag[axis])) {
-			cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
-			cm.deferred_write_flag = true;								// persist offsets once machining cycle is over
-		}
-	}
-	return (STAT_OK);
+    if (!L_flag) {
+        return (STAT_L_WORD_IS_MISSING);
+    }
+
+    if ((L_word == 2) || (L_word == 20)) {
+        // coordinate system offset command
+        if ((P_word < G54) || (P_word > COORD_SYSTEM_MAX)) {
+            return (STAT_P_WORD_IS_INVALID);                // you can't set G53
+        }
+        for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+            if (flag[axis]) {
+                if (L_word == 2) {
+                    cm.coord_offset[P_word][axis] = _to_millimeters(offset[axis]);
+                } else {
+                    // Should L20 take into account G92 offsets?
+                    cm.coord_offset[P_word][axis] = cm.gmx.position[axis] -
+                        _to_millimeters(offset[axis]) -
+                        cm.tool_offset[axis];
+                }
+                cm.deferred_write_flag = true;         // persist offsets once machining cycle is over
+            }
+        }
+    // }
+    // else if ((L_word == 1) || (L_word == 10)) {
+    //     if ((P_word < 1) || (P_word > TOOLS)) {         // tool table offset command. L11 not supported atm.
+    //         return (STAT_P_WORD_IS_INVALID);
+    //     }
+    //     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+    //         if (flag[axis]) {
+    //             if (L_word == 1) {
+    //                 tt.tt_offset[P_word][axis] = _to_millimeters(offset[axis]);
+    //             } else {                                // L10 should also take into account G92 offset
+    //                 tt.tt_offset[P_word][axis] =
+    //                     cm.gmx.position[axis] - _to_millimeters(offset[axis]) -
+    //                     cm.coord_offset[cm->gm.coord_system][axis] -
+    //                     (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
+    //             }
+    //             cm->deferred_write_flag = true;         // persist offsets once machining cycle is over
+    //         }
+    //     }
+    }
+    else {
+        return (STAT_L_WORD_IS_INVALID);
+    }
+    cm_set_display_offsets(MODEL);
+    return (STAT_OK);
 }
 
 /******************************************************************************************
