@@ -116,7 +116,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	int32_t last_line_number;           // used with line checksums
 
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
-	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	float g92_offset[AXES];				// XYZABC G92 offsets (Note: not used in gn or gf)
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
@@ -127,7 +127,7 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint8_t L_word;						// L word - Specification of what register to edit using G10
 	uint8_t H_word;						// H word - used by G43s
 
-	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
+	uint8_t g92_offset_enable;		    // G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
@@ -164,7 +164,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
+	uint8_t g92_offset_mode;			// G92...TRUE=in origin offset mode
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
 	uint8_t arc_distance_mode;			// G91.1   0=use absolute coords(G90), 1=incremental movement
@@ -389,10 +389,10 @@ enum cmNextAction {						// these are in order to optimized CASE statement
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
 	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
-	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
-	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
-	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
-	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
+	NEXT_ACTION_SET_G92_OFFSETS,		// G92
+	NEXT_ACTION_RESET_G92_OFFSETS,	// G92.1
+	NEXT_ACTION_SUSPEND_G92_OFFSETS,	// G92.2
+	NEXT_ACTION_RESUME_G92_OFFSETS,	// G92.3
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
 	NEXT_ACTION_SET_JERK,				// M201.3
@@ -599,10 +599,10 @@ stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
 void cm_set_axis_origin(uint8_t axis, const float position);	// G28.3 planner callback
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
-stat_t cm_reset_origin_offsets(void); 							// G92.1
-stat_t cm_suspend_origin_offsets(void); 						// G92.2
-stat_t cm_resume_origin_offsets(void);				 			// G92.3
+stat_t cm_set_g92_offsets(float offset[], float flag[]);		// G92
+stat_t cm_reset_g92_offsets(void); 								// G92.1
+stat_t cm_suspend_g92_offsets(void); 							// G92.2
+stat_t cm_resume_g92_offsets(void);				 				// G92.3
 
 stat_t cm_get_position(void);									// M114
 stat_t cm_get_firmware(void);									// M115

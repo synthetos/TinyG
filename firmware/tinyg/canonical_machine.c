@@ -242,7 +242,7 @@ void cm_set_model_linenum(uint32_t linenum)
  * Managing the coordinate systems & offsets is somewhat complicated. The following affect offsets:
  *	- coordinate system selected. 1-9 correspond to G54-G59
  *	- absolute override: forces current move to be interpreted in machine coordinates: G53 (system 0)
- *	- G92 offsets are added "on top of" the coord system offsets -- if origin_offset_enable == true
+ *	- G92 offsets are added "on top of" the coord system offsets -- if g92_offset_enable == true
  *	- G28 and G30 moves; these are run in absolute coordinates
  *
  * The offsets themselves are considered static, are kept in cm, and are supposed to be persistent.
@@ -266,8 +266,8 @@ float cm_get_active_coord_offset(uint8_t axis)
 {
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
 	float offset = cm.offset[cm.gm.coord_system][axis];
-	if (cm.gmx.origin_offset_enable == true)
-		offset += cm.gmx.origin_offset[axis];				// includes G5x and G92 components
+	if (cm.gmx.g92_offset_enable == true)
+		offset += cm.gmx.g92_offset[axis];				// includes G5x and G92 components
 	return (offset);
 }
 
@@ -696,7 +696,7 @@ stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,
     //                 tt.tt_offset[P_word][axis] =
     //                     cm.gmx.position[axis] - _to_millimeters(offset[axis]) -
     //                     cm.coord_offset[cm->gm.coord_system][axis] -
-    //                     (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
+    //                     (cm.gmx.g92_offset[axis] * cm.gmx.g92_offset_enable);
     //             }
     //             cm->deferred_write_flag = true;         // persist offsets once machining cycle is over
     //         }
@@ -730,7 +730,7 @@ static void _exec_offset(float *value, float *flag)
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.origin_offset[axis] * cm.gmx.origin_offset_enable);
+		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.g92_offset[axis] * cm.gmx.g92_offset_enable);
 	}
 	mp_set_runtime_work_offset(offsets);
 	cm_set_work_offsets(MODEL);								// set work offsets in the Gcode model
@@ -807,21 +807,21 @@ static void _exec_absolute_origin(float *value, float *flag)
 }
 
 /*
- * cm_set_origin_offsets() 		- G92
- * cm_reset_origin_offsets() 	- G92.1
- * cm_suspend_origin_offsets() 	- G92.2
- * cm_resume_origin_offsets() 	- G92.3
+ * cm_set_g92_offsets() 		- G92
+ * cm_reset_g92_offsets() 	    - G92.1
+ * cm_suspend_g92_offsets() 	- G92.2
+ * cm_resume_g92_offsets() 	    - G92.3
  *
  * G92's behave according to NIST 3.5.18 & LinuxCNC G92
  * http://linuxcnc.org/docs/html/gcode/gcode.html#sec:G92-G92.1-G92.2-G92.3
  */
-stat_t cm_set_origin_offsets(float offset[], float flag[])
+stat_t cm_set_g92_offsets(float offset[], float flag[])
 {
 	// set offsets in the Gcode model extended context
-	cm.gmx.origin_offset_enable = 1;
+	cm.gmx.g92_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
-			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] -
+			cm.gmx.g92_offset[axis] = cm.gmx.position[axis] -
 									  cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
@@ -831,28 +831,28 @@ stat_t cm_set_origin_offsets(float offset[], float flag[])
 	return (STAT_OK);
 }
 
-stat_t cm_reset_origin_offsets()
+stat_t cm_reset_g92_offsets()
 {
-	cm.gmx.origin_offset_enable = 0;
+	cm.gmx.g92_offset_enable = 0;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		cm.gmx.origin_offset[axis] = 0;
+		cm.gmx.g92_offset[axis] = 0;
 	}
 	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
 }
 
-stat_t cm_suspend_origin_offsets()
+stat_t cm_suspend_g92_offsets()
 {
-	cm.gmx.origin_offset_enable = 0;
+	cm.gmx.g92_offset_enable = 0;
 	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
 }
 
-stat_t cm_resume_origin_offsets()
+stat_t cm_resume_g92_offsets()
 {
-	cm.gmx.origin_offset_enable = 1;
+	cm.gmx.g92_offset_enable = 1;
 	float value[AXES] = { (float)cm.gm.coord_system,0,0,0,0,0 };
 	mp_queue_command(_exec_offset, value, value);
 	return (STAT_OK);
@@ -1397,8 +1397,8 @@ static void _exec_program_finalize(float *value, float *flag)
 
 	// perform the following resets if it's a program END
 	if (cm.machine_state == MACHINE_PROGRAM_END) {
-		cm_reset_origin_offsets();						// G92.1 - we do G91.1 instead of G92.2
-	//	cm_suspend_origin_offsets();					// G92.2 - as per Kramer
+		cm_reset_g92_offsets();						// G92.1 - we do G91.1 instead of G92.2
+	//	cm_suspend_g92_offsets();					// G92.2 - as per Kramer
 		cm_set_coord_system(cm.coord_system);			// reset to default coordinate system
 		cm_select_plane(cm.select_plane);				// reset to default arc plane
 		cm_set_distance_mode(cm.distance_mode);

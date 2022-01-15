@@ -333,10 +333,10 @@ static stat_t _parse_gcode_block(char_t *buf)
 				}
 				case 92: {
 					switch (_point(value)) {
-						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_ORIGIN_OFFSETS);
-						case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
-						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
-						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS);
+						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G92_OFFSETS);
+						case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_G92_OFFSETS);
+						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_G92_OFFSETS);
+						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_G92_OFFSETS);
 						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
@@ -493,11 +493,11 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_coord_offsets(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_SET_ORIGIN_OFFSETS: { status = cm_set_origin_offsets(cm.gn.target, cm.gf.target); break;}
-		case NEXT_ACTION_RESET_ORIGIN_OFFSETS: { status = cm_reset_origin_offsets(); break;}
-		case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: { status = cm_suspend_origin_offsets(); break;}
-		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS: { status = cm_resume_origin_offsets(); break;}
+		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_g10_data(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_G92_OFFSETS: { status = cm_set_g92_offsets(cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_RESET_G92_OFFSETS: { status = cm_reset_g92_offsets(); break;}
+		case NEXT_ACTION_SUSPEND_G92_OFFSETS: { status = cm_suspend_g92_offsets(); break;}
+		case NEXT_ACTION_RESUME_G92_OFFSETS: { status = cm_resume_g92_offsets(); break;}
 		case NEXT_ACTION_GET_POSITION: { status = cm_get_position(); break; }
 		case NEXT_ACTION_GET_FIRMWARE: { status = cm_get_firmware(); break; }
 		case NEXT_ACTION_SET_JERK: { status = cm_set_jerk(cm.gn.target, cm.gf.target); break; }
