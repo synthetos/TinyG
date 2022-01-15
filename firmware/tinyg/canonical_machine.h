@@ -84,7 +84,7 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89
 	float target[AXES]; 				// XYZABC where the move should go
-	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
+    float display_offset[AXES];         // work offsets from the machine coordinate system (for reporting only)
 
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
@@ -563,10 +563,10 @@ void cm_set_model_linenum(uint32_t linenum);
 
 // Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
-void cm_set_work_offsets(GCodeState_t *gcode_state);
+float cm_get_display_offset(GCodeState_t *gcode_state, uint8_t axis);
+void cm_set_display_offsets(GCodeState_t *gcode_state);
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_display_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
 void cm_update_model_position_from_runtime(void);

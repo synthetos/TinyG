@@ -218,7 +218,7 @@ void cm_set_tool_number(GCodeState_t *gcode_state, uint8_t tool) { gcode_state->
 void cm_set_absolute_override(GCodeState_t *gcode_state, uint8_t absolute_override)
 {
 	gcode_state->absolute_override = absolute_override;
-	cm_set_work_offsets(MODEL);				// must reset offsets if you change absolute override
+	cm_set_display_offsets(MODEL);				// must reset offsets if you change absolute override
 }
 
 void cm_set_model_linenum(uint32_t linenum)
@@ -258,7 +258,7 @@ void cm_set_model_linenum(uint32_t linenum)
  *
  *	Takes G5x, G92 and absolute override into account to return the active offset for this move
  *
- *	This function is typically used to evaluate and set offsets, as opposed to cm_get_work_offset()
+ *	This function is typically used to evaluate and set offsets, as opposed to cm_get_display_offset()
  *	which merely returns what's in the work_offset[] array.
  */
 
@@ -272,7 +272,7 @@ float cm_get_active_coord_offset(uint8_t axis)
 }
 
 /*
- * cm_get_work_offset() - return a coord offset from the gcode_state
+ * cm_get_display_offset() - return a coord offset from the gcode_state
  *
  *	This function accepts as input:
  *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
@@ -281,13 +281,13 @@ float cm_get_active_coord_offset(uint8_t axis)
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_display_offset(GCodeState_t *gcode_state, uint8_t axis)
 {
 	return (gcode_state->work_offset[axis]);
 }
 
 /*
- * cm_set_work_offsets() - capture coord offsets from the model into absolute values in the gcode_state
+ * cm_set_display_offsets() - capture coord offsets from the model into absolute values in the gcode_state
  *
  *	This function accepts as input:
  *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
@@ -296,7 +296,7 @@ float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis)
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
 
-void cm_set_work_offsets(GCodeState_t *gcode_state)
+void cm_set_display_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
@@ -321,7 +321,7 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
 }
 
 /*
- * cm_get_work_position() - return work position in external form
+ * cm_get_display_position() - return work position in external form
  *
  *	... that means in prevailing units (mm/inch) and with all offsets applied
  *
@@ -335,14 +335,14 @@ float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis)
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis)
+float cm_get_display_position(GCodeState_t *gcode_state, uint8_t axis)
 {
 	float position;
 
 	if (gcode_state == MODEL) {
 		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis);
 	} else {
-		position = mp_get_runtime_work_position(axis);
+		position = mp_get_runtime_display_position(axis);
 	}
 	if (gcode_state->units_mode == INCHES) { position /= MM_PER_INCH; }
 	return (position);
@@ -732,8 +732,8 @@ static void _exec_offset(float *value, float *flag)
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.g92_offset[axis] * cm.gmx.g92_offset_enable);
 	}
-	mp_set_runtime_work_offset(offsets);
-	cm_set_work_offsets(MODEL);								// set work offsets in the Gcode model
+	mp_set_runtime_display_offset(offsets);
+	cm_set_display_offsets(MODEL);								// set work offsets in the Gcode model
 }
 
 /*
@@ -920,7 +920,7 @@ stat_t cm_straight_traverse(float target[], float flags[])
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
 	// prep and plan the move
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_display_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	mp_aline(&cm.gm);							// send the move to the planner
 	cm_finalize_move();
@@ -1041,7 +1041,7 @@ stat_t cm_straight_feed(float target[], float flags[])
 	if (status != STAT_OK) return (cm_soft_alarm(status));
 
 	// prep and plan the move
-	cm_set_work_offsets(&cm.gm);				// capture the fully resolved offsets to the state
+	cm_set_display_offsets(&cm.gm);				// capture the fully resolved offsets to the state
 	cm_cycle_start();							// required for homing & other cycles
 	status = mp_aline(&cm.gm);					// send the move to the planner
 	cm_finalize_move();
@@ -1720,7 +1720,7 @@ stat_t cm_get_feed(nvObj_t *nv)
 
 stat_t cm_get_pos(nvObj_t *nv)
 {
-	nv->value = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value = cm_get_display_position(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -1736,7 +1736,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 
 stat_t cm_get_ofs(nvObj_t *nv)
 {
-	nv->value = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value = cm_get_display_offset(ACTIVE_MODEL, _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);

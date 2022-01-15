@@ -47,16 +47,16 @@ static void _reset_replannable_list(void);
  * mp_zero_segment_velocity() 		- correct velocity in last segment for reporting purposes
  * mp_get_runtime_velocity() 		- returns current velocity (aggregate)
  * mp_get_runtime_machine_position()- returns current axis position in machine coordinates
- * mp_set_runtime_work_offset()		- set offsets in the MR struct
- * mp_get_runtime_work_position() 	- returns current axis position in work coordinates
+ * mp_set_runtime_display_offset()		- set offsets in the MR struct
+ * mp_get_runtime_display_position() 	- returns current axis position in work coordinates
  *									  that were in effect at move planning time
  */
 
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
-void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
-float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
+void mp_set_runtime_display_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
+float mp_get_runtime_display_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
 
 /*
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)
