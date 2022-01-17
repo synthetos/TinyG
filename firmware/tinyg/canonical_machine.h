@@ -158,6 +158,7 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
 	uint8_t L_word;						// L word - Specification of what register to edit using G10
+	float P_word;						// P - parameter used for dwell time in seconds, G10 coord select...
 	uint8_t H_word;						// H word - used by G43s
 	
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
@@ -176,11 +177,10 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	float spindle_speed;				// in RPM
+	float S_word;						// spindle_speed in RPM
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
-	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	float arc_radius;					// R - radius value in arc radius mode
 	float arc_offset[3];  				// IJK - used by arc commands
 
@@ -234,7 +234,9 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	uint8_t distance_mode;				// G90,G91 reset default
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];		// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+	float coord_offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+	float tool_offset[AXES];            // current tool offset
+
 
 	// settings for axes X,Y,Z,A B,C
 	cfgAxis_t a[AXES];

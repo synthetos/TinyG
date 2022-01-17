@@ -55,8 +55,8 @@ static void _reset_replannable_list(void);
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
 float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
-void mp_set_runtime_display_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
-float mp_get_runtime_display_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
+void mp_set_runtime_display_offset(float offset[]) { copy_vector(mr.gm.display_offset, offset);}
+float mp_get_runtime_display_position(uint8_t axis) { return (mr.position[axis] - mr.gm.display_offset[axis]);}
 
 /*
  * mp_get_runtime_busy() - return TRUE if motion control busy (i.e. robot is moving)

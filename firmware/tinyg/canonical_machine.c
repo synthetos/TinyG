@@ -265,7 +265,7 @@ void cm_set_model_linenum(uint32_t linenum)
 float cm_get_active_coord_offset(uint8_t axis)
 {
 	if (cm.gm.absolute_override == true) return (0);		// no offset if in absolute override mode
-	float offset = cm.offset[cm.gm.coord_system][axis];
+	float offset = cm.coord_offset[cm.gm.coord_system][axis];
 	if (cm.gmx.g92_offset_enable == true)
 		offset += cm.gmx.g92_offset[axis];				// includes G5x and G92 components
 	return (offset);
@@ -283,7 +283,7 @@ float cm_get_active_coord_offset(uint8_t axis)
 
 float cm_get_display_offset(GCodeState_t *gcode_state, uint8_t axis)
 {
-	return (gcode_state->work_offset[axis]);
+	return (gcode_state->display_offset[axis]);
 }
 
 /*
@@ -299,7 +299,7 @@ float cm_get_display_offset(GCodeState_t *gcode_state, uint8_t axis)
 void cm_set_display_offsets(GCodeState_t *gcode_state)
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		gcode_state->work_offset[axis] = cm_get_active_coord_offset(axis);
+		gcode_state->display_offset[axis] = cm_get_active_coord_offset(axis);
 	}
 }
 
@@ -395,7 +395,7 @@ stat_t cm_deferred_write_callback()
 			for (uint8_t j=0; j<AXES; j++) {
 				sprintf((char *)nv.token, "g%2d%c", 53+i, ("xyzabc")[j]);
 				nv.index = nv_get_index((const char_t *)"", nv.token);
-				nv.value = cm.offset[i][j];
+				nv.value = cm.coord_offset[i][j];
 				nv_persist(&nv);				// Note: only writes values that have changed
 			}
 		}
@@ -730,7 +730,7 @@ static void _exec_offset(float *value, float *flag)
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		offsets[axis] = cm.offset[coord_system][axis] + (cm.gmx.g92_offset[axis] * cm.gmx.g92_offset_enable);
+		offsets[axis] = cm.coord_offset[coord_system][axis] + (cm.gmx.g92_offset[axis] * cm.gmx.g92_offset_enable);
 	}
 	mp_set_runtime_display_offset(offsets);
 	cm_set_display_offsets(MODEL);								// set work offsets in the Gcode model
@@ -822,7 +822,7 @@ stat_t cm_set_g92_offsets(float offset[], float flag[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (fp_TRUE(flag[axis])) {
 			cm.gmx.g92_offset[axis] = cm.gmx.position[axis] -
-									  cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
+									  cm.coord_offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
@@ -1175,7 +1175,7 @@ stat_t cm_override_enables(uint8_t flag)			// M48, M49
 
 stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (fp_TRUE(cm.gf.feed_rate) && fp_ZERO(cm.gn.feed_rate)) {
 		cm.gmx.feed_rate_override_enable = false;
 	} else {
 		cm.gmx.feed_rate_override_enable = true;
@@ -1186,14 +1186,14 @@ stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
 stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 {
 	cm.gmx.feed_rate_override_enable = flag;
-	cm.gmx.feed_rate_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, cm.gn.parameter);	// replan the queue for new feed rate
+	cm.gmx.feed_rate_override_factor = cm.gn.feed_rate;
+//	mp_feed_rate_override(flag, cm.gn.feed_rate);	// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
 stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (fp_TRUE(cm.gf.feed_rate) && fp_ZERO(cm.gn.feed_rate)) {
 		cm.gmx.traverse_override_enable = false;
 	} else {
 		cm.gmx.traverse_override_enable = true;
@@ -1204,14 +1204,14 @@ stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 {
 	cm.gmx.traverse_override_enable = flag;
-	cm.gmx.traverse_override_factor = cm.gn.parameter;
-//	mp_feed_rate_override(flag, cm.gn.parameter);	// replan the queue for new feed rate
+	cm.gmx.traverse_override_factor = cm.gn.feed_rate;
+//	mp_feed_rate_override(flag, cm.gn.feed_rate);	// replan the queue for new feed rate
 	return (STAT_OK);
 }
 
 stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 {
-	if (fp_TRUE(cm.gf.parameter) && fp_ZERO(cm.gn.parameter)) {
+	if (fp_TRUE(cm.gf.feed_rate) && fp_ZERO(cm.gn.feed_rate)) {
 		cm.gmx.spindle_override_enable = false;
 	} else {
 		cm.gmx.spindle_override_enable = true;
@@ -1222,7 +1222,7 @@ stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
 stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1
 {
 	cm.gmx.spindle_override_enable = flag;
-	cm.gmx.spindle_override_factor = cm.gn.parameter;
+	cm.gmx.spindle_override_factor = cm.gn.feed_rate;
 //	change spindle speed
 	return (STAT_OK);
 }

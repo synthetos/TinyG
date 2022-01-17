@@ -35,7 +35,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 
 // local helper functions and macros
 static void _normalize_gcode_block(char_t *str, char_t **com, char_t **msg, uint8_t *block_delete_flag);
-static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value);
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, int32_t *value_int);
 static stat_t _point(float value);
 static stat_t _validate_gcode_block(void);
 static stat_t _parse_gcode_block(char_t *line);	// Parse the block into the GN/GF structs
@@ -169,7 +169,7 @@ static void _normalize_gcode_block(char_t *str, char_t **com, char_t **msg, uint
  *	Normalization must remove any leading zeros or they will be converted to Octal
  *	G0X... is not interpreted as hexadecimal. This is trapped.
  */
-static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, int32_t *value_int)
 {
 	if (**pstr == NUL)
         return (STAT_COMPLETE);    // no more words to process
@@ -189,7 +189,9 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 
 	// get-value general case
 	char *end;
-	*value = strtof(*pstr, &end);
+    *value = strtof(*pstr, &end);
+    *value_int = atol(*pstr);                       // needed to get an accurate line number for N > 8,388,608
+
 	if(end == *pstr)
         return(STAT_BAD_NUMBER_FORMAT); // more robust test then checking for value=0;
 	*pstr = end;
@@ -244,6 +246,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 	char *pstr = (char *)buf;		// persistent pointer into gcode block for parsing words
   	char letter;					// parsed letter, eg.g. G or X or Y
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
+    int32_t value_int = 0;          // integer value parsed from letter - needed for line numbers
 	stat_t status = STAT_OK;
 
 	// set initial state for new move
@@ -381,8 +384,8 @@ static stat_t _parse_gcode_block(char_t *buf)
 
 			case 'T': SET_NON_MODAL (tool_select, (uint8_t)trunc(value));
 			case 'F': SET_NON_MODAL (feed_rate, value);
-			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select, rotations
-			case 'S': SET_NON_MODAL (spindle_speed, value);
+			case 'P': SET_NON_MODAL (P_word, value);				// used for dwell time, G10 coord select, rotations
+			case 'S': SET_NON_MODAL (S_word, value);
 			case 'X': SET_NON_MODAL (target[AXIS_X], value);
 			case 'Y': SET_NON_MODAL (target[AXIS_Y], value);
 			case 'Z': SET_NON_MODAL (target[AXIS_Z], value);
@@ -398,7 +401,7 @@ static stat_t _parse_gcode_block(char_t *buf)
 			case 'K': SET_NON_MODAL (arc_offset[2], value);
 			case 'L': SET_NON_MODAL (L_word, value);				// Specification of what register to edit using G10
 			case 'R': SET_NON_MODAL (arc_radius, value);
-			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);		// line number
+            case 'N': SET_NON_MODAL (linenum, value_int);           // line number handled as special case to preserve integer value
 
 			default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 		}
@@ -457,7 +460,7 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_set_feed_rate, feed_rate);
 	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
-	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
+	EXEC_FUNC(cm_set_spindle_speed, S_word);
 	EXEC_FUNC(cm_spindle_override_factor, spindle_override_factor);
 	EXEC_FUNC(cm_select_tool, tool_select);					// tool_select is where it's written
 	EXEC_FUNC(cm_change_tool, tool_change);
@@ -470,7 +473,7 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_override_enables, override_enables);
 
 	if (cm.gn.next_action == NEXT_ACTION_DWELL) { 			// G4 - dwell
-		ritorno(cm_dwell(cm.gn.parameter));					// return if error, otherwise complete the block
+		ritorno(cm_dwell(cm.gn.feed_rate));					// return if error, otherwise complete the block
 	}
 	EXEC_FUNC(cm_select_plane, select_plane);
 	EXEC_FUNC(cm_set_units_mode, units_mode);
@@ -493,7 +496,7 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_g10_data(cm.gn.parameter, cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_g10_data(cm.gn.P_word,cm.gf.P_word,cm.gn.L_word, cm.gf.L_word,cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_G92_OFFSETS: { status = cm_set_g92_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_G92_OFFSETS: { status = cm_reset_g92_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_G92_OFFSETS: { status = cm_suspend_g92_offsets(); break;}
