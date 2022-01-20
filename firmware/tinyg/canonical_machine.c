@@ -657,11 +657,12 @@ stat_t cm_set_distance_mode(uint8_t mode)
  *  It also does resets the display offsets to reflect the new values.
  */
 
-stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,
-                       const uint8_t L_word, const bool L_flag,
-                       const float offset[], const bool flag[])
+stat_t cm_set_g10_data(const float P_word,
+                       const uint8_t L_word,
+                       const float offset[], 
+                       const float flag[])
 {
-    if (!L_flag) {
+    if (!fp_TRUE(L_flag)) {
         return (STAT_L_WORD_IS_MISSING);
     }
 
@@ -671,7 +672,7 @@ stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,
             return (STAT_P_WORD_IS_INVALID);                // you can't set G53
         }
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-            if (flag[axis]) {
+            if (fp_TRUE(flag[axis])) {
                 if (L_word == 2) {
                     cm.coord_offset[P_word][axis] = _to_millimeters(offset[axis]);
                 } else {

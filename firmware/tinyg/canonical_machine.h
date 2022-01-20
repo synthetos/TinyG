@@ -592,9 +592,10 @@ stat_t cm_clear(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_g10_data(const uint8_t P_word, const bool P_flag,             // G10
-                       const uint8_t L_word, const bool L_flag,
-                       const float offset[], const bool flag[]);
+stat_t cm_set_g10_data(const float P_word,				        // G10
+                       const uint8_t L_word,
+                       const float offset[], 
+                       const float flag[]);
 
 void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3

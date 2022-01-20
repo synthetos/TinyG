@@ -496,7 +496,7 @@ static stat_t _execute_gcode_block()
 
 		case NEXT_ACTION_STRAIGHT_PROBE: { status = cm_straight_probe(cm.gn.target, cm.gf.target); break;}			// G38.2
 
-		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_g10_data(cm.gn.P_word,cm.gf.P_word,cm.gn.L_word, cm.gf.L_word,cm.gn.target, cm.gf.target); break;}
+		case NEXT_ACTION_SET_G10_DATA: { status = cm_set_g10_data(cm.gn.P_word, cm.gn.L_word, cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_G92_OFFSETS: { status = cm_set_g92_offsets(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_RESET_G92_OFFSETS: { status = cm_reset_g92_offsets(); break;}
 		case NEXT_ACTION_SUSPEND_G92_OFFSETS: { status = cm_suspend_g92_offsets(); break;}
