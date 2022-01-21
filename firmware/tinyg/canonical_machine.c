@@ -657,12 +657,12 @@ stat_t cm_set_distance_mode(uint8_t mode)
  *  It also does resets the display offsets to reflect the new values.
  */
 
-stat_t cm_set_g10_data(const float P_word,
+stat_t cm_set_g10_data(const uint8_t P_word,
                        const uint8_t L_word,
                        const float offset[], 
                        const float flag[])
 {
-    if (!fp_TRUE(L_flag)) {
+    if (!fp_TRUE(L_word)) {
         return (STAT_L_WORD_IS_MISSING);
     }
 
