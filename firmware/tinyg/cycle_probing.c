@@ -134,7 +134,7 @@ uint8_t cm_probe_callback(void)
 		return (STAT_NOOP);				// exit if not in a probe cycle or waiting for one
 	}
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (pb.func());                                         // execute the current homing move
+	return (pb.func());                                         // execute the current probing move
 }
 
 /*

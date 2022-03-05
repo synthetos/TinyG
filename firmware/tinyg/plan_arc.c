@@ -155,7 +155,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
-	arc.rotations = floor(fabs(cm.gn.feed_rate));   // P must be a positive integer - force it if not
+	arc.rotations = floor(fabs(cm.gn.P_word));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
 	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
@@ -164,7 +164,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	ritorno(_compute_arc());
 
 	if (fp_ZERO(arc.length)) {
-        return (STAT_MINIMUM_LENGTH_MOVE);          // trap zero length arcs that _compute_arc can throw
+        return (STAT_OK);          // trap zero length arcs that _compute_arc can throw
     }
 
 /*	// test arc soft limits
