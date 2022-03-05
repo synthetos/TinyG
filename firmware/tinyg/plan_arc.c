@@ -158,7 +158,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	arc.rotations = floor(fabs(cm.gn.P_word));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
-	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) && fp_ZERO(flags[arc.plane_axis_1]));
 
 	// compute arc runtime values
 	ritorno(_compute_arc());
