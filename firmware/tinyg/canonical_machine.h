@@ -84,7 +84,7 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80, G81,
 										// G82, G83 G84, G85, G86, G87, G88, G89
 	float target[AXES]; 				// XYZABC where the move should go
-	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
+    float display_offset[AXES];         // work offsets from the machine coordinate system (for reporting only)
 
 	float move_time;					// optimal time for move given axis constraints
 	float minimum_time;					// minimum time possible for move given axis constraints
@@ -113,9 +113,10 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	uint16_t magic_start;				// magic number to test memory integrity
 	uint8_t next_action;				// handles G modal group 1 moves & non-modals
 	uint8_t program_flow;				// used only by the gcode_parser
+	int32_t last_line_number;           // used with line checksums
 
 	float position[AXES];				// XYZABC model position (Note: not used in gn or gf)
-	float origin_offset[AXES];			// XYZABC G92 offsets (Note: not used in gn or gf)
+	float g92_offset[AXES];				// XYZABC G92 offsets (Note: not used in gn or gf)
 	float g28_position[AXES];			// XYZABC stored machine position for G28
 	float g30_position[AXES];			// XYZABC stored machine position for G30
 
@@ -123,9 +124,10 @@ typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by
 	float traverse_override_factor;		// 1.0000 x traverse rate. Go down from there
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
-	uint8_t l_word;						// L word - used by G10s
+	uint8_t L_word;						// L word - Specification of what register to edit using G10
+	uint8_t H_word;						// H word - used by G43s
 
-	uint8_t origin_offset_enable;		// G92 offsets enabled/disabled.  0=disabled, 1=enabled
+	uint8_t g92_offset_enable;		    // G92 offsets enabled/disabled.  0=disabled, 1=enabled
 	uint8_t block_delete_switch;		// set true to enable block deletes (true is default)
 
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
@@ -155,13 +157,15 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t	feed_rate_override_enable;	// TRUE = overrides enabled (M48), F=(M49)
 	uint8_t	traverse_override_enable;	// TRUE = traverse override enabled
 	uint8_t override_enables;			// enables for feed and spoindle (GN/GF only)
-	uint8_t l_word;						// L word - used by G10s
-
+	uint8_t L_word;						// L word - Specification of what register to edit using G10
+	float P_word;						// P - parameter used for dwell time in seconds, G10 coord select...
+	uint8_t H_word;						// H word - used by G43s
+	
 	uint8_t select_plane;				// G17,G18,G19 - values to set plane to
 	uint8_t units_mode;					// G20,G21 - 0=inches (G20), 1 = mm (G21)
 	uint8_t coord_system;				// G54-G59 - select coordinate system 1-9
 	uint8_t absolute_override;			// G53 TRUE = move using machine coordinates - this block only (G53)
-	uint8_t origin_offset_mode;			// G92...TRUE=in origin offset mode
+	uint8_t g92_offset_mode;			// G92...TRUE=in origin offset mode
 	uint8_t path_control;				// G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
 	uint8_t distance_mode;				// G91   0=use absolute coords(G90), 1=incremental movement
 	uint8_t arc_distance_mode;			// G91.1   0=use absolute coords(G90), 1=incremental movement
@@ -173,11 +177,10 @@ typedef struct GCodeInput {				// Gcode model inputs - meaning depends on contex
 	uint8_t flood_coolant;				// TRUE = flood on (M8), FALSE = off (M9)
 
 	uint8_t spindle_mode;				// 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	float spindle_speed;				// in RPM
+	float S_word;						// spindle_speed in RPM
 	float spindle_override_factor;		// 1.0000 x S spindle speed. Go up or down from there
 	uint8_t	spindle_override_enable;	// TRUE = override enabled
 
-	float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 	float arc_radius;					// R - radius value in arc radius mode
 	float arc_offset[3];  				// IJK - used by arc commands
 
@@ -231,7 +234,9 @@ typedef struct cmSingleton {			// struct to manage cm globals and cycles
 	uint8_t distance_mode;				// G90,G91 reset default
 
 	// coordinate systems and offsets
-	float offset[COORDS+1][AXES];		// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+	float coord_offset[COORDS+1][AXES];	// persistent coordinate offsets: absolute (G53) + G54,G55,G56,G57,G58,G59
+	float tool_offset[AXES];            // current tool offset
+
 
 	// settings for axes X,Y,Z,A B,C
 	cfgAxis_t a[AXES];
@@ -375,21 +380,21 @@ enum cmProbeState {					// applies to cm.probe_state
  */
 
 enum cmNextAction {						// these are in order to optimized CASE statement
-	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)
+	NEXT_ACTION_DEFAULT = 0,			// Must be zero (invokes motion modes)	
+	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_SET_G10_DATA,			// G10
+	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
+	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates
 	NEXT_ACTION_SEARCH_HOME,			// G28.2 homing cycle
 	NEXT_ACTION_SET_ABSOLUTE_ORIGIN,	// G28.3 origin set
 	NEXT_ACTION_HOMING_NO_SET,			// G28.4 homing cycle with no coordinate setting
-	NEXT_ACTION_SET_G28_POSITION,		// G28.1 set position in abs coordinates
-	NEXT_ACTION_GOTO_G28_POSITION,		// G28 go to machine position
-	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_GOTO_G30_POSITION,		// G30
-	NEXT_ACTION_SET_COORD_DATA,			// G10
-	NEXT_ACTION_SET_ORIGIN_OFFSETS,		// G92
-	NEXT_ACTION_RESET_ORIGIN_OFFSETS,	// G92.1
-	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
-	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
-	NEXT_ACTION_DWELL,					// G4
+	NEXT_ACTION_SET_G30_POSITION,		// G30.1
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_SET_G92_OFFSETS,		// G92
+	NEXT_ACTION_RESET_G92_OFFSETS,	// G92.1
+	NEXT_ACTION_SUSPEND_G92_OFFSETS,	// G92.2
+	NEXT_ACTION_RESUME_G92_OFFSETS,	// G92.3
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
 	NEXT_ACTION_SET_JERK,				// M201.3
@@ -560,10 +565,10 @@ void cm_set_model_linenum(uint32_t linenum);
 
 // Coordinate systems and offsets
 float cm_get_active_coord_offset(uint8_t axis);
-float cm_get_work_offset(GCodeState_t *gcode_state, uint8_t axis);
-void cm_set_work_offsets(GCodeState_t *gcode_state);
+float cm_get_display_offset(GCodeState_t *gcode_state, uint8_t axis);
+void cm_set_display_offsets(GCodeState_t *gcode_state);
 float cm_get_absolute_position(GCodeState_t *gcode_state, uint8_t axis);
-float cm_get_work_position(GCodeState_t *gcode_state, uint8_t axis);
+float cm_get_display_position(GCodeState_t *gcode_state, uint8_t axis);
 
 // Critical helpers
 void cm_update_model_position_from_runtime(void);
@@ -587,17 +592,20 @@ stat_t cm_clear(nvObj_t *nv);
 stat_t cm_select_plane(uint8_t plane);							// G17, G18, G19
 stat_t cm_set_units_mode(uint8_t mode);							// G20, G21
 stat_t cm_set_distance_mode(uint8_t mode);						// G90, G91
-stat_t cm_set_coord_offsets(uint8_t coord_system, float offset[], float flag[]); // G10 L2
+stat_t cm_set_g10_data(const uint8_t P_word,				        // G10
+                       const uint8_t L_word,
+                       const float offset[], 
+                       const float flag[]);
 
 void cm_set_position(uint8_t axis, float position);				// set absolute position - single axis
 stat_t cm_set_absolute_origin(float origin[], float flag[]);	// G28.3
 void cm_set_axis_origin(uint8_t axis, const float position);	// G28.3 planner callback
 
 stat_t cm_set_coord_system(uint8_t coord_system);				// G54 - G59
-stat_t cm_set_origin_offsets(float offset[], float flag[]);		// G92
-stat_t cm_reset_origin_offsets(void); 							// G92.1
-stat_t cm_suspend_origin_offsets(void); 						// G92.2
-stat_t cm_resume_origin_offsets(void);				 			// G92.3
+stat_t cm_set_g92_offsets(float offset[], float flag[]);		// G92
+stat_t cm_reset_g92_offsets(void); 								// G92.1
+stat_t cm_suspend_g92_offsets(void); 							// G92.2
+stat_t cm_resume_g92_offsets(void);				 				// G92.3
 
 stat_t cm_get_position(void);									// M114
 stat_t cm_get_firmware(void);									// M115

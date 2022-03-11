@@ -134,7 +134,7 @@ uint8_t cm_probe_callback(void)
 		return (STAT_NOOP);				// exit if not in a probe cycle or waiting for one
 	}
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN);}	// sync to planner move ends
-	return (pb.func());                                         // execute the current homing move
+	return (pb.func());                                         // execute the current probing move
 }
 
 /*
@@ -241,7 +241,7 @@ static stat_t _probing_finish()
 
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		// if we got here because of a feed hold we need to keep the model position correct
-		cm_set_position(axis, mp_get_runtime_work_position(axis));
+		cm_set_position(axis, mp_get_runtime_display_position(axis));
 
 		// store the probe results
 		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis);
