@@ -145,7 +145,7 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 
     // now get down to the rest of the work setting up the arc for execution
 	cm.gm.motion_mode = motion_mode;
-	cm_set_work_offsets(&cm.gm);					// capture the fully resolved offsets to gm
+	cm_set_display_offsets(&cm.gm);					// capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));	// copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);		// set initial arc position from gcode model
 
@@ -155,16 +155,16 @@ stat_t cm_arc_feed(float target[], float flags[],       // arc endpoints
 	arc.offset[1] = _to_millimeters(j);
 	arc.offset[2] = _to_millimeters(k);
 
-	arc.rotations = floor(fabs(cm.gn.parameter));   // P must be a positive integer - force it if not
+	arc.rotations = floor(fabs(cm.gn.P_word));   // P must be a positive integer - force it if not
 
 	// determine if this is a full circle arc. Evaluates true if no target is set
-	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) & fp_ZERO(flags[arc.plane_axis_1]));
+	arc.full_circle = (fp_ZERO(flags[arc.plane_axis_0]) && fp_ZERO(flags[arc.plane_axis_1]));
 
 	// compute arc runtime values
 	ritorno(_compute_arc());
 
 	if (fp_ZERO(arc.length)) {
-        return (STAT_MINIMUM_LENGTH_MOVE);          // trap zero length arcs that _compute_arc can throw
+        return (STAT_OK);          // trap zero length arcs that _compute_arc can throw
     }
 
 /*	// test arc soft limits
@@ -260,7 +260,7 @@ static stat_t _compute_arc()
     float end_1 = arc.gm.target[arc.plane_axis_1] - arc.position[arc.plane_axis_1] - arc.offset[arc.plane_axis_1];
     float err = fabs(hypotf(end_0, end_1) - arc.radius);   // end radius - start radius
     if ( (err > ARC_RADIUS_ERROR_MAX) || 
-        ((err < ARC_RADIUS_ERROR_MIN) && 
+        ((err > ARC_RADIUS_ERROR_MIN) && 
          (err > arc.radius * ARC_RADIUS_TOLERANCE)) ) {
 //        return (STAT_ARC_HAS_IMPOSSIBLE_CENTER_POINT);
         return (STAT_ARC_SPECIFICATION_ERROR);
