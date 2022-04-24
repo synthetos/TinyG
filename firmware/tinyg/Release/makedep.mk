@@ -12,7 +12,11 @@ controller.c
 
 cycle_homing.c
 
+cycle_jogging.c
+
 cycle_probing.c
+
+encoder.c
 
 gcode_parser.c
 
@@ -30,11 +34,17 @@ main.c
 
 network.c
 
+persistence.c
+
 planner.c
 
 plan_arc.c
 
+plan_exec.c
+
 plan_line.c
+
+plan_zoid.c
 
 pwm.c
 
@@ -52,7 +62,7 @@ text_parser.c
 
 util.c
 
-xio\xio.c
+xio.c
 
 xio\xio_file.c
 
@@ -65,6 +75,8 @@ xio\xio_spi.c
 xio\xio_usart.c
 
 xio\xio_usb.c
+
+xmega\xmega_adc.c
 
 xmega\xmega_eeprom.c
 
