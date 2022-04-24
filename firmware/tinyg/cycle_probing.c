@@ -29,7 +29,6 @@
 #include "json_parser.h"
 #include "text_parser.h"
 #include "canonical_machine.h"
-#include "spindle.h"
 #include "report.h"
 #include "switch.h"
 #include "util.h"
@@ -203,7 +202,6 @@ static uint8_t _probing_init()
 	cm_set_distance_mode(ABSOLUTE_MODE);
 	cm_set_coord_system(ABSOLUTE_COORDS);
 
-	cm_spindle_control(SPINDLE_OFF);
 	return (_set_pb_func(_probing_start));							// start the move
 }
 
