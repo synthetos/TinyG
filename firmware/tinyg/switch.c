@@ -48,6 +48,8 @@
 #include "canonical_machine.h"
 #include "text_parser.h"
 
+struct swStruct sw;
+
 static void _switch_isr_helper(uint8_t sw_num);
 
 /*

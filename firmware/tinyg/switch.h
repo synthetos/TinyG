@@ -146,7 +146,7 @@ struct swStruct {								// switch state
 	volatile uint8_t debounce[NUM_SWITCHES];	// switch debouncer state machine - see swDebounce
 	volatile int8_t count[NUM_SWITCHES];		// deglitching and lockout counter
 };
-struct swStruct sw;
+extern struct swStruct sw;
 
 //*** Structures from new-style switch code --- NOT YET FOLDED IN ***//
 
