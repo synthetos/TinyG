@@ -276,8 +276,9 @@ static stat_t _command_dispatch()
 		}
 		default: {										// anything else must be Gcode
 			if (cfg.comm_mode == JSON_MODE) {			// run it as JSON...
-				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -8);					// use out_buf as temp
-				sprintf((char *)cs.bufp,"{\"gc\":\"%s\"}\n", (char *)cs.out_buf);	// '-8' is used for JSON chars
+				strncpy(cs.out_buf, cs.bufp, INPUT_BUFFER_LEN -10);					// use out_buf as temp
+				cs.out_buf[INPUT_BUFFER_LEN-10] = '\0';
+				snprintf(cs.bufp,INPUT_BUFFER_LEN,"{\"gc\":\"%.244s\"}\n", cs.out_buf);	// 10 chars used for JSON shell
 				json_parser(cs.bufp);
 			} else {									//...or run it as text
 				text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);

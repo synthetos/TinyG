@@ -117,6 +117,7 @@ static stat_t _json_parser_kernal(char_t *str)
 		// propagate the group from previous NV pair (if relevant)
 		if (group[0] != NUL) {
 			strncpy(nv->group, group, GROUP_LEN);	// copy the parent's group to this child
+			nv->group[GROUP_LEN] = '\0';
 		}
 		// validate the token and get the index
 		if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
@@ -124,6 +125,7 @@ static stat_t _json_parser_kernal(char_t *str)
 		}
 		if ((nv_index_is_group(nv->index)) && (nv_group_is_prefixed(nv->token))) {
 			strncpy(group, nv->token, GROUP_LEN);	// record the group ID
+			group[GROUP_LEN] = '\0';
 		}
 		if ((nv = nv->nx) == NULL)
             return (STAT_JSON_TOO_MANY_PAIRS);      // Not supposed to encounter a NULL
@@ -229,7 +231,8 @@ static stat_t _get_nv_pair(nvObj_t *nv, char_t **pstr, int8_t *depth)
 	for (i=0; true; i++, (*pstr)++) {
 		if (strchr(separators, (int)**pstr) != NULL) {
 			*(*pstr)++ = NUL;
-			strncpy(nv->token, name, TOKEN_LEN+1);			// copy the string to the token
+			strncpy(nv->token, name, TOKEN_LEN);			// copy the string to the token
+			nv->token[TOKEN_LEN] = '\0';
 			break;
 		}
 		if (i == MAX_NAME_CHARS)
