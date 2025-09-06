@@ -70,6 +70,7 @@ stat_t text_parser(char_t *str)
 
 	// trap special displays
 	if (str[0] == '?') {							// handle status report case
+		rx_request_rx_report();
 		sr_run_text_status_report();
 		return (STAT_OK);
 	}

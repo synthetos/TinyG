@@ -205,7 +205,15 @@ enum tgCommunicationsMode {
 enum flowControl {
 	FLOW_CONTROL_OFF = 0,				// flow control disabled
 	FLOW_CONTROL_XON,					// flow control uses XON/XOFF
-	FLOW_CONTROL_RTS					// flow control uses RTS/CTS
+	FLOW_CONTROL_RTS,					// flow control uses RTS/CTS
+	/*
+	 * Character Counting mode disables firmware-side flow control (XON/XOFF, RTS/CTS)
+	 * and relies on the host to manage the data flow. In this mode, the host is
+	 * expected to query the controller's RX buffer status (e.g. using '?') and
+	 * only send new data when there is sufficient space. This is the method
+	 * used by many high-performance G-code senders and is the standard for Grbl.
+	 */
+	FLOW_CONTROL_CHAR_COUNT				// flow control by character counting (GRBL style)
 };
 
 /*

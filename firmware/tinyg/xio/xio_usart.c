@@ -125,6 +125,24 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 	memset (dx, 0, sizeof(xioUsart_t));				// clear all values
 	xio_reset_working_flags(d);
 	xio_ctrl_generic(d, flags);						// setup control flags
+
+	// Override default flags with runtime config from EEPROM
+	switch (cfg.enable_flow_control) {
+		case FLOW_CONTROL_OFF:
+		case FLOW_CONTROL_CHAR_COUNT:
+			d->flag_xoff = false;
+			// d->flag_rtscts = false; // Assuming this flag exists
+			break;
+		case FLOW_CONTROL_XON:
+			d->flag_xoff = true;
+			// d->flag_rtscts = false;
+			break;
+		case FLOW_CONTROL_RTS:
+			d->flag_xoff = false;
+			// d->flag_rtscts = true;
+			break;
+	}
+
 	if (d->flag_xoff) {								// initialize flow control settings
 		dx->fc_state_rx = FC_IN_XON;
 		dx->fc_state_tx = FC_IN_XON;

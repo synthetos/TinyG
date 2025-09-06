@@ -6,7 +6,7 @@ TinyG is a 6 axis motion control system designed for high-performance on small t
 * 6 axis motion (XYZABC axes)
 * jerk controlled motion for acceleration planning (3rd order motion planning)
 * status displays ('?' character)
-* XON/XOFF and RTS/CTS protocol over USB serial
+* XON/XOFF, RTS/CTS, and character-counting (Grbl-style) flow control protocols over USB serial
 * RESTful interface using JSON
 
 See these links for more details.

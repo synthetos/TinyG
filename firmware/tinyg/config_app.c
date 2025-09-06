@@ -891,12 +891,28 @@ static stat_t set_ee(nvObj_t *nv) 				// enable character echo
 	return(_set_comm_helper(nv, XIO_ECHO, XIO_NOECHO));
 }
 
-static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
+static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF, RTS/CTS, or character counting flow control
 {
-	if (nv->value > FLOW_CONTROL_RTS)
+	if (nv->value > FLOW_CONTROL_CHAR_COUNT)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
 	cfg.enable_flow_control = (uint8_t)nv->value;
-	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+
+	switch (cfg.enable_flow_control) {
+		case FLOW_CONTROL_OFF:
+			return(_set_comm_helper(nv, XIO_NOXOFF, XIO_XOFF));
+			break;
+		case FLOW_CONTROL_XON:
+			return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+			break;
+		case FLOW_CONTROL_RTS:
+			// To be implemented: return(_set_comm_helper(nv, XIO_RTS, XIO_NORTS));
+			return (STAT_UNSUPPORTED_COMMAND);
+			break;
+		case FLOW_CONTROL_CHAR_COUNT:
+			return(_set_comm_helper(nv, XIO_NOXOFF, XIO_XOFF));
+			break;
+	}
+	return (STAT_OK);
 }
 
 static stat_t get_rx(nvObj_t *nv)
@@ -975,7 +991,7 @@ stat_t set_baud_callback(void)
 //static const char fmt_ic[] PROGMEM = "[ic]  ignore CR or LF on RX%8d [0=off,1=CR,2=LF]\n";
 static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=on]\n";
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
-static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS]\n";
+static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF, 2=RTS/CTS, 3=char count]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 static const char fmt_net[] PROGMEM = "[net] network mode%17d [0=master]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
