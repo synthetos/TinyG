@@ -4,3 +4,6 @@ firmware/tinyg/Release/Makefile
 firmware/tinyg/Release/makedep.mk
 firmware/tinyg/default/path
 tinyg.hex
+
+# portable Makefile output
+firmware/tinyg/build/
