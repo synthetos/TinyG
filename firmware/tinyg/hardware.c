@@ -44,6 +44,8 @@
 extern "C"{
 #endif
 
+hwSingleton_t hw;
+
 /*
  * _port_bindings  - bind XMEGA ports to hardware - these changed at board revision 7
  * hardware_init() - lowest level hardware init
