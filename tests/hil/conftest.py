@@ -70,6 +70,21 @@ def dialect(tg):
     return tg.dialect
 
 
+@pytest.fixture
+def keep(tg):
+    """keep("si", "jv") saves those settings now and writes them back after the test."""
+    saved = {}
+
+    def _keep(*tokens):
+        for token in tokens:
+            saved.setdefault(token, tg.get(token))
+    yield _keep
+    tg.drain(quiet=0.05)
+    for token, value in saved.items():
+        if not tg.values_equal(token, tg.get(token), value):
+            tg.set(token, value, allow="restore after test")
+
+
 @pytest.fixture(autouse=True)
 def _per_test(request):
     """Apply dialect/bug markers, then put the board in a known state before each hardware test."""
