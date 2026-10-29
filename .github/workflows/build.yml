@@ -1,0 +1,77 @@
+name: Build firmware
+
+on:
+  push:
+    branches: ['**']
+    tags: ['[0-9]*', 'v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AVR toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-avr avr-libc binutils-avr
+          avr-gcc --version | head -1
+
+      - name: Build
+        working-directory: firmware/tinyg
+        run: make
+
+      - name: Report size
+        working-directory: firmware/tinyg
+        run: |
+          avr-size --format=avr --mcu=atxmega192a3 build/tinyg.elf | tee build/size.txt || avr-size build/tinyg.elf | tee build/size.txt
+          {
+            echo '### Firmware size'
+            echo '```'
+            cat build/size.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Name artifacts
+        id: names
+        run: |
+          build=$(sed -n 's/^#define TINYG_FIRMWARE_BUILD[[:space:]]*\([0-9.]*\).*/\1/p' firmware/tinyg/tinyg.h)
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          mkdir -p dist
+          cp firmware/tinyg/build/tinyg.hex "dist/tinyg-$build.hex"
+          cp firmware/tinyg/build/tinyg.elf "dist/tinyg-$build.elf"
+          cp firmware/tinyg/build/size.txt dist/size.txt
+          (cd dist && sha256sum tinyg-$build.hex tinyg-$build.elf > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tinyg-${{ steps.names.outputs.build }}-${{ github.sha }}
+          path: dist/
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          BUILD: ${{ steps.names.outputs.build }}
+        run: |
+          cat > notes.md <<NOTES
+          TinyG firmware build $BUILD for the TinyG v8 board (ATxmega192A3).
+
+          Built by CI with avr-gcc from the tagged source using \`firmware/tinyg/Makefile\`.
+          Flash \`tinyg-$BUILD.hex\` with the xboot bootloader (see the wiki), e.g.:
+
+              avrdude -p x192a3 -c avr109 -b 115200 -P <port> -U flash:w:tinyg-$BUILD.hex
+
+          Firmware size:
+
+          \`\`\`
+          $(cat dist/size.txt)
+          \`\`\`
+          NOTES
+          gh release create "$TAG" dist/* --title "TinyG $BUILD" --notes-file notes.md --prerelease --verify-tag
