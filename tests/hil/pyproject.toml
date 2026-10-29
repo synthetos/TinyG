@@ -1,0 +1,27 @@
+[project]
+name = "tinyg-hil"
+version = "0.1.0"
+description = "Hardware-in-the-loop tests for TinyG firmware over the USB serial port"
+requires-python = ">=3.11"
+dependencies = [
+    "pyserial>=3.5",
+    "pytest>=8",
+    "pytest-timeout>=2.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 120
+addopts = "-ra"
+markers = [
+    "hardware: needs a TinyG on --port (applied automatically to tests using the tg fixture)",
+    "motion: moves axes; skipped unless --allow-motion",
+    "resets_board: resets the board (^X)",
+    "persists: writes EEPROM; the session restores settings afterwards",
+    "destructive: flashing or $defa; skipped unless --allow-destructive",
+    "dialect(*names): run only on these firmware dialects (d440 = master 440.x, d449 = edge 449.x)",
+    "bug(uid, on=...): known bug from docs/audit (E001-E139); expected to fail (strict) on the listed dialects",
+]

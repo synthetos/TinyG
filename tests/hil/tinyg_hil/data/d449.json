@@ -1,0 +1,3521 @@
+{
+ "commit": "c5024186",
+ "fb": 449.01,
+ "name": "d449",
+ "ref": "origin/edge-0.97",
+ "status": {
+  "ALARM": 18,
+  "ALARMED": 27,
+  "ARC_AXIS_MISSING_FOR_SELECTED_PLANE": 156,
+  "ARC_ENDPOINT_IS_STARTING_POINT": 159,
+  "ARC_ERROR_RESERVED": 153,
+  "ARC_HAS_IMPOSSIBLE_CENTER_POINT": 154,
+  "ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE": 157,
+  "ARC_RADIUS_OUT_OF_TOLERANCE": 158,
+  "ARC_SPECIFICATION_ERROR": 155,
+  "BAD_NUMBER_FORMAT": 102,
+  "BAD_STATUS_REPORT_SETTING": 35,
+  "BUFFER_EMPTY": 12,
+  "BUFFER_FREE_ASSERTION_FAILURE": 88,
+  "BUFFER_FULL": 13,
+  "BUFFER_FULL_FATAL": 14,
+  "CANONICAL_MACHINE_ASSERTION_FAILURE": 95,
+  "COMMAND_NOT_ACCEPTED": 106,
+  "COMMAND_REJECTED_BY_ALARM": 204,
+  "COMMAND_REJECTED_BY_PANIC": 206,
+  "COMMAND_REJECTED_BY_SHUTDOWN": 205,
+  "COMPLETE": 4,
+  "CONFIG_ASSERTION_FAILURE": 90,
+  "CONTROLLER_ASSERTION_FAILURE": 96,
+  "CUTTER_COMPENSATION_CANNOT_BE_ENABLED": 147,
+  "DIVIDE_BY_ZERO": 23,
+  "D_WORD_IS_INVALID": 167,
+  "D_WORD_IS_MISSING": 166,
+  "EAGAIN": 2,
+  "ENCODER_ASSERTION_FAILURE": 92,
+  "ENTERING_BOOT_LOADER": 16,
+  "EOF": 8,
+  "EOL": 7,
+  "ERROR": 1,
+  "ERROR_117": 117,
+  "ERROR_118": 118,
+  "ERROR_119": 119,
+  "ERROR_120": 120,
+  "ERROR_121": 121,
+  "ERROR_122": 122,
+  "ERROR_123": 123,
+  "ERROR_124": 124,
+  "ERROR_125": 125,
+  "ERROR_126": 126,
+  "ERROR_127": 127,
+  "ERROR_128": 128,
+  "ERROR_129": 129,
+  "ERROR_183": 183,
+  "ERROR_184": 184,
+  "ERROR_185": 185,
+  "ERROR_186": 186,
+  "ERROR_187": 187,
+  "ERROR_188": 188,
+  "ERROR_189": 189,
+  "ERROR_190": 190,
+  "ERROR_191": 191,
+  "ERROR_192": 192,
+  "ERROR_193": 193,
+  "ERROR_194": 194,
+  "ERROR_195": 195,
+  "ERROR_196": 196,
+  "ERROR_197": 197,
+  "ERROR_198": 198,
+  "ERROR_199": 199,
+  "ERROR_208": 208,
+  "ERROR_209": 209,
+  "ERROR_210": 210,
+  "ERROR_211": 211,
+  "ERROR_212": 212,
+  "ERROR_213": 213,
+  "ERROR_214": 214,
+  "ERROR_215": 215,
+  "ERROR_216": 216,
+  "ERROR_217": 217,
+  "ERROR_218": 218,
+  "ERROR_219": 219,
+  "ERROR_234": 234,
+  "ERROR_235": 235,
+  "ERROR_236": 236,
+  "ERROR_237": 237,
+  "ERROR_238": 238,
+  "ERROR_239": 239,
+  "ERROR_248": 248,
+  "ERROR_249": 249,
+  "ERROR_255": 255,
+  "ERROR_37": 37,
+  "ERROR_38": 38,
+  "ERROR_39": 39,
+  "ERROR_40": 40,
+  "ERROR_41": 41,
+  "ERROR_42": 42,
+  "ERROR_43": 43,
+  "ERROR_44": 44,
+  "ERROR_45": 45,
+  "ERROR_46": 46,
+  "ERROR_47": 47,
+  "ERROR_48": 48,
+  "ERROR_49": 49,
+  "ERROR_50": 50,
+  "ERROR_51": 51,
+  "ERROR_52": 52,
+  "ERROR_53": 53,
+  "ERROR_54": 54,
+  "ERROR_55": 55,
+  "ERROR_56": 56,
+  "ERROR_57": 57,
+  "ERROR_58": 58,
+  "ERROR_59": 59,
+  "ERROR_60": 60,
+  "ERROR_61": 61,
+  "ERROR_62": 62,
+  "ERROR_63": 63,
+  "ERROR_64": 64,
+  "ERROR_65": 65,
+  "ERROR_66": 66,
+  "ERROR_67": 67,
+  "ERROR_68": 68,
+  "ERROR_69": 69,
+  "ERROR_70": 70,
+  "ERROR_71": 71,
+  "ERROR_72": 72,
+  "ERROR_73": 73,
+  "ERROR_74": 74,
+  "ERROR_75": 75,
+  "ERROR_76": 76,
+  "ERROR_77": 77,
+  "ERROR_78": 78,
+  "ERROR_79": 79,
+  "ERROR_80": 80,
+  "ERROR_81": 81,
+  "ERROR_82": 82,
+  "ERROR_83": 83,
+  "ERROR_84": 84,
+  "ERROR_85": 85,
+  "ERROR_86": 86,
+  "ERROR_87": 87,
+  "E_WORD_IS_INVALID": 169,
+  "E_WORD_IS_MISSING": 168,
+  "FAILED_GET_PLANNER_BUFFER": 36,
+  "FAILED_TO_GET_PLANNER_BUFFER": 28,
+  "FILE_NOT_OPEN": 9,
+  "FILE_SIZE_EXCEEDED": 10,
+  "FLOATING_POINT_ERROR": 22,
+  "FLOAT_IS_INFINITE": 32,
+  "FLOAT_IS_NAN": 33,
+  "FUNCTION_IS_STUBBED": 17,
+  "GCODE_ACTIVE_PLANE_IS_INVALID": 141,
+  "GCODE_ACTIVE_PLANE_IS_MISSING": 140,
+  "GCODE_AXIS_CANNOT_BE_PRESENT": 135,
+  "GCODE_AXIS_IS_INVALID": 136,
+  "GCODE_AXIS_IS_MISSING": 134,
+  "GCODE_AXIS_IS_NOT_CONFIGURED": 137,
+  "GCODE_AXIS_NUMBER_IS_INVALID": 139,
+  "GCODE_AXIS_NUMBER_IS_MISSING": 138,
+  "GCODE_COMMAND_UNSUPPORTED": 131,
+  "GCODE_FEEDRATE_NOT_SPECIFIED": 142,
+  "GCODE_G53_WITHOUT_G0_OR_G1": 145,
+  "GCODE_GENERIC_INPUT_ERROR": 130,
+  "GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED": 143,
+  "GCODE_MODAL_GROUP_VIOLATION": 133,
+  "GCODE_ROTARY_AXIS_CANNOT_BE_USED": 144,
+  "GENERIC_ASSERTION_FAILURE": 99,
+  "GENERIC_ERROR": 200,
+  "GENERIC_EXCEPTION_REPORT": 29,
+  "HOMING_CYCLE_FAILED": 240,
+  "HOMING_ERROR_BAD_OR_NO_AXIS": 241,
+  "HOMING_ERROR_HOMING_INPUT_MISCONFIGURED": 246,
+  "HOMING_ERROR_MUST_CLEAR_SWITCHES_BEFORE_HOMING": 247,
+  "HOMING_ERROR_NEGATIVE_LATCH_BACKOFF": 245,
+  "HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL": 244,
+  "HOMING_ERROR_ZERO_LATCH_VELOCITY": 243,
+  "HOMING_ERROR_ZERO_SEARCH_VELOCITY": 242,
+  "H_WORD_IS_INVALID": 171,
+  "H_WORD_IS_MISSING": 170,
+  "INITIALIZING": 15,
+  "INIT_FAILURE": 26,
+  "INPUT_EXCEEDS_MAX_LENGTH": 107,
+  "INPUT_EXCEEDS_MAX_VALUE": 109,
+  "INPUT_LESS_THAN_MIN_VALUE": 108,
+  "INPUT_VALUE_RANGE_ERROR": 110,
+  "INTERNAL_ERROR": 20,
+  "INTERNAL_RANGE_ERROR": 21,
+  "INVALID_ADDRESS": 24,
+  "INVALID_OR_MALFORMED_COMMAND": 101,
+  "JSON_OUTPUT_TOO_LONG": 113,
+  "JSON_SYNTAX_ERROR": 111,
+  "JSON_TOO_MANY_PAIRS": 112,
+  "KILL_JOB": 207,
+  "LIMIT_SWITCH_HIT": 203,
+  "L_WORD_IS_INVALID": 173,
+  "L_WORD_IS_MISSING": 172,
+  "MAX_DEPTH_EXCEEDED": 115,
+  "MCODE_COMMAND_UNSUPPORTED": 132,
+  "MEMORY_FAULT": 98,
+  "MINIMUM_LENGTH_MOVE": 201,
+  "MINIMUM_TIME_MOVE": 202,
+  "MULTIPLE_PROBE_SWITCHES_CONFIGURED": 253,
+  "NESTED_TXT_CONTAINER": 114,
+  "NOOP": 3,
+  "NO_DISPLAY": 19,
+  "NO_PROBE_SWITCH_CONFIGURED": 252,
+  "NO_SUCH_DEVICE": 11,
+  "OK": 0,
+  "PANIC": 6,
+  "PARAMETER_CANNOT_BE_READ": 105,
+  "PARAMETER_IS_READ_ONLY": 104,
+  "PERSISTENCE_ERROR": 34,
+  "PLANNER_ASSERTION_FAILURE": 94,
+  "PREP_LINE_MOVE_TIME_IS_INFINITE": 30,
+  "PREP_LINE_MOVE_TIME_IS_NAN": 31,
+  "PROBE_CYCLE_FAILED": 250,
+  "PROBE_SWITCH_ON_ABC_AXIS": 254,
+  "PROBE_TRAVEL_TOO_SMALL": 251,
+  "PROGRAMMED_POINT_SAME_AS_CURRENT_POINT": 148,
+  "P_WORD_IS_INVALID": 161,
+  "P_WORD_IS_MISSING": 160,
+  "P_WORD_IS_NEGATIVE": 163,
+  "P_WORD_IS_NOT_AN_INTEGER": 164,
+  "P_WORD_IS_NOT_VALID_TOOL_NUMBER": 165,
+  "P_WORD_IS_ZERO": 162,
+  "Q_WORD_IS_INVALID": 175,
+  "Q_WORD_IS_MISSING": 174,
+  "READ_ONLY_ADDRESS": 25,
+  "REQUESTED_VELOCITY_EXCEEDS_LIMITS": 146,
+  "R_WORD_IS_INVALID": 177,
+  "R_WORD_IS_MISSING": 176,
+  "SHUTDOWN": 5,
+  "SOFT_LIMIT_EXCEEDED": 220,
+  "SOFT_LIMIT_EXCEEDED_AMAX": 228,
+  "SOFT_LIMIT_EXCEEDED_AMIN": 227,
+  "SOFT_LIMIT_EXCEEDED_ARC": 233,
+  "SOFT_LIMIT_EXCEEDED_BMAX": 220,
+  "SOFT_LIMIT_EXCEEDED_BMIN": 229,
+  "SOFT_LIMIT_EXCEEDED_CMAX": 232,
+  "SOFT_LIMIT_EXCEEDED_CMIN": 231,
+  "SOFT_LIMIT_EXCEEDED_XMAX": 222,
+  "SOFT_LIMIT_EXCEEDED_XMIN": 221,
+  "SOFT_LIMIT_EXCEEDED_YMAX": 224,
+  "SOFT_LIMIT_EXCEEDED_YMIN": 223,
+  "SOFT_LIMIT_EXCEEDED_ZMAX": 226,
+  "SOFT_LIMIT_EXCEEDED_ZMIN": 225,
+  "SPINDLE_MUST_BE_OFF": 151,
+  "SPINDLE_MUST_BE_TURNING": 152,
+  "SPINDLE_SPEED_BELOW_MINIMUM": 149,
+  "SPINDLE_SPEED_MAX_EXCEEDED": 150,
+  "STACK_OVERFLOW": 97,
+  "STATE_MANAGEMENT_ASSERTION_FAILURE": 89,
+  "STEPPER_ASSERTION_FAILURE": 93,
+  "S_WORD_IS_INVALID": 179,
+  "S_WORD_IS_MISSING": 178,
+  "T_WORD_IS_INVALID": 181,
+  "T_WORD_IS_MISSING": 180,
+  "UNRECOGNIZED_NAME": 100,
+  "UNSUPPORTED_TYPE": 103,
+  "VALUE_TYPE_ERROR": 116,
+  "XIO_ASSERTION_FAILURE": 91
+ },
+ "tokens": {
+  "$": {
+   "get": "_do_all",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "1": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "1ma": {
+   "get": "get_ui8",
+   "group": "1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "1mi": {
+   "get": "get_ui8",
+   "group": "1",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_mi",
+   "type": "integer"
+  },
+  "1pm": {
+   "get": "get_ui8",
+   "group": "1",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_pm",
+   "type": "integer"
+  },
+  "1po": {
+   "get": "get_ui8",
+   "group": "1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "boolean"
+  },
+  "1sa": {
+   "get": "get_flt",
+   "group": "1",
+   "persist": true,
+   "precision": 3,
+   "set": "st_set_sa",
+   "type": "float"
+  },
+  "1tr": {
+   "get": "get_flt",
+   "group": "1",
+   "persist": true,
+   "precision": 4,
+   "set": "st_set_tr",
+   "type": "float"
+  },
+  "2": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "2ma": {
+   "get": "get_ui8",
+   "group": "2",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "2mi": {
+   "get": "get_ui8",
+   "group": "2",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_mi",
+   "type": "integer"
+  },
+  "2pm": {
+   "get": "get_ui8",
+   "group": "2",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_pm",
+   "type": "integer"
+  },
+  "2po": {
+   "get": "get_ui8",
+   "group": "2",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "boolean"
+  },
+  "2sa": {
+   "get": "get_flt",
+   "group": "2",
+   "persist": true,
+   "precision": 3,
+   "set": "st_set_sa",
+   "type": "float"
+  },
+  "2tr": {
+   "get": "get_flt",
+   "group": "2",
+   "persist": true,
+   "precision": 4,
+   "set": "st_set_tr",
+   "type": "float"
+  },
+  "3": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "3ma": {
+   "get": "get_ui8",
+   "group": "3",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "3mi": {
+   "get": "get_ui8",
+   "group": "3",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_mi",
+   "type": "integer"
+  },
+  "3pm": {
+   "get": "get_ui8",
+   "group": "3",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_pm",
+   "type": "integer"
+  },
+  "3po": {
+   "get": "get_ui8",
+   "group": "3",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "boolean"
+  },
+  "3sa": {
+   "get": "get_flt",
+   "group": "3",
+   "persist": true,
+   "precision": 3,
+   "set": "st_set_sa",
+   "type": "float"
+  },
+  "3tr": {
+   "get": "get_flt",
+   "group": "3",
+   "persist": true,
+   "precision": 4,
+   "set": "st_set_tr",
+   "type": "float"
+  },
+  "4": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "4ma": {
+   "get": "get_ui8",
+   "group": "4",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "4mi": {
+   "get": "get_ui8",
+   "group": "4",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_mi",
+   "type": "integer"
+  },
+  "4pm": {
+   "get": "get_ui8",
+   "group": "4",
+   "persist": true,
+   "precision": 0,
+   "set": "st_set_pm",
+   "type": "integer"
+  },
+  "4po": {
+   "get": "get_ui8",
+   "group": "4",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "boolean"
+  },
+  "4sa": {
+   "get": "get_flt",
+   "group": "4",
+   "persist": true,
+   "precision": 3,
+   "set": "st_set_sa",
+   "type": "float"
+  },
+  "4tr": {
+   "get": "get_flt",
+   "group": "4",
+   "persist": true,
+   "precision": 4,
+   "set": "st_set_tr",
+   "type": "float"
+  },
+  "_cs": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_cs1": {
+   "get": "get_flt",
+   "group": "_cs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_cs2": {
+   "get": "get_flt",
+   "group": "_cs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_cs3": {
+   "get": "get_flt",
+   "group": "_cs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_cs4": {
+   "get": "get_flt",
+   "group": "_cs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_es": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_es1": {
+   "get": "get_flt",
+   "group": "_es",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_es2": {
+   "get": "get_flt",
+   "group": "_es",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_es3": {
+   "get": "get_flt",
+   "group": "_es",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_es4": {
+   "get": "get_flt",
+   "group": "_es",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_fe": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_fe1": {
+   "get": "get_flt",
+   "group": "_fe",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_fe2": {
+   "get": "get_flt",
+   "group": "_fe",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_fe3": {
+   "get": "get_flt",
+   "group": "_fe",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_fe4": {
+   "get": "get_flt",
+   "group": "_fe",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ps": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_ps1": {
+   "get": "get_flt",
+   "group": "_ps",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ps2": {
+   "get": "get_flt",
+   "group": "_ps",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ps3": {
+   "get": "get_flt",
+   "group": "_ps",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ps4": {
+   "get": "get_flt",
+   "group": "_ps",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_te": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_tea": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_teb": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_tec": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_tex": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_tey": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_tez": {
+   "get": "get_flt",
+   "group": "_te",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_tr": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_tra": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_trb": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_trc": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_trx": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_try": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_trz": {
+   "get": "get_flt",
+   "group": "_tr",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ts": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_ts1": {
+   "get": "get_flt",
+   "group": "_ts",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ts2": {
+   "get": "get_flt",
+   "group": "_ts",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ts3": {
+   "get": "get_flt",
+   "group": "_ts",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_ts4": {
+   "get": "get_flt",
+   "group": "_ts",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_xs": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "_xs1": {
+   "get": "get_flt",
+   "group": "_xs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_xs2": {
+   "get": "get_flt",
+   "group": "_xs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_xs3": {
+   "get": "get_flt",
+   "group": "_xs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "_xs4": {
+   "get": "get_flt",
+   "group": "_xs",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "a": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "aam": {
+   "get": "cm_get_am",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "admo": {
+   "get": "cm_get_admo",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "afr": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "ajd": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 4,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "ajh": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjh",
+   "type": "float"
+  },
+  "ajm": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "alarm": {
+   "get": "cm_alrm",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_alrm",
+   "type": "null"
+  },
+  "alb": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "alv": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "ara": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "asn": {
+   "get": "get_ui8",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "asv": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "asx": {
+   "get": "get_ui8",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "atm": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "atn": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "avm": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "azb": {
+   "get": "get_flt",
+   "group": "a",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "b": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "bam": {
+   "get": "cm_get_am",
+   "group": "b",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "baud": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": false,
+   "precision": 0,
+   "set": "set_baud",
+   "type": "integer"
+  },
+  "bfr": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "bjd": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "bjm": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "boot": {
+   "get": "help_boot",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "hw_run_boot",
+   "type": "boolean"
+  },
+  "bra": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "btm": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "btn": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "bvm": {
+   "get": "get_flt",
+   "group": "b",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "c": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "cam": {
+   "get": "cm_get_am",
+   "group": "c",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "cfr": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "cjd": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "cjm": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "clear": {
+   "get": "cm_clr",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_clr",
+   "type": "null"
+  },
+  "clr": {
+   "get": "cm_clr",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_clr",
+   "type": "null"
+  },
+  "coor": {
+   "get": "cm_get_coor",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "cra": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "ct": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 4,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ctm": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "ctn": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "cvm": {
+   "get": "get_flt",
+   "group": "c",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "cycs": {
+   "get": "cm_get_cycs",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "defa": {
+   "get": "help_defa",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_defaults",
+   "type": "boolean"
+  },
+  "dist": {
+   "get": "cm_get_dist",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "ec": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ec",
+   "type": "integer"
+  },
+  "ee": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ee",
+   "type": "integer"
+  },
+  "ej": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "er": {
+   "get": "rpt_er",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "ex": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ex",
+   "type": "integer"
+  },
+  "fb": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "feed": {
+   "get": "cm_get_feed",
+   "group": "",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "frmo": {
+   "get": "cm_get_frmo",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "fv": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g28a": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28b": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28c": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28x": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28y": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g28z": {
+   "get": "get_flt",
+   "group": "g28",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g30a": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30b": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30c": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30x": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30y": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g30z": {
+   "get": "get_flt",
+   "group": "g30",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g54": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g54a": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g54b": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g54c": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g54x": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g54y": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g54z": {
+   "get": "get_flt",
+   "group": "g54",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g55": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g55a": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g55b": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g55c": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g55x": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g55y": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g55z": {
+   "get": "get_flt",
+   "group": "g55",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g56": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g56a": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g56b": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g56c": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g56x": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g56y": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g56z": {
+   "get": "get_flt",
+   "group": "g56",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g57": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g57a": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g57b": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g57c": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g57x": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g57y": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g57z": {
+   "get": "get_flt",
+   "group": "g57",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g58": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g58a": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g58b": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g58c": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g58x": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g58y": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g58z": {
+   "get": "get_flt",
+   "group": "g58",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g59": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g59a": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g59b": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g59c": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "g59x": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g59y": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g59z": {
+   "get": "get_flt",
+   "group": "g59",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "g92": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "g92a": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g92b": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g92c": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g92x": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g92y": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "g92z": {
+   "get": "get_flt",
+   "group": "g92",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "gc": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "gc_run_gc",
+   "type": "null"
+  },
+  "gco": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "gdi": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "gpa": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_012",
+   "type": "integer"
+  },
+  "gpl": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_012",
+   "type": "integer"
+  },
+  "gun": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "h": {
+   "get": "help_config",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "help_config",
+   "type": "null"
+  },
+  "help": {
+   "get": "help_config",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "help_config",
+   "type": "null"
+  },
+  "hold": {
+   "get": "cm_get_hold",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "hom": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "homa": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "homb": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "homc": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "home": {
+   "get": "cm_get_home",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_home",
+   "type": "integer"
+  },
+  "homx": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "homy": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "homz": {
+   "get": "get_ui8",
+   "group": "hom",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "hp": {
+   "get": "get_u32",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "hv": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "hw_set_hv",
+   "type": "float"
+  },
+  "id": {
+   "get": "hw_get_id",
+   "group": "sys",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "string"
+  },
+  "in": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in1": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in2": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in3": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in4": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in5": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in6": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in7": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "in8": {
+   "get": "get_int",
+   "group": "in",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ja": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "jid": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "jida": {
+   "get": "get_data",
+   "group": "jid",
+   "persist": false,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "jidb": {
+   "get": "get_data",
+   "group": "jid",
+   "persist": false,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "jidc": {
+   "get": "get_data",
+   "group": "jid",
+   "persist": false,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "jidd": {
+   "get": "get_data",
+   "group": "jid",
+   "persist": false,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "jog": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "joga": {
+   "get": "get_nul",
+   "group": "jog",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_joga",
+   "type": "float"
+  },
+  "jogx": {
+   "get": "get_nul",
+   "group": "jog",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_jogx",
+   "type": "float"
+  },
+  "jogy": {
+   "get": "get_nul",
+   "group": "jog",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_jogy",
+   "type": "float"
+  },
+  "jogz": {
+   "get": "get_nul",
+   "group": "jog",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_jogz",
+   "type": "float"
+  },
+  "js": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "jv": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "json_set_jv",
+   "type": "integer"
+  },
+  "line": {
+   "get": "cm_get_line",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_u32",
+   "type": "integer"
+  },
+  "m": {
+   "get": "_do_motors",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "macs": {
+   "get": "cm_get_macs",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "md": {
+   "get": "st_set_md",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "st_set_md",
+   "type": "integer"
+  },
+  "me": {
+   "get": "st_set_me",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "st_set_me",
+   "type": "integer"
+  },
+  "momo": {
+   "get": "cm_get_momo",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "mots": {
+   "get": "cm_get_mots",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "mpo": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "mpoa": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "mpob": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "mpoc": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "mpox": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "mpoy": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "mpoz": {
+   "get": "cm_get_mpo",
+   "group": "mpo",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "msg": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_str",
+   "type": "string"
+  },
+  "mt": {
+   "get": "get_flt",
+   "group": "sys",
+   "persist": true,
+   "precision": 2,
+   "set": "st_set_mt",
+   "type": "float"
+  },
+  "n": {
+   "get": "get_u32",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_u32",
+   "type": "integer"
+  },
+  "o": {
+   "get": "_do_offsets",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "ofs": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "ofsa": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ofsb": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ofsc": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ofsx": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ofsy": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "ofsz": {
+   "get": "cm_get_ofs",
+   "group": "ofs",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "p1": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "p1cph": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1cpl": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1csh": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1csl": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1frq": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1pof": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1wph": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1wpl": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1wsh": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "p1wsl": {
+   "get": "get_flt",
+   "group": "p1",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flt",
+   "type": "float"
+  },
+  "panic": {
+   "get": "cm_pnic",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_pnic",
+   "type": "null"
+  },
+  "path": {
+   "get": "cm_get_path",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "plan": {
+   "get": "cm_get_plan",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "pos": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "posa": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "posb": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "posc": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "posx": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "posy": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "posz": {
+   "get": "cm_get_pos",
+   "group": "pos",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prb": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "prba": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prbb": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prbc": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prbe": {
+   "get": "get_ui8",
+   "group": "prb",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "prbx": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prby": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "prbz": {
+   "get": "get_flt",
+   "group": "prb",
+   "persist": false,
+   "precision": 3,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "pwr": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "q": {
+   "get": "_do_axes",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "qf": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_run_qf",
+   "type": "null"
+  },
+  "qi": {
+   "get": "qi_get",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "qo": {
+   "get": "qo_get",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "qr": {
+   "get": "qr_get",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "qv": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_0123",
+   "type": "integer"
+  },
+  "rx": {
+   "get": "get_rx",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "null"
+  },
+  "rxm": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "se00": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se01": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se02": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se03": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se04": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se05": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se06": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se07": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se08": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se09": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se10": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se11": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se12": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se13": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se14": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se15": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se16": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se17": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se18": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se19": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se20": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se21": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se22": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se23": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se24": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se25": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se26": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se27": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se28": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "se29": {
+   "get": "get_u16",
+   "group": "",
+   "persist": true,
+   "precision": 0,
+   "set": "set_u16",
+   "type": "float"
+  },
+  "set": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_not",
+   "type": "null"
+  },
+  "shutd": {
+   "get": "cm_shutd",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "cm_shutd",
+   "type": "null"
+  },
+  "si": {
+   "get": "get_u32",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "sr_set_si",
+   "type": "integer"
+  },
+  "sl": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_ui8",
+   "type": "integer"
+  },
+  "sr": {
+   "get": "sr_get",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "sr_set",
+   "type": "boolean"
+  },
+  "srs": {
+   "get": "srs_get",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "srs_set",
+   "type": "null"
+  },
+  "st": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_st",
+   "type": "integer"
+  },
+  "stat": {
+   "get": "cm_get_stat",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "sv": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_012",
+   "type": "integer"
+  },
+  "sys": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "test": {
+   "get": "help_test",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "run_test",
+   "type": "boolean"
+  },
+  "tid": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_not",
+   "type": "float"
+  },
+  "tool": {
+   "get": "cm_get_toolv",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "tv": {
+   "get": "get_ui8",
+   "group": "sys",
+   "persist": true,
+   "precision": 0,
+   "set": "set_01",
+   "type": "integer"
+  },
+  "txt": {
+   "get": "get_nul",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_not",
+   "type": "txtcon"
+  },
+  "uda": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "uda0": {
+   "get": "get_data",
+   "group": "uda",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "uda1": {
+   "get": "get_data",
+   "group": "uda",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "uda2": {
+   "get": "get_data",
+   "group": "uda",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "uda3": {
+   "get": "get_data",
+   "group": "uda",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udb": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "udb0": {
+   "get": "get_data",
+   "group": "udb",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udb1": {
+   "get": "get_data",
+   "group": "udb",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udb2": {
+   "get": "get_data",
+   "group": "udb",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udb3": {
+   "get": "get_data",
+   "group": "udb",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udc": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "udc0": {
+   "get": "get_data",
+   "group": "udc",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udc1": {
+   "get": "get_data",
+   "group": "udc",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udc2": {
+   "get": "get_data",
+   "group": "udc",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udc3": {
+   "get": "get_data",
+   "group": "udc",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udd": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "udd0": {
+   "get": "get_data",
+   "group": "udd",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udd1": {
+   "get": "get_data",
+   "group": "udd",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udd2": {
+   "get": "get_data",
+   "group": "udd",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "udd3": {
+   "get": "get_data",
+   "group": "udd",
+   "persist": true,
+   "precision": 0,
+   "set": "set_data",
+   "type": "data"
+  },
+  "unit": {
+   "get": "cm_get_unit",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_nul",
+   "type": "integer"
+  },
+  "vel": {
+   "get": "cm_get_vel",
+   "group": "",
+   "persist": false,
+   "precision": 2,
+   "set": "set_nul",
+   "type": "float"
+  },
+  "x": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "xam": {
+   "get": "cm_get_am",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "xfr": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xjd": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 4,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xjh": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjh",
+   "type": "float"
+  },
+  "xjm": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "xlb": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xlv": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xsn": {
+   "get": "get_ui8",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "xsv": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xsx": {
+   "get": "get_ui8",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "xtm": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xtn": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xvm": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "xzb": {
+   "get": "get_flt",
+   "group": "x",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "y": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "yam": {
+   "get": "cm_get_am",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "yfr": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "yjd": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 4,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "yjh": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjh",
+   "type": "float"
+  },
+  "yjm": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "ylb": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ylv": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ysn": {
+   "get": "get_ui8",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "ysv": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ysx": {
+   "get": "get_ui8",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "ytm": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ytn": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "yvm": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "yzb": {
+   "get": "get_flt",
+   "group": "y",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "z": {
+   "get": "get_grp",
+   "group": "",
+   "persist": false,
+   "precision": 0,
+   "set": "set_grp",
+   "type": "null"
+  },
+  "zam": {
+   "get": "cm_get_am",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_am",
+   "type": "integer"
+  },
+  "zfr": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zjd": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 4,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zjh": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjh",
+   "type": "float"
+  },
+  "zjm": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "cm_set_xjm",
+   "type": "float"
+  },
+  "zlb": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zlv": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zsn": {
+   "get": "get_ui8",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "zsv": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zsx": {
+   "get": "get_ui8",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "sw_set_sw",
+   "type": "integer"
+  },
+  "ztm": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "ztn": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zvm": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 0,
+   "set": "set_flu",
+   "type": "float"
+  },
+  "zzb": {
+   "get": "get_flt",
+   "group": "z",
+   "persist": true,
+   "precision": 3,
+   "set": "set_flu",
+   "type": "float"
+  }
+ }
+}

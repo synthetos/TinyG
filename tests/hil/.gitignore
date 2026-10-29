@@ -1,0 +1,4 @@
+.snapshots/
+.venv/
+__pycache__/
+*.transcript
