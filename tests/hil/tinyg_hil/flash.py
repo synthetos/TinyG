@@ -4,7 +4,7 @@ import re
 import subprocess
 import time
 
-from .driver import TinyG
+from .driver import NoResponse, TinyG
 
 
 def build(source_dir) -> pathlib.Path:
@@ -42,8 +42,16 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         raise RuntimeError(f"avrdude failed ({proc.returncode}):\n{proc.stderr[-2000:]}")
-    time.sleep(1.0)
-    identity = tg.connect(timeout=8.0)
+    # The first boot of a new fb writes every default to EEPROM before answering.
+    deadline = time.monotonic() + 30
+    while True:
+        time.sleep(1.0)
+        try:
+            identity = tg.connect(timeout=3.0)
+            break
+        except NoResponse:
+            if time.monotonic() > deadline:
+                raise
     if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
         raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
     return identity

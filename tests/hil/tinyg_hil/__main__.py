@@ -1,0 +1,65 @@
+"""Board utilities.
+
+  uv run python -m tinyg_hil info     --port P
+  uv run python -m tinyg_hil snapshot --port P [--out DIR]
+  uv run python -m tinyg_hil restore  --port P SNAPSHOT.json
+  uv run python -m tinyg_hil flash    --port P (--hex FILE | --build CHECKOUT) [--restore SNAPSHOT.json]
+
+flash always takes a snapshot first (to --out) and, unless --no-restore, writes it back
+afterwards, so a flash that changes fb (and therefore loads defaults) keeps the settings.
+"""
+import argparse
+import json
+import pathlib
+import sys
+
+from . import flash as flasher
+from . import snapshot
+from .driver import TinyG
+
+DEFAULT_OUT = pathlib.Path(__file__).resolve().parent.parent / ".snapshots"
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(prog="tinyg_hil")
+    p.add_argument("command", choices=["info", "snapshot", "restore", "flash"])
+    p.add_argument("file", nargs="?", help="snapshot file for restore")
+    p.add_argument("--port", required=True)
+    p.add_argument("--out", default=str(DEFAULT_OUT))
+    p.add_argument("--hex")
+    p.add_argument("--build", help="checkout to build with make (firmware/tinyg)")
+    p.add_argument("--restore", help="snapshot to restore after flashing (default: the one just taken)")
+    p.add_argument("--no-restore", action="store_true")
+    p.add_argument("--transcript", help="write a timestamped raw serial transcript here")
+    args = p.parse_args(argv)
+
+    tg = TinyG(args.port, transcript=open(args.transcript, "w") if args.transcript else None)
+    tg.connect()
+    print(f"board: {json.dumps(tg.identity)} dialect {tg.dialect.name}")
+    if args.command == "info":
+        pass
+    elif args.command == "snapshot":
+        print("saved", snapshot.save(snapshot.take(tg), args.out))
+    elif args.command == "restore":
+        print(snapshot.restore(tg, snapshot.load(args.file)))
+    elif args.command == "flash":
+        expect = None
+        hex_path = args.hex
+        if args.build:
+            hex_path = flasher.build(args.build)
+            expect = flasher.source_build(args.build)
+            print(f"built {hex_path} (fb {expect})")
+        if not hex_path:
+            p.error("flash needs --hex or --build")
+        snap = snapshot.take(tg)
+        print("snapshot", snapshot.save(snap, args.out))
+        ident = flasher.flash(tg, hex_path, expect_fb=expect)
+        print(f"flashed: {json.dumps(ident)} dialect {tg.dialect.name}")
+        if not args.no_restore:
+            source = snapshot.load(args.restore) if args.restore else snap
+            print("restore:", snapshot.restore(tg, source))
+    tg.close()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

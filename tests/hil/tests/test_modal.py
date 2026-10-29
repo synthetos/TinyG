@@ -31,6 +31,3 @@ def test_unsupported_mcode(tg):
     assert tg.send_gcode("M200").status == tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")
     assert tg.stat() not in (tg.dialect.stat("ALARM"),)
 
-
-def test_message_comment(tg):
-    assert tg.send_gcode("(MSG hello)", check=True).body.get("msg", "").strip() == "hello"

@@ -2,11 +2,15 @@
 import datetime
 import json
 import pathlib
+import re
 
 from .driver import StatusError, TinyG
 
 IDENTITY = ("fb", "fv", "hp", "hv", "id")
 NEVER_WRITE = set(IDENTITY) | {"baud"}
+# se00-se29 hold the status-report list as raw cfgArray row numbers, which differ between builds,
+# and writing them stores the low 16 bits of the float (E140). The list is saved by name via "sr".
+INTERNAL = re.compile(r"^se\d\d$")
 # Communication settings change how the board answers, so they are written last, jv very last.
 COMM_ORDER = ["js", "ee", "ec", "ej", "ex", "rxm", "jv"]
 
@@ -22,7 +26,7 @@ def take(tg: TinyG) -> dict:
     values, missing = {}, []
     unrecognized = tg.dialect.status("UNRECOGNIZED_NAME")
     for token in tg.dialect.persisted_tokens():
-        if token in IDENTITY:
+        if token in IDENTITY or INTERNAL.match(token):
             continue
         try:
             values[token] = tg.get(token)
@@ -72,7 +76,7 @@ def restore(tg: TinyG, snap: dict) -> dict:
     if snap.get("sr"):
         current = tg.get("sr")
         if not isinstance(current, dict) or list(current) != snap["sr"]:
-            tg.send_json({"sr": {k: True for k in snap["sr"]}}, check=True)
+            set_status_report(tg, snap["sr"])
             result["changed"].append("sr")
     # jv is last in COMM_ORDER: it can make later responses terse, so nothing is read after it
     for token in [t for t in COMM_ORDER if t in values]:
@@ -82,7 +86,7 @@ def restore(tg: TinyG, snap: dict) -> dict:
 
 def _restore_one(tg: TinyG, token: str, value, result: dict):
     tokens = tg.dialect.tokens
-    if token in NEVER_WRITE:
+    if token in NEVER_WRITE or INTERNAL.match(token):
         return
     if token not in tokens or not tokens[token]["persist"]:
         result["dropped"].append(token)
@@ -98,3 +102,12 @@ def _restore_one(tg: TinyG, token: str, value, result: dict):
         result["changed"].append(token)
     except StatusError as e:
         result["failed"].append((token, want, e.response.status))
+
+
+def set_status_report(tg: TinyG, keys: list):
+    """Set the status-report list by name. 449 rejects JSON input over 128 chars, so it gets relaxed syntax."""
+    if tg.dialect.name == "d449":
+        line = "{sr:{" + ",".join(f"{k}:t" for k in keys) + "}}"
+    else:
+        line = json.dumps({"sr": {k: True for k in keys}}, separators=(",", ":"))
+    tg.send_json(line, check=True)
