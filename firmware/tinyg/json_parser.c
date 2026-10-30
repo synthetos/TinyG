@@ -789,7 +789,7 @@ void json_print_response(uint8_t status)
     } else {                                            // or line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_line_buffers_available());
     }
-	nv_copy_string(nv, footer_string);					// link string to nv object
+	nv->str = footer_string;					// footer stays live through serialization; shared storage may be full
 	nv->depth = 0;                                      // footer is a peer to r{} response
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");                             // terminate the list
@@ -798,6 +798,8 @@ void json_print_response(uint8_t status)
 	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
     	printf(cs.out_buf);
 	}
+    nv->str = NULL;                                 // do not retain the stack-backed footer
+    nv->valuetype = TYPE_EMPTY;
 }
 
 /*

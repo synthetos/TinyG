@@ -51,9 +51,9 @@ int json_serialize(nvObj_t *n,char *s,int z){(void)n;(void)s;(void)z;assert(foot
         code+=r'''
 int main(void){
  js.json_verbosity=4;body.valuetype=TYPE_EMPTY;foot.str="End";xio.rx_mode=1;
- json_print_response(0);assert(!strcmp(seen,"3,0,10"));assert(copies==0);
+ json_print_response(0);assert(!strcmp(seen,"3,0,10"));assert(copies==0);assert(foot.str==NULL);assert(foot.valuetype==TYPE_EMPTY);
  foot.str="G21";xio.rx_mode=RX_MODE_CHAR;cs.linelen=247;
- json_print_response(111);assert(!strcmp(seen,"2,111,247"));assert(cs.linelen==0);assert(copies==0);
+ json_print_response(111);assert(!strcmp(seen,"2,111,247"));assert(cs.linelen==0);assert(copies==0);assert(foot.str==NULL);assert(foot.valuetype==TYPE_EMPTY);
 }
 '''
         with tempfile.TemporaryDirectory() as d:

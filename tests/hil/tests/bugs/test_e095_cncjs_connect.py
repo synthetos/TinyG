@@ -50,8 +50,7 @@ def test_cncjs_connect_sequence(tg, keep):
     finally:
         tg.drain(quiet=0.2)
         tg.clear_alarm()
-        if list(tg.get("sr")) != original_sr:
-            snapshot.set_status_report(tg, original_sr)
+        snapshot.set_status_report(tg, original_sr)  # restore even if a large SR query failed
     exceptions = [e.raw for _, _, events in results for e in events if e.kind == "exception"]
     assert not exceptions
     for line, response, _ in results[5:11]:
