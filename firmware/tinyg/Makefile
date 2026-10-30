@@ -44,6 +44,14 @@ CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
           -ffunction-sections -fdata-sections -I. $(TEST_DEFS) \
           -MMD -MP
 
+# avr-gcc 12 and 13 assume the first 4 KiB of memory is an unmapped null page, so every access to
+# the xmega I/O registers there draws -Warray-bounds/-Wstringop-overflow warnings;
+# --param=min-pagesize=0 drops that assumption. Older and newer versions don't need it.
+GCC_MAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion 2>/dev/null)))
+ifneq (,$(filter 12 13,$(GCC_MAJOR)))
+CFLAGS += --param=min-pagesize=0
+endif
+
 LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
           -Wl,--start-group -lm -lprintf_flt -Wl,--end-group -Wl,--gc-sections
 
