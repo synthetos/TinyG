@@ -57,12 +57,26 @@ def tg(request):
     board.snapshot_path = snapshot.save(snap, config.getoption("--snapshot-dir"))
     yield board
     board.drain()
+    recover(board)
     result = snapshot.restore(board, snap)
     board.close()
     if transcript:
         transcript.close()
     if result["failed"]:
         pytest.fail(f"settings restore failed: {result['failed']} (snapshot {board.snapshot_path})")
+
+
+def recover(board):
+    """Get the board back to idle, ready and unalarmed, whatever the last test left behind."""
+    try:
+        stat, qr = board.stat(), board.get("qr")
+    except Exception:  # noqa: BLE001 - silent board: only a reset helps
+        stat, qr = None, None
+    if stat is None or stat in (board.dialect.stat("SHUTDOWN"), board.dialect.stat("PANIC")) \
+            or qr != board.planner_buffers:
+        board.reset()       # stale queue (E069), unrecoverable state, or no answer
+    if board.stat() == board.dialect.stat("ALARM"):
+        board.clear_alarm()
 
 
 @pytest.fixture
@@ -99,8 +113,7 @@ def _per_test(request):
         if board.dialect.name in bug.kwargs.get("on", ("d440", "d449")):
             request.node.add_marker(pytest.mark.xfail(strict=True, reason=f"known bug {bug.args[0]}"))
     board.drain(quiet=0.05)
-    if board.stat() in (board.dialect.stat("ALARM"), board.dialect.stat("SHUTDOWN")):
-        board.clear_alarm()
+    recover(board)
     board.send_gcode("M2", check=True)     # resets G92, coordinate system, plane, distance mode, M5, M9
     board.send_gcode("G21", check=True)    # M2 does not reset units
     board.drain(quiet=0.05)
