@@ -34,6 +34,7 @@ enum {FC_IN_XON,FC_IN_XOFF};
 static uint8_t SREG;
 static void cli(void) {SREG=0;}
 static struct {uint8_t enable_flow_control;} xio;
+static volatile bool rx_in_line;
 static struct {uint8_t flag_xoff;} USB;
 typedef struct {uint8_t CTRLA,DATA;} usart_t;
 typedef struct {uint8_t OUTCLR,OUTSET;} port_t;
