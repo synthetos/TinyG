@@ -37,5 +37,7 @@ def test_null_only_command_rejects_values(tg, value):
 
 
 @pytest.mark.dialect("d449")
-def test_gc_null_remains_a_query(tg):
-    tg.send_json({"gc": None}, check=True)
+def test_gc_null_remains_a_noop(tg):
+    units = tg.get("unit")
+    assert tg.send_json({"gc": None}).status == tg.dialect.status("NOOP")
+    assert tg.get("unit") == units
