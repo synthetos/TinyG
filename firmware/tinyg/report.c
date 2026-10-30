@@ -211,6 +211,11 @@ static stat_t _set_srs(nvObj_t *nv);
  * _helpers
  */
 
+static bool _valid_status_report_index(uint32_t index)
+{
+    return ((index == (uint32_t)NO_MATCH) || (index < (uint32_t)nv_index_max()));
+}
+
 static void _persist_status_report_list()
 {
     nvObj_t nv;                                         // local working object
@@ -249,13 +254,20 @@ void sr_init_status_report_P(const char *sr_csv_P)
     // SR CSV list is NULL, load SR from NVram
     if (*sr_csv == NUL) {
         for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
-            read_persistent_value(&nv);                     // read token index from NVram into nv->value_int element
+            if ((read_persistent_value(&nv) != STAT_OK) ||
+                !_valid_status_report_index(nv.value_int)) {
+                break;
+            }
             sr.status_report_list[i] = nv.value_int;        // load into the active SR list
             sr.value_flt[i] = 8675309;                      // pre-load SR values with an unlikely number
             nv.index++;                                     // increment SR NVM index
         }
+        if (i == NV_STATUS_REPORT_LEN) { return; }
+        // Repair invalid persisted indexes before any report can dereference them.
+        strcpy_P(sr_csv, SR_DEFAULTS);
+        nv.index = nv_get_index("", "se00");
     }
-    else { // load the sr_csv_P list provided as an arg and persist it NVram
+    { // load the CSV list and persist it to NVram
         char *rd = strtok(sr_csv, ",");                     // initialize strtok & get pointer for token parsing
     	for (i=0; i<NV_STATUS_REPORT_LEN; i++) {            // initialize the SR list
             if (rd == NULL) {
@@ -591,6 +603,22 @@ stat_t srs_get(nvObj_t *nv) // new semantics
 stat_t srs_set(nvObj_t *nv) // new semantics
 {
     return (_set_srs(nv));
+}
+
+stat_t sr_get_se(nvObj_t *nv)
+{
+    get_u16(nv);
+    nv->value_int = (int16_t)nv->value_int;
+    nv->valuetype = TYPE_SIGNED;
+    return (STAT_OK);
+}
+
+stat_t sr_set_se(nvObj_t *nv)
+{
+    if (!_valid_status_report_index(nv->value_int)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (set_u16(nv));
 }
 
 stat_t sr_set_si(nvObj_t *nv)

@@ -332,8 +332,8 @@ char *strcat_integer(char *str, const uint32_t value)
 
 char *strcat_signed(char *str, const int32_t value)
 {
-    str += sprintf_P(str, PSTR("%l"), value);
-    return (str);   //++++ STUBBED
+    str += sprintf_P(str, PSTR("%ld"), (long)value);
+    return (str);
 }
 
 char *strcat_float(char *str, const float value, const uint8_t precision)

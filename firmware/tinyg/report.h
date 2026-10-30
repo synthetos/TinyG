@@ -123,6 +123,8 @@ stat_t sr_set(nvObj_t *nv);
 stat_t srs_get(nvObj_t *nv);
 stat_t srs_set(nvObj_t *nv);
 stat_t sr_set_si(nvObj_t *nv);
+stat_t sr_get_se(nvObj_t *nv);
+stat_t sr_set_se(nvObj_t *nv);
 
 void qr_init_queue_report(void);
 void qr_request_queue_report(int8_t buffers);
