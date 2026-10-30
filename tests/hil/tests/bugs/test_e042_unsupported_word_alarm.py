@@ -9,7 +9,7 @@ import pytest
 
 
 @pytest.mark.parametrize("line", ["G43 H1", "G41", "G98", "O1001", "G0 D1"])
-@pytest.mark.bug("E042", on=["d449"])
+@pytest.mark.bug("E042", on=[])
 def test_unsupported_word_is_an_error_not_an_alarm(tg, line):
     tg.send_gcode(line)
     assert tg.stat() != tg.dialect.stat("ALARM")

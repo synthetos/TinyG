@@ -430,13 +430,10 @@ static stat_t _parse_gcode_block(char *buf)
             case 'L': SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
-    	    default: return (cm_alarm(STAT_GCODE_COMMAND_UNSUPPORTED, cs.saved_buf));
+    	    default: return (STAT_GCODE_COMMAND_UNSUPPORTED);	// an error for this block, not an alarm (E042)
 		}
 		if(status != STAT_OK) break;
 	}
-    if (status == STAT_GCODE_COMMAND_UNSUPPORTED) {                 // stop the job if command is unsupported
-    	return (cm_alarm(status, cs.saved_buf));
-    }
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);
     }
