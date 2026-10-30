@@ -880,6 +880,8 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 			rpt_exception(STAT_EOF, "");				// not really an exception
 		}
 		controller_reset_source();						// reset to active source to default source
+		xio.bufp[0] = NUL;              // immediate EOF leaves the previously executed line intact
+		return (_exit_null(flags, size));
 	}
 	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));

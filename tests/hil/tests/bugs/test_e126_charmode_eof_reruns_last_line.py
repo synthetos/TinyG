@@ -51,7 +51,6 @@ def _return_to(tg, start):
 @pytest.mark.motion
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E126", on=["d449"])
 def test_eof_report_is_last(tg, keep):
     keep("rxm")
     start = [tg.get(t) for t in ("mpox", "mpoy", "mpoz")]
