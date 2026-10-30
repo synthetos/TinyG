@@ -14,6 +14,7 @@ Holding the board lock is the caller's job (pytest's tg fixture already holds it
 """
 import pathlib
 import struct
+import threading
 import time
 from contextlib import contextmanager
 
@@ -121,12 +122,14 @@ def encode(value, size, kind):
 
 
 class Ice:
-    def __init__(self, elf=None, serial=None, board: Board | None = None):
+    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None):
         self.board = board or load_board()
         self.symbols = Symbols(elf, self.board.sram_symbol_base) if elf else None
         self.serial = serial
+        self.wire = wire                    # the serial Transport.wire lock: never halt while bytes are inbound
         self.transport = self.target = self.protocol = None
         self._halt_depth = 0
+        self._mutex = threading.RLock()     # one thread at a time drives the debugger (mounted switches poll)
 
     # ---- session ----------------------------------------------------------------------
 
@@ -169,16 +172,28 @@ class Ice:
 
     @contextmanager
     def halted(self):
-        """Keep the CPU stopped for several accesses; nests."""
-        if self._halt_depth == 0:
-            self.protocol.stop()
-        self._halt_depth += 1
-        try:
-            yield self
-        finally:
-            self._halt_depth -= 1
+        """Keep the CPU stopped for several accesses; nests. Waits for any serial line in flight first."""
+        with self._mutex:
             if self._halt_depth == 0:
-                self.protocol.run()
+                if self.wire:
+                    self.wire.acquire()
+                try:
+                    self.protocol.stop()
+                except BaseException:
+                    if self.wire:
+                        self.wire.release()
+                    raise
+            self._halt_depth += 1
+            try:
+                yield self
+            finally:
+                self._halt_depth -= 1
+                if self._halt_depth == 0:
+                    try:
+                        self.protocol.run()
+                    finally:
+                        if self.wire:
+                            self.wire.release()
 
     def _retry(self, fn, *args):
         from pyedbglib.protocols.jtagice3protocol import Jtagice3ResponseError
@@ -245,6 +260,9 @@ class Ice:
         own pin-change ISR sees a real edge.
         """
         port, bit = self.board.switch_pin(axis, end)
+        if self._uses_hook():
+            self._switch_via_hook(axis, bit, level)
+            return
         mask = bytes([1 << bit])
         method = self.board.data.get("switch_drive", {}).get("method", "pull")
         with self.halted():
@@ -259,6 +277,33 @@ class Ice:
             ctrl = self.read(addr, 1)[0]
             self.write(addr, bytes([(ctrl & ~opc["mask"] & 0xFF) | (opc["pullup"] if level else opc["pulldown"])]))
 
+    HOOK_RELEASE, HOOK_DRIVE_LOW, HOOK_INVERT, HOOK_NORMAL = 0, 1, 2, 3
+
+    def _uses_hook(self):
+        return bool(self.symbols) and "test_hook" in self.symbols.sym
+
+    def _switch_via_hook(self, axis, bit, level, timeout=1.0):
+        """Test builds (TINYG_TEST_HOOKS): the running firmware applies the change, so the port's edge
+        detector and the switch ISR see it (a change made while the CPU is halted is not detected)."""
+        if self._halt_depth:
+            raise RuntimeError("switch hook requested while the CPU is held halted; the firmware cannot apply it")
+        if self.peek("test_hook.magic") != 0x5A:
+            raise RuntimeError("test_hook present but not initialized (firmware not running?)")
+        index = list(self.board.switches).index(axis)
+        action = self.HOOK_RELEASE if level else self.HOOK_DRIVE_LOW
+        with self.halted():
+            self.poke("test_hook.axis", index)
+            self.poke("test_hook.bit", bit)
+            self.poke("test_hook.action", action)
+            self.poke("test_hook.pending", 1)                   # last: the firmware acts on this
+        end = time.monotonic() + timeout
+        while True:
+            time.sleep(0.01)                    # each check halts the CPU; give the main loop room to run
+            if not self.peek("test_hook.pending"):
+                return
+            if time.monotonic() > end:
+                raise RuntimeError("firmware did not apply the switch hook (main loop blocked?)")
+
     def set_switch(self, axis, end, closed, normally_closed=False):
         """Simulate a switch: NO switches read low when closed, NC switches read high when open (tripped)."""
         tripped_level = 1 if normally_closed else 0
@@ -266,6 +311,11 @@ class Ice:
 
     def release_all_switches(self):
         """Restore every switch input to the firmware's pull-up configuration."""
+        if self._uses_hook():
+            for axis in self.board.switches:             # the CPU must run to service each hook
+                for end in ("min", "max"):
+                    self.set_switch_level(axis, end, 1)
+            return
         with self.halted():
             for axis in self.board.switches:
                 for end in ("min", "max"):

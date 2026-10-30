@@ -28,6 +28,8 @@ class SoftSwitches:
         self.closed = {}                    # (axis, end) -> bool, as last driven
         self.mounts = {}                    # (axis, end) -> machine position of the switch
         self.trips = []                     # (time, axis, end, closed, position) for assertions
+        self.samples = []                   # (time, axis, position) read by the mounted-switch follower
+        self.error = None                   # exception that stopped the follower thread
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = None
@@ -89,9 +91,16 @@ class SoftSwitches:
             return self.ice.peek(f"{board.symbols['runtime_position']}[{board.axis_index(axis)}]")
 
     def _follow(self):
+        try:
+            self._follow_loop()
+        except Exception as e:              # surfaced to the test via .error (a thread cannot raise into it)
+            self.error = e
+
+    def _follow_loop(self):
         while not self._stop.is_set():
             for (axis, end), at in list(self.mounts.items()):
                 pos = self.position(axis)
+                self.samples.append((time.monotonic(), axis, pos))
                 closed = pos <= at if end == "min" else pos >= at
                 if self.closed.get((axis, end)) != closed:
                     self._drive(axis, end, closed, pos)

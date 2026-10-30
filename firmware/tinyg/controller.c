@@ -42,6 +42,7 @@
 #include "switch.h"
 #include "gpio.h"
 #include "report.h"
+#include "testhooks.h"
 #include "help.h"
 #include "util.h"
 #include "xio.h"
@@ -148,6 +149,9 @@ static void _controller_HSM()
 	DISPATCH(hw_hard_reset_handler());			// handle hard reset requests
 	DISPATCH(hw_bootloader_handler());			// handle requests to enter bootloader
 
+#ifdef TINYG_TEST_HOOKS
+	DISPATCH(testhooks_callback());				// HIL test hooks (test builds only)
+#endif
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
     DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock

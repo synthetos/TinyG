@@ -29,10 +29,13 @@ def test_close_and_open_x_min_is_seen_by_firmware(tg, switches):
 
 
 @pytest.mark.profile("switches-no")
-def test_mounted_switch_follows_position(tg, switches):
+def test_mounted_switch_follows_position(tg, switches, record):
     switches.mount("x", "max", at=0.5)
     tg.send_gcode("G91 G1 X1 F120", check=True, allow="1 mm X move across a software switch")
     tg.wait_idle()
+    t0 = switches.samples[0][0] if switches.samples else 0
+    record("follower_samples", [(round(t - t0, 3), round(p, 4)) for t, _, p in switches.samples[::5]])
+    record("trips", [(round(t - t0, 3), a, e, c, p) for t, a, e, c, p in switches.trips])
     tripped = [t for t in switches.trips if t[1:4] == ("x", "max", True)]
     assert tripped, "mounted switch never closed"
     assert tripped[0][4] == pytest.approx(0.5, abs=0.1)

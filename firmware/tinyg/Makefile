@@ -15,6 +15,13 @@ MCU      = atxmega192a3
 F_CPU    = 32000000UL
 BUILDDIR = build
 
+# make TEST_HOOKS=1: compile the HIL test hooks (testhooks.c) into a separate build directory.
+# Never ship these builds.
+ifdef TEST_HOOKS
+BUILDDIR = build-testhooks
+TEST_DEFS = -DTINYG_TEST_HOOKS
+endif
+
 SRCS  = $(filter-out system.c,$(wildcard *.c))
 SRCS += $(filter-out xio/xio.c,$(wildcard xio/*.c))
 SRCS += $(filter-out xmega/xmega_wdt.c,$(wildcard xmega/*.c))
@@ -27,7 +34,7 @@ SIZE    = avr-size
 
 CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
           -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
-          -ffunction-sections -fdata-sections -I. \
+          -ffunction-sections -fdata-sections -I. $(TEST_DEFS) \
           -MMD -MP
 
 LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \

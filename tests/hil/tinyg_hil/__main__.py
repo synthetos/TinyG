@@ -29,6 +29,7 @@ def main(argv=None):
     p.add_argument("--out", default=str(DEFAULT_OUT))
     p.add_argument("--hex")
     p.add_argument("--build", help="checkout to build with make (firmware/tinyg)")
+    p.add_argument("--make", action="append", default=[], help="extra make arguments, e.g. --make TEST_HOOKS=1")
     p.add_argument("--restore", help="snapshot to restore after flashing (default: the one just taken)")
     p.add_argument("--no-restore", action="store_true")
     p.add_argument("--transcript", help="write a timestamped raw serial transcript here")
@@ -53,7 +54,7 @@ def main(argv=None):
         expect = None
         hex_path = args.hex
         if args.build:
-            hex_path = flasher.build(args.build)
+            hex_path = flasher.build(args.build, args.make)
             expect = flasher.source_build(args.build)
             print(f"built {hex_path} (fb {expect})")
         if not hex_path:

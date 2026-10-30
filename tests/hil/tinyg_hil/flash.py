@@ -10,13 +10,17 @@ import time
 from .driver import NoResponse, TinyG
 
 
-def build(source_dir) -> pathlib.Path:
-    """Run make in firmware/tinyg of a checkout; returns the hex path."""
+def build(source_dir, make_args=()) -> pathlib.Path:
+    """Run make in firmware/tinyg of a checkout; returns the hex path.
+
+    make_args e.g. ["TEST_HOOKS=1"] (the Makefile then builds into build-testhooks/).
+    """
     src = pathlib.Path(source_dir)
     if (src / "firmware" / "tinyg").is_dir():
         src = src / "firmware" / "tinyg"
-    subprocess.run(["make", "-C", str(src), "-j8"], check=True, capture_output=True)
-    return src / "build" / "tinyg.hex"
+    subprocess.run(["make", "-C", str(src), "-j8", *make_args], check=True, capture_output=True)
+    builddir = "build-testhooks" if any(a.startswith("TEST_HOOKS=") for a in make_args) else "build"
+    return src / builddir / "tinyg.hex"
 
 
 def source_build(source_dir) -> float:
@@ -49,7 +53,8 @@ def flash_provenance(hex_path, stock_ref="origin/edge-0.97") -> dict:
         "elf_sha256": hashlib.sha256(elf.read_bytes()).hexdigest() if elf.exists() else "",
         "commit": commit, "branch": _git(tree, "symbolic-ref", "--short", "-q", "HEAD"),
         "tree": _git(tree, "rev-parse", "HEAD:firmware/tinyg") if commit else "",
-        "dirty": dirty, "stock": bool(stock and not dirty), "stock_ref": stock_ref,
+        "dirty": dirty, "stock": bool(stock and not dirty and hex_path.parent.name == "build"), "stock_ref": stock_ref,
+        "build_dir": hex_path.parent.name, "test_hooks": hex_path.parent.name == "build-testhooks",
     }
 
 

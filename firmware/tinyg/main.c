@@ -31,6 +31,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
+#include "testhooks.h"
 //#include "coolant.h"
 #include "switch.h"     // #include "gpio.h"
 #include "test.h"
@@ -156,6 +157,9 @@ static void _application_init_startup(void)
 	canonical_machine_reset();                  // depends on config_init()
     spindle_init();                             // depends on config_init()
     spindle_reset();
+#ifdef TINYG_TEST_HOOKS
+    testhooks_init();                           // HIL test hooks (test builds only)
+#endif
 
 #ifdef __AVR
 	// now bring up the interrupts and get started

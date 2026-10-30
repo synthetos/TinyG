@@ -109,7 +109,7 @@ def firmware_identity(port):
     if not prov or prov.get("legacy") or not prov.get("commit"):
         return {"known": False, **({"elf": prov["elf"]} if prov.get("elf") else {})}
     return {"known": True, "commit": prov["commit"][:12], **{k: prov[k] for k in
-            ("branch", "tree", "dirty", "stock", "stock_ref", "elf", "elf_sha256", "hex_sha256", "flashed_at") if k in prov}}
+            ("branch", "tree", "dirty", "stock", "stock_ref", "elf", "elf_sha256", "hex_sha256", "flashed_at", "build_dir", "test_hooks") if k in prov}}
 
 
 def _overall(phases):
