@@ -91,24 +91,19 @@ class RunRecorder:
         self._write_meta()
 
 
-def firmware_identity(port, stock_ref="origin/edge-0.97"):
-    """What is on the board, as far as the harness knows: the build last flashed through tinyg_hil.
+def firmware_identity(port):
+    """What is on the board: the provenance tinyg_hil.flash recorded when it flashed it.
 
-    The test checkout's branch says nothing about the firmware (a stock-baseline run executes fix-branch
-    tests against stock firmware), so run records carry this separately.
+    Captured at flash time (commit, firmware tree hash, dirty flag, ELF/hex SHA-256), so a worktree
+    rebased or rebuilt afterwards cannot change it. This is declared provenance, not a readback of the
+    binary on the chip. The test checkout's branch says nothing about the firmware.
     """
-    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
-    elf = record.read_text().strip() if record.exists() else ""
-    if not elf or not pathlib.Path(elf).exists():
-        return {"known": False}
-    tree = pathlib.Path(elf).parent.parent            # firmware/tinyg
-    commit = _git(tree, "rev-parse", "HEAD")
-    dirty = bool(_git(tree, "status", "--porcelain", "--", "."))
-    # stock = firmware sources identical to edge-0.97 (the Makefile's -g aside)
-    diff = subprocess.run(["git", "-C", str(tree), "diff", "--quiet", stock_ref, "HEAD", "--", ".", ":!Makefile"],
-                          capture_output=True)
-    return {"known": True, "elf": elf, "commit": commit[:12], "branch": _git(tree, "symbolic-ref", "--short", "-q", "HEAD"),
-            "dirty": dirty, "stock": diff.returncode == 0 and not dirty, "stock_ref": stock_ref}
+    from .flash import read_provenance
+    prov = read_provenance(port)
+    if not prov or prov.get("legacy") or not prov.get("commit"):
+        return {"known": False, **({"elf": prov["elf"]} if prov.get("elf") else {})}
+    return {"known": True, "commit": prov["commit"][:12], **{k: prov[k] for k in
+            ("branch", "tree", "dirty", "stock", "stock_ref", "elf", "elf_sha256", "hex_sha256", "flashed_at") if k in prov}}
 
 
 def _overall(phases):

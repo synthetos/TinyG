@@ -1,4 +1,7 @@
 """Build firmware and flash it through the xboot bootloader."""
+import datetime
+import hashlib
+import json
 import pathlib
 import re
 import subprocess
@@ -23,6 +26,43 @@ def source_build(source_dir) -> float:
         src = src / "firmware" / "tinyg"
     text = (src / "tinyg.h").read_text(errors="replace")
     return float(re.search(r"#define\s+TINYG_FIRMWARE_BUILD\s+([\d.]+)", text).group(1))
+
+
+def _git(cwd, *args):
+    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def flash_provenance(hex_path, stock_ref="origin/edge-0.97") -> dict:
+    """Immutable description of the image being flashed, captured at flash time."""
+    hex_path = pathlib.Path(hex_path).resolve()
+    elf = hex_path.with_suffix(".elf")
+    tree = hex_path.parent.parent if hex_path.parent.name == "build" else hex_path.parent   # firmware/tinyg
+    commit = _git(tree, "rev-parse", "HEAD")
+    stock = subprocess.run(["git", "-C", str(tree), "diff", "--quiet", stock_ref, "HEAD", "--", ".", ":!Makefile"],
+                           capture_output=True).returncode == 0 if commit else False
+    dirty = bool(_git(tree, "status", "--porcelain", "--", ".")) if commit else None
+    return {
+        "flashed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "hex": str(hex_path), "hex_sha256": hashlib.sha256(hex_path.read_bytes()).hexdigest(),
+        "elf": str(elf) if elf.exists() else "",
+        "elf_sha256": hashlib.sha256(elf.read_bytes()).hexdigest() if elf.exists() else "",
+        "commit": commit, "branch": _git(tree, "symbolic-ref", "--short", "-q", "HEAD"),
+        "tree": _git(tree, "rev-parse", "HEAD:firmware/tinyg") if commit else "",
+        "dirty": dirty, "stock": bool(stock and not dirty), "stock_ref": stock_ref,
+    }
+
+
+def read_provenance(port) -> dict:
+    """The flash record for a port ({} if none). Older records held just the ELF path."""
+    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
+    if not record.exists():
+        return {}
+    text = record.read_text().strip()
+    try:
+        return json.loads(text)
+    except ValueError:
+        return {"elf": text, "legacy": True} if text else {}
 
 
 def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str = "avrdude",
@@ -52,9 +92,8 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         except NoResponse:
             if time.monotonic() > deadline:
                 raise
-    elf = pathlib.Path(hex_path).with_suffix(".elf")
     record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
-    record.write_text(str(elf.resolve()) if elf.exists() else "")     # for tinyg_hil.ice symbol lookups
+    record.write_text(json.dumps(flash_provenance(hex_path), indent=1))    # read by record.py and ice.py
     if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
         raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
     return identity

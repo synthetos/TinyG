@@ -262,9 +262,19 @@ class Ice:
 
 
 def flashed_elf(port):
-    """ELF recorded by tinyg_hil.flash for the build last flashed on this port, or None."""
-    f = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
-    return f.read_text().strip() if f.exists() else None
+    """ELF recorded by tinyg_hil.flash for the build last flashed on this port, or None.
+
+    Refuses an ELF whose contents changed since the flash (rebuilt tree), since its symbols would lie.
+    """
+    import hashlib
+    from .flash import read_provenance
+    prov = read_provenance(port)
+    elf = prov.get("elf")
+    if not elf or not pathlib.Path(elf).exists():
+        return None
+    if prov.get("elf_sha256") and hashlib.sha256(pathlib.Path(elf).read_bytes()).hexdigest() != prov["elf_sha256"]:
+        raise RuntimeError(f"{elf} was rebuilt after flashing; reflash or pass --elf for the build on the board")
+    return elf
 
 
 def main(argv=None):
