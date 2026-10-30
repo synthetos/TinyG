@@ -22,6 +22,13 @@ BUILDDIR = build-testhooks
 TEST_DEFS = -DTINYG_TEST_HOOKS
 endif
 
+# make FW_BUILD=449.99: same firmware with another build number, in its own build directory
+# (HIL test that settings survive a build change).
+ifdef FW_BUILD
+BUILDDIR = build-fb$(FW_BUILD)
+TEST_DEFS += -DTINYG_FIRMWARE_BUILD=$(FW_BUILD)
+endif
+
 SRCS  = $(filter-out system.c,$(wildcard *.c))
 SRCS += $(filter-out xio/xio.c,$(wildcard xio/*.c))
 SRCS += $(filter-out xmega/xmega_wdt.c,$(wildcard xmega/*.c))

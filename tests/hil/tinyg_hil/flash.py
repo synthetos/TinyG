@@ -20,6 +20,9 @@ def build(source_dir, make_args=()) -> pathlib.Path:
         src = src / "firmware" / "tinyg"
     subprocess.run(["make", "-C", str(src), "-j8", *make_args], check=True, capture_output=True)
     builddir = "build-testhooks" if any(a.startswith("TEST_HOOKS=") for a in make_args) else "build"
+    for a in make_args:
+        if a.startswith("FW_BUILD="):
+            builddir = "build-fb" + a.split("=", 1)[1]
     return src / builddir / "tinyg.hex"
 
 
