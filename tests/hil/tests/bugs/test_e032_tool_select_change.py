@@ -11,7 +11,7 @@ M6 = "M6 only records the tool number on this firmware"
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E032", on=["d440", "d449"])
+@pytest.mark.bug("E032", on=["d440"])
 def test_t_and_m6_on_one_line(tg):
     tg.send_gcode("T0 M6", check=True, allow=M6)
     tg.wait_idle()
@@ -21,7 +21,7 @@ def test_t_and_m6_on_one_line(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E032", on=["d440", "d449"])
+@pytest.mark.bug("E032", on=["d440"])
 def test_t_and_m6_on_separate_lines_behind_dwell(tg):
     # With an empty planner the queued T runs before M6 is parsed; a dwell ahead of it exposes the bug.
     tg.send_gcode("T0 M6", check=True, allow=M6)
