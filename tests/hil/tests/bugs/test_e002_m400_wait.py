@@ -2,6 +2,12 @@
 
 E002: M400 (wait for motion to finish) is missing on edge and wrong on master.
 
+Completion contract: standalone M400 accepts an optional leading N<digits>.
+The canonical JSON reply remains gc="M400", with the original tid when present.
+A feedhold leaves the barrier pending while motion remains queued; a queue flush
+allows successful completion once the planner, runtime and prepared segment drain.
+It does not certify execution of motion discarded by that flush.
+
 Edge: (uint8_t)400 == 144 falls to STAT_MCODE_COMMAND_UNSUPPORTED (gcode_parser.c:384/:400) and
 _sync_to_planner (controller.c:434-440) has no drain state. Master answers M400 at once in JSON
 mode, and in text mode releases it when the dwell's planner buffer is freed at dwell start
