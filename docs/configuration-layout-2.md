@@ -21,12 +21,17 @@ in this fixed order, before group entries:
 | `fstk` | Read-only observed unused stack margin in bytes | Measured since boot |
 | `adc3` | Read-only signed raw ADCB/PB3 count | Measured on request |
 
-The three E060 entries reserve and initialize their EEPROM slots. Their GETs
-return null and SETs return read-only until the E060 runtime implementation passes
-its external timing gate. They allocate no runtime backing fields in this build.
-They do **not** enable automatic spindle/coolant pause or a resume delay yet.
-When E060 lands, replace the accessors in these same rows, retaining their order,
-types and defaults; no additional layout bump is needed. The session-only `os`
+The three E060 entries are placeholders at their final table indexes. They have
+no initialization or persistence flags: neither reads/writes nor loading defaults
+writes their EEPROM slots. Direct GETs and SETs return status 17
+(`STAT_FUNCTION_IS_STUBBED`); group reports omit them. They allocate no runtime
+backing fields and do **not** enable spindle/coolant pause or a resume delay.
+The table's default constants are for the future implementation only; they do not
+initialize EEPROM in this build. When E060 lands, replace the accessors/flags at
+these same indexes and initialize its settings once (spph=1, spde=1.0, coph=0 for
+the default profile). Existing contents of unused EEPROM slots cannot be assumed
+to be erased or valid; E060 must establish its defaults before loading them.
+No additional layout bump is needed if indexes stay fixed. The session-only `os`
 row from E020 belongs after these entries if merged afterward. Do not insert it
 before them once layout 2 has been deployed.
 

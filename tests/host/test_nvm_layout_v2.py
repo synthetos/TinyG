@@ -29,15 +29,15 @@ int main(void) {
    subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined',str(c),'-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
- def test_reserved_defaults_are_written_without_active_controls(self):
+ def test_reserved_slots_are_unsupported_and_never_persisted(self):
   source=(ROOT/'firmware/tinyg/config.c').read_text()
   app=(ROOT/'firmware/tinyg/config_app.c').read_text()
   rows=[]
   defaults={'SPINDLE_PAUSE_ON_HOLD':'1','SPINDLE_DWELL_TIME':'1.0','COOLANT_PAUSE_ON_HOLD':'0'}
   for token in ('spph','spde','coph'):
    row=next(line for line in app.splitlines() if '"'+token+'"' in line)
-   self.assertIn('_get_reserved_hold_setting,set_nul',row)
-   flag='_fipn' if token=='spde' else '_iipn'
+   self.assertIn('_reserved_hold_setting,_reserved_hold_setting',row)
+   flag='_f0' if token=='spde' else '_i0'
    self.assertIn(flag,row)
    value=re.search(r',([^,}]+)\s*}',row).group(1).strip()
    rows.append('{"'+token+'", '+('TYPE_FLOAT' if token=='spde' else 'TYPE_INTEGER')+', '+defaults[value]+'}')
@@ -48,7 +48,8 @@ int main(void) {
 #include <assert.h>
 #define TYPE_INTEGER 2
 #define TYPE_FLOAT 5
-#define TYPE_NULL 0
+#define TYPE_EMPTY -1
+#define STAT_FUNCTION_IS_STUBBED 17
 #define CYCLE_OFF 0
 #define MILLIMETERS 1
 #define STAT_OK 0
@@ -72,7 +73,7 @@ struct {char token[6];int type;float default_value;} cfgArray[]={
 static uint32_t records[4];
 bool nv_index_is_single(int i) {return i<4;}
 bool nv_index_lt_groups(int i) {return i<4;}
-bool cfg_has_flag(int i,int f) {return true;}
+bool cfg_has_flag(int i,int f) {return i==0;}
 int cfg_is_type(int i) {return cfgArray[i].type;}
 void cm_set_units_mode(int m) {}
 void rpt_exception_P(int s,const char *m) {assert(0);}
@@ -81,18 +82,19 @@ void rpt_print_initializing_message(void) {}
 stat_t write_persistent_value(nvObj_t *nv) {records[nv->index]=nv->value_int;return 0;}
 void _write_nvm_layout_marker(nvObj_t *nv) {nv->index=0;nv->value_flt=10002;write_persistent_value(nv);}
 '''
-  code+=function(source,r'stat_t set_nul\([^;{}]*\)(?=\s*\{)')+'\n'
-  code+='stat_t nv_set(nvObj_t *nv) {return set_nul(nv); }\n'
+  code+='stat_t nv_set(nvObj_t *nv) {assert(nv->index==0);return STAT_PARAMETER_IS_READ_ONLY; }\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
-  code+=function(app,r'static stat_t _get_reserved_hold_setting\([^;{}]*\)(?=\s*\{)')+'\n'
+  code+=function(app,r'static stat_t _reserved_hold_setting\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=r'''
 int main(void) {
+ for(int i=0;i<4;i++) records[i]=0xdeadbeef;
  nvObj_t nv={0}; _set_defa(&nv);
- union {float f;uint32_t u;} one={.f=1.0};
- assert(records[1]==1 && records[2]==one.u && records[3]==0);
- nv.value_int=42;assert(set_nul(&nv)==STAT_PARAMETER_IS_READ_ONLY);
- assert(_get_reserved_hold_setting(&nv)==0 && nv.valuetype==TYPE_NULL);
+ for(int i=1;i<4;i++) {
+  assert(records[i]==0xdeadbeef);nv.index=i;nv.value_int=42;
+  assert(nv_persist(&nv)==0 && records[i]==0xdeadbeef);
+  assert(_reserved_hold_setting(&nv)==STAT_FUNCTION_IS_STUBBED && nv.valuetype==TYPE_EMPTY);
+ }
 }
 '''
   with tempfile.TemporaryDirectory() as d:
