@@ -35,6 +35,11 @@
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
+// Resume and queue flush are recognized between lines (leading space is allowed).
+// Feedhold remains immediate even mid-line; it does not change the framing state.
+// Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
+static volatile bool rx_in_line;
+
 /*
  * xio_putc_usb()
  * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
@@ -149,11 +154,11 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		cm_request_feedhold();
 		return;
 	}
-	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
+	if (!rx_in_line && c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
 		cm_request_queue_flush();
 		return;
 	}
-	if (c == CHAR_END_HOLD) {				    // trap cycle start signal
+	if (!rx_in_line && c == CHAR_END_HOLD) {				    // trap cycle start signal
 		cm_request_end_hold();
 		return;
 	}
@@ -172,6 +177,13 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			return;
 		}
 	}
+
+    // Keep reset, enquiry and flow control independent of line framing.
+    if (c == '\r' || c == '\n') {
+        rx_in_line = false;
+    } else if (c != ' ' && c != '\t') {
+        rx_in_line = true;
+    }
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
@@ -204,6 +216,7 @@ buffer_t xio_get_usb_rx_free(void)
  */
 void xio_reset_usb_rx_buffers(void)
 {
+    rx_in_line = false;
 	// reset xio_gets() buffer
 	USB.len = 0;
 	USB.flag_in_line = false;
