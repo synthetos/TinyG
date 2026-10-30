@@ -67,6 +67,7 @@ mpBuf_t *mp_get_run_buffer(void) {fetched++; return queued ? &block : NULL;}
 bool mp_has_runnable_buffer(void) {return queued;}
 bool mp_runtime_is_idle(void) {return idle;}
 void st_prep_null(void) {}
+void mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD);}
 void st_request_exec_move(void) {wakeups++;}
 void cm_set_motion_state(int state) {cm.motion_state=state;}
 stat_t cm_panic_P(int status,const char *msg) {(void)msg;return status;}
