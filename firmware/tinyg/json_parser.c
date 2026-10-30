@@ -201,7 +201,14 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             return (STAT_OK);   // normal return if no (more) tokenized JSON to process
         }
         nv = *p_nv;             // set starting NV pair for execution
-        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true, false)); // collect NV pair from JSON string
+        stat_t status = _marshall_nv_pair(p_nv, &str, group, 0, true, false);
+        if (status != STAT_OK) {
+            // A provisional type may still contain the reset sentinel or a NULL string.
+            if (((*p_nv)->index != NO_MATCH) && ((*p_nv)->valuetype != TYPE_PARENT)) {
+                (*p_nv)->valuetype = TYPE_NULL;
+            }
+            return (status);
+        }
 
         // Special processing for text container (TXT tag)
         if ((*p_nv)->valuetype == TYPE_TXTCON) {

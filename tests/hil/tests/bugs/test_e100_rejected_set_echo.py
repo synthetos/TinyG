@@ -10,7 +10,7 @@ import pytest
 pytestmark = [pytest.mark.dialect("d449"), pytest.mark.persists]
 
 
-@pytest.mark.bug("E100", on=["d449"])
+@pytest.mark.bug("E100", on=[])
 @pytest.mark.parametrize("line, path", [
     ('{"1mi":8.5}', ("1mi",)),          # non-integral float to an integer token
     ('{"1":{"mi":8.5}}', ("1", "mi")),  # the same through the group form UGS sends
