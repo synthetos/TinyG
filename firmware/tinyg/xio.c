@@ -471,12 +471,17 @@ static char *_get_free_buffer(uint16_t requested_size)
         free->bufp = b->pool_base;                      // never supposed to happen, but protects against memory faults
     }
 
-    // attempt to allocate free RAM above used_top
-    if ((b->pool_top - free->bufp) > requested_size) {      // is there enough RAM at the top?
-        free->size = b->pool_top - free->bufp -1;           // claim all available RAM (no reason not to)
+    bool wrapped = (top->state != BUFFER_FREE) && (b->used_base->state != BUFFER_FREE) &&
+                   (top->bufp < b->used_base->bufp);
+    char *limit = wrapped ? b->used_base->bufp : b->pool_top;
+
+    // A wrapped allocation must stop before the oldest live buffer.
+    if ((limit - free->bufp) > requested_size) {      // is there enough RAM at the top?
+        free->size = limit - free->bufp -1;           // claim all available RAM (no reason not to)
 
     // if not, attempt to allocate free RAM below the used_base (wraparound case)
-    } else if ((b->used_base->bufp - b->pool_base) > requested_size) {
+    } else if (!wrapped && (b->used_base->state != BUFFER_FREE) &&
+               ((b->used_base->bufp - b->pool_base) > requested_size)) {
         free->bufp = b->pool_base;                          // reset the pointer to the base
         free->size = b->used_base->bufp - b->pool_base -1;  // claim all available RAM
 
@@ -665,7 +670,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 	// Resume a partially filled buffer if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
     if ((bufp = _get_filling_buffer()) != NULL) {       // 2. Get a buffer if one is filling
-    	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
+        status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size));
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
@@ -679,7 +684,7 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     if ((bufp = _get_free_buffer(b->requested_size)) == NULL) { // 3. get a FREE buffer
         return(_next_buffer_to_process(flags));         // no buffer available
     }
-    if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) { // 4.
+    if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
