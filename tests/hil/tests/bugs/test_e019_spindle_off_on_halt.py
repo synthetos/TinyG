@@ -54,3 +54,32 @@ def test_shutdown_turns_outputs_off_and_holds_direction(tg, ice):
         assert len({s["spindle_dir"] for s in samples}) == 1, f"spindle direction toggling: {samples}"
     finally:
         tg.reset()                                 # SHUTDOWN cannot be cleared over serial (E045)
+
+
+def test_alarm_during_dwell_keeps_queued_outputs_off(tg, ice):
+    """M3/M8 queued behind a running dwell must not switch the outputs on after an alarm."""
+    tg.send_gcode("G4 P1", check=True)
+    tg.send_gcode("M3 S1000", check=True, allow=OUTPUTS)
+    tg.send_gcode("M8", check=True, allow=OUTPUTS)
+    try:
+        time.sleep(0.3)                            # inside the dwell; M3/M8 still queued
+        assert ice.outputs()["spindle_enable"] == 0, "M3 ran before the dwell ended"
+        tg.send_json({"alarm": None})
+        time.sleep(1.5)                            # past the end of the dwell
+        assert tg.stat() == tg.dialect.stat("ALARM")
+        out = ice.outputs()
+        assert (out["spindle_enable"], out["coolant"]) == (0, 0), f"queued M3/M8 turned outputs on in ALARM: {out}"
+    finally:
+        tg.clear_alarm()
+        tg.send_gcode("M5 M9", allow=OUTPUTS)
+
+
+def test_outputs_work_again_after_clear(tg, ice):
+    """After an alarm is cleared, an explicit M3/M8 turns the outputs on again."""
+    tg.send_json({"alarm": None})
+    time.sleep(0.2)
+    tg.clear_alarm()
+    try:
+        _outputs_on(tg, ice)
+    finally:
+        tg.send_gcode("M5 M9", allow=OUTPUTS)
