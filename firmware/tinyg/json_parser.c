@@ -222,7 +222,6 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
         } else {
             ritorno(cm_is_alarmed());                       // report rejected SETs; GETs remain available
             ritorno(nv_set(nv));
-            nv->precision = (int8_t)GET_TABLE_WORD(precision);  // SET echoes use the row's display precision, as GETs do (E076)
             if (nv->valuetype != TYPE_PARENT) {             // groups persist their children
                 ritorno(nv_persist(nv));
             }

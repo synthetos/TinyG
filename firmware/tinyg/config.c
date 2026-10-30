@@ -70,7 +70,11 @@ stat_t nv_set(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
+	stat_t status = ((fptrCmd)GET_TABLE_WORD(set))(nv);
+	if ((status == STAT_OK) && nv_index_is_single(nv->index)) {
+		nv->precision = (int8_t)GET_TABLE_WORD(precision);	// SET echoes use the row's display precision, as GETs do (E076)
+	}
+	return (status);
 }
 
 stat_t nv_get(nvObj_t *nv)

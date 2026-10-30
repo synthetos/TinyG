@@ -19,3 +19,10 @@ def test_mt_in_range_round_trips(tg, keep):
     keep("mt")
     assert tg.set("mt", 3) == pytest.approx(3)
     assert tg.get("mt") == pytest.approx(3)
+
+
+def test_group_set_echo_matches_clamped_value(tg, keep):
+    """A group SET ({sys:{mt:0}}) sets children through set_grp; its echo must use the row precision too."""
+    keep("mt")
+    resp = tg.send_json({"sys": {"mt": 0}}, check=True)
+    assert resp.body["sys"]["mt"] == pytest.approx(tg.get("mt"))
