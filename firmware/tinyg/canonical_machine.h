@@ -743,6 +743,8 @@ stat_t cm_tool_offset_cancel();	                                            // G
 // Miscellaneous Functions (4.3.9)
 stat_t cm_mist_coolant_control(const uint8_t mist_coolant); 			    // M7
 stat_t cm_flood_coolant_control(const uint8_t flood_coolant);			    // M8, M9
+bool cm_outputs_inhibited(void);										// ALARM/SHUTDOWN/PANIC: outputs may only turn off
+void cm_coolant_off_immediate(void);									// alarm, shutdown, panic
 
 stat_t cm_override_enables(uint8_t flag); 						            // M48, M49
 stat_t cm_feed_rate_override_enable(uint8_t flag); 				            // M50

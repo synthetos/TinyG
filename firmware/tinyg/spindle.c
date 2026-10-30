@@ -52,7 +52,8 @@ void spindle_init()
 
 void spindle_reset()
 {
-    return;
+    float value[] = { (float)SPINDLE_OFF };
+    _exec_spindle_control(value, FLAGS_NONE);   // immediate, not queued: used by alarm, shutdown and panic
 }
 
 /*
@@ -101,7 +102,7 @@ stat_t cm_spindle_control(uint8_t spindle_mode)
 //static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
 static void _exec_spindle_control(float *value, bool *flags)
 {
-	uint8_t spindle_mode = (uint8_t)value[0];
+	uint8_t spindle_mode = cm_outputs_inhibited() ? SPINDLE_OFF : (uint8_t)value[0];  // a queued M3/M4 may run after an alarm
 	cm_set_spindle_mode(MODEL, spindle_mode);
 
  #ifdef __AVR

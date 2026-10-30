@@ -362,10 +362,8 @@ static stat_t _shutdown_handler()
 {
 	if (cm_get_machine_state() != MACHINE_SHUTDOWN) { return (STAT_OK);}
 
-	if (SysTickTimer_getValue() > cs.led_timer) {
-		cs.led_timer = SysTickTimer_getValue() + LED_ALARM_TIMER;
-		IndicatorLed_toggle();
-	}
+	// No indicator blink here: INDICATOR_LED is the spindle direction output (hardware.h), and
+	// toggling it would flip the direction line of a spindle drive that is still wired up.
 	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
 }
 

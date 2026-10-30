@@ -771,9 +771,8 @@ stat_t cm_alarm(const stat_t status, const char *msg)
     cm_request_feedhold();                      // stop motion
     cm_request_queue_flush();                   // do a queue flush once runtime is not busy
 
-//  TBD - these functions should probably be called - See cm_shutdown()
-//	cm_spindle_control_immediate(SPINDLE_OFF);
-//	cm_coolant_off_immediate();
+    spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
+    cm_coolant_off_immediate();                 // stop coolant immediately
 //	cm_spindle_optional_pause(spindle.pause_on_hold);
 //	cm_coolant_optional_pause(coolant.pause_on_hold);
 
@@ -804,8 +803,8 @@ stat_t cm_shutdown(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately (S is kept, like M5)
+    cm_coolant_off_immediate();                 // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
     for (uint8_t i = 0; i < HOMING_AXES; i++) { // unhome axes and the machine
@@ -842,8 +841,8 @@ stat_t cm_panic(const stat_t status, const char *msg)
         return (STAT_OK);
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-//    spindle_reset();                            // stop spindle immediately and set speed to 0 RPM
-//    coolant_reset();                            // stop coolant immediately
+    spindle_reset();                            // stop spindle immediately (S is kept, like M5)
+    cm_coolant_off_immediate();                 // stop coolant immediately
     cm_queue_flush();                           // flush all queues and reset positions
 
 	cm.machine_state = MACHINE_PANIC;           // don't reset anything. Panics are not recoverable
@@ -1365,7 +1364,7 @@ stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
 }
 static void _exec_mist_coolant_control(float *value, bool *flags)
 {
-	cm.gm.mist_coolant = (uint8_t)value[0];
+	cm.gm.mist_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
 
 #ifdef __AVR
 	if (cm.gm.mist_coolant == true) {
@@ -1390,9 +1389,30 @@ stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
 	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }
+/*
+ * cm_outputs_inhibited() - true in ALARM, SHUTDOWN and PANIC: spindle and coolant may only turn off
+ *
+ *  A queued M3/M7/M8 can still reach its exec function after an alarm (e.g. at the end of a running
+ *  dwell, before the queue flush runs), so the exec functions check this at execution time.
+ */
+bool cm_outputs_inhibited()
+{
+    return ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
+            (cm.machine_state == MACHINE_PANIC));
+}
+
+/*
+ * cm_coolant_off_immediate() - turn mist and flood coolant off now (alarm, shutdown, panic)
+ */
+void cm_coolant_off_immediate()
+{
+    float value[] = { 0,0,0,0,0,0 };
+    _exec_flood_coolant_control(value, FLAGS_NONE);   // the M9 path also turns mist off
+}
+
 static void _exec_flood_coolant_control(float *value, bool *flags)
 {
-	cm.gm.flood_coolant = (uint8_t)value[0];
+	cm.gm.flood_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
 
 #ifdef __AVR
 	if (cm.gm.flood_coolant == true) {
