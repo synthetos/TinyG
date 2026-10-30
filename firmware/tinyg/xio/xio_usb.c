@@ -161,7 +161,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
     	controller_request_enquiry();
     	return;
 	}
-	if (USB.flag_xoff) {
+	if (USB.flag_xoff && xio.enable_flow_control == FLOW_CONTROL_XON) {
 		if (c == XOFF) {						// trap incoming XON/XOFF signals
 			USBu.fc_state_tx = FC_IN_XOFF;
 			return;

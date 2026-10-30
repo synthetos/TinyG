@@ -16,14 +16,15 @@ from tinyg_hil.protocol import XOFF, XON
 
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E139", on=["d440", "d449"])
-def test_disabling_flow_control_releases_xoff(tg, keep):
+@pytest.mark.bug("E139", on=["d440"])
+@pytest.mark.parametrize("mode", [0, 2])
+def test_disabling_flow_control_releases_xoff(tg, keep, mode):
     keep("ex")
     if tg.get("ex") != 1:
         tg.set("ex", 1, allow="XON/XOFF mode for this test; restored by keep")
     tg.send_raw(bytes([XOFF]))
     try:
-        resp = tg.send_json({"ex": 0}, timeout=2.0, allow="flow control off; restored by keep")
+        resp = tg.send_json({"ex": mode}, timeout=2.0, allow="switch away from software flow control; restored by keep")
         assert resp.status == 0
     finally:
         tg.reset()          # the only way out of a stuck XOFF on 449.01; keep() then restores ex
