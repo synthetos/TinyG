@@ -25,6 +25,8 @@ def pytest_addoption(parser):
     g.addoption("--snapshot-dir", default=str(HERE / ".snapshots"))
     g.addoption("--runs-dir", default=str(HERE / ".runs"), help="where run records for the dashboard go")
     g.addoption("--no-record", action="store_true", help="do not write run records")
+    g.addoption("--ice", action="store_true", help="enable Atmel-ICE tests (peek/poke over PDI)")
+    g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
                 help="seconds to wait for another user of the board to finish [default 600]")
 
@@ -62,6 +64,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="moves axes; pass --allow-motion"))
         if item.get_closest_marker("destructive") and not config.getoption("--allow-destructive"):
             item.add_marker(pytest.mark.skip(reason="destructive; pass --allow-destructive"))
+        if item.get_closest_marker("ice") and not config.getoption("--ice"):
+            item.add_marker(pytest.mark.skip(reason="needs the Atmel-ICE; pass --ice"))
         if item.get_closest_marker("resets_board") and config.getoption("--no-reset"):
             item.add_marker(pytest.mark.skip(reason="--no-reset"))
 
@@ -113,6 +117,18 @@ def recover(board):
         board.reset()       # stale queue (E069), unrecoverable state, or no answer
     if board.stat() == board.dialect.stat("ALARM"):
         board.clear_alarm()
+
+
+@pytest.fixture(scope="session")
+def ice(request, tg):
+    """Atmel-ICE debug session on the same board (the tg session already holds the board lock)."""
+    from tinyg_hil.ice import Ice, flashed_elf
+    elf = request.config.getoption("--elf") or flashed_elf(tg.transport.port)
+    if not elf:
+        pytest.skip("no ELF for the flashed build: pass --elf or flash through tinyg_hil")
+    session = Ice(elf=elf).open()
+    yield session
+    session.close()
 
 
 @pytest.fixture

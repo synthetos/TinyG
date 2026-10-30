@@ -7,6 +7,9 @@ dependencies = [
     "pyserial>=3.5",
     "pytest>=8",
     "pytest-timeout>=2.3",
+    "pymcuprog>=3.19",      # Atmel-ICE access (pyedbglib) for tinyg_hil.ice
+    "pyusb>=1.2",
+    "pyelftools>=0.31",     # ELF symbols and DWARF members for peek/poke
 ]
 
 [tool.uv]
@@ -22,6 +25,7 @@ markers = [
     "resets_board: resets the board (^X)",
     "persists: writes EEPROM; the session restores settings afterwards",
     "destructive: flashing or $defa; skipped unless --allow-destructive",
+    "ice: needs the Atmel-ICE on the PDI header; skipped unless --ice",
     "dialect(*names): run only on these firmware dialects (d440 = master 440.x, d449 = edge 449.x)",
     "bug(uid, on=...): known bug from docs/audit (E001-E139); expected to fail (strict) on the listed dialects",
 ]

@@ -36,3 +36,15 @@ uv run python -m tinyg_hil flash --port ... --build ../..   # build this checkou
 - `render.py` draws expected (dashed) against board-reported (solid) paths in XY and XZ. It also reports the largest deviation and the end-point error, so a test can assert on the path and not just the endpoint.
 
 **Sharing the board.** Every pytest session and every `python -m tinyg_hil` command takes an exclusive lock on the port (`/tmp/tinyg-hil-<port>.lock`). Another user waits up to `--lock-wait` seconds (default 600), then fails with a message naming who holds the board and why. Set `TINYG_OWNER` (for example your name) so the other side knows who is on the board. Ad-hoc scripts that open the port directly bypass the lock; use the harness instead.
+
+**Atmel-ICE (peek/poke).** With the ICE on the PDI header (AVR port), `tinyg_hil/ice.py` attaches to the running firmware.
+- It reads and writes RAM by symbol, including struct members (`mb.buffers_available`, `cm.hold_state`), reads the program counter as `function+offset`, and dumps EEPROM.
+- Each access halts the CPU for a few milliseconds.
+- Symbols come from the ELF that `tinyg_hil flash` recorded for the build on the board. The Makefile builds with `-g` for DWARF.
+
+```
+uv run python -m tinyg_hil.ice peek mb.buffers_available cm.hold_state
+uv run python -m tinyg_hil.ice watch cm.hold_state mb.buffers_available --interval 0.1
+uv run python -m tinyg_hil.ice where
+uv run pytest --port ... --ice           # enables tests marked @pytest.mark.ice (fixture: ice)
+```

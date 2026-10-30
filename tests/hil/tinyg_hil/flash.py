@@ -52,6 +52,9 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         except NoResponse:
             if time.monotonic() > deadline:
                 raise
+    elf = pathlib.Path(hex_path).with_suffix(".elf")
+    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
+    record.write_text(str(elf.resolve()) if elf.exists() else "")     # for tinyg_hil.ice symbol lookups
     if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
         raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
     return identity
