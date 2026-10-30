@@ -310,8 +310,15 @@ static stat_t _compute_arc(const bool radius_f)
     if (!arc.full_circle) {
         arc.angular_travel = atan2(end_0, end_1) - arc.theta; // travel = theta_end - theta_start
 
+        // Coincident center-format endpoints describe a full circle in either direction.
+        // Compare positions, not angles: a small angle on a large radius may be real travel.
+        if ((!radius_f) &&
+            fp_EQ(arc.gm.target[arc.plane_axis_0], arc.position[arc.plane_axis_0]) &&
+            fp_EQ(arc.gm.target[arc.plane_axis_1], arc.position[arc.plane_axis_1])) {
+            arc.angular_travel = (arc.gm.motion_mode == MOTION_MODE_CW_ARC) ? 2*M_PI : -2*M_PI;
+        }
         // correct for atan2 output quadrants
-        if (arc.gm.motion_mode == MOTION_MODE_CW_ARC) {
+        else if (arc.gm.motion_mode == MOTION_MODE_CW_ARC) {
             if (arc.angular_travel <= 0) { arc.angular_travel += 2*M_PI; }
         } else {
             if (arc.angular_travel > 0)  { arc.angular_travel -= 2*M_PI; }
