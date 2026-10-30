@@ -275,12 +275,15 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
-    if (d->len >= d->size) {                    // handle buffer overruns
+    if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
+        if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't
+            return (XIO_EAGAIN);                // come back as a separate line (E087)
+        }
         d->buf[d->size-1] = NUL;                // terminate line (d->size is zero based)
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;                // reset in-line state
         d->len = 0;                             // reset length counter
-        return (XIO_BUFFER_FULL);
+        return (XIO_BUFFER_FULL);               // reported once, at the end of the line
     }
     if ((c == CR) || (c == LF)) {				// handle CR, LF termination
         d->buf[(d->len)++] = NUL;

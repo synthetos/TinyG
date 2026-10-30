@@ -648,6 +648,25 @@ static devflags_t _classify_line(const char *line, uint16_t size)
  * _next_buffer_to_process() - Search ctrl first, then data; send NULL if nothing to process
  */
 
+/*
+ * _post_overflow() - post a truncated (overlong) line, flagged so the controller rejects it
+ *
+ *	The line is answered with one error and never run, so its text doesn't matter - but it must be
+ *	posted: _post_buffer() drops a blank line, and an overlong line of only spaces would then get no
+ *	answer (and flagging used_top afterwards would hit the previous command).
+ */
+static void _post_overflow(char *bufp)
+{
+    buf_hdr_t *hdr = bm.used_top;                       // the overflowing line's own header
+    char *c = bufp;
+    while ((*c != NUL) && (*c <= ' ')) { c++; }
+    if (*c == NUL) {
+        strcpy_P(bufp, PSTR("(line too long)"));        // whitespace only: give it text so it is posted
+    }
+    _post_buffer();
+    hdr->flags |= DEV_IS_OVERFLOW;
+}
+
 static char *_next_buffer_to_process(devflags_t *flags)
 {
     buf_hdr_t *hdr = bm.used_base;     // initialize header pointer to first used block
@@ -659,7 +678,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_CTRL)) {
-                *flags = (DEV_IS_CTRL);                     // set as control only
+                *flags = (DEV_IS_CTRL) | (hdr->flags & DEV_IS_OVERFLOW);                     // set as control only
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -674,7 +693,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_DATA)) {
-                *flags = (DEV_IS_DATA);
+                *flags = (DEV_IS_DATA) | (hdr->flags & DEV_IS_OVERFLOW);
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -766,9 +785,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
     	if (status == XIO_BUFFER_FULL) {
-        	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
-    	}
-        _post_buffer();                                 // post your newly filled buffer
+            _post_overflow(bufp);                       // truncated: the controller rejects it
+    	} else {
+            _post_buffer();                             // post your newly filled buffer
+        }
     }
 
     // Get a new free buffer
@@ -779,9 +799,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
-        return ((char *)_FDEV_ERR);                     // buffer overflow occurred
+        _post_overflow(bufp);                           // truncated: the controller rejects it
+    } else {
+        _post_buffer();                                 // 5. post newly filled buffer
     }
-    _post_buffer();                                     // 5. post newly filled buffer
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }
 

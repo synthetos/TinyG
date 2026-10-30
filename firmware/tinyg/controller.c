@@ -214,6 +214,23 @@ static stat_t _controller_state()
  */
 
 #ifdef __AVR
+/*
+ * _reject_overlong_line() - answer a truncated line-mode line with one error response (E087)
+ *
+ *	The line is not executed: running the front of a cut line (or its remainder) is unsafe.
+ *	No alarm - the input was bad, the machine is fine.
+ */
+static void _reject_overlong_line()
+{
+	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);
+	if (cs.comm_mode == TEXT_MODE) {
+		text_response(STAT_INPUT_EXCEEDS_MAX_LENGTH, cs.saved_buf);
+	} else {
+		nv_reset_nv_list("");
+		nv_print_list(STAT_INPUT_EXCEEDS_MAX_LENGTH, TEXT_RESPONSE, JSON_RESPONSE);
+	}
+}
+
 static stat_t _dispatch_command()
 {
 	devflags_t flags = DEV_IS_BOTH;
@@ -221,7 +238,9 @@ static stat_t _dispatch_command()
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
         return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
     }
-    if (cs.bufp != (char *)NULL) {          // process the command
+    if ((cs.bufp != (char *)NULL) && (flags & DEV_IS_OVERFLOW)) {
+        _reject_overlong_line();
+    } else if (cs.bufp != (char *)NULL) {   // process the command
         _dispatch_kernel();
     }
 	return (STAT_OK);
@@ -234,7 +253,9 @@ static stat_t _dispatch_control()
 	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
     	return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
 	}
-	if (cs.bufp != (char *)NULL) {          // process the command
+	if ((cs.bufp != (char *)NULL) && (flags & DEV_IS_OVERFLOW)) {
+		_reject_overlong_line();
+	} else if (cs.bufp != (char *)NULL) {   // process the command
     	_dispatch_kernel();
 	}
 	return (STAT_OK);
