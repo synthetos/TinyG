@@ -201,7 +201,14 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             return (STAT_OK);   // normal return if no (more) tokenized JSON to process
         }
         nv = *p_nv;             // set starting NV pair for execution
-        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true, false)); // collect NV pair from JSON string
+        stat_t status = _marshall_nv_pair(p_nv, &str, group, 0, true, false);
+        if (status != STAT_OK) {
+            // A provisional type may still contain the reset sentinel or a NULL string.
+            if (((*p_nv)->index != NO_MATCH) && ((*p_nv)->valuetype != TYPE_PARENT)) {
+                (*p_nv)->valuetype = TYPE_NULL;
+            }
+            return (status);
+        }
 
         // Special processing for text container (TXT tag)
         if ((*p_nv)->valuetype == TYPE_TXTCON) {
@@ -534,9 +541,26 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
         } else { return (STAT_VALUE_TYPE_ERROR); }
     }
     else if (cfg_type == TYPE_INTEGER) {
-        if (nv->valuetype == TYPE_INTEGER) {
+        if (nv->valuetype == TYPE_BOOLEAN) {
+            nv->value_int = (*str == 't');
+            nv->valuetype = TYPE_INTEGER;
+        } else if (nv->valuetype == TYPE_INTEGER) {
             ritorno(str2long(str, &(nv->value_int)));
         } else { return (STAT_VALUE_TYPE_ERROR); }
+    }
+    else if (cfg_type == TYPE_SIGNED) {
+        if (nv->valuetype == TYPE_BOOLEAN) {
+            nv->value_int = (*str == 't');
+        } else if (nv->valuetype == TYPE_INTEGER) {
+            bool negative = (*str == '-');
+            uint32_t magnitude;
+            ritorno(str2long(str + negative, &magnitude));
+            if (magnitude > (negative ? 2147483648UL : 2147483647UL)) {
+                return (STAT_INPUT_VALUE_RANGE_ERROR);
+            }
+            nv->value_int = negative ? 0UL - magnitude : magnitude;
+        } else { return (STAT_VALUE_TYPE_ERROR); }
+        nv->valuetype = TYPE_SIGNED;
     }
     else if (cfg_type == TYPE_BOOLEAN) {            // booleans are complicated
         if (nv->valuetype == TYPE_BOOLEAN) {

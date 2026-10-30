@@ -1,0 +1,17 @@
+{
+  "v2_source": "70da9452:firmware/tinyg/config_app.c",
+  "optional_stop_source": "518d1a8a:firmware/tinyg/config_app.c",
+  "v2": [
+    "{ \"sys\",\"spep\",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },",
+    "{ \"sys\",\"spdp\",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },",
+    "{ \"sys\",\"spph\",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },",
+    "{ \"sys\",\"spde\",_f0,3,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },",
+    "{ \"sys\",\"coph\",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },",
+    "{ \"sys\",\"prbp\",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },",
+    "{ \"sys\",\"fstk\",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },",
+    "{ \"sys\",\"adc3\",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },"
+  ],
+  "optional_stop": [
+    "{ \"sys\",\"os\",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },"
+  ]
+}
