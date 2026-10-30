@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.dialect("d449")]
 
 
 @pytest.mark.profile("switches-no", "probe-z")
-@pytest.mark.bug("E061", on=["d449"])
+@pytest.mark.bug("E061", on=[])
 def test_successful_probe_leaves_spindle_on(tg, ice, switches):
     tg.send_gcode("M3 S1000", check=True, allow="spindle output on a bare bench")
     tg.wait_idle()

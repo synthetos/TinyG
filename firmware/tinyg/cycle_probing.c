@@ -174,7 +174,8 @@ static uint8_t _probing_init()
 
 	// probe in workspace coordinate system, absolute distance
 	cm_set_distance_mode(ABSOLUTE_MODE);
-	cm_spindle_control(SPINDLE_OFF);
+	// the spindle and coolant are left alone (as in g2core): a probe cycle must not drop a PnP
+	// vacuum or silently stop a spindle (E061)
 	return (_set_pb_func(_probing_start));							// start the move
 }
 
