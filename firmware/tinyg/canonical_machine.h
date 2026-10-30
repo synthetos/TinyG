@@ -160,7 +160,8 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_DWELL,					// G4
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
-	NEXT_ACTION_GET_FIRMWARE			// M115
+	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_WAIT_FOR_COMPLETION	// M400
 } cmNextAction;
 
 typedef enum {						    // G Modal Group 1

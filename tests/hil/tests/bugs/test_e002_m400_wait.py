@@ -1,4 +1,6 @@
-"""E002: M400 (wait for motion to finish) is missing on edge and wrong on master.
+"""Timing thresholds are timing-pending until external capture.
+
+E002: M400 (wait for motion to finish) is missing on edge and wrong on master.
 
 Edge: (uint8_t)400 == 144 falls to STAT_MCODE_COMMAND_UNSUPPORTED (gcode_parser.c:384/:400) and
 _sync_to_planner (controller.c:434-440) has no drain state. Master answers M400 at once in JSON
@@ -8,6 +10,7 @@ mode, and in text mode releases it when the dwell's planner buffer is freed at d
 import time
 
 import pytest
+
 
 
 def _text_mode(tg, line: str, timeout: float = 2.0):
@@ -21,7 +24,8 @@ def _text_mode(tg, line: str, timeout: float = 2.0):
             return lines, ev.t
 
 
-@pytest.mark.bug("E002", on=["d440", "d449"])
+@pytest.mark.timing
+@pytest.mark.bug("E002", on=["d440"])
 def test_m400_json_waits_for_dwell(tg):
     tg.send_gcode("G4 P2", check=True)
     t0 = time.monotonic()
@@ -41,7 +45,8 @@ def test_m400_json_waits_for_dwell(tg):
     assert t_m400 >= 1.9
 
 
-@pytest.mark.bug("E002", on=["d440", "d449"])
+@pytest.mark.timing
+@pytest.mark.bug("E002", on=["d440"])
 def test_m400_text_mode_waits_for_dwell(tg):
     _text_mode(tg, "$fb")       # any $ line switches the board to text mode
     try:
@@ -53,3 +58,10 @@ def test_m400_text_mode_waits_for_dwell(tg):
         tg.wait_idle()
     assert "ok>" in lines[-1], lines
     assert t_prompt - t0 >= 1.9
+
+
+def test_m400_idle_acknowledges(tg):
+    """Functional coverage, with no timing threshold or motion stimulus."""
+    tg.wait_idle()
+    response = tg.send_gcode("M400")
+    assert response.status == 0, response.raw

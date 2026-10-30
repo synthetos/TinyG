@@ -772,7 +772,9 @@ void json_print_response(uint8_t status)
 
 	// serialize the JSON response and print it if there were no errors
 	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-    	printf(cs.out_buf);
+        if (!controller_defer_motion_response(status, cs.out_buf)) {
+            printf(cs.out_buf);
+        }
 	}
 }
 
