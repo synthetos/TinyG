@@ -8,7 +8,7 @@ Master reaches a zero-radius full circle and returns STAT_MINIMUM_LENGTH_MOVE (2
 import pytest
 
 
-@pytest.mark.bug("E074", on=["d440", "d449"])
+@pytest.mark.bug("E074", on=["d440"])
 def test_bare_g2_is_a_noop(tg):
     tg.send_gcode("G21 G90 G17", check=True)
     assert tg.send_gcode("G2 F100").status == 0
