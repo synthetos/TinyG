@@ -16,7 +16,7 @@ class InverseTime(unittest.TestCase):
         prefix=parser[parser.index('stat_t status = STAT_OK;',parser.index('static stat_t _execute_gcode_block()\n{')):]
         prefix=prefix[:prefix.index('EXEC_FUNC(cm_feed_rate_override_factor')]
         feed_guard=function(machine,r'stat_t cm_straight_feed\(')
-        feed_guard=feed_guard[feed_guard.index('{')+1:feed_guard.index('cm.gm.motion_mode =')]
+        feed_guard=feed_guard[feed_guard.index('{')+1:feed_guard.index('cm_set_model_target')]
         code=r'''
 #include <assert.h>
 #include <math.h>
@@ -33,7 +33,7 @@ void cm_set_model_linenum(uint32_t n) {}
         code+=function((FW/'util.c').read_text(),r'float max4\(')+'\n'
         for src,sig in [(line,r'static void _calc_move_times\([^;]*?\)\s*(?://[^\n]*)?\s*(?=\{)'),(machine,r'void cm_finalize_move\('),(machine,r'stat_t cm_set_feed_rate\('),(machine,r'stat_t cm_set_feed_rate_mode\(')]:code+=function(src,sig)+'\n'
         code+='static stat_t begin_block(void) {\n'+prefix+'return status;}\n'
-        code+='static stat_t check_feed(void) {\n'+feed_guard+'return STAT_OK;}\n'
+        code+='static bool requested_axes[AXES]={true};\nstatic stat_t check_feed(void) {\nconst bool *flags=requested_axes;\n'+feed_guard+'return STAT_OK;}\n'
         code+=r'''
 int main(void) {
     memset(&cm,0,sizeof(cm));
@@ -64,6 +64,14 @@ int main(void) {
         length[0]=.01;square[0]=.0001;
         for(int i=0;i<10;i++) {_calc_move_times(&arc,length,square);assert(arc.feed_rate_mode==INVERSE_TIME_MODE);assert(fabs(arc.move_time-1.0/600)<1e-8);}
     }
+    // Axis-free modal/program commands dispatch through the current G1 mode.
+    // They must not require F after a G93 move cleared its per-block feed.
+    memset(requested_axes,0,sizeof(requested_axes));
+    for(int mode=INVERSE_TIME_MODE;mode<=UNITS_PER_MINUTE_MODE;mode++) {
+        cm.gm.feed_rate_mode=mode;cm.gm.feed_rate=0;
+        assert(check_feed()==STAT_OK);
+    }
+    requested_axes[0]=true;
     // G94 feed remains modal, while a zero inverse feed is rejected.
     cm.gf.feed_rate_mode=true;cm.gn.feed_rate_mode=UNITS_PER_MINUTE_MODE;
     cm.gf.feed_rate=true;cm.gn.feed_rate=120;assert(begin_block()==STAT_OK);
