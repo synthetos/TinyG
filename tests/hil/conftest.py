@@ -4,6 +4,7 @@ import pathlib
 import pytest
 
 from tinyg_hil import Guard, TinyG, snapshot
+from tinyg_hil.lock import BoardLock
 from tinyg_hil.record import RunRecorder
 
 HERE = pathlib.Path(__file__).parent
@@ -24,6 +25,8 @@ def pytest_addoption(parser):
     g.addoption("--snapshot-dir", default=str(HERE / ".snapshots"))
     g.addoption("--runs-dir", default=str(HERE / ".runs"), help="where run records for the dashboard go")
     g.addoption("--no-record", action="store_true", help="do not write run records")
+    g.addoption("--lock-wait", type=float, default=600.0,
+                help="seconds to wait for another user of the board to finish [default 600]")
 
 
 def pytest_configure(config):
@@ -70,6 +73,9 @@ def tg(request):
     port = config.getoption("--port")
     if not port:
         pytest.skip("no TinyG: pass --port or set TINYG_PORT")
+    lock = BoardLock(port).acquire(f"pytest {' '.join(config.invocation_params.args)[:200]}",
+                                   wait=config.getoption("--lock-wait"))
+    request.addfinalizer(lock.release)
     transcript_path = config.getoption("--transcript")
     transcript = open(transcript_path, "w") if transcript_path else None
     board = TinyG(port, config.getoption("--baud"), transcript=transcript,

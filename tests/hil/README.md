@@ -34,3 +34,5 @@ uv run python -m tinyg_hil flash --port ... --build ../..   # build this checkou
   - per-finding pages with the evidence, test source, failure text and serial traffic.
 - **Path plots.** For motion tests, `tinyg_hil/gsim.py` simulates where the sent G-code should go, following NIST RS274NGC: lines, IJK/R arcs in G17/G18/G19, units, distance modes and offsets. `paths.py` overlays the positions the board actually reported.
 - `render.py` draws expected (dashed) against board-reported (solid) paths in XY and XZ. It also reports the largest deviation and the end-point error, so a test can assert on the path and not just the endpoint.
+
+**Sharing the board.** Every pytest session and every `python -m tinyg_hil` command takes an exclusive lock on the port (`/tmp/tinyg-hil-<port>.lock`). Another user waits up to `--lock-wait` seconds (default 600), then fails with a message naming who holds the board and why. Set `TINYG_OWNER` (for example your name) so the other side knows who is on the board. Ad-hoc scripts that open the port directly bypass the lock; use the harness instead.

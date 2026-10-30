@@ -16,6 +16,7 @@ import sys
 from . import flash as flasher
 from . import snapshot
 from .driver import TinyG
+from .lock import BoardLock
 
 DEFAULT_OUT = pathlib.Path(__file__).resolve().parent.parent / ".snapshots"
 
@@ -33,6 +34,7 @@ def main(argv=None):
     p.add_argument("--transcript", help="write a timestamped raw serial transcript here")
     args = p.parse_args(argv)
 
+    lock = BoardLock(args.port).acquire(f"tinyg_hil {args.command}", wait=600)
     tg = TinyG(args.port, transcript=open(args.transcript, "w") if args.transcript else None)
     tg.connect()
     print(f"board: {json.dumps(tg.identity)} dialect {tg.dialect.name}")
@@ -59,6 +61,7 @@ def main(argv=None):
             source = snapshot.load(args.restore) if args.restore else snap
             print("restore:", snapshot.restore(tg, source))
     tg.close()
+    lock.release()
 
 
 if __name__ == "__main__":
