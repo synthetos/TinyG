@@ -122,6 +122,7 @@ static void _exec_mist_coolant_control(float *value, bool *flags);
 static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
+static void _exec_program_end(float *value, bool *flags);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
@@ -1834,22 +1835,45 @@ void cm_optional_program_stop()
 
 void cm_program_end()
 {
-	// Reset the model now, in the main loop, so blocks parsed after the M2/M30 keep their modes;
-	// the queued commands below (offsets, M5, M9) run in order behind the moves before the M2/M30
-	cm_reset_origin_offsets();						// 1.  G92.1 - we do G91.1 instead of G92.2
+	// Reset the model now, in the main loop, so blocks parsed after the M2/M30 keep their modes, and
+	// queue ONE runtime command for the rest: the per-block planner demand stays bounded (E069, E088)
+	cm.gmx.origin_offset_enable = 0;				// 1.  G92.1 - we do G91.1 instead of G92.2
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		cm.gmx.origin_offset[axis] = 0;
+	}
 //	cm_suspend_origin_offsets();					// 1.  G92.2 - as per NIST
-	cm_set_coord_system(cm.default_coord_system);	// 1a. reset to default coordinate system
+	cm.gm.coord_system = cm.default_coord_system;	// 1a. reset to default coordinate system
 	cm_select_plane(cm.default_select_plane);		// 2.  reset to default arc plane
 	cm_set_distance_mode(cm.default_distance_mode); // 3.  reset to default distance mode
 	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// 4.  G94
-	cm_spindle_control(SPINDLE_OFF);				// 7.  M5
+	cm.gm.spindle_mode = SPINDLE_OFF;				// 7.  M5 (model; the output goes off at runtime)
 //	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// 8.  NIST specifies G1...
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);  // 8.  but we cancel motion mode. Safer.
-	cm_flood_coolant_control(false);				// 9.  M9
+	cm.gm.mist_coolant = false;						// 9.  M9 (model)
+	cm.gm.flood_coolant = false;
 //	cm_set_units_mode(cm.units_mode);				// 10. reset to default units mode +++ REMOVED +++
 
-	float value[] = { (float)MACHINE_PROGRAM_END };
-	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
+	float value[] = { (float)MACHINE_PROGRAM_END, (float)cm.default_coord_system };
+	mp_queue_command(_exec_program_end, value, FLAGS_ONE);
+}
+
+/*
+ * _exec_program_end() - runtime half of M2/M30, in queue order behind the moves before it
+ *
+ *	One queued command (it must not queue more): apply the reset work offsets, stop the spindle and
+ *	coolant outputs directly, then finalize the program end.
+ */
+static void _exec_program_end(float *value, bool *flags)
+{
+	uint8_t coord_system = (uint8_t)value[1];
+	float offsets[AXES];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		offsets[axis] = cm.offset[coord_system][axis];	// origin offsets were reset with the model
+	}
+	mp_set_runtime_work_offset(offsets);
+	spindle_reset();								// M5 now (immediate; S is kept)
+	cm_coolant_off_immediate();						// M9 now
+	_exec_program_finalize(value, flags);			// value[0] is MACHINE_PROGRAM_END
 }
 
 /**************************************
