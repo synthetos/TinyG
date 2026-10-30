@@ -101,6 +101,38 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 }
 
 /************************************************************************************
+ * NVM layout version (E022)
+ *
+ *	NVM record 0 used to hold the firmware build number, and config_init() loaded defaults whenever it
+ *	differed from the running build - so every release wiped every setting. Record 0 now holds a
+ *	layout marker that changes only when the persisted layout changes: NVM records are indexed by
+ *	cfgArray position, so bump CONFIG_NVM_LAYOUT whenever a persisted cfgArray row is added, removed
+ *	or moved. Layout 1 is the 449.01 layout, so a board whose record 0 still says 449.01 keeps its
+ *	settings. An erased EEPROM (0xFFFFFFFF, a NaN) is never current.
+ */
+#define CONFIG_NVM_LAYOUT			1
+#define CONFIG_NVM_LAYOUT_MARKER	(10000.0 + CONFIG_NVM_LAYOUT)	// can't be mistaken for a build number
+#define CONFIG_NVM_LAYOUT_1_BUILD	449.01							// record 0 of a layout-1 board before markers
+
+static bool _nvm_layout_is_current(nvObj_t *nv)
+{
+	if (nv->value_int == 0xFFFFFFFF) {
+		return (false);
+	}
+	if (fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_MARKER)) {
+		return (true);
+	}
+	return ((CONFIG_NVM_LAYOUT == 1) && fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD));
+}
+
+static void _write_nvm_layout_marker(nvObj_t *nv)
+{
+	nv->index = 0;
+	nv->value_flt = CONFIG_NVM_LAYOUT_MARKER;
+	write_persistent_value(nv);
+}
+
+/************************************************************************************
  * config_init() - called once on hard reset
  *
  * Performs one of 2 actions:
@@ -128,7 +160,7 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (fp_NE(nv->value_flt, cs.fw_build)) {    // case (1) NVM is not setup or not in revision
+	if (!_nvm_layout_is_current(nv)) {			// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
 		rpt_print_loading_configs_message();
@@ -145,6 +177,7 @@ void config_init()
 			}
 		}
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
+		_write_nvm_layout_marker(nv);			// migrates a 449.01 record 0 to the marker
 	}
 #endif
 }
@@ -172,10 +205,11 @@ static void _set_defa(nvObj_t *nv)
             }
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			nv_set(nv);                         // sets value
-			nv_persist(nv);
+			nv_persist(nv);                     // (record 0 gets the build number here...)
 		}
 	}
     sr_init_status_report_P(SR_DEFAULTS);       // reset status reports to defaults
+	_write_nvm_layout_marker(nv);               // (...and the layout marker replaces it)
 	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
 

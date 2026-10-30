@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.destructive, pytest.mark.persists, pytest.mark.dialect
 SOURCE = pathlib.Path(__file__).resolve().parents[4]        # the checkout these tests belong to
 
 
-@pytest.mark.bug("E022", on=["d449"])
+@pytest.mark.bug("E022", on=[])
 def test_settings_survive_a_build_number_change(tg, keep):
     keep("xvm")
     tg.set("xvm", 12345)
