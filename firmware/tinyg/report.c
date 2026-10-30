@@ -321,7 +321,7 @@ static stat_t _set_srs(nvObj_t *nv)
 
     // {srs:{clear:t}}  clear SR list
     if (nv->token[0] == 'c') {
-        if (nv->value_int) {
+        if ((nv->valuetype == TYPE_BOOLEAN) && (nv->value_int == 1)) {
 	        for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) { // clear all SR settings
     	        sr.status_report_list[i] = NO_MATCH;
 	        }
@@ -332,7 +332,7 @@ static stat_t _set_srs(nvObj_t *nv)
 
     // {srs:{defa:t}}  Reset SR list to defaults
     if (nv->token[0] == 'd') {
-        if (nv->value_int) {
+        if ((nv->valuetype == TYPE_BOOLEAN) && (nv->value_int == 1)) {
             sr_init_status_report_P(SR_DEFAULTS);
         }
         return (STAT_OK);
