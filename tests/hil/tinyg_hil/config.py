@@ -212,6 +212,11 @@ def apply(tg, spec: ConfigSpec, base: dict) -> Machine:
         current = tg._config_applied = dict(base)
     desired = dict(base)
     desired.update(settings)
+    # A test may change settings behind this cache (a known-bug test can leave a motor's geometry
+    # zeroed), so re-read the motor geometry and this spec's own tokens from the board every time.
+    for token in set(settings) | set(GEOMETRY_TOKENS):
+        if token in tg.dialect.tokens:
+            current[token] = tg.get(token)
     changed = False
     for token in set(current) | set(desired):
         if token not in desired or token in ("fb", "fv", "hp", "hv", "id", "baud"):
