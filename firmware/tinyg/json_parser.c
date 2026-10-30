@@ -653,8 +653,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
             case TYPE_INTEGER : {   str = strcat_integer(str, nv->value_int); break; }
 
-            case TYPE_STRING :  {   if ((str + strlen(nv->str)) >= out_max) { return (-1); }
-                                    str = strcat_string(str, nv->str);
+            case TYPE_STRING :  {   if ((str = strcat_string(str, nv->str, out_max - str)) == NULL) { return (-1); }
                                     break;
                                 }
 
@@ -735,7 +734,7 @@ void json_print_response(uint8_t status)
     }
 	nv = NV_BODY;	                                    // start body processing
 	if (status == STAT_JSON_SYNTAX_ERROR) {             // wrap syntax errors. These would blow up the host's JSON parser
-    	nv_add_string((const char *)"err", str_escape(cs.bufp, cs.saved_buf));
+    	nv_add_string((const char *)"err", cs.saved_buf);	// raw; the serializer escapes it (E102)
 	}
 
     // Filter the NV pairs down to the JSON verbosity reporting level
@@ -769,6 +768,7 @@ void json_print_response(uint8_t status)
             }
 		} while ((nv = nv_next(nv)) != NULL);
 	}
+	bool tid_present = js.tid_present;					// kept for the overflow reply below
 	if (js.tid_present) {								// the tid goes back at the top level, exactly,
 		for (nv = NV_BODY; nv != NULL; nv = nv_next(nv)) {	// whatever the JSON verbosity (E049)
 			if (nv->valuetype == TYPE_EMPTY) { break; }
@@ -794,7 +794,14 @@ void json_print_response(uint8_t status)
 	strcpy(nv->token, "f");                             // terminate the list
 
 	// serialize the JSON response and print it if there were no errors
-	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
+	int16_t size = json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
+	if (size < 0) {                                     // too big: still answer the line, with its tid and footer (E102)
+		char *str = cs.out_buf + sprintf_P(cs.out_buf, PSTR("{\"r\":{},"));
+		if (tid_present) { str += sprintf_P(str, PSTR("\"tid\":%lu,"), js.tid); }
+		sprintf_P(str, PSTR("\"f\":[%s]}\n"), footer_string);
+		json_relax(cs.out_buf);
+	}
+	if (size != 0) {
         fputs(cs.out_buf, stdout);
 	}
     nv->str = NULL;                                 // do not retain the stack-backed footer

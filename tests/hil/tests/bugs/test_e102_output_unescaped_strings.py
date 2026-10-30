@@ -8,6 +8,8 @@ covered by E127; the banner moving from r{} to sr{} is a policy question and is 
 """
 import pytest
 
+pytestmark = pytest.mark.dialect("d449")
+
 
 def _send_any(tg, line, timeout=2.0):
     """Like send_line, but also returns a JSON line that fails to parse instead of timing out."""
@@ -15,14 +17,12 @@ def _send_any(tg, line, timeout=2.0):
     return tg.wait_for(lambda e: e.kind in ("response", "malformed"), timeout)
 
 
-@pytest.mark.bug("E102", on=["d440", "d449"])
 def test_message_with_quotes_is_valid_json(tg):
     ev = _send_any(tg, 'G90 (MSG say "hi")')
     assert ev.kind == "response", ev.raw
     assert ev.data["r"].get("msg", "").strip() == 'say "hi"'
 
 
-@pytest.mark.bug("E102", on=["d440", "d449"])
 def test_syntax_error_echo_is_exact(tg):
     # Fill the input buffers with non-NUL bytes so an unterminated copy shows up.
     for _ in range(10):

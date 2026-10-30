@@ -44,7 +44,7 @@ nvObj_t *nv_relink_nv_list(void){return nodes;}
 nvObj_t *nv_next(nvObj_t *n){return n->nx;}
 char *json_relax(char *s){return s;}
 char *strcat_literal_P(char *d,const char *s){strcpy(d,s);return d+strlen(s);}
-char *strcat_string(char *d,const char *s){assert(0);return d;}
+char *strcat_string(char *d,const char *s,size_t n){assert(0);return d;}
 char *strcat_float(char *d,float f,int precision){assert(0);return d;}
 bool prep_float(nvObj_t *n){assert(0);return false;}
 /* The unsigned formatter is not under test; match the host ABI for its helper. */

@@ -54,7 +54,7 @@ nvObj_t *nv_next(nvObj_t *n){return n->nx==&end?NULL:n->nx;}
 char *strcat_literal_P(char *d,const char *s){strcpy(d,s);return d+strlen(s);}
 char *strcat_integer(char *d,uint32_t n){return d+sprintf(d,"%u",n);}
 char *strcat_signed(char *d,uint32_t n){return d+sprintf(d,"%d",(int32_t)n);}
-char *strcat_string(char *d,char *s){return d+sprintf(d,"\"%s\"",s);}
+char *strcat_string(char *d,char *s,size_t n){(void)n;return d+sprintf(d,"\"%s\"",s);}
 char *strcat_float(char *d,float n,int precision){(void)precision;return d+sprintf(d,"%.2f",n);}
 bool prep_float(nvObj_t *n){(void)n;return true;}
 void json_relax(char *s){(void)s;}
