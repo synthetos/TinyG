@@ -57,7 +57,7 @@ HELIX = {
 
 @pytest.mark.motion
 @pytest.mark.persists
-@pytest.mark.bug("E041", on=["d440", "d449"])
+@pytest.mark.bug("E041", on=["d440"])
 @pytest.mark.parametrize("plane", list(HELIX))
 def test_helix_linear_endpoint_beyond_soft_limit_is_rejected(tg, keep, plane):
     linear, block = HELIX[plane]

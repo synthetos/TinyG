@@ -595,8 +595,9 @@ static stat_t _test_arc_soft_limit_plane_axis(float center, uint8_t axis, float 
 static stat_t _test_arc_soft_limits()
 {
 	if (cm.soft_limit_enable == true) {
-		// the endpoint, all axes (this also covers the linear axis of a helix)
-		ritorno(cm_test_soft_limits(arc.gm.target));
+		// the endpoint, all axes, from the model: _compute_arc() has already reset arc.gm.target's
+		// linear axis to the start for segment generation, which would hide a helix's endpoint (E041)
+		ritorno(cm_test_soft_limits(cm.gm.target));
 
 		// the arc's extent in its plane: axis 0 runs centre + r*sin(theta), axis 1 centre + r*cos(theta)
 		ritorno(_test_arc_soft_limit_plane_axis(arc.center_0, arc.plane_axis_0, M_PI/2));
