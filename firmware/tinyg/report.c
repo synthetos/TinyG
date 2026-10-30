@@ -725,14 +725,15 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 		if (qr.queue_report_verbosity == QR_SINGLE) {
 			printf_P(PSTR("qr:%d\n"), qr.buffers_available);
 		} else  {
-			printf_P(PSTR("qr:%d, qi:%u, qo:%u\n"), qr.buffers_available,qr.buffers_added,qr.buffers_removed);
+			printf_P(PSTR("qr:%d, qi:%u, qo:%u\n"), qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
 		}
 	} else {
         char line_msg[40];                      // {"qr":255,"qi":65535,"qo":65535}\n is 34 with its NUL
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			sprintf_P(line_msg, PSTR("{\"qr\":%d}\n"), qr.buffers_available);
+			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d}\n"), qr.buffers_available);
 		} else {
-			sprintf_P(line_msg,PSTR("{\"qr\":%d,\"qi\":%u,\"qo\":%u}\n"), qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d,\"qi\":%u,\"qo\":%u}\n"),
+					   qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
 		}
         printf(json_relax(line_msg));
 	}
