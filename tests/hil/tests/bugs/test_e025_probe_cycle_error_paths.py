@@ -7,8 +7,8 @@
   so _probing_init (cycle_probing.c:167, CYCLE_PROBE + homing jerk) runs while an earlier G1 is
   still moving, and switch.c:219-222 turns limit hits during that move into plain feedholds.
 
-The stuck-CYCLE_PROBE path (cycle_probing.c:188, ritorno on STAT_MINIMUM_TIME_MOVE) depends on jerk
-settings and float rounding, so it is not tested here.
+Rejected-move cleanup is covered by a soft-limit rejection here and deterministic
+host checks for planner errors, restored settings, and preserved alarm state.
 
 Bench: the probe is Z-min with nothing connected. Edge forces probe inputs to NO (switch.c:127-128),
 so the open input reads untripped and each G38.2 runs its full (1 mm) travel.
@@ -55,6 +55,8 @@ def use_zmin_probe(tg, keep):
 
 
 def back_to_start(tg):
+    if tg.stat() == tg.dialect.stat("ALARM"):
+        tg.clear_alarm()
     idle(tg)
     tg.drain()
     tg.send_gcode("G90 G1 X0 Y0 Z0 F600", check=True, allow="return to the G92 zero")
@@ -91,3 +93,33 @@ def test_probe_cycle_waits_for_previous_move(tg, probe_zero):
     assert get(tg, "mpox") < x0 + 4.5       # the G1 is still running
     assert cycs != 3                        # CYCLE_PROBE must not start yet
     wait_prb(tg, timeout=15)
+
+
+@pytest.mark.resets_board
+@pytest.mark.bug("E025", on=["d449"])
+def test_rejected_probe_restores_cycle_and_settings(tg, keep):
+    use_zmin_probe(tg, keep)
+    keep("sl", "ztn", "ztm", "zjh")
+    saved_jerk = tg.get("zjm")
+    try:
+        for line in ("G21 G90", "G92.1", "G49", "G28.3 Z0"):
+            tg.send_gcode(line, check=True)
+        tg.wait_idle()
+        tg.set("ztn", -0.5)
+        tg.set("ztm", 0.5)
+        tg.set("zjh", max(1, saved_jerk / 2))
+        tg.set("sl", 1)
+        tg.send_gcode("G91", check=True)
+        assert tg.send_gcode("G38.2 Z-1 F100", allow="probe target outside the configured soft limit").status == 0
+        end = time.monotonic() + 5
+        while time.monotonic() < end:
+            if get(tg, "stat") == tg.dialect.stat("ALARM") and get(tg, "cycs") == 0:
+                break
+            time.sleep(0.05)
+        assert get(tg, "cycs") == 0, "rejected probe kept its continuation active"
+        assert tg.stat() == tg.dialect.stat("ALARM"), "probe cleanup erased its soft-limit alarm"
+        assert get(tg, "dist") == 1
+        assert get(tg, "zjm") == pytest.approx(saved_jerk, rel=1e-4)
+    finally:
+        # Stock can retry the rejected move indefinitely; restore communications before keep cleanup.
+        tg.reset()
