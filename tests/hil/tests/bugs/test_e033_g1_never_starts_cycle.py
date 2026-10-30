@@ -19,7 +19,6 @@ def _sample(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E033", on=["d449"])
 def test_stat_is_run_during_g1(tg):
     tg.send_gcode("G91 G1 X2 F120", check=True, allow=MOVE)
     try:
@@ -39,7 +38,6 @@ def test_stat_is_run_during_g1(tg):
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E033", on=["d449"])
 def test_feedhold_while_idle_does_not_hold_next_move(tg):
     tg.send_gcode("G91 G1 X0.5 F300", check=True, allow=MOVE)
     tg.wait_idle()

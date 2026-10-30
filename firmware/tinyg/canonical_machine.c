@@ -1116,11 +1116,15 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 
+    cm_cycle_start();                           // before queueing, so a short move can't end the cycle first
     status = mp_aline(&cm.gm);                  // send the move to the planner
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
+    if (status != STAT_OK) {
+        if (!mp_has_runnable_buffer()) {        // nothing queued or running: undo the cycle start
+            cm_cycle_end();
+        }
+        if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status == STAT_MINIMUM_TIME_MOVE)) {
+            status = STAT_OK;                   // too short to plan; not an error
+        }
     }
     cm_finalize_move();
 	return (status);
@@ -1320,11 +1324,15 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
+    cm_cycle_start();                           // before queueing, so a short move can't end the cycle first
     status = mp_aline(&cm.gm);
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
+    if (status != STAT_OK) {
+        if (!mp_has_runnable_buffer()) {        // nothing queued or running: undo the cycle start
+            cm_cycle_end();
+        }
+        if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status == STAT_MINIMUM_TIME_MOVE)) {
+            status = STAT_OK;                   // too short to plan; not an error
+        }
     }
 	cm_finalize_move();
 	return (status);
