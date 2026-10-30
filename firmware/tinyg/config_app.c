@@ -620,6 +620,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se29",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
 
+    // Session optional-stop switch; append to preserve existing persistent indexes.
+    { "sys","os",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
+
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***

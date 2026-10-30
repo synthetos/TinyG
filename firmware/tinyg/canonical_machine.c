@@ -1958,7 +1958,7 @@ void cm_cycle_start()
     uint8_t saved_sreg = SREG;
     cli();
 #endif
-    // The runtime stop callback must not interrupt this state transition.
+    // Program-stop callbacks run in the HI loader, so masking only LO/MED is insufficient.
     if (!cm.program_paused) {
         cm.machine_state = MACHINE_CYCLE;
         if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
@@ -1976,7 +1976,7 @@ void cm_cycle_end()
     uint8_t saved_sreg = SREG;
     cli();
 #endif
-    // The runtime stop callback must not interrupt this state transition.
+    // Program-stop callbacks run in the HI loader, so masking only LO/MED is insufficient.
     if (!cm.program_paused) {
         if (cm.cycle_state != CYCLE_OFF) {
             float value[] = { (float)MACHINE_PROGRAM_STOP };
@@ -2004,7 +2004,7 @@ void cm_program_stop()
 
 void cm_optional_program_stop()
 {
-    cm_program_stop();
+    if (cm.optional_stop_enabled) { cm_program_stop(); }
 }
 
 void cm_program_end()

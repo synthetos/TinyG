@@ -56,10 +56,10 @@ uint8_t SREG=128;
 #define PSTR(x) (x)
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
-        bool program_paused, end_hold_requested;} cm;
+        bool program_paused, end_hold_requested; uint8_t optional_stop_enabled;} cm;
 static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
-static int fetched, ran, wakeups, finalized;
+static int fetched, ran, wakeups, finalized, queued_commands;
 static bool queued, idle=true;
 typedef struct mpBuf {int block_type; stat_t (*bf_func)(struct mpBuf *);} mpBuf_t;
 mpBuf_t block;
@@ -79,7 +79,7 @@ void cm_set_position(int axis,float pos) {(void)axis;(void)pos;}
 void (*stop_callback)(float *, bool *);
 float queued_value[AXES];
 void mp_queue_command(void (*fn)(float *,bool *),float *value,bool *flags) {
-    assert(flags==FLAGS_ONE); stop_callback=fn;
+    assert(flags==FLAGS_ONE); queued_commands++; stop_callback=fn;
     for(int i=0;i<AXES;i++) queued_value[i]=value[i];
 }
 static void _exec_program_finalize(float *value,bool *flags) {
@@ -127,6 +127,11 @@ int main(void) {
         assert(!cm.program_paused && !cm.end_hold_requested && cm.hold_state==FEEDHOLD_OFF);
         assert(mp_exec_move()==STAT_OK && ran==previous_ran+1);
     }
+    // M1 is ignored with the switch off; it must not even queue a synchronization barrier.
+    int previous_commands=queued_commands;
+    cm.optional_stop_enabled=0; cm_optional_program_stop();
+    assert(queued_commands==previous_commands && !cm.program_paused);
+    cm.optional_stop_enabled=1;
     // Empty-queue resume does not leave a pause on the next job.
     cm_optional_program_stop(); run_stop_callback(); queued=false;
     cm_request_end_hold(); cm_end_hold();
@@ -136,6 +141,8 @@ int main(void) {
     cm.cycle_state=CYCLE_MACHINING; cm_cycle_end();
     assert(!cm.program_paused && cm.hold_state==FEEDHOLD_OFF);
     assert(mp_exec_move()==STAT_OK);
+    // Nested callers must not accidentally re-enable interrupts.
+    SREG=0; cm_cycle_start(); assert(SREG==0); cm_cycle_end(); assert(SREG==0); SREG=128;
     // A flush releases the explicit pause after clearing queued work.
     cm_program_stop(); run_stop_callback();
     cm.queue_flush_state=1; cm_queue_flush();

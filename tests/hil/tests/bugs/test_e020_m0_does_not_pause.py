@@ -17,8 +17,10 @@ MOVE = "two 1 mm +X moves separated by M0, then back"
 
 @pytest.mark.motion
 @pytest.mark.bug("E020", on=["d440"])
-@pytest.mark.parametrize("stop", ["M0", "M1", "M60"])     # edge treats M1 as an unconditional stop
-def test_program_stop_waits_for_cycle_start(tg, stop):
+@pytest.mark.parametrize("stop", ["M0", "M1", "M60"])     # M1 obeys the session optional-stop switch
+def test_program_stop_waits_for_cycle_start(tg, keep, stop):
+    keep("os")
+    tg.set("os", int(stop == "M1"))
     x0 = tg.get("mpox")
     tg.send_gcode("G91 G1 X1 F300", check=True, allow=MOVE)
     tg.send_gcode(stop, check=True)
@@ -54,3 +56,27 @@ def test_program_stop_blocks_queued_dwell(tg):
     finally:
         tg.send_raw(b"~")
         tg.wait_idle(timeout=10)
+
+
+@pytest.mark.dialect("d449")
+def test_optional_stop_disabled_does_not_pause(tg, keep):
+    keep("os")
+    tg.set("os", 0)
+    try:
+        tg.send_gcode("M1", check=True)
+        tg.send_gcode("G4 P0.1", check=True)
+        tg.wait_idle(timeout=5)
+        assert tg.get("hold") == 0
+        assert tg.get("qr") == tg.planner_buffers
+    finally:
+        tg.send_raw(b"~")
+        tg.wait_idle(timeout=5)
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.resets_board
+def test_optional_stop_is_session_only(tg, keep):
+    keep("os")
+    tg.set("os", 1)
+    tg.reset()
+    assert tg.get("os") == 0
