@@ -73,11 +73,26 @@ class TinyG:
             raise StatusError(resp, self.status_name(resp.status))
         return resp
 
+    # Persisting a setting writes EEPROM with every interrupt disabled, and serial input that arrives
+    # meanwhile is lost; the wiki asks hosts to wait for each config response and pause >= 30 ms
+    # (TinyG-Command-Line.md, TinyG-Configuration-for-Firmware-Version-0.94-and-Earlier.md).
+    persist_pause = 0.05
+
+    @staticmethod
+    def _is_set(obj) -> bool:
+        if isinstance(obj, dict):
+            return any(v is not None and (not isinstance(v, dict) or TinyG._is_set(v)) for v in obj.values())
+        return isinstance(obj, str) and re.search(r':\s*(?!null\b)[^\s{]', obj) is not None
+
     def send_json(self, obj, *, timeout: float = 2.0, check: bool = False, allow: str | None = None) -> Response:
+        setting = self._is_set(obj)
         if not isinstance(obj, str):
             self.guard.check_json(obj, allow)
             obj = encode(obj)
-        return self.send_line(obj, timeout=timeout, check=check)
+        resp = self.send_line(obj, timeout=timeout, check=check)
+        if setting:
+            time.sleep(self.persist_pause)          # let the EEPROM write finish before the next line
+        return resp
 
     def send_gcode(self, line: str, *, timeout: float = 2.0, check: bool = False,
                    allow: str | None = None) -> Response:
@@ -106,6 +121,8 @@ class TinyG:
             lines.append(ev.raw)
             if ev.kind == "prompt":
                 break
+        if "=" in line:                             # a text-mode SET ($xvm=...) persists too
+            time.sleep(self.persist_pause)
         self.get("fb")
         return lines
 
