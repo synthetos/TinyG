@@ -738,7 +738,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define NV_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
-#define NV_INDEX_END_SINGLES		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS - NV_STATUS_REPORT_LEN)
+// Status slots and appended settings are single-valued rows too; flags control initialization.
+#define NV_INDEX_END_SINGLES		(NV_INDEX_START_GROUPS - 1)
 #define NV_INDEX_START_GROUPS		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS)
 #define NV_INDEX_START_UBER_GROUPS (NV_INDEX_MAX - NV_COUNT_UBER_GROUPS)
 /* </DO NOT MESS WITH THESE DEFINES> */
