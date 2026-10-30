@@ -16,17 +16,41 @@ MOVE = "two 1 mm +X moves separated by M0, then back"
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E020", on=["d440", "d449"])
-@pytest.mark.parametrize("stop", ["M0", "M60"])     # M1 may legitimately depend on an optional-stop switch
+@pytest.mark.bug("E020", on=["d440"])
+@pytest.mark.parametrize("stop", ["M0", "M1", "M60"])     # edge treats M1 as an unconditional stop
 def test_program_stop_waits_for_cycle_start(tg, stop):
+    x0 = tg.get("mpox")
     tg.send_gcode("G91 G1 X1 F300", check=True, allow=MOVE)
     tg.send_gcode(stop, check=True)
     tg.send_gcode("G1 X1", check=True, allow=MOVE)
     try:
         time.sleep(2.0)                      # the first move takes ~0.3 s
         assert tg.get("qr") < tg.planner_buffers, "second move ran without a cycle start"
+        assert tg.get("hold") == 6, "program stop did not enter HOLD"
+        tg.send_raw(b"~")
+        tg.wait_idle(timeout=10)
+        assert tg.get("mpox") == pytest.approx(x0 + 2, abs=0.03)
     finally:
         tg.send_raw(b"~")
         tg.wait_idle(timeout=10)
         tg.send_gcode("G91 G1 X-2 F600", allow=MOVE)
         tg.wait_idle()
+
+
+@pytest.mark.bug("E020", on=["d440"])
+def test_program_stop_blocks_queued_dwell(tg):
+    """A pause gates non-motion blocks too; no motor motion is needed."""
+    tg.send_gcode("M0", check=True)
+    try:
+        deadline = time.monotonic() + 3
+        while tg.get("hold") != 6:
+            assert time.monotonic() < deadline, "M0 never entered HOLD"
+        tg.send_gcode("G4 P0.1", check=True)
+        assert tg.get("qr") < tg.planner_buffers, "dwell bypassed program stop"
+        assert tg.get("hold") == 6
+        tg.send_raw(b"~")
+        tg.wait_idle(timeout=10)
+        assert tg.get("qr") == tg.planner_buffers
+    finally:
+        tg.send_raw(b"~")
+        tg.wait_idle(timeout=10)

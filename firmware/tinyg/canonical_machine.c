@@ -123,6 +123,7 @@ static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 static void _exec_program_end(float *value, bool *flags);
+static void _exec_program_stop(float *value, bool *flags);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
@@ -603,6 +604,7 @@ void canonical_machine_reset()
 //	cm.cycle_start_requested = false;               //+++++ TO BE REMOVED
 
     cm.queue_flush_state = FLUSH_OFF;
+    cm.program_paused = false;
     cm.end_hold_requested = false;
     cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
     cm.safety_interlock_disengaged = 0;         // ditto
@@ -1799,6 +1801,7 @@ void cm_start_hold()
 void cm_end_hold()
 {
 	if (cm.hold_state == FEEDHOLD_HOLD) {
+        cm.program_paused = false;
         cm.end_hold_requested = false;
         mp_replan_held_block();                     // the held block resumes from zero velocity
 	    mp_exit_hold_state();
@@ -1951,6 +1954,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 
 void cm_cycle_start()
 {
+    if (cm.program_paused) { return; }
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
 		cm.cycle_state = CYCLE_MACHINING;			// keep qi/qo: buffers queued before the cycle started count (E091)
@@ -1959,22 +1963,30 @@ void cm_cycle_start()
 
 void cm_cycle_end()
 {
+    if (cm.program_paused) { return; }
 	if (cm.cycle_state != CYCLE_OFF) {
 		float value[] = { (float)MACHINE_PROGRAM_STOP };
 		_exec_program_finalize(value, FLAGS_ONE);
 	}
 }
 
+static void _exec_program_stop(float *value, bool *flags)
+{
+    _exec_program_finalize(value, flags);
+    cm.program_paused = true;
+    cm.hold_state = FEEDHOLD_HOLD;
+    cm_set_motion_state(MOTION_HOLD);
+}
+
 void cm_program_stop()
 {
-	float value[] = { (float)MACHINE_PROGRAM_STOP };
-	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
+	float value[AXES] = { (float)MACHINE_PROGRAM_STOP };
+	mp_queue_command(_exec_program_stop, value, FLAGS_ONE);
 }
 
 void cm_optional_program_stop()
 {
-	float value[] = { (float)MACHINE_PROGRAM_STOP };
-	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
+    cm_program_stop();
 }
 
 void cm_program_end()
