@@ -64,6 +64,7 @@ controller_t cs;		// controller state structure
 static void _controller_HSM(void);
 static stat_t _shutdown_handler(void);
 static stat_t _normal_idler(void);
+static stat_t _enquiry_handler(void);
 static stat_t _limit_switch_handler(void);
 
 static void _init_assertions(void);
@@ -152,6 +153,7 @@ static void _controller_HSM()
 #ifdef TINYG_TEST_HOOKS
 	DISPATCH(testhooks_callback());				// HIL test hooks (test builds only)
 #endif
+	DISPATCH(_enquiry_handler());				// answer ENQ from the main loop
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
     DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
@@ -419,7 +421,15 @@ static stat_t _normal_idler()
 void controller_reset_source() { controller_set_primary_source(xio.default_src);}
 void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
 void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
-void controller_request_enquiry() { printf_P(PSTR("{\"ack\":true}\n")); }
+void controller_request_enquiry() { cs.enquiry_requested = true; }	// called from the RX ISR: no printing there (E052)
+
+static stat_t _enquiry_handler()
+{
+	if (!cs.enquiry_requested) { return (STAT_NOOP); }
+	cs.enquiry_requested = false;
+	printf_P(PSTR("{\"ack\":true}\n"));
+	return (STAT_OK);
+}
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up
