@@ -35,6 +35,13 @@ DEVICE_DATA = (_le32(0x00800000) + _le32(0x00830000) + _le32(0x008C0000) + _le32
                _le16(0x01C0) + _le16(0x0090))
 
 
+# XMEGA PORTx register blocks in data space (OUT = base + 4, IN = base + 8)
+PORT_BASE = {"A": 0x0600, "B": 0x0620, "C": 0x0640, "D": 0x0660, "E": 0x0680, "F": 0x06A0}
+
+# TinyG v7/v8 output mapping (hardware.h PORT_OUT_V7_*, gpio.c): GPIO1 bit 5 on each port
+TINYG_OUTPUTS = {"spindle_enable": ("A", 5), "spindle_dir": ("F", 5), "out3": ("D", 5), "coolant": ("E", 5)}
+
+
 class Symbols:
     """Addresses, sizes and (with DWARF) member offsets and base types from an ELF."""
 
@@ -227,6 +234,19 @@ class Ice:
     def poke(self, expr, value):
         addr, size, kind = self.symbols.resolve(expr)
         self.write(addr, encode(value, size, kind))
+
+    def port_out(self, port):
+        """PORTx.OUT register value."""
+        return self.read(PORT_BASE[port] + 4, 1)[0]
+
+    def output(self, name):
+        """State (0/1) of a TinyG output pin by name: spindle_enable, spindle_dir, coolant, out3."""
+        port, bit = TINYG_OUTPUTS[name]
+        return (self.port_out(port) >> bit) & 1
+
+    def outputs(self):
+        with self.halted():
+            return {name: self.output(name) for name in TINYG_OUTPUTS}
 
     def pc(self):
         with self.halted():
