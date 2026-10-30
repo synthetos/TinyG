@@ -481,7 +481,7 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
             return (STAT_OK);
         }
     }
-    nv_print_list(STAT_OK, TEXT_RESPONSE, JSON_OBJECT);
+    nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT);
     return (STAT_OK);
 }
 

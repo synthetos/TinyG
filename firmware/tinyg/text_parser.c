@@ -190,9 +190,42 @@ void text_response(const stat_t status, char *buf)
  * text_print_list() - produce text formatted output from an NV list
  */
 
+static void _text_print_inline_pairs(nvObj_t *nv)
+{
+    bool separator = false;
+    for (uint8_t i=0; (i<NV_BODY_LEN-1) && (nv != NULL); i++, nv=nv_next(nv)) {
+        if (nv->valuetype == TYPE_EMPTY) { break; }
+        if ((nv->valuetype == TYPE_PARENT) || (nv->valuetype == TYPE_SKIP)) { continue; }
+        if (nv->valuetype == TYPE_FLOAT) { prep_float(nv); }
+        if (separator) { putchar(','); }
+        separator = true;
+        fputs(nv->token, stdout);                    // SR population has already flattened group names
+        putchar(':');
+        switch ((int8_t)nv->valuetype) {
+            case TYPE_BOOLEAN:
+            case TYPE_INTEGER: printf_P(PSTR("%lu"), (unsigned long)nv->value_int); break;
+            case TYPE_SIGNED: printf_P(PSTR("%ld"), (long)(int32_t)nv->value_int); break;
+            case TYPE_FLOAT:
+                fntoa(cs.out_buf, nv->value_flt, nv->precision);
+                fputs(cs.out_buf, stdout);
+                break;
+            case TYPE_STRING: if (nv->str != NULL) { fputs(nv->str, stdout); } break;
+            case TYPE_DATA: {
+                uint32_t value;
+                memcpy(&value, &nv->value_flt, sizeof(value));
+                printf_P(PSTR("%lu"), (unsigned long)value);
+                break;
+            }
+            default: printf_P(PSTR("null")); break;
+        }
+    }
+    putchar('\n');
+}
+
 void text_print_list(stat_t status, uint8_t flags)
 {
     if (flags == TEXT_NO_DISPLAY) { return; }
+    if (flags == TEXT_INLINE_PAIRS) { _text_print_inline_pairs(NV_BODY); return; }
 
     nvObj_t *nv = NV_BODY;
     for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
