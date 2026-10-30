@@ -770,8 +770,34 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't alarm if already in an alarm state
     }
 	cm.machine_state = MACHINE_ALARM;
-    cm_request_feedhold();                      // stop motion
-    cm_request_queue_flush();                   // do a queue flush once runtime is not busy
+
+    // Nothing moving (idle, a dwell, moves not started yet) means no hold will ever start, so the
+    // flush would wait forever while queued moves run in ALARM (E044). Decide that atomically with
+    // the exec: with interrupts off, a stopped runtime is put straight into HOLD, which keeps
+    // mp_exec_aline() from starting another move. A move already running takes the normal hold.
+#ifdef __AVR
+    uint8_t sreg = SREG;
+    cli();
+#endif
+    bool idle = (cm.motion_state == MOTION_STOP) && (cm.hold_state == FEEDHOLD_OFF);
+    bool segment_in_flight = false;
+    if (idle) {
+        segment_in_flight = st_aline_in_flight();   // a block's last segment can outlive MOTION_STOP
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_HOLD;          // no new move starts; a last segment finishes on its own
+    }
+#ifdef __AVR
+    SREG = sreg;
+#endif
+    if (idle) {
+        if (!segment_in_flight) {
+            stepper_reset();                    // only a dwell (or nothing) is running: stop it now
+        }
+        cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
+    } else {
+        cm_request_feedhold();                  // stop motion
+        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+    }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
     cm_coolant_off_immediate();                 // stop coolant immediately

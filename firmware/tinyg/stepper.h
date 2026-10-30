@@ -424,6 +424,7 @@ void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 
 uint8_t st_runtime_isbusy(void);
+bool st_aline_in_flight(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
 stat_t st_clc(nvObj_t *nv);
