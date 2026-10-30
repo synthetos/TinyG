@@ -59,12 +59,15 @@ void expect_data(const char *s) {
     for (int i=0;s[i];i++) assert(USBu.rx_buf[i+2]==s[i]);
 }
 int main(void) {
-    const char *lines[]={"G21 (MSG 50% done ! ~)\n", "G1 X1 ; !~%\r", "{\"msg\":\"!~%\"}\n",
+    const char *lines[]={"G21 (MSG 50% done ! ~)\n", "G1 X1 (note !~%)\r", "{\"msg\":\"!~%\"}\n",
                          "G1 X1!~%\n", "(unterminated !~%\n"};
     for(int i=0;i<5;i++) {
-        fresh(); send(lines[i]); expect_data(lines[i]);
-        assert(!holds && !resumes && !flushes);
-        send("!~%"); assert(holds==1 && resumes==1 && flushes==1);
+        char expected[128]; int n=0;
+        for (int j=0;lines[i][j];j++) if(lines[i][j]!='!') expected[n++]=lines[i][j];
+        expected[n]=0;
+        fresh(); send(lines[i]); expect_data(expected);
+        assert(holds==1 && !resumes && !flushes);
+        send("!~%"); assert(holds==2 && resumes==1 && flushes==1);
     }
     fresh(); send(" \t!~%"); expect_data(" \t");
     assert(holds==1 && resumes==1 && flushes==1);
@@ -73,8 +76,9 @@ int main(void) {
     assert(resets==1 && enquiries==1 && USBu.fc_state_tx==FC_IN_XOFF);
     send_byte(XON); assert(USBu.fc_state_tx==FC_IN_XON);
     expect_data("partial line");
-    send("!~%"); assert(!holds && !resumes && !flushes);
-    send("\r!\n~%"); assert(holds==1 && resumes==1 && flushes==1);
+    send("!~%"); assert(holds==1 && !resumes && !flushes);
+    expect_data("partial line~%");
+    send("\r!\n~%"); assert(holds==2 && resumes==1 && flushes==1);
     fresh(); send("unfinished ("); xio_reset_usb_rx_buffers(); send("!");
     assert(holds==1);
 }

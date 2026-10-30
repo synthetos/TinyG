@@ -35,9 +35,9 @@
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
-// Printable realtime controls are recognized between lines (leading space is allowed).
-// Consecutive !/~/% bytes retain the boundary; terminate a partial line before sending them.
-// Reset, enquiry and flow control remain unconditional.
+// Resume and queue flush are recognized between lines (leading space is allowed).
+// Feedhold remains immediate even mid-line; it does not change the framing state.
+// Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
 
 /*
@@ -150,7 +150,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		hw_request_hard_reset();
 		return;
 	}
-	if (!rx_in_line && c == CHAR_FEEDHOLD) {					// trap feedhold signal
+	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
 		cm_request_feedhold();
 		return;
 	}
