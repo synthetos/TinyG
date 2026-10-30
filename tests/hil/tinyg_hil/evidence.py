@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 
 from .motion_profile import analyze
 
@@ -87,7 +88,8 @@ def promote(run, finding, label, dest_root=None):
             for p in (original,edge,capture):
                 source_artifacts.append({'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
             shutil.copy2(capture,destination/capture.name)
-            edges=_json(edge);_write(destination/edge.name,edges)
+            edges=_json(edge)
+            (destination/edge.name).write_text(json.dumps(edges,separators=(',',':'))+'\n')
             data=_plot_case(edges,analysis,destination/f'{stem}.png')
             compact={k:v for k,v in analysis.items() if k not in ('raw','windows','capture','edge_file')}
             compact['capture']=capture.name;compact['edge_file']=edge.name
@@ -101,7 +103,8 @@ def promote(run, finding, label, dest_root=None):
         for name in ('profile-calibration.json','baseline-fixed-comparison.json'):
             if (run/name).exists():shutil.copy2(run/name,destination/name)
         artifacts=_manifest(destination)
-        summary={'finding':finding,'label':label,'result':'measurement; gate verdict requires review',
+        revision=subprocess.run(['git','-C',str(Path(__file__).resolve().parents[3]),'rev-parse','HEAD'],capture_output=True,text=True)
+        summary={'promoter_commit':revision.stdout.strip() if revision.returncode==0 else None,'finding':finding,'label':label,'result':'measurement; gate verdict requires review',
                  'firmware':firmware,'harness_commit':record.get('commit'),'bench':record.get('identity'),
                  'run_record':str(run/'run.json'),'source_artifacts':source_artifacts,
                  'method':{'sample_rate':12_000_000,'channels':{'6':'M1 step','7':'M1 direction'},'fit':'degree-5 local position polynomial; >=12 edges, >=80% window coverage','window_rule':'baseline-selected by move length, unchanged for after','raw':'adjacent step intervals then finite differences','time':'first-to-last step, not command-to-rest'},
