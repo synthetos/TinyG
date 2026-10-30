@@ -157,6 +157,7 @@ static void _controller_HSM()
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
  	DISPATCH(_limit_switch_handler());          // invoke limit switch
     DISPATCH(_controller_state());              // controller state management
+    config_report_load_failure();              // non-fatal, after startup enables TX
 	DISPATCH(_test_system_assertions());		// system integrity assertions
 	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 

@@ -351,6 +351,7 @@ extern const cfgItem_t cfgArray[];
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
+void config_report_load_failure(void); // call only after startup enables TX
 stat_t set_defaults(nvObj_t *nv);			// reset config to default values
 void config_init_assertions(void);
 stat_t config_test_assertions(void);

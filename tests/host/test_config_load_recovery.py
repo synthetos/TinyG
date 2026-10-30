@@ -42,7 +42,7 @@ struct {int cycle_state;} cm;
 static nvObj_t object;
 static bool current, reject, reject_default, tx;
 static float ram[3];
-static int attempts[3],reports;
+static int attempts[3],persisted[3],reports;
 static char reported[6];
 static int setters,markers,panics;
 nvObj_t *nv_reset_nv_list(int n){memset(&object,0,sizeof(object));return &object;}
@@ -54,10 +54,11 @@ bool cfg_has_flag(int index,int flag){return index>0;}
 int cfg_is_type(int index){return index==1?TYPE_FLOAT:TYPE_INTEGER;}
 stat_t nv_set(nvObj_t *nv){
  setters++;attempts[nv->index]++;
+ if(reject_default && nv->index==2)return 106;
  if(nv->index==1 && ((reject && nv->value_flt==9) || (reject_default && nv->value_flt==1.8f))) return 106;
  ram[nv->index]=nv->valuetype==TYPE_FLOAT?nv->value_flt:nv->value_int;return 0;
 }
-void nv_persist(nvObj_t *nv){}
+void nv_persist(nvObj_t *nv){persisted[nv->index]++;}
 void rpt_print_loading_configs_message(void){}
 void rpt_print_initializing_message(void){}
 void sr_init_status_report_P(const char *s){}
@@ -80,12 +81,13 @@ void config_init_assertions(void);
 int main(void){
  for(int layout=0;layout<2;layout++) for(int failure=0;failure<3;failure++){
   current=layout;reject=failure>0;reject_default=failure==2;tx=false;
-  setters=markers=panics=reports=0;memset(attempts,0,sizeof(attempts));ram[1]=7;
+  setters=markers=panics=reports=0;memset(attempts,0,sizeof(attempts));memset(persisted,0,sizeof(persisted));ram[1]=7;
   config_init();
   bool warned=layout ? failure>0 : failure==2;
   assert(config_test_assertions()==STAT_OK && panics==0 && reports==0);
   assert(ram[1]==(failure==2?7:(layout && !failure?9:1.8f)));
   assert(attempts[1]==(layout && failure?2:1));
+  assert(persisted[1]==(!layout && failure!=2));
   tx=true;config_report_load_failure();
   assert(reports==warned);
   if(warned)assert(strcmp(reported,"1sa")==0);

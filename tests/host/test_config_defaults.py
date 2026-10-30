@@ -20,6 +20,7 @@ class ConfigDefaults(unittest.TestCase):
         pre = subprocess.check_output(args + ['-E', '-P', str(FW/'config_app.c')], text=True)
         table = pre.split('const cfgItem_t cfgArray[]', 1)[1].split('\n};', 1)[0]
         rows = [row.split(',') for row in re.findall(r'\{(\s*"[^{}]+)\}', table)]
+        self.assertGreater(len(rows), 300)
         enums = '\n'.join(re.findall(r'typedef enum\s*(?:\w+\s*)?\{[^{}]*\}\s*\w+\s*;', pre))
         macros = subprocess.check_output(args + ['-dM', '-E', str(FW/'config_app.c')], text=True)
         needed = ['AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
@@ -102,7 +103,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
                 code += f'stat_t status=cfgArray[{i}].set(&nv);if(status){{fprintf(stderr,"default rejected: %s status=%u\\n",nv.token,status);failures++;}}count++;\n'
             code += '}\n'
         code = code.replace('int main(void){', 'int main(void){int count=0,failures=0;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;' )
-        code += 'printf("Checked %d initialized defaults; %d rejected\\n",count,failures);return failures?1:0;}\n'
+        code += 'assert(count>100);printf("Checked %d initialized defaults; %d rejected\\n",count,failures);return failures?1:0;}\n'
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory);(path/'check.c').write_text(code)
             subprocess.run(['cc','-Wall','-Werror','-Wno-unused-function','-fsanitize=address,undefined',str(path/'check.c'),'-lm','-o',str(path/'check')],check=True)
