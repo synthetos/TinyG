@@ -95,7 +95,7 @@ def test_g38_2_in_inverse_time_mode_is_an_error(tg, keep):
         tg.send_gcode("G94", check=True)
 
 
-@pytest.mark.bug("E071", on=["d449"])
+@pytest.mark.bug("E071", on=[])
 def test_g20_short_probe_above_minimum_is_accepted(tg, probe_zero):
     """RS274NGC 3.5.9.1: error only if the move is < 0.254 mm or 0.01 inch. The check compared a
     current-unit distance (inches in G20) against 0.254, so 0.02 inch (0.508 mm) was rejected."""
