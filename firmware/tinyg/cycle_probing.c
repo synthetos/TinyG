@@ -120,6 +120,9 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
 		pb.saved_jerk[axis] = cm_get_axis_jerk(axis);
         length += square(cm_get_work_position(MODEL,axis) - pb.target[axis]);
 	}
+	if (cm_get_units_mode(MODEL) == INCHES) {	// positions above are in current units; the limit is mm
+		length *= (MM_PER_INCH * MM_PER_INCH);
+	}
 	if (sqrt(length) < MINIMUM_PROBE_TRAVEL) {  // test the actual length (which is the sqrt())
         return(STAT_PROBE_TRAVEL_TOO_SMALL);
 	}
