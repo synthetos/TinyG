@@ -62,23 +62,26 @@ def test_m400_text_mode_waits_for_dwell(tg):
     assert t_prompt - t0 >= 1.9
 
 
-def test_m400_idle_acknowledges(tg):
+@pytest.mark.parametrize("line", ["M400", "N123 M400"])
+def test_m400_idle_acknowledges(tg, line):
     """Functional coverage, with no timing threshold or motion stimulus."""
     tg.wait_idle()
-    response = tg.send_gcode("M400")
+    response = tg.send_gcode(line)
     assert response.status == 0, response.raw
 
+@pytest.mark.parametrize("line", ["M400", "N123 M400"])
 @pytest.mark.parametrize("tid", [0, 4294967295])
-def test_m400_canonical_completion(tg, tid):
+def test_m400_canonical_completion(tg, tid, line):
     tg.wait_idle()
-    tg.transport.write(('{"gc":"M400","tid":%d}\n' % tid).encode())
+    tg.transport.write(('{"gc":"%s","tid":%d}\n' % (line, tid)).encode())
     event = tg.wait_for(lambda e: e.kind == "response", 3.0)
     assert event.data.get("r") == {"gc": "M400"}, event.raw
     assert event.data.get("tid") == tid, event.raw
     assert event.data["f"][1] == 0, event.raw
 
 
-@pytest.mark.parametrize("line", ["M400 G91", "G91 M400", "M400 X1", "M400 M400"])
+@pytest.mark.parametrize("line", ["M400 G91", "G91 M400", "M400 X1", "M400 M400",
+                                  "N123 M400 X1", "N123 M400 M400", "M400 N123"])
 def test_m400_compound_is_rejected(tg, line):
     response = tg.send_gcode(line)
     assert response.status == 106, response.raw

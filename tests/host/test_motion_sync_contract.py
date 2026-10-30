@@ -47,8 +47,9 @@ int main(void){
  assert(!_motion_sync_envelope("gc\x98\"M400\"\x93tid\x98\"bad\"\x93"));
  // Literal text inside a value does not create another key.
  assert(_motion_sync_envelope("gc\x98\"M400 (tid:123 gc:hello)\"\x93"));
- assert(validate(400,"M400")==0);
- const char *bad[]={"M400G91","G91M400","M400X1","M400M400","M400.0","N1M400"};
+ const char *good[]={"M400","N0M400","N123M400","N000123M400","N99999M400"};
+ for(unsigned i=0;i<sizeof(good)/sizeof(*good);i++)assert(validate(400,good[i])==0);
+ const char *bad[]={"M400G91","G91M400","M400X1","M400M400","M400.0","NM400","N-1M400","N+1M400","N1.0M400","N1N2M400","N1G91M400","N1M400X1","N1M400M400","M400N1"};
  for(unsigned i=0;i<sizeof(bad)/sizeof(*bad);i++)assert(validate(400,bad[i])==106);
  assert(validate(400.5f,"M400.5")==106);
 }
