@@ -38,7 +38,7 @@ def _track(tg, tokens, timeout=20.0):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E029", on=["d440", "d449"])
+@pytest.mark.bug("E029", on=["d440"])
 def test_g18_cw_arc_takes_short_path_below(tg):
     start = _mpo(tg)
     try:
