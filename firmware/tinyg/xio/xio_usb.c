@@ -58,8 +58,8 @@ int xio_putc_usb(const char c, FILE *stream)
 	while (next_tx_buf_head == USBu.tx_buf_tail)
 		sleep_mode(); 									// sleep until there is space in the buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
-	USBu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
-	USBu.tx_buf[USBu.tx_buf_head] = c;					// write char to buffer
+	USBu.tx_buf[next_tx_buf_head] = c;					// write char to buffer, then publish it: the RX
+	USBu.tx_buf_head = next_tx_buf_head;				// ISR (XON) or CTS ISR may re-enable TX at any time
 
 	// expand <LF> to <LF><CR> if $ec is set
 	if ((c == '\n') && (USB.flag_crlf)) {
@@ -68,8 +68,8 @@ int xio_putc_usb(const char c, FILE *stream)
 		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
 		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
+		USBu.tx_buf[next_tx_buf_head] = CR;
 		USBu.tx_buf_head = next_tx_buf_head;
-		USBu.tx_buf[USBu.tx_buf_head] = CR;
 	}
 	// finish up
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
