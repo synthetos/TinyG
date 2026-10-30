@@ -30,7 +30,6 @@ def recover(tg):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E142", on=["d440", "d449"])
 def test_output_resumes_after_xon_with_full_tx_buffer(tg, recover):
     if tg.get("ex") != 1:
         pytest.skip("needs XON/XOFF flow control ($ex=1)")

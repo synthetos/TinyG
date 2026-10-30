@@ -91,8 +91,10 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		return;
 	}
 
-	// Halt transmission while in TX-side XOFF
+	// Halt transmission while in TX-side XOFF. Disable the interrupt, or it re-fires continuously;
+	// XON and the next xio_putc_usb() re-enable it.
 	if (USBu.fc_state_tx == FC_IN_XOFF) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;
 		return;
 	}
 
@@ -166,7 +168,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 		if (c == XON) {
 			USBu.fc_state_tx = FC_IN_XON;
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;// force a TX interrupt
+			USBu.usart->CTRLA = CTRLA_RXON_TXON;	// re-enable the TX interrupt to resume sending
 			return;
 		}
 	}
