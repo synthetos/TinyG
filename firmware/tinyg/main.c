@@ -156,6 +156,7 @@ static void _application_init_startup(void)
 	config_init();					            // SECOND: read config records from eeprom
     stepper_init_complete();                    // runtime geometry guards apply from here
 	switch_init();                              // switch setup relies on config settings
+    sw.configured = true;
 	canonical_machine_reset();                  // depends on config_init()
     spindle_init();                             // depends on config_init()
     spindle_init_outputs();                     // latch configured OFF before enabling outputs

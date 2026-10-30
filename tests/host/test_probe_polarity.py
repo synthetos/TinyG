@@ -26,7 +26,7 @@ typedef int stat_t;
 typedef struct {uint32_t value_int;} nvObj_t;
 struct {int cycle_state;} cm;
 struct {int buffer_state;} st_pre;
-struct {uint8_t switch_type,probe_type;struct {int mode,type,state,edge,lockout_ms,timeout;} s[8];} sw;
+struct {bool configured;uint8_t switch_type,probe_type;struct {int mode,type,state,edge,lockout_ms,timeout;} s[8];} sw;
 static bool queued,busy;
 bool mp_has_runnable_buffer(void) {return queued;}
 bool mp_runtime_is_idle(void) {return !busy;}
@@ -37,7 +37,7 @@ void switch_init(void) {reset_switches();}
 '''
 MAIN=r'''
 int main(void) {
- st_pre.buffer_state=1;sw.switch_type=1;
+ st_pre.buffer_state=1;sw.switch_type=1;sw.configured=true;
  for(int i=0;i<8;i++)sw.s[i].mode=1;
  sw.s[0].mode=SW_MODE_PROBE;sw.s[7].mode=SW_MODE_DISABLED;
  nvObj_t n;
@@ -54,6 +54,7 @@ int main(void) {
  st_pre.buffer_state=0;assert(sw_set_prbp(&n)==106);st_pre.buffer_state=1;
  cm.cycle_state=1;assert(sw_set_prbp(&n)==106);cm.cycle_state=0;
  SREG=0;assert(sw_set_prbp(&n)==0 && SREG==0);
+ sw.configured=false;queued=busy=true;n.value_int=1;assert(sw_set_prbp(&n)==0 && sw.probe_type==1);
  return 0;
 }
 '''

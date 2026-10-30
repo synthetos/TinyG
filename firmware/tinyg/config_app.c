@@ -625,6 +625,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
     { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
 
+    { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
+
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***
