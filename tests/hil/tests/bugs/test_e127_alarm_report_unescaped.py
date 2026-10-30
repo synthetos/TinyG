@@ -19,7 +19,6 @@ def _alarm_reports(tg, send):
         tg.clear_alarm()
 
 
-@pytest.mark.bug("E127", on=["d449"])
 def test_alarm_from_json_command_is_valid_json(tg):
     reports = _alarm_reports(tg, lambda: tg.send_json({"gc": "G41"}))   # G41 is unsupported -> alarm
     assert [e.kind for e in reports] == ["exception"], [e.raw for e in reports]

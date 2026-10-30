@@ -14,7 +14,6 @@ SR_LINE = ('{"sr":{"line":t,"posx":t,"posy":t,"posz":t,"vel":t,"unit":t,"stat":t
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E098", on=["d449"])
 def test_chilipeppr_status_report_setup(tg):
     original_sr = list(tg.get("sr"))
     assert len(SR_LINE) == 151
