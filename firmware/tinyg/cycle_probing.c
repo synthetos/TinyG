@@ -156,6 +156,15 @@ uint8_t cm_probe_callback(void)
 	if (cm_get_runtime_busy()) {        // sync to planner move ends
         return (STAT_EAGAIN);
     }
+	if (cm_is_alarmed() != STAT_OK) {   // an alarm ends the probe: don't queue its move
+		cm.probe_state = PROBE_FAILED;
+		if (cm.cycle_state == CYCLE_PROBE) {
+			cm.cycle_state = CYCLE_OFF;	// first, so the finalize's cm_cycle_end() keeps the ALARM
+			pb.already_tripped = false;
+			_probing_finalize_exit();	// restore jerk and distance mode
+		}
+		return (STAT_OK);
+	}
 	return (pb.func());                 // execute the staged homing move
 }
 

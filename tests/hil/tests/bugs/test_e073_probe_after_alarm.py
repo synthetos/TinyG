@@ -46,7 +46,7 @@ def use_zmin_probe(tg, keep):
     tg.set("zsn", 4)
 
 
-@pytest.mark.bug("E073", on=["d449"])
+@pytest.mark.bug("E073", on=[])
 def test_pending_probe_does_not_run_after_alarm(tg, keep):
     use_zmin_probe(tg, keep)
     tg.send_gcode("G92 X0 Y0 Z0", check=True)     # work zero here; M2 in the next test clears it
@@ -69,3 +69,27 @@ def test_pending_probe_does_not_run_after_alarm(tg, keep):
         tg.clear_alarm()
         tg.send_gcode("G90 G1 X0 Y0 Z0 F600", check=True, allow="return to the G92 zero")
         idle(tg)
+
+
+@pytest.mark.ice
+@pytest.mark.profile("switches-no", "homing-x")
+@pytest.mark.bug("E073", on=[])
+def test_homing_stops_for_good_on_alarm(tg, switches, record):
+    """cm_homing_callback queues the next homing move after an alarm's hold; the cycle must end instead."""
+    switches.mount("x", "min", at=-50.0)        # far away: the alarm arrives during the search
+    try:
+        tg.send_gcode("G28.2 X0", check=True, allow="homing search toward a switch 50 mm away")
+        time.sleep(1.0)
+        tg.send_json({"alarm": None})
+        time.sleep(1.5)                            # the hold, the flush, and any wrongly queued move
+        p1 = switches.physical_position("x")
+        time.sleep(1.5)
+        p2 = switches.physical_position("x")
+        record("positions", {"after_alarm": p1, "later": p2})
+        assert tg.stat() == tg.dialect.stat("ALARM"), "the alarm was cleared by the homing cycle's exit"
+        assert tg.get("cycs") == 0 and tg.get("homx") == 0
+        assert abs(p2 - p1) < 0.01, "X kept moving after the alarm"
+    finally:
+        tg.clear_alarm()
+        switches.unmount_all()
+        tg.send_gcode("G90", check=True)

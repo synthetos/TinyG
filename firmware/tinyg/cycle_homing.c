@@ -194,6 +194,14 @@ stat_t cm_homing_callback(void)
 	if (cm_get_runtime_busy() == true) {        // sync to planner move ends
         return (STAT_EAGAIN);
     }
+	if (cm_is_alarmed() != STAT_OK) {           // an alarm (limit, {alarm}, ...) ends the cycle: never
+		cm.cycle_state = CYCLE_OFF;				// queue the next homing move. CYCLE_OFF first, so the
+		if (hm.axis >= 0) {						// finalize's cm_cycle_end() can't clear the ALARM
+			cm_set_axis_jerk(hm.axis, hm.saved_jerk);
+		}
+		_homing_finalize_exit(hm.axis);			// restore coordinate system, units, modes
+		return (STAT_OK);						// homing state stays HOMING_NOT_HOMED
+	}
 	return (hm.func(hm.axis));                  // execute the current homing move
 }
 
