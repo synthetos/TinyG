@@ -28,7 +28,6 @@ def _fill_planner(tg):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E035", on=["d449"])
 def test_control_line_while_rx_buffers_full(tg):
     try:
         _fill_planner(tg)
