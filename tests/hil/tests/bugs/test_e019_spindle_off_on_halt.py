@@ -28,7 +28,6 @@ def _outputs_on(tg, ice):
         time.sleep(0.05)
 
 
-@pytest.mark.bug("E019", on=["d449"])
 def test_alarm_turns_spindle_and_coolant_off(tg, ice):
     _outputs_on(tg, ice)
     try:
@@ -42,7 +41,6 @@ def test_alarm_turns_spindle_and_coolant_off(tg, ice):
         tg.send_gcode("M5 M9", allow=OUTPUTS)
 
 
-@pytest.mark.bug("E019", on=["d449"])
 def test_shutdown_turns_outputs_off_and_holds_direction(tg, ice):
     _outputs_on(tg, ice)
     try:

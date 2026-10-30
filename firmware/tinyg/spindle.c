@@ -52,7 +52,8 @@ void spindle_init()
 
 void spindle_reset()
 {
-    return;
+    float value[] = { (float)SPINDLE_OFF };
+    _exec_spindle_control(value, FLAGS_NONE);   // immediate, not queued: used by alarm, shutdown and panic
 }
 
 /*
