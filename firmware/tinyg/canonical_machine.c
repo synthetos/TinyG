@@ -1853,7 +1853,7 @@ void cm_program_end()
 	cm.gm.flood_coolant = false;
 //	cm_set_units_mode(cm.units_mode);				// 10. reset to default units mode +++ REMOVED +++
 
-	float value[] = { (float)MACHINE_PROGRAM_END, (float)cm.default_coord_system };
+	float value[AXES] = { (float)MACHINE_PROGRAM_END, (float)cm.default_coord_system };	// mp_queue_command reads AXES values
 	mp_queue_command(_exec_program_end, value, FLAGS_ONE);
 }
 
