@@ -62,6 +62,14 @@ $(BUILDDIR)/%.o: %.c
 size: $(BUILDDIR)/tinyg.elf
 	$(SIZE) $<
 
+# Format-string lint: compile every source with lint.h forced in, so GCC checks the PSTR() formats
+# of printf_P/sprintf_P (avr-libc gives them no format attribute). Needs -O2 -c: the overflow and
+# truncation checks run in an optimisation pass. Output is discarded; nothing is built.
+LINT_FLAGS = -include lint.h -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
+             -Wno-format-nonliteral -Wno-format-security
+lint:
+	@for f in $(SRCS); do $(CC) $(filter-out -MMD -MP,$(CFLAGS)) $(LINT_FLAGS) -c $$f -o /dev/null || exit 1; done
+
 # Flash via the xboot bootloader (avr109 protocol). Set PORT to your device,
 # e.g. make flash PORT=/dev/tty.usbserial-XXXX
 PORT ?= /dev/tty.usbserial*
@@ -73,4 +81,4 @@ clean:
 
 -include $(OBJS:.o=.d)
 
-.PHONY: all size flash clean
+.PHONY: all size lint flash clean
