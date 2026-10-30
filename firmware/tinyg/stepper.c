@@ -266,18 +266,43 @@ void stepper_init()
 
 void stepper_reset()
 {
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+    TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;
+    TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;
+    TIMER_LOAD.CTRLA = LOAD_TIMER_DISABLE;
+    TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;
+    TIMER_DDA.CNT = 0;
+    TIMER_DWELL.CNT = 0;
+    TIMER_LOAD.CNT = 0;
+    TIMER_EXEC.CNT = 0;
+    // Clock-off does not clear a pending overflow interrupt.
+    TIMER_DDA.INTFLAGS = TC0_OVFIF_bm;
+    TIMER_DWELL.INTFLAGS = TC0_OVFIF_bm;
+    TIMER_LOAD.INTFLAGS = TC0_OVFIF_bm;
+    TIMER_EXEC.INTFLAGS = TC0_OVFIF_bm;
+#endif
 #ifdef __ARM
     dda_timer.stop();                                   // stop all movement
     dwell_timer.stop();
 #endif
 
+    st_pre.block_type = BLOCK_TYPE_NULL;               // discard any prepared move after a halt
+    st_pre.dda_ticks = 0;
     st_run.dda_ticks_downcount = 0;                     // signal the runtime is not busy
     st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;    // set to EXEC or it won't restart
 
 	for (uint8_t motor=0; motor<MOTORS; motor++) {      // Note: do not initialize prev_direction
+#ifdef __AVR
+        hw.st_port[motor]->OUTCLR = STEP_BIT_bm;
+#endif
 		st_run.mot[motor].substep_accumulator = 0;      // will become max negative during per-motor setup;
 		st_pre.mot[motor].corrected_steps = 0;          // diagnostic only - no action effect
 	}
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
  	mp_set_steps_to_runtime_position();                 // reset encoder to agree with the above
 }
 
@@ -321,12 +346,30 @@ uint8_t st_runtime_isbusy()
 	return (true);
 }
 
+static bool _stepper_configuration_busy()
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool busy = st_runtime_isbusy() || mp_has_runnable_buffer() ||
+                (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER);
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return (busy);
+}
+
 /*
  * st_clc() - clear counters
  */
 
 stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
 {
+    if (_stepper_configuration_busy()) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+
 	stepper_reset();
 	return(STAT_OK);
 }
@@ -1181,6 +1224,10 @@ static void _set_motor_steps_per_unit(nvObj_t *nv)
 
 stat_t st_set_sa(nvObj_t *nv)			// motor step angle
 {
+    if (_stepper_configuration_busy()) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+
 	set_flt(nv);
 	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
@@ -1188,6 +1235,10 @@ stat_t st_set_sa(nvObj_t *nv)			// motor step angle
 
 stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 {
+    if (_stepper_configuration_busy()) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+
 	set_flu(nv);
 	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
@@ -1195,6 +1246,10 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 
 stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 {
+    if (_stepper_configuration_busy()) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+
     uint32_t mi = nv->value_int;
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
