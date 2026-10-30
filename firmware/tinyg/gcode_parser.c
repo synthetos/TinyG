@@ -407,7 +407,11 @@ static stat_t _parse_gcode_block(char *buf)
 				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
-				case 400: SET_NON_MODAL (next_action, NEXT_ACTION_WAIT_FOR_COMPLETION);
+				case 400:
+                        if ((value != 400) || strcmp_P(buf, PSTR("M400"))) {
+                            return (STAT_COMMAND_NOT_ACCEPTED);
+                        }
+                        SET_NON_MODAL (next_action, NEXT_ACTION_WAIT_FOR_COMPLETION);
 				default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
 			}
 			break;

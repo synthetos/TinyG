@@ -157,6 +157,7 @@ static void _scan_tid(const char *p)
 
 void json_parser(char *str)
 {
+    js.motion_sync_allowed = true;
 	_scan_tid(str);									// before the tokenizer edits the string
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(&nv, str);
@@ -187,6 +188,26 @@ void json_parser(char *str)
  *    - TXT commands cannot be nested
  */
 
+// Tokenizer has already normalized keys and marked depth; values cannot masquerade as keys.
+static bool _motion_sync_envelope(const char *str)
+{
+    const char *field = str;
+    uint8_t gc = 0, tid = 0;
+    for (const char *p = str; *p != NUL; p++) {
+        uint8_t token = (uint8_t)*p;
+        if (!(token & JTOK_FLAG)) { continue; }
+        if (token & JTOK_KEY) {
+            if ((token & JTOK_PARENT) || ((token & JTOK_DEPTH) != (1 << JTOK_DSHIFT))) { return (false); }
+            uint16_t length = p - field;
+            if ((length == 2) && (field[0] == 'g') && (field[1] == 'c')) { gc++; }
+            else if ((length == 3) && (field[0] == 't') && (field[1] == 'i') && (field[2] == 'd')) { tid++; }
+            else { return (false); }
+        }
+        field = p + 1;
+    }
+    return ((gc == 1) && (tid <= 1) && (!tid || js.tid_present));
+}
+
 static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
 {
 	char group[GROUP_LEN+1] = "";   // group identifier - initial value must be provided
@@ -194,6 +215,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
 
     //---- do an application agnostic pre-parse of JSON string ----//
 	ritorno(_tokenize_json_string(str, JSON_INPUT_STRING_MAX, JSON_PAIRS_MAX)); // return if exception
+    js.motion_sync_allowed = js.motion_sync_allowed && _motion_sync_envelope(str);
 
 	//---- parse the JSON string into the nv list one executable NV at a time ----//
     do {
@@ -705,6 +727,11 @@ void json_print_response(uint8_t status)
 		js.tid_present = false;
     	return;
 	}
+    if (controller_defer_motion_response(status, true)) {
+        js.tid_present = false;
+        cs.linelen = 0;
+        return;
+    }
 	nvObj_t *nv = NV_HEAD;	                            // setup the response header
     if (nv->valuetype != TYPE_TXTCON) {                 // include r{} if not a text container
 	    nv->valuetype = TYPE_PARENT;
@@ -771,11 +798,10 @@ void json_print_response(uint8_t status)
 	strcpy(nv->token, "f");                             // terminate the list
 
 	// serialize the JSON response and print it if there were no errors
-	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-        if (!controller_defer_motion_response(status, cs.out_buf)) {
-            printf(cs.out_buf);
-        }
-	}
+    if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
+        printf(cs.out_buf);
+    }
+
 }
 
 /*

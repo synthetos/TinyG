@@ -64,8 +64,8 @@ static struct {
     uint8_t reply;
     bool char_mode;
     uint16_t linelen;
-    // Leave room for an error status to lengthen the completion footer.
-    char response[OUTPUT_BUFFER_LEN+8];
+    uint32_t tid;
+    bool tid_present;
 } motion_sync;
 
 /***********************************************************************************
@@ -303,6 +303,7 @@ static void _dispatch_kernel()
         cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+    js.motion_sync_allowed = true;
 	js.tid_present = false;									// only json_parser() sets it, for this line (E049)
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
@@ -472,10 +473,13 @@ static stat_t _sync_to_tx_buffer()
 	return (STAT_OK);
 }
 
-/* Keep the deferred reply separate: control queries reuse the shared NV/output buffers. */
+/* Capture only completion metadata; control queries reuse the shared NV/output buffers. */
 stat_t controller_request_motion_sync(void)
 {
     if (motion_sync.state != SYNC_OFF) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    if (!js.motion_sync_allowed) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    motion_sync.tid = js.tid;
+    motion_sync.tid_present = js.tid_present;
     motion_sync.state = SYNC_REQUESTED;
     motion_sync.reply = SYNC_SILENT;
     motion_sync.char_mode = (xio.rx_mode == RX_MODE_CHAR);
@@ -483,32 +487,26 @@ stat_t controller_request_motion_sync(void)
     return (STAT_OK);
 }
 
-bool controller_defer_motion_response(const stat_t status, const char *response)
+bool controller_defer_motion_response(const stat_t status, bool json)
 {
     if (motion_sync.state != SYNC_REQUESTED) { return (false); }
     if (status != STAT_OK) {
         motion_sync.state = SYNC_OFF;
         return (false);
     }
-    if (response == NULL) {
-        motion_sync.reply = SYNC_TEXT;
-    } else {
-        strncpy(motion_sync.response, response, OUTPUT_BUFFER_LEN);
-        motion_sync.response[OUTPUT_BUFFER_LEN-1] = NUL;
-        motion_sync.reply = SYNC_JSON;
-    }
+    motion_sync.reply = json ? SYNC_JSON : SYNC_TEXT;
     return (true);
 }
 
 static stat_t _sync_to_motion(void)
 {
     if (motion_sync.state == SYNC_OFF) { return (STAT_NOOP); }
-    stat_t status = cm_is_alarmed();
     // Include the prepared segment: its planner buffer may already be freed.
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    stat_t status = cm_is_alarmed();
     bool busy = mp_has_runnable_buffer() || !mp_runtime_is_idle() ||
                 (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER);
 #ifdef __AVR
@@ -522,15 +520,13 @@ static stat_t _sync_to_motion(void)
         nv_reset_nv_list(NUL);
         text_response(status, command);
     } else if (motion_sync.reply == SYNC_JSON) {
-        // The serializer always appends f last. Refresh credits at completion.
-        char *footer = strrchr(motion_sync.response, '[');
-        if (footer != NULL) {
-            snprintf_P(footer, sizeof(motion_sync.response) - (footer - motion_sync.response),
-                       PSTR("[%u,%u,%u]}\n"), (unsigned int)(motion_sync.char_mode ? 2 : 3),
-                       (unsigned int)status, (unsigned int)(motion_sync.char_mode ?
-                       motion_sync.linelen : xio_get_line_buffers_available()));
-            fputs(motion_sync.response, stdout);
+        fputs_P(PSTR("{\"r\":{\"gc\":\"M400\"}"), stdout);
+        if (motion_sync.tid_present) {
+            fprintf_P(stdout, PSTR(",\"tid\":%lu"), (unsigned long)motion_sync.tid);
         }
+        fprintf_P(stdout, PSTR(",\"f\":[%u,%u,%u]}\n"),
+                  (unsigned int)(motion_sync.char_mode ? 2 : 3), (unsigned int)status,
+                  (unsigned int)(motion_sync.char_mode ? motion_sync.linelen : xio_get_line_buffers_available()));
     }
     return (STAT_OK);
 }

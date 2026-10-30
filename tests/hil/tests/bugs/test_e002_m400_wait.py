@@ -29,7 +29,7 @@ def _text_mode(tg, line: str, timeout: float = 2.0):
 def test_m400_json_waits_for_dwell(tg):
     tg.send_gcode("G4 P2", check=True)
     t0 = time.monotonic()
-    tg.transport.write(b"M400\n")
+    tg.transport.write(b'{"gc":"M400","tid":4294967295}\n')
     time.sleep(0.2)
     tg.transport.write(b'{"sr":null}\n')     # control lines must still be answered during the wait
     responses = []
@@ -42,6 +42,8 @@ def test_m400_json_waits_for_dwell(tg):
     (t_first, first), (t_m400, m400) = responses
     assert "sr" in first.data.get("r", {}) and t_first < 1.0, first.raw
     assert m400.data["f"][1] == 0, m400.raw
+    assert m400.data.get("r") == {"gc": "M400"}, m400.raw
+    assert m400.data.get("tid") == 4294967295, m400.raw
     assert t_m400 >= 1.9
 
 
