@@ -8,6 +8,7 @@ has no headroom check, so mp_get_write_buffer() fails (planner.c:403, st 28) and
 planner.c:217,260 call cm_panic (st 14). Master reads one line at a time behind _sync_to_planner.
 """
 import time
+import warnings
 
 import pytest
 
@@ -34,9 +35,18 @@ def _fill_planner(tg):
 @pytest.mark.parametrize("rxm", [1, 0], ids=["line-mode", "char-mode"])
 def test_json_gc_waits_for_planner_room(tg, keep, rxm):
     keep("rxm")
-    tg.set("rxm", rxm, allow="test both receive modes")
     panic = tg.dialect.stat("PANIC")
     try:
+        tg.set("rxm", rxm, allow="test both receive modes")
+        if rxm == 0:
+            # E079 can garble the first line after switching the shared receive pool.
+            first = tg.send_json({"fb": None})
+            first_ok = first.status == 0 and first.body.get("fb") == pytest.approx(tg.identity["fb"])
+            assert tg.get("fb") == pytest.approx(tg.identity["fb"]), "char-mode GET did not resynchronize"
+            tg.drain()
+            if not first_ok:
+                warnings.warn(f"E079: first GET after rxm=0 was corrupted; second GET recovered: {first.raw}",
+                              RuntimeWarning)
         _fill_planner(tg)
         burst = "".join(encode({"txt": "G4 P0.01", "tid": k}) + "\n" for k in range(1, 7))
         tg.transport.write(burst.encode())      # one write, so all six arrive while the planner is full
