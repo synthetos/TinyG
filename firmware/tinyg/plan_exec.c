@@ -260,6 +260,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                 cs.controller_state = CONTROLLER_READY;                 // remove controller readline() PAUSE
                 cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
                 cm.hold_fast = false;
+                cm.hold_escalate = false;
             }
             return (STAT_OK);                                           // hold here. No more movement
         }
@@ -267,8 +268,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Cases (1a, 1b), Case (2), Case (4)
         // Build a tail-only move from here. Decelerate as fast as possible in the space we have.
         // Finish up the initialization in the case of a new deceleration_continue block.
-        if ((cm.hold_state == FEEDHOLD_SYNC) ||
+        if ((cm.hold_state == FEEDHOLD_SYNC) || cm.hold_escalate ||
             ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
+            cm.hold_escalate = false;               // a limit during a normal hold rebuilds the tail once
             if ((mr.section == SECTION_TAIL) && !cm.hold_fast) {   // already decelerating (a fast stop rebuilds the tail)
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;

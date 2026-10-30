@@ -221,10 +221,15 @@ static void _dispatch_switch(const uint8_t sw_num)
         return;
     }
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
-		cm.hold_fast = true;							// brake at the homing jerk, and start the hold here
-		if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state == MOTION_RUN)) {	// rather than waiting
-			cm_set_motion_state(MOTION_HOLD);			// for the main loop (same as cm_start_hold()):
-			cm.hold_state = FEEDHOLD_SYNC;				// the exec picks it up at the next segment
+		if (!cm.hold_fast) {							// once per stop: brake at the homing jerk
+			cm.hold_fast = true;
+			if (((cm.hold_state == FEEDHOLD_OFF) || (cm.hold_state == FEEDHOLD_REQUESTED)) &&
+				(cm.motion_state == MOTION_RUN)) {		// start the hold here, not in the main loop
+				cm_set_motion_state(MOTION_HOLD);		// (same as cm_start_hold()); the exec picks
+				cm.hold_state = FEEDHOLD_SYNC;			// it up at the next segment
+			} else if ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) || (cm.hold_state == FEEDHOLD_DECEL_TO_ZERO)) {
+				cm.hold_escalate = true;				// a normal hold is already braking: rebuild it fast
+			}
 		}
     	controller_assert_limit_condition(sw_num+1);
 	}
