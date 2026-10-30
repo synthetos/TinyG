@@ -89,8 +89,75 @@ static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t
  */
 
 //void json_parser(char *str, nvObj_t *nv, bool display)
+/*
+ * _scan_tid() - find a top-level "tid" key before anything executes (E049)
+ *
+ *	Pairs execute one at a time and the first error returns, so a tid after the failing pair was
+ *	never marshalled. Scan the raw line lexically instead: strings (with escapes) are skipped, depth
+ *	is tracked, and only a key of the top-level object counts - quoted or bare, any case, spaces or
+ *	tabs around the ':'. The value must be a plain unsigned integer that fits a uint32 followed by
+ *	',' or '}'; anything else (42.5, -1, "42", overflow) leaves no tid.
+ */
+static bool _is_key_char(char c)
+{
+	return (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9')) || (c == '_'));
+}
+
+static void _scan_tid(const char *p)
+{
+	js.tid_present = false;
+	uint8_t depth = 0;
+	bool expect_key = false;
+	while (*p != NUL) {
+		char c = *p;
+		if ((c == '"') && !((depth == 1) && expect_key)) {		// skip a string (value or nested key)
+			for (p++; (*p != NUL) && (*p != '"'); p++) {
+				if ((*p == '\\') && (p[1] != NUL)) { p++; }
+			}
+			if (*p != NUL) { p++; }
+			continue;
+		}
+		if ((c == '{') || (c == '[')) { depth++; expect_key = ((c == '{') && (depth == 1)); p++; continue; }
+		if ((c == '}') || (c == ']')) { if (depth) { depth--; } p++; continue; }
+		if ((depth == 1) && (c == ',')) { expect_key = true; p++; continue; }
+		if ((depth == 1) && expect_key && (c != ' ') && (c != '\t')) {
+			bool quoted = (c == '"');
+			char key[4] = "";
+			uint8_t n = 0;
+			if (quoted) { p++; }
+			while ((*p != NUL) && (quoted ? (*p != '"') : _is_key_char(*p))) {
+				if (n < 3) { key[n] = (*p >= 'A' && *p <= 'Z') ? (*p + ('a' - 'A')) : *p; }
+				n++; p++;
+			}
+			if (quoted && (*p == '"')) { p++; }
+			expect_key = false;
+			while ((*p == ' ') || (*p == '\t')) { p++; }
+			if (*p != ':') { continue; }
+			p++;
+			if ((n != 3) || (key[0] != 't') || (key[1] != 'i') || (key[2] != 'd')) { continue; }
+			while ((*p == ' ') || (*p == '\t')) { p++; }
+			uint32_t value = 0;
+			uint8_t digits = 0;
+			while ((*p >= '0') && (*p <= '9')) {
+				uint8_t d = *p++ - '0';
+				if (value > (0xFFFFFFFFUL - d) / 10) { return; }	// does not fit a uint32
+				value = value * 10 + d;
+				digits++;
+			}
+			while ((*p == ' ') || (*p == '\t')) { p++; }
+			if (digits && ((*p == ',') || (*p == '}'))) {
+				js.tid = value;
+				js.tid_present = true;
+			}
+			return;
+		}
+		p++;
+	}
+}
+
 void json_parser(char *str)
 {
+	_scan_tid(str);									// before the tokenizer edits the string
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(&nv, str);
 //    if (display) {
@@ -631,9 +698,11 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 void json_print_response(uint8_t status)
 {
 	if (js.json_verbosity == JV_SILENT) {               // silent responses
+		js.tid_present = false;							// a tid belongs to this line only (E049)
         return;
     }
 	if (status == STAT_NO_DISPLAY) {                    // upstream function has already performed output
+		js.tid_present = false;
     	return;
 	}
 	nvObj_t *nv = NV_HEAD;	                            // setup the response header
@@ -676,6 +745,16 @@ void json_print_response(uint8_t status)
 			    }
             }
 		} while ((nv = nv_next(nv)) != NULL);
+	}
+	if (js.tid_present) {								// the tid goes back at the top level, exactly,
+		for (nv = NV_BODY; nv != NULL; nv = nv_next(nv)) {	// whatever the JSON verbosity (E049)
+			if (nv->valuetype == TYPE_EMPTY) { break; }
+			if (strcmp(nv->token, "tid") == 0) { nv->valuetype = TYPE_SKIP; }	// not the float echo
+		}
+		if ((nv = nv_add_integer("tid", js.tid)) != NULL) {
+			nv->depth = 0;								// a peer of r{} and f[]
+		}
+		js.tid_present = false;
 	}
     nv = NV_FOOT;                                       // Add the footer
 	char footer_string[NV_FOOTER_LEN];
