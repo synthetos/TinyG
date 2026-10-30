@@ -1,0 +1,8 @@
+{
+ "description": "40 mm/rev belt drive (low steps per mm)",
+ "motors": {
+  "1-4": {
+   "tr": 40
+  }
+ }
+}

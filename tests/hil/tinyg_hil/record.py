@@ -47,7 +47,7 @@ class RunRecorder:
     def begin(self, nodeid, tg, bugs, markers):
         rec = {"nodeid": nodeid, "bugs": bugs, "markers": markers, "phases": {},
                "history_start": len(tg.transport.history), "sent_start": len(tg.transport.sent),
-               "t0": time.monotonic(), "start_position": None}
+               "t0": time.monotonic(), "start_position": None, "config": getattr(tg, "config_info", None)}
         if "motion" in markers:
             try:
                 rec["start_position"] = {t: tg.get(t) for t in POSITION_TOKENS}

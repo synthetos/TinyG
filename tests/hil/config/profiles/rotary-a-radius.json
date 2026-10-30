@@ -1,0 +1,7 @@
+{
+ "description": "A axis in radius mode: linear units mapped to degrees through ara",
+ "settings": {
+  "aam": 3,
+  "ara": 10
+ }
+}

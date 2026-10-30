@@ -1,0 +1,10 @@
+{
+ "combine": "full",
+ "dimensions": {
+  "ct": {
+   "ct0.001": "arcs-chordal-fine",
+   "ct0.01": "arcs-chordal-default",
+   "ct0.1": "arcs-chordal-coarse"
+  }
+ }
+}

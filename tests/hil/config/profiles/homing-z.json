@@ -1,0 +1,14 @@
+{
+ "description": "Z homes to its min switch (software switch on the bench)",
+ "requires": {
+  "ice": true
+ },
+ "settings": {
+  "zsn": 1,
+  "zsx": 0,
+  "zsv": 400,
+  "zlv": 100,
+  "zlb": 2,
+  "zzb": 1
+ }
+}

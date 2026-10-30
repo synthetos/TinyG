@@ -1,0 +1,8 @@
+{
+ "description": "quarter steps",
+ "motors": {
+  "1-4": {
+   "mi": 4
+  }
+ }
+}

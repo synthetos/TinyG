@@ -1,0 +1,12 @@
+{
+ "description": "Z-min is the probe input (switch mode 4 exists on 449 only)",
+ "requires": {
+  "dialect": [
+   "d449"
+  ]
+ },
+ "settings": {
+  "zsn": 4,
+  "zsx": 0
+ }
+}

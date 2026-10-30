@@ -1,0 +1,186 @@
+{
+  "name": "tinyg-v8",
+  "description": "Synthetos TinyG v8 (ATxmega192A3, FT230X USB serial, PDI header)",
+  "hardware_version": 8,
+  "mcu": {
+    "part": "atxmega192a3",
+    "avrdude_part": "x192a3",
+    "signature": "1E9744",
+    "pdi_device_context": {
+      "appl_base": "0x00800000",
+      "boot_base": "0x00830000",
+      "eeprom_base": "0x008C0000",
+      "fuse_base": "0x008F0020",
+      "lockbit_base": "0x008F0027",
+      "user_sig_base": "0x008E0400",
+      "prod_sig_base": "0x008E0200",
+      "data_base": "0x01000000",
+      "appl_bytes": "0x00030000",
+      "boot_bytes": "0x2000",
+      "flash_page_bytes": 512,
+      "eeprom_bytes": 2048,
+      "eeprom_page_bytes": 32,
+      "nvm_offset": "0x01C0",
+      "signature_offset": "0x0090"
+    },
+    "sram_symbol_base": "0x800000",
+    "ports": {
+      "A": "0x0600",
+      "B": "0x0620",
+      "C": "0x0640",
+      "D": "0x0660",
+      "E": "0x0680",
+      "F": "0x06A0"
+    },
+    "port_registers": {
+      "OUT": 4,
+      "IN": 8,
+      "PINCTRL": 16
+    },
+    "pinctrl_opc": {
+      "mask": "0x38",
+      "pullup": "0x18",
+      "pulldown": "0x10"
+    },
+    "pinctrl_isc": {
+      "mask": "0x07",
+      "bothedges": "0x00",
+      "rising": "0x01"
+    }
+  },
+  "serial": {
+    "usb_vid_pid": "0403:6015",
+    "baud": 115200,
+    "usart": "USARTC0"
+  },
+  "programming": {
+    "bootloader": {
+      "programmer": "avr109",
+      "baud": 115200,
+      "enter": "{\"boot\":1}"
+    },
+    "pdi": {
+      "programmer": "atmelice_pdi",
+      "port": "usb"
+    }
+  },
+  "outputs": {
+    "spindle_enable": {
+      "port": "A",
+      "bit": 5,
+      "gpio_mask": "0x08"
+    },
+    "spindle_dir": {
+      "port": "F",
+      "bit": 5,
+      "gpio_mask": "0x04"
+    },
+    "out3": {
+      "port": "D",
+      "bit": 5,
+      "gpio_mask": "0x02"
+    },
+    "coolant": {
+      "port": "E",
+      "bit": 5,
+      "gpio_mask": "0x01",
+      "note": "mist and flood share this output"
+    }
+  },
+  "switches": {
+    "x": {
+      "port": "A",
+      "min": 6,
+      "max": 7,
+      "input_min": 1,
+      "input_max": 2
+    },
+    "y": {
+      "port": "D",
+      "min": 6,
+      "max": 7,
+      "input_min": 3,
+      "input_max": 4
+    },
+    "z": {
+      "port": "E",
+      "min": 6,
+      "max": 7,
+      "input_min": 5,
+      "input_max": 6
+    },
+    "a": {
+      "port": "F",
+      "min": 6,
+      "max": 7,
+      "input_min": 7,
+      "input_max": 8
+    }
+  },
+  "firmware_symbols": {
+    "runtime_position": "mr.position",
+    "axis_index": {
+      "x": 0,
+      "y": 1,
+      "z": 2,
+      "a": 3,
+      "b": 4,
+      "c": 5
+    },
+    "encoder_steps": "en.en[{motor_index}].encoder_steps"
+  },
+  "motors": {
+    "1": {
+      "port": "A",
+      "step": 0,
+      "dir": 1,
+      "enable": 2
+    },
+    "2": {
+      "port": "F",
+      "step": 0,
+      "dir": 1,
+      "enable": 2
+    },
+    "3": {
+      "port": "E",
+      "step": 0,
+      "dir": 1,
+      "enable": 2
+    },
+    "4": {
+      "port": "D",
+      "step": 0,
+      "dir": 1,
+      "enable": 2
+    }
+  },
+  "step_counter": {
+    "note": "TCC1 is TinyG's unallocated timer (hardware.h TIMER_5); the firmware does not use the event system",
+    "timer_base": "0x0840",
+    "timer_registers": {
+      "CTRLA": "0x00",
+      "CTRLB": "0x01",
+      "CTRLD": "0x03",
+      "CNT": "0x20",
+      "PER": "0x26",
+      "CCA": "0x28"
+    },
+    "event_channel": 0,
+    "evsys_base": "0x0180",
+    "evsys_port_pin_mux": {
+      "A": "0x50",
+      "B": "0x58",
+      "C": "0x60",
+      "D": "0x68",
+      "E": "0x70",
+      "F": "0x78"
+    },
+    "clksel_evch0": "0x08",
+    "clksel_div1": "0x01",
+    "evact_pw": "0xC0",
+    "evsel_ch0": "0x08",
+    "ccaen": "0x10",
+    "cpu_hz": 32000000
+  }
+}

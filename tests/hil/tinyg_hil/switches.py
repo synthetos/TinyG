@@ -11,14 +11,12 @@ with a physical switch (see Ice.set_switch_level).
     ...run G28.2 Z0 over serial...
     sw.unmount_all()
 
-Mounted switches are followed by a background thread that samples mr.position[axis] (runtime machine
-position, mm) over the ICE. Each sample halts the CPU for a few milliseconds; the trip lags the crossing
-by about one sample period (interval + halt), which at homing search speeds is a few hundredths of a mm.
+Mounted switches are followed by a background thread that samples the runtime machine position
+(board file firmware_symbols.runtime_position, mm) over the ICE. Each sample halts the CPU for a few
+milliseconds; the trip lags the crossing by about one sample period (interval + halt), which at homing search speeds is a few hundredths of a mm.
 """
 import threading
 import time
-
-AXIS_INDEX = {"x": 0, "y": 1, "z": 2, "a": 3}
 
 
 class SoftSwitches:
@@ -78,7 +76,8 @@ class SoftSwitches:
 
     def position(self, axis):
         with self._lock:
-            return self.ice.peek(f"mr.position[{AXIS_INDEX[axis]}]")
+            board = self.ice.board
+            return self.ice.peek(f"{board.symbols['runtime_position']}[{board.axis_index(axis)}]")
 
     def _follow(self):
         while not self._stop.is_set():

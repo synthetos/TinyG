@@ -1,0 +1,8 @@
+{
+ "description": "eighth steps (TinyG maximum)",
+ "motors": {
+  "1-4": {
+   "mi": 8
+  }
+ }
+}

@@ -17,45 +17,16 @@ import struct
 import time
 from contextlib import contextmanager
 
-SRAM_SYMBOL_BASE = 0x800000         # avr-gcc puts data-space symbols at 0x800000 + address
-
-
-def _le32(v):
-    return bytearray(struct.pack("<I", v))
-
-
-def _le16(v):
-    return bytearray(struct.pack("<H", v))
-
-
-# ATxmega192A3 device context for the AVR8 generic protocol (XMEGA layout)
-DEVICE_DATA = (_le32(0x00800000) + _le32(0x00830000) + _le32(0x008C0000) + _le32(0x008F0020) +
-               _le32(0x008F0027) + _le32(0x008E0400) + _le32(0x008E0200) + _le32(0x01000000) +
-               _le32(0x00030000) + _le16(0x2000) + _le16(512) + _le16(2048) + bytearray([32]) +
-               _le16(0x01C0) + _le16(0x0090))
-
-
-# XMEGA PORTx register blocks in data space (OUT = base + 4, IN = base + 8)
-PORT_BASE = {"A": 0x0600, "B": 0x0620, "C": 0x0640, "D": 0x0660, "E": 0x0680, "F": 0x06A0}
-
-# TinyG v7/v8 output mapping (hardware.h PORT_OUT_V7_*, gpio.c): GPIO1 bit 5 on each port
-TINYG_OUTPUTS = {"spindle_enable": ("A", 5), "spindle_dir": ("F", 5), "out3": ("D", 5), "coolant": ("E", 5)}
-
-
-# TinyG switch inputs (hardware.h PORT_SWITCH_*, switch.c): min on bit 6, max on bit 7 of each axis port.
-# The firmware sets PINnCTRL = PULLUP | ISC_BOTHEDGES. With nothing wired, switching the internal
-# pull-up to a pull-down makes a real edge on the pin, so the real pin-change ISR runs.
-SWITCH_PORTS = {"x": "A", "y": "D", "z": "E", "a": "F"}
-SWITCH_BITS = {"min": 6, "max": 7}
-OPC_MASK, OPC_PULLUP, OPC_PULLDOWN = 0x38, 0x18, 0x10
+from .board import Board, load_board
 
 
 class Symbols:
     """Addresses, sizes and (with DWARF) member offsets and base types from an ELF."""
 
-    def __init__(self, elf_path):
+    def __init__(self, elf_path, sram_symbol_base=0x800000):
         from elftools.elf.elffile import ELFFile
         self.path = elf_path
+        self.sram_symbol_base = sram_symbol_base     # avr-gcc puts data-space symbols at 0x800000 + address
         self._f = open(elf_path, "rb")
         self.elf = ELFFile(self._f)
         self.sym = {}
@@ -97,7 +68,7 @@ class Symbols:
         if name not in self.sym:
             raise KeyError(f"no data symbol {name!r} in {self.path}")
         addr, size = self.sym[name]
-        addr = addr - SRAM_SYMBOL_BASE + offset
+        addr = addr - self.sram_symbol_base + offset
         kind = "bytes"
         die = self._strip(self.types[name]) if name in self.types else None
         for part in parts[1:]:
@@ -150,8 +121,9 @@ def encode(value, size, kind):
 
 
 class Ice:
-    def __init__(self, elf=None, serial=None):
-        self.symbols = Symbols(elf) if elf else None
+    def __init__(self, elf=None, serial=None, board: Board | None = None):
+        self.board = board or load_board()
+        self.symbols = Symbols(elf, self.board.sram_symbol_base) if elf else None
         self.serial = serial
         self.transport = self.target = self.protocol = None
         self._halt_depth = 0
@@ -172,7 +144,7 @@ class Ice:
             except Exception:  # noqa: BLE001
                 pass
         self.target.setup_debug_session()
-        self.protocol.write_device_data(DEVICE_DATA)
+        self.protocol.write_device_data(self.board.pdi_device_data())
         self.target.activate_physical()
         self.protocol.attach(do_break=False)
         return self
@@ -245,31 +217,33 @@ class Ice:
 
     def port_out(self, port):
         """PORTx.OUT register value."""
-        return self.read(PORT_BASE[port] + 4, 1)[0]
+        return self.read(self.board.port_reg(port, "OUT"), 1)[0]
 
     def output(self, name):
-        """State (0/1) of a TinyG output pin by name: spindle_enable, spindle_dir, coolant, out3."""
-        port, bit = TINYG_OUTPUTS[name]
+        """State (0/1) of a board output pin by name (board file "outputs")."""
+        port, bit = self.board.output_pin(name)
         return (self.port_out(port) >> bit) & 1
 
     def outputs(self):
         with self.halted():
-            return {name: self.output(name) for name in TINYG_OUTPUTS}
-
-    def _switch_ctrl(self, axis, end):
-        return PORT_BASE[SWITCH_PORTS[axis]] + 0x10 + SWITCH_BITS[end]       # PORTx.PINnCTRL
+            return {name: self.output(name) for name in self.board.outputs}
 
     def switch_pin(self, axis, end):
         """Electrical level (0/1) of a switch input: PORTx.IN bit."""
-        port = PORT_BASE[SWITCH_PORTS[axis]]
-        return (self.read(port + 8, 1)[0] >> SWITCH_BITS[end]) & 1
+        port, bit = self.board.switch_pin(axis, end)
+        return (self.read(self.board.port_reg(port, "IN"), 1)[0] >> bit) & 1
 
     def set_switch_level(self, axis, end, level):
-        """Drive an unwired switch input high (pull-up, the firmware default) or low (pull-down)."""
-        addr = self._switch_ctrl(axis, end)
+        """Drive an unwired switch input high (pull-up, the firmware default) or low (pull-down).
+
+        The firmware configures switch pins as PULLUP | ISC_BOTHEDGES; changing only the OPC field
+        makes a real edge on the pin, so the firmware's pin-change ISR runs.
+        """
+        port, bit = self.board.switch_pin(axis, end)
+        addr, opc = self.board.pinctrl(port, bit), self.board.opc
         with self.halted():
             ctrl = self.read(addr, 1)[0]
-            self.write(addr, bytes([(ctrl & ~OPC_MASK & 0xFF) | (OPC_PULLUP if level else OPC_PULLDOWN)]))
+            self.write(addr, bytes([(ctrl & ~opc["mask"] & 0xFF) | (opc["pullup"] if level else opc["pulldown"])]))
 
     def set_switch(self, axis, end, closed, normally_closed=False):
         """Simulate a switch: NO switches read low when closed, NC switches read high when open (tripped)."""
@@ -279,8 +253,8 @@ class Ice:
     def release_all_switches(self):
         """Restore every switch input to the firmware's pull-up configuration."""
         with self.halted():
-            for axis in SWITCH_PORTS:
-                for end in SWITCH_BITS:
+            for axis in self.board.switches:
+                for end in ("min", "max"):
                     self.set_switch_level(axis, end, 1)
 
     def pc(self):

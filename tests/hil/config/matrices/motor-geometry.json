@@ -1,0 +1,20 @@
+{
+ "description": "steps-per-unit inputs; pairwise keeps it to a handful of runs",
+ "combine": "pairwise",
+ "dimensions": {
+  "step_angle": {
+   "1.8deg": "motors-1.8deg",
+   "0.9deg": "motors-0.9deg"
+  },
+  "microsteps": {
+   "mi1": "microsteps-1",
+   "mi2": "microsteps-2",
+   "mi8": "microsteps-8"
+  },
+  "travel": {
+   "tr1.25": "travel-leadscrew-1.25",
+   "tr5": "travel-acme-5",
+   "tr40": "travel-belt-40"
+  }
+ }
+}

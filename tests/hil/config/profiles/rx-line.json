@@ -1,0 +1,11 @@
+{
+ "description": "line-mode receive (449)",
+ "requires": {
+  "dialect": [
+   "d449"
+  ]
+ },
+ "settings": {
+  "rxm": 1
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "combine": "full",
+ "dimensions": {
+  "a_mode": {
+   "standard": "rotary-a-standard",
+   "radius": "rotary-a-radius"
+  }
+ }
+}

@@ -27,6 +27,10 @@ def pytest_addoption(parser):
     g.addoption("--no-record", action="store_true", help="do not write run records")
     g.addoption("--run-purpose", default=None, choices=["stock-baseline", "fix-verify", "regression", "adhoc"],
                 help="recorded with the run (default: stock-baseline if the flashed firmware is stock edge, else fix-verify)")
+    g.addoption("--board", default=None, help="board description in tests/hil/boards (default tinyg-v8) [TINYG_BOARD]")
+    g.addoption("--profile", action="append", default=[], help="config profile layered onto every hardware test (repeatable)")
+    g.addoption("--matrix", action="append", default=[], help="config matrix expanded for every hardware test (repeatable)")
+    g.addoption("--list-configs", action="store_true", help="print the configurations each test would run under, then exit")
     g.addoption("--ice", action="store_true", help="enable Atmel-ICE tests (peek/poke over PDI)")
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
@@ -58,7 +62,32 @@ def pytest_unconfigure(config):
         config._tinyg_recorder.finish()
 
 
+def pytest_generate_tests(metafunc):
+    """One `machine` parameter per configuration a hardware test must run under (see tinyg_hil/config.py)."""
+    if "machine" not in metafunc.fixturenames or "tg" not in metafunc.fixturenames:
+        return
+    from tinyg_hil.config import specs_for_test
+    node = metafunc.definition
+    profiles = [p for m in node.iter_markers("profile") for p in m.args]
+    matrices = [x for m in node.iter_markers("matrix") for x in m.args] + metafunc.config.getoption("--matrix")
+    inline = {}
+    for m in node.iter_markers("settings"):
+        inline.update(m.kwargs)
+    specs = specs_for_test(metafunc.config.getoption("--profile"), profiles, matrices, inline)
+    metafunc.parametrize("machine", specs, indirect=True, ids=[s.label for s in specs], scope="session")
+
+
 def pytest_collection_modifyitems(config, items):
+    if config.getoption("--list-configs"):
+        from tinyg_hil.config import describe
+        seen = {}
+        for item in items:
+            spec = getattr(getattr(item, "callspec", None), "params", {}).get("machine")
+            if spec is not None:
+                seen.setdefault(spec, []).append(item.nodeid)
+        for spec, nodes in seen.items():
+            print(f"\n{describe(spec)}\n    {len(nodes)} tests, e.g. {nodes[0]}")
+        pytest.exit("listed configurations", returncode=0)
     for item in items:
         if "tg" in getattr(item, "fixturenames", ()):
             item.add_marker(pytest.mark.hardware)
@@ -121,14 +150,48 @@ def recover(board):
         board.clear_alarm()
 
 
+@pytest.fixture
+def steps(ice):
+    """Hardware step counter / pulse-width capture on the spare timer (needs --ice)."""
+    from tinyg_hil.stepcount import StepCounter
+    counter = StepCounter(ice)
+    yield counter
+    counter.disarm()
+
+
 @pytest.fixture(scope="session")
-def ice(request, tg):
+def board(request):
+    from tinyg_hil.board import load_board
+    return load_board(request.config.getoption("--board"))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def machine(request):
+    """The machine configuration this test runs under (applied as a diff, read back, recorded).
+
+    Autouse so --profile/--matrix reach every hardware test; offline tests get None and never touch tg.
+    """
+    from tinyg_hil.config import ConfigError, apply
+    spec = getattr(request, "param", None)
+    if spec is None:
+        return None
+    tg = request.getfixturevalue("tg")
+    try:
+        m = apply(tg, spec, tg.snapshot["values"])
+    except ConfigError as e:
+        pytest.skip(str(e))
+    tg.config_info = m.info()
+    return m
+
+
+@pytest.fixture(scope="session")
+def ice(request, tg, board):
     """Atmel-ICE debug session on the same board (the tg session already holds the board lock)."""
     from tinyg_hil.ice import Ice, flashed_elf
     elf = request.config.getoption("--elf") or flashed_elf(tg.transport.port)
     if not elf:
         pytest.skip("no ELF for the flashed build: pass --elf or flash through tinyg_hil")
-    session = Ice(elf=elf).open()
+    session = Ice(elf=elf, board=board).open()
     yield session
     session.close()
 

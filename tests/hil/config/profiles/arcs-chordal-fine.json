@@ -1,0 +1,6 @@
+{
+ "description": "chordal tolerance 0.001 mm (many short arc segments)",
+ "settings": {
+  "ct": 0.001
+ }
+}

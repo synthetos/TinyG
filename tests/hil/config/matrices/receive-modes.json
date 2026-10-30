@@ -1,0 +1,9 @@
+{
+ "combine": "full",
+ "dimensions": {
+  "rx": {
+   "line": "rx-line",
+   "char": "rx-char"
+  }
+ }
+}

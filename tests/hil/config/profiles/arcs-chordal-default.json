@@ -1,0 +1,6 @@
+{
+ "description": "chordal tolerance 0.01 mm",
+ "settings": {
+  "ct": 0.01
+ }
+}

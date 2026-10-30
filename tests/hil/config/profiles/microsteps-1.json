@@ -1,0 +1,8 @@
+{
+ "description": "full steps",
+ "motors": {
+  "1-4": {
+   "mi": 1
+  }
+ }
+}

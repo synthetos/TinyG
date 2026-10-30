@@ -1,0 +1,9 @@
+{
+ "combine": "full",
+ "dimensions": {
+  "switch_type": {
+   "no": "switches-no",
+   "nc": "switches-nc"
+  }
+ }
+}

@@ -1,0 +1,8 @@
+{
+ "description": "1.8 degree motors on all four outputs",
+ "motors": {
+  "1-4": {
+   "sa": 1.8
+  }
+ }
+}

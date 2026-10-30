@@ -1,0 +1,8 @@
+{
+ "description": "5 mm/rev screw",
+ "motors": {
+  "1-4": {
+   "tr": 5
+  }
+ }
+}

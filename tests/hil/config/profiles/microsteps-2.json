@@ -1,0 +1,8 @@
+{
+ "description": "half steps",
+ "motors": {
+  "1-4": {
+   "mi": 2
+  }
+ }
+}

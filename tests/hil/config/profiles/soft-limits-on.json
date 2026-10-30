@@ -1,0 +1,6 @@
+{
+ "description": "soft limits enabled",
+ "settings": {
+  "sl": 1
+ }
+}

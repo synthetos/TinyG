@@ -1,0 +1,8 @@
+{
+ "description": "1.25 mm/rev lead screw (high steps per mm)",
+ "motors": {
+  "1-4": {
+   "tr": 1.25
+  }
+ }
+}
