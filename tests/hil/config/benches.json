@@ -1,0 +1,7 @@
+{
+ "description": "Which instruments are wired to which board, keyed by the board's serial port. An Atmel-ICE is opened only by serial number: with two attached, 'the first one' can be the other bench's.",
+ "/dev/cu.usbserial-BENCH1": {"name": "bench-1", "ice_serial": "ICE-BENCH1", "saleae": null},
+ "/dev/cu.usbserial-BENCH2": {"name": "bench-2", "ice_serial": "ICE-BENCH2", "saleae": "SALEAE-BENCH2",
+                                "saleae_channels": {"0": "M1 step", "1": "M1 dir", "2": "M2 step", "3": "M2 dir",
+                                                    "4": "M3 step", "5": "M3 dir", "6": "M4 step", "7": "M4 dir"}}
+}
