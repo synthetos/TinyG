@@ -16,7 +16,7 @@ pytestmark = [pytest.mark.ice, pytest.mark.motion]
 
 
 @pytest.mark.profile("switches-no", "homing-x")
-@pytest.mark.bug("E055", on=["d440", "d449"])
+@pytest.mark.bug("E055", on=["d440"])
 def test_g28_4_keeps_machine_coordinates(tg, switches, record):
     switches.mount("x", "min", at=-3.0)
     try:
