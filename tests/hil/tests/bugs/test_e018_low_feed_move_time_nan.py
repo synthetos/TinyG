@@ -16,7 +16,7 @@ MOVE = "0.2 mm +X at F5 (2.4 s), then back"
 @pytest.mark.motion
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E018", on=["d440", "d449"])
+@pytest.mark.bug("E018", on=["d440"])
 def test_slow_move_from_rest_completes(tg, keep):
     keep("xjm")
     tg.set("xjm", 5000)
