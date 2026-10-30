@@ -26,6 +26,7 @@ class InverseTime(unittest.TestCase):
 #include "canonical_machine.h"
 #include "util.h"
 cmSingleton_t cm;
+stat_t status_code;
 void cm_set_model_linenum(uint32_t n) {}
 #define EXEC_FUNC(f,v) if(cm.gf.v) {status=f(cm.gn.v);}
 '''
@@ -39,6 +40,7 @@ int main(void) {
     cm.gm.units_mode=MILLIMETERS;
     for(int i=0;i<AXES;i++){cm.a[i].velocity_max=600;cm.a[i].feedrate_max=600;}
     float length[AXES]={1,0,0,0,0,0}, square[AXES]={1,0,0,0,0,0};
+    cm.gn.motion_mode=MOTION_MODE_STRAIGHT_FEED;
     cm.gf.feed_rate_mode=true;cm.gn.feed_rate_mode=INVERSE_TIME_MODE;
     cm.gf.feed_rate=true;cm.gn.feed_rate=60;
     assert(begin_block()==STAT_OK);
@@ -69,6 +71,10 @@ int main(void) {
     cm.gm.motion_mode=MOTION_MODE_STRAIGHT_FEED;cm_finalize_move();assert(cm.gm.feed_rate==120);
     cm.gm.feed_rate_mode=INVERSE_TIME_MODE;
     assert(cm_set_feed_rate(0)==STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+    assert(cm_set_feed_rate(1e8)==STAT_OK);assert(check_feed()==STAT_OK);
+    assert(cm_set_feed_rate(1e-40f)==STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+    cm.gn.motion_mode=MOTION_MODE_STRAIGHT_TRAVERSE;cm.gf.feed_rate=true;cm.gn.feed_rate=0;
+    assert(begin_block()==STAT_OK);assert(cm.gm.feed_rate==0);
     return 0;
 }
 '''
