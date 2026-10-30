@@ -64,6 +64,7 @@ controller_t cs;		// controller state structure
 static void _controller_HSM(void);
 static stat_t _shutdown_handler(void);
 static stat_t _normal_idler(void);
+static stat_t _enquiry_handler(void);
 static stat_t _limit_switch_handler(void);
 
 static void _init_assertions(void);
@@ -152,11 +153,13 @@ static void _controller_HSM()
 #ifdef TINYG_TEST_HOOKS
 	DISPATCH(testhooks_callback());				// HIL test hooks (test builds only)
 #endif
+	DISPATCH(_enquiry_handler());				// answer ENQ from the main loop
 	DISPATCH(_normal_idler());					// blink LEDs slowly to show everything is OK
     DISPATCH(_shutdown_handler());              // invoke shutdown (++++ INCOMPLETE)
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
  	DISPATCH(_limit_switch_handler());          // invoke limit switch
     DISPATCH(_controller_state());              // controller state management
+    config_report_load_failure();              // non-fatal, after startup enables TX
 	DISPATCH(_test_system_assertions());		// system integrity assertions
 	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 
@@ -291,6 +294,12 @@ static void _dispatch_kernel()
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
 	js.tid_present = false;									// only json_parser() sets it, for this line (E049)
 
+	// A stray leading '?' (a status request sent just before the line) must not swallow the line:
+	// strip it before dispatching, so the rest is parsed and answered (E053)
+	if ((*cs.bufp == '?') && (cs.bufp[1] != NUL)) {
+		cs.bufp++;
+	}
+
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
 			text_response(STAT_OK, cs.saved_buf);
@@ -302,10 +311,6 @@ static void _dispatch_kernel()
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
 	else if (*cs.bufp == ENQ) { controller_request_enquiry(); }
 
-    // this is a hack until we can figure out how a buffer might obtain a leading '?'
-    else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
-        cs.bufp++;
-    }
 
 	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode
@@ -447,7 +452,15 @@ static stat_t _normal_idler()
 void controller_reset_source() { controller_set_primary_source(xio.default_src);}
 void controller_set_primary_source(uint8_t dev) { xio.primary_src = dev;}
 void controller_set_secondary_source(uint8_t dev) { xio.secondary_src = dev;}
-void controller_request_enquiry() { printf_P(PSTR("{\"ack\":true}\n")); }
+void controller_request_enquiry() { cs.enquiry_requested = true; }	// called from the RX ISR: no printing there (E052)
+
+static stat_t _enquiry_handler()
+{
+	if (!cs.enquiry_requested) { return (STAT_NOOP); }
+	cs.enquiry_requested = false;
+	printf_P(PSTR("{\"ack\":true}\n"));
+	return (STAT_OK);
+}
 
 /*
  * _sync_to_tx_buffer() - return eagain if TX queue is backed up

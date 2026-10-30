@@ -32,7 +32,8 @@ typedef int stat_t;
 enum { TYPE_SKIP=-2,TYPE_EMPTY=-1,TYPE_NULL=0,TYPE_BOOLEAN,TYPE_INTEGER,TYPE_STRING,
        TYPE_FLOAT,TYPE_SIGNED,TYPE_DATA,TYPE_TXTCON,TYPE_ARRAY,TYPE_PARENT };
 #define GET_TABLE_WORD(a) 0
-typedef struct nvObject {int valuetype,depth,precision; char token[8];char *str;
+#define NO_MATCH (-1)
+typedef struct nvObject {int index,valuetype,depth,precision; char token[8];char *str;
  uint32_t value_int;float value_flt;struct nvObject *nx;} nvObj_t;
 nvObj_t root,child,end;
 struct {char out_buf[256];} cs;
