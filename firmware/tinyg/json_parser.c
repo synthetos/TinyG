@@ -48,7 +48,7 @@ jsSingleton_t js;
 
 static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str);
 static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs);
-static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t depth, bool typesafe);
+static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t depth, bool typesafe, bool ignore_unknown);
 
 /****************************************************************************
  * json_parser()          - exposed part of JSON parser
@@ -223,16 +223,17 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             return (STAT_OK);   // normal return if no (more) tokenized JSON to process
         }
         nv = *p_nv;             // set starting NV pair for execution
-        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true)); // collect NV pair from JSON string
+        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true, false)); // collect NV pair from JSON string
 
         // Special processing for text container (TXT tag)
         if ((*p_nv)->valuetype == TYPE_TXTCON) {
             if (strncmp("txt", (*p_nv)->str, 3) == 0) {     // don't allow nested txt containers
                 return (STAT_NESTED_TXT_CONTAINER);
             } else if (*(*p_nv)->str == '{') {              // it's JSON passed in as a string
-                _json_parser_kernal(p_nv, (*p_nv)->str);    // call JSON parser recursively
+                (*p_nv)->valuetype = TYPE_EMPTY;            // recursive syntax errors must not echo an opaque txt value
+                ritorno(_json_parser_kernal(p_nv, (*p_nv)->str)); // recursive parse; its status goes in the footer
             } else {
-                controller_dispatch_txt_container((*p_nv), (*p_nv)->str); // call specialized dispatcher
+                ritorno(controller_dispatch_txt_container((*p_nv), (*p_nv)->str)); // status goes in the footer
             }
             continue;
         }
@@ -280,14 +281,10 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
 // Position string pointer past whitespace
 static char *_skip_whitespace(char *str)
 {
-    do {
-        if (((*str > NUL) && (*str <= SPC)) || (*str == DEL)) {
-            str++;
-        } else {
-            return (str);
-        }
-    } while (*str != NUL);      // safety valve
-    return (NUL);
+    while (((*str > NUL) && (*str <= SPC)) || (*str == DEL)) {
+        str++;
+    }
+    return (str);               // the first non-space, or the terminating NUL - never a NULL pointer (E082)
 }
 
 // Position string pointer past quote and any trailing whitespace
@@ -333,9 +330,11 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
         // STRING_VALUE state                       // must be first to avoid WS removal
         if (state == JTSM_STRING_VALUE) {
             if (*str == NUL) { break; }             // exit with error
-            if (*str == '\\') {                     // skip over escaped quotes (unescape them later)
-                if (*(str+1) == '"') { str++; }
-                continue;
+            if (*str == '\\') {                     // unescape \" and \\ here, so the end quote is found (E082)
+                if ((*(str+1) == '"') || (*(str+1) == '\\')) {
+                    *wr++ = *(++str);               // a quote written here is part of the value
+                }
+                continue;                           // any other escape drops its backslash
             }
             if (*str == '"') {                      // a lone quote is the end quote
                 state = JTSM_VALUE;                 // use the VALUE state logic to exit
@@ -425,7 +424,7 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
 //            else if (*str == NUL) { break; }                     // exit with error
 //        }
         *wr++ = tolower(*str);
-    } while (str++ != NUL); // This is a safety value. Ordinarily exits on its own
+    } while (*str++ != NUL);    // safety valve: stop at the terminator. Ordinarily exits on its own
     *wr++ = NUL;            // always terminate. Regardless.
     *wr = NUL;              // and your little dog, too. (used to terminate marshalling)
 	return (status);
@@ -455,7 +454,7 @@ static char *_next_token(char *str)
     return (NULL);
 }
 
-static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8_t parent_depth, bool typesafe)
+static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8_t parent_depth, bool typesafe, bool ignore_unknown)
 {
     nvObj_t *nv = *p_nv;            // local pointer for convenience and easier code inspection
     char *tok = *p_str;             // local pointer to token location
@@ -487,7 +486,22 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
 //    nv->group = group;                          // bind group string to nv struct
 
     if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
-        return (STAT_UNRECOGNIZED_NAME);        // failed to get a valid index
+        // Capability probes must echo the missing key; unknown SETs still fail.
+        if (!(jtoken & JTOK_PARENT)) {
+            char *value_end = _next_token(tok+1);
+            if (value_end != NULL) {
+                uint8_t type = *value_end & JTOK_TMASK;
+                if ((depth == 1) && (type == TYPE_NULL)) { nv->valuetype = TYPE_NULL; }
+                // Only the legacy SR selector tolerates unsupported boolean fields.
+                if (ignore_unknown && (type == TYPE_BOOLEAN) &&
+                    ((tok[1] == 't') || (tok[1] == 'f'))) {
+                    nv->valuetype = TYPE_SKIP;
+                    *p_str = value_end+1;
+                    return (STAT_OK);
+                }
+            }
+        }
+        return (STAT_UNRECOGNIZED_NAME);
     }
     str = tok+1; *p_str = str;                  // set str & p_str to start of next field
 
@@ -499,11 +513,20 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
             strncpy(group, nv->token, GROUP_LEN); // capture the group field
         }
         bool typesafe = nv_group_is_typesafe(nv->token); // deal with typesafe exceptions
+        bool sr_selector = (depth == 1) && (strcmp_P(nv->token, PSTR("sr")) == 0);
+        uint8_t children = 0;
 
         while (true) {  // gather up the kiddies: Nothing is certain except depth and tokens
             if ((nv = nv_next(nv)) == NULL) { return (STAT_JSON_TOO_MANY_PAIRS); } // get next child or exit
             *p_nv = nv;
-            ritorno(_marshall_nv_pair(p_nv, p_str, group, depth, typesafe)); // recursively parse child, exit if error
+            ritorno(_marshall_nv_pair(p_nv, p_str, group, depth, typesafe, sr_selector));
+            if (nv->valuetype == TYPE_SKIP) {
+                nv->valuetype = TYPE_EMPTY;
+                nv = nv_prev(nv);                   // reuse the slot for the next supported field
+                *p_nv = nv;
+            } else if (sr_selector && (++children > NV_STATUS_REPORT_LEN)) {
+                return (STAT_JSON_TOO_MANY_PAIRS);  // reject before changing the report
+            }
             if ((tok = _next_token(*p_str)) == NULL) { return(STAT_OK); }  // normal end-of-string exit
             if (((*tok >> JTOK_DSHIFT) & JTOK_DMASK) <= depth) { return (STAT_OK); } // normal depth exit
         }
@@ -792,16 +815,17 @@ void json_print_response(uint8_t status)
     } else {                                            // or line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_line_buffers_available());
     }
-	nv_copy_string(nv, footer_string);					// link string to nv object
+	nv->str = footer_string;					// footer stays live through serialization; shared storage may be full
 	nv->depth = 0;                                      // footer is a peer to r{} response
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");                             // terminate the list
 
 	// serialize the JSON response and print it if there were no errors
-    if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-        printf(cs.out_buf);
-    }
-
+	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
+        fputs(cs.out_buf, stdout);
+	}
+    nv->str = NULL;                                 // do not retain the stack-backed footer
+    nv->valuetype = TYPE_EMPTY;
 }
 
 /*
@@ -827,7 +851,7 @@ void json_print_list(stat_t status, uint8_t flags)
 void json_print_object(nvObj_t *nv)
 {
 	if (json_serialize(nv, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-        printf(cs.out_buf);
+        fputs(cs.out_buf, stdout);
     }
     // fails silently on 0 or -1 return. May want to revisit this.
 }

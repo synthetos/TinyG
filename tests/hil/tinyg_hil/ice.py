@@ -121,8 +121,20 @@ def encode(value, size, kind):
     return bytearray(int(value).to_bytes(size, "little", signed=(kind == "int" and int(value) < 0)))
 
 
+def ice_serial_for(port):
+    """Atmel-ICE serial wired to the board on `port` (config/benches.json); refuses to guess if unknown."""
+    import json, pathlib
+    benches = json.loads((pathlib.Path(__file__).resolve().parent.parent / "config" / "benches.json").read_text())
+    bench = benches.get(port)
+    if not bench or not bench.get("ice_serial"):
+        raise RuntimeError(f"no Atmel-ICE recorded for {port} in config/benches.json")
+    return bench["ice_serial"]
+
+
 class Ice:
-    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None):
+    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None, port=None):
+        if serial is None and port is not None:
+            serial = ice_serial_for(port)   # never "the first ICE": with two benches that is a coin toss
         self.board = board or load_board()
         self.symbols = Symbols(elf, self.board.sram_symbol_base) if elf else None
         self.serial = serial
@@ -137,8 +149,12 @@ class Ice:
         from pyedbglib.hidtransport.hidtransportfactory import hid_transport
         from pymcuprog.avr8target import XmegaAvrTarget
         self.transport = hid_transport()
+        if self.serial is None:
+            found = [d.serial_number for d in self.transport.get_matching_tools(product="atmel-ice")]
+            if len(found) != 1:         # with two benches attached, "the first one" may be the other board's
+                raise RuntimeError(f"Atmel-ICE serial needed (pass serial= or port=): attached {found}")
         if not self.transport.connect(serial_number=self.serial, product="atmel-ice"):
-            raise RuntimeError("Atmel-ICE not found on USB")
+            raise RuntimeError(f"Atmel-ICE {self.serial or ''} not found on USB")
         self.target = XmegaAvrTarget(self.transport)
         self.protocol = self.target.protocol
         for stale in (self.protocol.detach, self.target.deactivate_physical):   # left by an aborted session
@@ -403,7 +419,7 @@ def main(argv=None):
         p.error("no ELF: pass --elf or flash through tinyg_hil first")
     lock = BoardLock(a.port).acquire(f"ice {a.command} {' '.join(a.args)}"[:120], wait=60)
     try:
-        with Ice(elf=elf) as ice:
+        with Ice(elf=elf, port=a.port) as ice:
             if a.command == "peek":
                 print(json.dumps(ice.peek_many(a.args), default=lambda b: b.hex(" ")))
             elif a.command == "poke":

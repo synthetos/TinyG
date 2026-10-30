@@ -98,9 +98,10 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
+    // Read-only identity/position rows are initialized by their owning subsystems.
 	// group token flags   p, print_func, get_func, set_func, target for get/set,   	  default value
-	{ "sys", "fb", _fipn, 2, hw_print_fb, get_flt,  set_nul,  (uint32_t *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
-	{ "sys", "fv", _fipn, 3, hw_print_fv, get_flt,  set_nul,  (uint32_t *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
+	{ "sys", "fb", (_fipn & ~F_INITIALIZE), 2, hw_print_fb, get_flt,  set_nul,  (uint32_t *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
+	{ "sys", "fv", (_fipn & ~F_INITIALIZE), 3, hw_print_fv, get_flt,  set_nul,  (uint32_t *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
 	{ "sys", "hp", _iipn, 0, hw_print_hp, get_ui8,  set_ui8,  (uint32_t *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn, 0, hw_print_hv, get_flt,  hw_set_hv,(uint32_t *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _sn0,  0, hw_print_id, hw_get_id,set_nul,  (uint32_t *)&cs.null, 0 },        // device ID (ASCII signature)
@@ -401,27 +402,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59b",_fip,  3, cm_print_cofs, get_flt, set_flt,(uint32_t *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip,  3, cm_print_cofs, get_flt, set_flt,(uint32_t *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
 
-	{ "g92","g92x",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
-	{ "g92","g92y",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Y], 0 },
-	{ "g92","g92z",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Z], 0 },
-	{ "g92","g92a",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_A], 0 },
-	{ "g92","g92b",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_B], 0 },
-	{ "g92","g92c",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_C], 0 },
+	{ "g92","g92x",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
+	{ "g92","g92y",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Y], 0 },
+	{ "g92","g92z",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Z], 0 },
+	{ "g92","g92a",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_A], 0 },
+	{ "g92","g92b",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_B], 0 },
+	{ "g92","g92c",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_C], 0 },
 
 	// Coordinate positions (G28, G30)
-	{ "g28","g28x",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Z], 0 },
-	{ "g28","g28a",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_A], 0 },
-	{ "g28","g28b",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_B], 0 },
-	{ "g28","g28c",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_C], 0 },
+	{ "g28","g28x",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28a",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_A], 0 },
+	{ "g28","g28b",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_B], 0 },
+	{ "g28","g28c",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Z], 0 },
-	{ "g30","g30a",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_A], 0 },
-	{ "g30","g30b",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_B], 0 },
-	{ "g30","g30c",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_C], 0 },
+	{ "g30","g30x",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30a",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_A], 0 },
+	{ "g30","g30b",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_B], 0 },
+	{ "g30","g30c",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_C], 0 },
 
 	// this is a 128bit UUID for identifying a previously committed job state
 	{ "jid","jida",_d0, 0, tx_print_nul, get_data, set_data, (uint32_t *)&cs.job_id[0], 0},
@@ -474,7 +475,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // special functions
 	{ "", "txt", _t0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_int, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Transaction id
-	{ "", "test",_b0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "test",_i0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_b0, 0, tx_print_nul, help_defa, set_defaults,(uint32_t *)&cs.null,0 },// set defaults / help screen
 	{ "", "boot",_b0, 0, tx_print_nul, help_boot, hw_run_boot, (uint32_t *)&cs.null,0 },
 	{ "", "help",_n0, 0, tx_print_nul, help_config, help_config, (uint32_t *)&cs.null,0 },  // prints config help screen
@@ -884,8 +885,28 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 	if (nv->value_int > FLOW_CONTROL_RTS) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-	xio.enable_flow_control = (uint8_t)nv->value_int; // the cast is required
-	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+    uint8_t mode = (uint8_t)nv->value_int;
+    uint8_t saved_sreg = SREG;
+    cli();
+    (void)xio_ctrl(XIO_DEV_USB, mode == FLOW_CONTROL_OFF ? XIO_NOXOFF : XIO_XOFF);
+    if (mode != xio.enable_flow_control) {
+        // Release an old software pause even if another mode change precedes its TX interrupt.
+        bool release_xon = USBu.fc_char_rx == XON ||
+            (xio.enable_flow_control == FLOW_CONTROL_XON &&
+             (USBu.fc_state_rx == FC_IN_XOFF || USBu.fc_char_rx == XOFF));
+        USBu.fc_char_rx = release_xon ? XON : NUL;
+        USBu.port->OUTCLR = USB_RTS_bm;
+        USBu.fc_state_rx = FC_IN_XON;
+        USBu.fc_state_tx = FC_IN_XON;
+        xio.enable_flow_control = mode;
+        if (mode != FLOW_CONTROL_OFF &&
+            xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK) {
+            xio_xoff_usart(&USBu);
+        }
+        USBu.usart->CTRLA = CTRLA_RXON_TXON;
+    }
+    SREG = saved_sreg;
+    return (STAT_OK);
 }
 
 static stat_t get_rx(nvObj_t *nv)

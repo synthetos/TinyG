@@ -6,36 +6,34 @@
  *	  - Comments are not allowed in the char array, but gcode comments are OK e.g. (g0 test)
  */
 const char test_inverse_time[] PROGMEM = "\
-(MSG**** Inverse Time Motion Test [v1] ****)\n\
+(MSG**** Inverse Time Motion Test [v2] ****)\n\
 g00g17g21g40g49g80g90\n\
 g55\n\
 g0x0y0\n\
 g93\n\
-f0.01\n\
-g1x10\n\
-y10\n\
-z10\n\
-a10\n\
-x0\n\
-y0\n\
-z0\n\
-a0\n\
-g1x10y10z-10a10\n\
+g1x10f60\n\
+y10f60\n\
+z10f60\n\
+a10f60\n\
+x0f60\n\
+y0f60\n\
+z0f60\n\
+a0f60\n\
+g1x10y10z-10a10f60\n\
 g0x0y0z0a0\n\
-f0.1\n\
-g2x10y-10z-20i10\n\
+g2x10y-10z-20i10f30\n\
 g0x0y0z0\n\
-g3x10y-10z-20i10\n\
+g3x10y-10z-20i10f30\n\
 g0x0y0z0\n\
-g2x20y0z-20i10\n\
+g2x20y0z-20i10f30\n\
 g0x0y0z0\n\
-g3x20y0i10\n\
+g3x20y0i10f30\n\
 g0x0y0z0\n\
-g2x0y0z-30i10\n\
-g3x0y0z0i10\n\
+g2x0y0z-30i10f30\n\
+g3x0y0z0i10f30\n\
 g0x0y0z0\n\
-g2x0y0i20 (CW 360 degrees)\n\
-g3x0y0i20 (CCW 360 degrees)\n\
+g2x0y0i20f30 (CW 360 degrees)\n\
+g3x0y0i20f30 (CCW 360 degrees)\n\
 g94\n\
 g54\n\
 g0x0y0\n\

@@ -116,6 +116,7 @@ cmSingleton_t cm;		// canonical machine controller singleton
 
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, bool *flags);
+static void _exec_g10_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_mist_coolant_control(float *value, bool *flags);
 static void _exec_flood_coolant_control(float *value, bool *flags);
@@ -412,7 +413,8 @@ void cm_finalize_move() {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
 	// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
-	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && ((cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) ||
+        (cm.gm.motion_mode == MOTION_MODE_CW_ARC) || (cm.gm.motion_mode == MOTION_MODE_CCW_ARC))) {
 		cm.gm.feed_rate = 0;
 	}
 }
@@ -770,8 +772,34 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't alarm if already in an alarm state
     }
 	cm.machine_state = MACHINE_ALARM;
-    cm_request_feedhold();                      // stop motion
-    cm_request_queue_flush();                   // do a queue flush once runtime is not busy
+
+    // Nothing moving (idle, a dwell, moves not started yet) means no hold will ever start, so the
+    // flush would wait forever while queued moves run in ALARM (E044). Decide that atomically with
+    // the exec: with interrupts off, a stopped runtime is put straight into HOLD, which keeps
+    // mp_exec_aline() from starting another move. A move already running takes the normal hold.
+#ifdef __AVR
+    uint8_t sreg = SREG;
+    cli();
+#endif
+    bool idle = (cm.motion_state == MOTION_STOP) && (cm.hold_state == FEEDHOLD_OFF);
+    bool segment_in_flight = false;
+    if (idle) {
+        segment_in_flight = st_aline_in_flight();   // a block's last segment can outlive MOTION_STOP
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_HOLD;          // no new move starts; a last segment finishes on its own
+    }
+#ifdef __AVR
+    SREG = sreg;
+#endif
+    if (idle) {
+        if (!segment_in_flight) {
+            stepper_reset();                    // only a dwell (or nothing) is running: stop it now
+        }
+        cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
+    } else {
+        cm_request_feedhold();                  // stop motion
+        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+    }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
     cm_coolant_off_immediate();                 // stop coolant immediately
@@ -894,23 +922,27 @@ stat_t cm_set_arc_distance_mode(const uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - G10 L2/L20 Pn (affects MODEL only)
+ * cm_set_coord_offsets() - G10 L2/L20 Pn (model now, runtime in queue order)
  *
  *	This function applies the offset to the GM model but does not persist the offsets
  *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
  *	has ended. You can also use $g54x - $g59c config functions to change offsets.
  *
- *	It also does not reset the work_offsets which may be accomplished by calling
- *	cm_set_work_offsets() immediately afterwards.
+ *	Edits to the active system capture new model offsets and queue a runtime snapshot.
  *
  *  Both L2 and L20 forms are supported
  */
 
-stat_t cm_set_coord_offsets(const uint8_t coord_system,
+stat_t cm_set_coord_offsets(const float coord_system,
                             const uint8_t L_word,
                             const float offset[], const bool flag[])
 {
-    if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
+    if ((!cm.gf.parameter) || !(coord_system >= 0 && coord_system <= COORD_SYSTEM_MAX) ||
+        (coord_system != floor(coord_system))) {
+        return (STAT_P_WORD_IS_INVALID);
+    }
+    uint8_t selected = (coord_system == 0) ? cm.gm.coord_system : (uint8_t)coord_system;
+    if ((selected < G54) || (selected > COORD_SYSTEM_MAX)) { // you can't set G53
         return (STAT_P_WORD_IS_INVALID);
     }
     if (!cm.gf.L_word) {
@@ -919,17 +951,33 @@ stat_t cm_set_coord_offsets(const uint8_t coord_system,
     if ((L_word != 2) && (L_word != 20)) {
         return (STAT_L_WORD_IS_INVALID);
     }
+    cm_set_work_offsets();
+    bool changed = false;
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
         if (flag[axis]) {
+            float value = (axis < AXIS_A) ? _to_millimeters(offset[axis]) : offset[axis];
             if (L_word == 2) {
-                cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
+                cm.offset[selected][axis] = value;
             } else {
-                cm.offset[coord_system][axis] = cm.gmx.position[axis] - _to_millimeters(offset[axis]);
+                // Isolate signed tool compensation using the same convention as the DRO.
+                float tool = cm.gm.work_offset[axis] - cm_get_active_coord_offset(axis);
+                float origin = cm.gmx.origin_offset_enable ? cm.gmx.origin_offset[axis] : 0;
+                cm.offset[selected][axis] = cm.gmx.position[axis] - value - origin - tool;
             }
-            cm.deferred_write_flag = true;                  // persist offsets once machining cycle is over
+            changed = true;
+            cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
     }
+    if (changed && (selected == cm.gm.coord_system)) {
+        cm_set_work_offsets();
+        mp_queue_command(_exec_g10_offset, cm.gm.work_offset, FLAGS_NONE);
+    }
     return (STAT_OK);
+}
+
+static void _exec_g10_offset(float *value, bool *flags)
+{
+    mp_set_runtime_work_offset(value); // use the queued snapshot, not later model edits
 }
 
 /******************************************************************************************
@@ -1088,6 +1136,42 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
+/*
+ * _queue_line() - plan the move in cm.gm inside a machining cycle (G0/G1)
+ *
+ *	The cycle starts before the move is queued so a short move cannot finish and end the cycle
+ *	before it was started. But mp_aline() plans before it reserves its buffer, and meanwhile the
+ *	runtime can finish the previous last block and end the cycle (plan_exec.c, mp_free_run_buffer()
+ *	then cm_cycle_end()). So once the move is queued, check again with interrupts off: restart the
+ *	cycle if anything is queued or running, end it if nothing is (a too-short or rejected move).
+ */
+static stat_t _queue_line()
+{
+	cm_cycle_start();
+	stat_t status = mp_aline(&cm.gm);
+	if (cm_is_alarmed() != STAT_OK) {			// mp_aline can alarm or panic (failed reservation): the
+		return (status);						// cycle repair below must not overwrite that state
+	}
+#ifdef __AVR
+	uint8_t sreg = SREG;
+	cli();
+#endif
+	bool runnable = mp_has_runnable_buffer();
+	if (runnable) {
+		cm_cycle_start();						// cheap; must not race the runtime's cycle end
+	}
+#ifdef __AVR
+	SREG = sreg;
+#endif
+	if (!runnable) {
+		cm_cycle_end();							// only the main loop queues, so this can't race a new move
+	}
+	if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status == STAT_MINIMUM_TIME_MOVE)) {
+		status = STAT_OK;						// too short to plan; not an error
+	}
+	return (status);
+}
+
 static stat_t _straight_traverse(const float target[], const bool flags[], const bool machine_coordinates)
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
@@ -1116,12 +1200,7 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 
-    status = mp_aline(&cm.gm);                  // send the move to the planner
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
-    }
+    status = _queue_line();                     // plan the move inside a machining cycle
     cm_finalize_move();
 	return (status);
 }
@@ -1240,7 +1319,10 @@ stat_t cm_goto_g30_position(const float target[], const bool flags[])
 stat_t cm_set_feed_rate(const float feed_rate)
 {
 	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
-		cm.gm.feed_rate = 1 / feed_rate;	// normalize to minutes (NB: active for this gcode block only)
+        if (!(feed_rate > 0) || !isfinite(feed_rate)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        float inverse_time = 1 / feed_rate;
+        if (!isfinite(inverse_time)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        cm.gm.feed_rate = inverse_time;	// minutes, active for this block only
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
 	}
@@ -1300,10 +1382,6 @@ stat_t cm_dwell(const float seconds)
  */
 stat_t cm_straight_feed(const float target[], const bool flags[])
 {
-	// trap zero feed rate condition
-	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
     // it's legal for a G1 to have no axis words but we don't want to process it
@@ -1311,6 +1389,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
+	// trap zero feed rate condition
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	}
 	cm_set_model_target(target, flags);
 
 	// test soft limits
@@ -1320,12 +1402,7 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
-    status = mp_aline(&cm.gm);
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
-    }
+    status = _queue_line();                     // plan the move inside a machining cycle
 	cm_finalize_move();
 	return (status);
 }
@@ -1876,8 +1953,7 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
-		cm.cycle_state = CYCLE_MACHINING;
-		qr_init_queue_report();							// clear queue reporting buffer counts
+		cm.cycle_state = CYCLE_MACHINING;			// keep qi/qo: buffers queued before the cycle started count (E091)
 	}
 }
 
@@ -2311,6 +2387,26 @@ void cm_set_axis_jerk(const uint8_t axis, const float jerk)
 {
 	cm.a[axis].jerk_max = jerk;
 	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
+}
+
+/* M201.3 uses units/second^3; stored jerk uses million units/minute^3. */
+stat_t cm_set_jerk(const float target[], const bool flags[])
+{
+    float jerk[AXES];
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (!flags[axis]) { continue; }
+        float scale = (60.f * 60.f * 60.f) / JERK_MULTIPLIER;
+        if (axis <= AXIS_Z && cm.gm.units_mode == INCHES) { scale *= MM_PER_INCH; }
+        jerk[axis] = target[axis] * scale;
+        if (!isfinite(jerk[axis])) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+        jerk[axis] = max(1, jerk[axis]);
+        if (!isfinite(jerk[axis] * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    }
+    // Validate the whole block before changing any axis; do not persist the values.
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (flags[axis]) { cm_set_axis_jerk(axis, jerk[axis]); }
+    }
+    return (STAT_OK);
 }
 
 stat_t cm_set_xjm(nvObj_t *nv)

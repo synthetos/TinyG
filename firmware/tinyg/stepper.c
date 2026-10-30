@@ -338,6 +338,23 @@ stat_t stepper_test_assertions()
  *	- dwell is running
  */
 
+/*
+ * st_aline_in_flight() - true if a line segment is stepping or prepared for the loader
+ *
+ *	Unlike st_runtime_isbusy() this tells a move from a dwell (which runs on its own timer). The
+ *	final segment of a block can still be prepared or stepping after the cycle end has set
+ *	MOTION_STOP. Call with interrupts disabled for a consistent answer.
+ */
+bool st_aline_in_flight()
+{
+#ifdef __AVR
+	if (TIMER_DDA.CTRLA != STEP_TIMER_DISABLE) {
+		return (true);
+	}
+#endif
+	return ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) && (st_pre.block_type == BLOCK_TYPE_ALINE));
+}
+
 uint8_t st_runtime_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {
@@ -409,6 +426,7 @@ static uint8_t _motor_is_enabled(uint8_t motor)
 
 static void _deenergize_motor(const uint8_t motor)
 {
+    st_run.energize_mask &= ~(1 << motor);
 #ifdef __AVR
 	switch (motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
@@ -519,6 +537,19 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (! _motor_is_enabled(m)) _energize_motor(m);
 			continue;
 		}
+
+        if (st_run.energize_mask & (1 << m)) {
+            if ((uint32_t)(SysTickTimer_getValue() - st_run.energize_start) < st_run.energize_duration) {
+                continue;
+            }
+            st_run.energize_mask &= ~(1 << m);
+            // An explicit timeout must not cut torque while a move or feedhold is active.
+            if (!st_runtime_isbusy() && cm_get_motion_state() != MOTION_HOLD) {
+                _deenergize_motor(m);
+                sr_request_status_report(SR_REQUEST_TIMED);
+                continue;
+            }
+        }
 
 		// start a countdown if MOTOR_POWERED_IN_CYCLE or MOTOR_POWERED_ONLY_WHEN_MOVING
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
@@ -1322,7 +1353,7 @@ stat_t st_get_pwr(nvObj_t *nv)
  *
  * Calling me or md with NULL will enable or disable all motors
  * Setting a value of 0 will enable or disable all motors
- * Setting a value from 1 to MOTORS will enable or disable that motor only
+ * me=N holds all enabled motors for N seconds; md=N disables only motor N.
  */
 
 stat_t st_set_mt(nvObj_t *nv)
@@ -1345,18 +1376,15 @@ stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initiali
 	return (STAT_OK);
 }
 
-stat_t st_set_me(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
+stat_t st_set_me(nvObj_t *nv) // seconds of explicit hold, or zero/null for the configured idle timeout
 {
-	if ((nv->value_int == 0) || (nv->valuetype == TYPE_NULL)) {
-		st_energize_motors();
-	} else {
-        uint8_t motor = nv->value_int;
-        if (motor > MOTORS) {
-            return (STAT_INPUT_VALUE_RANGE_ERROR);
-        }
-		_energize_motor(motor-1);     // adjust so that motor 1 is actually 0 (etc)
-	}
-	return (STAT_OK);
+    uint32_t seconds = (nv->valuetype == TYPE_NULL) ? 0 : nv->value_int;
+    if (seconds > 4294967UL) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    st_run.energize_start = SysTickTimer_getValue();
+    st_run.energize_duration = seconds * 1000UL;
+    st_run.energize_mask = seconds ? ((1 << MOTORS) - 1) : 0;
+    st_energize_motors();
+    return (STAT_OK);
 }
 
 /***********************************************************************************

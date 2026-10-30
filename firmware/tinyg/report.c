@@ -71,7 +71,10 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char *)"hv");		// hardware version
 	nv_add_object((const char *)"id");		// hardware ID
 	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
+    uint8_t syntax = js.json_syntax;
+    js.json_syntax = JSON_SYNTAX_STRICT;
     json_print_object(NV_HEAD);
+    js.json_syntax = syntax;
 }
 
 void rpt_print_initializing_message(void)
@@ -147,7 +150,7 @@ stat_t rpt_exception(stat_t status, const char *msg)
         if (end - wr >= 3) { *wr++ = ' '; *wr++ = '-'; *wr++ = ' '; }
         wr = _append_exception_text(wr, end, msg);
         *wr++ = '"'; *wr++ = '}'; *wr++ = '}'; *wr++ = '\n'; *wr = NUL;
-        printf_P(PSTR("%s"), json_relax(line_msg));
+        fputs(json_relax(line_msg), stdout);
     }
     return (status);
 }
@@ -402,13 +405,23 @@ static stat_t _set_srs(nvObj_t *nv)
         }
 	}
 
-    // copy the working list to the SR list; use i as read pointer, j as write pointer
-    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
+    // the result must fit the SR list, or nothing changes (see Error conditions above)
+    uint8_t live = 0;
+    for (i=0; i<SR_WORKING_LIST_LEN; i++) {
+        if (working_list[i] >= 0) { live++; }           // not NO_MATCH (-1) or deleted (-2)
+    }
+    if (live > NV_STATUS_REPORT_LEN) {
+        return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
+    }
+    // copy the live entries to the SR list in order. value_flt and the SR list are only
+    // NV_STATUS_REPORT_LEN long; the working list is longer (E047: deletions wrote past sr)
+    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         sr.value_flt[i] = 8675309;                      // reset all filter terms
-        if (working_list[i] == -2) { continue; }        // skip deleted elements
-        sr.status_report_list[j] = working_list[i];
-        if (++j >= NV_STATUS_REPORT_LEN) {
-            break;
+        sr.status_report_list[i] = NO_MATCH;
+    }
+    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
+        if (working_list[i] >= 0) {
+            sr.status_report_list[j++] = working_list[i];
         }
     }
     _persist_status_report_list();
@@ -462,15 +475,16 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
     if (SysTickTimer_getValue() < sr.status_report_systick) {
         return (STAT_NOOP);
     }
-    if (sr.status_report_request == SR_VERBOSE) {
+    uint8_t request = sr.status_report_request;
+    sr.status_report_request = SR_OFF;              // a request is spent even if nothing changed (E056, as g2core)
+    if (request == SR_VERBOSE) {
         _populate_unfiltered_status_report("sr");
     } else {
         if (_populate_filtered_status_report() == false) {	// no new data
             return (STAT_OK);
         }
     }
-    sr.status_report_request = SR_OFF;
-    nv_print_list(STAT_OK, TEXT_RESPONSE, JSON_OBJECT);
+    nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT);
     return (STAT_OK);
 }
 
@@ -725,16 +739,17 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 		if (qr.queue_report_verbosity == QR_SINGLE) {
 			printf_P(PSTR("qr:%d\n"), qr.buffers_available);
 		} else  {
-			printf_P(PSTR("qr:%d, qi:%d, qo:%d\n"), qr.buffers_available,qr.buffers_added,qr.buffers_removed);
+			printf_P(PSTR("qr:%d, qi:%u, qo:%u\n"), qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
 		}
 	} else {
-        char line_msg[32];
+        char line_msg[40];                      // {"qr":255,"qi":65535,"qo":65535}\n is 34 with its NUL
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			sprintf_P(line_msg, PSTR("{\"qr\":%d}\n"), qr.buffers_available);
+			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d}\n"), qr.buffers_available);
 		} else {
-			sprintf_P(line_msg,PSTR("{\"qr\":%d,\"qi\":%d,\"qo\":%d}\n"), qr.buffers_available, qr.buffers_added,qr.buffers_removed);
+			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d,\"qi\":%u,\"qo\":%u}\n"),
+					   qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
 		}
-        printf(json_relax(line_msg));
+        fputs(json_relax(line_msg), stdout);
 	}
 	qr_init_queue_report();
 	return (STAT_OK);
@@ -872,7 +887,7 @@ uint8_t job_report_callback()
 	if (cs.comm_mode == JSON_MODE) {		// only JSON mode; job_ids are client app state
         char local_msg[64];
 		sprintf_P(local_msg, PSTR("{\"job\":[%lu,%lu,%lu,%lu]}\n"), cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
-        printf(json_relax(local_msg));
+        fputs(json_relax(local_msg), stdout);
     }
 	return (STAT_OK);
 }

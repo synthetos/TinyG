@@ -170,6 +170,7 @@ static void _controller_HSM()
 // 	DISPATCH(_interlock_handler());             // invoke / remove safety interlock
  	DISPATCH(_limit_switch_handler());          // invoke limit switch
     DISPATCH(_controller_state());              // controller state management
+    config_report_load_failure();              // non-fatal, after startup enables TX
 	DISPATCH(_test_system_assertions());		// system integrity assertions
 	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
 
@@ -341,8 +342,11 @@ static void _dispatch_kernel()
     	// this optimization bypasses the standard JSON parser and does what it needs directly
     	nvObj_t *nv = nv_reset_nv_list(NUL);                // get a fresh nvObj list
     	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
-    	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
-    	nv->valuetype = TYPE_STRING;
+    	if (nv_copy_string(nv, cs.bufp) == STAT_OK) {       // copy the Gcode line (for the echo)
+    	    nv->valuetype = TYPE_STRING;
+    	} else {
+    	    nv->valuetype = TYPE_EMPTY;                     // too long to echo: report the status without it
+    	}
     	float status = gc_gcode_parser(cs.bufp);
     	nv_print_list(status, TEXT_NO_DISPLAY, JSON_RESPONSE);
     	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
@@ -360,10 +364,11 @@ static void _dispatch_kernel()
  *  (e,g \n instead of LF). The text response string is closed, then
  *  json_continuation is set so that the JSON response is properly completed.
  *
- *  Gcode is simply wrapped in a JSON gc tag and processed.
+ *  Gcode is run as if it had been sent as {"gc":"..."}: no text-mode prompt goes into the JSON
+ *  stream, and the Gcode status is returned for the JSON footer (E057).
  */
 
-void controller_dispatch_txt_container (nvObj_t *nv, char *str)
+stat_t controller_dispatch_txt_container (nvObj_t *nv, char *str)
 {
     // process pure text-mode commands
     if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
@@ -378,12 +383,12 @@ void controller_dispatch_txt_container (nvObj_t *nv, char *str)
         printf_P(PSTR("\""));                       // close quote
         nv_reset_nv_list(NUL);                      // reset the list to start at the head
         NV_HEAD->valuetype = TYPE_TXTCON;           // label the list as a text container
+        return (STAT_OK);
     }
     // process gcode
-    else {
-        strcpy(nv->token,"gc");
-        text_response(gc_gcode_parser(str), cs.saved_buf);
-    }
+    strcpy(nv->token,"gc");
+    nv->valuetype = TYPE_STRING;                    // echo like a gc pair, not a text container
+    return (gc_gcode_parser(str));
 }
 
 /**** Local Utilities ********************************************************/
@@ -404,7 +409,9 @@ static stat_t _shutdown_handler()
 
 	// No indicator blink here: INDICATOR_LED is the spindle direction output (hardware.h), and
 	// toggling it would flip the direction line of a spindle drive that is still wired up.
-	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
+	// Let control lines run so {clear:n} can exit SHUTDOWN without a reset (E045);
+	// cm_is_alarmed() still rejects G-code and settings while shut down.
+	return (STAT_OK);
 }
 
 /*

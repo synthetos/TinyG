@@ -305,7 +305,7 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 		d->flag_in_line = true;					// yes, we are busy getting a line
 		d->len = 0;								// zero buffer
 		d->buf = buf;
-		d->size = size;
+		d->size = min(size, UINT8_MAX);      // len is uint8_t; reserve a countable terminating NUL
 		d->signal = XIO_SIG_OK;					// reset signal register
 	}
 	while (true) {
