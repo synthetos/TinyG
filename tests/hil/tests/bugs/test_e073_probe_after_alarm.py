@@ -64,9 +64,12 @@ def test_pending_probe_does_not_run_after_alarm(tg, keep):
         assert get(tg, "stat") == alarm
         assert get(tg, "mpoz") == pytest.approx(z0, abs=0.01)
     finally:
-        idle(tg)
+        # the unexecuted probe stays queued under the alarm: flush it before waiting for idle
+        tg.transport.write(b"%\n")
+        time.sleep(0.5)
         tg.drain()
         tg.clear_alarm()
+        idle(tg)
         tg.send_gcode("G90 G1 X0 Y0 Z0 F600", check=True, allow="return to the G92 zero")
         idle(tg)
 
