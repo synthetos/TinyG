@@ -12,6 +12,9 @@ dependencies = [
     "pyelftools>=0.31",     # ELF symbols and DWARF members for peek/poke
 ]
 
+[project.optional-dependencies]
+evidence = ["matplotlib>=3.8"]
+
 [tool.uv]
 package = false
 
