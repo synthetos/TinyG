@@ -136,6 +136,15 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
         return (STAT_OK);
     }
 
+    // A G2/G3 word with no axis, offset, radius or P word (e.g. 'G2 F100') only sets the motion
+    // mode; it is not a zero-offset full circle (g2core plan_arc.cpp, E074)
+    if (!(target_f[AXIS_X] | target_f[AXIS_Y] | target_f[AXIS_Z] |
+          offset_f[AXIS_X] | offset_f[AXIS_Y] | offset_f[AXIS_Z] |
+          radius_f | P_word_f)) {
+        cm.gm.motion_mode = motion_mode;            // the mode is modal: later offset-only blocks use it
+        return (STAT_OK);
+    }
+
     // Some things you might think are errors but are not:
     //  - offset specified for linear axis (i.e. not one of the plane axes). Ignored
     //  - rotary axes are present. Ignored
