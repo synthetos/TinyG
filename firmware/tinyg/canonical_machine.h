@@ -867,6 +867,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 
 	void cm_print_lin(nvObj_t *nv);		// generic print for linear values
 	void cm_print_pos(nvObj_t *nv);		// print runtime work position in prevailing units
+	void cm_print_hom(nvObj_t *nv);		// print an axis homed flag
 	void cm_print_mpo(nvObj_t *nv);		// print runtime work position always in MM units
 	void cm_print_ofs(nvObj_t *nv);		// print runtime work offset always in MM units
 
@@ -922,6 +923,7 @@ stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 
 	#define cm_print_lin tx_print_stub		// generic print for linear values
 	#define cm_print_pos tx_print_stub		// print runtime work position in prevailing units
+	#define cm_print_hom tx_print_stub
 	#define cm_print_mpo tx_print_stub		// print runtime work position always in MM uints
 	#define cm_print_ofs tx_print_stub		// print runtime work offset always in MM uints
 

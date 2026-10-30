@@ -208,7 +208,15 @@ static stat_t _homing_axis_start(int8_t axis)
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) {    // axes are done or error
 		if (axis == -1) {						// -1 is done
+			// the machine is homed only when every axis with a homing switch is homed,
+			// not whenever the axes requested by this G28.2 are done
 			cm.homing_state = HOMING_HOMED;
+			for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
+				if (((get_switch_mode(MIN_SWITCH(i)) | get_switch_mode(MAX_SWITCH(i))) & SW_HOMING_BIT) &&
+					(cm.homed[i] == false)) {
+					cm.homing_state = HOMING_NOT_HOMED;
+				}
+			}
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
 			return (_homing_error_exit(-2, STAT_HOMING_ERROR_BAD_OR_NO_AXIS));

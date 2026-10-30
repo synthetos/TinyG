@@ -328,6 +328,38 @@ class Ice:
     def where(self):
         return self.symbols.function_at(self.pc()) if self.symbols else hex(self.pc())
 
+    # ---- stack depth --------------------------------------------------------------------
+
+    def stack_pointer(self):
+        """CPU stack pointer (data-space address), read from CPU.SPL/SPH while halted."""
+        sp_io = int(self.board.data["mcu"]["sram"]["sp_io_address"], 0)
+        with self.halted():
+            return int.from_bytes(self.read(sp_io, 2), "little")
+
+    def _bss_end(self):
+        return self.symbols.sym["__bss_end"][0] - self.board.sram_symbol_base
+
+    def stack_paint(self, pattern=0xA5, guard=32, chunk=128):
+        """Fill the free RAM between the end of static data and the stack pointer with a pattern.
+
+        Returns (start, end): later, stack_highwater() finds how far down the stack ever reached.
+        The `guard` bytes just below SP are left alone (the halted frame and pending pushes)."""
+        with self.halted():
+            start, end = self._bss_end(), self.stack_pointer() - guard
+            for addr in range(start, end, chunk):
+                self.write(addr, bytes([pattern]) * min(chunk, end - addr))
+        return start, end
+
+    def stack_highwater(self, start, end, pattern=0xA5, chunk=256):
+        """Lowest address the stack has written since stack_paint(); returns (address, free bytes)."""
+        with self.halted():
+            for addr in range(start, end, chunk):
+                block = self.read(addr, min(chunk, end - addr))
+                for i, v in enumerate(block):
+                    if v != pattern:
+                        return addr + i, addr + i - start
+        return end, end - start
+
     def eeprom_read(self, addr=0, n=2048):
         from pyedbglib.protocols.avr8protocol import Avr8Protocol
         return self.read(addr, n, Avr8Protocol.AVR8_MEMTYPE_EEPROM)
