@@ -71,7 +71,6 @@ def probe_zero(tg, keep):
     back_to_start(tg)
 
 
-@pytest.mark.bug("E025", on=["d449"])
 def test_g38_2_uses_modal_feed_rate(tg, probe_zero):
     tg.send_gcode("F100", check=True)
     resp = tg.send_gcode("G38.2 Z-1", allow="1 mm probe in free air")
@@ -84,7 +83,6 @@ def test_g38_2_with_feed_rate_on_line(tg, probe_zero):
     assert wait_prb(tg)["e"] == 0
 
 
-@pytest.mark.bug("E025", on=["d449"])
 def test_probe_cycle_waits_for_previous_move(tg, probe_zero):
     x0 = get(tg, "mpox")
     tg.send_gcode("G1 X5 F100", check=True, allow="5 mm move (3 s) ahead of the probe")
@@ -96,7 +94,6 @@ def test_probe_cycle_waits_for_previous_move(tg, probe_zero):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E025", on=["d449"])
 def test_rejected_probe_restores_cycle_and_settings(tg, keep):
     use_zmin_probe(tg, keep)
     keep("sl", "ztn", "ztm", "zjh")

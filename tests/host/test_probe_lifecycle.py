@@ -75,7 +75,7 @@ stat_t cm_is_alarmed(void) {
     if(cm.machine_state==MACHINE_PANIC) return STAT_COMMAND_REJECTED_BY_PANIC;
     return STAT_OK;
 }
-stat_t cm_alarm_P(const stat_t s,const char *msg) { alarms++; cm.machine_state=MACHINE_ALARM; return s; }
+stat_t cm_alarm_P(const stat_t s,const char *msg) { status_code=s; alarms++; cm.machine_state=MACHINE_ALARM; return s; }
 bool mp_runtime_is_idle(void) { assert(!(SREG&128)); return !stepping; }
 bool mp_has_runnable_buffer(void) { assert(!(SREG&128)); return queued; }
 uint8_t cm_get_runtime_busy(void) { return cm.cycle_state==CYCLE_OFF ? false : stepping; }
@@ -86,7 +86,7 @@ static void setup(void) {
     memset(&cm,0,sizeof(cm)); memset(&pb,0,sizeof(pb)); memset(&st_pre,0,sizeof(st_pre));
     st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC; SREG=0x95;
     queued=stepping=alarm_on_feed=false; feeds=finishes=flushes=alarms=cycle_ends=0;
-    feed_status=STAT_OK;
+    feed_status=STAT_OK; status_code=STAT_OK;
     cm.gm.feed_rate=100; cm.gm.feed_rate_mode=UNITS_PER_MINUTE_MODE;
     cm.gm.distance_mode=INCREMENTAL_MODE; cm.machine_state=MACHINE_PROGRAM_STOP;
     for(int a=0;a<3;a++) { cm.a[a].jerk_max=100+a; cm.a[a].jerk_homing=10+a; }
@@ -138,6 +138,7 @@ int main(void) {
         for(int a=0;a<AXES;a++) assert(cm.gm.target[a]==.25+a);
         assert(cm_probe_callback()==STAT_NOOP && feeds==1);
         assert(alarms==(preset==0 ? 1 : 0));
+        if(preset==0) assert(status_code==STAT_MINIMUM_TIME_MOVE); // preserve rejection, not generic miss
         if(preset>=1) assert(cycle_ends==0); // do not erase alarm/shutdown/panic
         if(preset<2) assert(cm.machine_state==MACHINE_ALARM);
         if(preset==2) assert(cm.machine_state==MACHINE_SHUTDOWN);
