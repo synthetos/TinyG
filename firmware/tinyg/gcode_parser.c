@@ -510,8 +510,8 @@ static stat_t _execute_gcode_block()
 	//--> cutter radius compensation goes here
 
 	// set / cancel tool length offset compensation
-    if (cm.gf.tool_offset_set) { return(cm_tool_offset_set(cm.gn.target, cm.gf.target)); }
-    if (cm.gf.tool_offset_cancel) { return(cm_tool_offset_cancel()); }
+    if (cm.gf.tool_offset_set) { ritorno(cm_tool_offset_set(cm.gn.target, cm.gf.target)); }
+    if (cm.gf.tool_offset_cancel) { ritorno(cm_tool_offset_cancel()); }
 
 	EXEC_FUNC(cm_set_coord_system, coord_system);
 	EXEC_FUNC(cm_set_path_control, path_control);
@@ -537,6 +537,8 @@ static stat_t _execute_gcode_block()
 		case NEXT_ACTION_RESUME_ORIGIN_OFFSETS:  { status = cm_resume_origin_offsets(); break;}
 
 		case NEXT_ACTION_DEFAULT: {
+            // G43.1 axis words set offsets; they must not also execute a move.
+            if (cm.gf.tool_offset_set && (cm.gn.motion_mode != MOTION_MODE_CANCEL)) { break; }
 			cm_set_absolute_override(cm.gn.absolute_override);	// apply override setting to gm struct
 			switch (cm.gn.motion_mode) {
 				case MOTION_MODE_CANCEL:            { status = cm_cancel_motion_mode(); break;}
