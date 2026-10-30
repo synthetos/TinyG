@@ -41,12 +41,29 @@ def loads(raw: str):
         return json.loads(_BARE_KEY.sub(r'\1"\2":', raw))
 
 
+def _salvage(raw: str):
+    """A line whose start was mangled (an Atmel-ICE halt can freeze the USART mid-byte while the board
+    transmits) may still end with a whole JSON object; return the last one that parses, or None."""
+    for i in range(len(raw) - 1, 0, -1):
+        if raw[i] == "{" and raw[i:i + 2] == '{"':
+            try:
+                data = loads(raw[i:])
+            except ValueError:
+                continue
+            if isinstance(data, dict) and data:
+                return raw[i:], data
+    return None
+
+
 def parse_line(raw: str, t: float) -> Event:
     if raw.startswith("{"):
         try:
             data = loads(raw)
         except ValueError:
-            return Event("malformed", t, raw)
+            found = _salvage(raw)
+            if found is None:
+                return Event("malformed", t, raw)
+            raw, data = found
         if not isinstance(data, dict):
             return Event("malformed", t, raw)
         if "r" in data or "f" in data:
