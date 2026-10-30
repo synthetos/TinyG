@@ -23,7 +23,7 @@ def _settle(tg, timeout=10.0):
 
 @pytest.mark.motion
 @pytest.mark.persists
-@pytest.mark.bug("E041", on=["d440", "d449"])
+@pytest.mark.bug("E041", on=["d440"])
 def test_arc_endpoint_beyond_soft_limit_is_rejected(tg, keep):
     keep("sl", "xtn", "xtm")
     try:

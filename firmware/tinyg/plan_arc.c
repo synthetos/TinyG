@@ -563,36 +563,44 @@ static float _estimate_arc_time (float arc_time)
  *	  - arc angular travel in radians (arc.angular_travel)
  *	  - max and min travel in axis 0 and axis 1 (in cm struct)
  */
-/*
-static stat_t _test_arc_soft_limit_plane_axis(float center, uint8_t plane_axis)
+// true if the arc, starting at arc.theta and turning arc.angular_travel (signed), passes 'angle'
+static bool _arc_sweeps(float angle)
 {
-	if (center <= arc.position[plane_axis]) {
-		if (arc.angular_travel < M_PI) {							// case (1)
-			return (STAT_OK);
-		}
-		if ((center - arc.radius) < cm.a[plane_axis].travel_min) {	// case (2)
-			return (STAT_SOFT_LIMIT_EXCEEDED);
-		}
+	float travel = fabs(arc.angular_travel);
+	if (travel >= 2*M_PI) { return (true); }
+	float low = (arc.angular_travel >= 0) ? arc.theta : arc.theta + arc.angular_travel;
+	float d = angle - low;							// angles are within a few turns: no fmod (1 KB of libm)
+	while (d < 0) { d += 2*M_PI; }
+	while (d >= 2*M_PI) { d -= 2*M_PI; }
+	return (d <= travel);
+}
+
+// test the plane axis extremes the arc actually reaches: centre + r at max_angle, centre - r opposite
+static stat_t _test_arc_soft_limit_plane_axis(float center, uint8_t axis, float max_angle)
+{
+	if ((cm.homed[axis] != true) || fp_EQ(cm.a[axis].travel_min, cm.a[axis].travel_max)) {
+		return (STAT_OK);								// same skips as cm_test_soft_limits()
 	}
-	if ((center + arc.radius) > cm.a[plane_axis].travel_max) {		// cases (3) and (4)
+	if ((cm.a[axis].travel_max > DISABLE_SOFT_LIMIT) && _arc_sweeps(max_angle) &&
+		((center + arc.radius) > cm.a[axis].travel_max)) {
 		return (STAT_SOFT_LIMIT_EXCEEDED);
 	}
-	return(STAT_OK);
+	if ((cm.a[axis].travel_min > DISABLE_SOFT_LIMIT) && _arc_sweeps(max_angle + M_PI) &&
+		((center - arc.radius) < cm.a[axis].travel_min)) {
+		return (STAT_SOFT_LIMIT_EXCEEDED);
+	}
+	return (STAT_OK);
 }
-*/
+
 static stat_t _test_arc_soft_limits()
 {
-/*
-    if (cm.soft_limit_enable == true) {
+	if (cm.soft_limit_enable == true) {
+		// the endpoint, all axes (this also covers the linear axis of a helix)
+		ritorno(cm_test_soft_limits(arc.gm.target));
 
-        // Test if target falls outside boundaries. This is a 3 dimensional test
-        // so it also checks the linear axis of the arc (helix axis)
-        ritorno(cm_test_soft_limits(arc.gm.target));
-
-        // test arc extents
-        ritorno(_test_arc_soft_limit_plane_axis(arc.center_0, arc.plane_axis_0));
-        ritorno(_test_arc_soft_limit_plane_axis(arc.center_1, arc.plane_axis_1));
-    }
-*/
-    return(STAT_OK);
+		// the arc's extent in its plane: axis 0 runs centre + r*sin(theta), axis 1 centre + r*cos(theta)
+		ritorno(_test_arc_soft_limit_plane_axis(arc.center_0, arc.plane_axis_0, M_PI/2));
+		ritorno(_test_arc_soft_limit_plane_axis(arc.center_1, arc.plane_axis_1, 0));
+	}
+	return (STAT_OK);
 }
