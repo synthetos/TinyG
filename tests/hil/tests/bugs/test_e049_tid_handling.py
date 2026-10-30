@@ -39,3 +39,22 @@ def test_tid_echoed_at_low_jv(tg, keep, jv):
     keep("jv")
     tg.set("jv", jv)
     assert _tid(tg.send_json('{"fb":null,"tid":5}', check=True)) == 5
+
+
+@pytest.mark.parametrize("line,expect", [
+    ('{"msg":"literal tid:7","tid":42}', 42),     # 'tid' inside a string value is not a key
+    ('{"sr":{"tid":7},"tid":42}', 42),             # nested 'tid' is not the top-level key
+    ('{"TID":42,"fb":null}', 42),                  # keys are case-insensitive like the tokenizer
+    ('{"tid"\t:\t42,"fb":null}', 42),              # tabs around ':'
+    ('{"fb":null,"tid":42.5}', None),              # not a plain unsigned integer
+    ('{"fb":null,"tid":4294967296}', None),        # does not fit a uint32
+])
+def test_tid_scan_cases(tg, line, expect):
+    resp = tg.send_json(line)
+    assert resp.event.data.get("tid") == expect, resp.raw
+
+
+def test_tid_does_not_leak_to_the_next_line(tg):
+    tg.send_json('{"fb":null,"tid":77}', check=True)
+    resp = tg.send_gcode("G90", check=True)        # a plain G-code line answered in JSON mode
+    assert "tid" not in resp.event.data, resp.raw

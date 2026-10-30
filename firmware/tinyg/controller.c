@@ -268,6 +268,7 @@ static void _dispatch_kernel()
         cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+	js.tid_present = false;									// only json_parser() sets it, for this line (E049)
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
