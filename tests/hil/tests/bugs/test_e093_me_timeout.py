@@ -7,7 +7,7 @@ times out after $mt regardless. g2core and the TinyG wiki (`$me=180`) use second
 import pytest
 
 
-@pytest.mark.bug("E093", on=["d440", "d449"])
+@pytest.mark.bug("E093", on=["d440"])
 def test_me_accepts_timeout_seconds(tg):
     try:
         assert tg.send_json({"me": 30}).status == 0
