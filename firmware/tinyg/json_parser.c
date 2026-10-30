@@ -152,12 +152,11 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
         if (nv->valuetype == TYPE_NULL) {                   // GET the value or group
             ritorno(nv_get(nv));                            // return if exception
         } else {
-            if (!cm_is_alarmed()) {                         // don't execute actions if in ALARM state
-                ritorno(nv_set(nv));
-                if (nv->valuetype != TYPE_PARENT) {         // group SETs (parents) perform persistence
-                    ritorno(nv_persist(nv));                // as part of group iteration so don't need
-                }                                           // to persist here.
-            }                                               // See set_grp() if this makes no sense
+            ritorno(cm_is_alarmed());                       // report rejected SETs; GETs remain available
+            ritorno(nv_set(nv));
+            if (nv->valuetype != TYPE_PARENT) {             // groups persist their children
+                ritorno(nv_persist(nv));
+            }
         }
     } while ((*p_nv = nv_next_empty(*p_nv)) != NULL);       // skip past any NV's that have been filled
     return (STAT_OK);
