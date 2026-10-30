@@ -577,6 +577,7 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     cmCycleState cycle_state;               // cycs
     cmMotionState motion_state;             // momo
     cmFeedholdState hold_state;             // hold: feedhold state machine
+    bool hold_fast;                         // brake with the homing jerk (limit switch hit); cleared at HOLD
     cmOverrideState mfo_state;              // feed override state machine
     cmQueueFlushState queue_flush_state;    // master queue flush state machine
 

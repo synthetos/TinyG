@@ -32,7 +32,7 @@ def _stopped(switches, timeout=10.0):
 
 @pytest.mark.profile("switches-no")
 @pytest.mark.settings(xsx=2, xsn=0)
-@pytest.mark.bug("E031", on=["d449"])
+@pytest.mark.bug("E031", on=[])
 def test_limit_hit_stops_fast_and_unhomes(tg, switches, keep, record):
     keep("xjh")
     xjm = tg.get("xjm")

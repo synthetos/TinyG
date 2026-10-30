@@ -393,6 +393,10 @@ static stat_t _limit_switch_handler(void)
     sprintf_P(msg, PSTR("input %d"), cs.limit_switch_asserted);
     cm_alarm(STAT_LIMIT_SWITCH_HIT, msg);
     cs.limit_switch_asserted = 0;
+    for (uint8_t axis=0; axis<AXES; axis++) {        // a limit hit means the machine was not where it
+        cm.homed[axis] = false;                     // thought it was: positions are kept, homing is not
+    }
+    cm.homing_state = HOMING_NOT_HOMED;
 
     return (STAT_OK);
 }

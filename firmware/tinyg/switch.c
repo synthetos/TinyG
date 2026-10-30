@@ -221,6 +221,8 @@ static void _dispatch_switch(const uint8_t sw_num)
         return;
     }
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
+		cm.hold_fast = true;							// stop now, at the homing jerk, without waiting
+		cm_request_feedhold();							// for the main loop to raise the alarm
     	controller_assert_limit_condition(sw_num+1);
 	}
 }

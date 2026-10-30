@@ -160,6 +160,25 @@ stat_t mp_exec_move()
  **
  **** NOTICE ** NOTICE ** NOTICE ****/
 
+/*
+ * _fast_stop_scale() - braking length factor for a limit-switch stop
+ *
+ *	A jerk-limited stop from v takes v * sqrt(v / J), so braking at the axes' homing jerk instead of
+ *	the move's jerk scales the tail by sqrt(1 / ratio), where ratio is the smallest jerk_homing /
+ *	jerk_max over the axes in motion. Never softer than a normal hold.
+ */
+static float _fast_stop_scale(const mpBuf_t *bf)
+{
+	float ratio = 0;
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		if (fabs(bf->unit[axis]) > EPSILON && cm.a[axis].jerk_max > EPSILON) {
+			float r = cm.a[axis].jerk_homing / cm.a[axis].jerk_max;
+			if (ratio == 0 || r < ratio) { ratio = r; }
+		}
+	}
+	return ((ratio > 1) ? sqrt(1 / ratio) : 1);
+}
+
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
 	if (bf->block_state == BLOCK_IDLE) {
@@ -240,6 +259,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                 sr_request_status_report(SR_REQUEST_ASAP);
                 cs.controller_state = CONTROLLER_READY;                 // remove controller readline() PAUSE
                 cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
+                cm.hold_fast = false;
             }
             return (STAT_OK);                                           // hold here. No more movement
         }
@@ -268,6 +288,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
                 float available_length = get_axis_vector_length(mr.target, mr.position);
                 mr.tail_length = mp_get_target_length(mr.cruise_velocity, 0, bf);   // braking length
+                if (cm.hold_fast) {
+                    mr.tail_length *= _fast_stop_scale(bf);
+                }
 
                 if (available_length >= mr.tail_length) {   // cases (1a) and (1c)
                     mr.exit_velocity = 0;
