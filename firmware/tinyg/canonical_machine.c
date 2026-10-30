@@ -413,7 +413,8 @@ void cm_finalize_move() {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
 	// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
-	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && ((cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) ||
+        (cm.gm.motion_mode == MOTION_MODE_CW_ARC) || (cm.gm.motion_mode == MOTION_MODE_CCW_ARC))) {
 		cm.gm.feed_rate = 0;
 	}
 }
@@ -1318,7 +1319,10 @@ stat_t cm_goto_g30_position(const float target[], const bool flags[])
 stat_t cm_set_feed_rate(const float feed_rate)
 {
 	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
-		cm.gm.feed_rate = 1 / feed_rate;	// normalize to minutes (NB: active for this gcode block only)
+        if (!(feed_rate > 0) || !isfinite(feed_rate)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        float inverse_time = 1 / feed_rate;
+        if (!isfinite(inverse_time)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        cm.gm.feed_rate = inverse_time;	// minutes, active for this block only
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
 	}
@@ -1378,10 +1382,6 @@ stat_t cm_dwell(const float seconds)
  */
 stat_t cm_straight_feed(const float target[], const bool flags[])
 {
-	// trap zero feed rate condition
-	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
     // it's legal for a G1 to have no axis words but we don't want to process it
@@ -1389,6 +1389,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
+	// trap zero feed rate condition
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	}
 	cm_set_model_target(target, flags);
 
 	// test soft limits

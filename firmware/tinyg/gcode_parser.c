@@ -496,7 +496,14 @@ static stat_t _execute_gcode_block()
 
 	cm_set_model_linenum(cm.gn.linenum);
 	EXEC_FUNC(cm_set_feed_rate_mode, feed_rate_mode);
-	EXEC_FUNC(cm_set_feed_rate, feed_rate);
+    // G93 F belongs to this block only, including after an F-only line.
+    if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) { cm.gm.feed_rate = 0; }
+    if (cm.gf.feed_rate && ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) ||
+        ((cm.gn.next_action == NEXT_ACTION_DEFAULT) && !cm.gf.tool_offset_set &&
+         ((cm.gn.motion_mode == MOTION_MODE_STRAIGHT_FEED) ||
+          (cm.gn.motion_mode == MOTION_MODE_CW_ARC) || (cm.gn.motion_mode == MOTION_MODE_CCW_ARC))))) {
+        ritorno(cm_set_feed_rate(cm.gn.feed_rate));
+    }
 	EXEC_FUNC(cm_feed_rate_override_factor, feed_rate_override_factor);
 	EXEC_FUNC(cm_traverse_override_factor, traverse_override_factor);
 	EXEC_FUNC(cm_set_spindle_speed, spindle_speed);
