@@ -147,7 +147,7 @@ stat_t rpt_exception(stat_t status, const char *msg)
         if (end - wr >= 3) { *wr++ = ' '; *wr++ = '-'; *wr++ = ' '; }
         wr = _append_exception_text(wr, end, msg);
         *wr++ = '"'; *wr++ = '}'; *wr++ = '}'; *wr++ = '\n'; *wr = NUL;
-        printf_P(PSTR("%s"), json_relax(line_msg));
+        fputs(json_relax(line_msg), stdout);
     }
     return (status);
 }
@@ -746,7 +746,7 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d,\"qi\":%u,\"qo\":%u}\n"),
 					   qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
 		}
-        printf(json_relax(line_msg));
+        fputs(json_relax(line_msg), stdout);
 	}
 	qr_init_queue_report();
 	return (STAT_OK);
@@ -884,7 +884,7 @@ uint8_t job_report_callback()
 	if (cs.comm_mode == JSON_MODE) {		// only JSON mode; job_ids are client app state
         char local_msg[64];
 		sprintf_P(local_msg, PSTR("{\"job\":[%lu,%lu,%lu,%lu]}\n"), cs.job_id[0], cs.job_id[1], cs.job_id[2], cs.job_id[3] );
-        printf(json_relax(local_msg));
+        fputs(json_relax(local_msg), stdout);
     }
 	return (STAT_OK);
 }

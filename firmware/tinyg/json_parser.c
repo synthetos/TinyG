@@ -795,7 +795,7 @@ void json_print_response(uint8_t status)
 
 	// serialize the JSON response and print it if there were no errors
 	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-    	printf(cs.out_buf);
+        fputs(cs.out_buf, stdout);
 	}
     nv->str = NULL;                                 // do not retain the stack-backed footer
     nv->valuetype = TYPE_EMPTY;
@@ -824,7 +824,7 @@ void json_print_list(stat_t status, uint8_t flags)
 void json_print_object(nvObj_t *nv)
 {
 	if (json_serialize(nv, cs.out_buf, sizeof(cs.out_buf)) > 0) {
-        printf(cs.out_buf);
+        fputs(cs.out_buf, stdout);
     }
     // fails silently on 0 or -1 return. May want to revisit this.
 }
