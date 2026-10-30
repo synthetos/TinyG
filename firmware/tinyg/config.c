@@ -822,7 +822,7 @@ void nv_populate_nv_by_index(nvObj_t *nv, index_t index)
  */
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
-	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN) {
+	if ((nvStr.wp + strlen(src) + 1) > NV_SHARED_STRING_LEN) {	// room for the NUL too (E048)
         return (STAT_BUFFER_FULL);
     }
 	char *dst = &(nvStr.string[nvStr.wp]);
