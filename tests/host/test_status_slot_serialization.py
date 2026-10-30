@@ -15,7 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 def function(filename, name):
     source = (ROOT / "firmware/tinyg" / filename).read_text()
-    match = re.search(r"(?m)^(?:char \*|stat_t |int16_t )" + name + r"\([^\n]*\)\n\{", source)
+    match = re.search(r"(?m)^(?:static )?(?:char \*|stat_t |int16_t )" + name + r"\([^\n]*\)\n\{", source)
     if not match:
         raise AssertionError(f"missing function {name}")
     return source[match.start():source.index("\n}", match.end()) + 2]
@@ -44,7 +44,6 @@ nvObj_t *nv_relink_nv_list(void){return nodes;}
 nvObj_t *nv_next(nvObj_t *n){return n->nx;}
 char *json_relax(char *s){return s;}
 char *strcat_literal_P(char *d,const char *s){strcpy(d,s);return d+strlen(s);}
-char *strcat_string(char *d,const char *s,size_t n){assert(0);return d;}
 char *strcat_float(char *d,float f,int precision){assert(0);return d;}
 bool prep_float(nvObj_t *n){assert(0);return false;}
 /* The unsigned formatter is not under test; match the host ABI for its helper. */
@@ -81,7 +80,8 @@ class StatusSlotSerializationTests(unittest.TestCase):
             self.skipTest("host C compiler not installed")
         code = PRELUDE + "\n".join(function(filename, name) for filename, name in (
             ("config.c", "get_u16"), ("report.c", "sr_get_se"),
-            ("util.c", "strcat_signed"), ("json_parser.c", "json_serialize"))) + EXERCISE
+            ("util.c", "strcat_signed"), ("util.c", "strcat_string"),
+            ("json_parser.c", "_serialize_string"), ("json_parser.c", "json_serialize"))) + EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-status-json-") as directory:
             path = pathlib.Path(directory)
             (path / "check.c").write_text(code)

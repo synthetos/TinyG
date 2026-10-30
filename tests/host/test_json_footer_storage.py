@@ -20,6 +20,7 @@ class JsonFooterStorage(unittest.TestCase):
 #define NUL 0
 #define JV_SILENT 0
 #define STAT_OK 0
+#define STAT_BUFFER_FULL 13
 #define STAT_NO_DISPLAY 250
 #define STAT_JSON_SYNTAX_ERROR 111
 #define MACHINE_INITIALIZING 0
@@ -58,8 +59,8 @@ int main(void){
  json_print_response(111);assert(!strcmp(seen,"2,111,247"));assert(cs.linelen==0);assert(copies==0);assert(foot.str==NULL);assert(foot.valuetype==TYPE_EMPTY);
  /* E102: a reply too big for out_buf still answers the line, keeping its tid and footer */
  foot.str="x";xio.rx_mode=1;serialize_ret=-1;js.tid_present=true;js.tid=4000000000u;
- json_print_response(0);assert(!strcmp(cs.out_buf,"{\"r\":{},\"tid\":4000000000,\"f\":[3,0,10]}\n"));assert(!js.tid_present);
- json_print_response(0);assert(!strcmp(cs.out_buf,"{\"r\":{},\"f\":[3,0,10]}\n"));
+ json_print_response(0);assert(!strcmp(cs.out_buf,"{\"r\":{},\"tid\":4000000000,\"f\":[3,13,10]}\n"));assert(!js.tid_present);
+ json_print_response(0);assert(!strcmp(cs.out_buf,"{\"r\":{},\"f\":[3,13,10]}\n"));
 }
 '''
         with tempfile.TemporaryDirectory() as d:
