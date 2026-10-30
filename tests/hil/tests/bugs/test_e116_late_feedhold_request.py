@@ -1,4 +1,6 @@
-"""E116: a feedhold request arriving as the last block finishes is never cleared: hold stays REQUESTED (or SYNC).
+"""Timing-pending: this serial sweep is stress coverage, not a bound on ISR latency.
+
+E116: a feedhold request arriving as the last block finishes is never cleared: hold stays REQUESTED (or SYNC).
 
 edge canonical_machine.c:1554-1555 accepts '!' whenever motion_state != MOTION_STOP. cm_start_hold
 (:1603-1607) only acts `if (mp_has_runnable_buffer())` and has no else branch, so once the exec has freed the
@@ -33,7 +35,8 @@ def _move_time(tg):
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E116", on=["d449"])
+@pytest.mark.bug("E116", on=[])
+@pytest.mark.timing
 def test_late_feedhold_never_sticks(tg):
     rng = random.Random(116)
     t_end = _move_time(tg)
