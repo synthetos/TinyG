@@ -71,7 +71,10 @@ void _startup_helper(stat_t status, const char *msg)
 	nv_add_object((const char *)"hv");		// hardware version
 	nv_add_object((const char *)"id");		// hardware ID
 	nv_add_string((const char *)"msg", pstr2str(msg));	// startup message
+    uint8_t syntax = js.json_syntax;
+    js.json_syntax = JSON_SYNTAX_STRICT;
     json_print_object(NV_HEAD);
+    js.json_syntax = syntax;
 }
 
 void rpt_print_initializing_message(void)

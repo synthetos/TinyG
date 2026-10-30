@@ -155,6 +155,7 @@ void hw_request_hard_reset() { cs.hard_reset_requested = true; }
 void hw_hard_reset(void)			// software hard reset using the watchdog timer
 {
 #ifdef __AVR
+	cli();                      // no motion or reporting ISR while waiting for reset
 	wdt_enable(WDTO_15MS);
 	while (true);					// loops for about 15ms then resets
 #endif

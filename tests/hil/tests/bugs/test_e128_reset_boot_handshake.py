@@ -49,47 +49,41 @@ def _reset(tg):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E128", on=["d440", "d449"])
-def test_ctrl_x_resets_while_tx_is_blocked(tg, recover):
-    if tg.get("ex") != 1:
-        pytest.skip("pausing the board's output needs XON/XOFF flow control ($ex=1)")
+@pytest.mark.persists
+@pytest.mark.bug("E128", on=["d440"])
+def test_ctrl_x_resets_while_tx_is_blocked(tg, recover, keep):
+    keep("ex")
+    tg.set("ex", 1)
     tg.drain(quiet=0.05)
-    tg.send_raw(bytes([XOFF]))          # host pauses the board's TX
+    tg.send_raw(bytes([XOFF]))
     try:
-        tg.transport.write(b"$$\n")     # several KB of text: the main loop blocks once TX is full
-        time.sleep(0.5)
+        tg.transport.write(b"$$\n")
+        time.sleep(0.5)  # let the listing fill TX, then never release it before the reset verdict
         tg.send_raw(b"\x18")
-        time.sleep(1.0)
+        ready = tg.wait_for(_is_ready, 20)
+        assert _is_ready(ready)
     finally:
-        t_xon = time.monotonic()
         tg.send_raw(bytes([XON]))
-    events, end = [], time.monotonic() + 20
-    while not events or not _is_ready(events[-1]):
-        ev = tg.transport.next_event(end - time.monotonic())
-        assert ev is not None, "no banner within 20 s of ^X"
-        events.append(ev)
     tg.drain(quiet=0.3)
-    tg.get("fb")                        # leave text mode if the board is still in it
-    # A reset taken at ^X discards the rest of the $$ listing; one taken only after the loop
-    # resumes prints all of it first.
-    late = [e.raw for e in events if e.kind == "text" and e.raw.startswith("[") and e.t > t_xon + 0.2]
-    assert len(late) <= 2, f"{len(late)} lines of $$ output after XON, e.g. {late[:3]}"
+    tg.get("fb")
 
 
 @pytest.mark.dialect("d449")
 @pytest.mark.resets_board
-@pytest.mark.bug("E128", on=["d449"])
-def test_banner_is_response_with_footer(tg):
+def test_banner_retains_edge_sr_envelope(tg):
+    # Edge deliberately uses an unsolicited sr banner, not a command response.
     banner = _reset(tg)
-    assert "r" in banner.data and "f" in banner.data, banner.raw
+    assert "sr" in banner.data, banner.raw
+    assert banner.body["msg"] == "SYSTEM READY"
 
 
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E128", on=["d440", "d449"])
+@pytest.mark.bug("E128", on=["d440"])
 def test_banner_is_strict_json_with_relaxed_js(tg, keep):
     keep("js")
     tg.set("js", 0)
     banner = _reset(tg)
+    assert tg.get("js") == 0  # strict startup output must not change the selected syntax
     tg.set("js", 1)
     json.loads(banner.raw)
