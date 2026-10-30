@@ -141,6 +141,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     if (!(target_f[AXIS_X] | target_f[AXIS_Y] | target_f[AXIS_Z] |
           offset_f[AXIS_X] | offset_f[AXIS_Y] | offset_f[AXIS_Z] |
           radius_f | P_word_f)) {
+        cm.gm.motion_mode = motion_mode;            // the mode is modal: later offset-only blocks use it
         return (STAT_OK);
     }
 

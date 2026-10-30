@@ -19,7 +19,7 @@ MOVE = "half-circle G2/G3 of 2 mm in X, then back"
 G1, G2, G3 = 1, 2, 3     # momo values (cmMotionMode)
 
 
-@pytest.mark.bug("E074", on=["d449"])
+@pytest.mark.bug("E074", on=["d440"])
 def test_bare_arc_word_selects_the_motion_mode(tg):
     tg.send_gcode("G21 G90 G17 G1 F100", check=True)
     tg.send_gcode("G2 F100", check=True)
@@ -29,7 +29,7 @@ def test_bare_arc_word_selects_the_motion_mode(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E074", on=["d449"])
+@pytest.mark.bug("E074", on=["d440"])
 def test_offset_only_arc_uses_the_bare_mode(tg):
     tg.send_gcode("G21 G17 G91 G1 F600", check=True)
     tg.send_gcode("G3", check=True)                    # select CCW without moving
