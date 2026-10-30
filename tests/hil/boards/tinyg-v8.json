@@ -35,7 +35,10 @@
     "port_registers": {
       "OUT": 4,
       "IN": 8,
-      "PINCTRL": 16
+      "PINCTRL": 16,
+      "DIRSET": 1,
+      "DIRCLR": 2,
+      "OUTCLR": 6
     },
     "pinctrl_opc": {
       "mask": "0x38",
@@ -200,5 +203,13 @@
     "PORTD_INT1": "Y max switch",
     "PORTE_INT1": "Z max switch",
     "PORTF_INT1": "A max switch"
+  },
+  "switch_drive": {
+    "method": "drive-low",
+    "note": "the v8 board's switch inputs have pull-ups the internal pull-down cannot overcome; a closed switch is simulated by driving the pin low as an output, released by returning it to input"
+  },
+  "ice": {
+    "run_timers_when_halted": true,
+    "note": "keep peripheral clocks running during debug halts so port edge detection sees pin changes made while halted (software switches)"
   }
 }

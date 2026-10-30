@@ -2,5 +2,7 @@
  "description": "normally-open switches",
  "settings": {
   "st": 0
- }
+ },
+ "reset": true,
+ "reset_note": "the live switch type only follows $st after a reset (finding E106)"
 }

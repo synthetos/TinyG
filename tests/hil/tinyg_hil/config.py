@@ -61,6 +61,7 @@ class Profile:
     requires: dict = field(default_factory=dict)
     by_dialect: dict = field(default_factory=dict)
     description: str = ""
+    reset: bool = False         # settings only take effect after a board reset (e.g. $st, finding E106)
 
 
 def load_profile(name: str, _seen=()) -> Profile:
@@ -81,7 +82,8 @@ def load_profile(name: str, _seen=()) -> Profile:
     requires.update(data.get("requires", {}))
     for d, block in data.get("dialects", {}).items():
         by_dialect.setdefault(d, {}).update(_expand_block(block))
-    return Profile(name, settings, requires, by_dialect, data.get("description", ""))
+    reset = data.get("reset", False) or any(load_profile(p, _seen + (name,)).reset for p in data.get("extends", []))
+    return Profile(name, settings, requires, by_dialect, data.get("description", ""), reset)
 
 
 @dataclass(frozen=True)
@@ -97,6 +99,8 @@ class ConfigSpec:
                 settings.update(dict(layer[1]))
                 continue
             p = load_profile(layer)
+            if p.reset:
+                requires["reset"] = True
             settings.update(p.settings)
             if dialect:
                 settings.update(p.by_dialect.get(dialect, {}))
@@ -208,6 +212,7 @@ def apply(tg, spec: ConfigSpec, base: dict) -> Machine:
         current = tg._config_applied = dict(base)
     desired = dict(base)
     desired.update(settings)
+    changed = False
     for token in set(current) | set(desired):
         if token not in desired or token in ("fb", "fv", "hp", "hv", "id", "baud"):
             continue
@@ -215,6 +220,9 @@ def apply(tg, spec: ConfigSpec, base: dict) -> Machine:
             continue
         tg.set(token, desired[token], allow=f"apply config {spec.label}")
         current[token] = desired[token]
+        changed = True
+    if changed and requires.get("reset"):
+        tg.reset()                                  # e.g. the live switch type only follows $st after a reset
     readback = {}
     for token in sorted(set(settings) | set(GEOMETRY_TOKENS)):
         if token not in tg.dialect.tokens:

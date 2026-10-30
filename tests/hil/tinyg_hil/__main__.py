@@ -23,8 +23,8 @@ DEFAULT_OUT = pathlib.Path(__file__).resolve().parent.parent / ".snapshots"
 
 def main(argv=None):
     p = argparse.ArgumentParser(prog="tinyg_hil")
-    p.add_argument("command", choices=["info", "snapshot", "restore", "flash"])
-    p.add_argument("file", nargs="?", help="snapshot file for restore")
+    p.add_argument("command", choices=["info", "snapshot", "restore", "flash", "text", "json"])
+    p.add_argument("file", nargs="?", help="snapshot file for restore; the line to send for text/json")
     p.add_argument("--port", required=True)
     p.add_argument("--out", default=str(DEFAULT_OUT))
     p.add_argument("--hex")
@@ -40,6 +40,11 @@ def main(argv=None):
     print(f"board: {json.dumps(tg.identity)} dialect {tg.dialect.name}")
     if args.command == "info":
         pass
+    elif args.command == "text":
+        for line in tg.send_text(args.file):
+            print(line)
+    elif args.command == "json":
+        print(tg.send_json(args.file).raw)
     elif args.command == "snapshot":
         print("saved", snapshot.save(snapshot.take(tg), args.out))
     elif args.command == "restore":

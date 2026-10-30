@@ -5,7 +5,8 @@ real edge on the pin, so the firmware's pin-change ISR, lockout, limit and homin
 with a physical switch (see Ice.set_switch_level).
 
     sw = SoftSwitches(ice, normally_closed=False)
-    sw.close("x", "min"); sw.open("x", "min")
+    sw.idle()                             # every switch untripped for its type
+    sw.close("x", "min"); sw.open("x", "min")     # close = trip, open = untrip
     sw.pulse("z", "min", ms=20)
     sw.mount("z", "min", at=-5.0)        # switch bolted at machine Z=-5: closed while Z <= -5
     ...run G28.2 Z0 over serial...
@@ -50,8 +51,16 @@ class SoftSwitches:
         time.sleep(ms / 1000.0)
         self.open(axis, end)
 
+    def idle(self):
+        """Every switch untripped for the configured type: NO released (high), NC closed (driven low)."""
+        with self._lock:
+            for axis in self.ice.board.switches:
+                for end in ("min", "max"):
+                    self.ice.set_switch(axis, end, False, self.normally_closed)
+                    self.closed[(axis, end)] = False
+
     def release_all(self):
-        """Back to the firmware default (pull-up) on every input; stops mounted switches."""
+        """Back to the board's own input configuration on every pin; stops mounted switches."""
         self.unmount_all()
         with self._lock:
             self.ice.release_all_switches()

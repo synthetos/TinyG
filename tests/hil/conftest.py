@@ -1,5 +1,6 @@
 import os
 import pathlib
+import time
 
 import pytest
 
@@ -215,7 +216,8 @@ def switches(tg, ice):
     """Software switches on the unwired inputs (needs --ice); everything released after the test."""
     from tinyg_hil.switches import SoftSwitches
     soft = SoftSwitches(ice, normally_closed=(tg.get("st") == 1))
-    soft.release_all()
+    soft.idle()
+    time.sleep(0.1)                         # let the firmware's switch lockout expire
     yield soft
     soft.release_all()
 

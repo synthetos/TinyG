@@ -144,6 +144,9 @@ class Ice:
             except Exception:  # noqa: BLE001
                 pass
         self.target.setup_debug_session()
+        if self.board.data.get("ice", {}).get("run_timers_when_halted"):
+            from pyedbglib.protocols.avr8protocol import Avr8Protocol
+            self.protocol.set_byte(Avr8Protocol.AVR8_CTXT_OPTIONS, Avr8Protocol.AVR8_OPT_RUN_TIMERS, 1)
         self.protocol.write_device_data(self.board.pdi_device_data())
         self.target.activate_physical()
         self.protocol.attach(do_break=False)
@@ -234,14 +237,25 @@ class Ice:
         return (self.read(self.board.port_reg(port, "IN"), 1)[0] >> bit) & 1
 
     def set_switch_level(self, axis, end, level):
-        """Drive an unwired switch input high (pull-up, the firmware default) or low (pull-down).
+        """Drive a switch input low, or release it to its idle level (board pull-up -> high).
 
-        The firmware configures switch pins as PULLUP | ISC_BOTHEDGES; changing only the OPC field
-        makes a real edge on the pin, so the firmware's pin-change ISR runs.
+        "drive-low" (board file switch_drive.method): low = pin as output driving 0 (input buffer and
+        pin-change interrupt keep working), high = pin back to input. "pull" instead swaps the
+        internal pull-up/pull-down, for boards without external pull-ups. Either way the firmware's
+        own pin-change ISR sees a real edge.
         """
         port, bit = self.board.switch_pin(axis, end)
-        addr, opc = self.board.pinctrl(port, bit), self.board.opc
+        mask = bytes([1 << bit])
+        method = self.board.data.get("switch_drive", {}).get("method", "pull")
         with self.halted():
+            if method == "drive-low":
+                if level:
+                    self.write(self.board.port_reg(port, "DIRCLR"), mask)
+                else:
+                    self.write(self.board.port_reg(port, "OUTCLR"), mask)
+                    self.write(self.board.port_reg(port, "DIRSET"), mask)
+                return
+            addr, opc = self.board.pinctrl(port, bit), self.board.opc
             ctrl = self.read(addr, 1)[0]
             self.write(addr, bytes([(ctrl & ~opc["mask"] & 0xFF) | (opc["pullup"] if level else opc["pulldown"])]))
 
