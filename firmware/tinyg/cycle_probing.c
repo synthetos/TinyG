@@ -163,8 +163,8 @@ uint8_t _set_pb_func(uint8_t (*func)())
 static uint8_t _probing_init()
 {
 	// so optimistic... ;)
-	// NOTE: it is *not* an error condition for the probe not to trigger.
-	// it is an error for the limit or homing switches to fire, or for some other configuration error.
+	// NOTE: a probe that does not trigger is an error (RS274NGC 3.5.9.1): the cycle ends in ALARM (E072).
+	// It is also an error for the limit or homing switches to fire, or for some other configuration error.
 	cm.probe_state = PROBE_FAILED;      // starts out as failed
 	cm.cycle_state = CYCLE_PROBE;
 
