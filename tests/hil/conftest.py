@@ -217,7 +217,14 @@ def ice(request, tg, board):
 def switches(tg, ice):
     """Software switches on the unwired inputs (needs --ice); everything released after the test."""
     from tinyg_hil.switches import SoftSwitches
-    soft = SoftSwitches(ice, normally_closed=(tg.get("st") == 1))
+    def geometry(axis):
+        """First motor mapped to the axis and its steps per unit, from the board's settings."""
+        index = "xyzabc".index(axis)
+        for m in range(1, 7):
+            if f"{m}ma" in tg.dialect.tokens and tg.get(f"{m}ma") == index:
+                return m - 1, 360.0 / tg.get(f"{m}sa") * tg.get(f"{m}mi") / tg.get(f"{m}tr")
+        raise LookupError(f"no motor mapped to {axis}")
+    soft = SoftSwitches(ice, normally_closed=(tg.get("st") == 1), geometry=geometry)
     soft.idle()
     time.sleep(0.1)                         # let the firmware's switch lockout expire
     yield soft

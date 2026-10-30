@@ -95,7 +95,12 @@
 
 #define SET_ENCODER_STEP_SIGN(m,s)	en.en[m].step_sign = s;
 #define INCREMENT_ENCODER(m)		en.en[m].steps_run += en.en[m].step_sign;
+#ifdef TINYG_TEST_HOOKS				// HIL test builds also keep a step count nothing rewrites (testhooks.h)
+#include "testhooks.h"
+#define ACCUMULATE_ENCODER(m)		test_hook.steps[m] += en.en[m].steps_run; en.en[m].encoder_steps += en.en[m].steps_run; en.en[m].steps_run = 0;
+#else
 #define ACCUMULATE_ENCODER(m)		en.en[m].encoder_steps += en.en[m].steps_run; en.en[m].steps_run = 0;
+#endif
 
 /**** Structures ****/
 

@@ -4,6 +4,8 @@
 #include "tinyg.h"
 #include "config.h"
 #include "hardware.h"
+#include "encoder.h"
+#include "switch.h"
 #include "testhooks.h"
 
 #ifdef TINYG_TEST_HOOKS
@@ -14,25 +16,59 @@ void testhooks_init()
 {
 	test_hook.pending = 0;
 	test_hook.applied = 0;
+	for (uint8_t i = 0; i < TEST_HOOK_MOUNTS; i++) {
+		test_hook.mount[i].enabled = false;
+	}
 	test_hook.magic = TEST_HOOK_MAGIC;
+}
+
+static void _apply(uint8_t axis, uint8_t bit, uint8_t action)
+{
+	if (axis >= 4) {
+		return;
+	}
+	PORT_t *port = hw.sw_port[axis];
+	uint8_t mask = (1 << bit);
+	register8_t *pinctrl = &port->PIN0CTRL + bit;
+	switch (action) {
+		case TEST_HOOK_DRIVE_LOW: { port->OUTCLR = mask; port->DIRSET = mask; break; }
+		case TEST_HOOK_RELEASE:   { port->DIRCLR = mask; break; }
+		case TEST_HOOK_INVERT:    { *pinctrl |= PORT_INVEN_bm; break; }
+		case TEST_HOOK_NORMAL:    { *pinctrl &= ~PORT_INVEN_bm; break; }
+	}
+}
+
+static void _service_mounts()
+{
+	for (uint8_t i = 0; i < TEST_HOOK_MOUNTS; i++) {
+		volatile test_mount_t *m = &test_hook.mount[i];
+		if (!m->enabled || m->motor >= MOTORS) {
+			continue;
+		}
+		uint8_t sreg = SREG;			// steps[] and steps_run are updated by the stepper ISRs
+		cli();
+		int32_t steps = test_hook.steps[m->motor] + en.en[m->motor].steps_run;
+		SREG = sreg;
+		uint8_t closed = (m->sense > 0) ? (steps >= m->at) : (steps <= m->at);
+		if (closed == m->closed) {
+			continue;
+		}
+		if (closed && m->closed == false) {
+			m->trips++;
+			m->trip_steps = steps;
+		}
+		m->closed = closed;
+		_apply(i >> 1, (i & 1) ? SW_MAX_BIT_bp : SW_MIN_BIT_bp, closed ? m->closed_action : m->open_action);
+	}
 }
 
 stat_t testhooks_callback()
 {
+	_service_mounts();
 	if (!test_hook.pending) {
 		return (STAT_OK);
 	}
-	if (test_hook.axis < 4) {
-		PORT_t *port = hw.sw_port[test_hook.axis];
-		uint8_t mask = (1 << test_hook.bit);
-		register8_t *pinctrl = &port->PIN0CTRL + test_hook.bit;
-		switch (test_hook.action) {
-			case TEST_HOOK_DRIVE_LOW: { port->OUTCLR = mask; port->DIRSET = mask; break; }
-			case TEST_HOOK_RELEASE:   { port->DIRCLR = mask; break; }
-			case TEST_HOOK_INVERT:    { *pinctrl |= PORT_INVEN_bm; break; }
-			case TEST_HOOK_NORMAL:    { *pinctrl &= ~PORT_INVEN_bm; break; }
-		}
-	}
+	_apply(test_hook.axis, test_hook.bit, test_hook.action);
 	test_hook.applied++;
 	test_hook.pending = 0;
 	return (STAT_OK);

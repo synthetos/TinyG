@@ -1,0 +1,14 @@
+{
+ "description": "X homes to its min switch (software switch on the bench; mount it with the switches fixture)",
+ "requires": {
+  "ice": true
+ },
+ "settings": {
+  "xsn": 1,
+  "xsx": 0,
+  "xsv": 400,
+  "xlv": 100,
+  "xlb": 2,
+  "xzb": 1
+ }
+}

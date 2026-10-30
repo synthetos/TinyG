@@ -1,28 +1,38 @@
 """Software switches: drive the TinyG's unwired limit/homing/probe inputs through the Atmel-ICE.
 
-Each switch input idles high on its internal pull-up. Switching it to the internal pull-down makes a
-real edge on the pin, so the firmware's pin-change ISR, lockout, limit and homing logic run exactly as
-with a physical switch (see Ice.set_switch_level).
+A closed switch is simulated by driving its input low (or, for normally-closed switches, an open one
+by releasing it); see Ice.set_switch_level. On a test-hooks build (make TEST_HOOKS=1) the running
+firmware makes the change, so the port's edge detector, the switch ISR, lockout, limit and homing
+logic run exactly as with a physical switch.
 
-    sw = SoftSwitches(ice, normally_closed=False)
+    sw = SoftSwitches(ice, normally_closed=False, geometry=fn)
     sw.idle()                             # every switch untripped for its type
     sw.close("x", "min"); sw.open("x", "min")     # close = trip, open = untrip
     sw.pulse("z", "min", ms=20)
-    sw.mount("z", "min", at=-5.0)        # switch bolted at machine Z=-5: closed while Z <= -5
+    sw.mount("z", "min", at=-5.0)        # switch bolted 5 mm below the current machine zero
     ...run G28.2 Z0 over serial...
+    sw.mount_status("z", "min")           # {"closed", "trips", "trip_at"} in the mount's frame
     sw.unmount_all()
 
-Mounted switches are followed by a background thread that samples the runtime machine position
-(board file firmware_symbols.runtime_position, mm) over the ICE. Each sample halts the CPU for a few
-milliseconds; the trip lags the crossing by about one sample period (interval + halt), which at homing search speeds is a few hundredths of a mm.
+Mounts on a test-hooks build live in the firmware: it counts every motor step since power-up (a
+count homing and G92 never rewrite) and flips the pin from the main loop when the count crosses
+the switch, so the switch stays put in physical space while homing redefines machine coordinates,
+and nothing halts the CPU during motion. `at` is in machine units relative to the machine position
+when mount() is called; geometry(axis) -> (motor index, steps per unit) places it.
+
+Without the hook, mounted switches fall back to a background thread that samples the runtime machine
+position (board file firmware_symbols.runtime_position) over the ICE; each sample halts the CPU, the
+trip lags the crossing by about one sample period, and homing's position rewrite moves the switch.
 """
 import threading
 import time
 
 
 class SoftSwitches:
-    def __init__(self, ice, normally_closed=False, interval=0.02):
+    def __init__(self, ice, normally_closed=False, interval=0.02, geometry=None):
         self.ice = ice
+        self.geometry = geometry            # axis -> (motor index 0.., steps per unit), for firmware mounts
+        self.frames = {}                    # (axis, end) -> (steps at mount, position at mount, steps per unit)
         self.normally_closed = normally_closed
         self.interval = interval
         self.closed = {}                    # (axis, end) -> bool, as last driven
@@ -70,15 +80,75 @@ class SoftSwitches:
 
     # ---- mounted switches -----------------------------------------------------------
 
+    def _firmware_mounts(self):
+        return self.ice._uses_hook() and self.geometry is not None and \
+            "test_hook" in self.ice.symbols.types and self._has_member("mount")
+
+    def _has_member(self, name):
+        try:
+            self.ice.symbols.resolve(f"test_hook.{name}")
+            return True
+        except KeyError:
+            return False
+
+    def _mount_index(self, axis, end):
+        return list(self.ice.board.switches).index(axis) * 2 + (1 if end == "max" else 0)
+
     def mount(self, axis, end, at):
         """A switch fixed at machine position `at`: a min switch is closed while pos <= at, a max while pos >= at."""
+        if self._firmware_mounts():
+            self._mount_in_firmware(axis, end, at)
+            return
         self.mounts[(axis, end)] = at
         if self._thread is None:
             self._stop.clear()
             self._thread = threading.Thread(target=self._follow, name="soft-switches", daemon=True)
             self._thread.start()
 
+    def _mount_in_firmware(self, axis, end, at):
+        motor, spu = self.geometry(axis)
+        board, i = self.ice.board, self._mount_index(axis, end)
+        here = self.ice.peek_many([f"test_hook.steps[{motor}]",
+                                   f"{board.symbols['runtime_position']}[{board.axis_index(axis)}]"])
+        steps, pos = here.values()
+        tripped, untripped = (1, 0) if self.normally_closed else (0, 1)
+        action = {0: self.ice.HOOK_DRIVE_LOW, 1: self.ice.HOOK_RELEASE}
+        m = f"test_hook.mount[{i}]"
+        with self.ice.halted():
+            self.ice.poke(f"{m}.enabled", 0)
+            self.ice.poke(f"{m}.motor", motor)
+            self.ice.poke(f"{m}.sense", -1 if end == "min" else 1)
+            self.ice.poke(f"{m}.closed_action", action[tripped])
+            self.ice.poke(f"{m}.open_action", action[untripped])
+            self.ice.poke(f"{m}.closed", 0xFF)          # unknown: the firmware applies the current state
+            self.ice.poke(f"{m}.trips", 0)
+            self.ice.poke(f"{m}.at", round(steps + (at - pos) * spu))
+            self.ice.poke(f"{m}.enabled", 1)
+        self.frames[(axis, end)] = (steps, pos, spu)
+        time.sleep(0.02)
+
+    def mount_status(self, axis, end):
+        """Firmware mount state; trip_at is the last trip position in the frame mount() was given."""
+        steps0, pos0, spu = self.frames[(axis, end)]
+        m = f"test_hook.mount[{self._mount_index(axis, end)}]"
+        v = self.ice.peek_many([f"{m}.closed", f"{m}.trips", f"{m}.trip_steps"])
+        trips = v[f"{m}.trips"]
+        return {"closed": bool(v[f"{m}.closed"]), "trips": trips,
+                "trip_at": pos0 + (v[f"{m}.trip_steps"] - steps0) / spu if trips else None}
+
+    def physical_position(self, axis):
+        """Position in the mount frame from the never-rewritten step count (test-hooks builds)."""
+        motor, spu = self.geometry(axis)
+        frame = next(f for (a, _), f in self.frames.items() if a == axis)
+        steps0, pos0, _ = frame
+        return pos0 + (self.ice.peek(f"test_hook.steps[{motor}]") - steps0) / spu
+
     def unmount_all(self):
+        if self.frames:
+            with self.ice.halted():
+                for (axis, end) in self.frames:
+                    self.ice.poke(f"test_hook.mount[{self._mount_index(axis, end)}].enabled", 0)
+            self.frames.clear()
         self.mounts.clear()
         if self._thread is not None:
             self._stop.set()
