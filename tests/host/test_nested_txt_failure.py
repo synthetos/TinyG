@@ -36,6 +36,12 @@ typedef struct nvObject {int index,valuetype,depth,precision; char token[8];char
  uint32_t value_int;float value_flt;struct nvObject *nx;} nvObj_t;
 nvObj_t root,child,end;
 struct {char out_buf[256];} cs;
+struct {bool motion_sync_allowed,tid_present;} js;
+#define JTOK_FLAG 0x80
+#define JTOK_DEPTH 0x70
+#define JTOK_DSHIFT 4
+#define JTOK_KEY 0x08
+#define JTOK_PARENT 0x04
 char inner[32];
 int _tokenize_json_string(char *s,int size,int pairs){(void)size;(void)pairs;return !strcmp(s,"{fv:@}")?111:0;}
 int _marshall_nv_pair(nvObj_t **p,char **s,char *group,int depth,bool safe,...){
@@ -60,6 +66,7 @@ char *strcat_float(char *d,float n,int precision){(void)precision;return d+sprin
 bool prep_float(nvObj_t *n){(void)n;return true;}
 void json_relax(char *s){(void)s;}
 '''
+        code += function(source, r'static bool _motion_sync_envelope\([^;{}]*\)(?=\s*\{)')
         code += function(source, r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
         code += function(source, r'int16_t json_serialize\([^;{}]*\)(?=\s*\{)')
         code += r'''

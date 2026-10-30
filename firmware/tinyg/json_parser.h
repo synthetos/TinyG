@@ -85,6 +85,7 @@ typedef struct jsSingleton {
 	/*** config values (PUBLIC) ***/
 	jsonVerbosity json_verbosity;   // see enum in this file for settings
 	uint32_t tid;					// transaction id of the line being answered (exact: a uint32, E049)
+    bool motion_sync_allowed; // standalone gc plus optional tid, intersected across nesting
 	bool tid_present;
 	jsonSyntax json_syntax;         // 0=relaxed syntax, 1=strict syntax
 

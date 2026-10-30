@@ -90,6 +90,8 @@ void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
 
 void controller_run(void);
+stat_t controller_request_motion_sync(void);
+bool controller_defer_motion_response(const stat_t status, bool json);
 stat_t controller_dispatch_txt_container (nvObj_t *nv, char *str);
 void controller_reset_source(void);
 void controller_set_primary_source(uint8_t dev);

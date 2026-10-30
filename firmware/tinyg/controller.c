@@ -57,6 +57,17 @@
 
 controller_t cs;		// controller state structure
 
+enum { SYNC_OFF, SYNC_REQUESTED, SYNC_WAITING };
+enum { SYNC_SILENT, SYNC_TEXT, SYNC_JSON };
+static struct {
+    uint8_t state;
+    uint8_t reply;
+    bool char_mode;
+    uint16_t linelen;
+    uint32_t tid;
+    bool tid_present;
+} motion_sync;
+
 /***********************************************************************************
  **** STATICS AND LOCALS ***********************************************************
  ***********************************************************************************/
@@ -71,6 +82,7 @@ static void _init_assertions(void);
 static stat_t _test_system_assertions(void);
 
 static stat_t _sync_to_planner(void);
+static stat_t _sync_to_motion(void);
 static stat_t _sync_to_tx_buffer(void);
 
 static stat_t _controller_state(void);
@@ -93,6 +105,7 @@ void controller_init(uint8_t std_in, uint8_t std_out, uint8_t std_err)
 {
 	memset(&cs, 0, sizeof(controller_t));			// clear all values, job_id's, pointers and status
 	_init_assertions();
+	memset(&motion_sync, 0, sizeof(motion_sync));
 
 	cs.fw_build = TINYG_FIRMWARE_BUILD;
 	cs.fw_version = TINYG_FIRMWARE_VERSION;
@@ -179,6 +192,7 @@ static void _controller_HSM()
 
 //----- command readers and parsers --------------------------------------------------//
 
+	DISPATCH(_sync_to_motion());				// complete M400 before accepting more data
 	DISPATCH(_sync_to_planner());				// ensure there is at least one free buffer in planning queue
 	DISPATCH(_sync_to_tx_buffer());				// sync with TX buffer (pseudo-blocking)
 	DISPATCH(set_baud_callback());				// (AVR only) perform baud rate update (must be after TX sync)
@@ -292,6 +306,7 @@ static void _dispatch_kernel()
         cs.bufp++;
     }
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
+    js.motion_sync_allowed = true;
 	js.tid_present = false;									// only json_parser() sets it, for this line (E049)
 
 	// A stray leading '?' (a status request sent just before the line) must not swallow the line:
@@ -340,6 +355,9 @@ static void _dispatch_kernel()
     	nv_print_list(status, TEXT_NO_DISPLAY, JSON_RESPONSE);
     	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
 	}
+    if (motion_sync.state == SYNC_REQUESTED) {
+        motion_sync.state = SYNC_WAITING;
+    }
 }
 
 /*
@@ -472,6 +490,64 @@ static stat_t _sync_to_tx_buffer()
 		return (STAT_EAGAIN);
 	}
 	return (STAT_OK);
+}
+
+/* Capture only completion metadata; control queries reuse the shared NV/output buffers. */
+stat_t controller_request_motion_sync(void)
+{
+    if (motion_sync.state != SYNC_OFF) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    if (!js.motion_sync_allowed) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    motion_sync.tid = js.tid;
+    motion_sync.tid_present = js.tid_present;
+    motion_sync.state = SYNC_REQUESTED;
+    motion_sync.reply = SYNC_SILENT;
+    motion_sync.char_mode = (xio.rx_mode == RX_MODE_CHAR);
+    motion_sync.linelen = cs.linelen;
+    return (STAT_OK);
+}
+
+bool controller_defer_motion_response(const stat_t status, bool json)
+{
+    if (motion_sync.state != SYNC_REQUESTED) { return (false); }
+    if (status != STAT_OK) {
+        motion_sync.state = SYNC_OFF;
+        return (false);
+    }
+    motion_sync.reply = json ? SYNC_JSON : SYNC_TEXT;
+    return (true);
+}
+
+static stat_t _sync_to_motion(void)
+{
+    if (motion_sync.state == SYNC_OFF) { return (STAT_NOOP); }
+    // Include the prepared segment: its planner buffer may already be freed.
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    stat_t status = cm_is_alarmed();
+    bool busy = mp_has_runnable_buffer() || !mp_runtime_is_idle() ||
+                (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER);
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (status == STAT_OK && busy) { return (STAT_EAGAIN); }
+    motion_sync.state = SYNC_OFF;
+    if (motion_sync.reply == SYNC_TEXT) {
+        char command[5];
+        strcpy_P(command, PSTR("M400"));
+        nv_reset_nv_list(NUL);
+        text_response(status, command);
+    } else if (motion_sync.reply == SYNC_JSON) {
+        fputs_P(PSTR("{\"r\":{\"gc\":\"M400\"}"), stdout);
+        if (motion_sync.tid_present) {
+            fprintf_P(stdout, PSTR(",\"tid\":%lu"), (unsigned long)motion_sync.tid);
+        }
+        fprintf_P(stdout, PSTR(",\"f\":[%u,%u,%u]}\n"),
+                  (unsigned int)(motion_sync.char_mode ? 2 : 3), (unsigned int)status,
+                  (unsigned int)(motion_sync.char_mode ? motion_sync.linelen : xio_get_line_buffers_available()));
+    }
+    return (STAT_OK);
 }
 
 static stat_t _sync_to_planner()

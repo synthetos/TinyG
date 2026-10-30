@@ -195,6 +195,7 @@ static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 void text_response(const stat_t status, char *buf)
 {
 	if (txt.text_verbosity == TV_SILENT) { return; } // skip all this
+	if (controller_defer_motion_response(status, false)) { return; }
 
 	char units[] = "inch";
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
