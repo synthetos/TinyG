@@ -72,6 +72,24 @@ void nv_add_message_P(const char *s){}
 void switch_init(void){}
 void _port_bindings(float hv){}
 int xio_ctrl(int dev,uint32_t flags){return 0;}
+/* E139 set_ex flow-control transition (only its compile surface matters here) */
+#ifndef NUL
+#define NUL 0
+#endif
+enum {XON=0x11, XOFF=0x13};
+#ifndef ritorno
+static int status_code;
+#define ritorno(a) if((status_code=(a)) != STAT_OK) { return(status_code); }
+#endif
+#define USB_RTS_bm 0x10
+#define CTRLA_RXON_TXON 0
+#define XOFF_RX_HI_WATER_MARK 192
+typedef struct {uint8_t OUTCLR;} fc_port_t;
+typedef struct {uint8_t CTRLA;} fc_usart_t;
+static fc_port_t fc_port; static fc_usart_t fc_usart;
+static struct {uint8_t fc_char_rx, fc_state_rx, fc_state_tx; fc_port_t *port; fc_usart_t *usart;} USBu = {0,0,0,&fc_port,&fc_usart};
+static uint16_t xio_get_rx_bufcount_usart(void *d){(void)d;return 0;}
+static void xio_xoff_usart(void *d){(void)d;}
 int cm_get_units_mode(int model){return MILLIMETERS;}
 static uint8_t _get_axis(index_t index){const char *p=strchr("xyzabc",cfgArray[index].token[0]);assert(p);return p-"xyzabc";}
 static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
