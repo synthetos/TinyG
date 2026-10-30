@@ -25,7 +25,7 @@ CC      = avr-gcc
 OBJCOPY = avr-objcopy
 SIZE    = avr-size
 
-CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -std=gnu99 -Wall \
+CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
           -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
           -ffunction-sections -fdata-sections -I. \
           -MMD -MP
