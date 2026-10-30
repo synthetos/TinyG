@@ -181,7 +181,7 @@ void text_response(const stat_t status, char *buf)
 	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		printf(nv->str);
+		fputs(nv->str, stdout);
 	}
 	printf_P(PSTR("\n"));
 }
@@ -250,7 +250,7 @@ void text_finalize_message(char *msg)
             msg++;
         }
     }
-    printf(start);
+    fputs(start, stdout);
 }
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
