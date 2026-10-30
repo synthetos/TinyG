@@ -87,7 +87,8 @@ def test_lone_question_mark_answers_while_planner_full(tg, keep):
         blocked_until = _fill_planner(tg)
         assert time.monotonic() + 1.0 < blocked_until, "not enough dwell remaining to test priority"
         tg.transport.write(b"?\n")
-        ev = tg.wait_for(lambda e: e.kind == "status", 1.0)
+        # a lone '?' prints the text-mode status report (any comm mode), not a JSON sr
+        ev = tg.wait_for(lambda e: e.kind in ("status", "text"), 1.0)
         assert ev.t < blocked_until
     finally:
         tg.reset()
