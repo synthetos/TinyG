@@ -14,6 +14,7 @@ class Transport:
         self.transcript = transcript        # open text file or None
         self.events: "queue.Queue[Event]" = queue.Queue()
         self.history: list[Event] = []
+        self.sent: list[tuple[float, bytes]] = []
         self.flow: list[tuple[float, int]] = []   # (time, XON/XOFF byte) sent by the board
         self.ser = None
         self._stop = threading.Event()
@@ -39,6 +40,7 @@ class Transport:
         return self.ser is not None
 
     def write(self, data: bytes):
+        self.sent.append((time.monotonic(), data))
         self._log(">>", data)
         self.ser.write(data)
         self.ser.flush()

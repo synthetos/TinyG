@@ -25,3 +25,12 @@ uv run python -m tinyg_hil flash --port ... --build ../..   # build this checkou
 - `snapshot`/`restore` go through token names, so a 440 snapshot can be restored onto a 449 build.
 - Tokens missing on the target are reported as dropped.
 - `se00`-`se29` are never copied: they hold build-specific cfgArray row numbers (E140). The status-report list is restored by name instead.
+
+**Dashboard.**
+- Every pytest run with a board writes a run record to `.runs/<UTC>-<branch>/`. Each record holds the traffic each test sent and received, its outcome, and its bug IDs. Motion tests also record their start position.
+- `uv run python -m tinyg_hil.dashboard` serves them at http://127.0.0.1:8765/. It shows:
+  - every audit finding with its test status, branch and latest hardware outcome;
+  - why a finding has no test (from `docs/audit/edge-0.97/test-coverage.json` on the docs branch);
+  - per-finding pages with the evidence, test source, failure text and serial traffic.
+- **Path plots.** For motion tests, `tinyg_hil/gsim.py` simulates where the sent G-code should go, following NIST RS274NGC: lines, IJK/R arcs in G17/G18/G19, units, distance modes and offsets. `paths.py` overlays the positions the board actually reported.
+- `render.py` draws expected (dashed) against board-reported (solid) paths in XY and XZ. It also reports the largest deviation and the end-point error, so a test can assert on the path and not just the endpoint.

@@ -4,6 +4,7 @@ import pathlib
 import pytest
 
 from tinyg_hil import Guard, TinyG, snapshot
+from tinyg_hil.record import RunRecorder
 
 HERE = pathlib.Path(__file__).parent
 # Response format the tests are written against; applied for the session and restored afterwards.
@@ -21,6 +22,33 @@ def pytest_addoption(parser):
     g.addoption("--no-reset", action="store_true", help="skip tests that reset the board")
     g.addoption("--transcript", default=None, help="write a timestamped raw serial transcript here")
     g.addoption("--snapshot-dir", default=str(HERE / ".snapshots"))
+    g.addoption("--runs-dir", default=str(HERE / ".runs"), help="where run records for the dashboard go")
+    g.addoption("--no-record", action="store_true", help="do not write run records")
+
+
+def pytest_configure(config):
+    config._tinyg_recorder = None
+    if not config.getoption("--no-record") and not config.getoption("--collect-only"):
+        config._tinyg_recorder = RunRecorder(config.getoption("--runs-dir"), HERE)
+
+
+_CONFIG = {}
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionstart(session):
+    _CONFIG["config"] = session.config
+
+
+def pytest_runtest_logreport(report):
+    config = _CONFIG.get("config")
+    if config is not None and config._tinyg_recorder:
+        config._tinyg_recorder.report(report)
+
+
+def pytest_unconfigure(config):
+    if getattr(config, "_tinyg_recorder", None):
+        config._tinyg_recorder.finish()
 
 
 def pytest_collection_modifyitems(config, items):
@@ -47,6 +75,8 @@ def tg(request):
     board = TinyG(port, config.getoption("--baud"), transcript=transcript,
                   guard=Guard(allow_motion=config.getoption("--allow-motion")))
     board.connect()
+    if config._tinyg_recorder:
+        config._tinyg_recorder.board(board)
     # Text mode reads work at any jv, so the user's own comm settings are captured before changing them.
     original = {t: board.get_text(t) for t in BASELINE}
     for token, value in BASELINE.items():
@@ -117,4 +147,10 @@ def _per_test(request):
     board.send_gcode("M2", check=True)     # resets G92, coordinate system, plane, distance mode, M5, M9
     board.send_gcode("G21", check=True)    # M2 does not reset units
     board.drain(quiet=0.05)
+    recorder = request.config._tinyg_recorder
+    if recorder:
+        recorder.begin(request.node.nodeid, board, [m.args[0] for m in request.node.iter_markers("bug")],
+                       sorted({m.name for m in request.node.iter_markers()}))
     yield
+    if recorder:
+        recorder.end(request.node.nodeid, board)
