@@ -16,7 +16,7 @@ class ReceiveModeSwitch(unittest.TestCase):
         source=(FIRMWARE/'xio.c').read_text()
         usart=(FIRMWARE/'xio/xio_usart.c').read_text()
         names=['_init_readline_linemode','_init_readline_charmode','_get_free_buffer',
-               '_get_filling_buffer','_post_buffer','_next_buffer_to_process',
+               '_get_filling_buffer','_post_buffer','_post_overflow','_next_buffer_to_process',
                '_free_processed_buffer','_exit_line','_exit_null',
                '_readline_linemode','_readline_charmode','readline']
         definitions=[function(source, r"static bool _json_space\(char c\)(?=\s*\{)"),
@@ -48,9 +48,11 @@ class ReceiveModeSwitch(unittest.TestCase):
 #define DEV_IS_CTRL 1
 #define DEV_IS_DATA 2
 #define DEV_IS_BOTH 3
+#define DEV_IS_OVERFLOW 8
 #define TEXT_MODE 0
 #define PSTR(x) x
 #define strchr_P strchr
+#define strcpy_P strcpy
 #define pgm_read_byte(p) (*(p))
 #define min(a,b) ((a)<(b)?(a):(b))
 #define printf_P printf
@@ -117,6 +119,15 @@ int main(void) {
     char *p=read_flags(DEV_IS_CTRL); assert(p && !strcmp(p,"{rxm:0}")); xio.rx_mode=RX_MODE_CHAR;
     assert(!read_flags(DEV_IS_CTRL)); expect("G1 X1");
     input("null}\n"); expect("{fb:null}"); assert(!read_flags(DEV_IS_BOTH));
+    // An overflow posted in line mode keeps its error flag when the queued mode change drains it.
+    setup(RX_MODE_LINE);
+    char overlong[212]; memset(overlong,' ',210); overlong[210]='\n'; overlong[211]=0;
+    input("{rxm:0}\n"); input(overlong); input("{fb:null}\n");
+    expect("{rxm:0}"); xio.rx_mode=RX_MODE_CHAR;
+    devflags_t overflow_flags=DEV_IS_BOTH; uint16_t overflow_size=0;
+    p=readline(&overflow_flags,&overflow_size);
+    assert(p && (overflow_flags & DEV_IS_OVERFLOW) && overflow_size==strlen(p)+1);
+    expect("{fb:null}"); assert(!read_flags(DEV_IS_BOTH));
     // Retained DATA and partial lines also survive a character-to-line switch.
     setup(RX_MODE_CHAR); input("G1 X2\n"); assert(!read_flags(DEV_IS_CTRL));
     xio.rx_mode=RX_MODE_LINE; assert(!read_flags(DEV_IS_CTRL)); expect("G1 X2");
