@@ -80,7 +80,7 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
 	if ((xio.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// stop TX interrupts; the CTS edge ISR re-enables them
 		return;
 	}
 
@@ -103,7 +103,7 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
 		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
 	} else {
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer has no data; force another interrupt
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer empty: stop TX interrupts until xio_putc_usb()
 	}
 }
 
