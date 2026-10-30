@@ -206,8 +206,10 @@ def ice(request, tg, board):
     elf = request.config.getoption("--elf") or flashed_elf(tg.transport.port)
     if not elf:
         pytest.skip("no ELF for the flashed build: pass --elf or flash through tinyg_hil")
-    session = Ice(elf=elf, board=board).open()
+    session = Ice(elf=elf, board=board, wire=tg.transport.wire).open()
+    tg.transport.wire_margin = 0.012          # wait for the USB bridge FIFO before halting
     yield session
+    tg.transport.wire_margin = 0.0
     session.close()
 
 

@@ -14,6 +14,7 @@ Holding the board lock is the caller's job (pytest's tg fixture already holds it
 """
 import pathlib
 import struct
+import threading
 import time
 from contextlib import contextmanager
 
@@ -121,12 +122,14 @@ def encode(value, size, kind):
 
 
 class Ice:
-    def __init__(self, elf=None, serial=None, board: Board | None = None):
+    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None):
         self.board = board or load_board()
         self.symbols = Symbols(elf, self.board.sram_symbol_base) if elf else None
         self.serial = serial
+        self.wire = wire                    # the serial Transport.wire lock: never halt while bytes are inbound
         self.transport = self.target = self.protocol = None
         self._halt_depth = 0
+        self._mutex = threading.RLock()     # one thread at a time drives the debugger (mounted switches poll)
 
     # ---- session ----------------------------------------------------------------------
 
@@ -169,16 +172,28 @@ class Ice:
 
     @contextmanager
     def halted(self):
-        """Keep the CPU stopped for several accesses; nests."""
-        if self._halt_depth == 0:
-            self.protocol.stop()
-        self._halt_depth += 1
-        try:
-            yield self
-        finally:
-            self._halt_depth -= 1
+        """Keep the CPU stopped for several accesses; nests. Waits for any serial line in flight first."""
+        with self._mutex:
             if self._halt_depth == 0:
-                self.protocol.run()
+                if self.wire:
+                    self.wire.acquire()
+                try:
+                    self.protocol.stop()
+                except BaseException:
+                    if self.wire:
+                        self.wire.release()
+                    raise
+            self._halt_depth += 1
+            try:
+                yield self
+            finally:
+                self._halt_depth -= 1
+                if self._halt_depth == 0:
+                    try:
+                        self.protocol.run()
+                    finally:
+                        if self.wire:
+                            self.wire.release()
 
     def _retry(self, fn, *args):
         from pyedbglib.protocols.jtagice3protocol import Jtagice3ResponseError
