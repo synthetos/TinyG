@@ -217,7 +217,7 @@ char *str_asciify(char *str)
 
 /*
  * str2float() - wrapped version of strtod with additional error checking
- * str2long()  - wrapped version of strtol with additional error checking
+ * str2long()  - exact unsigned decimal conversion with integral exponent support
  */
 // 
 stat_t str2float(const char *str, float *value)
@@ -233,11 +233,60 @@ stat_t str2float(const char *str, float *value)
 
 stat_t str2long(const char *str, uint32_t *value)
 {
-    if (strchr(str, (int)'.') != NULL) { return (STAT_VALUE_TYPE_ERROR); } // is float
-    char *end;
-    *value = strtol(str, &end, 0);
-    if (end == str) { return (STAT_BAD_NUMBER_FORMAT); } // failed to convert
-    if (*end != 0) { return (STAT_BAD_NUMBER_FORMAT); }  // nonsense following int string
+    if (*str == '-') { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    if (*str == '+') { str++; }
+    const char *digits_start = str;
+    uint16_t digits = 0, fraction = 0;
+    bool point = false;
+    while ((*str >= '0' && *str <= '9') || *str == '.') {
+        if (*str == '.') {
+            if (point) { return (STAT_BAD_NUMBER_FORMAT); }
+            point = true;
+        } else {
+            digits++;
+            if (point) { fraction++; }
+        }
+        str++;
+    }
+    if (digits == 0) { return (STAT_BAD_NUMBER_FORMAT); }
+    const char *digits_end = str;
+    int16_t exponent = 0;
+    if (*str == 'e' || *str == 'E') {
+        str++;
+        bool negative = (*str == '-');
+        if (*str == '-' || *str == '+') { str++; }
+        if (*str < '0' || *str > '9') { return (STAT_BAD_NUMBER_FORMAT); }
+        do {
+            if (exponent < 1000) {
+                exponent = exponent * 10 + (*str - '0');
+                if (exponent > 1000) { exponent = 1000; }
+            }
+            str++;
+        } while (*str >= '0' && *str <= '9');
+        if (negative) { exponent = -exponent; }
+    }
+    if (*str != 0) { return (STAT_BAD_NUMBER_FORMAT); }
+
+    // JSON input is bounded to 254 bytes. Count decimal places exactly: AVR double
+    // cannot distinguish UINT32_MAX from UINT32_MAX+1, nor a tiny fractional tail.
+    int16_t shift = exponent - (int16_t)fraction;
+    int16_t keep = (int16_t)digits + ((shift < 0) ? shift : 0);
+    uint32_t result = 0;
+    for (const char *p=digits_start; p<digits_end; p++) {
+        if (*p == '.') { continue; }
+        uint8_t digit = *p - '0';
+        if (keep-- > 0) {
+            if (result > (UINT32_MAX - digit) / 10) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+            result = result * 10 + digit;
+        } else if (digit != 0) {
+            return (STAT_VALUE_TYPE_ERROR);       // non-integral value
+        }
+    }
+    while (shift-- > 0 && result != 0) {
+        if (result > UINT32_MAX / 10) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+        result *= 10;
+    }
+    *value = result;
     return (STAT_OK);
 }
 

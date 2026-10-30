@@ -9,7 +9,7 @@ import pytest
 pytestmark = pytest.mark.persists
 
 
-@pytest.mark.bug("E107", on=["d449"])
+@pytest.mark.bug("E107", on=[])
 def test_integral_float_accepted(tg, keep):
     keep("1mi")
     value = tg.get("1mi")
@@ -17,7 +17,7 @@ def test_integral_float_accepted(tg, keep):
     assert tg.get("1mi") == value
 
 
-@pytest.mark.bug("E107", on=["d449"])
+@pytest.mark.bug("E107", on=[])
 def test_boolean_accepted_for_integer_token(tg, keep):
     keep("sl")
     value = tg.get("sl")
@@ -25,8 +25,15 @@ def test_boolean_accepted_for_integer_token(tg, keep):
     assert tg.get("sl") == value
 
 
-@pytest.mark.bug("E107", on=["d449"])
+@pytest.mark.bug("E107", on=[])
 def test_negative_interval_not_wrapped(tg, keep):
     keep("si")
     resp = tg.send_json({"si": -1})
     assert resp.status != 0 or 100 <= tg.get("si") < 2 ** 31
+
+
+@pytest.mark.dialect("d449")
+def test_unknown_test_number_reaches_test_dispatch(tg):
+    # 99 is not a motion program; reject it in run_test, not as a boolean value.
+    response = tg.send_json({"test": 99})
+    assert response.status == tg.dialect.status("ERROR")

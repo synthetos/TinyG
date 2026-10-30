@@ -509,7 +509,10 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
         } else { return (STAT_VALUE_TYPE_ERROR); }
     }
     else if (cfg_type == TYPE_INTEGER) {
-        if (nv->valuetype == TYPE_INTEGER) {
+        if (nv->valuetype == TYPE_BOOLEAN) {
+            nv->value_int = (*str == 't');
+            nv->valuetype = TYPE_INTEGER;
+        } else if (nv->valuetype == TYPE_INTEGER) {
             ritorno(str2long(str, &(nv->value_int)));
         } else { return (STAT_VALUE_TYPE_ERROR); }
     }

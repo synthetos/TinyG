@@ -474,7 +474,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // special functions
 	{ "", "txt", _t0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_int, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Transaction id
-	{ "", "test",_b0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "test",_i0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_b0, 0, tx_print_nul, help_defa, set_defaults,(uint32_t *)&cs.null,0 },// set defaults / help screen
 	{ "", "boot",_b0, 0, tx_print_nul, help_boot, hw_run_boot, (uint32_t *)&cs.null,0 },
 	{ "", "help",_n0, 0, tx_print_nul, help_config, help_config, (uint32_t *)&cs.null,0 },  // prints config help screen
