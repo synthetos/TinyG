@@ -9,7 +9,7 @@ import pytest
 pytestmark = pytest.mark.dialect("d449")
 
 
-@pytest.mark.bug("E053", on=["d449"])
+@pytest.mark.bug("E053", on=[])
 def test_leading_question_mark_line_gets_response(tg):
     resp = tg.send_line('?{"fb":null}', timeout=1.5)
     assert resp.status == 0
