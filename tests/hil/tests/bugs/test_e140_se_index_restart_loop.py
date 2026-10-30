@@ -41,7 +41,6 @@ def _recover(tg, keys):
 @pytest.mark.dialect("d449")
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E140", on=["d449"])
 def test_out_of_range_se_index_rejected(tg):
     keys = list(tg.get("sr") or {})
     assert keys, "need the current status-report list to recover"
