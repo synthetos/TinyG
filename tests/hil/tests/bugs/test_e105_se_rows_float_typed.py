@@ -27,3 +27,14 @@ def test_se_slot_round_trips(tg):
         assert list(tg.get("sr") or {}) == keys
     finally:
         set_status_report(tg, keys)
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.persists
+def test_unused_se_slot_returns_negative_one(tg):
+    keys = list(tg.get("sr") or {})
+    try:
+        tg.set("se29", -1)
+        assert tg.get("se29") == -1
+    finally:
+        set_status_report(tg, keys)
