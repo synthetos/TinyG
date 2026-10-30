@@ -16,7 +16,7 @@ pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.persists, pytest.
 @pytest.mark.profile("switches-no", "rotary-a-radius")
 @pytest.mark.settings(**{"4ma": 3, "asn": 1, "asx": 0, "atn": 0, "atm": 0, "alb": 5, "azb": 1,
                          "asv": 600, "alv": 100})
-@pytest.mark.bug("E075", on=["d449"])
+@pytest.mark.bug("E075", on=[])
 def test_cyclic_rotary_axis_homes_within_one_rotation(tg, switches, record):
     switches.mount("a", "min", at=-90.0)
     try:
