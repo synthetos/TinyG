@@ -26,7 +26,6 @@ def _wait_hold(tg, timeout=3.0):
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E030", on=["d449"])
 def test_resume_stops_at_endpoint(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X4 F120", check=True, allow=MOVE)
@@ -44,6 +43,7 @@ def test_resume_stops_at_endpoint(tg):
             if tg.get("qr") == tg.planner_buffers and tg.get("vel") == 0:
                 break
         assert peak <= start + 4 + 0.01, f"resumed move overshot to {peak:.3f} (endpoint {start + 4:.3f})"
+        assert tg.get("posx") == pytest.approx(start + 4, abs=0.005), "resumed move stopped short"
     finally:
         if peak > start + 4 + 0.01:
             tg.wait_idle()
@@ -53,3 +53,31 @@ def test_resume_stops_at_endpoint(tg):
             tg.wait_idle()
             tg.send_gcode("G91 G1 X-4 F600", allow=MOVE)
             tg.wait_idle()
+
+
+def _settle(tg, timeout=10.0):
+    end = time.monotonic() + timeout
+    while not (tg.get("qr") == tg.planner_buffers and tg.get("vel") == 0):
+        assert time.monotonic() < end, "motion did not finish"
+        time.sleep(0.05)
+
+
+@pytest.mark.motion
+@pytest.mark.resets_board
+def test_resume_reaches_endpoint_with_queued_move(tg):
+    """Hold in the first of two queued moves; both must land exactly where commanded."""
+    start = tg.get("posx")
+    tg.send_gcode("G91 G1 X4 F120", check=True, allow=MOVE)
+    tg.send_gcode("G1 X2 F240", check=True, allow=MOVE)
+    try:
+        time.sleep(0.8)
+        tg.send_raw(b"!")
+        _wait_hold(tg)
+        tg.send_raw(b"~")
+        _settle(tg)
+        assert tg.get("posx") == pytest.approx(start + 6, abs=0.005)
+    finally:
+        tg.wait_idle()
+        tg.send_gcode(f"G90 G1 X{start:.4f} F600", allow=MOVE)
+        tg.wait_idle()
+        tg.send_gcode("G91")

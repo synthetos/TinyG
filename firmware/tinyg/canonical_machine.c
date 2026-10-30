@@ -1612,6 +1612,7 @@ void cm_end_hold()
 {
 	if (cm.hold_state == FEEDHOLD_HOLD) {
         cm.end_hold_requested = false;
+        mp_replan_held_block();                     // the held block resumes from zero velocity
 	    mp_exit_hold_state();
 
         // State machine cases:
