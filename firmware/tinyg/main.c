@@ -153,6 +153,7 @@ static void _application_init_startup(void)
     // start the application
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // FIRST:  depends on xio_init()
 	config_init();					            // SECOND: read config records from eeprom
+    stepper_init_complete();                    // runtime geometry guards apply from here
 	switch_init();                              // switch setup relies on config settings
 	canonical_machine_reset();                  // depends on config_init()
     spindle_init();                             // depends on config_init()
