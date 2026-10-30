@@ -19,3 +19,14 @@ def test_txt_gcode_emits_only_json(tg):
 @pytest.mark.bug("E057", on=[])
 def test_txt_gcode_error_in_footer(tg):
     assert tg.send_json({"txt": "M200"}).status == tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")
+
+
+# A txt value that is itself JSON is parsed recursively; its status was dropped the same way.
+@pytest.mark.bug("E057", on=["d449"])
+@pytest.mark.parametrize("inner", ['{"zzzq":null}', '{"fv":}'], ids=["unknown-token", "bad-json"])
+def test_nested_txt_json_error_in_footer(tg, inner):
+    assert tg.send_json({"txt": inner}).status != 0
+
+
+def test_nested_txt_json_ok(tg):
+    assert tg.send_json({"txt": '{"fv":null}'}).status == 0
