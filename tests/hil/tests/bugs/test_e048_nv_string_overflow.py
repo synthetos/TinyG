@@ -10,7 +10,7 @@ import pytest
 pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449")]
 
 
-@pytest.mark.bug("E048", on=["d449"])
+@pytest.mark.bug("E048", on=[])
 def test_256_char_gcode_line_does_not_panic(tg, keep):
     keep("rxm")
     tg.set("rxm", 0)                               # character mode: no 199-character line limit

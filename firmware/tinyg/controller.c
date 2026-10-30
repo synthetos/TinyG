@@ -304,8 +304,11 @@ static void _dispatch_kernel()
     	// this optimization bypasses the standard JSON parser and does what it needs directly
     	nvObj_t *nv = nv_reset_nv_list(NUL);                // get a fresh nvObj list
     	strcpy(nv->token, "gc");                            // label is as a Gcode block (do not get an index - not necessary)
-    	nv_copy_string(nv, cs.bufp);                        // copy the Gcode line
-    	nv->valuetype = TYPE_STRING;
+    	if (nv_copy_string(nv, cs.bufp) == STAT_OK) {       // copy the Gcode line (for the echo)
+    	    nv->valuetype = TYPE_STRING;
+    	} else {
+    	    nv->valuetype = TYPE_EMPTY;                     // too long to echo: report the status without it
+    	}
     	float status = gc_gcode_parser(cs.bufp);
     	nv_print_list(status, TEXT_NO_DISPLAY, JSON_RESPONSE);
     	sr_request_status_report(SR_REQUEST_TIMED);         // generate incremental status report to show any changes
