@@ -208,6 +208,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             if (strncmp("txt", (*p_nv)->str, 3) == 0) {     // don't allow nested txt containers
                 return (STAT_NESTED_TXT_CONTAINER);
             } else if (*(*p_nv)->str == '{') {              // it's JSON passed in as a string
+                (*p_nv)->valuetype = TYPE_EMPTY;            // recursive syntax errors must not echo an opaque txt value
                 ritorno(_json_parser_kernal(p_nv, (*p_nv)->str)); // recursive parse; its status goes in the footer
             } else {
                 ritorno(controller_dispatch_txt_container((*p_nv), (*p_nv)->str)); // status goes in the footer
