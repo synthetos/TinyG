@@ -97,7 +97,10 @@ class TinyG:
     def send_gcode(self, line: str, *, timeout: float = 2.0, check: bool = False,
                    allow: str | None = None) -> Response:
         self.guard.check_gcode(line, allow)
-        return self.send_line(line, timeout=timeout, check=check)
+        resp = self.send_line(line, timeout=timeout, check=check)
+        if re.search(r"\bG10\b", line, re.IGNORECASE):
+            time.sleep(self.persist_pause)          # G10 offsets are written to EEPROM too
+        return resp
 
     def get(self, token: str, *, timeout: float = 2.0):
         resp = self.send_json({token: None}, timeout=timeout, check=True)
