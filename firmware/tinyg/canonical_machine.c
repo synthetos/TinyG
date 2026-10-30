@@ -1135,6 +1135,51 @@ stat_t cm_cancel_motion_mode()
     return (STAT_OK);
 }
 
+/* M114/M115 report immediately; they do not wait for queued motion. */
+stat_t cm_get_position(void)
+{
+    const GCodeState_t *gcode_state = ACTIVE_MODEL;
+    char token[5];
+    strcpy_P(token, PSTR("posx"));
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        char letter = pgm_read_byte(PSTR("XYZABC") + axis);
+        float position = cm_get_work_position(gcode_state, axis);
+        if (cs.comm_mode == TEXT_MODE) {
+            fprintf_P(stderr, PSTR("%c:%.4f%c"), letter, position, (axis == AXES-1) ? '\n' : ' ');
+        } else {
+            token[3] = letter + ('a' - 'A');
+            nvObj_t *nv = nv_add_object(token);
+            if (nv == NULL) { return (STAT_JSON_TOO_MANY_PAIRS); }
+            // Response fields are peers of gc, not members of the pos group.
+            strcpy(nv->token, token);
+            nv->group[0] = NUL;
+            nv->depth = 1;
+            nv->value_flt = position;
+            nv->precision = 4;
+        }
+    }
+    return (STAT_OK);
+}
+
+stat_t cm_get_firmware(void)
+{
+    if (cs.comm_mode == TEXT_MODE) {
+        fprintf_P(stderr, PSTR("FIRMWARE_NAME:TinyG, FIRMWARE_VERSION:%.2f, FIRMWARE_BUILD:%.2f\n"),
+                  cs.fw_version, cs.fw_build);
+    } else {
+        char token[3];
+        strcpy_P(token, PSTR("fb"));
+        nvObj_t *nv = nv_add_object(token);
+        if (nv == NULL) { return (STAT_JSON_TOO_MANY_PAIRS); }
+        nv->depth = 1;
+        strcpy_P(token, PSTR("fv"));
+        nv = nv_add_object(token);
+        if (nv == NULL) { return (STAT_JSON_TOO_MANY_PAIRS); }
+        nv->depth = 1;
+    }
+    return (STAT_OK);
+}
+
 /*
  * cm_set_g28_position()  - G28.1
  * cm_goto_g28_position() - G28
