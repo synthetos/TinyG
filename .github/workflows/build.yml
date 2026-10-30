@@ -28,7 +28,9 @@ jobs:
 
       - name: Format-string lint (PSTR formats)
         working-directory: firmware/tinyg
+        shell: bash
         run: |
+          set -o pipefail                       # a compile error must fail the step, not just tee
           make lint 2>&1 | tee build/lint.log
           if grep -E 'Wformat' build/lint.log; then
             echo "::error::format-string warnings (see make lint)"; exit 1
