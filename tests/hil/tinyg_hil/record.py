@@ -38,8 +38,10 @@ class RunRecorder:
     def _write_meta(self):
         (self.dir / "run.json").write_text(json.dumps(self.meta, indent=1) + "\n")
 
-    def board(self, tg):
+    def board(self, tg, purpose=None):
         self.meta["identity"], self.meta["dialect"] = dict(tg.identity), tg.dialect.name
+        self.meta["firmware"] = firmware_identity(tg.transport.port)
+        self.meta["purpose"] = purpose or ("stock-baseline" if self.meta["firmware"].get("stock") else "fix-verify")
         self._write_meta()
 
     def begin(self, nodeid, tg, bugs, markers):
@@ -87,6 +89,26 @@ class RunRecorder:
     def finish(self):
         self.meta["finished"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         self._write_meta()
+
+
+def firmware_identity(port, stock_ref="origin/edge-0.97"):
+    """What is on the board, as far as the harness knows: the build last flashed through tinyg_hil.
+
+    The test checkout's branch says nothing about the firmware (a stock-baseline run executes fix-branch
+    tests against stock firmware), so run records carry this separately.
+    """
+    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
+    elf = record.read_text().strip() if record.exists() else ""
+    if not elf or not pathlib.Path(elf).exists():
+        return {"known": False}
+    tree = pathlib.Path(elf).parent.parent            # firmware/tinyg
+    commit = _git(tree, "rev-parse", "HEAD")
+    dirty = bool(_git(tree, "status", "--porcelain", "--", "."))
+    # stock = firmware sources identical to edge-0.97 (the Makefile's -g aside)
+    diff = subprocess.run(["git", "-C", str(tree), "diff", "--quiet", stock_ref, "HEAD", "--", ".", ":!Makefile"],
+                          capture_output=True)
+    return {"known": True, "elf": elf, "commit": commit[:12], "branch": _git(tree, "symbolic-ref", "--short", "-q", "HEAD"),
+            "dirty": dirty, "stock": diff.returncode == 0 and not dirty, "stock_ref": stock_ref}
 
 
 def _overall(phases):

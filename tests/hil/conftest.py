@@ -25,6 +25,8 @@ def pytest_addoption(parser):
     g.addoption("--snapshot-dir", default=str(HERE / ".snapshots"))
     g.addoption("--runs-dir", default=str(HERE / ".runs"), help="where run records for the dashboard go")
     g.addoption("--no-record", action="store_true", help="do not write run records")
+    g.addoption("--run-purpose", default=None, choices=["stock-baseline", "fix-verify", "regression", "adhoc"],
+                help="recorded with the run (default: stock-baseline if the flashed firmware is stock edge, else fix-verify)")
     g.addoption("--ice", action="store_true", help="enable Atmel-ICE tests (peek/poke over PDI)")
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
@@ -86,7 +88,7 @@ def tg(request):
                   guard=Guard(allow_motion=config.getoption("--allow-motion")))
     board.connect()
     if config._tinyg_recorder:
-        config._tinyg_recorder.board(board)
+        config._tinyg_recorder.board(board, config.getoption("--run-purpose"))
     # Text mode reads work at any jv, so the user's own comm settings are captured before changing them.
     original = {t: board.get_text(t) for t in BASELINE}
     for token, value in BASELINE.items():
