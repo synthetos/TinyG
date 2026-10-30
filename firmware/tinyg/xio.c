@@ -871,6 +871,9 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 		return(_exit_null(flags, size));
 	}
 	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
+    if (status == XIO_BUFFER_FULL) {
+        return (_exit_line(DEV_IS_OVERFLOW | DEV_IS_CTRL, flags, size));
+    }
 
 	//*** got a full buffer ***
 	if (status == STAT_EOF) {							// EOF can come from file devices only
