@@ -36,7 +36,7 @@ def idle(tg, timeout=15.0):
 
 
 @pytest.mark.profile("probe-z")
-@pytest.mark.bug("E070", on=["d449"])
+@pytest.mark.bug("E070", on=[])
 def test_g38_2_with_probe_already_closed_is_an_error(tg, ice, switches):
     ice.set_switch_level("z", "min", 0)             # probe contact closed before the cycle starts
     time.sleep(0.1)
