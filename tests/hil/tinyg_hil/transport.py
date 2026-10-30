@@ -20,6 +20,10 @@ class Transport:
         self._stop = threading.Event()
         self._thread = None
         self._lock = threading.Lock()
+        # Held while bytes are travelling to the board. An Atmel-ICE halt stops the RX interrupt, and
+        # the USART keeps only two bytes, so Ice.halted() takes this lock first (Ice(wire=...)).
+        self.wire = threading.Lock()
+        self.wire_margin = 0.0                  # extra hold after a write; Ice sets it (USB bridge FIFO + 1 ms frames)
 
     def open(self):
         self.ser = serial.Serial(self.port, self.baud, timeout=0.02, xonxoff=False, rtscts=False)
@@ -42,8 +46,11 @@ class Transport:
     def write(self, data: bytes):
         self.sent.append((time.monotonic(), data))
         self._log(">>", data)
-        self.ser.write(data)
-        self.ser.flush()
+        with self.wire:
+            self.ser.write(data)
+            self.ser.flush()                    # handed to the USB bridge; still has to cross the UART
+            if self.wire_margin:
+                time.sleep(len(data) * 10 / self.baud + self.wire_margin)
 
     def cts(self) -> bool:
         return self.ser.cts
