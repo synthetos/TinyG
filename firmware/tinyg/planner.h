@@ -81,7 +81,9 @@ typedef enum {
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 #define PLANNER_BUFFER_POOL_SIZE 32
-#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
+#define PLANNER_BUFFER_HEADROOM 8			// buffers to reserve in planner before processing new input line:
+											// one block can queue S, M6, M3/4/5, M7, M8/9, G4, G92 and a move,
+											// and M2/M30 queue five (E088); 4 let such a block PANIC
 
 #define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
 #define MIN_ARC_RADIUS          ((float)0.1)

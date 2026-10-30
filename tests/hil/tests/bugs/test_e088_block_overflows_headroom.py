@@ -15,7 +15,7 @@ BLOCK = "T1 M6 S100 M3 M7 M8 G4 P0.1"
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E088", on=["d440", "d449"])
+@pytest.mark.bug("E088", on=["d440"])
 def test_block_with_seven_queued_items(tg):
     bad = {tg.dialect.stat(s) for s in ("ALARM", "SHUTDOWN")} | (
         {tg.dialect.stat("PANIC")} if "PANIC" in tg.dialect.stat_names else set())
@@ -29,3 +29,18 @@ def test_block_with_seven_queued_items(tg):
         assert tg.stat() not in bad
     finally:
         tg.reset()                           # discards ~60 s of queued dwells and any PANIC
+
+
+@pytest.mark.motion
+@pytest.mark.resets_board
+def test_m30_behind_a_nearly_full_queue(tg):
+    """M2/M30 queue their resets (offsets, coordinate system, M5, M9) and a finalize: five buffers."""
+    try:
+        for _ in range(30):
+            tg.send_gcode("G4 P2", check=True)
+        resp = tg.send_gcode("M30", timeout=15)
+        events = resp.events + tg.drain(quiet=0.3)
+        assert resp.status == 0, resp.raw
+        assert not [e.raw for e in events if e.kind == "exception"]
+    finally:
+        tg.reset()
