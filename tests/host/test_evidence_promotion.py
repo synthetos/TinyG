@@ -35,7 +35,7 @@ class EvidencePromotion(unittest.TestCase):
             def render(edges,analysis,path):
                 path.write_bytes(b'plot');return evidence.analyze(edges['step_rises'],1280,windows=())
             with patch.object(evidence,'_plot_module'),patch.object(evidence,'_plot_case',side_effect=render):
-                dest,summary=evidence.promote(run,'E015','before',root/'store')
+                dest,summary=evidence.promote(run,'E015','before',root/'store',representative=(.01,))
             self.assertEqual((dest/f'{stem}.sal').read_bytes(),capture)
             self.assertEqual(summary['firmware'],firmware)
             self.assertEqual(summary['harness_commit'],'abcdef12')
@@ -44,7 +44,7 @@ class EvidencePromotion(unittest.TestCase):
             self.assertNotIn('raw',compact)
             entry=next(x for x in summary['artifacts'] if x['file'].endswith('.sal'))
             self.assertEqual(entry['sha256'],hashlib.sha256(capture).hexdigest())
-            with self.assertRaises(FileExistsError):evidence.promote(run,'E015','before',root/'store')
+            with self.assertRaises(FileExistsError):evidence.promote(run,'E015','before',root/'store',representative=(.01,))
 
 
 if __name__=='__main__':unittest.main()

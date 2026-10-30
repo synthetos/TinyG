@@ -1,0 +1,4109 @@
+{
+  "limitations": "Compare the same baseline-selected windows, including estimator phase sensitivity.\nSynthetic envelopes are empirical checks, NOT rigorous bounds on unknown motion.\nThey omit executor segmentation, step correction, motor mechanics and probe errors.\n",
+  "firmware": {
+    "baseline": "d2f5f44a (e9f0ecd6 has identical firmware)",
+    "fixed": "470e2f1f"
+  },
+  "windows": "Chosen from baseline sensitivity checks and retained unchanged for fixed measurements. .01mm unresolved.",
+  "time_note": "Measured time is first-to-last step only; step correction/start phase changes can shift it substantially for short moves. Ideal command-to-rest durations are model predictions, not measurements.",
+  "rows": [
+    {
+      "length_mm": 0.01,
+      "window_s": null,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.01mm.sal",
+        "steps": 12,
+        "pulse_span_s": 0.078420083,
+        "raw_peak_v_mm_s": 0.1314608705982488,
+        "raw_peak_a_mm_s2": 2.9446918673999924,
+        "raw_peak_j_ratio": 1.6240327142363127
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.01mm.sal",
+        "steps": 13,
+        "pulse_span_s": 0.13147241699999998,
+        "raw_peak_v_mm_s": 0.11653201904606758,
+        "raw_peak_a_mm_s2": 2.391127476870731,
+        "raw_peak_j_ratio": 1.3480705411863194
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.1708641845992083,
+          "phase_results": []
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.1511905259873848,
+          "phase_results": []
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 0.02,
+      "window_s": 0.08,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.02mm.sal",
+        "steps": 26,
+        "pulse_span_s": 0.152673417,
+        "raw_peak_v_mm_s": 0.2096799820500518,
+        "raw_peak_a_mm_s2": 4.288705301415874,
+        "raw_peak_j_ratio": 3.4205607026798748,
+        "estimated_peak_v_mm_s": 0.2100045773513492,
+        "estimated_peak_a_mm_s2": 2.933077524143127,
+        "estimated_peak_j_ratio": 1.3732496389041826,
+        "assumed_worst_case_j_ratio": 31.387482809484776
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.02mm.sal",
+        "steps": 26,
+        "pulse_span_s": 0.17804766699999997,
+        "raw_peak_v_mm_s": 0.18571343673857327,
+        "raw_peak_a_mm_s2": 3.40694432212431,
+        "raw_peak_j_ratio": 2.09501792478444,
+        "estimated_peak_v_mm_s": 0.1858460334580135,
+        "estimated_peak_a_mm_s2": 2.4477397877251117,
+        "estimated_peak_j_ratio": 0.9474007803574358,
+        "assumed_worst_case_j_ratio": 35.23711194321725
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.2152753828496659,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9654963383906506,
+              "pulse_span_s": 0.13406
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9832997616127955,
+              "pulse_span_s": 0.13406
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9714865222111844,
+              "pulse_span_s": 0.13406
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9502957281350825,
+              "pulse_span_s": 0.13406000000000004
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9624465549310219,
+              "pulse_span_s": 0.13362000000000002
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9687433134658698,
+              "pulse_span_s": 0.13362000000000002
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.973009037972079,
+              "pulse_span_s": 0.13362000000000002
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9574317553856498,
+              "pulse_span_s": 0.13364
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9577737248220168,
+              "pulse_span_s": 0.13360000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.964574743699685,
+              "pulse_span_s": 0.13358
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9662142745851049,
+              "pulse_span_s": 0.13358
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9550700112373917,
+              "pulse_span_s": 0.13360000000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9682210764452849,
+              "pulse_span_s": 0.13394
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9516949368674053,
+              "pulse_span_s": 0.13394
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9687878633931435,
+              "pulse_span_s": 0.13394
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9732209627271976,
+              "pulse_span_s": 0.13394000000000003
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9608927075605531,
+              "pulse_span_s": 0.15668
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9658916982368535,
+              "pulse_span_s": 0.1567
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9536331212811866,
+              "pulse_span_s": 0.15668
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9597082107423198,
+              "pulse_span_s": 0.15668000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.963217112573986,
+              "pulse_span_s": 0.15382
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9700333187161707,
+              "pulse_span_s": 0.15382
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9444859426640706,
+              "pulse_span_s": 0.1538
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9628794190635669,
+              "pulse_span_s": 0.15380000000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9677363237092184,
+              "pulse_span_s": 0.15360000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9625870493552906,
+              "pulse_span_s": 0.15360000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9526904567044118,
+              "pulse_span_s": 0.15360000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9706187451480679,
+              "pulse_span_s": 0.15360000000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9581071696193613,
+              "pulse_span_s": 0.15576
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9381475817737374,
+              "pulse_span_s": 0.15578
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9411645170474717,
+              "pulse_span_s": 0.15578
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9667282570466598,
+              "pulse_span_s": 0.15578000000000003
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9381475817737374,
+            0.9832997616127955
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.19048812623618397,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3714966203966217,
+              "pulse_span_s": 0.11862000000000003
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3676486364234302,
+              "pulse_span_s": 0.11862
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.360668412129981,
+              "pulse_span_s": 0.11862
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.3595176806962075,
+              "pulse_span_s": 0.11862000000000003
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3156630156964733,
+              "pulse_span_s": 0.11824000000000003
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3024428913336292,
+              "pulse_span_s": 0.11824000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3144105912013482,
+              "pulse_span_s": 0.11824000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.3077583741437173,
+              "pulse_span_s": 0.11824000000000003
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.2855636530280623,
+              "pulse_span_s": 0.1182
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3135237279445693,
+              "pulse_span_s": 0.1182
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3192215437325554,
+              "pulse_span_s": 0.11822000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.305779215529301,
+              "pulse_span_s": 0.11822000000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.310379976953318,
+              "pulse_span_s": 0.11850000000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3165135829576744,
+              "pulse_span_s": 0.11851999999999999
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3221643451906697,
+              "pulse_span_s": 0.11851999999999999
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.2968007746731052,
+              "pulse_span_s": 0.11852000000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3447794732389347,
+              "pulse_span_s": 0.13863999999999999
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3541277703494918,
+              "pulse_span_s": 0.13863999999999999
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3622986791395395,
+              "pulse_span_s": 0.13863999999999999
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.3450544169225425,
+              "pulse_span_s": 0.13866000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3217399937406884,
+              "pulse_span_s": 0.13610000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3049611476420673,
+              "pulse_span_s": 0.13610000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3153936893544194,
+              "pulse_span_s": 0.1361
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.3557412278986682,
+              "pulse_span_s": 0.13610000000000003
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3202157374739178,
+              "pulse_span_s": 0.13591999999999999
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3059654586698164,
+              "pulse_span_s": 0.13591999999999999
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.2961874162056939,
+              "pulse_span_s": 0.1359
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.3053703988916014,
+              "pulse_span_s": 0.13590000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3468946758037117,
+              "pulse_span_s": 0.13784000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.3517593706074802,
+              "pulse_span_s": 0.13784000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.3471739688359188,
+              "pulse_span_s": 0.13784000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.335641029919217,
+              "pulse_span_s": 0.13784000000000005
+            }
+          ],
+          "estimator_ratio_range": [
+            1.2855636530280623,
+            1.3714966203966217
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 0.05,
+      "window_s": 0.08,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.05mm.sal",
+        "steps": 65,
+        "pulse_span_s": 0.25263466700000003,
+        "raw_peak_v_mm_s": 0.3900076179407996,
+        "raw_peak_a_mm_s2": 7.4901004909345685,
+        "raw_peak_j_ratio": 34.632471569791484,
+        "estimated_peak_v_mm_s": 0.38665724383199834,
+        "estimated_peak_a_mm_s2": 5.581903469786118,
+        "estimated_peak_j_ratio": 1.4138526335835837,
+        "assumed_worst_case_j_ratio": 60.31327504110518
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.05mm.sal",
+        "steps": 64,
+        "pulse_span_s": 0.240241583,
+        "raw_peak_v_mm_s": 0.3451260035711986,
+        "raw_peak_a_mm_s2": 6.207434306338567,
+        "raw_peak_j_ratio": 20.212786299060795,
+        "estimated_peak_v_mm_s": 0.34198126994948896,
+        "estimated_peak_a_mm_s2": 4.366558401471964,
+        "estimated_peak_j_ratio": 0.9988708884682334,
+        "assumed_worst_case_j_ratio": 27.204605517255164
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.29217364581317307,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9970027832843597,
+              "pulse_span_s": 0.24668000000000004
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9955977287036814,
+              "pulse_span_s": 0.24668000000000007
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0125957970695487,
+              "pulse_span_s": 0.24668000000000004
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0160376252848609,
+              "pulse_span_s": 0.24668000000000007
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0124510243258018,
+              "pulse_span_s": 0.22254000000000004
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0121180260385751,
+              "pulse_span_s": 0.22254000000000007
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9975415681723714,
+              "pulse_span_s": 0.22254
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9880219578449257,
+              "pulse_span_s": 0.22254000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9987817761521646,
+              "pulse_span_s": 0.21911999999999998
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0093175944990314,
+              "pulse_span_s": 0.21914000000000003
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.003687826044161,
+              "pulse_span_s": 0.21914
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.010341584129483,
+              "pulse_span_s": 0.21912000000000004
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0041333567938449,
+              "pulse_span_s": 0.21760000000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9955315765377215,
+              "pulse_span_s": 0.21758000000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0056015361805613,
+              "pulse_span_s": 0.21758
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9918076679310639,
+              "pulse_span_s": 0.21760000000000004
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9728245892784184,
+              "pulse_span_s": 0.21711999999999998
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9809685653108825,
+              "pulse_span_s": 0.21712
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9785455125599981,
+              "pulse_span_s": 0.21714
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9830538364597581,
+              "pulse_span_s": 0.21714000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9989745537786423,
+              "pulse_span_s": 0.21758
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0093234376106253,
+              "pulse_span_s": 0.21760000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9899360887524481,
+              "pulse_span_s": 0.21760000000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0003320209018987,
+              "pulse_span_s": 0.21760000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0093175944990174,
+              "pulse_span_s": 0.21914
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.014724450086586,
+              "pulse_span_s": 0.21912
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0173587951042167,
+              "pulse_span_s": 0.21911999999999998
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0057586423664961,
+              "pulse_span_s": 0.21914000000000003
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0050725548791282,
+              "pulse_span_s": 0.22254000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0182414736387213,
+              "pulse_span_s": 0.22254000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.002169528949077,
+              "pulse_span_s": 0.22254000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9897022300278095,
+              "pulse_span_s": 0.22254000000000002
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9728245892784184,
+            1.0182414736387213
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.25853216280382607,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4343646350985375,
+              "pulse_span_s": 0.21826
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.410053411057988,
+              "pulse_span_s": 0.21828000000000006
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4215301418032855,
+              "pulse_span_s": 0.21828000000000003
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4388416164497422,
+              "pulse_span_s": 0.21826000000000007
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.3998935572580364,
+              "pulse_span_s": 0.19692
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4148714774303466,
+              "pulse_span_s": 0.19692
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4539532859744662,
+              "pulse_span_s": 0.19692
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4484300368456238,
+              "pulse_span_s": 0.19690000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4195480837904249,
+              "pulse_span_s": 0.19390000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.433357755948414,
+              "pulse_span_s": 0.19390000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4345509399269438,
+              "pulse_span_s": 0.19390000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4324245085173581,
+              "pulse_span_s": 0.19390000000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.421827035936732,
+              "pulse_span_s": 0.19254
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4391165773122838,
+              "pulse_span_s": 0.19254
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4424628145607064,
+              "pulse_span_s": 0.19254
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.41941772804303,
+              "pulse_span_s": 0.19254000000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4275260620999748,
+              "pulse_span_s": 0.19212
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4336410374295585,
+              "pulse_span_s": 0.19212
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4267348558572535,
+              "pulse_span_s": 0.19214
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4135766760621697,
+              "pulse_span_s": 0.19214000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4394084757730214,
+              "pulse_span_s": 0.19254000000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.434409463237405,
+              "pulse_span_s": 0.19254000000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.420300075863124,
+              "pulse_span_s": 0.19252
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4170429981016441,
+              "pulse_span_s": 0.19254000000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4346155777045777,
+              "pulse_span_s": 0.19388
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4310401968145072,
+              "pulse_span_s": 0.1939
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4475103485027092,
+              "pulse_span_s": 0.1939
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.431588169602779,
+              "pulse_span_s": 0.19390000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4594763722054762,
+              "pulse_span_s": 0.19692000000000004
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4110312411135313,
+              "pulse_span_s": 0.19692000000000004
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4164772736982434,
+              "pulse_span_s": 0.19692
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4489591073604253,
+              "pulse_span_s": 0.19692000000000004
+            }
+          ],
+          "estimator_ratio_range": [
+            1.3998935572580364,
+            1.4594763722054762
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 0.1,
+      "window_s": 0.08,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.1mm.sal",
+        "steps": 128,
+        "pulse_span_s": 0.27759516700000003,
+        "raw_peak_v_mm_s": 0.6190977695046499,
+        "raw_peak_a_mm_s2": 17.556993612763602,
+        "raw_peak_j_ratio": 210.6838094034542,
+        "estimated_peak_v_mm_s": 0.6137196968388063,
+        "estimated_peak_a_mm_s2": 7.051746848466258,
+        "estimated_peak_j_ratio": 1.4311787907179205,
+        "assumed_worst_case_j_ratio": 53.02618077032538
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.1mm.sal",
+        "steps": 128,
+        "pulse_span_s": 0.313806916,
+        "raw_peak_v_mm_s": 0.5493381222726451,
+        "raw_peak_a_mm_s2": 13.208677393327282,
+        "raw_peak_j_ratio": 156.04398658224838,
+        "estimated_peak_v_mm_s": 0.5427108893255743,
+        "estimated_peak_a_mm_s2": 5.473159951097294,
+        "estimated_peak_j_ratio": 1.0037058795411673,
+        "assumed_worst_case_j_ratio": 27.89406851875437
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.3681157265845459,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9980948873741995,
+              "pulse_span_s": 0.32082000000000005
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9969995060780534,
+              "pulse_span_s": 0.32084
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.00747879030002,
+              "pulse_span_s": 0.32082
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0101215354434512,
+              "pulse_span_s": 0.32082
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0192600625865305,
+              "pulse_span_s": 0.29546
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0032900923049308,
+              "pulse_span_s": 0.29544000000000004
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9893846257168806,
+              "pulse_span_s": 0.29544
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0002845432078848,
+              "pulse_span_s": 0.29544000000000004
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0125289745637458,
+              "pulse_span_s": 0.2919
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0157255445225881,
+              "pulse_span_s": 0.29188000000000003
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0106365889279652,
+              "pulse_span_s": 0.29188000000000003
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0020433345743076,
+              "pulse_span_s": 0.29188000000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0018158148420018,
+              "pulse_span_s": 0.29028
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0381913962406977,
+              "pulse_span_s": 0.29028000000000004
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0158615556414745,
+              "pulse_span_s": 0.29028
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0072228179549452,
+              "pulse_span_s": 0.29028000000000004
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.988965030221071,
+              "pulse_span_s": 0.28980000000000006
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9840205864089476,
+              "pulse_span_s": 0.28980000000000006
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.029190479940962,
+              "pulse_span_s": 0.28980000000000006
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0291904799410463,
+              "pulse_span_s": 0.28980000000000006
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0302230087869602,
+              "pulse_span_s": 0.29028000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0002772675816647,
+              "pulse_span_s": 0.2902800000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0160699810064884,
+              "pulse_span_s": 0.29028000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.024524571242965,
+              "pulse_span_s": 0.29028000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.019029485894485,
+              "pulse_span_s": 0.29188000000000003
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0174626766185308,
+              "pulse_span_s": 0.29190000000000005
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9969972260897804,
+              "pulse_span_s": 0.29188
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0160581881124426,
+              "pulse_span_s": 0.29188000000000003
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.00324228243625,
+              "pulse_span_s": 0.29546
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0123727118375712,
+              "pulse_span_s": 0.29546000000000006
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0048745957661465,
+              "pulse_span_s": 0.29544
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9903169412634908,
+              "pulse_span_s": 0.29544000000000004
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9840205864089476,
+            1.0381913962406977
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.3257301139913888,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.44613699793669,
+              "pulse_span_s": 0.28388
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4418244099817874,
+              "pulse_span_s": 0.28390000000000004
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4389993061037516,
+              "pulse_span_s": 0.28390000000000004
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4157194466903615,
+              "pulse_span_s": 0.28388
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4274054585574814,
+              "pulse_span_s": 0.26142000000000004
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4402117672995636,
+              "pulse_span_s": 0.26144000000000006
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.455240723121752,
+              "pulse_span_s": 0.26144000000000006
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4444108072743544,
+              "pulse_span_s": 0.26142000000000004
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4439860876134543,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4539616309449184,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4513992040757389,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4504864800185566,
+              "pulse_span_s": 0.25826
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4591799710889863,
+              "pulse_span_s": 0.25684
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4328287968405458,
+              "pulse_span_s": 0.25686000000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4339043161036578,
+              "pulse_span_s": 0.25686
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4425447683096075,
+              "pulse_span_s": 0.25686
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4450970588147372,
+              "pulse_span_s": 0.25644
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4454517389369623,
+              "pulse_span_s": 0.25644000000000006
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.445097058815805,
+              "pulse_span_s": 0.25644
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4408000212293766,
+              "pulse_span_s": 0.25642000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4339043161035034,
+              "pulse_span_s": 0.25686000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.432828796840026,
+              "pulse_span_s": 0.25686000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4591799710886069,
+              "pulse_span_s": 0.25684
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4425447683104928,
+              "pulse_span_s": 0.2568600000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4513992040746007,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4539616309460988,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.448361684011506,
+              "pulse_span_s": 0.25828
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4504864800180508,
+              "pulse_span_s": 0.25826
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4552407231230167,
+              "pulse_span_s": 0.26144
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4402117673002242,
+              "pulse_span_s": 0.26144
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4274054585572564,
+              "pulse_span_s": 0.26142
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4444108072735957,
+              "pulse_span_s": 0.26142000000000004
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4157194466903615,
+            1.4591799710889863
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 0.25,
+      "window_s": 0.12,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.25mm.sal",
+        "steps": 320,
+        "pulse_span_s": 0.39134566600000004,
+        "raw_peak_v_mm_s": 1.1472099853157338,
+        "raw_peak_a_mm_s2": 108.6994401506016,
+        "raw_peak_j_ratio": 2562.099107869991,
+        "estimated_peak_v_mm_s": 1.1300259154527945,
+        "estimated_peak_a_mm_s2": 9.519151696267564,
+        "estimated_peak_j_ratio": 1.4449438655174451,
+        "assumed_worst_case_j_ratio": 11.747080542225046
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.25mm.sal",
+        "steps": 320,
+        "pulse_span_s": 0.44160666699999995,
+        "raw_peak_v_mm_s": 1.0263844859275202,
+        "raw_peak_a_mm_s2": 55.75561213948595,
+        "raw_peak_j_ratio": 1396.5574497414952,
+        "estimated_peak_v_mm_s": 1.0005955498292944,
+        "estimated_peak_a_mm_s2": 7.48412851892824,
+        "estimated_peak_j_ratio": 0.9916715983071479,
+        "assumed_worst_case_j_ratio": 12.456019283814607
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.49960990659336263,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9895572060849402,
+              "pulse_span_s": 0.44954000000000005
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9976357002817516,
+              "pulse_span_s": 0.44954000000000005
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9983861013746738,
+              "pulse_span_s": 0.44952000000000003
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9951973223859296,
+              "pulse_span_s": 0.44954000000000005
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.006094814038791,
+              "pulse_span_s": 0.42238000000000003
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0045346814805067,
+              "pulse_span_s": 0.4223800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9975097653362298,
+              "pulse_span_s": 0.42236
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0034193980444364,
+              "pulse_span_s": 0.42236000000000007
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9959049981998288,
+              "pulse_span_s": 0.41858
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9897039859319503,
+              "pulse_span_s": 0.41858000000000006
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9958182732907912,
+              "pulse_span_s": 0.41858
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9993066431239845,
+              "pulse_span_s": 0.41858000000000006
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0036429316932274,
+              "pulse_span_s": 0.41688000000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9985498193907013,
+              "pulse_span_s": 0.4168800000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0033104922920617,
+              "pulse_span_s": 0.41688000000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0004487732377776,
+              "pulse_span_s": 0.41688000000000003
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0085775188151125,
+              "pulse_span_s": 0.41638000000000003
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.987077889024593,
+              "pulse_span_s": 0.41636000000000006
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0071232079754329,
+              "pulse_span_s": 0.41638000000000003
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0047837432088813,
+              "pulse_span_s": 0.41638000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0033104922922031,
+              "pulse_span_s": 0.41688000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9969469740148925,
+              "pulse_span_s": 0.4168800000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0036429316940683,
+              "pulse_span_s": 0.41688000000000003
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.000448773239443,
+              "pulse_span_s": 0.4168800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9958182732905831,
+              "pulse_span_s": 0.41858
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9897039859318669,
+              "pulse_span_s": 0.41858000000000006
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9959049982002535,
+              "pulse_span_s": 0.41858
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9993066431244508,
+              "pulse_span_s": 0.41858
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9980137534230273,
+              "pulse_span_s": 0.42236000000000007
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.004534681479799,
+              "pulse_span_s": 0.42238000000000003
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0045609296557652,
+              "pulse_span_s": 0.42238
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0002050961033988,
+              "pulse_span_s": 0.42236
+            }
+          ],
+          "estimator_ratio_range": [
+            0.987077889024593,
+            1.0085775188151125
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.4420837798368464,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4206333925066876,
+              "pulse_span_s": 0.39778
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4266074899232486,
+              "pulse_span_s": 0.39778
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4267365247798647,
+              "pulse_span_s": 0.39778
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.431187015917751,
+              "pulse_span_s": 0.3977800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4160818222191343,
+              "pulse_span_s": 0.37374
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.410813147316842,
+              "pulse_span_s": 0.37374
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4147667009742795,
+              "pulse_span_s": 0.37372
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4099199915553253,
+              "pulse_span_s": 0.37374000000000007
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4328567964981889,
+              "pulse_span_s": 0.37038000000000004
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4252283753781847,
+              "pulse_span_s": 0.3704
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4324751512318823,
+              "pulse_span_s": 0.37038
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4303968491999275,
+              "pulse_span_s": 0.37038000000000004
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4433566772449837,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4389628093228972,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4420661844953222,
+              "pulse_span_s": 0.36886
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4396157836575334,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4392608388806545,
+              "pulse_span_s": 0.36842
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4480372962191903,
+              "pulse_span_s": 0.36844000000000005
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.450049078997673,
+              "pulse_span_s": 0.36844
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4388506481120946,
+              "pulse_span_s": 0.36842
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.439615576414727,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4369788029136688,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.438424418382034,
+              "pulse_span_s": 0.36888
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4393716053482277,
+              "pulse_span_s": 0.36888000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4273146652635684,
+              "pulse_span_s": 0.37038000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4337166682514892,
+              "pulse_span_s": 0.37038000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4259669530498567,
+              "pulse_span_s": 0.3704
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4322222781774196,
+              "pulse_span_s": 0.37038000000000004
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4140868829434272,
+              "pulse_span_s": 0.37374000000000007
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.407893889505091,
+              "pulse_span_s": 0.37372000000000005
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4106926665369226,
+              "pulse_span_s": 0.37374
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4191916529859183,
+              "pulse_span_s": 0.37374
+            }
+          ],
+          "estimator_ratio_range": [
+            1.407893889505091,
+            1.450049078997673
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 0.5,
+      "window_s": 0.12,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.5mm.sal",
+        "steps": 640,
+        "pulse_span_s": 0.502939083,
+        "raw_peak_v_mm_s": 1.8575406043516918,
+        "raw_peak_a_mm_s2": 314.7300485183612,
+        "raw_peak_j_ratio": 12958.341847501031,
+        "estimated_peak_v_mm_s": 1.7932771279520894,
+        "estimated_peak_a_mm_s2": 12.027791717646329,
+        "estimated_peak_j_ratio": 1.4381828377822095,
+        "assumed_worst_case_j_ratio": 12.258336381849036
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-0.5mm.sal",
+        "steps": 640,
+        "pulse_span_s": 0.5682780839999999,
+        "raw_peak_v_mm_s": 1.6253489949361302,
+        "raw_peak_a_mm_s2": 214.32007533942704,
+        "raw_peak_j_ratio": 9238.656607977546,
+        "estimated_peak_v_mm_s": 1.5875039094358558,
+        "estimated_peak_a_mm_s2": 9.437537791557192,
+        "estimated_peak_j_ratio": 1.0067278081356297,
+        "assumed_worst_case_j_ratio": 13.11980917484262
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.6294690380529889,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9976246014052671,
+              "pulse_span_s": 0.57702
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9952191803627832,
+              "pulse_span_s": 0.577
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9957505045832622,
+              "pulse_span_s": 0.5770000000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0079014237545176,
+              "pulse_span_s": 0.5770000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.99987673342839,
+              "pulse_span_s": 0.5483800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.005763775380364,
+              "pulse_span_s": 0.5483600000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.999610696865111,
+              "pulse_span_s": 0.5483600000000002
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0074520082067329,
+              "pulse_span_s": 0.5483600000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0065583118415378,
+              "pulse_span_s": 0.5443800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0057563976917372,
+              "pulse_span_s": 0.5444000000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9918595770868067,
+              "pulse_span_s": 0.5444000000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9944939946046228,
+              "pulse_span_s": 0.5444000000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9967713022886683,
+              "pulse_span_s": 0.5426
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0105333652577737,
+              "pulse_span_s": 0.54262
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.000222767404646,
+              "pulse_span_s": 0.5426200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9955748813773592,
+              "pulse_span_s": 0.5426000000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0007869779654261,
+              "pulse_span_s": 0.5420800000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9963526893703141,
+              "pulse_span_s": 0.54206
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0006819167434455,
+              "pulse_span_s": 0.5420800000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9943274618536253,
+              "pulse_span_s": 0.5420800000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9942408931898129,
+              "pulse_span_s": 0.54262
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0104765946072016,
+              "pulse_span_s": 0.54262
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0036456159512763,
+              "pulse_span_s": 0.5426000000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.99827641750532,
+              "pulse_span_s": 0.5426
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9986170801558671,
+              "pulse_span_s": 0.5444000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.004959169136216,
+              "pulse_span_s": 0.5444
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0007707722069328,
+              "pulse_span_s": 0.5443800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9970527032154871,
+              "pulse_span_s": 0.5444000000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0045142896545125,
+              "pulse_span_s": 0.5483600000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0006896048901484,
+              "pulse_span_s": 0.54836
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9996993386761023,
+              "pulse_span_s": 0.5483600000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0047385728711113,
+              "pulse_span_s": 0.5483600000000001
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9918595770868067,
+            1.0105333652577737
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.5569906600335335,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4356553304989084,
+              "pulse_span_s": 0.51058
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4333672569720959,
+              "pulse_span_s": 0.51056
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4325276270700074,
+              "pulse_span_s": 0.5105600000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4362009610778605,
+              "pulse_span_s": 0.51058
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4305104760698408,
+              "pulse_span_s": 0.48522000000000004
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.435377094114443,
+              "pulse_span_s": 0.48524
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4397202247684762,
+              "pulse_span_s": 0.4852200000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4475192445943255,
+              "pulse_span_s": 0.4852200000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.441797089543684,
+              "pulse_span_s": 0.4817000000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4340393984140998,
+              "pulse_span_s": 0.48172000000000004
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.433146316733275,
+              "pulse_span_s": 0.48172000000000015
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4422424869174335,
+              "pulse_span_s": 0.48170000000000013
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4404855311099087,
+              "pulse_span_s": 0.48014000000000007
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.441652649880937,
+              "pulse_span_s": 0.48014
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4463691579124862,
+              "pulse_span_s": 0.4801200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4449181937050692,
+              "pulse_span_s": 0.48014000000000007
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4442669937304589,
+              "pulse_span_s": 0.47966000000000003
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.433832117726236,
+              "pulse_span_s": 0.47966
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.445600904971789,
+              "pulse_span_s": 0.4796600000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.445282915080254,
+              "pulse_span_s": 0.47968000000000005
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.445309328996425,
+              "pulse_span_s": 0.48012
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.438107645910214,
+              "pulse_span_s": 0.48014
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4408367339197594,
+              "pulse_span_s": 0.48014000000000007
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.447009975789282,
+              "pulse_span_s": 0.48012000000000005
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.430699719911588,
+              "pulse_span_s": 0.48172000000000004
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4341221536718796,
+              "pulse_span_s": 0.48172
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4389325020643107,
+              "pulse_span_s": 0.4817000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4401825936924408,
+              "pulse_span_s": 0.4817
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4397286495808406,
+              "pulse_span_s": 0.48522
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4370518285469593,
+              "pulse_span_s": 0.48522
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4322054717435084,
+              "pulse_span_s": 0.48522000000000004
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.447170179116969,
+              "pulse_span_s": 0.48522000000000004
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4305104760698408,
+            1.4475192445943255
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 1,
+      "window_s": 0.16,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-1mm.sal",
+        "steps": 1280,
+        "pulse_span_s": 0.6444945,
+        "raw_peak_v_mm_s": 3.0009641497626585,
+        "raw_peak_a_mm_s2": 1237.3507224407977,
+        "raw_peak_j_ratio": 80287.83759860082,
+        "estimated_peak_v_mm_s": 2.8410888109050125,
+        "estimated_peak_a_mm_s2": 15.077755483866383,
+        "estimated_peak_j_ratio": 1.4216409578424398,
+        "assumed_worst_case_j_ratio": 5.2303241503555435
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-1mm.sal",
+        "steps": 1280,
+        "pulse_span_s": 0.72860375,
+        "raw_peak_v_mm_s": 2.6012705854143094,
+        "raw_peak_a_mm_s2": 826.0399217925717,
+        "raw_peak_j_ratio": 56241.01595171344,
+        "estimated_peak_v_mm_s": 2.520714649106444,
+        "estimated_peak_a_mm_s2": 11.887828649317887,
+        "estimated_peak_j_ratio": 0.9979435189366597,
+        "assumed_worst_case_j_ratio": 5.224520194826902
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.7930812913000377,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0003921185156137,
+              "pulse_span_s": 0.7380000000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9961034474356243,
+              "pulse_span_s": 0.7380000000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9974136907807558,
+              "pulse_span_s": 0.7379800000000002
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9979299956279448,
+              "pulse_span_s": 0.7380000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.002879777949608,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0041417087560778,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9988777656857856,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.000539154440521,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.001168731675827,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9961768737137039,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.00698076780774,
+              "pulse_span_s": 0.7036200000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0002622253404385,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.995009279754272,
+              "pulse_span_s": 0.7017400000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9945729963994984,
+              "pulse_span_s": 0.7017200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.000124670992698,
+              "pulse_span_s": 0.7017200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9992335974718735,
+              "pulse_span_s": 0.70174
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9955694375874902,
+              "pulse_span_s": 0.70118
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9963498336387611,
+              "pulse_span_s": 0.70118
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9921376453002756,
+              "pulse_span_s": 0.7011600000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0005072368342312,
+              "pulse_span_s": 0.70118
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9993802252831426,
+              "pulse_span_s": 0.70174
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9977173116500772,
+              "pulse_span_s": 0.70174
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0003466914906376,
+              "pulse_span_s": 0.7017200000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9986728614927975,
+              "pulse_span_s": 0.7017200000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.994671660811762,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0008077401550357,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.00358956812832,
+              "pulse_span_s": 0.7036200000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9956222244672582,
+              "pulse_span_s": 0.7036
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.001718925649169,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9969239245657158,
+              "pulse_span_s": 0.70778
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9959655932022784,
+              "pulse_span_s": 0.7077800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0118329204819578,
+              "pulse_span_s": 0.7077800000000001
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9921376453002756,
+            1.0118329204819578
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.7017642571710879,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4364343546593579,
+              "pulse_span_s": 0.65302
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4366807691976546,
+              "pulse_span_s": 0.6530400000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4401105661459845,
+              "pulse_span_s": 0.65302
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4472556070599885,
+              "pulse_span_s": 0.65302
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4431760822855866,
+              "pulse_span_s": 0.6262800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.440240986104589,
+              "pulse_span_s": 0.6262800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4337575142445718,
+              "pulse_span_s": 0.6262800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4376179128488158,
+              "pulse_span_s": 0.6263000000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.438038380415024,
+              "pulse_span_s": 0.62258
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.448619777504168,
+              "pulse_span_s": 0.6226
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4470809148619055,
+              "pulse_span_s": 0.6226000000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4488102682859476,
+              "pulse_span_s": 0.62258
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4448389627589988,
+              "pulse_span_s": 0.62094
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4490043455104982,
+              "pulse_span_s": 0.62094
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4451154258676986,
+              "pulse_span_s": 0.6209200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4446153225740015,
+              "pulse_span_s": 0.6209200000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4443601548109541,
+              "pulse_span_s": 0.62044
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4403672458934194,
+              "pulse_span_s": 0.62044
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4439995519283328,
+              "pulse_span_s": 0.6204400000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4444083606671727,
+              "pulse_span_s": 0.6204400000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4391861533877102,
+              "pulse_span_s": 0.62092
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4446997254884646,
+              "pulse_span_s": 0.62092
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4470966806203902,
+              "pulse_span_s": 0.6209400000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4413367414313345,
+              "pulse_span_s": 0.62094
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.447855727448819,
+              "pulse_span_s": 0.62258
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4398161997404884,
+              "pulse_span_s": 0.6226
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.441256933083953,
+              "pulse_span_s": 0.6226000000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4419950061752738,
+              "pulse_span_s": 0.6225800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4364932152800804,
+              "pulse_span_s": 0.6263000000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.434853908281247,
+              "pulse_span_s": 0.6262800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4379671139536978,
+              "pulse_span_s": 0.6262800000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.439527227498011,
+              "pulse_span_s": 0.6262800000000001
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4337575142445718,
+            1.4490043455104982
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 2,
+      "window_s": 0.24,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-2mm.sal",
+        "steps": 2560,
+        "pulse_span_s": 0.8251328329999998,
+        "raw_peak_v_mm_s": 4.880280854309205,
+        "raw_peak_a_mm_s2": 4779.719716828438,
+        "raw_peak_j_ratio": 578237.343853131,
+        "estimated_peak_v_mm_s": 4.516456576985231,
+        "estimated_peak_a_mm_s2": 19.033738753632,
+        "estimated_peak_j_ratio": 1.430350081771298,
+        "assumed_worst_case_j_ratio": 2.416501199660003
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-2mm.sal",
+        "steps": 2560,
+        "pulse_span_s": 0.9380021669999999,
+        "raw_peak_v_mm_s": 4.336278765137923,
+        "raw_peak_a_mm_s2": 3454.632166450906,
+        "raw_peak_j_ratio": 319657.0697976669,
+        "estimated_peak_v_mm_s": 4.001087609981944,
+        "estimated_peak_a_mm_s2": 14.962064301914339,
+        "estimated_peak_j_ratio": 0.9981954322190846,
+        "assumed_worst_case_j_ratio": 2.1684219616209646
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 0.9992198131867253,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0073866226890662,
+              "pulse_span_s": 0.9412800000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0010139052049671,
+              "pulse_span_s": 0.94128
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9983018862366023,
+              "pulse_span_s": 0.9412800000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9998822726845686,
+              "pulse_span_s": 0.9412800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.999996119255306,
+              "pulse_span_s": 0.9093800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0009111507778004,
+              "pulse_span_s": 0.9093800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0021346543424543,
+              "pulse_span_s": 0.9094000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9999435604543445,
+              "pulse_span_s": 0.9093800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9938699279832015,
+              "pulse_span_s": 0.905
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9971704038235304,
+              "pulse_span_s": 0.90498
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9966167853994014,
+              "pulse_span_s": 0.9049800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9947455492221675,
+              "pulse_span_s": 0.905
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9909221390436402,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9890202601566285,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9935367819946723,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9894128312873148,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9881756190480903,
+              "pulse_span_s": 0.9024400000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.987809387263683,
+              "pulse_span_s": 0.9024400000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9864970129564222,
+              "pulse_span_s": 0.9024200000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9875330296639951,
+              "pulse_span_s": 0.90244
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9950684291726938,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9927373985669871,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9891994759860969,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9920596714833753,
+              "pulse_span_s": 0.90302
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9941146696084925,
+              "pulse_span_s": 0.9050000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9954844459153235,
+              "pulse_span_s": 0.905
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9961627215547693,
+              "pulse_span_s": 0.9049800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9953147556422989,
+              "pulse_span_s": 0.9049800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0044328583389968,
+              "pulse_span_s": 0.9093800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.999694887499883,
+              "pulse_span_s": 0.90938
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0016516375459945,
+              "pulse_span_s": 0.9094000000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0000297658062764,
+              "pulse_span_s": 0.9093800000000001
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9864970129564222,
+            1.0073866226890662
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 0.8841675596736928,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4296835764293807,
+              "pulse_span_s": 0.8329000000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4337424252115039,
+              "pulse_span_s": 0.8329
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.431307765928275,
+              "pulse_span_s": 0.8329000000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4320428819494138,
+              "pulse_span_s": 0.8329000000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.428782066663892,
+              "pulse_span_s": 0.8046800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4311136147941552,
+              "pulse_span_s": 0.8046800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4345234406667462,
+              "pulse_span_s": 0.8046800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4304426012597515,
+              "pulse_span_s": 0.80466
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4408797197593972,
+              "pulse_span_s": 0.80078
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4397293246843303,
+              "pulse_span_s": 0.8008000000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4388527692792366,
+              "pulse_span_s": 0.8007800000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.445347494279392,
+              "pulse_span_s": 0.8007800000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4395915223858082,
+              "pulse_span_s": 0.7990400000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4395788316645677,
+              "pulse_span_s": 0.79904
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4426231432572658,
+              "pulse_span_s": 0.7990400000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4463916052631478,
+              "pulse_span_s": 0.7990400000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4418980484971895,
+              "pulse_span_s": 0.7985200000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4408018638862654,
+              "pulse_span_s": 0.7985200000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.440445396344331,
+              "pulse_span_s": 0.7985200000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4431191687772407,
+              "pulse_span_s": 0.79854
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4411367655077252,
+              "pulse_span_s": 0.7990400000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4435724180181464,
+              "pulse_span_s": 0.7990400000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4412819945868711,
+              "pulse_span_s": 0.7990400000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.441289522217215,
+              "pulse_span_s": 0.79906
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4380663383613992,
+              "pulse_span_s": 0.80078
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4384560471604055,
+              "pulse_span_s": 0.8008
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4436504532991918,
+              "pulse_span_s": 0.8008000000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.439304410578396,
+              "pulse_span_s": 0.80078
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.429302179864084,
+              "pulse_span_s": 0.80466
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4301940504032717,
+              "pulse_span_s": 0.8046800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4285867196493942,
+              "pulse_span_s": 0.8046800000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.434449595771381,
+              "pulse_span_s": 0.8046800000000002
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4285867196493942,
+            1.4463916052631478
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 5,
+      "window_s": 0.24,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-5mm.sal",
+        "steps": 6400,
+        "pulse_span_s": 1.134893417,
+        "raw_peak_v_mm_s": 9.765625000003785,
+        "raw_peak_a_mm_s2": 29909.60652253038,
+        "raw_peak_j_ratio": 5979763.990015562,
+        "estimated_peak_v_mm_s": 8.332950209905722,
+        "estimated_peak_a_mm_s2": 25.99481367482189,
+        "estimated_peak_j_ratio": 1.4408501700331644,
+        "assumed_worst_case_j_ratio": 2.639011378150989
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-5mm.sal",
+        "steps": 6400,
+        "pulse_span_s": 1.2843015,
+        "raw_peak_v_mm_s": 7.81250000000086,
+        "raw_peak_a_mm_s2": 16780.94105442295,
+        "raw_peak_j_ratio": 3095121.083262155,
+        "estimated_peak_v_mm_s": 7.35335908498222,
+        "estimated_peak_a_mm_s2": 20.251866747383144,
+        "estimated_peak_j_ratio": 0.9852957636203364,
+        "assumed_worst_case_j_ratio": 2.2152742482939587
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 1.3561499318823593,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9970885521615737,
+              "pulse_span_s": 1.2941000000000003
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0023105145465034,
+              "pulse_span_s": 1.2941000000000003
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.008275317038726,
+              "pulse_span_s": 1.2941200000000002
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9941045744564616,
+              "pulse_span_s": 1.2941
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9979196533411007,
+              "pulse_span_s": 1.2598
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9989488898781819,
+              "pulse_span_s": 1.25978
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9980521895398999,
+              "pulse_span_s": 1.25978
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.000913507805773,
+              "pulse_span_s": 1.2598
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9968978434420241,
+              "pulse_span_s": 1.25508
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9997224401802121,
+              "pulse_span_s": 1.2551
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0024467173575966,
+              "pulse_span_s": 1.2551
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0108947442833363,
+              "pulse_span_s": 1.2550800000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0036910904708432,
+              "pulse_span_s": 1.2529800000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.001675237761085,
+              "pulse_span_s": 1.25296
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0018208002833457,
+              "pulse_span_s": 1.25298
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0022678075542357,
+              "pulse_span_s": 1.25298
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0011756432478136,
+              "pulse_span_s": 1.2523400000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0054078395425436,
+              "pulse_span_s": 1.2523400000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0030179773990138,
+              "pulse_span_s": 1.2523400000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9968517496169507,
+              "pulse_span_s": 1.25236
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9974299481827433,
+              "pulse_span_s": 1.2529800000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0065466151405635,
+              "pulse_span_s": 1.25296
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9958418543719789,
+              "pulse_span_s": 1.25298
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9989860956254817,
+              "pulse_span_s": 1.25298
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0022159639185764,
+              "pulse_span_s": 1.2551
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9997224401801454,
+              "pulse_span_s": 1.2551
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9972698996755459,
+              "pulse_span_s": 1.25508
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0034426465309056,
+              "pulse_span_s": 1.25508
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0013395830682283,
+              "pulse_span_s": 1.2597800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0009210215392752,
+              "pulse_span_s": 1.2597800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9984977621686598,
+              "pulse_span_s": 1.2598
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0007706887802839,
+              "pulse_span_s": 1.2598
+            }
+          ],
+          "estimator_ratio_range": [
+            0.9941045744564616,
+            1.0108947442833363
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 1.2000000000000002,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4386185769134532,
+              "pulse_span_s": 1.14508
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4479544869459684,
+              "pulse_span_s": 1.14508
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4459953739085876,
+              "pulse_span_s": 1.14508
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.442753722360962,
+              "pulse_span_s": 1.1450799999999999
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4417129669577868,
+              "pulse_span_s": 1.11474
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4476131332608002,
+              "pulse_span_s": 1.11474
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4469754007229887,
+              "pulse_span_s": 1.11474
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4401722324785038,
+              "pulse_span_s": 1.1147399999999998
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4442245751914609,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4484706023973617,
+              "pulse_span_s": 1.11056
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4393516138381304,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4436651134194682,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4414543676955496,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4438029797936516,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4468081755960596,
+              "pulse_span_s": 1.1087200000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4497011795780252,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.443274257588534,
+              "pulse_span_s": 1.10814
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4491555423119975,
+              "pulse_span_s": 1.10816
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4431501708121464,
+              "pulse_span_s": 1.10816
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4427774507659032,
+              "pulse_span_s": 1.10816
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4455242279997504,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4465464399925856,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.446808175595993,
+              "pulse_span_s": 1.1087200000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.443802979794351,
+              "pulse_span_s": 1.1087
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4489279925140433,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4431320470241429,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.442612287603873,
+              "pulse_span_s": 1.1105800000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4487364794852746,
+              "pulse_span_s": 1.11056
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.443437375496615,
+              "pulse_span_s": 1.11474
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4394562424775492,
+              "pulse_span_s": 1.11474
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4443278801638373,
+              "pulse_span_s": 1.1147399999999998
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.452629272043843,
+              "pulse_span_s": 1.1147399999999998
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4386185769134532,
+            1.452629272043843
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    },
+    {
+      "length_mm": 10,
+      "window_s": 0.24,
+      "baseline": {
+        "run": "20261030T155623Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-10mm.sal",
+        "steps": 12800,
+        "pulse_span_s": 1.589606,
+        "raw_peak_v_mm_s": 13.038870437446093,
+        "raw_peak_a_mm_s2": 60912.43643274689,
+        "raw_peak_j_ratio": 15834678.79111122,
+        "estimated_peak_v_mm_s": 9.98752776268744,
+        "estimated_peak_a_mm_s2": 28.483798702120072,
+        "estimated_peak_j_ratio": 1.4419349342731147,
+        "assumed_worst_case_j_ratio": 2.848588017447242
+      },
+      "fixed": {
+        "run": "20261030T160910Z-test_motion-profile",
+        "capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-10mm.sal",
+        "steps": 12799,
+        "pulse_span_s": 1.662905,
+        "raw_peak_v_mm_s": 13.03908805658991,
+        "raw_peak_a_mm_s2": 68144.13086136198,
+        "raw_peak_j_ratio": 16111280.071563587,
+        "estimated_peak_v_mm_s": 9.986057322559782,
+        "estimated_peak_a_mm_s2": 23.70254163113582,
+        "estimated_peak_j_ratio": 0.9999405597974382,
+        "assumed_worst_case_j_ratio": 2.1074305344709803
+      },
+      "synthetic_phase_checks": [
+        {
+          "true_J_ratio": 1.0,
+          "ideal_command_to_rest_duration_s": 1.7896444077714955,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0011808723088933,
+              "pulse_span_s": 1.7253800000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9999175555476916,
+              "pulse_span_s": 1.7253800000000001
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0033227170400507,
+              "pulse_span_s": 1.72536
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.993654452967846,
+              "pulse_span_s": 1.7253800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0048361459141233,
+              "pulse_span_s": 1.6898000000000002
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9972055490627242,
+              "pulse_span_s": 1.68982
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9957586471540049,
+              "pulse_span_s": 1.6898
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 0.9972788210863893,
+              "pulse_span_s": 1.6898
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0087832072877667,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0028169174620463,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0007958692151626,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0031336660037915,
+              "pulse_span_s": 1.68492
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.0022118755280252,
+              "pulse_span_s": 1.6827400000000001
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9970661358955303,
+              "pulse_span_s": 1.6827600000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0011011984830234,
+              "pulse_span_s": 1.6827600000000003
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.003259717355215,
+              "pulse_span_s": 1.6827400000000001
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9970789268519826,
+              "pulse_span_s": 1.6821000000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.000146554978143,
+              "pulse_span_s": 1.6821000000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.0123765210841214,
+              "pulse_span_s": 1.6821000000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0046901981045022,
+              "pulse_span_s": 1.6821000000000002
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.000373572232638,
+              "pulse_span_s": 1.6827400000000001
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0028878770308505,
+              "pulse_span_s": 1.68276
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9965962198187129,
+              "pulse_span_s": 1.68276
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0019783919642755,
+              "pulse_span_s": 1.6827400000000001
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9992906111567558,
+              "pulse_span_s": 1.6849200000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.0055852881672878,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.004661715514965,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0014766560207335,
+              "pulse_span_s": 1.68494
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 0.9978758024059676,
+              "pulse_span_s": 1.6898000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 0.9973380401192001,
+              "pulse_span_s": 1.6898000000000002
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 0.9978650155882454,
+              "pulse_span_s": 1.68982
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.0088267049367161,
+              "pulse_span_s": 1.6898
+            }
+          ],
+          "estimator_ratio_range": [
+            0.993654452967846,
+            1.0123765210841214
+          ]
+        },
+        {
+          "true_J_ratio": 1.4433756729740645,
+          "ideal_command_to_rest_duration_s": 1.6572670690061995,
+          "phase_results": [
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4440637199925666,
+              "pulse_span_s": 1.60118
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4461399099830465,
+              "pulse_span_s": 1.60118
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4397472990019977,
+              "pulse_span_s": 1.6012
+            },
+            {
+              "initial_step_fraction": 0.0,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4424770199589378,
+              "pulse_span_s": 1.60118
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4421734494013796,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4501257145282447,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.449748977731902,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.125,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.440930361620685,
+              "pulse_span_s": 1.57018
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4370927293948843,
+              "pulse_span_s": 1.56594
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4372620958794382,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4485885540774515,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.25,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4488637730525946,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4422315788143127,
+              "pulse_span_s": 1.5640200000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4403926947602343,
+              "pulse_span_s": 1.5640200000000002
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4394105620479272,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.375,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.448077791032093,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.444328310671067,
+              "pulse_span_s": 1.5634400000000002
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4391290301253692,
+              "pulse_span_s": 1.56346
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4473866441823249,
+              "pulse_span_s": 1.56346
+            },
+            {
+              "initial_step_fraction": 0.5,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.438707792621491,
+              "pulse_span_s": 1.56344
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.44046288651013,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.4419947022257187,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4446548411787832,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.625,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4437365918083758,
+              "pulse_span_s": 1.56402
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.4496915670078605,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.451556466054499,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4351391417464001,
+              "pulse_span_s": 1.5659200000000002
+            },
+            {
+              "initial_step_fraction": 0.75,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4425070880390303,
+              "pulse_span_s": 1.56594
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 0.0,
+              "estimated_ratio": 1.440104801827258,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 5e-06,
+              "estimated_ratio": 1.447150355286009,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1e-05,
+              "estimated_ratio": 1.4409016763459295,
+              "pulse_span_s": 1.5701800000000001
+            },
+            {
+              "initial_step_fraction": 0.875,
+              "dda_phase_s": 1.5e-05,
+              "estimated_ratio": 1.4432842491805544,
+              "pulse_span_s": 1.5701800000000001
+            }
+          ],
+          "estimator_ratio_range": [
+            1.4351391417464001,
+            1.451556466054499
+          ]
+        }
+      ],
+      "settings": {
+        "1ma": 0,
+        "1sa": 1.8,
+        "1mi": 8,
+        "1tr": 1.25,
+        "1po": 0,
+        "xjm": 20,
+        "xvm": 800,
+        "xfr": 800,
+        "xam": 1
+      },
+      "steps_per_mm": 1280.0,
+      "commanded_F": 600.0,
+      "commanded_J_mm_s3": 92.5925925925926
+    }
+  ]
+}

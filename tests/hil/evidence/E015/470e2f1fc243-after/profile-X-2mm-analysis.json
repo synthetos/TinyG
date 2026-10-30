@@ -1,0 +1,51 @@
+{
+  "step_count": 2560,
+  "first_to_last_step_s": 0.9380021669999999,
+  "raw_peak_v_mm_s": 4.336278765137923,
+  "raw_peak_a_mm_s2": 3454.632166450906,
+  "raw_peak_j_mm_s3": 29597876.833117306,
+  "position_error_assumption_mm": 0.00086833693186652,
+  "length_mm": 2.0,
+  "feed_mm_min": 600.0,
+  "commanded_jerk_mm_s3": 92.5925925925926,
+  "settings": {
+    "1ma": 0,
+    "1sa": 1.8,
+    "1mi": 8,
+    "1tr": 1.25,
+    "1po": 0,
+    "xjm": 20,
+    "xvm": 800,
+    "xfr": 800,
+    "xam": 1
+  },
+  "steps_per_mm": 1280.0,
+  "smoothing": "degree-5 position fits, 10/20/40/80ms centered windows",
+  "direction_initial": 0,
+  "direction_transitions": [
+    [
+      0.000170667,
+      1
+    ],
+    [
+      0.162785583,
+      0
+    ]
+  ],
+  "gate_verdict": "measurement only; bias/quantization review required",
+  "capture": null,
+  "edge_file": null,
+  "source_capture": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-2mm.sal",
+  "source_edges": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/profile-X-2mm-edges.json",
+  "windows": [
+    {
+      "width_s": 0.24,
+      "resolved": true,
+      "peak_v_mm_s": 4.001087609981944,
+      "peak_a_mm_s2": 14.962064301914339,
+      "peak_j_mm_s3": 92.42550298324858,
+      "peak_j_upper_assumed_mm_s3": 200.77981126120042
+    }
+  ],
+  "trace_regeneration": "Recompute from representative stored gzip edges or the full source run with tinyg_hil.motion_profile.analyze; derivative traces are not duplicated."
+}
