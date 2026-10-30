@@ -216,10 +216,10 @@ static void _dispatch_switch(const uint8_t sw_num)
         sw.s[sw_num].edge = SW_EDGE_NONE;
     }
 
-	if (cm.cycle_state == CYCLE_PROBE) {
-    	cm_request_feedhold();
+	if ((cm.cycle_state == CYCLE_PROBE) && (sw.s[sw_num].mode == SW_MODE_PROBE)) {
+    	cm_request_feedhold();						// the probe contact ends the probe move...
         return;
-    }
+    }											// ...any other switch keeps its limit action
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
     	controller_assert_limit_condition(sw_num+1);
 	}
