@@ -336,7 +336,7 @@ float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis)
 void cm_set_work_offsets()
 {
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
-		cm.gm.work_offset[axis] = cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
+		cm.gm.work_offset[axis] = cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
 	}
 }
 
@@ -379,7 +379,7 @@ float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 	float position;
 
 	if (gcode_state == MODEL) {
-		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
+		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
 	} else {
 		position = mp_get_runtime_work_position(axis);
 	}
@@ -493,7 +493,7 @@ void cm_set_model_target(const float target[], const bool flags[])
 			if (cm.gm.distance_mode == ABSOLUTE_MODE) {
 				cm.gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
 				if (cm.gm.absolute_override == ABSOLUTE_OVERRIDE_OFF) {
-					cm.gm.target[axis] -= cm.gmx.tool_offset[axis];	// work coordinates only: not G53
+					cm.gm.target[axis] += cm.gmx.tool_offset[axis];	// work coordinates only: not G53
 				}
 			} else {
 				cm.gm.target[axis] += _to_millimeters(target[axis]);	// a distance: the offset is already in the position
@@ -1044,7 +1044,7 @@ stat_t cm_set_origin_offsets(const float offset[], bool flags[])
 	cm.gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (flags[axis]) {
-			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - cm.offset[cm.gm.coord_system][axis] +
+			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - cm.offset[cm.gm.coord_system][axis] -
 									  cm.gmx.tool_offset[axis] - _to_millimeters(offset[axis]);	// work position = offset
 		}
 	}
@@ -1308,9 +1308,11 @@ static void _exec_change_tool(float *value, bool *flags)
  * cm_tool_offset_set()    - G43.1
  * cm_tool_offset_cancel() - G49
  *
- *  Tool length offset is positive and relative to absolute coordinates.
- *  If Z is at 0, G43.1 Z10 will make Z now appear to be at 10 mm,
- *  i.e the reported work position will be 10 mm.
+ *  Tool length offset is positive for a longer tool: it moves the controlled point out along
+ *  the spindle axis (RS274NGC v3 2.1.2.3, same as LinuxCNC and g2core). If Z is at 0,
+ *  G43.1 Z10 makes Z appear to be at -10 mm (the tool tip is 10 mm below the gauge point),
+ *  and a following G0 Z0 raises the spindle 10 mm. Before build 449.02 edge used the
+ *  opposite sign.
  *
  *  G43.1 does not cause any movement but will change status report displays
  *  (DRO values). Movement will occur on next feed or traverse.
