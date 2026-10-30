@@ -52,6 +52,10 @@ nvObj_t list[8];int executed;
 void nv_reset_nv(nvObj_t *n){n->valuetype=TYPE_EMPTY;n->value_int=UINT32_MAX;n->str=NULL;}
 int nv_get_index(char *g,char *t){(void)g;if(!strcmp(t,"xvm"))return 0;if(!strcmp(t,"1mi")||!strcmp(t,"mi"))return 1;if(!strcmp(t,"1"))return 2;return NO_MATCH;}
 nvObj_t *nv_next(nvObj_t *n){return n->nx;}
+nvObj_t *nv_prev(nvObj_t *n){return n>list?n-1:n;}
+#define PSTR(s) (s)
+#define strcmp_P strcmp
+#define NV_STATUS_REPORT_LEN 30
 nvObj_t *nv_next_empty(nvObj_t *n){while(n && n->valuetype!=TYPE_EMPTY)n=n->nx;return n;}
 bool nv_group_is_prefixed(char *t){return !strcmp(t,"1");}
 bool nv_group_is_typesafe(char *t){(void)t;return true;}
