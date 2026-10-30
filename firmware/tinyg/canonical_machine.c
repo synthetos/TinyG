@@ -1101,6 +1101,9 @@ static stat_t _queue_line()
 {
 	cm_cycle_start();
 	stat_t status = mp_aline(&cm.gm);
+	if (cm_is_alarmed() != STAT_OK) {			// mp_aline can alarm or panic (failed reservation): the
+		return (status);						// cycle repair below must not overwrite that state
+	}
 #ifdef __AVR
 	uint8_t sreg = SREG;
 	cli();
