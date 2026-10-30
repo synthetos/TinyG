@@ -27,7 +27,7 @@ def _get(tg, token, events):
 
 @pytest.mark.motion
 @pytest.mark.persists
-@pytest.mark.bug("E091", on=["d440", "d449"])
+@pytest.mark.bug("E091", on=["d440"])
 def test_queue_report_counts_balance(tg, keep):
     keep("qv")
     tg.set("qv", 2)
