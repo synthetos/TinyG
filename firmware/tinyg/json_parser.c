@@ -516,6 +516,20 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
             ritorno(str2long(str, &(nv->value_int)));
         } else { return (STAT_VALUE_TYPE_ERROR); }
     }
+    else if (cfg_type == TYPE_SIGNED) {
+        if (nv->valuetype == TYPE_BOOLEAN) {
+            nv->value_int = (*str == 't');
+        } else if (nv->valuetype == TYPE_INTEGER) {
+            bool negative = (*str == '-');
+            uint32_t magnitude;
+            ritorno(str2long(str + negative, &magnitude));
+            if (magnitude > (negative ? 2147483648UL : 2147483647UL)) {
+                return (STAT_INPUT_VALUE_RANGE_ERROR);
+            }
+            nv->value_int = negative ? 0UL - magnitude : magnitude;
+        } else { return (STAT_VALUE_TYPE_ERROR); }
+        nv->valuetype = TYPE_SIGNED;
+    }
     else if (cfg_type == TYPE_BOOLEAN) {            // booleans are complicated
         if (nv->valuetype == TYPE_BOOLEAN) {
             if      (*str == 'f') { nv->value_int = 0; } // handle t/f input values

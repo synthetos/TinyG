@@ -261,6 +261,7 @@ typedef enum {						    // value typing for config and JSON parsing
 #define _b0     (TYPE_BOOLEAN)      // boolean data types (only listing the ones we use)
 #define _bip    (TYPE_BOOLEAN | F_INITIALIZE | F_PERSIST)
 
+#define _sip    (TYPE_SIGNED | F_PERSIST)
 #define _ip     (TYPE_INTEGER | F_PERSIST)
 #define _i0     (TYPE_INTEGER)      // integer data types (only listing the ones we use)
 #define _in     (TYPE_INTEGER | F_NOSTRIP)
