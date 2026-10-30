@@ -56,6 +56,12 @@ class RunRecorder:
             rec["history_start"], rec["sent_start"] = len(tg.transport.history), len(tg.transport.sent)
         self.pending[nodeid] = rec
 
+    def note(self, nodeid, key, value):
+        """Attach an observation (ICE snapshot, samples, counts...) to the test's run record."""
+        rec = self.pending.setdefault(nodeid, {"nodeid": nodeid, "bugs": [], "markers": [], "phases": {},
+                                               "start_position": None})
+        rec.setdefault("observations", {})[key] = value
+
     def end(self, nodeid, tg):
         rec = self.pending.get(nodeid)
         if rec is None or tg is None:

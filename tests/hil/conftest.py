@@ -32,6 +32,7 @@ def pytest_addoption(parser):
     g.addoption("--matrix", action="append", default=[], help="config matrix expanded for every hardware test (repeatable)")
     g.addoption("--list-configs", action="store_true", help="print the configurations each test would run under, then exit")
     g.addoption("--ice", action="store_true", help="enable Atmel-ICE tests (peek/poke over PDI)")
+    g.addoption("--diagnostics", action="store_true", help="run investigation tests marked diagnostic")
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
                 help="seconds to wait for another user of the board to finish [default 600]")
@@ -95,6 +96,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="moves axes; pass --allow-motion"))
         if item.get_closest_marker("destructive") and not config.getoption("--allow-destructive"):
             item.add_marker(pytest.mark.skip(reason="destructive; pass --allow-destructive"))
+        if item.get_closest_marker("diagnostic") and not config.getoption("--diagnostics"):
+            item.add_marker(pytest.mark.skip(reason="investigation test; pass --diagnostics"))
         if item.get_closest_marker("ice") and not config.getoption("--ice"):
             item.add_marker(pytest.mark.skip(reason="needs the Atmel-ICE; pass --ice"))
         if item.get_closest_marker("resets_board") and config.getoption("--no-reset"):
@@ -148,6 +151,17 @@ def recover(board):
         board.reset()       # stale queue (E069), unrecoverable state, or no answer
     if board.stat() == board.dialect.stat("ALARM"):
         board.clear_alarm()
+
+
+@pytest.fixture
+def record(request):
+    """record(key, value): attach an observation to this test's run record (shown on the dashboard)."""
+    recorder = request.config._tinyg_recorder
+
+    def _record(key, value):
+        if recorder:
+            recorder.note(request.node.nodeid, key, value)
+    return _record
 
 
 @pytest.fixture
