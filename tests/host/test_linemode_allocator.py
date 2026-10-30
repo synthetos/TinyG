@@ -41,6 +41,8 @@ typedef struct {buf_hdr_t *used_base,*used_top;uint16_t requested_size;
     buf_hdr_t buf[RX_HEADERS];} buf_mgr_t;
 static buf_mgr_t bm;
 static char pool[RX_BUFFER_POOL_SIZE];
+/* _post_buffer() classifies each line (E103); classification does not matter to the allocator */
+static devflags_t _classify_line(const char *line, uint16_t size) {(void)line;(void)size;return DEV_IS_DATA;}
 '''
 
 EXERCISE = r'''
