@@ -48,7 +48,7 @@ jsSingleton_t js;
 
 static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str);
 static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs);
-static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t depth, bool typesafe);
+static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t depth, bool typesafe, bool ignore_unknown);
 
 /****************************************************************************
  * json_parser()          - exposed part of JSON parser
@@ -201,7 +201,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             return (STAT_OK);   // normal return if no (more) tokenized JSON to process
         }
         nv = *p_nv;             // set starting NV pair for execution
-        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true)); // collect NV pair from JSON string
+        ritorno(_marshall_nv_pair(p_nv, &str, group, 0, true, false)); // collect NV pair from JSON string
 
         // Special processing for text container (TXT tag)
         if ((*p_nv)->valuetype == TYPE_TXTCON) {
@@ -432,7 +432,7 @@ static char *_next_token(char *str)
     return (NULL);
 }
 
-static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8_t parent_depth, bool typesafe)
+static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8_t parent_depth, bool typesafe, bool ignore_unknown)
 {
     nvObj_t *nv = *p_nv;            // local pointer for convenience and easier code inspection
     char *tok = *p_str;             // local pointer to token location
@@ -464,7 +464,22 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
 //    nv->group = group;                          // bind group string to nv struct
 
     if ((nv->index = nv_get_index(nv->group, nv->token)) == NO_MATCH) {
-        return (STAT_UNRECOGNIZED_NAME);        // failed to get a valid index
+        // Capability probes must echo the missing key; unknown SETs still fail.
+        if (!(jtoken & JTOK_PARENT)) {
+            char *value_end = _next_token(tok+1);
+            if (value_end != NULL) {
+                uint8_t type = *value_end & JTOK_TMASK;
+                if ((depth == 1) && (type == TYPE_NULL)) { nv->valuetype = TYPE_NULL; }
+                // Only the legacy SR selector tolerates unsupported boolean fields.
+                if (ignore_unknown && (type == TYPE_BOOLEAN) &&
+                    ((tok[1] == 't') || (tok[1] == 'f'))) {
+                    nv->valuetype = TYPE_SKIP;
+                    *p_str = value_end+1;
+                    return (STAT_OK);
+                }
+            }
+        }
+        return (STAT_UNRECOGNIZED_NAME);
     }
     str = tok+1; *p_str = str;                  // set str & p_str to start of next field
 
@@ -476,11 +491,20 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
             strncpy(group, nv->token, GROUP_LEN); // capture the group field
         }
         bool typesafe = nv_group_is_typesafe(nv->token); // deal with typesafe exceptions
+        bool sr_selector = (depth == 1) && (strcmp_P(nv->token, PSTR("sr")) == 0);
+        uint8_t children = 0;
 
         while (true) {  // gather up the kiddies: Nothing is certain except depth and tokens
             if ((nv = nv_next(nv)) == NULL) { return (STAT_JSON_TOO_MANY_PAIRS); } // get next child or exit
             *p_nv = nv;
-            ritorno(_marshall_nv_pair(p_nv, p_str, group, depth, typesafe)); // recursively parse child, exit if error
+            ritorno(_marshall_nv_pair(p_nv, p_str, group, depth, typesafe, sr_selector));
+            if (nv->valuetype == TYPE_SKIP) {
+                nv->valuetype = TYPE_EMPTY;
+                nv = nv_prev(nv);                   // reuse the slot for the next supported field
+                *p_nv = nv;
+            } else if (sr_selector && (++children > NV_STATUS_REPORT_LEN)) {
+                return (STAT_JSON_TOO_MANY_PAIRS);  // reject before changing the report
+            }
             if ((tok = _next_token(*p_str)) == NULL) { return(STAT_OK); }  // normal end-of-string exit
             if (((*tok >> JTOK_DSHIFT) & JTOK_DMASK) <= depth) { return (STAT_OK); } // normal depth exit
         }
@@ -764,7 +788,7 @@ void json_print_response(uint8_t status)
     } else {                                            // or line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_line_buffers_available());
     }
-	nv_copy_string(nv, footer_string);					// link string to nv object
+	nv->str = footer_string;					// footer stays live through serialization; shared storage may be full
 	nv->depth = 0;                                      // footer is a peer to r{} response
 	nv->valuetype = TYPE_ARRAY;
 	strcpy(nv->token, "f");                             // terminate the list
@@ -773,6 +797,8 @@ void json_print_response(uint8_t status)
 	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
     	printf(cs.out_buf);
 	}
+    nv->str = NULL;                                 // do not retain the stack-backed footer
+    nv->valuetype = TYPE_EMPTY;
 }
 
 /*
