@@ -691,6 +691,14 @@ void cm_clear()
 {
     if (cm.machine_state == MACHINE_ALARM) {
         cm.machine_state = MACHINE_PROGRAM_STOP;
+        // An alarm latches a hold (E044). Once nothing is left to run (e.g. after a '%' flush)
+        // no '~' will come, so clearing also ends the hold and the cycle; otherwise the cycle stays
+        // MACHINING and persisted settings are refused as 'moving' until a reset (E144).
+        if ((cm.hold_state == FEEDHOLD_HOLD) && !mp_has_runnable_buffer() && mp_runtime_is_idle()) {
+            cm.end_hold_requested = false;
+            mp_exit_hold_state();
+            cm_cycle_end();
+        }
     } else if (cm.machine_state == MACHINE_SHUTDOWN) {
         cm.machine_state = MACHINE_READY;
     }

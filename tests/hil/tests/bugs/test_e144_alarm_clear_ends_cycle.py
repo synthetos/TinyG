@@ -15,7 +15,7 @@ MOVE = "5 mm X move (3 s) stopped by an alarm, then back"
 
 @pytest.mark.motion
 @pytest.mark.persists
-@pytest.mark.bug("E144", on=["d449"])
+@pytest.mark.bug("E144", on=[])
 def test_clear_after_alarm_and_flush_ends_the_cycle(tg, keep):
     keep("zsn")
     alarm = tg.dialect.stat("ALARM")
