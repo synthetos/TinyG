@@ -223,21 +223,23 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));  // copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);     // set initial arc position from gcode model
 
-    // setup offsets
-    arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
-    arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
-    arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
+    if (!radius_f) {                 // radius arcs derive offsets in _compute_arc()
+        // setup offsets
+        arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
+        arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
+        arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
 
-    if (arc.gm.arc_distance_mode == ABSOLUTE_MODE) {    // adjust offsets if in absolute mode
-         arc.offset[OFS_I] -= arc.position[AXIS_X];
-         arc.offset[OFS_J] -= arc.position[AXIS_Y];
-         arc.offset[OFS_K] -= arc.position[AXIS_Z];
-    }
+        if (arc.gm.arc_distance_mode == ABSOLUTE_MODE) {    // adjust offsets if in absolute mode
+             arc.offset[OFS_I] -= arc.position[AXIS_X];
+             arc.offset[OFS_J] -= arc.position[AXIS_Y];
+             arc.offset[OFS_K] -= arc.position[AXIS_Z];
+        }
 
-    if ((fp_ZERO(arc.offset[OFS_I])) &&             // it's an error if no offsets are provided
-        (fp_ZERO(arc.offset[OFS_J])) &&
-        (fp_ZERO(arc.offset[OFS_K]))) {
-        return (cm_alarm_P(STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE, PSTR("arc offsets missing or zero")));
+        if ((fp_ZERO(arc.offset[OFS_I])) &&             // it's an error if no offsets are provided
+            (fp_ZERO(arc.offset[OFS_J])) &&
+            (fp_ZERO(arc.offset[OFS_K]))) {
+            return (cm_alarm_P(STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE, PSTR("arc offsets missing or zero")));
+        }
     }
 
 	// compute arc runtime values

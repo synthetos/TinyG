@@ -20,7 +20,6 @@ def _return_to(tg, start):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E008", on=["d449"])
 def test_radius_arcs_run(tg):
     start = _mpo(tg)
     try:
