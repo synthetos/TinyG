@@ -26,7 +26,7 @@ def _enter_char_mode(tg):
 
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E080", on=["d449"])
+@pytest.mark.bug("E080", on=[])
 def test_overlong_line_is_rejected(tg, keep):
     keep("rxm")
     line = '{"fb":null}' + " " * 250 + '{"fv":null}'      # 272 chars; chars 256+ are ' {"fv":null}'
@@ -34,7 +34,9 @@ def test_overlong_line_is_rejected(tg, keep):
         _enter_char_mode(tg)
         resp = tg.send_line(line)
         assert "fv" not in resp.body, resp.raw
-        assert resp.status != 0
+        assert resp.status == tg.dialect.status("INPUT_EXCEEDS_MAX_LENGTH")
+        assert tg.send_line('{"fv":null}', check=True).body.get("fv") == pytest.approx(0.97)
+        assert tg.stat() != tg.dialect.stat("ALARM")
     finally:
         tg.reset()      # keep() then restores rxm
 
