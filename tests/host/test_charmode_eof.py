@@ -13,9 +13,9 @@ PRELUDE = r'''
 #include <string.h>
 typedef uint8_t devflags_t;
 typedef int stat_t;
-enum {DEV_IS_NONE=0,DEV_IS_CTRL=1,DEV_IS_DATA=2};
+enum {DEV_IS_NONE=0,DEV_IS_CTRL=1,DEV_IS_DATA=2,DEV_IS_OVERFLOW=8};
 enum {BUFFER_FREE,BUFFER_FULL};
-enum {STAT_OK,STAT_EOF,XIO_EAGAIN};
+enum {STAT_OK,STAT_EOF,XIO_EAGAIN,XIO_BUFFER_FULL};
 #define NUL 0
 #define TEXT_MODE 1
 #define RX_BUFFER_POOL_SIZE 1000

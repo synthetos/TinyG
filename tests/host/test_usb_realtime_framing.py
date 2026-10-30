@@ -45,6 +45,9 @@ void cm_request_feedhold(void) {holds++;}
 void cm_request_end_hold(void) {resumes++;}
 void cm_request_queue_flush(void) {flushes++;}
 void hw_request_hard_reset(void) {resets++;}
+void hw_hard_reset(void) {resets++;}
+enum {FLOW_CONTROL_OFF,FLOW_CONTROL_XON,FLOW_CONTROL_RTS};
+struct {uint8_t enable_flow_control;} xio = {FLOW_CONTROL_XON};
 void controller_request_enquiry(void) {enquiries++;}
 int xio_get_rx_bufcount_usart(void *unused) {(void)unused; return USBu.rx_buf_count;}
 void xio_xoff_usart(void *unused) {(void)unused;}

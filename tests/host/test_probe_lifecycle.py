@@ -53,6 +53,7 @@ float cm_get_work_position(const GCodeState_t *g, const uint8_t a) { return cm.g
 float cm_get_axis_jerk(const uint8_t a) { return cm.a[a].jerk_max; }
 void cm_set_axis_jerk(const uint8_t a, const float j) { cm.a[a].jerk_max=j; }
 uint8_t cm_get_distance_mode(const GCodeState_t *g) { return g->distance_mode; }
+uint8_t cm_get_units_mode(const GCodeState_t *g) { (void)g; return MILLIMETERS; }
 stat_t cm_set_distance_mode(const uint8_t mode) { cm.gm.distance_mode=mode; return STAT_OK; }
 int8_t find_probe_switch(void) { return 0; }
 swState read_switch(const uint8_t s) { return SW_INACTIVE; }
@@ -97,11 +98,9 @@ static void begin(void) {
     assert(cm.probe_state==PROBE_WAITING && cm.cycle_state==CYCLE_OFF);
 }
 static void init_probe(void) {
-    assert(cm_probe_callback()==STAT_EAGAIN); // initialization queues spindle off
+    assert(cm_probe_callback()==STAT_EAGAIN); // initialization; E061: probing leaves the spindle alone
     assert(cm.cycle_state==CYCLE_PROBE && cm.gm.distance_mode==ABSOLUTE_MODE);
-    assert(queued && feeds==0);
-    assert(cm_probe_callback()==STAT_EAGAIN && feeds==0); // drain the command first
-    queued=false;
+    assert(!queued && feeds==0);                // nothing queued, so nothing to drain
 }
 int main(void) {
     setup(); begin();
