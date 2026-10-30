@@ -44,6 +44,7 @@ struct pbProbingSingleton {						// persistent probing runtime variables
 	stat_t (*func)();							// binding for callback function state machine
 
 	int8_t probe_switch;						// which switch should we check?
+	bool already_tripped;						// probe was active before the move: a stuck or shorted probe
 	uint8_t saved_distance_mode;				// save and restore G90,G91 setting
 	float saved_jerk[3];						// saved and restored for each axis
 
@@ -184,7 +185,10 @@ static uint8_t _probing_init()
 static stat_t _probing_start()
 {
 	// initial probe state, don't probe if we're already contacted!
-    if (read_switch(pb.probe_switch) == SW_INACTIVE) {              // reads and sets initial switch state
+	// An active probe before the move is a stuck or shorted probe (or a closed NC probe), not a
+	// contact: it fails the cycle and alarms rather than reporting the current position.
+	pb.already_tripped = (read_switch(pb.probe_switch) != SW_INACTIVE);  // reads and sets initial switch state
+    if (!pb.already_tripped) {
         ritorno(cm_straight_feed(pb.target, pb.flags));
     }
 	return (_set_pb_func(_probing_finish));
@@ -197,7 +201,7 @@ static stat_t _probing_start()
 static stat_t _probing_finish()
 {
 	int8_t probe = sw.s[pb.probe_switch].state;
-	cm.probe_state = (probe == SW_ACTIVE) ? PROBE_SUCCEEDED : PROBE_FAILED;
+	cm.probe_state = ((probe == SW_ACTIVE) && !pb.already_tripped) ? PROBE_SUCCEEDED : PROBE_FAILED;
 
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		// if we got here because of a feed hold we need to keep the model position correct
@@ -231,6 +235,9 @@ static stat_t _probing_finalize_exit()
 	cm_cycle_end();
 	cm.cycle_state = CYCLE_OFF;
 
+	if (pb.already_tripped) {					// after cm_cycle_end(), which would end the alarm state
+		cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe already tripped"));
+	}
 	return (STAT_OK);
 }
 
