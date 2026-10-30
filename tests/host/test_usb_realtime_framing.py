@@ -31,6 +31,7 @@ class RealtimeFraming(unittest.TestCase):
 #define FC_IN_XOFF 0
 #define FC_IN_XON 1
 #define CTRLA_RXON_TXOFF 32
+#define CTRLA_RXON_TXON 36
 #define RX_BUFFER_SIZE 512
 #define XOFF_RX_HI_WATER_MARK 400
 #define advance_buffer(i,size) ((i)=((i)+1)%(size))
@@ -75,6 +76,7 @@ int main(void) {
     send_byte(CHAR_RESET); send_byte(CHAR_ENQUIRY); send_byte(XOFF);
     assert(resets==1 && enquiries==1 && USBu.fc_state_tx==FC_IN_XOFF);
     send_byte(XON); assert(USBu.fc_state_tx==FC_IN_XON);
+    assert(USBu.usart->CTRLA==CTRLA_RXON_TXON);
     expect_data("partial line");
     send("!~%"); assert(holds==1 && !resumes && !flushes);
     expect_data("partial line~%");
