@@ -46,6 +46,9 @@ TYPE_FLOAT,TYPE_SIGNED,TYPE_DATA,TYPE_TXTCON,TYPE_ARRAY,TYPE_PARENT};
 #define JTOK_DMASK 7
 #define JTOK_PARENT 4
 #define JTOK_TMASK 3
+#define JTOK_DEPTH 0x70
+#define JTOK_KEY 0x08
+struct {bool motion_sync_allowed,tid_present;} js;
 typedef struct nv {int index,valuetype,depth;char token[6],group[4];char *str;
  union {uint32_t value_int;float value_flt;};struct nv *pv,*nx;} nvObj_t;
 nvObj_t list[8];int executed;
@@ -76,6 +79,7 @@ void val(char *s,int depth,int type){while(*s)*wr++=*s++;*wr++=JTOK_FLAG|(depth<
         code+=function(util,r'stat_t str2float\(')+function(util,r'stat_t str2long\(')
         code+=function(source,r'static char \*_next_token\(')
         code+=function(source,r'static stat_t _marshall_nv_pair\([^;{}]*\)(?=\s*\{)')
+        code+=function(source,r'static bool _motion_sync_envelope\([^;{}]*\)(?=\s*\{)')
         code+=function(source,r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
         code+=r'''
 int parse(void){nvObj_t *p=list;return _json_parser_kernal(&p,input);}
