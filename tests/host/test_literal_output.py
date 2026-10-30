@@ -22,6 +22,7 @@ class LiteralOutput(unittest.TestCase):
 #include <stdint.h>
 #define PSTR(x) (x)
 #define sprintf_P sprintf
+#define snprintf_P snprintf
 #define printf_P printf
 #define STAT_OK 0
 #define STAT_NOOP 3
@@ -51,6 +52,7 @@ int json_serialize(nvObj_t *nv,char *s,size_t n) {
     (void)nv; snprintf(s,n,"{\"msg\":\"50%% %%s %%n %%%%\"}\n");return strlen(s);
 }
 '''
+        code += function(report, r'static char \*_append_exception_text\(char \*dst, char \*end, const char \*src\)')
         code += function(report, r'stat_t rpt_exception\(stat_t status, const char \*msg\)')
         code += function(text, r'void text_finalize_message\(char \*msg\)')
         code += function(text, r'void text_response\(const stat_t status, char \*buf\)')
