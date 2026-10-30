@@ -28,7 +28,6 @@ def power_x_motors_in_cycle(tg, keep):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E051", on=["d449"])
 def test_motor_setting_during_motion_does_not_hang(tg, keep):
     power_x_motors_in_cycle(tg, keep)
     keep("1tr")
@@ -38,7 +37,8 @@ def test_motor_setting_during_motion_does_not_hang(tg, keep):
     try:
         tg.send_gcode("G91 G1 X5 F100", check=True, allow="5 mm move (3 s)")
         time.sleep(1.0)
-        tg.send_json({"1tr": tr})                 # same value: only the stepper_reset() side effect
+        response = tg.send_json({"1tr": tr})       # geometry cannot change during queued motion
+        assert response.status == tg.dialect.status("COMMAND_NOT_ACCEPTED")
         tg.wait_idle(timeout=15)                  # buggy: the runtime never goes idle
         hung = False
         x1 = tg.get("mpox")
@@ -64,3 +64,19 @@ def test_motor_setting_when_idle(tg, keep):
     finally:
         tg.send_gcode(f"G90 G53 G1 X{x0:.3f} F600", check=True, allow="return to start")
         tg.wait_idle(timeout=10)
+
+
+@pytest.mark.ice
+@pytest.mark.resets_board
+@pytest.mark.parametrize("command", ["G91 G1 X1 F120", "G4 P5"])
+def test_shutdown_stops_stepper_tick_counter(tg, ice, command):
+    try:
+        tg.send_gcode(command, check=True, allow="at most 1 mm motion before shutdown")
+        time.sleep(0.2)
+        tg.send_json({"shutd": None}, check=True)
+        assert tg.stat() == tg.dialect.stat("SHUTDOWN")
+        for _ in range(3):
+            time.sleep(0.05)
+            assert ice.peek("st_run.dda_ticks_downcount") == 0
+    finally:
+        tg.reset()
