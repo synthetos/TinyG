@@ -148,22 +148,24 @@ class TinyG:
     def wait_idle(self, timeout: float = 30.0, poll: float = 0.1) -> int:
         """Poll until the machine is idle and the planner queue is empty."""
         end = time.monotonic() + timeout
-        stuck_since, last_qr = None, None
+        stuck_since, last = None, None
         while True:
             stat = self.stat()
             qr = self.get("qr")
             if stat in self.dialect.idle_stats:
                 if qr == self.planner_buffers:
                     return stat
-                # Idle with commands left in the queue that nothing will start (E069/E033):
-                # accept once the queue has not moved for 0.5 s; tests that care check qr.
-                if qr != last_qr or stuck_since is None:
+                # "Idle" with commands left in the queue (E069/E033): either nothing will start them,
+                # or stat is wrong while a move runs (E033 reports program-end during motion, and qr
+                # does not change until a move finishes). Accept once queue and position are still for 0.5 s.
+                now = (qr, self.get("pos"))
+                if now != last or stuck_since is None:
                     stuck_since = time.monotonic()
                 elif time.monotonic() - stuck_since >= 0.5:
                     return stat
+                last = now
             else:
-                stuck_since = None
-            last_qr = qr
+                stuck_since, last = None, None
             if time.monotonic() > end:
                 raise NoResponse(f"not idle after {timeout}s (stat {stat}, qr {qr})")
             time.sleep(poll)
