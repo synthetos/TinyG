@@ -3,10 +3,6 @@
 gc_gcode_parser() returns early when the normalized block is empty (gcode_parser.c:61-63),
 before the message is queued at :65-68, so the msg never reaches the response.
 """
-import pytest
-
-
-@pytest.mark.bug("E141", on=["d449"])
 def test_msg_alone_on_line(tg):
     assert tg.send_gcode("(MSG hello)", check=True).body.get("msg", "").strip() == "hello"
 
