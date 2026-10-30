@@ -1567,8 +1567,7 @@ void cm_request_queue_flush()
 {
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
-        xio_flush_read();                           // flush the input buffers - you can do that now
-        cm.queue_flush_state = FLUSH_REQUESTED;     // request planner flush once motion has stopped
+        cm.queue_flush_state = FLUSH_REQUESTED;     // input and planner are flushed from the main loop
     }
 }
 
@@ -1576,13 +1575,36 @@ void cm_request_queue_flush()
  * cm_feedhold_sequencing_callback() - sequence feedhold, queue_flush, and end_hold requests
  */
 
+/*
+ * _run_requested_queue_flush() - complete a host-requested flush ('%' or alarm) from the main loop
+ *
+ *  Waits until motion has stopped and no hold is still decelerating, then drops all buffered input
+ *  (lines received before the '%') and flushes the planner. A hold that was requested but never
+ *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
+ *  cm_queue_flush() (homing, panic) keep the host input.
+ */
+static void _run_requested_queue_flush()
+{
+    if (!mp_runtime_is_idle() ||
+        ((cm.hold_state != FEEDHOLD_OFF) && (cm.hold_state != FEEDHOLD_REQUESTED) &&
+         (cm.hold_state != FEEDHOLD_HOLD))) {
+        return;
+    }
+    xio_flush_input();
+    cm_queue_flush();
+    if (cm.hold_state == FEEDHOLD_REQUESTED) {
+        cm.hold_state = FEEDHOLD_OFF;
+        cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
+    }
+}
+
 stat_t cm_feedhold_sequencing_callback()
 {
 	if (cm.hold_state == FEEDHOLD_REQUESTED) {
 		cm_start_hold();                            // feed won't run unless the machine is moving
 	}
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
-        cm_queue_flush();                           // queue flush won't run until runtime is idle
+        _run_requested_queue_flush();               // runs once motion has stopped
 	}
 	if (cm.end_hold_requested) {
         if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
