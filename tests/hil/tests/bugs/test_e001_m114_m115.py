@@ -34,7 +34,6 @@ def _text_mode(tg, line: str, timeout: float = 2.0) -> list[str]:
             return lines
 
 
-@pytest.mark.bug("E001", on=["d449"])
 def test_m114_json(tg):
     tg.send_gcode("G92 X12.5 Y-3", check=True)
     try:
@@ -48,7 +47,6 @@ def test_m114_json(tg):
         tg.send_gcode("G92.1", check=True)
 
 
-@pytest.mark.bug("E001", on=["d449"])
 def test_m114_text_mode(tg):
     _text_mode(tg, "$fb")       # any $ line switches the board to text mode
     try:
@@ -59,7 +57,6 @@ def test_m114_text_mode(tg):
     assert any(M114_LINE.match(line) for line in lines), lines
 
 
-@pytest.mark.bug("E001", on=["d449"])
 def test_m115_json(tg):
     resp = tg.send_gcode("M115")
     assert resp.status == 0
@@ -69,3 +66,27 @@ def test_m115_json(tg):
         text = "\n".join(resp.text())
         assert "FIRMWARE_NAME:TinyG" in text
         assert f"FIRMWARE_BUILD:{tg.identity['fb']:.2f}" in text
+
+
+def test_m114_inches(tg):
+    """Linear reports convert to inches without moving the board."""
+    tg.send_gcode("G21 G92 X25.4 Y-50.8", check=True)
+    try:
+        tg.send_gcode("G20", check=True)
+        response = tg.send_gcode("M114", check=True)
+        pos = _m114_position(response)
+        assert pos["X"] == pytest.approx(1.0, abs=1e-4)
+        assert pos["Y"] == pytest.approx(-2.0, abs=1e-4)
+    finally:
+        tg.send_gcode("G21 G92.1", check=True)
+
+
+def test_m115_text_mode(tg):
+    _text_mode(tg, "$fb")
+    try:
+        lines = _text_mode(tg, "M115")
+    finally:
+        tg.get("fb")
+    assert "ok>" in lines[-1], lines
+    assert any("FIRMWARE_NAME:TinyG" in line and
+               f"FIRMWARE_BUILD:{tg.identity['fb']:.2f}" in line for line in lines), lines

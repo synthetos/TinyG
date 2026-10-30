@@ -158,7 +158,9 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS,	// G92.2
 	NEXT_ACTION_RESUME_ORIGIN_OFFSETS,	// G92.3
 	NEXT_ACTION_DWELL,					// G4
-	NEXT_ACTION_STRAIGHT_PROBE			// G38.2
+	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
+	NEXT_ACTION_GET_POSITION,			// M114
+	NEXT_ACTION_GET_FIRMWARE			// M115
 } cmNextAction;
 
 typedef enum {						    // G Modal Group 1
@@ -720,6 +722,9 @@ stat_t cm_set_g28_position(void);								            // G28.1
 stat_t cm_goto_g28_position(const float target[], const bool flags[]);      // G28
 stat_t cm_set_g30_position(void);								            // G30.1
 stat_t cm_goto_g30_position(const float target[], const bool flags[]);      // G30
+
+stat_t cm_get_position(void);                                            // M114
+stat_t cm_get_firmware(void);                                            // M115
 
 // Machining Attributes (4.3.5)
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
