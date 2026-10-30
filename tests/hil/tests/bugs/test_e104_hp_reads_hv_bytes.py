@@ -7,7 +7,6 @@ import pytest
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E104", on=["d449"])
 def test_hp_after_hv7(tg, keep):
     if tg.get("hv") < 7:
         pytest.skip("hv=7 only binds ports like hv=8 on v7/v8 hardware (hardware.c:61)")

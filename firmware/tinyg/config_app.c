@@ -101,7 +101,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// group token flags   p, print_func, get_func, set_func, target for get/set,   	  default value
 	{ "sys", "fb", _fipn, 2, hw_print_fb, get_flt,  set_nul,  (uint32_t *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
 	{ "sys", "fv", _fipn, 3, hw_print_fv, get_flt,  set_nul,  (uint32_t *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
-	{ "sys", "hp", _iipn, 0, hw_print_hp, get_u32,  set_ui8,  (uint32_t *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
+	{ "sys", "hp", _iipn, 0, hw_print_hp, get_ui8,  set_ui8,  (uint32_t *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn, 0, hw_print_hv, get_flt,  hw_set_hv,(uint32_t *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _sn0,  0, hw_print_id, hw_get_id,set_nul,  (uint32_t *)&cs.null, 0 },        // device ID (ASCII signature)
 
