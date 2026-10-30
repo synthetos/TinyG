@@ -482,6 +482,7 @@ static float _calc_ABC(const uint8_t axis, const float target[])
 
 void cm_set_model_target(const float target[], const bool flags[])
 {
+    copy_vector(cm.gm.target, cm.gmx.position); // start from the last accepted endpoint
 	uint8_t axis;
 	float tmp = 0;
 
