@@ -134,6 +134,16 @@ def ice(request, tg):
 
 
 @pytest.fixture
+def switches(tg, ice):
+    """Software switches on the unwired inputs (needs --ice); everything released after the test."""
+    from tinyg_hil.switches import SoftSwitches
+    soft = SoftSwitches(ice, normally_closed=(tg.get("st") == 1))
+    soft.release_all()
+    yield soft
+    soft.release_all()
+
+
+@pytest.fixture
 def dialect(tg):
     return tg.dialect
 

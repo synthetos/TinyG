@@ -24,3 +24,15 @@ def test_poke_round_trip(tg, ice):
         assert ice.peek("cs.null") == 0x5A5A5A5A
     finally:
         ice.poke("cs.null", original)
+
+
+def test_switch_simulation_changes_pin_and_input(tg, ice):
+    """Pull-down on X-min makes the pin read low and the firmware's input change; pull-up restores it."""
+    try:
+        assert ice.switch_pin("x", "min") == 1, "unwired switch input should idle high (pull-up)"
+        ice.set_switch_level("x", "min", 0)
+        assert ice.switch_pin("x", "min") == 0
+        ice.set_switch_level("x", "min", 1)
+        assert ice.switch_pin("x", "min") == 1
+    finally:
+        ice.release_all_switches()

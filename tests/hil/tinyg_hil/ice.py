@@ -42,6 +42,14 @@ PORT_BASE = {"A": 0x0600, "B": 0x0620, "C": 0x0640, "D": 0x0660, "E": 0x0680, "F
 TINYG_OUTPUTS = {"spindle_enable": ("A", 5), "spindle_dir": ("F", 5), "out3": ("D", 5), "coolant": ("E", 5)}
 
 
+# TinyG switch inputs (hardware.h PORT_SWITCH_*, switch.c): min on bit 6, max on bit 7 of each axis port.
+# The firmware sets PINnCTRL = PULLUP | ISC_BOTHEDGES. With nothing wired, switching the internal
+# pull-up to a pull-down makes a real edge on the pin, so the real pin-change ISR runs.
+SWITCH_PORTS = {"x": "A", "y": "D", "z": "E", "a": "F"}
+SWITCH_BITS = {"min": 6, "max": 7}
+OPC_MASK, OPC_PULLUP, OPC_PULLDOWN = 0x38, 0x18, 0x10
+
+
 class Symbols:
     """Addresses, sizes and (with DWARF) member offsets and base types from an ELF."""
 
@@ -247,6 +255,33 @@ class Ice:
     def outputs(self):
         with self.halted():
             return {name: self.output(name) for name in TINYG_OUTPUTS}
+
+    def _switch_ctrl(self, axis, end):
+        return PORT_BASE[SWITCH_PORTS[axis]] + 0x10 + SWITCH_BITS[end]       # PORTx.PINnCTRL
+
+    def switch_pin(self, axis, end):
+        """Electrical level (0/1) of a switch input: PORTx.IN bit."""
+        port = PORT_BASE[SWITCH_PORTS[axis]]
+        return (self.read(port + 8, 1)[0] >> SWITCH_BITS[end]) & 1
+
+    def set_switch_level(self, axis, end, level):
+        """Drive an unwired switch input high (pull-up, the firmware default) or low (pull-down)."""
+        addr = self._switch_ctrl(axis, end)
+        with self.halted():
+            ctrl = self.read(addr, 1)[0]
+            self.write(addr, bytes([(ctrl & ~OPC_MASK & 0xFF) | (OPC_PULLUP if level else OPC_PULLDOWN)]))
+
+    def set_switch(self, axis, end, closed, normally_closed=False):
+        """Simulate a switch: NO switches read low when closed, NC switches read high when open (tripped)."""
+        tripped_level = 1 if normally_closed else 0
+        self.set_switch_level(axis, end, tripped_level if closed else 1 - tripped_level)
+
+    def release_all_switches(self):
+        """Restore every switch input to the firmware's pull-up configuration."""
+        with self.halted():
+            for axis in SWITCH_PORTS:
+                for end in SWITCH_BITS:
+                    self.set_switch_level(axis, end, 1)
 
     def pc(self):
         with self.halted():
