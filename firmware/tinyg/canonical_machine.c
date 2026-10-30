@@ -1954,20 +1954,38 @@ static void _exec_program_finalize(float *value, bool *flags)
 
 void cm_cycle_start()
 {
-    if (cm.program_paused) { return; }
-	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
-		cm.cycle_state = CYCLE_MACHINING;			// keep qi/qo: buffers queued before the cycle started count (E091)
-	}
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // The runtime stop callback must not interrupt this state transition.
+    if (!cm.program_paused) {
+        cm.machine_state = MACHINE_CYCLE;
+        if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
+            cm.cycle_state = CYCLE_MACHINING;		// keep qi/qo: buffers queued before the cycle started count (E091)
+        }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 void cm_cycle_end()
 {
-    if (cm.program_paused) { return; }
-	if (cm.cycle_state != CYCLE_OFF) {
-		float value[] = { (float)MACHINE_PROGRAM_STOP };
-		_exec_program_finalize(value, FLAGS_ONE);
-	}
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // The runtime stop callback must not interrupt this state transition.
+    if (!cm.program_paused) {
+        if (cm.cycle_state != CYCLE_OFF) {
+            float value[] = { (float)MACHINE_PROGRAM_STOP };
+            _exec_program_finalize(value, FLAGS_ONE);
+        }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 static void _exec_program_stop(float *value, bool *flags)

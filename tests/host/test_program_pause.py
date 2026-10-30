@@ -32,6 +32,9 @@ class ProgramPause(unittest.TestCase):
 #include <stdint.h>
 #include <assert.h>
 #include <stddef.h>
+#define __AVR 1
+uint8_t SREG=128;
+#define cli() (SREG=0)
 #define AXES 6
 #define AXIS_X 0
 #define STAT_OK 0
@@ -68,7 +71,7 @@ void st_request_exec_move(void) {wakeups++;}
 void cm_set_motion_state(int state) {cm.motion_state=state;}
 stat_t cm_panic_P(int status,const char *msg) {(void)msg;return status;}
 void sr_request_status_report(int state) {(void)state;}
-void qr_init_queue_report(void) {}
+void qr_init_queue_report(void) {assert(SREG==0);}
 void qr_request_queue_report(int n) {(void)n;}
 void mp_flush_planner(void) {queued=false;}
 float mp_get_runtime_absolute_position(int axis) {(void)axis;return 0;}
@@ -80,7 +83,7 @@ void mp_queue_command(void (*fn)(float *,bool *),float *value,bool *flags) {
     for(int i=0;i<AXES;i++) queued_value[i]=value[i];
 }
 static void _exec_program_finalize(float *value,bool *flags) {
-    (void)flags; finalized++; cm.machine_state=(int)value[0];
+    assert(SREG==0); (void)flags; finalized++; cm.machine_state=(int)value[0];
     cm.cycle_state=CYCLE_OFF; cm.motion_state=MOTION_STOP;
     cm.hold_state=FEEDHOLD_OFF; cm.end_hold_requested=false;
 }
@@ -95,6 +98,11 @@ static stat_t run(mpBuf_t *bf) {(void)bf;ran++;return STAT_OK;}
         for name in ('mp_exec_move', 'mp_exit_hold_state'):
             code += '\n' + function(executor, name)
         code += r'''
+void run_stop_callback(void) {
+    uint8_t previous=SREG; SREG=0;
+    stop_callback(queued_value,FLAGS_ONE);
+    SREG=previous;
+}
 int main(void) {
     block.bf_func=run; queued=true;
     for(int type=1;type<=3;type++) {
@@ -103,12 +111,13 @@ int main(void) {
         cm_program_stop();
         assert(!cm.program_paused); // reception is not the runtime boundary
         for(int i=1;i<AXES;i++) assert(queued_value[i]==0);
-        stop_callback(queued_value,FLAGS_ONE);
+        run_stop_callback();
         assert(cm.program_paused && cm.hold_state==FEEDHOLD_HOLD && cm.motion_state==MOTION_HOLD);
         int previous_fetched=fetched, previous_ran=ran, previous_finalized=finalized;
         for(int i=0;i<20;i++) {
             cm_cycle_start(); // planning a later line cannot resume execution
             cm_cycle_end();   // a no-op/zero-length line cannot clear the pause
+            assert(SREG==128);
             assert(mp_exec_move()==STAT_NOOP);
         }
         assert(fetched==previous_fetched && ran==previous_ran && finalized==previous_finalized);
@@ -119,7 +128,7 @@ int main(void) {
         assert(mp_exec_move()==STAT_OK && ran==previous_ran+1);
     }
     // Empty-queue resume does not leave a pause on the next job.
-    cm_optional_program_stop(); stop_callback(queued_value,FLAGS_ONE); queued=false;
+    cm_optional_program_stop(); run_stop_callback(); queued=false;
     cm_request_end_hold(); cm_end_hold();
     assert(!cm.program_paused && cm.motion_state==MOTION_STOP);
     queued=true; assert(mp_exec_move()==STAT_OK);
@@ -128,7 +137,7 @@ int main(void) {
     assert(!cm.program_paused && cm.hold_state==FEEDHOLD_OFF);
     assert(mp_exec_move()==STAT_OK);
     // A flush releases the explicit pause after clearing queued work.
-    cm_program_stop(); stop_callback(queued_value,FLAGS_ONE);
+    cm_program_stop(); run_stop_callback();
     cm.queue_flush_state=1; cm_queue_flush();
     assert(!cm.program_paused && !queued && cm.hold_state==FEEDHOLD_OFF && cm.queue_flush_state==0);
 }
