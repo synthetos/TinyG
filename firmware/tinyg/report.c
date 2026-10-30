@@ -114,16 +114,44 @@ stat_t rpt_exception_P(stat_t status, const char *msg_P)
     return(rpt_exception(status, msg_buf));
 }
 
+static char *_append_exception_text(char *dst, char *end, const char *src)
+{
+    if (src == NULL) { return (dst); }
+    while (*src != NUL) {
+        uint8_t c = (uint8_t)*src++;
+        uint8_t size = ((c < 0x20) || (c >= 0x7f)) ? 6 : ((c == '"') || (c == '\\')) ? 2 : 1;
+        if (end - dst < size) { break; }
+        if (size == 6) {
+            *dst++ = '\\'; *dst++ = 'u'; *dst++ = '0'; *dst++ = '0';
+            uint8_t hi = c >> 4;
+            uint8_t lo = c & 0x0f;
+            *dst++ = (hi < 10) ? '0' + hi : 'a' + hi - 10;
+            *dst++ = (lo < 10) ? '0' + lo : 'a' + lo - 10;
+        } else {
+            if (size == 2) { *dst++ = '\\'; }
+            *dst++ = c;
+        }
+    }
+    return (dst);
+}
+
 stat_t rpt_exception(stat_t status, const char *msg)
 {
-    if (status != STAT_OK) { // makes it possible to call exception reports w/o checking status value
+    if (status != STAT_OK) {
         char line_msg[LINE_MSG_LEN];
-        sprintf_P(line_msg, PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\"%s - %s\"}}\n"),
-            TINYG_FIRMWARE_BUILD, status, get_status_message(status), msg);
-        printf(json_relax(line_msg));
+        int len = snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"er\":{\"fb\":%0.2f,\"st\":%d,\"msg\":\""),
+            TINYG_FIRMWARE_BUILD, status);
+        if ((len < 0) || ((size_t)len > sizeof(line_msg) - 5)) { return (status); }
+        char *end = line_msg + sizeof(line_msg) - 5; // reserve closing JSON, newline and NUL
+        char *wr = _append_exception_text(line_msg + len, end, get_status_message(status));
+        if (end - wr >= 3) { *wr++ = ' '; *wr++ = '-'; *wr++ = ' '; }
+        wr = _append_exception_text(wr, end, msg);
+        *wr++ = '"'; *wr++ = '}'; *wr++ = '}'; *wr++ = '\n'; *wr = NUL;
+        printf_P(PSTR("%s"), json_relax(line_msg));
     }
-    return (status);			// makes it possible to inline, e.g: return(rpt_exception(status, msg));
+    return (status);
 }
+
 
 stat_t rpt_er(nvObj_t *nv)      // bogus exception report for testing
 {
