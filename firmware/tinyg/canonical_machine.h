@@ -160,7 +160,8 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_DWELL,					// G4
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
-	NEXT_ACTION_GET_FIRMWARE			// M115
+	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_SET_JERK				// M201.3
 } cmNextAction;
 
 typedef enum {						    // G Modal Group 1
@@ -727,6 +728,7 @@ stat_t cm_get_position(void);                                            // M114
 stat_t cm_get_firmware(void);                                            // M115
 
 // Machining Attributes (4.3.5)
+stat_t cm_set_jerk(const float target[], const bool flags[]);              // M201.3
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
 stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
