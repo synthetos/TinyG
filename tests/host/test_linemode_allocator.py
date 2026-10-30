@@ -71,15 +71,15 @@ static void verify_payloads(void) {
 }
 static bool append(unsigned length) {
     assert(length+1<RX_BUFFER_MIN_SIZE);
-    char *p=_get_free_buffer(RX_BUFFER_MIN_SIZE);
+    char *p=_get_free_buffer(bm.requested_size);
     if(!p) {verify_payloads();return false;}
     buf_hdr_t *allocated=bm.used_top;
-    assert(p>=pool&&p+RX_BUFFER_MIN_SIZE<=pool+sizeof(pool));
-    assert(allocated->size>=RX_BUFFER_MIN_SIZE);
+    assert(p>=pool&&p+bm.requested_size<=pool+sizeof(pool));
+    assert(allocated->size>=bm.requested_size);
     for(unsigned i=0;i<RX_HEADERS;i++) {
         buf_hdr_t *h=&bm.buf[i];
         if(h==allocated||h->state==BUFFER_FREE)continue;
-        if(p<h->bufp+h->size&&h->bufp<p+RX_BUFFER_MIN_SIZE) {
+        if(p<h->bufp+h->size&&h->bufp<p+bm.requested_size) {
             fprintf(stderr,"E094: allocation at %td overlaps queued header %u at %td (line %u)\n",
                     p-pool,i,h->bufp-pool,next_id);
             exit(2);
@@ -98,7 +98,7 @@ static bool consume(void) {
 }
 int main(void) {
     /* Eleven 72-byte lines, then reclaim three: the next wrap exposes E094. */
-    init();for(int i=0;i<11;i++)assert(append(72));
+    init();bm.requested_size=200;for(int i=0;i<11;i++)assert(append(72));
     for(int i=0;i<3;i++)assert(consume());
     assert(append(72));
     assert(!append(72)); /* there is less than one full receive buffer before used_base */

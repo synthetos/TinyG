@@ -213,7 +213,7 @@ typedef void (*x_flow_t)(xioDev_t *d);
  */
 
 #define RX_HEADERS                12        // buffer headers in the list
-#define RX_BUFFER_MIN_SIZE       200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_MIN_SIZE       255        // minimum requested buffer size (they are usually larger)
 #define RX_BUFFER_POOL_SIZE     1000        // total size of RX buffer memory pool
 /*
 #define RX_HEADERS                26        // buffer headers in the list

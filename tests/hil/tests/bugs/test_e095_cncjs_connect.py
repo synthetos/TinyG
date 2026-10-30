@@ -1,10 +1,7 @@
-"""E095: the CNCjs connect sequence puts edge into ALARM and its status-report setup never takes effect.
+"""E095: CNCjs capability probes and its full cross-controller SR setup must connect.
 
-CNCjs's 246-char `{sr:{...}}` line overflows the 200-byte line-mode buffer (xio.h:215) and raises
-`cm_alarm(STAT_BUFFER_FULL)` (controller.c:216-218); in char mode it hits the 128-char JSON cap
-(json_parser.c:235-236). Even when it fits, the g2core-only keys spc/sps/com/cof/tof* make
-_marshall reject the whole list (json_parser.c:401-402), so mpox never appears in status reports.
-Master rejects the unknown keys too.
+The full 246-character selector deliberately includes unsupported g2core fields. Only
+boolean selections inside sr may ignore missing fields; unknown commands still fail.
 """
 import time
 
@@ -43,7 +40,7 @@ def _replay(tg, lines, timeout: float = 3.0):
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E095", on=["d440", "d449"])
+@pytest.mark.bug("E095", on=["d440"])
 def test_cncjs_connect_sequence(tg, keep):
     keep("ej", "jv", "qv", "sv", "si")
     original_sr = list(tg.get("sr"))
@@ -57,9 +54,19 @@ def test_cncjs_connect_sequence(tg, keep):
             snapshot.set_status_report(tg, original_sr)
     exceptions = [e.raw for _, _, events in results for e in events if e.kind == "exception"]
     assert not exceptions
+    for line, response, _ in results[5:11]:
+        key = line[1:line.index(":")]
+        assert response is not None and response.data["r"].get(key, "missing") is None, (line, response)
+        assert response.data["f"][1] == 100  # unsupported capability, not successful execution
     _, sr_resp, _ = results[CONNECT.index(SR_LINE)]
     assert sr_resp is not None and sr_resp.data["f"][1] == 0, sr_resp and sr_resp.raw
     _, final, _ = results[-1]
     sr = final.data["r"]["sr"]
     assert sr["stat"] != tg.dialect.stat("ALARM")
     assert "mpox" in sr
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.parametrize("line", ['{zzzzq:1}', '{sys:{zzzzq:t}}', '{sr:{zzzzq:42}}', '{sr:{zzzzq:{stat:t}}}'])
+def test_unknown_commands_still_fail(tg, line):
+    assert tg.send_line(line).status == 100
