@@ -393,8 +393,9 @@ static stat_t _parse_gcode_block(char *buf)
 				break;
 			}
 			switch((uint16_t)value) {
-				case 0: case 1: case 60:
+				case 0: case 60:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
+				case 1: SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_OPTIONAL_STOP);
 				case 2: case 30:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_END);
 				case 3: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CW);
@@ -584,6 +585,8 @@ static stat_t _execute_gcode_block()
 	if (cm.gf.program_flow == true) {
 		if (cm.gn.program_flow == PROGRAM_STOP) {
 			cm_program_stop();
+		} else if (cm.gn.program_flow == PROGRAM_OPTIONAL_STOP) {
+			cm_optional_program_stop();
 		} else {
 			cm_program_end();
 		}

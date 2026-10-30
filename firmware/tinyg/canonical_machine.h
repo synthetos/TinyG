@@ -259,7 +259,8 @@ typedef enum {
 
 typedef enum {
 	PROGRAM_STOP = 0,
-	PROGRAM_END
+	PROGRAM_END,
+	PROGRAM_OPTIONAL_STOP					// M1: stops only when the optional-stop switch ($os) is on (E020)
 } cmProgramFlow;
 
 typedef enum {				        // spindle state settings (See hardware.h for bit settings)
