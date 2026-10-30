@@ -2,7 +2,7 @@
 in ALARM instead of running to the end of the file.
 
 Per the audit row for each test: T4 test_004_arcs.h:28 `N160 g3x0y0z40i20` raises ALARM 159;
-T6 test_006_feedhold.h:16 `g0x100v76.765` raises ALARM 131 for the V word; T7 test_007_Mcodes.h:59
+T6 test_006_feedhold.h:16 `g0x100v76.765` raises ALARM 131 for the V word (a typo for Y); T7 test_007_Mcodes.h:59
 `g3x0y0i10` raises ALARM 159; T8 runs every {gc:...} line ahead of the planner (E034) and line 32
 raises ALARM 159. Programs only run in char mode on 449.01 (E123). Tests 9, 10 (hours), 13 and 14
 (rewrite EEPROM) and 2 (needs homing switches) are deliberately not run.
@@ -57,8 +57,10 @@ def _check_runs_clean(tg, n):
     events = _run_canned(tg, n, timeout=240)
     stat = _settle(tg)
     eof = tg.dialect.status("EOF")
+    # a rejected line answers with a nonzero footer status but need not alarm, so check those too
     errors = [e.raw for e in events + tg.drain(quiet=0.3)
-              if e.kind == "malformed" or (e.kind == "exception" and e.data["er"].get("st") != eof)]
+              if e.kind == "malformed" or (e.kind == "exception" and e.data["er"].get("st") != eof)
+              or (e.kind == "response" and e.data.get("f") and e.data["f"][1] != 0)]
     assert not errors, errors
     assert stat in tg.dialect.idle_stats
 
