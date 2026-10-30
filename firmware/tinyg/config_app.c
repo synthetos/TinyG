@@ -464,7 +464,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "", "panic",_n0,0, tx_print_nul, cm_pnic, cm_pnic,  (uint32_t *)&cs.null, 0 },    // trigger panic
     { "", "shutd",_n0,0, tx_print_nul, cm_shutd,cm_shutd, (uint32_t *)&cs.null, 0 },    // trigger shutdown
     { "", "clear",_b0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // GET "clear" to clear alarm state
-    { "", "clr",  _n0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // synonym for "clear"
+    { "", "clr",  _b0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // synonym for "clear"
 
     // status report keys
 	{ "", "set", _nn0,0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },	// used only to validate key. No actions

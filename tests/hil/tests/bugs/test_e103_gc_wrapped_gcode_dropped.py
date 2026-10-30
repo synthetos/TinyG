@@ -41,3 +41,10 @@ def test_gc_null_remains_a_noop(tg):
     units = tg.get("unit")
     assert tg.send_json({"gc": None}).status == tg.dialect.status("NOOP")
     assert tg.get("unit") == units
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.parametrize("command", ["clear", "clr"])
+@pytest.mark.parametrize("value", [None, True])
+def test_clear_alias_accepts_same_values(tg, command, value):
+    assert tg.send_json({command: value}).status == 0
