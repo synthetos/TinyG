@@ -152,7 +152,8 @@ int main(void) {
         self.assertEqual(new[end+6], ("sys", "fstk"))
         self.assertEqual(new[end+7], ("sys", "adc3"))
         self.assertEqual(new[end+8:end+11], [("", "net"), ("", "fd"), ("", "ma")])   # E099, not persisted
-        self.assertEqual(new[end+11:], old[end:])
+        self.assertEqual(new[end+11], ("sys", "os"))                                # E020, session only
+        self.assertEqual(new[end+12:], old[end:])
 
 
 if __name__ == "__main__":
