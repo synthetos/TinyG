@@ -42,7 +42,7 @@ def home_x(tg, keep, switch_type):
     tg.drain()
 
 
-@pytest.mark.bug("E132", on=["d449"])
+@pytest.mark.bug("E132", on=[])
 def test_open_nc_switch_does_not_home(tg, keep):
     home_x(tg, keep, switch_type=1)
     assert get(tg, "homx") == 0
