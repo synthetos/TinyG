@@ -401,10 +401,10 @@ static stat_t _parse_gcode_block(char *buf)
 				case 7: SET_MODAL (MODAL_GROUP_M8, mist_coolant, true);
 				case 8: SET_MODAL (MODAL_GROUP_M8, flood_coolant, true);
 				case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
-				case 48: SET_MODAL (MODAL_GROUP_M9, override_enables, true);
-				case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
-				case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true); // conditionally true
-				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
+				// No planner or spindle consumer applies these override settings yet.
+				case 48: case 49: case 50: case 51:
+					status = STAT_MCODE_COMMAND_UNSUPPORTED;
+					break;
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
 				default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
