@@ -15,6 +15,7 @@ class Event:
     t: float            # host monotonic time the line completed
     raw: str
     data: Any = None    # parsed JSON object (None for text)
+    damaged: str | None = None  # the line as received, when `raw` is a JSON object salvaged from its tail
 
     @property
     def body(self):
@@ -56,6 +57,7 @@ def _salvage(raw: str):
 
 
 def parse_line(raw: str, t: float) -> Event:
+    damaged = None
     if raw.startswith("{"):
         try:
             data = loads(raw)
@@ -63,21 +65,21 @@ def parse_line(raw: str, t: float) -> Event:
             found = _salvage(raw)
             if found is None:
                 return Event("malformed", t, raw)
-            raw, data = found
+            damaged, (raw, data) = raw, found
         if not isinstance(data, dict):
-            return Event("malformed", t, raw)
+            return Event("malformed", t, raw, damaged=damaged)
         if "r" in data or "f" in data:
             r = data.get("r")
             if isinstance(r, dict) and r.get("msg") == "SYSTEM READY":
-                return Event("banner", t, raw, data)
-            return Event("response", t, raw, data)
+                return Event("banner", t, raw, data, damaged)
+            return Event("response", t, raw, data, damaged)
         if "sr" in data:
             sr = data["sr"]
-            return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data)
+            return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data, damaged)
         for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack")):
             if key in data:
-                return Event(kind, t, raw, data)
-        return Event("malformed", t, raw, data)
+                return Event(kind, t, raw, data, damaged)
+        return Event("malformed", t, raw, data, damaged)
     if PROMPT.match(raw):
         return Event("prompt", t, raw)
     return Event("text", t, raw)
