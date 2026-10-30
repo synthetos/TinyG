@@ -7,7 +7,6 @@ waits for the key to be echoed in r and never moves on.
 import pytest
 
 
-@pytest.mark.bug("E099", on=["d449"])
 @pytest.mark.parametrize("token, value", [("net", 0), ("fd", 0), ("ma", 0.1)])
 def test_master_token_accepted(tg, token, value):
     resp = tg.send_json({token: value}, allow="master compatibility token")
@@ -15,13 +14,11 @@ def test_master_token_accepted(tg, token, value):
     assert token in resp.body
 
 
-@pytest.mark.bug("E099", on=["d449"])
 def test_net_text_mode(tg):
     lines = tg.send_text("$net=0")
     assert "ok>" in lines[-1], lines
 
 
-@pytest.mark.bug("E099", on=["d449"])
 @pytest.mark.parametrize("token", ["net", "fd", "ma"])
 def test_retired_token_get_is_zero(tg, token):
     resp = tg.send_json({token: None}, allow="retired compatibility token")

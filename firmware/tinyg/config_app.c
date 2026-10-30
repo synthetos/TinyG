@@ -72,6 +72,29 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t get_tick(nvObj_t *nv);		// get system tick count
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 
+// Retired master settings are accepted only for backup compatibility.
+static stat_t get_legacy_zero(nvObj_t *nv)
+{
+    nv->valuetype = cfg_is_type(nv->index);
+    nv->value_int = 0;
+    nv->precision = 4;
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_zero(nvObj_t *nv)
+{
+    if (nv->value_int != 0) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_arc_length(nvObj_t *nv)
+{
+    if (!isfinite(nv->value_flt) || nv->value_flt < 0) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (STAT_OK);
+}
+
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
@@ -620,6 +643,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se29",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
 
+    // Direct legacy lookups only: no initialization, persistence, or group export.
+    // Keep these after se29 so every existing EEPROM index stays unchanged.
+    { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "fd",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
+
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***
@@ -712,9 +741,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #define NV_COUNT_GROUPS 		(STANDARD_GROUPS + MOTOR_GROUP_5 + MOTOR_GROUP_6 + DIAGNOSTIC_GROUPS)
 
+#define NV_COUNT_LEGACY_ROWS 3       // trailing direct-only compatibility entries
+
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define NV_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
-#define NV_INDEX_END_SINGLES		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS - NV_STATUS_REPORT_LEN)
+#define NV_INDEX_END_SINGLES		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS - NV_STATUS_REPORT_LEN - NV_COUNT_LEGACY_ROWS)
 #define NV_INDEX_START_GROUPS		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS)
 #define NV_INDEX_START_UBER_GROUPS (NV_INDEX_MAX - NV_COUNT_UBER_GROUPS)
 /* </DO NOT MESS WITH THESE DEFINES> */
