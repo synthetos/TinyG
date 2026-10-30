@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E106", on=["d440", "d449"])
+@pytest.mark.bug("E106", on=["d440"])
 def test_st_out_of_range_rejected(tg):
     original = tg.get("st")
     try:

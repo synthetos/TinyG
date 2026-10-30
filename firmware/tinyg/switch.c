@@ -290,7 +290,7 @@ int8_t find_probe_switch()
 
 stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 {
-	set_01(nv);
+	ritorno(set_01(nv));
 	switch_init();
 	return (STAT_OK);
 }
