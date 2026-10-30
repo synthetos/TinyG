@@ -258,14 +258,10 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
 // Position string pointer past whitespace
 static char *_skip_whitespace(char *str)
 {
-    do {
-        if (((*str > NUL) && (*str <= SPC)) || (*str == DEL)) {
-            str++;
-        } else {
-            return (str);
-        }
-    } while (*str != NUL);      // safety valve
-    return (NUL);
+    while (((*str > NUL) && (*str <= SPC)) || (*str == DEL)) {
+        str++;
+    }
+    return (str);               // the first non-space, or the terminating NUL - never a NULL pointer (E082)
 }
 
 // Position string pointer past quote and any trailing whitespace
@@ -311,9 +307,11 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
         // STRING_VALUE state                       // must be first to avoid WS removal
         if (state == JTSM_STRING_VALUE) {
             if (*str == NUL) { break; }             // exit with error
-            if (*str == '\\') {                     // skip over escaped quotes (unescape them later)
-                if (*(str+1) == '"') { str++; }
-                continue;
+            if (*str == '\\') {                     // unescape \" and \\ here, so the end quote is found (E082)
+                if ((*(str+1) == '"') || (*(str+1) == '\\')) {
+                    *wr++ = *(++str);               // a quote written here is part of the value
+                }
+                continue;                           // any other escape drops its backslash
             }
             if (*str == '"') {                      // a lone quote is the end quote
                 state = JTSM_VALUE;                 // use the VALUE state logic to exit
@@ -403,7 +401,7 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
 //            else if (*str == NUL) { break; }                     // exit with error
 //        }
         *wr++ = tolower(*str);
-    } while (str++ != NUL); // This is a safety value. Ordinarily exits on its own
+    } while (*str++ != NUL);    // safety valve: stop at the terminator. Ordinarily exits on its own
     *wr++ = NUL;            // always terminate. Regardless.
     *wr = NUL;              // and your little dog, too. (used to terminate marshalling)
 	return (status);
