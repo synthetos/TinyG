@@ -68,6 +68,7 @@ typedef int stat_t;
                           ('controller_request_motion_sync', 'controller_defer_motion_response', '_sync_to_motion'))
         code += r'''
 int main(void) {
+    assert(sizeof(motion_sync)<=32);
     char response[OUTPUT_BUFFER_LEN]="{\"r\":{\"gc\":\"M400\",\"tid\":123},\"f\":[3,0,9]}\n";
     assert(_sync_to_motion()==STAT_NOOP);
     assert(controller_request_motion_sync()==0);

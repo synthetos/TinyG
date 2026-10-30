@@ -65,3 +65,29 @@ def test_m400_idle_acknowledges(tg):
     tg.wait_idle()
     response = tg.send_gcode("M400")
     assert response.status == 0, response.raw
+
+@pytest.mark.parametrize("tid", [0, 4294967295])
+def test_m400_canonical_completion(tg, tid):
+    tg.wait_idle()
+    tg.transport.write(('{"gc":"M400","tid":%d}\n' % tid).encode())
+    event = tg.wait_for(lambda e: e.kind == "response", 3.0)
+    assert event.data.get("r") == {"gc": "M400"}, event.raw
+    assert event.data.get("tid") == tid, event.raw
+    assert event.data["f"][1] == 0, event.raw
+
+
+@pytest.mark.parametrize("line", ["M400 G91", "G91 M400", "M400 X1", "M400 M400"])
+def test_m400_compound_is_rejected(tg, line):
+    response = tg.send_gcode(line)
+    assert response.status == 106, response.raw
+
+
+@pytest.mark.parametrize("line", [
+    '{"gc":"M400","fb":null}',
+    '{"fb":null,"gc":"M400"}',
+    '{"gc":"M400","gc":"G91"}',
+])
+def test_m400_mixed_envelope_is_rejected(tg, line):
+    tg.transport.write((line + "\n").encode())
+    event = tg.wait_for(lambda e: e.kind == "response", 3.0)
+    assert event.data["f"][1] == 106, event.raw
