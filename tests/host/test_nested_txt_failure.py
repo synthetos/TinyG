@@ -37,7 +37,7 @@ nvObj_t root,child,end;
 struct {char out_buf[256];} cs;
 char inner[32];
 int _tokenize_json_string(char *s,int size,int pairs){(void)size;(void)pairs;return !strcmp(s,"{fv:@}")?111:0;}
-int _marshall_nv_pair(nvObj_t **p,char **s,char *group,int depth,bool safe){
+int _marshall_nv_pair(nvObj_t **p,char **s,char *group,int depth,bool safe,...){
  (void)group;(void)depth;(void)safe;
  if(!strcmp(*s,"outer")){(*p)->valuetype=TYPE_TXTCON;(*p)->str=inner;strcpy((*p)->token,"txt");}
  else{(*p)->valuetype=TYPE_FLOAT;(*p)->value_flt=.97;strcpy((*p)->token,"fv");}
