@@ -1103,6 +1103,7 @@ void st_prep_dwell(float microseconds)
 	st_pre.block_type = BLOCK_TYPE_DWELL;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
+	if (st_pre.dda_ticks == 0) { st_pre.dda_ticks = 1; }
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
 

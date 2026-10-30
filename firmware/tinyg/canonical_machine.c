@@ -1219,7 +1219,7 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
  */
 stat_t cm_dwell(const float seconds)
 {
-//	cm.gm.parameter = seconds;
+	if (seconds < 0) { return (STAT_P_WORD_IS_NEGATIVE); }
 	mp_dwell(seconds);
 	return (STAT_OK);
 }

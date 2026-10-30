@@ -29,7 +29,6 @@ def _recover(tg):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E004", on=["d449"])
 @pytest.mark.parametrize("dwell", ["G4 P0", "G4", "G4 P0.00001"])
 def test_sub_tick_dwell_does_not_stall_queue(tg, dwell):
     try:
@@ -40,7 +39,7 @@ def test_sub_tick_dwell_does_not_stall_queue(tg, dwell):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E004", on=["d440", "d449"])
+@pytest.mark.bug("E004", on=["d440"])
 def test_negative_dwell_rejected(tg):
     try:
         assert tg.send_gcode("G4 P-1").status == tg.dialect.status("P_WORD_IS_NEGATIVE")
