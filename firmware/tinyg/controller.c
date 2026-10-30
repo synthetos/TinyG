@@ -294,6 +294,12 @@ static void _dispatch_kernel()
 	strncpy(cs.saved_buf, cs.bufp, SAVED_BUFFER_LEN-1);		// save input buffer for reporting
 	js.tid_present = false;									// only json_parser() sets it, for this line (E049)
 
+	// A stray leading '?' (a status request sent just before the line) must not swallow the line:
+	// strip it before dispatching, so the rest is parsed and answered (E053)
+	if ((*cs.bufp == '?') && (cs.bufp[1] != NUL)) {
+		cs.bufp++;
+	}
+
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
 			text_response(STAT_OK, cs.saved_buf);
@@ -305,10 +311,6 @@ static void _dispatch_kernel()
 	else if (*cs.bufp == '%') { cm_request_queue_flush(); }
 	else if (*cs.bufp == ENQ) { controller_request_enquiry(); }
 
-    // this is a hack until we can figure out how a buffer might obtain a leading '?'
-    else if ((*cs.bufp == '?') && (strlen(cs.bufp) > 1)) {
-        cs.bufp++;
-    }
 
 	else if (*cs.bufp == '{') {							    // process as JSON mode
 		cs.comm_mode = JSON_MODE;							// switch to JSON mode

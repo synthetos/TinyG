@@ -638,6 +638,9 @@ static devflags_t _classify_line(const char *line, uint16_t size)
     const char *end = line + size;
     while ((line < end) && _json_space(*line)) { line++; }
     if ((line == end) || (*line == NUL)) { return (DEV_IS_CTRL); }
+    if ((*line == '?') && ((line+1) < end) && (line[1] != NUL)) {
+        line++;                 // the dispatcher drops one stray '?' and runs the rest: classify the rest,
+    }                           // so '?G1' waits for planner room like 'G1' (E053); a lone '?' stays CTRL
     if (*line == '{') {
         return (_json_wraps_gcode(line, end) ? DEV_IS_DATA : DEV_IS_CTRL);
     }
