@@ -117,7 +117,6 @@ cmSingleton_t cm;		// canonical machine controller singleton
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
-static void _exec_select_tool(float *value, bool *flags);
 static void _exec_mist_coolant_control(float *value, bool *flags);
 static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
@@ -1341,7 +1340,6 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
  **************************/
 /*
  * cm_select_tool()		- T parameter
- * _exec_select_tool()	- execution callback
  *
  * cm_change_tool()		- M6 (This might become a complete tool change cycle)
  * _exec_change_tool()	- execution callback
@@ -1351,14 +1349,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
  */
 stat_t cm_select_tool(const uint8_t tool_select)
 {
-	float value[] = { (float)tool_select };
-	mp_queue_command(_exec_select_tool, value, FLAGS_ONE);
+	// T only selects (RS274NGC 3.7.3): set the model now, so an M6 in the same block or behind
+	// queued moves changes to this tool. Queuing it let M6 snapshot the previous selection.
+	cm.gm.tool_select = tool_select;
 	return (STAT_OK);
-}
-
-static void _exec_select_tool(float *value, bool *flags)
-{
-	cm.gm.tool_select = (uint8_t)value[0];
 }
 
 stat_t cm_change_tool(const uint8_t tool_change)
