@@ -22,7 +22,6 @@ def _wait_hold(tg, timeout=3.0):
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E117", on=["d449"])
 def test_g80_keeps_feedhold(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X4 F120", check=True, allow=MOVE)

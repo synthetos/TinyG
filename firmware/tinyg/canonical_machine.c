@@ -1117,8 +1117,7 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
 
 stat_t cm_cancel_motion_mode()
 {
-	cm.gm.motion_mode = MOTION_MODE_CANCEL;
-    cm_cycle_end();
+	cm.gm.motion_mode = MOTION_MODE_CANCEL;    // modal only: queued moves keep their cycle
     return (STAT_OK);
 }
 
