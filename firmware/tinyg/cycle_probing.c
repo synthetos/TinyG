@@ -237,6 +237,8 @@ static stat_t _probing_finalize_exit()
 
 	if (pb.already_tripped) {					// after cm_cycle_end(), which would end the alarm state
 		cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe already tripped"));
+	} else if (cm.probe_state == PROBE_FAILED) {	// RS274NGC 3.5.9.1: an error if the probe does not trip;
+		cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe did not trip"));	// stop the job before it zeroes in the air
 	}
 	return (STAT_OK);
 }

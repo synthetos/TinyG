@@ -46,7 +46,7 @@ def use_zmin_probe(tg, keep):
     tg.set("zsn", 4)
 
 
-@pytest.mark.bug("E072", on=["d440", "d449"])
+@pytest.mark.bug("E072", on=["d440"])
 def test_missed_probe_raises_alarm(tg, keep):
     use_zmin_probe(tg, keep)
     tg.send_gcode("G92 X0 Y0 Z0", check=True)     # work zero here; M2 in the next test clears it
