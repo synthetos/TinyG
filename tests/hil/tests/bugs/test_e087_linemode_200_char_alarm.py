@@ -9,7 +9,7 @@ cs.saved_buf). 440 reads into a 255-byte buffer and accepts such lines.
 import pytest
 
 
-@pytest.mark.bug("E087", on=["d449"])
+@pytest.mark.bug("E087", on=[])
 def test_225_char_line_does_not_alarm(tg):
     line = "G21 (" + "x" * 218 + ")"
     assert len(line) == 224

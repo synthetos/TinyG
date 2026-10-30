@@ -113,6 +113,7 @@ typedef uint16_t devflags_t;
 #define DEV_IS_CTRL			(0x0001)    // device is set as a control channel
 #define DEV_IS_DATA			(0x0002)    // device is set as a data channel
 #define DEV_IS_PRIMARY		(0x0004)    // device is the primary control channel
+#define DEV_IS_OVERFLOW		(0x0008)    // line-mode buffer: the line was longer than the buffer (truncated)
 #define DEV_IS_BOTH			(DEV_IS_CTRL | DEV_IS_DATA)
 
 // device connection state

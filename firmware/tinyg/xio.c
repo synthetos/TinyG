@@ -648,6 +648,16 @@ static devflags_t _classify_line(const char *line, uint16_t size)
  * _next_buffer_to_process() - Search ctrl first, then data; send NULL if nothing to process
  */
 
+/*
+ * _mark_overflow() - flag the just-posted buffer as a truncated (overlong) line
+ */
+static void _mark_overflow()
+{
+    if (bm.used_top->state == BUFFER_FULL) {            // not a blank line that _post_buffer() dropped
+        bm.used_top->flags |= DEV_IS_OVERFLOW;
+    }
+}
+
 static char *_next_buffer_to_process(devflags_t *flags)
 {
     buf_hdr_t *hdr = bm.used_base;     // initialize header pointer to first used block
@@ -659,7 +669,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_CTRL)) {
-                *flags = (DEV_IS_CTRL);                     // set as control only
+                *flags = (DEV_IS_CTRL) | (hdr->flags & DEV_IS_OVERFLOW);                     // set as control only
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -674,7 +684,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_DATA)) {
-                *flags = (DEV_IS_DATA);
+                *flags = (DEV_IS_DATA) | (hdr->flags & DEV_IS_OVERFLOW);
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -765,10 +775,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
-    	if (status == XIO_BUFFER_FULL) {
-        	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
-    	}
         _post_buffer();                                 // post your newly filled buffer
+    	if (status == XIO_BUFFER_FULL) {
+            _mark_overflow();                           // truncated: the controller rejects it
+    	}
     }
 
     // Get a new free buffer
@@ -778,10 +788,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
-    if (status == XIO_BUFFER_FULL) {
-        return ((char *)_FDEV_ERR);                     // buffer overflow occurred
-    }
     _post_buffer();                                     // 5. post newly filled buffer
+    if (status == XIO_BUFFER_FULL) {
+        _mark_overflow();                               // truncated: the controller rejects it
+    }
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }
 
