@@ -32,6 +32,7 @@ PRELUDE = r'''
 #define DEV_IS_NONE 0
 #define DEV_IS_CTRL 1
 #define DEV_IS_DATA 2
+#define DEV_IS_OVERFLOW 8
 typedef uint8_t devflags_t;
 enum {BUFFER_FREE,BUFFER_FRAGMENT,BUFFER_FILLING,BUFFER_FULL,BUFFER_PROCESSING};
 typedef struct hdr {uint8_t bufnum;struct hdr *pv,*nx;int state;
