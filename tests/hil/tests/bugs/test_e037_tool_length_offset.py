@@ -22,7 +22,7 @@ def _cleanup(tg, mpoz):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E037", on=["d449"])
+@pytest.mark.bug("E037", on=[])
 def test_incremental_move_ignores_tool_offset(tg):
     z0 = tg.get("mpoz")
     try:
@@ -35,7 +35,7 @@ def test_incremental_move_ignores_tool_offset(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E037", on=["d449"])
+@pytest.mark.bug("E037", on=[])
 def test_g53_ignores_tool_offset(tg):
     z0 = tg.get("mpoz")
     try:
@@ -47,7 +47,7 @@ def test_g53_ignores_tool_offset(tg):
         _cleanup(tg, z0)
 
 
-@pytest.mark.bug("E037", on=["d449"])
+@pytest.mark.bug("E037", on=[])
 def test_g92_includes_tool_offset(tg):
     try:
         tg.send_gcode("G43.1 Z10", check=True)

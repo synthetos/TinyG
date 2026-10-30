@@ -492,10 +492,12 @@ void cm_set_model_target(const float target[], const bool flags[])
 		} else if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 			if (cm.gm.distance_mode == ABSOLUTE_MODE) {
 				cm.gm.target[axis] = cm_get_active_coord_offset(axis) + _to_millimeters(target[axis]);
+				if (cm.gm.absolute_override == ABSOLUTE_OVERRIDE_OFF) {
+					cm.gm.target[axis] -= cm.gmx.tool_offset[axis];	// work coordinates only: not G53
+				}
 			} else {
-				cm.gm.target[axis] += _to_millimeters(target[axis]);
+				cm.gm.target[axis] += _to_millimeters(target[axis]);	// a distance: the offset is already in the position
 			}
-            cm.gm.target[axis] -= cm.gmx.tool_offset[axis];     //+++++ TEST THIS
 		}
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
@@ -1042,8 +1044,8 @@ stat_t cm_set_origin_offsets(const float offset[], bool flags[])
 	cm.gmx.origin_offset_enable = 1;
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (flags[axis]) {
-			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] -
-									  cm.offset[cm.gm.coord_system][axis] - _to_millimeters(offset[axis]);
+			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - cm.offset[cm.gm.coord_system][axis] +
+									  cm.gmx.tool_offset[axis] - _to_millimeters(offset[axis]);	// work position = offset
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
