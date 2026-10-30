@@ -22,13 +22,13 @@ def _text_mode(tg, line: str, allow: str | None = None, timeout: float = 3.0) ->
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E097", on=["d449"])
+@pytest.mark.bug("E097", on=[])
 def test_auto_status_report_inline_pairs(tg):
     _text_mode(tg, "$fb")       # any $ line switches the board to text mode
     try:
         _text_mode(tg, "G91")
-        _text_mode(tg, "G0 X0.1", allow="0.1 mm move")
-        lines = [e.raw for e in tg.drain(quiet=1.0, limit=5.0) if e.kind == "text"]
+        lines = _text_mode(tg, "G0 X0.1", allow="0.1 mm move")
+        lines += [e.raw for e in tg.drain(quiet=1.0, limit=5.0) if e.kind == "text"]
     finally:
         _text_mode(tg, "G0 X-0.1", allow="return to start")
         tg.drain(quiet=1.0, limit=5.0)

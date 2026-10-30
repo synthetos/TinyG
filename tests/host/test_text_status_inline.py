@@ -14,6 +14,9 @@ class TextStatusInline(unittest.TestCase):
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#define sprintf_P sprintf
+struct {char out_buf[512];} cs;
 #define PSTR(s) (s)
 #define printf_P printf
 #define NV_BODY_LEN 36
@@ -31,6 +34,7 @@ nvObj_t *nv_next(nvObj_t *n){return n->nx;}
 bool prep_float(nvObj_t *n){(void)n;return true;}
 void nv_print(nvObj_t *n){(void)n;puts("formatted value");}
 '''
+        code+=function((ROOT/'firmware/tinyg/util.c').read_text(),r'char fntoa\([^;{}]*\)(?=\s*\{)')
         if 'static void _text_print_inline_pairs' in source:
             code+=function(source,r'static void _text_print_inline_pairs\([^;{}]*\)(?=\s*\{)')
         code+=function(source,r'void text_print_list\([^;{}]*\)(?=\s*\{)')
@@ -54,6 +58,6 @@ int main(void){
 '''
         with tempfile.TemporaryDirectory() as d:
             p=Path(d);(p/'check.c').write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p/'check.c'),'-o',str(p/'check')],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-Wno-deprecated-declarations','-fsanitize=address,undefined',str(p/'check.c'),'-o',str(p/'check')],check=True)
             out=subprocess.check_output([str(p/'check')],text=True)
         self.assertEqual(out,'posx:-0.125,stat:3,line:4294967295,in1:-1,home:1,msg:100% ready\nformatted value\n')
