@@ -407,6 +407,13 @@ static stat_t _parse_gcode_block(char *buf)
 				case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);	  // conditionally true
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
+				case 201: {
+					switch (_point(value)) {
+						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_JERK);
+						default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
+					}
+					break;
+				}
 				default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
 			}
 			break;
@@ -523,6 +530,7 @@ static stat_t _execute_gcode_block()
 	switch (cm.gn.next_action) {
 		case NEXT_ACTION_GET_POSITION: { status = cm_get_position(); break;}
 		case NEXT_ACTION_GET_FIRMWARE: { status = cm_get_firmware(); break;}
+		case NEXT_ACTION_SET_JERK: { status = cm_set_jerk(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}                               // G28.1
 		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}    // G28
 		case NEXT_ACTION_SET_G30_POSITION:  { status = cm_set_g30_position(); break;}                               // G30.1

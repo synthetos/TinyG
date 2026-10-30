@@ -2313,6 +2313,26 @@ void cm_set_axis_jerk(const uint8_t axis, const float jerk)
 	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
 }
 
+/* M201.3 uses units/second^3; stored jerk uses million units/minute^3. */
+stat_t cm_set_jerk(const float target[], const bool flags[])
+{
+    float jerk[AXES];
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (!flags[axis]) { continue; }
+        float scale = (60.f * 60.f * 60.f) / JERK_MULTIPLIER;
+        if (axis <= AXIS_Z && cm.gm.units_mode == INCHES) { scale *= MM_PER_INCH; }
+        jerk[axis] = target[axis] * scale;
+        if (!isfinite(jerk[axis])) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+        jerk[axis] = max(1, jerk[axis]);
+        if (!isfinite(jerk[axis] * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    }
+    // Validate the whole block before changing any axis; do not persist the values.
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (flags[axis]) { cm_set_axis_jerk(axis, jerk[axis]); }
+    }
+    return (STAT_OK);
+}
+
 stat_t cm_set_xjm(nvObj_t *nv)
 {
 	if (nv->value_flt > JERK_MULTIPLIER) {
