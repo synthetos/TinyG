@@ -237,6 +237,11 @@ static stat_t _homing_axis_start(int8_t axis)
     }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
+	if (fp_EQ(cm.a[axis].travel_max, cm.a[axis].travel_min) && (cm.a[axis].axis_mode == AXIS_RADIUS)) {
+		// a cyclic rotary axis (tn == tm: infinite travel) searches one full rotation (g2core 0112c81);
+		// radius-mode homing distances are linear, so one rotation is 2*pi*radius (E075)
+		travel_distance = 2 * M_PI * cm.a[axis].radius;
+	}
 	if (fp_ZERO(travel_distance)) {
         return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
     }
