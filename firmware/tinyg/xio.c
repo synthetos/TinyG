@@ -649,13 +649,22 @@ static devflags_t _classify_line(const char *line, uint16_t size)
  */
 
 /*
- * _mark_overflow() - flag the just-posted buffer as a truncated (overlong) line
+ * _post_overflow() - post a truncated (overlong) line, flagged so the controller rejects it
+ *
+ *	The line is answered with one error and never run, so its text doesn't matter - but it must be
+ *	posted: _post_buffer() drops a blank line, and an overlong line of only spaces would then get no
+ *	answer (and flagging used_top afterwards would hit the previous command).
  */
-static void _mark_overflow()
+static void _post_overflow(char *bufp)
 {
-    if (bm.used_top->state == BUFFER_FULL) {            // not a blank line that _post_buffer() dropped
-        bm.used_top->flags |= DEV_IS_OVERFLOW;
+    buf_hdr_t *hdr = bm.used_top;                       // the overflowing line's own header
+    char *c = bufp;
+    while ((*c != NUL) && (*c <= ' ')) { c++; }
+    if (*c == NUL) {
+        strcpy_P(bufp, PSTR("(line too long)"));        // whitespace only: give it text so it is posted
     }
+    _post_buffer();
+    hdr->flags |= DEV_IS_OVERFLOW;
 }
 
 static char *_next_buffer_to_process(devflags_t *flags)
@@ -775,10 +784,11 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
-        _post_buffer();                                 // post your newly filled buffer
     	if (status == XIO_BUFFER_FULL) {
-            _mark_overflow();                           // truncated: the controller rejects it
-    	}
+            _post_overflow(bufp);                       // truncated: the controller rejects it
+    	} else {
+            _post_buffer();                             // post your newly filled buffer
+        }
     }
 
     // Get a new free buffer
@@ -788,9 +798,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
-    _post_buffer();                                     // 5. post newly filled buffer
     if (status == XIO_BUFFER_FULL) {
-        _mark_overflow();                               // truncated: the controller rejects it
+        _post_overflow(bufp);                           // truncated: the controller rejects it
+    } else {
+        _post_buffer();                                 // 5. post newly filled buffer
     }
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }
