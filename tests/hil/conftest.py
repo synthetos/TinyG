@@ -130,6 +130,11 @@ def tg(request):
     snap["values"].update({t: v for t, v in original.items() if v is not None})
     board.snapshot = snap
     board.snapshot_path = snapshot.save(snap, config.getoption("--snapshot-dir"))
+    bad = _broken_geometry(snap["values"])
+    if bad:     # a defaulted/zeroed config makes every motion result meaningless; stop before testing
+        board.close()
+        pytest.exit(f"board settings look reset (motor geometry {bad}); restore a good snapshot first "
+                    f"(this session's: {board.snapshot_path})", returncode=3)
     yield board
     board.drain()
     recover(board)
@@ -139,6 +144,12 @@ def tg(request):
         transcript.close()
     if result["failed"]:
         pytest.fail(f"settings restore failed: {result['failed']} (snapshot {board.snapshot_path})")
+
+
+def _broken_geometry(values):
+    """Motor geometry tokens that are zero (or missing) for motors 1-4, as {token: value}."""
+    return {f"{m}{t}": values.get(f"{m}{t}") for m in range(1, 5) for t in ("sa", "tr", "mi")
+            if f"{m}sa" in values and not values.get(f"{m}{t}")}
 
 
 def recover(board):
