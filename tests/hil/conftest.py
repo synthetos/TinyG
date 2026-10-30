@@ -1,3 +1,4 @@
+import math
 import os
 import pathlib
 import time
@@ -147,9 +148,11 @@ def tg(request):
 
 
 def _broken_geometry(values):
-    """Motor geometry tokens that are zero (or missing) for motors 1-4, as {token: value}."""
+    """Motor 1-4 geometry tokens that are missing, non-numeric, non-finite or not positive, as {token: value}."""
+    def ok(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v > 0
     return {f"{m}{t}": values.get(f"{m}{t}") for m in range(1, 5) for t in ("sa", "tr", "mi")
-            if f"{m}sa" in values and not values.get(f"{m}{t}")}
+            if not ok(values.get(f"{m}{t}"))}
 
 
 def recover(board):
