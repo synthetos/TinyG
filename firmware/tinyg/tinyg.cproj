@@ -264,6 +264,18 @@
     <Compile Include="kinematics.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="adc_report.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="adc_report.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="stack_report.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="stack_report.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>

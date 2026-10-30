@@ -149,7 +149,8 @@ int main(void) {
         self.assertEqual(new[end:end+2], [("sys", "spep"), ("sys", "spdp")])
         self.assertEqual(new[end+2], ("sys", "prbp"))
         self.assertEqual(new[end+3], ("sys", "fstk"))
-        self.assertEqual(new[end+4:], old[end:])
+        self.assertEqual(new[end+4], ("sys", "adc3"))
+        self.assertEqual(new[end+5:], old[end:])
 
 
 if __name__ == "__main__":

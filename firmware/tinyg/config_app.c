@@ -35,6 +35,7 @@
 #include "text_parser.h"
 #include "settings.h"
 #include "spindle.h"
+#include "adc_report.h"
 #include "stack_report.h"
 #include "planner.h"
 #include "stepper.h"
@@ -629,6 +630,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
 
     { "sys","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
+    { "sys","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***

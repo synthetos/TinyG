@@ -22,6 +22,7 @@
 
 #include "tinyg.h"					// #1 There are some dependencies
 #include "config.h"					// #2
+#include "adc_report.h"
 #include "hardware.h"
 #include "persistence.h"
 #include "controller.h"
@@ -153,6 +154,7 @@ static void _application_init_startup(void)
 {
     // start the application
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // FIRST:  depends on xio_init()
+    adc_init();                                // PB3 raw ADC, before config queries or interrupts
 	config_init();					            // SECOND: read config records from eeprom
     stepper_init_complete();                    // runtime geometry guards apply from here
 	switch_init();                              // switch setup relies on config settings
