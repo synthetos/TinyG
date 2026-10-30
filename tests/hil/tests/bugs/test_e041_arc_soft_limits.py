@@ -45,3 +45,40 @@ def test_arc_endpoint_beyond_soft_limit_is_rejected(tg, keep):
         tg.set("sl", 0)              # keep() restores the user's value afterwards
         tg.send_gcode("G90 G53 G0 X0 Y0", allow=MOVE)
         tg.wait_idle()
+
+
+# A helix whose arc stays well inside its plane but whose linear axis ends past its limit (1 mm).
+HELIX = {
+    "G17": ("z", "G2 X2 Y0 I1 J0 Z2"),
+    "G18": ("y", "G2 X2 Z0 I1 K0 Y2"),
+    "G19": ("x", "G2 Y2 Z0 J1 K0 X2"),
+}
+
+
+@pytest.mark.motion
+@pytest.mark.persists
+@pytest.mark.bug("E041", on=["d440", "d449"])
+@pytest.mark.parametrize("plane", list(HELIX))
+def test_helix_linear_endpoint_beyond_soft_limit_is_rejected(tg, keep, plane):
+    linear, block = HELIX[plane]
+    keep("sl", *(f"{a}{t}" for a in "xyz" for t in ("tn", "tm")))
+    try:
+        tg.send_gcode("G21 G90 G17", check=True)
+        tg.send_gcode("G28.3 X0 Y0 Z0", check=True)   # marks X, Y and Z homed
+        tg.wait_idle()
+        for a in "xyz":                               # plane axes: room to spare; linear axis: 0..1
+            tg.set(f"{a}tn", 0 if a == linear else -5)
+            tg.set(f"{a}tm", 1 if a == linear else 5)
+        tg.set("sl", 1)
+        resp = tg.send_gcode(f"{plane} G91 {block} F300", allow=MOVE)
+        _settle(tg)
+        rejected = tg.status_name(resp.status).startswith("SOFT_LIMIT") or \
+            tg.stat() == tg.dialect.stat("ALARM")
+        assert rejected
+        assert tg.get(f"mpo{linear}") == pytest.approx(0, abs=0.01)
+    finally:
+        if tg.stat() == tg.dialect.stat("ALARM"):
+            tg.clear_alarm()
+        tg.set("sl", 0)
+        tg.send_gcode("G17 G90 G53 G0 X0 Y0 Z0", allow=MOVE)
+        tg.wait_idle()
