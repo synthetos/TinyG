@@ -36,7 +36,8 @@
 
 #define FOOTER_REVISION 1
 
-#define JSON_INPUT_STRING_MAX 128   // set an arbitrary max
+#define JSON_INPUT_STRING_MAX 254   // the longest line the RX buffers can deliver (was an arbitrary 128, E078);
+                                    // JSON_PAIRS_MAX remains the structural limit
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 #define JSON_DEPTH_MAX 4            // maximum nesting level

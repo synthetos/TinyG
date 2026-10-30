@@ -14,7 +14,7 @@ KEYS = ["posx", "posy", "posz", "posa", "mpox", "mpoy", "mpoz", "mpoa",
         "unit", "coor", "dist", "plan", "frmo", "path", "stat"]
 
 
-@pytest.mark.bug("E078", on=["d449"])
+@pytest.mark.bug("E078", on=[])
 def test_long_json_get(tg):
     line = encode({k: None for k in KEYS})
     assert 128 < len(line) < 199
