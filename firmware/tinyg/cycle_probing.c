@@ -71,7 +71,10 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
     if (!cm.gf.feed_rate) {                                         // trap missing or zero feed rate
         return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
     }
-	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
+	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {				// RS274NGC 3.5.9.1: an error in G93
+		return (STAT_GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED);
+	}
+	if (fp_ZERO(cm.gm.feed_rate)) {
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
     if (flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C]) {	        // trap illegal ABC axis movement

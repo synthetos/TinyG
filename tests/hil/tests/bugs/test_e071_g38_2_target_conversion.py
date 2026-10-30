@@ -82,3 +82,14 @@ def test_travel_check_ignores_unflagged_axes(tg, probe_zero):
 def test_travel_check_at_xy_zero(tg, probe_zero):
     resp = tg.send_gcode("G38.2 Z-0.1 F100", allow="rejected: below MINIMUM_PROBE_TRAVEL")
     assert resp.status == tg.dialect.status("PROBE_TRAVEL_TOO_SMALL")
+
+
+@pytest.mark.bug("E071", on=["d440"])
+def test_g38_2_in_inverse_time_mode_is_an_error(tg, keep):
+    """RS274NGC v3 3.5.9.1: it is an error if G38.2 is used in inverse time feed rate mode."""
+    use_zmin_probe(tg, keep)
+    try:
+        r = tg.send_gcode("G93 G38.2 Z-1 F10", allow="rejected before any motion")
+        assert r.status == tg.dialect.status("GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED")
+    finally:
+        tg.send_gcode("G94", check=True)
