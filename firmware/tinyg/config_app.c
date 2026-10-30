@@ -82,6 +82,29 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t get_tick(nvObj_t *nv);		// get system tick count
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
 
+// Retired master settings are accepted only for backup compatibility.
+static stat_t get_legacy_zero(nvObj_t *nv)
+{
+    nv->valuetype = cfg_is_type(nv->index);
+    nv->value_int = 0;
+    nv->precision = 4;
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_zero(nvObj_t *nv)
+{
+    if (nv->value_int != 0) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_arc_length(nvObj_t *nv)
+{
+    if (!isfinite(nv->value_flt) || nv->value_flt < 0) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (STAT_OK);
+}
+
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
  ***********************************************************************************
@@ -599,36 +622,36 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with NV_STATUS_REPORT_LEN in config.h ***
-	{ "","se00",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[0], 0 },
-	{ "","se01",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[1], 0 },
-	{ "","se02",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[2], 0 },
-	{ "","se03",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[3], 0 },
-	{ "","se04",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[4], 0 },
-	{ "","se05",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[5], 0 },
-	{ "","se06",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[6], 0 },
-	{ "","se07",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[7], 0 },
-	{ "","se08",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[8], 0 },
-	{ "","se09",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[9], 0 },
-	{ "","se10",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[10], 0 },
-	{ "","se11",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[11], 0 },
-	{ "","se12",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[12], 0 },
-	{ "","se13",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[13], 0 },
-	{ "","se14",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[14], 0 },
-	{ "","se15",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[15], 0 },
-	{ "","se16",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[16], 0 },
-	{ "","se17",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[17], 0 },
-	{ "","se18",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[18], 0 },
-	{ "","se19",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[19], 0 },
-	{ "","se20",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[20], 0 },
-	{ "","se21",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[21], 0 },
-	{ "","se22",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[22], 0 },
-	{ "","se23",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[23], 0 },
-	{ "","se24",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[24], 0 },
-	{ "","se25",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[25], 0 },
-	{ "","se26",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[26], 0 },
-	{ "","se27",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[27], 0 },
-	{ "","se28",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[28], 0 },
-	{ "","se29",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
+	{ "","se00",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[0], 0 },
+	{ "","se01",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[1], 0 },
+	{ "","se02",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[2], 0 },
+	{ "","se03",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[3], 0 },
+	{ "","se04",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[4], 0 },
+	{ "","se05",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[5], 0 },
+	{ "","se06",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[6], 0 },
+	{ "","se07",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[7], 0 },
+	{ "","se08",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[8], 0 },
+	{ "","se09",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[9], 0 },
+	{ "","se10",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[10], 0 },
+	{ "","se11",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[11], 0 },
+	{ "","se12",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[12], 0 },
+	{ "","se13",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[13], 0 },
+	{ "","se14",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[14], 0 },
+	{ "","se15",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[15], 0 },
+	{ "","se16",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[16], 0 },
+	{ "","se17",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[17], 0 },
+	{ "","se18",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[18], 0 },
+	{ "","se19",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[19], 0 },
+	{ "","se20",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[20], 0 },
+	{ "","se21",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[21], 0 },
+	{ "","se22",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[22], 0 },
+	{ "","se23",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[23], 0 },
+	{ "","se24",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[24], 0 },
+	{ "","se25",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[25], 0 },
+	{ "","se26",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[26], 0 },
+	{ "","se27",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[27], 0 },
+	{ "","se28",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[28], 0 },
+	{ "","se29",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
 
     // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
@@ -643,6 +666,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
     { "sys","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
     { "sys","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
+    // Direct legacy lookups only: no initialization, persistence, or group export.
+    // Keep these after se29 so every existing EEPROM index stays unchanged.
+    { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "fd",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
