@@ -10,7 +10,6 @@ import pytest
 from tinyg_hil.snapshot import set_status_report
 
 
-@pytest.mark.bug("E103", on=["d449"])
 def test_gc_wrapped_gcode_runs(tg):
     tg.send_gcode("G21", check=True)
     try:
@@ -22,7 +21,6 @@ def test_gc_wrapped_gcode_runs(tg):
 
 @pytest.mark.dialect("d449")
 @pytest.mark.persists
-@pytest.mark.bug("E103", on=["d449"])
 def test_srs_clear_false_keeps_list(tg):
     keys = list(tg.get("sr") or {})
     try:
@@ -30,3 +28,14 @@ def test_srs_clear_false_keeps_list(tg):
         assert list(tg.get("sr") or {}) == keys
     finally:
         set_status_report(tg, keys)
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.parametrize("value", [False, 1])
+def test_null_only_command_rejects_values(tg, value):
+    assert tg.send_json({"er": value}).status != 0
+
+
+@pytest.mark.dialect("d449")
+def test_gc_null_remains_a_query(tg):
+    tg.send_json({"gc": None}, check=True)

@@ -463,7 +463,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "", "alarm",_n0,0, tx_print_nul, cm_alrm, cm_alrm,  (uint32_t *)&cs.null, 0 },    // trigger alarm
     { "", "panic",_n0,0, tx_print_nul, cm_pnic, cm_pnic,  (uint32_t *)&cs.null, 0 },    // trigger panic
     { "", "shutd",_n0,0, tx_print_nul, cm_shutd,cm_shutd, (uint32_t *)&cs.null, 0 },    // trigger shutdown
-    { "", "clear",_n0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // GET "clear" to clear alarm state
+    { "", "clear",_b0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // GET "clear" to clear alarm state
     { "", "clr",  _n0,0, tx_print_nul, cm_clr,  cm_clr,   (uint32_t *)&cs.null, 0 },    // synonym for "clear"
 
     // status report keys
@@ -496,7 +496,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","gco", _iipn, 0, cm_print_gco, get_ui8, set_ui8, (uint32_t *)&cm.default_coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
 	{ "sys","gpa", _iipn, 0, cm_print_gpa, get_ui8, set_012, (uint32_t *)&cm.default_path_control,	GCODE_DEFAULT_PATH_CONTROL },
 	{ "sys","gdi", _iipn, 0, cm_print_gdi, get_ui8, set_01,  (uint32_t *)&cm.default_distance_mode, GCODE_DEFAULT_DISTANCE_MODE },
-	{ "",   "gc",  _n0,   0, tx_print_nul, get_nul, gc_run_gc,(uint32_t *)&cs.null, 0 }, // gcode block - must be last in this group
+	{ "",   "gc",  _s0,   0, tx_print_nul, get_nul, gc_run_gc,(uint32_t *)&cs.null, 0 }, // gcode block - must be last in this group
 
 	// User defined data groups
 	{ "uda","uda0", _dip, 0, tx_print_int, get_data, set_data,(uint32_t *)&cfg.user_data_a[0], USER_DATA_A0 },

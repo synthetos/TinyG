@@ -436,6 +436,8 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
     // set type checking - true: type must agree with variable, false: type is set by JSON & therefore always OK
     cfg_type = (typesafe) ? cfg_is_type(nv->index) : nv->valuetype;
 
+    if (cfg_type == TYPE_NULL) { return (STAT_VALUE_TYPE_ERROR); }
+
     if (cfg_type == TYPE_FLOAT) {
         if ((nv->valuetype == TYPE_INTEGER) || (nv->valuetype == TYPE_FLOAT)) {
             nv->valuetype = TYPE_FLOAT;             // morph the into to a float
