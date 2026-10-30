@@ -778,16 +778,20 @@ stat_t cm_alarm(const stat_t status, const char *msg)
     cli();
 #endif
     bool idle = (cm.motion_state == MOTION_STOP) && (cm.hold_state == FEEDHOLD_OFF);
+    bool segment_in_flight = false;
     if (idle) {
+        segment_in_flight = st_aline_in_flight();   // a block's last segment can outlive MOTION_STOP
         cm_set_motion_state(MOTION_HOLD);
-        cm.hold_state = FEEDHOLD_HOLD;          // no aline is running, so there is nothing to decelerate
+        cm.hold_state = FEEDHOLD_HOLD;          // no new move starts; a last segment finishes on its own
     }
 #ifdef __AVR
     SREG = sreg;
 #endif
     if (idle) {
-        stepper_reset();                        // stop a running dwell now (no aline can be in flight)
-        cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner like any alarm; ends the hold
+        if (!segment_in_flight) {
+            stepper_reset();                    // only a dwell (or nothing) is running: stop it now
+        }
+        cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
     } else {
         cm_request_feedhold();                  // stop motion
         cm_request_queue_flush();               // do a queue flush once runtime is not busy

@@ -338,6 +338,23 @@ stat_t stepper_test_assertions()
  *	- dwell is running
  */
 
+/*
+ * st_aline_in_flight() - true if a line segment is stepping or prepared for the loader
+ *
+ *	Unlike st_runtime_isbusy() this tells a move from a dwell (which runs on its own timer). The
+ *	final segment of a block can still be prepared or stepping after the cycle end has set
+ *	MOTION_STOP. Call with interrupts disabled for a consistent answer.
+ */
+bool st_aline_in_flight()
+{
+#ifdef __AVR
+	if (TIMER_DDA.CTRLA != STEP_TIMER_DISABLE) {
+		return (true);
+	}
+#endif
+	return ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) && (st_pre.block_type == BLOCK_TYPE_ALINE));
+}
+
 uint8_t st_runtime_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {
