@@ -26,7 +26,6 @@ def _replies(tg, data: bytes) -> list[tuple]:
 
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E079", on=["d449"])
 def test_rxm_switch_keeps_following_lines(tg, keep):
     keep("rxm")             # restored after the reset below
     if tg.get("rxm") != 1:
@@ -40,3 +39,20 @@ def test_rxm_switch_keeps_following_lines(tg, keep):
         assert _replies(tg, b'{"rxm":1}\n{"fb":null}\n') == [("rxm", 0), ("fb", 0)]
     finally:
         tg.reset()          # discard whatever stale reader state the switches left behind
+
+
+@pytest.mark.persists
+@pytest.mark.resets_board
+def test_repeated_rxm_switches_preserve_partial_lines(tg, keep):
+    keep("rxm")
+    tg.set("rxm", 1)
+    tg.reset()
+    try:
+        for _ in range(5):
+            # Leave the next line incomplete while the mode-setting line is processed.
+            assert _replies(tg, b'{"rxm":0}\n{"fb":') == [("rxm", 0)]
+            assert _replies(tg, b'null}\n{"fv":null}\n') == [("fb", 0), ("fv", 0)]
+            assert _replies(tg, b'{"rxm":1}\n{"fb":') == [("rxm", 0)]
+            assert _replies(tg, b'null}\n{"fv":null}\n') == [("fb", 0), ("fv", 0)]
+    finally:
+        tg.reset()
