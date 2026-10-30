@@ -54,6 +54,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	float hw_version;                 // tinyg hardware compatibility - platform revision
 
 	// communications state variables
+	volatile bool enquiry_requested;	// set by the RX ISR on ENQ, answered by the main loop
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
