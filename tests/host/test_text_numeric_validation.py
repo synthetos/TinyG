@@ -23,6 +23,8 @@ enum {TYPE_NULL,TYPE_PARENT,TYPE_FLOAT,TYPE_INTEGER};
 #define JSON_RESPONSE 0
 #define MACHINE_ALARM 2
 #define strcpy_P strcpy
+#define memcpy_P memcpy
+#define PSTR(s) (s)
 #define ritorno(call) do {stat_t s=(call);if(s!=STAT_OK)return s;} while(0)
 typedef struct {char token[6],group[4];int index,valuetype;float value_flt;uint32_t value_int;} nvObj_t;
 static struct {const char *group;} cfgArray[]={{"x"},{"1"}};
