@@ -769,7 +769,13 @@ stat_t cm_alarm(const stat_t status, const char *msg)
     }
 	cm.machine_state = MACHINE_ALARM;
     cm_request_feedhold();                      // stop motion
-    cm_request_queue_flush();                   // do a queue flush once runtime is not busy
+    if (cm.hold_state == FEEDHOLD_OFF) {        // nothing moving (idle, a dwell, moves not started yet):
+        mp_halt_runtime();                      // no hold will come, so drop the dwell and queued moves now
+        cm_set_motion_state(MOTION_STOP);       // (no steps are in flight; positions are kept, E046)
+        cm.queue_flush_state = FLUSH_REQUESTED; // and flush input and model like any alarm (E044)
+    } else {
+        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+    }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
     cm_coolant_off_immediate();                 // stop coolant immediately

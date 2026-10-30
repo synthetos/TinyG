@@ -15,7 +15,7 @@ MOVE = "1 mm +X at F300 queued behind dwells; must not run after an alarm"
 
 @pytest.mark.motion
 @pytest.mark.dialect("d449")
-@pytest.mark.bug("E044", on=["d449"])
+@pytest.mark.bug("E044", on=[])
 def test_alarm_during_dwell_cancels_queued_move(tg):
     start = tg.get("posx")
     tg.send_gcode("G4 P2", check=True)
