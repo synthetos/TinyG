@@ -26,6 +26,7 @@
  */
 
 #include "tinyg.h"
+#include <errno.h>
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
@@ -138,14 +139,37 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
     	    return (STAT_UNRECOGNIZED_NAME);
 	    }
-        if (cfg_is_type(nv->index) == TYPE_FLOAT) { // copy value as a float
-  		    str = ++rd;
-		    nv->value_flt = strtof(str, &rd);       // rd used as end pointer
-		    nv->valuetype = TYPE_FLOAT;
-	    } else {                                    // copy value as integer
-		    str = ++rd;
-            nv->value_int = atol(str);
-    		nv->valuetype = TYPE_INTEGER;
+        str = rd + 1;
+        str += strspn(str, separators);
+        nv->valuetype = TYPE_NULL;             // empty values are display requests
+        if (*str != NUL) {
+            errno = 0;
+            if (cfg_is_type(nv->index) == TYPE_FLOAT) {
+                nv->value_flt = strtof(str, &rd);
+                if (errno == ERANGE || !isfinite(nv->value_flt)) {
+                    return (STAT_INPUT_VALUE_RANGE_ERROR);
+                }
+                nv->valuetype = TYPE_FLOAT;
+            } else {
+                // Keep signed text values available to setters that use int32_t storage.
+                if (*str == '-') {
+                    long value = strtol(str, &rd, 10);
+                    if (errno == ERANGE || value < INT32_MIN || value > INT32_MAX) {
+                        return (STAT_INPUT_VALUE_RANGE_ERROR);
+                    }
+                    nv->value_int = (uint32_t)value;
+                } else {
+                    unsigned long value = strtoul(str, &rd, 10);
+                    if (errno == ERANGE || value > UINT32_MAX) {
+                        return (STAT_INPUT_VALUE_RANGE_ERROR);
+                    }
+                    nv->value_int = (uint32_t)value;
+                }
+                nv->valuetype = TYPE_INTEGER;
+            }
+            if (rd == str) { return (STAT_BAD_NUMBER_FORMAT); }
+            while (isspace((unsigned char)*rd)) { rd++; }
+            if (*rd != NUL) { return (STAT_BAD_NUMBER_FORMAT); }
         }
 	}
 
