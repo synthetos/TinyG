@@ -27,7 +27,6 @@ def _query(tg, *tokens, timeout=2.0):
 @pytest.mark.motion
 @pytest.mark.persists
 @pytest.mark.dialect("d449")
-@pytest.mark.bug("E036", on=["d449"])
 def test_flush_drops_buffered_lines(tg, keep):
     keep("rxm")
     tg.set("rxm", 1)

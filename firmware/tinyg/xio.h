@@ -330,6 +330,7 @@ uint8_t xio_isbusy(void);
 
 char *readline(devflags_t *flags, uint16_t *size);
 void xio_reset_readline_linemode(void);
+void xio_flush_input(void);
 uint8_t xio_get_line_buffers_available(void);
 //uint8_t xio_is_control(char *str);
 

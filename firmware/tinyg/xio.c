@@ -76,6 +76,7 @@
 #include <string.h>					// for memset()
 #include <stdio.h>					// precursor for xio.h
 #include <avr/pgmspace.h>			// precursor for xio.h
+#include <avr/interrupt.h>			// cli() in xio_flush_input()
 
 #include "xio.h"					// all device includes are nested here
 #include "tinyg.h"					// needed by init() for default source
@@ -407,6 +408,22 @@ static void _init_readline_linemode()
 void xio_reset_readline_linemode()
 {
     _init_readline_linemode();
+}
+
+/*
+ * xio_flush_input() - drop all received input: USB RX ring, line-mode buffers and a held char-mode line
+ *
+ *  Main loop only (requested queue flush). The RX ISR also writes the ring and line state.
+ */
+
+void xio_flush_input()
+{
+    uint8_t sreg = SREG;
+    cli();
+    xio_reset_usb_rx_buffers();
+    SREG = sreg;
+    _init_readline_linemode();
+    xio.buf_state = BUFFER_FREE;
 }
 
 /*
