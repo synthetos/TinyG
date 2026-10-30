@@ -12,7 +12,7 @@ pytestmark = pytest.mark.dialect("d449")
 
 @pytest.mark.motion     # SHUTDOWN blinks the indicator LED, which is the spindle DIR output (E019)
 @pytest.mark.resets_board
-@pytest.mark.bug("E045", on=["d449"])
+@pytest.mark.bug("E045", on=[])
 def test_clear_exits_shutdown(tg):
     tg.send_json({"shutd": None})
     try:
