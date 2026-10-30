@@ -34,26 +34,41 @@ def _track(tg, tokens, timeout=20.0):
     raise TimeoutError(f"not idle after {timeout}s")
 
 
-def _full_circle(tg, word):
+def _full_circle(tg, word, plane="G17", helix=False):
     start = _mpo(tg)
     try:
-        assert tg.send_gcode(f"G17 G91 {word} X0 Y0 I-1 F600", allow=MOVE).status == 0
-        span = _track(tg, ["mpox"])
+        axes, offset, normal = {"G17": ("XY", "I", "Z"), "G18": ("XZ", "I", "Y"),
+                                "G19": ("YZ", "J", "X")}[plane]
+        linear = f" {normal}0.2" if helix else ""
+        words = f"{axes[0]}0 {axes[1]}0 {offset}-1{linear}"
+        assert tg.send_gcode(f"{plane} G91 {word} {words} F120", allow=MOVE).status == 0
+        token = "mpo" + axes[0].lower()
+        span = _track(tg, [token])
+        tg.wait_idle()
         assert tg.stat() != tg.dialect.stat("ALARM")
-        assert span["mpox"][0] == pytest.approx(start["x"] - 2, abs=0.1)     # reached the far side
-        assert tg.get("mpox") == pytest.approx(start["x"], abs=0.01)
-        assert tg.get("mpoy") == pytest.approx(start["y"], abs=0.01)
+        assert span[token][0] == pytest.approx(start[axes[0].lower()] - 2, abs=0.1)
+        for axis in "xyz":
+            expected = start[axis] + (0.2 if helix and axis == normal.lower() else 0)
+            assert tg.get("mpo" + axis) == pytest.approx(expected, abs=0.01)
     finally:
         _return_to(tg, start)
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E017", on=["d440", "d449"])
-def test_g3_full_circle_with_endpoint(tg):
-    _full_circle(tg, "G3")
+@pytest.mark.bug("E017", on=["d440"])
+@pytest.mark.parametrize("plane", ["G17", "G18", "G19"])
+def test_g3_full_circle_with_endpoint(tg, plane):
+    _full_circle(tg, "G3", plane)
 
 
 @pytest.mark.motion
 @pytest.mark.dialect("d449")
-def test_g2_full_circle_with_endpoint(tg):
-    _full_circle(tg, "G2")
+@pytest.mark.parametrize("plane", ["G17", "G18", "G19"])
+def test_g2_full_circle_with_endpoint(tg, plane):
+    _full_circle(tg, "G2", plane)
+
+
+@pytest.mark.motion
+@pytest.mark.bug("E017", on=["d440"])
+def test_g3_helical_full_circle_with_endpoint(tg):
+    _full_circle(tg, "G3", helix=True)
