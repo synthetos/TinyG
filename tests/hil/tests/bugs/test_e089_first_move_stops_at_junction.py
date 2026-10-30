@@ -5,6 +5,8 @@ once. It was planned as the last block (plan_line.c:470-471 `bp->exit_velocity =
 starts (plan_exec.c:183 `bf->replannable = false;`), so a block queued a few ms later cannot raise its exit
 velocity. There is no start-up delay like g2core's PLANNER_STARTUP (planner.cpp:545-560). Master is the same.
 """
+# Serial samples are a coarse diagnostic. The junction waveform and startup
+# latency remain timing-pending until external capture confirms them.
 import time
 
 import pytest
@@ -20,8 +22,9 @@ def _sample(tg):
 
 
 @pytest.mark.motion
+@pytest.mark.timing
 @pytest.mark.persists
-@pytest.mark.bug("E089", on=["d440", "d449"])
+@pytest.mark.bug("E089", on=["d440"])
 def test_second_move_joins_first_at_speed(tg, keep):
     keep("xjm")
     tg.set("xjm", 50)                        # 5e7 mm/min^3: a stop at the junction lasts ~0.6 s
@@ -44,3 +47,18 @@ def test_second_move_joins_first_at_speed(tg, keep):
         tg.wait_idle()
         tg.send_gcode("G91 G1 X-4 F600", allow=MOVE)
         tg.wait_idle()
+
+
+@pytest.mark.motion
+def test_single_move_is_released_without_a_successor(tg):
+    """Functional timeout fallback: an isolated move must complete rather than wait forever."""
+    tg.send_gcode("G21 G91", check=True)
+    start = tg.get("posx")
+    try:
+        tg.send_gcode("G1 X2 F300", check=True, allow="isolated 2 mm unloaded move")
+        tg.wait_idle(timeout=5)
+        assert tg.get("posx") == pytest.approx(start + 2, abs=0.01)
+    finally:
+        tg.wait_idle(timeout=5)
+        tg.send_gcode(f"G90 G1 X{start:.4f} F300", check=True, allow="return to starting work position")
+        tg.wait_idle(timeout=5)
