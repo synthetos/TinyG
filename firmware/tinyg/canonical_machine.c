@@ -1114,6 +1114,42 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
+/*
+ * _queue_line() - plan the move in cm.gm inside a machining cycle (G0/G1)
+ *
+ *	The cycle starts before the move is queued so a short move cannot finish and end the cycle
+ *	before it was started. But mp_aline() plans before it reserves its buffer, and meanwhile the
+ *	runtime can finish the previous last block and end the cycle (plan_exec.c, mp_free_run_buffer()
+ *	then cm_cycle_end()). So once the move is queued, check again with interrupts off: restart the
+ *	cycle if anything is queued or running, end it if nothing is (a too-short or rejected move).
+ */
+static stat_t _queue_line()
+{
+	cm_cycle_start();
+	stat_t status = mp_aline(&cm.gm);
+	if (cm_is_alarmed() != STAT_OK) {			// mp_aline can alarm or panic (failed reservation): the
+		return (status);						// cycle repair below must not overwrite that state
+	}
+#ifdef __AVR
+	uint8_t sreg = SREG;
+	cli();
+#endif
+	bool runnable = mp_has_runnable_buffer();
+	if (runnable) {
+		cm_cycle_start();						// cheap; must not race the runtime's cycle end
+	}
+#ifdef __AVR
+	SREG = sreg;
+#endif
+	if (!runnable) {
+		cm_cycle_end();							// only the main loop queues, so this can't race a new move
+	}
+	if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status == STAT_MINIMUM_TIME_MOVE)) {
+		status = STAT_OK;						// too short to plan; not an error
+	}
+	return (status);
+}
+
 static stat_t _straight_traverse(const float target[], const bool flags[], const bool machine_coordinates)
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
@@ -1142,12 +1178,7 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 
-    status = mp_aline(&cm.gm);                  // send the move to the planner
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
-    }
+    status = _queue_line();                     // plan the move inside a machining cycle
     cm_finalize_move();
 	return (status);
 }
@@ -1346,12 +1377,7 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
-    status = mp_aline(&cm.gm);
-    if ((status == STAT_MINIMUM_LENGTH_MOVE) || (status != STAT_MINIMUM_TIME_MOVE)) {
-        status = STAT_OK;
-    } else {
-        cm_cycle_start();
-    }
+    status = _queue_line();                     // plan the move inside a machining cycle
 	cm_finalize_move();
 	return (status);
 }
