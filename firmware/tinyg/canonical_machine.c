@@ -768,12 +768,28 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't alarm if already in an alarm state
     }
 	cm.machine_state = MACHINE_ALARM;
-    cm_request_feedhold();                      // stop motion
-    if (cm.hold_state == FEEDHOLD_OFF) {        // nothing moving (idle, a dwell, moves not started yet):
-        mp_halt_runtime();                      // no hold will come, so drop the dwell and queued moves now
-        cm_set_motion_state(MOTION_STOP);       // (no steps are in flight; positions are kept, E046)
-        cm.queue_flush_state = FLUSH_REQUESTED; // and flush input and model like any alarm (E044)
+
+    // Nothing moving (idle, a dwell, moves not started yet) means no hold will ever start, so the
+    // flush would wait forever while queued moves run in ALARM (E044). Decide that atomically with
+    // the exec: with interrupts off, a stopped runtime is put straight into HOLD, which keeps
+    // mp_exec_aline() from starting another move. A move already running takes the normal hold.
+#ifdef __AVR
+    uint8_t sreg = SREG;
+    cli();
+#endif
+    bool idle = (cm.motion_state == MOTION_STOP) && (cm.hold_state == FEEDHOLD_OFF);
+    if (idle) {
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_HOLD;          // no aline is running, so there is nothing to decelerate
+    }
+#ifdef __AVR
+    SREG = sreg;
+#endif
+    if (idle) {
+        stepper_reset();                        // stop a running dwell now (no aline can be in flight)
+        cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner like any alarm; ends the hold
     } else {
+        cm_request_feedhold();                  // stop motion
         cm_request_queue_flush();               // do a queue flush once runtime is not busy
     }
 
