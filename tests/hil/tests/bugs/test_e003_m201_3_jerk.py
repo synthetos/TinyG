@@ -28,7 +28,8 @@ def test_m201_3_inches_preserve_rotary_units(tg, keep):
         tg.send_gcode("M201.3 X1000 A1000", check=True, allow="M201.3 sets jerk only")
     finally:
         tg.send_gcode("G21", check=True)
-    assert tg.get("xjm") == pytest.approx(5486.4, abs=0.1)
+    # xjm is serialized with zero decimal places; allow half a reporting unit.
+    assert tg.get("xjm") == pytest.approx(5486.4, abs=0.5)
     assert tg.get("ajm") == pytest.approx(216, abs=0.01)
     assert tg.get("yjm") == pytest.approx(yjm, abs=0.01)
     assert tg.get("mpox") == pytest.approx(x0, abs=0.001)
