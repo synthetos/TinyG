@@ -1382,10 +1382,6 @@ stat_t cm_dwell(const float seconds)
  */
 stat_t cm_straight_feed(const float target[], const bool flags[])
 {
-	// trap zero feed rate condition
-	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
-		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
     // it's legal for a G1 to have no axis words but we don't want to process it
@@ -1393,6 +1389,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
+	// trap zero feed rate condition
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	}
 	cm_set_model_target(target, flags);
 
 	// test soft limits

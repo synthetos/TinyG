@@ -19,6 +19,8 @@ def test_g93_survives_a_feed_move(tg):
         tg.send_gcode("G91 G1 X1 F60", check=True, allow=MOVE)      # F60 = 1/60 min
         tg.wait_idle()
         assert tg.get("frmo") == 0
+        tg.send_gcode("G90", check=True)  # no axes: no inverse-time F required
+        tg.send_gcode("M2", check=True)
     finally:
         tg.send_gcode("G94", check=True)
         tg.send_gcode(f"G90 G53 G0 X{x0:.4f}", allow=MOVE)
