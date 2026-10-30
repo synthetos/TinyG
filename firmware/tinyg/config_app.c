@@ -34,6 +34,7 @@
 #include "json_parser.h"
 #include "text_parser.h"
 #include "settings.h"
+#include "spindle.h"
 #include "planner.h"
 #include "stepper.h"
 #include "switch.h"
@@ -619,6 +620,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se28",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[28], 0 },
 	{ "","se29",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
+
+    // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
+    { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
+    { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
