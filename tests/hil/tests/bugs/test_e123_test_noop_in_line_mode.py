@@ -4,6 +4,10 @@ test.c:62-84 opens the PGM file and calls controller_set_primary_source(XIO_DEV_
 line-mode reader is hard-wired to USB (xio.c:668 and 682 `xio_gets_usart(&ds[XIO_DEV_USB], ...)`);
 only the char-mode reader reads xio.primary_src (xio.c:753). Line mode is the default
 (settings_default.h:74). 440 has a single reader that honours the primary source.
+
+While a canned file is primary, ordinary USB commands wait until EOF (as on
+master). RX-ISR realtime characters still act. Observe unsolicited output here
+rather than polling GETs; the final realtime reset can interrupt the file.
 """
 import pytest
 
