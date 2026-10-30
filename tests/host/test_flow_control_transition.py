@@ -45,6 +45,7 @@ static unsigned count,normal;
 static unsigned xio_get_rx_bufcount_usart(xioUsart_t *d) {(void)d;return count;}
 static int xio_ctrl(int dev,uint32_t flags) {assert(dev==0);USB.flag_xoff=flags==XIO_XOFF;return 0;}
 static void hw_request_hard_reset(void) {}
+static void hw_hard_reset(void) {}
 static void cm_request_feedhold(void) {}
 static void cm_request_queue_flush(void) {}
 static void cm_request_end_hold(void) {}
