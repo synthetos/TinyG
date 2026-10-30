@@ -288,6 +288,13 @@ static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
+	// The switch states are cached and only change on ISR edges. Re-read them now that the clear
+	// move is done: a switch still active never opened (an open NC wire, a stuck or unwired input),
+	// and searching would end on its stale level and mark the axis homed anywhere.
+	if ((read_switch(hm.homing_switch) == SW_ACTIVE) ||
+		((hm.limit_switch >= 0) && (read_switch(hm.limit_switch) == SW_ACTIVE))) {
+		return (_homing_error_exit(axis, STAT_HOMING_ERROR_MUST_CLEAR_SWITCHES_BEFORE_HOMING));
+	}
 	cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
@@ -365,13 +372,13 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 		nv_add_message_P(PSTR("Homing error - Bad or no axis(es) specified"));
 	} else {
 		char message[NV_MESSAGE_LEN];
-		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
+		sprintf_P(message, PSTR("Homing error - %c axis"), cm_get_axis_char(axis));
 		nv_add_message((char *)message);
 	}
-	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_RESPONSE, JSON_RESPONSE);
+	nv_print_list(status, TEXT_RESPONSE, JSON_RESPONSE);	// the specific STAT_HOMING_ERROR_xxx
 
 	_homing_finalize_exit(axis);
-	return (STAT_HOMING_CYCLE_FAILED);						// homing state remains HOMING_NOT_HOMED
+	return (status);										// homing state remains HOMING_NOT_HOMED
 }
 
 /*
