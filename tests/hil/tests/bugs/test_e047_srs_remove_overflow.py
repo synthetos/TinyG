@@ -39,16 +39,25 @@ def test_srs_remove_leaves_neighbours_alone(tg):
 
 @pytest.mark.persists
 def test_srs_add_past_the_list_limit_is_rejected(tg):
-    """report.c's documented error: adding beyond NV_STATUS_REPORT_LEN (30) fails and leaves the list."""
+    """report.c's documented error: an add that would exceed NV_STATUS_REPORT_LEN (30) fails and leaves
+    the list unchanged. Items go in a few at a time (the JSON input line is capped at 128 chars, E078)."""
     keys = list(tg.get("sr"))
-    candidates = [t for t in ("posx", "posy", "posz", "posa", "posb", "posc", "mpox", "mpoy", "mpoz", "mpoa",
-                              "mpob", "mpoc", "vel", "feed", "stat", "unit", "coor", "momo", "plan", "path",
-                              "dist", "frmo", "tool", "line", "macs", "cycs", "mots", "hold", "ofsx", "ofsy",
-                              "ofsz", "ofsa") if t in tg.dialect.tokens and t not in keys]
+    pool = [t for t in ("posx", "posy", "posz", "posa", "posb", "posc", "mpox", "mpoy", "mpoz", "mpoa",
+                        "mpob", "mpoc", "vel", "feed", "stat", "unit", "coor", "momo", "plan", "path",
+                        "dist", "frmo", "tool", "line", "macs", "cycs", "mots", "hold", "ofsx", "ofsy",
+                        "ofsz", "ofsa", "ofsb", "ofsc") if t in tg.dialect.tokens and t not in keys]
+    if len(keys) + len(pool) <= 30:
+        pytest.skip("not enough distinct status tokens to overflow the list")
     try:
-        r = tg.send_json({"srs": {"set": {k: True for k in candidates}}})
-        if len(keys) + len(candidates) > 30:
-            assert r.status == tg.dialect.status("INPUT_EXCEEDS_MAX_LENGTH")
-            assert list(tg.get("sr")) == keys
+        current = list(keys)
+        while pool:
+            batch, pool = pool[:3], pool[3:]
+            r = tg.send_json({"srs": {"set": {k: True for k in batch}}})
+            if len(current) + len(batch) > 30:
+                assert r.status == tg.dialect.status("INPUT_EXCEEDS_MAX_LENGTH"), r.raw
+                assert list(tg.get("sr")) == current
+                break
+            assert r.status == 0, r.raw
+            current += batch
     finally:
         set_status_report(tg, keys)
