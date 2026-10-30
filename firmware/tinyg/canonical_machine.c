@@ -1096,6 +1096,7 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
         return(STAT_OK);
     }
     if (machine_coordinates) {
+        copy_vector(cm.gm.target, cm.gmx.position);
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
             if (flags[axis] && (cm.a[axis].axis_mode != AXIS_DISABLED)) {
                 cm.gm.target[axis] = target[axis];  // stored machine coordinates are already mm/degrees
