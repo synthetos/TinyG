@@ -210,7 +210,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
             } else if (*(*p_nv)->str == '{') {              // it's JSON passed in as a string
                 _json_parser_kernal(p_nv, (*p_nv)->str);    // call JSON parser recursively
             } else {
-                controller_dispatch_txt_container((*p_nv), (*p_nv)->str); // call specialized dispatcher
+                ritorno(controller_dispatch_txt_container((*p_nv), (*p_nv)->str)); // status goes in the footer
             }
             continue;
         }

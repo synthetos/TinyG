@@ -321,10 +321,11 @@ static void _dispatch_kernel()
  *  (e,g \n instead of LF). The text response string is closed, then
  *  json_continuation is set so that the JSON response is properly completed.
  *
- *  Gcode is simply wrapped in a JSON gc tag and processed.
+ *  Gcode is run as if it had been sent as {"gc":"..."}: no text-mode prompt goes into the JSON
+ *  stream, and the Gcode status is returned for the JSON footer (E057).
  */
 
-void controller_dispatch_txt_container (nvObj_t *nv, char *str)
+stat_t controller_dispatch_txt_container (nvObj_t *nv, char *str)
 {
     // process pure text-mode commands
     if (strchr("$?Hh", *str) != NULL) {             // a match indicates text mode
@@ -339,12 +340,12 @@ void controller_dispatch_txt_container (nvObj_t *nv, char *str)
         printf_P(PSTR("\""));                       // close quote
         nv_reset_nv_list(NUL);                      // reset the list to start at the head
         NV_HEAD->valuetype = TYPE_TXTCON;           // label the list as a text container
+        return (STAT_OK);
     }
     // process gcode
-    else {
-        strcpy(nv->token,"gc");
-        text_response(gc_gcode_parser(str), cs.saved_buf);
-    }
+    strcpy(nv->token,"gc");
+    nv->valuetype = TYPE_STRING;                    // echo like a gc pair, not a text container
+    return (gc_gcode_parser(str));
 }
 
 /**** Local Utilities ********************************************************/

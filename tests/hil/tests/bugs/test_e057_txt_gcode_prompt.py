@@ -9,13 +9,13 @@ import pytest
 pytestmark = pytest.mark.dialect("d449")     # 440 has no txt container
 
 
-@pytest.mark.bug("E057", on=["d449"])
+@pytest.mark.bug("E057", on=[])
 def test_txt_gcode_emits_only_json(tg):
     resp = tg.send_json({"txt": "G90"}, check=True)
     stray = [e.raw for e in resp.events if e.kind in ("prompt", "text", "malformed")]
     assert stray == []
 
 
-@pytest.mark.bug("E057", on=["d449"])
+@pytest.mark.bug("E057", on=[])
 def test_txt_gcode_error_in_footer(tg):
     assert tg.send_json({"txt": "M200"}).status == tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")
