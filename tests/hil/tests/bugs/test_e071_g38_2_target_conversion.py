@@ -61,7 +61,7 @@ def probe_zero(tg, keep):
     idle(tg)
 
 
-@pytest.mark.bug("E071", on=["d440", "d449"])
+@pytest.mark.bug("E071", on=["d440"])
 def test_incremental_probe_is_relative(tg, probe_zero):
     tg.send_gcode("G1 Z3 F600", check=True, allow="3 mm up")
     idle(tg)
@@ -72,7 +72,7 @@ def test_incremental_probe_is_relative(tg, probe_zero):
     assert get(tg, "mpoz") == pytest.approx(z0 - 2, abs=0.01)     # buggy: z0 - 5 (work Z=-2)
 
 
-@pytest.mark.bug("E071", on=["d449"])
+@pytest.mark.bug("E071", on=[])
 def test_travel_check_ignores_unflagged_axes(tg, probe_zero):
     tg.send_gcode("G92 X3", check=True)           # work X=3 without moving
     resp = tg.send_gcode("G38.2 Z-0.1 F100", allow="0.1 mm probe if the travel check misses")

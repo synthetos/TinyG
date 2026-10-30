@@ -48,8 +48,8 @@ struct pbProbingSingleton {						// persistent probing runtime variables
 	float saved_jerk[3];						// saved and restored for each axis
 
 	float start_position[3];
-	float target[3];	                        // probe destination
-	bool flags[3];
+	float target[AXES];	                        // probe destination: absolute work coordinates, current units
+	bool flags[AXES];							// AXES wide: cm_straight_feed() reads all six
 };
 static struct pbProbingSingleton pb;
 
@@ -89,9 +89,23 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
         case (-3): { return(STAT_PROBE_SWITCH_ON_ABC_AXIS); }
     }
 
-	// set probe move endpoint
-	copy_vector(pb.target, target);		// set probe move endpoint
-	copy_vector(pb.flags, flags);		// set axes involved on the move
+	// Resolve the endpoint now, in absolute work coordinates: the probe runs later in forced
+	// ABSOLUTE_MODE (_probing_init), so a G91 target must become here + distance at command time.
+	// Unflagged axes stay where they are (they also drop out of the travel check below).
+	bool incremental = (cm_get_distance_mode(MODEL) == INCREMENTAL_MODE);
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		pb.target[axis] = 0;
+		pb.flags[axis] = false;
+	}
+	for (uint8_t axis=0; axis<AXIS_A; axis++) {
+		float here = cm_get_work_position(MODEL, axis);
+		if (flags[axis]) {
+			pb.target[axis] = incremental ? here + target[axis] : target[axis];
+			pb.flags[axis] = true;
+		} else {
+			pb.target[axis] = here;
+		}
+	}
 	clear_vector(cm.probe_results);		// clear the old probe position.
 										// NOTE: relying on probe_result will not detect a probe to 0,0,0.
 
