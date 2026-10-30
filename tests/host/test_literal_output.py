@@ -20,6 +20,7 @@ class LiteralOutput(unittest.TestCase):
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #define PSTR(x) (x)
 #define sprintf_P sprintf
 #define snprintf_P snprintf
@@ -48,6 +49,7 @@ const char *get_status_message(int status) {(void)status;return "error";}
 const char *json_relax(const char *s) {return s;}
 int cm_get_units_mode(int model) {(void)model;return 0;}
 int nv_get_type(nvObj_t *nv) {(void)nv;return NV_TYPE_MESSAGE;}
+bool controller_defer_motion_response(int s,bool j){(void)s;(void)j;return false;}
 int json_serialize(nvObj_t *nv,char *s,size_t n) {
     (void)nv; snprintf(s,n,"{\"msg\":\"50%% %%s %%n %%%%\"}\n");return strlen(s);
 }

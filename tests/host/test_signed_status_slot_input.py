@@ -38,6 +38,9 @@ class SignedStatusSlots(unittest.TestCase):
 #define STAT_VALUE_TYPE_ERROR 116
 #define STAT_FLOAT_IS_NAN 117
 #define STAT_FLOAT_IS_INFINITE 118
+#define PSTR(s) (s)
+#define strcmp_P strcmp
+#define NV_STATUS_REPORT_LEN 30
 #define ritorno(x) do {int s=(x);if(s)return s;}while(0)
 #define JTOK_FLAG 0x80
 #define JTOK_DSHIFT 4
@@ -54,6 +57,7 @@ int row_type, writes;
 void nv_reset_nv(nvObj_t *n){n->valuetype=TYPE_EMPTY;n->value_int=1234567;n->str=NULL;}
 int nv_get_index(char *g,char *t){(void)g;(void)t;return 1;}
 nvObj_t *nv_next(nvObj_t *n){return n->nx;}
+nvObj_t *nv_prev(nvObj_t *n){(void)n;return NULL;}
 bool nv_group_is_prefixed(char *t){(void)t;return false;}
 bool nv_group_is_typesafe(char *t){(void)t;return true;}
 int cfg_is_type(int i){(void)i;return row_type;}
@@ -71,7 +75,7 @@ int set_u16(nvObj_t *n){(void)n;writes++;return 0;}
 int parse(char *value,int type,nvObj_t *n){
  char input[100],group[4]="";snprintf(input,sizeof(input),"se29%c%s%c",0x98,value,0x92);
  char *p=input;nvObj_t *np=n;memset(n,0,sizeof(*n));row_type=type;
- return _marshall_nv_pair(&np,&p,group,0,true);
+ return _marshall_nv_pair(&np,&p,group,0,true,false);
 }
 int main(void){
  nvObj_t n;

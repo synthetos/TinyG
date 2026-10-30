@@ -43,6 +43,7 @@ nvObj_t *nv_add_string(const char *k,const char *v){(void)k;(void)v;return NULL;
 nvObj_t *nv_add_integer(const char *k,uint32_t v){(void)k;(void)v;return NULL;}
 nvObj_t *nv_next(nvObj_t *n){return n->nx;}
 int nv_get_type(nvObj_t *n){(void)n;return NV_TYPE_CONFIG;}
+bool controller_defer_motion_response(int s,bool j){(void)s;(void)j;return false;}
 unsigned xio_get_line_buffers_available(void){return 10;}
 int nv_copy_string(nvObj_t *n,const char *s){(void)n;(void)s;copies++;return 107;}
 int json_serialize(nvObj_t *n,char *s,int z){(void)n;(void)s;(void)z;assert(foot.str);strcpy(seen,foot.str);return 0;}

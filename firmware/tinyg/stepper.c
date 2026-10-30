@@ -1358,7 +1358,8 @@ stat_t st_get_pwr(nvObj_t *nv)
 
 stat_t st_set_mt(nvObj_t *nv)
 {
-	st_cfg.motor_power_timeout = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value_flt, MOTOR_TIMEOUT_SECONDS_MIN));
+	nv->value_flt = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value_flt, MOTOR_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_power_timeout = nv->value_flt;	// clamp in place so the echo and the persisted value match (E076)
 	return (STAT_OK);
 }
 

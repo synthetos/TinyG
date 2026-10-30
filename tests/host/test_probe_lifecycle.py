@@ -125,11 +125,9 @@ int main(void) {
     assert(cm_probe_callback()==STAT_OK && finishes==1);
     assert(SREG==0x95);
     // A rejected move must restore configuration, report once, and never retry.
-    for(int preset=0;preset<4;preset++) {
+    for(int preset=0;preset<2;preset++) {
         setup(); begin(); init_probe(); feed_status=STAT_MINIMUM_TIME_MOVE;
         if(preset==1) alarm_on_feed=true;
-        if(preset==2) cm.machine_state=MACHINE_SHUTDOWN;
-        if(preset==3) cm.machine_state=MACHINE_PANIC;
         assert(cm_probe_callback()==STAT_MINIMUM_TIME_MOVE && feeds==1);
         assert(cm.cycle_state==CYCLE_OFF && cm.probe_state==PROBE_FAILED && pb.func==NULL);
         assert(cm.gm.distance_mode==INCREMENTAL_MODE && flushes==1);
@@ -139,9 +137,18 @@ int main(void) {
         assert(alarms==(preset==0 ? 1 : 0));
         if(preset==0) assert(status_code==STAT_MINIMUM_TIME_MOVE); // preserve rejection, not generic miss
         if(preset>=1) assert(cycle_ends==0); // do not erase alarm/shutdown/panic
-        if(preset<2) assert(cm.machine_state==MACHINE_ALARM);
-        if(preset==2) assert(cm.machine_state==MACHINE_SHUTDOWN);
-        if(preset==3) assert(cm.machine_state==MACHINE_PANIC);
+        assert(cm.machine_state==MACHINE_ALARM);
+    }
+    // Already in SHUTDOWN or PANIC when the move is staged: end the probe without queuing it (E073).
+    for(int preset=2;preset<4;preset++) {
+        setup(); begin(); init_probe();
+        cm.machine_state=(preset==2) ? MACHINE_SHUTDOWN : MACHINE_PANIC;
+        assert(cm_probe_callback()==STAT_OK && feeds==0);
+        assert(cm.cycle_state==CYCLE_OFF && cm.probe_state==PROBE_FAILED);
+        assert(cm.gm.distance_mode==INCREMENTAL_MODE);
+        for(int a=0;a<3;a++) assert(cm.a[a].jerk_max==100+a);
+        assert(alarms==0 && cycle_ends==0);
+        assert(cm.machine_state==((preset==2) ? MACHINE_SHUTDOWN : MACHINE_PANIC));
     }
     setup(); cm.gm.feed_rate=0;
     float target[AXES]={1}; bool flags[AXES]={true};

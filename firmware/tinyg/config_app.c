@@ -671,6 +671,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
     { "", "fd",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
     { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
+    // Session optional-stop switch; append to preserve existing persistent indexes.
+    { "sys","os",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***

@@ -161,6 +161,7 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_WAIT_FOR_COMPLETION,	// M400
 	NEXT_ACTION_SET_JERK,				// M201.3
     NEXT_ACTION_GET_ADC                 // M105
 } cmNextAction;
@@ -260,7 +261,8 @@ typedef enum {
 
 typedef enum {
 	PROGRAM_STOP = 0,
-	PROGRAM_END
+	PROGRAM_END,
+	PROGRAM_OPTIONAL_STOP					// M1: stops only when the optional-stop switch ($os) is on (E020)
 } cmProgramFlow;
 
 typedef enum {				        // spindle state settings (See hardware.h for bit settings)
@@ -600,6 +602,8 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     bool g28_flag;                          // true = complete a G28 move
     bool g30_flag;                          // true = complete a G30 move
     bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
+    volatile bool program_paused;          // explicit M0/M1/M60 requires cycle start
+    uint8_t optional_stop_enabled;          // session M1 switch, default off after board reset
     bool end_hold_requested;                // request restart after feedhold
     uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
     uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)

@@ -394,8 +394,9 @@ static stat_t _parse_gcode_block(char *buf)
 				break;
 			}
 			switch((uint16_t)value) {
-				case 0: case 1: case 60:
+				case 0: case 60:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
+				case 1: SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_OPTIONAL_STOP);
 				case 2: case 30:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_END);
 				case 3: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CW);
@@ -412,6 +413,20 @@ static stat_t _parse_gcode_block(char *buf)
                 case 105: SET_NON_MODAL (next_action, NEXT_ACTION_GET_ADC);
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
+				case 400: {
+                        const char *command = buf;
+                        if (*command == 'N') {
+                            command++;
+                            if (*command < '0' || *command > '9') {
+                                return (STAT_COMMAND_NOT_ACCEPTED);
+                            }
+                            while (*command >= '0' && *command <= '9') command++;
+                        }
+                        if ((value != 400) || strcmp_P(command, PSTR("M400"))) {
+                            return (STAT_COMMAND_NOT_ACCEPTED);
+                        }
+                        SET_NON_MODAL (next_action, NEXT_ACTION_WAIT_FOR_COMPLETION);
+                    }
 				case 201: {
 					switch (_point(value)) {
 						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_JERK);
@@ -544,6 +559,7 @@ static stat_t _execute_gcode_block()
         case NEXT_ACTION_GET_ADC: { status = adc_report(); break;}
 		case NEXT_ACTION_GET_POSITION: { status = cm_get_position(); break;}
 		case NEXT_ACTION_GET_FIRMWARE: { status = cm_get_firmware(); break;}
+		case NEXT_ACTION_WAIT_FOR_COMPLETION: { status = controller_request_motion_sync(); break;}
 		case NEXT_ACTION_SET_JERK: { status = cm_set_jerk(cm.gn.target, cm.gf.target); break;}
 		case NEXT_ACTION_SET_G28_POSITION:  { status = cm_set_g28_position(); break;}                               // G28.1
 		case NEXT_ACTION_GOTO_G28_POSITION: { status = cm_goto_g28_position(cm.gn.target, cm.gf.target); break;}    // G28
@@ -587,6 +603,8 @@ static stat_t _execute_gcode_block()
 	if (cm.gf.program_flow == true) {
 		if (cm.gn.program_flow == PROGRAM_STOP) {
 			cm_program_stop();
+		} else if (cm.gn.program_flow == PROGRAM_OPTIONAL_STOP) {
+			cm_optional_program_stop();
 		} else {
 			cm_program_end();
 		}
