@@ -58,13 +58,13 @@ stat_t gc_gcode_parser(char *block)
 
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
 
-	if (str[0] == NUL) {                    // normalization returned null string
-    	return (STAT_OK);                   // most likely a comment line
-	}
-
 	// queue a "(MSG" response
 	if (*msg != NUL) {
     	(void)cm_message(msg);
+	}
+
+	if (str[0] == NUL) {                    // normalization returned null string
+		return (STAT_OK);                   // most likely a comment line
 	}
 
     // Trap M30 and M2 as $clear conditions. This has no effect it not in ALARM or SHUTDOWN
