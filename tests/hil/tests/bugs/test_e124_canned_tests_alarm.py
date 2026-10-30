@@ -70,10 +70,10 @@ def _check_runs_clean(tg, n):
 @pytest.mark.resets_board
 @pytest.mark.timeout(420)
 @pytest.mark.parametrize("n", [
-    pytest.param(4, marks=pytest.mark.bug("E124", on=["d449"]), id="t4-arcs"),
-    pytest.param(6, marks=pytest.mark.bug("E124", on=["d449"]), id="t6-feedhold"),
-    pytest.param(7, marks=pytest.mark.bug("E124", on=["d449"]), id="t7-mcodes"),
-    pytest.param(8, marks=pytest.mark.bug("E124", on=["d449"]), id="t8-json"),
+    pytest.param(4, id="t4-arcs"),
+    pytest.param(6, id="t6-feedhold"),
+    pytest.param(7, id="t7-mcodes"),
+    pytest.param(8, id="t8-json"),
 ])
 def test_canned_test_runs_to_eof_without_alarm(tg, keep, n):
     keep("rxm")
