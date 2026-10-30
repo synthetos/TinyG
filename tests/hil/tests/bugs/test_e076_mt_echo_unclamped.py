@@ -8,7 +8,7 @@ import pytest
 pytestmark = pytest.mark.persists
 
 
-@pytest.mark.bug("E076", on=["d449"])
+@pytest.mark.bug("E076", on=[])
 def test_mt_echo_matches_clamped_value(tg, keep):
     keep("mt")
     echoed = tg.set("mt", 0)
