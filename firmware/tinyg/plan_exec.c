@@ -161,13 +161,13 @@ stat_t mp_exec_move()
  **** NOTICE ** NOTICE ** NOTICE ****/
 
 /*
- * _fast_stop_scale() - braking length factor for a limit-switch stop
+ * _fast_stop_ratio() - braking jerk ratio for a limit-switch stop (E031)
  *
- *	A jerk-limited stop from v takes v * sqrt(v / J), so braking at the axes' homing jerk instead of
- *	the move's jerk scales the tail by sqrt(1 / ratio), where ratio is the smallest jerk_homing /
- *	jerk_max over the axes in motion. Never softer than a normal hold.
+ *	The smallest jerk_homing / jerk_max over the axes in motion, never below 1 (never softer than a
+ *	normal hold). A jerk-limited stop from v takes v * sqrt(v / J), so the full-stop tail scales by
+ *	sqrt(1/ratio); over a given length L the velocity shed, (L^2 J)^(1/3), scales by cbrt(ratio).
  */
-static float _fast_stop_scale(const mpBuf_t *bf)
+static float _fast_stop_ratio(const mpBuf_t *bf)
 {
 	float ratio = 0;
 	for (uint8_t axis=0; axis<AXES; axis++) {
@@ -176,7 +176,7 @@ static float _fast_stop_scale(const mpBuf_t *bf)
 			if (ratio == 0 || r < ratio) { ratio = r; }
 		}
 	}
-	return ((ratio > 1) ? sqrt(1 / ratio) : 1);
+	return ((ratio > 1) ? ratio : 1);
 }
 
 stat_t mp_exec_aline(mpBuf_t *bf)
@@ -269,7 +269,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Finish up the initialization in the case of a new deceleration_continue block.
         if ((cm.hold_state == FEEDHOLD_SYNC) ||
             ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
-            if (mr.section == SECTION_TAIL) {   // if already in a tail don't decelerate. You already are
+            if ((mr.section == SECTION_TAIL) && !cm.hold_fast) {   // already decelerating (a fast stop rebuilds the tail)
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {
@@ -288,8 +288,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
                 float available_length = get_axis_vector_length(mr.target, mr.position);
                 mr.tail_length = mp_get_target_length(mr.cruise_velocity, 0, bf);   // braking length
+                float fast_ratio = cm.hold_fast ? _fast_stop_ratio(bf) : 1;
                 if (cm.hold_fast) {
-                    mr.tail_length *= _fast_stop_scale(bf);
+                    mr.tail_length /= sqrt(fast_ratio);     // full stop at the braking jerk
                 }
 
                 if (available_length >= mr.tail_length) {   // cases (1a) and (1c)
@@ -297,7 +298,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {                                    // case (1b)
                     mr.tail_length = available_length;
-                    mr.exit_velocity = mr.cruise_velocity - mp_get_target_velocity(0, mr.tail_length, bf);
+                    mr.exit_velocity = mr.cruise_velocity - mp_get_target_velocity(0, mr.tail_length, bf) * cbrt(fast_ratio);
+                    if (mr.exit_velocity < 0) { mr.exit_velocity = 0; }
                     cm.hold_state = FEEDHOLD_DECEL_CONTINUE;
                 }
             }

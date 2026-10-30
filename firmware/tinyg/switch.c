@@ -221,8 +221,11 @@ static void _dispatch_switch(const uint8_t sw_num)
         return;
     }
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
-		cm.hold_fast = true;							// stop now, at the homing jerk, without waiting
-		cm_request_feedhold();							// for the main loop to raise the alarm
+		cm.hold_fast = true;							// brake at the homing jerk, and start the hold here
+		if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state == MOTION_RUN)) {	// rather than waiting
+			cm_set_motion_state(MOTION_HOLD);			// for the main loop (same as cm_start_hold()):
+			cm.hold_state = FEEDHOLD_SYNC;				// the exec picks it up at the next segment
+		}
     	controller_assert_limit_condition(sw_num+1);
 	}
 }
