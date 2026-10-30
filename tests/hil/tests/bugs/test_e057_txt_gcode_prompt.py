@@ -22,7 +22,7 @@ def test_txt_gcode_error_in_footer(tg):
 
 
 # A txt value that is itself JSON is parsed recursively; its status was dropped the same way.
-@pytest.mark.bug("E057", on=["d449"])
+@pytest.mark.bug("E057", on=[])
 @pytest.mark.parametrize("inner", ['{"zzzq":null}', '{"fv":}'], ids=["unknown-token", "bad-json"])
 def test_nested_txt_json_error_in_footer(tg, inner):
     assert tg.send_json({"txt": inner}).status != 0
