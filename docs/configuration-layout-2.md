@@ -7,6 +7,12 @@ settings, then write marker `10002`. The boundary is looked up by the `spep` tok
 Already-current layout-2 settings are loaded without rewriting the marker.
 Erased EEPROM and unknown layouts still load profile defaults.
 
+A rejected saved value falls back to its row default in RAM without overwriting
+the saved EEPROM value. The first rejected token is reported once, non-fatally,
+after startup enables transmission. A rejected new-row default is not persisted;
+the old layout marker remains so a later boot can retry migration. This does not
+make the migration atomic against an interrupted EEPROM write.
+
 Keep a backup when changing firmware. Downgrading to a firmware that does not
 understand the newer marker can still reset or misinterpret settings; this
 forward migration cannot change older firmware's behavior.
@@ -76,10 +82,16 @@ requires external capture. The logic ordering is host-tested.
 synthetic EEPROM: both legacy markers retain non-default motor geometry, offsets
 and switch settings, new active rows get defaults, placeholders stay untouched,
 and the migration marker is written once. A second boot preserves new settings.
-Unknown markers take the existing default path.
+Unknown markers take the existing default path. Rejected old values recover in
+RAM while their EEPROM bytes stay unchanged; rejected appended defaults leave
+the old marker intact and can be retried. The default-setter host check executes
+all 186 initialized defaults, including both spindle polarities and probe
+polarity; hardware effects are stubbed.
 
 The optional board test `test_e022_layout2_migration.py` needs
-`TINYG_LAYOUT1_SOURCE` pointing at a layout-1 checkout and `--allow-destructive`.
+`TINYG_LAYOUT1_SOURCE` pointing at a layout-1 checkout that includes the E051
+boot-geometry fix, plus `--allow-destructive`. Both source and destination must
+load geometry correctly across reset before this test is meaningful.
 It backs up settings, flashes layout 1, restores them, changes `1sa` to 0.9, flashes
 layout 2 and verifies the preserved value plus new defaults. Its cleanup restores
 the layout-2 image and saved settings. Board validation remains pending.

@@ -38,7 +38,7 @@ typedef union {uint32_t u;float f;} value_t;
 typedef struct {int index,valuetype;char token[6];union {uint32_t value_int;float value_flt;};} nvObj_t;
 struct {int cycle_state;} cm;
 struct {char token[6];int type,flags;float default_value;} cfgArray[]={
- {"fb",TYPE_FLOAT,3,449.01},
+ {"fb",TYPE_FLOAT,2,449.01},
  {"1sa",TYPE_FLOAT,3,1.8},
  {"g54x",TYPE_FLOAT,3,0},
  {"st",TYPE_INTEGER,3,1},
@@ -56,6 +56,10 @@ struct {char token[6];int type,flags;float default_value;} cfgArray[]={
 static value_t eeprom[COUNT], model[COUNT];
 static unsigned writes[COUNT], loaded_sr, defaulted_sr, boundary_lookups;
 static nvObj_t object;
+static index_t config_load_failure;
+static bool reject_old, reject_new, tx;
+static unsigned reports;
+static char reported[6];
 static void _set_defa(nvObj_t *nv);
 stat_t nv_persist(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(char c) {memset(&object,0,sizeof(object));return &object;}
@@ -78,19 +82,24 @@ bool cfg_has_flag(int i,int f) {return cfgArray[i].flags & f;}
 int cfg_is_type(int i) {return cfgArray[i].type;}
 stat_t read_persistent_value(nvObj_t *nv) {nv->value_int=eeprom[nv->index].u;return 0;}
 stat_t write_persistent_value(nvObj_t *nv) {eeprom[nv->index].u=nv->value_int;writes[nv->index]++;return 0;}
-stat_t nv_set(nvObj_t *nv) {model[nv->index].u=nv->value_int;return 0;}
+stat_t nv_set(nvObj_t *nv) {
+ if(reject_old && nv->index==1 && nv->value_flt==.9f)return 106;
+ if(reject_new && nv->index==5)return 106;
+ model[nv->index].u=nv->value_int;return 0;
+}
+void rpt_exception(int status,const char *token){assert(tx && status==STAT_CONFIG_ASSERTION_FAILURE);reports++;strcpy(reported,token);}
 '''
   code+='\n'.join(x for x in source.splitlines() if x.startswith('#define CONFIG_NVM_LAYOUT'))+'\n'
-  for name in ('_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
+  for name in ('_record_config_load_failure','_load_config_default','config_report_load_failure','_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
    if name+'(' in source:
-    code+=function(source,r'static (?:bool|void) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
+    code+=function(source,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'void config_init\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=r'''
 void prepare(float marker) {
  memset(writes,0,sizeof(writes));memset(model,0,sizeof(model));
- loaded_sr=defaulted_sr=boundary_lookups=0;
+ loaded_sr=defaulted_sr=boundary_lookups=reports=0;config_load_failure=0;reject_old=reject_new=tx=false;
  for(int i=0;i<COUNT;i++)eeprom[i].u=0xdeadbeef;
  eeprom[0].f=marker;eeprom[1].f=.9f;eeprom[2].f=12.5f;eeprom[3].u=0;eeprom[4].u=123;
 }
@@ -109,6 +118,24 @@ int main(void) {
   eeprom[5].u=0;eeprom[10].u=1;memset(writes,0,sizeof(writes));config_init();
   assert(model[1].f==.9f && model[5].u==0 && model[10].u==1);
   for(int j=0;j<COUNT;j++)assert(writes[j]==0);
+ }
+ // Legacy and current layouts recover an invalid old value only in RAM.
+ float markers[]={449.01f,10001,10002};
+ for(int i=0;i<3;i++){
+  prepare(markers[i]);reject_old=true;config_init();
+  assert(model[1].f==1.8f && eeprom[1].f==.9f && writes[1]==0);
+  assert(reports==0);tx=true;config_report_load_failure();
+  assert(reports==1 && !strcmp(reported,"1sa"));config_report_load_failure();assert(reports==1);
+ }
+ // A rejected new default leaves its EEPROM slot untouched and migration retryable.
+ for(int i=0;i<2;i++){
+  prepare(legacy[i]);reject_new=true;config_init();
+  assert(writes[5]==0 && eeprom[5].u==0xdeadbeef);
+  assert(eeprom[0].f==legacy[i] && writes[0]==0 && model[1].f==.9f);
+  assert(reports==0);tx=true;config_report_load_failure();
+  assert(reports==1 && !strcmp(reported,"spep"));
+  reject_new=false;config_init();
+  assert(eeprom[0].f==10002 && writes[0]==1 && model[5].u==1);
  }
  float invalid[]={449.99f,10000,10003,0,NAN,INFINITY};
  for(int i=0;i<6;i++){

@@ -43,6 +43,42 @@
 #include "xio.h"
 
 static void _set_defa(nvObj_t *nv);
+static index_t config_load_failure; // first rejected row + 1; zero means no pending report
+
+static void _record_config_load_failure(nvObj_t *nv)
+{
+    if (config_load_failure == 0) {
+        config_load_failure = nv->index + 1;
+    }
+}
+
+static stat_t _load_config_default(nvObj_t *nv)
+{
+    nv->value_flt = GET_TABLE_FLOAT(default_value);
+    if (cfg_is_type(nv->index) != TYPE_FLOAT) {
+        nv->value_int = (uint32_t)nv->value_flt;
+        nv->valuetype = TYPE_INTEGER;
+    } else {
+        nv->valuetype = TYPE_FLOAT;
+    }
+    stat_t status = nv_set(nv);
+    if (status != STAT_OK) {
+        _record_config_load_failure(nv);
+    }
+    return (status);
+}
+
+void config_report_load_failure(void)
+{
+    if (config_load_failure == 0) {
+        return;
+    }
+    char token[TOKEN_LEN+1];
+    strncpy_P(token, cfgArray[config_load_failure-1].token, TOKEN_LEN);
+    token[TOKEN_LEN] = NUL;
+    config_load_failure = 0;
+    rpt_exception(STAT_CONFIG_ASSERTION_FAILURE, token);
+}
 
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
@@ -170,6 +206,7 @@ void config_init()
 	if (!_nvm_layout_is_current(nv) && !migrate) {			// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
+        bool initialized = true;
         index_t first_new = nv_index_max();
         if (migrate) {
             strcpy_P(nv->token, PSTR("spep"));
@@ -183,26 +220,24 @@ void config_init()
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
             if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-                bool initialize = migrate && (nv->index >= first_new);
-                if (initialize) {
-                    nv->value_flt = GET_TABLE_FLOAT(default_value);
-                    if (cfg_is_type(nv->index) != TYPE_FLOAT) {
-                        nv->value_int = (uint32_t)nv->value_flt;
+                if (migrate && (nv->index >= first_new)) {
+                    if (_load_config_default(nv) == STAT_OK) {
+                        nv_persist(nv);
+                    } else {
+                        initialized = false;
                     }
                 } else {
                     read_persistent_value(nv);
+                    nv->valuetype = (cfg_is_type(nv->index) == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INTEGER;
+                    if (nv_set(nv) != STAT_OK) {
+                        _record_config_load_failure(nv);
+                        _load_config_default(nv);
+                    }
                 }
-                if (cfg_is_type(nv->index) == TYPE_FLOAT) {
-                    nv->valuetype = TYPE_FLOAT;
-                } else {
-                    nv->valuetype = TYPE_INTEGER;
-                }
-				nv_set(nv);
-                if (initialize) { nv_persist(nv); }
 			}
 		}
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
-        if (migrate) { _write_nvm_layout_marker(nv); } // commit the migration last
+        if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
 #endif
 }
@@ -221,16 +256,10 @@ static void _set_defa(nvObj_t *nv)
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
         if (cfg_has_flag(nv->index, F_INITIALIZE)) {
-    		nv->value_flt = GET_TABLE_FLOAT(default_value); // get default as float
-            if (cfg_is_type(nv->index) != TYPE_FLOAT) {
-                nv->value_int = (uint32_t)nv->value_flt;    // cast in place to int if required
-                nv->valuetype = TYPE_INTEGER;
-            } else {
-                nv->valuetype = TYPE_FLOAT;
+            strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
+            if (_load_config_default(nv) == STAT_OK) {
+                nv_persist(nv);
             }
-			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
-			nv_set(nv);                         // sets value
-			nv_persist(nv);                     // (record 0 gets the build number here...)
 		}
 	}
     sr_init_status_report_P(SR_DEFAULTS);       // reset status reports to defaults

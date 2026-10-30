@@ -64,6 +64,8 @@ int main(void) {
 #define strncpy_P strncpy
 #define GET_TABLE_FLOAT(f) cfgArray[nv->index].f
 typedef int stat_t;
+typedef int index_t;
+static index_t config_load_failure;
 typedef struct {int index,valuetype; char token[6]; union {float value_flt;uint32_t value_int;};} nvObj_t;
 struct {int cycle_state;} cm;
 struct {char token[6];int type;float default_value;} cfgArray[]={
@@ -73,7 +75,7 @@ struct {char token[6];int type;float default_value;} cfgArray[]={
 static uint32_t records[4];
 bool nv_index_is_single(int i) {return i<4;}
 bool nv_index_lt_groups(int i) {return i<4;}
-bool cfg_has_flag(int i,int f) {return i==0;}
+bool cfg_has_flag(int i,int f) {return i==0 && f==F_PERSIST;}
 int cfg_is_type(int i) {return cfgArray[i].type;}
 void cm_set_units_mode(int m) {}
 void rpt_exception_P(int s,const char *m) {assert(0);}
@@ -83,6 +85,8 @@ stat_t write_persistent_value(nvObj_t *nv) {records[nv->index]=nv->value_int;ret
 void _write_nvm_layout_marker(nvObj_t *nv) {nv->index=0;nv->value_flt=10002;write_persistent_value(nv);}
 '''
   code+='stat_t nv_set(nvObj_t *nv) {assert(nv->index==0);return STAT_PARAMETER_IS_READ_ONLY; }\n'
+  for name in ('_record_config_load_failure','_load_config_default'):
+   code+=function(source,r'static (?:void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(app,r'static stat_t _reserved_hold_setting\([^;{}]*\)(?=\s*\{)')+'\n'
