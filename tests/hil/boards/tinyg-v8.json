@@ -46,7 +46,8 @@
       "mask": "0x07",
       "bothedges": "0x00",
       "rising": "0x01"
-    }
+    },
+    "avr_libc_header": "avr/iox192a3.h"
   },
   "serial": {
     "usb_vid_pid": "0403:6015",
@@ -182,5 +183,22 @@
     "evsel_ch0": "0x08",
     "ccaen": "0x10",
     "cpu_hz": 32000000
+  },
+  "firmware_isrs": {
+    "TCC0_OVF": "DDA step generation",
+    "TCD0_OVF": "dwell timer",
+    "TCE0_OVF": "segment loader",
+    "TCF0_OVF": "exec (planner runtime)",
+    "USARTC0_RXC": "USB receive",
+    "USARTC0_DRE": "USB transmit",
+    "RTC_OVF": "SysTick",
+    "PORTA_INT0": "X switch",
+    "PORTD_INT0": "Y switch",
+    "PORTE_INT0": "Z switch",
+    "PORTF_INT0": "A switch",
+    "PORTA_INT1": "X max switch",
+    "PORTD_INT1": "Y max switch",
+    "PORTE_INT1": "Z max switch",
+    "PORTF_INT1": "A max switch"
   }
 }
