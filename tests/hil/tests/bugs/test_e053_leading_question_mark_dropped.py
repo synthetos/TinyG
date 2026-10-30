@@ -50,7 +50,7 @@ def _char_mode(tg):
 # line while the planner is full (which panics, as in E034).
 @pytest.mark.resets_board
 @pytest.mark.persists
-@pytest.mark.bug("E053", on=["d449"])
+@pytest.mark.bug("E053", on=[])
 @pytest.mark.parametrize("rxm", [1, 0], ids=["line-mode", "char-mode"])
 def test_question_prefixed_gcode_waits_for_planner_room(tg, keep, rxm):
     keep("rxm")
