@@ -694,7 +694,19 @@ void cm_clear()
         // An alarm latches a hold (E044). Once nothing is left to run (e.g. after a '%' flush)
         // no '~' will come, so clearing also ends the hold and the cycle; otherwise the cycle stays
         // MACHINING and persisted settings are refused as 'moving' until a reset (E144).
-        if (!mp_has_runnable_buffer() && mp_runtime_is_idle()) {
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;
+        cli();
+#endif
+        // Drained means no queued block, an idle runtime AND no prepared segment waiting for the
+        // loader (the last block can be freed before its final segment loads); snapshot together.
+        bool drained = !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+                       (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER);
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
+        // once drained only the main loop (this code) can queue motion, so act outside the cli window
+        if (drained) {
             if (cm.hold_state != FEEDHOLD_OFF) {
                 cm.end_hold_requested = false;
                 mp_exit_hold_state();
