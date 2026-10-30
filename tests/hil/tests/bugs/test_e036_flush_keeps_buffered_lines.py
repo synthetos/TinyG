@@ -55,3 +55,47 @@ def test_flush_drops_buffered_lines(tg, keep):
         if abs(back) > 0.0005:
             tg.send_gcode(f"G91 G1 X{back:.4f} F600", allow=MOVE)
             tg.wait_idle()
+
+
+@pytest.mark.motion
+@pytest.mark.persists
+@pytest.mark.dialect("d449")
+def test_flush_releases_xoff(tg, keep):
+    """After a flush empties a receive ring that had paused the host (XOFF), the board sends XON."""
+    from tinyg_hil.protocol import XOFF, XON
+    keep("rxm", "ex")
+    tg.set("rxm", 1)
+    if tg.get("ex") != 1:
+        pytest.skip("needs XON/XOFF flow control ($ex=1)")
+    start = tg.get("mpox")
+    tg.send_gcode("G91", check=True)
+    for _ in range(28):
+        tg.send_gcode(LINE, check=True, allow=MOVE)
+    try:
+        time.sleep(0.1)
+        tg.send_raw(b"!")
+        end = time.monotonic() + 3
+        while _query(tg, "hold", "vel") != {"hold": tg.dialect.hold("HOLD"), "vel": 0}:
+            assert time.monotonic() < end, "feedhold did not reach HOLD"
+        mark = len(tg.transport.flow)
+        for _ in range(40):                                 # fill the line pool, then the RX ring
+            tg.transport.write((LINE + "\n").encode())
+            if any(b == XOFF for _, b in tg.transport.flow[mark:]):
+                break
+            time.sleep(0.01)
+        assert any(b == XOFF for _, b in tg.transport.flow[mark:]), "board never sent XOFF"
+        t_flush = time.monotonic()
+        tg.send_raw(b"%")
+        end = time.monotonic() + 2
+        while not any(b == XON and t > t_flush for t, b in tg.transport.flow[mark:]):
+            assert time.monotonic() < end, "no XON after the flush emptied the receive buffer"
+            time.sleep(0.02)
+    finally:
+        end = time.monotonic() + 15
+        while _query(tg, "qr")["qr"] != tg.planner_buffers and time.monotonic() < end:
+            time.sleep(0.1)
+        tg.drain(quiet=0.3)
+        back = start - tg.get("mpox")
+        if abs(back) > 0.0005:
+            tg.send_gcode(f"G91 G1 X{back:.4f} F600", allow=MOVE)
+            tg.wait_idle()
