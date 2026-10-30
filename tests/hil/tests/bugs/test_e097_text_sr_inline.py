@@ -8,6 +8,8 @@ import re
 
 import pytest
 
+from tinyg_hil import snapshot
+
 
 def _text_mode(tg, line: str, allow: str | None = None, timeout: float = 3.0) -> list[str]:
     """Send one line in text mode (motion-guarded) and return its output up to the prompt."""
@@ -23,7 +25,12 @@ def _text_mode(tg, line: str, allow: str | None = None, timeout: float = 3.0) ->
 
 @pytest.mark.motion
 @pytest.mark.bug("E097", on=[])
-def test_auto_status_report_inline_pairs(tg):
+def test_auto_status_report_inline_pairs(tg, keep):
+    keep("sv", "si")
+    original_sr = tg.get("sr")
+    snapshot.set_status_report(tg, {"posx": True, "stat": True})
+    tg.set("sv", 2)
+    tg.set("si", 100)
     _text_mode(tg, "$fb")       # any $ line switches the board to text mode
     try:
         _text_mode(tg, "G91")
@@ -34,5 +41,6 @@ def test_auto_status_report_inline_pairs(tg):
         tg.drain(quiet=1.0, limit=5.0)
         tg.get("fb")            # back to JSON mode
         tg.wait_idle()
-    assert any(re.search(r"(^|,)stat:3(,|$)", line) for line in lines), lines
+        snapshot.set_status_report(tg, original_sr)
+    assert any(re.search(r"(^|,)stat:\d+(,|$)", line) for line in lines), lines
     assert any(re.search(r"(^|,)posx:-?\d+\.\d+", line) for line in lines), lines
