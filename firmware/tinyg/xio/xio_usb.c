@@ -58,8 +58,8 @@ int xio_putc_usb(const char c, FILE *stream)
 	while (next_tx_buf_head == USBu.tx_buf_tail)
 		sleep_mode(); 									// sleep until there is space in the buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
-	USBu.tx_buf_head = next_tx_buf_head;				// accept next buffer head
-	USBu.tx_buf[USBu.tx_buf_head] = c;					// write char to buffer
+	USBu.tx_buf[next_tx_buf_head] = c;					// write char to buffer, then publish it: the RX
+	USBu.tx_buf_head = next_tx_buf_head;				// ISR (XON) or CTS ISR may re-enable TX at any time
 
 	// expand <LF> to <LF><CR> if $ec is set
 	if ((c == '\n') && (USB.flag_crlf)) {
@@ -68,8 +68,8 @@ int xio_putc_usb(const char c, FILE *stream)
 		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
 		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
 		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
+		USBu.tx_buf[next_tx_buf_head] = CR;
 		USBu.tx_buf_head = next_tx_buf_head;
-		USBu.tx_buf[USBu.tx_buf_head] = CR;
 	}
 	// finish up
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
@@ -80,7 +80,7 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 {
 	// If the CTS pin (FTDI's RTS) is HIGH, then we cannot send anything, so exit
 	if ((xio.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)) {
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// force another TX interrupt
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// stop TX interrupts; the CTS edge ISR re-enables them
 		return;
 	}
 
@@ -91,8 +91,10 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		return;
 	}
 
-	// Halt transmission while in TX-side XOFF
+	// Halt transmission while in TX-side XOFF. Disable the interrupt, or it re-fires continuously;
+	// XON and the next xio_putc_usb() re-enable it.
 	if (USBu.fc_state_tx == FC_IN_XOFF) {
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;
 		return;
 	}
 
@@ -101,7 +103,7 @@ ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
 		advance_buffer(USBu.tx_buf_tail, TX_BUFFER_SIZE);
 		USBu.usart->DATA = USBu.tx_buf[USBu.tx_buf_tail];
 	} else {
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer has no data; force another interrupt
+		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;		// buffer empty: stop TX interrupts until xio_putc_usb()
 	}
 }
 
@@ -166,7 +168,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 		if (c == XON) {
 			USBu.fc_state_tx = FC_IN_XON;
-			USBu.usart->CTRLA = CTRLA_RXON_TXOFF;// force a TX interrupt
+			USBu.usart->CTRLA = CTRLA_RXON_TXON;	// re-enable the TX interrupt to resume sending
 			return;
 		}
 	}
