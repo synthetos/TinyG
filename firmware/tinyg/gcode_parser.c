@@ -178,13 +178,16 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
  */
 static void _parse_clear(const char *str)
 {
-    if (cm.machine_state == MACHINE_ALARM) {
-        if (str[0] == 'M') {
-            if ( ((str[1]=='3') && (str[2]=='0') && (str[3]==NUL)) ||   // M30
-                 ((str[1]=='2') && (str[2]==NUL) )) {                   // M2
-                cm_clear();
-            }
-        }
+    if (cm.machine_state != MACHINE_ALARM) { return; }
+    if (*str == 'N') {
+        str++;
+        if (!isdigit((unsigned char)*str)) { return; }
+        while (isdigit((unsigned char)*str)) { str++; }
+    }
+    // Only a standalone program end clears an alarm; never unlock a mixed motion block.
+    if (strcmp_P(str, PSTR("M2")) == 0 || strcmp_P(str, PSTR("M02")) == 0 ||
+        strcmp_P(str, PSTR("M30")) == 0) {
+        cm_clear();
     }
 }
 

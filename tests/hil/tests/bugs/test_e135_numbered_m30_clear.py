@@ -9,11 +9,11 @@ import pytest
 pytestmark = pytest.mark.dialect("d449")
 
 
-@pytest.mark.bug("E135", on=["d449"])
-def test_numbered_m30_clears_alarm(tg):
+@pytest.mark.parametrize("command", ["N10 M30", "N20 M2", "N30 M02"])
+def test_numbered_m30_clears_alarm(tg, command):
     tg.send_json({"alarm": None})
     assert tg.stat() == tg.dialect.stat("ALARM")
-    assert tg.send_gcode("N10 M30").status == 0
+    assert tg.send_gcode(command).status == 0
     assert tg.stat() != tg.dialect.stat("ALARM")
 
 
