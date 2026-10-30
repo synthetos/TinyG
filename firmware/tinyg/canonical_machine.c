@@ -1086,7 +1086,7 @@ stat_t cm_resume_origin_offsets()
  * cm_straight_traverse() - G0 linear rapid
  */
 
-stat_t cm_straight_traverse(const float target[], const bool flags[])
+static stat_t _straight_traverse(const float target[], const bool flags[], const bool machine_coordinates)
 {
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;
 
@@ -1095,7 +1095,16 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
-	cm_set_model_target(target, flags);
+    if (machine_coordinates) {
+        copy_vector(cm.gm.target, cm.gmx.position);
+        for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+            if (flags[axis] && (cm.a[axis].axis_mode != AXIS_DISABLED)) {
+                cm.gm.target[axis] = target[axis];  // stored machine coordinates are already mm/degrees
+            }
+        }
+    } else {
+        cm_set_model_target(target, flags);
+    }
 
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
@@ -1115,6 +1124,11 @@ stat_t cm_straight_traverse(const float target[], const bool flags[])
 	return (status);
 }
 
+stat_t cm_straight_traverse(const float target[], const bool flags[])
+{
+    return (_straight_traverse(target, flags, false));
+}
+
 stat_t cm_cancel_motion_mode()
 {
 	cm.gm.motion_mode = MOTION_MODE_CANCEL;    // modal only: queued moves keep their cycle
@@ -1128,6 +1142,23 @@ stat_t cm_cancel_motion_mode()
  * cm_goto_g30_position() - G30
  */
 
+static stat_t _goto_stored_position(const float stored[], const float target[], const bool flags[])
+{
+    // Normal dispatch reserves this headroom; reject ungated calls instead of blocking in a hold.
+    if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
+        return (STAT_BUFFER_FULL);
+    }
+    uint8_t saved_override = cm.gm.absolute_override;
+    cm_set_absolute_override(false);
+    stat_t status = cm_straight_traverse(target, flags); // intermediate point uses work coordinates
+    if (status == STAT_OK) {
+        cm_set_absolute_override(true);
+        status = _straight_traverse(stored, FLAGS_ALL, true);
+    }
+    cm_set_absolute_override(saved_override);
+    return (status);
+}
+
 stat_t cm_set_g28_position(void)
 {
 	copy_vector(cm.gmx.g28_position, cm.gmx.position);
@@ -1136,10 +1167,7 @@ stat_t cm_set_g28_position(void)
 
 stat_t cm_goto_g28_position(const float target[], const bool flags[])
 {
-	cm_set_absolute_override(true);
-	while (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM); // ensure planner buffers
-	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
-	return(cm_straight_traverse(cm.gmx.g28_position, FLAGS_ALL));// execute actual stored move
+    return (_goto_stored_position(cm.gmx.g28_position, target, flags));
 }
 
 stat_t cm_set_g30_position(void)
@@ -1150,10 +1178,7 @@ stat_t cm_set_g30_position(void)
 
 stat_t cm_goto_g30_position(const float target[], const bool flags[])
 {
-	cm_set_absolute_override(true);
-	while (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM); // ensure planner buffers
-	cm_straight_traverse(target, flags);			 // move through intermediate point, or skip
-	return(cm_straight_traverse(cm.gmx.g30_position, FLAGS_ALL));// execute actual stored move
+    return (_goto_stored_position(cm.gmx.g30_position, target, flags));
 }
 
 /********************************
