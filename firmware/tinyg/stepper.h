@@ -418,6 +418,7 @@ extern stPrepSingleton_t st_pre;		// only used by config_app diagnostics
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_init_complete(void); // finish the boot-only configuration window
 void stepper_reset(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);

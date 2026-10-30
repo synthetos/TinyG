@@ -346,13 +346,21 @@ uint8_t st_runtime_isbusy()
 	return (true);
 }
 
+// Offset commands can be queued before config_init loads EEPROM, with interrupts still off.
+static bool stepper_configured;
+
+void stepper_init_complete(void)
+{
+    stepper_configured = true;
+}
+
 static bool _stepper_configuration_busy()
 {
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
     cli();
 #endif
-    bool busy = st_runtime_isbusy() || mp_has_runnable_buffer() ||
+    bool busy = st_runtime_isbusy() || (stepper_configured && mp_has_runnable_buffer()) ||
                 (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER);
 #ifdef __AVR
     SREG = saved_sreg;

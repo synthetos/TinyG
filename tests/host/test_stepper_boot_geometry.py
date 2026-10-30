@@ -82,6 +82,12 @@ int main(void){
   st_cfg.mot[0].step_angle=.9f;
   assert(st_set_sa(&nv)==(busy ? 106:0));assert(SREG==saved);
   assert(st_cfg.mot[0].step_angle==(busy ? .9f:1.8f));
+  nv.target=&st_cfg.mot[0].travel_rev;nv.value_flt=5;st_cfg.mot[0].travel_rev=10;
+  assert(st_set_tr(&nv)==(busy ? 106:0));assert(SREG==saved);
+  assert(st_cfg.mot[0].travel_rev==(busy ? 10:5));
+  nv.target=&st_cfg.mot[0].microsteps;nv.value_int=8;st_cfg.mot[0].microsteps=4;
+  assert(st_set_mi(&nv)==(busy ? 106:0));assert(SREG==saved);
+  assert(st_cfg.mot[0].microsteps==(busy ? 4:8));
  }
  // The boot exception concerns queued commands only, never running/prepared steps.
  stepper_configured=false;queued=true;SREG=0x15;
