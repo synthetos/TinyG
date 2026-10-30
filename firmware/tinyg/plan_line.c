@@ -335,7 +335,6 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
 			inv_time = gms->feed_rate;	// NB: feed rate was un-inverted to minutes by cm_set_feed_rate()
-			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
 		} else {
 			// compute length of linear move in millimeters. Feed rate is provided as mm/min
 			xyz_time = sqrt(axis_square[AXIS_X] + axis_square[AXIS_Y] + axis_square[AXIS_Z]) / gms->feed_rate;

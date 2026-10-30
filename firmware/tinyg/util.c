@@ -161,7 +161,7 @@ float max4(float x1, float x2, float x3, float x4)
 /**** String utilities ****
  * isnumber() 	  - isdigit that also accepts plus, minus, and decimal point
  * str_escape()   - add escapes to a string - currently for quotes only
- * str_unescape() - remove escaped quotes from a string. Also remove leading "'s if any
+ * str_unescape() - strip the quotes around a tokenized JSON string (the tokenizer already unescaped it)
  * str_concat()   - concatenate src to dst string and return pointer to NUL of dst string
  * str_asciify()  - turn string into good old American 7 but ASCII - obliterate smart quotes
  */
@@ -188,20 +188,12 @@ char *str_escape(char *dst, const char *src)
 
 char *str_unescape(char *str)
 {
-    char c;
-    char *wr = str;  // write pointer
+    char *wr = str;                 // write pointer
 	char *start_str = str;
 
     if (*str == '"') { str++; }     // skip leading quote in string
-
-    while ((c = *(str++)) != 0) {	// NUL
-        if ((c == '\\') && (*str == '"')) { 
-            str++;
-        }
-        *wr++ = c;
-    }
-    wr--;                        // back up to last char before the NUL
-    if (*wr == '"') { *wr = 0; }    // re-terminate
+    while ((*wr = *(str++)) != 0) { wr++; } // shift down over it, NUL included
+    if ((wr > start_str) && (*(wr-1) == '"')) { *(wr-1) = 0; } // drop the closing quote only (E082)
     return (start_str);
 }
 

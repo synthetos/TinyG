@@ -161,6 +161,7 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
 	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_SET_JERK,				// M201.3
     NEXT_ACTION_GET_ADC                 // M105
 } cmNextAction;
 
@@ -702,7 +703,7 @@ stat_t cm_select_plane(const uint8_t plane);                                // G
 stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
 stat_t cm_set_distance_mode(const uint8_t mode);                            // G90, G91
 stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
-stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
+stat_t cm_set_coord_offsets(const float coord_system,                     // G10
                             const uint8_t L_word,
                             const float offset[], const bool flag[]);
 
@@ -728,6 +729,7 @@ stat_t cm_get_position(void);                                            // M114
 stat_t cm_get_firmware(void);                                            // M115
 
 // Machining Attributes (4.3.5)
+stat_t cm_set_jerk(const float target[], const bool flags[]);              // M201.3
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
 stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64

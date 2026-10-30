@@ -95,7 +95,13 @@ void planner_init()
 
 void planner_reset()
 {
-    planner_init();
+	// Drop queued and running moves but keep the planner and runtime positions: shutdown, panic
+	// and flushes resync the model from mr.position, so a memset here zeroed the machine
+	// position (E046). The full clear is only for boot (planner_init).
+	mp_init_buffers();
+	mr.block_state = BLOCK_IDLE;
+	mr.section_state = SECTION_OFF;
+	mr.segment_velocity = 0;
 }
 
 /*

@@ -485,7 +485,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // special functions
 	{ "", "txt", _t0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_int, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Transaction id
-	{ "", "test",_b0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "test",_i0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_b0, 0, tx_print_nul, help_defa, set_defaults,(uint32_t *)&cs.null,0 },// set defaults / help screen
 	{ "", "boot",_b0, 0, tx_print_nul, help_boot, hw_run_boot, (uint32_t *)&cs.null,0 },
 	{ "", "help",_n0, 0, tx_print_nul, help_config, help_config, (uint32_t *)&cs.null,0 },  // prints config help screen
@@ -909,8 +909,28 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 	if (nv->value_int > FLOW_CONTROL_RTS) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-	xio.enable_flow_control = (uint8_t)nv->value_int; // the cast is required
-	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+    uint8_t mode = (uint8_t)nv->value_int;
+    uint8_t saved_sreg = SREG;
+    cli();
+    (void)xio_ctrl(XIO_DEV_USB, mode == FLOW_CONTROL_OFF ? XIO_NOXOFF : XIO_XOFF);
+    if (mode != xio.enable_flow_control) {
+        // Release an old software pause even if another mode change precedes its TX interrupt.
+        bool release_xon = USBu.fc_char_rx == XON ||
+            (xio.enable_flow_control == FLOW_CONTROL_XON &&
+             (USBu.fc_state_rx == FC_IN_XOFF || USBu.fc_char_rx == XOFF));
+        USBu.fc_char_rx = release_xon ? XON : NUL;
+        USBu.port->OUTCLR = USB_RTS_bm;
+        USBu.fc_state_rx = FC_IN_XON;
+        USBu.fc_state_tx = FC_IN_XON;
+        xio.enable_flow_control = mode;
+        if (mode != FLOW_CONTROL_OFF &&
+            xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK) {
+            xio_xoff_usart(&USBu);
+        }
+        USBu.usart->CTRLA = CTRLA_RXON_TXON;
+    }
+    SREG = saved_sreg;
+    return (STAT_OK);
 }
 
 static stat_t get_rx(nvObj_t *nv)
