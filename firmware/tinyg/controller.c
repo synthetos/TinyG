@@ -386,7 +386,9 @@ static stat_t _shutdown_handler()
 
 	// No indicator blink here: INDICATOR_LED is the spindle direction output (hardware.h), and
 	// toggling it would flip the direction line of a spindle drive that is still wired up.
-	return (STAT_EAGAIN);	// EAGAIN prevents any lower-priority actions from running
+	// Let control lines run so {clear:n} can exit SHUTDOWN without a reset (E045);
+	// cm_is_alarmed() still rejects G-code and settings while shut down.
+	return (STAT_OK);
 }
 
 /*
