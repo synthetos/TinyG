@@ -26,6 +26,14 @@ jobs:
         working-directory: firmware/tinyg
         run: make
 
+      - name: Format-string lint (PSTR formats)
+        working-directory: firmware/tinyg
+        run: |
+          make lint 2>&1 | tee build/lint.log
+          if grep -E 'Wformat' build/lint.log; then
+            echo "::error::format-string warnings (see make lint)"; exit 1
+          fi
+
       - name: Report size
         working-directory: firmware/tinyg
         run: |

@@ -77,7 +77,7 @@ uint8_t run_test(nvObj_t *nv)
 		case 51: { xio_open(XIO_DEV_PGM, PGMFILE(&test_braid),PGM_FLAGS); break;}
 #endif
 		default: {
-			printf_P(PSTR("Test #%d not found\n"),nv->value_int);
+			printf_P(PSTR("Test #%lu not found\n"), (unsigned long)nv->value_int);
 			return (STAT_ERROR);
 		}
 	}
