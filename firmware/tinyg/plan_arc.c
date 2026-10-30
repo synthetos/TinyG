@@ -151,9 +151,9 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     	arc.plane_axis_0 = AXIS_X;
     	arc.plane_axis_1 = AXIS_Y;
     	arc.linear_axis  = AXIS_Z;
-    } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18
-        arc.plane_axis_0 = AXIS_X;
-        arc.plane_axis_1 = AXIS_Z;
+    } else if (cm.gm.select_plane == CANON_PLANE_XZ) {	// G18: (Z, X), so G2 is clockwise seen from +Y
+        arc.plane_axis_0 = AXIS_Z;							// as in RS274NGC, LinuxCNC and grbl (E029);
+        arc.plane_axis_1 = AXIS_X;							// edge and g2core used (X, Z), which reversed it
         arc.linear_axis  = AXIS_Y;
     } else if (cm.gm.select_plane == CANON_PLANE_YZ) {	// G19
         arc.plane_axis_0 = AXIS_Y;
