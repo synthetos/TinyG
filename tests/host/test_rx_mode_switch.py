@@ -19,7 +19,9 @@ class ReceiveModeSwitch(unittest.TestCase):
                '_get_filling_buffer','_post_buffer','_next_buffer_to_process',
                '_free_processed_buffer','_exit_line','_exit_null',
                '_readline_linemode','_readline_charmode','readline']
-        definitions=[]
+        definitions=[function(source, r"static bool _json_space\(char c\)(?=\s*\{)"),
+                     function(source, r"static bool _json_wraps_gcode\(const char \*line, const char \*end\)(?=\s*\{)"),
+                     function(source, r"static devflags_t _classify_line\(const char \*line, uint16_t size\)(?=\s*\{)")]
         for name in ['_gets_helper','xio_gets_usart']+names:
             text=usart if name in ['_gets_helper','xio_gets_usart'] else source
             signature=r'(?m)^(?:static )?(?:void|int|char \*)\s*'+name+r'\([^;{}\n]*\)\s*'
@@ -48,6 +50,9 @@ class ReceiveModeSwitch(unittest.TestCase):
 #define DEV_IS_BOTH 3
 #define TEXT_MODE 0
 #define PSTR(x) x
+#define strchr_P strchr
+#define pgm_read_byte(p) (*(p))
+#define min(a,b) ((a)<(b)?(a):(b))
 #define printf_P printf
 #define _FDEV_ERR -1
 #define advance_buffer(p,n) do { if(--(p)==0) (p)=(n)-1; } while(0)
