@@ -768,6 +768,32 @@ static void _free_processed_buffer()
  *    6. get next buffer to process and return as char *
  */
 
+/* A file must not inherit a partially received USB line or its saved buffer pointer. */
+uint8_t xio_prepare_pgm_source(void)
+{
+    if (xio.primary_src == XIO_DEV_PGM) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    if (ds[XIO_DEV_USB].flag_in_line && ds[XIO_DEV_USB].len != 0) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+    ds[XIO_DEV_USB].flag_in_line = false;
+    return (STAT_OK);
+}
+
+static stat_t _readline_source(char *bufp, uint16_t size)
+{
+    stat_t status = xio_gets(xio.primary_src, bufp, size);
+    if (status == XIO_EOF) {
+        bufp[0] = NUL;                 // fgets leaves stale bytes at EOF: never post them
+        controller_reset_source();
+        if (cs.comm_mode == TEXT_MODE) {
+            printf_P(PSTR("End of command file\n"));
+        } else {
+            rpt_exception(STAT_EOF, "");
+        }
+    }
+    return (status);
+}
+
 static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 {
     char *bufp;         // local pointer to allocated buffer
@@ -776,11 +802,20 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
     _free_processed_buffer();                           // 1. Free a buffer is one is processing
+    bool file_source = (xio.primary_src == XIO_DEV_PGM);
+    if (file_source) {
+        // Do not read ahead across file commands: a later CTRL must not overtake DATA.
+        for (uint8_t i=0; i<RX_HEADERS; i++) {
+            if (b->buf[i].state == BUFFER_FULL) {
+                return (_next_buffer_to_process(flags));
+            }
+        }
+    }
 
 	// Resume a partially filled buffer if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
     if ((bufp = _get_filling_buffer()) != NULL) {       // 2. Get a buffer if one is filling
-        status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size));
+        status = _readline_source(bufp, min(b->used_top->size, b->requested_size));
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
@@ -791,11 +826,15 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
         }
     }
 
+    if (file_source && bufp != NULL) {
+        return (_next_buffer_to_process(flags));
+    }
+
     // Get a new free buffer
     if ((bufp = _get_free_buffer(b->requested_size)) == NULL) { // 3. get a FREE buffer
         return(_next_buffer_to_process(flags));         // no buffer available
     }
-    if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
+    if ((status = _readline_source(bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {

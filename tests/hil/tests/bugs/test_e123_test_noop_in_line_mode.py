@@ -12,7 +12,7 @@ pytestmark = pytest.mark.dialect("d449")
 
 @pytest.mark.motion
 @pytest.mark.resets_board
-@pytest.mark.bug("E123", on=["d449"])
+@pytest.mark.bug("E123", on=[])
 def test_canned_test_runs_in_line_mode(tg):
     if tg.get("rxm") != 1:
         pytest.skip("needs the default line mode ($rxm=1)")

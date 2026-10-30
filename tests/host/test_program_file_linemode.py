@@ -48,7 +48,7 @@ int xio_gets(int dev,char *buf,int size) {
 }
 '''
         for name in ('_get_free_buffer','_get_filling_buffer','_post_buffer','_post_overflow','_next_buffer_to_process','_free_processed_buffer','xio_prepare_pgm_source','_readline_source','_readline_linemode'):
-            code+=function(source,r'(?:static )?(?:stat_t|char \*|void)\s*'+name+r'\([^;{]*\)(?=\s*\{)')
+            code+=function(source,r'(?:static )?(?:stat_t|uint8_t|char \*|void)\s*'+name+r'\([^;{]*\)(?=\s*\{)')
         code+=r'''
 int main(void) {
     bm.pool_base=pool;bm.pool_top=pool+sizeof(pool);

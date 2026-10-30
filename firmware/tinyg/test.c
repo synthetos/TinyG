@@ -55,6 +55,7 @@
  */
 uint8_t run_test(nvObj_t *nv)
 {
+	if (nv->value_int != 0) { ritorno(xio_prepare_pgm_source()); }
 	switch (nv->value_int) {
 		case 0: { return (STAT_OK);}
 #ifdef __CANNED_TESTS
