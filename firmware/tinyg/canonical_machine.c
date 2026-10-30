@@ -2315,7 +2315,7 @@ const char fmt_tool[] PROGMEM = "Tool number          %d\n";
 const char fmt_pos[] PROGMEM = "%c position:%15.3f%s\n";
 const char fmt_mpo[] PROGMEM = "%c machine posn:%11.3f%s\n";
 const char fmt_ofs[] PROGMEM = "%c work offset:%12.3f%s\n";
-const char fmt_hom[] PROGMEM = "%c axis homing state:%2.0f\n";
+const char fmt_hom[] PROGMEM = "%c axis homed:%9d\n";
 
 const char fmt_gpl[] PROGMEM = "[gpl] default gcode plane%10d [0=G17,1=G18,2=G19]\n";
 const char fmt_gun[] PROGMEM = "[gun] default gcode units mode%5d [0=G20,1=G21]\n";
@@ -2473,6 +2473,14 @@ void cm_print_cofs(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cofs);}
 void cm_print_cpos(nvObj_t *nv) { _print_axis_coord_flt(nv, fmt_cpos);}
 
 void cm_print_pos(nvObj_t *nv) { _print_pos(nv, fmt_pos, cm_get_units_mode(MODEL));}
+
+void cm_print_hom(nvObj_t *nv)	// homed flag: an integer, not a position (get_ui8 fills value_int)
+{
+	char axes[] = {"XYZABC"};
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, fmt_hom, axes[_get_axis(nv->index)], (int)nv->value_int);
+    text_finalize_message(msg);
+}
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
 

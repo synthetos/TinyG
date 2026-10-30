@@ -4,7 +4,7 @@
 @pytest.mark.motion
 @pytest.mark.profile("switches-no", "homing-x")
 @pytest.mark.settings(zsn=1, zsx=0)
-@pytest.mark.bug("E092", on=["d440", "d449"])
+@pytest.mark.bug("E092", on=["d440"])
 def test_homing_one_axis_is_not_homed_while_z_is_unhomed(tg, switches):
     """cycle_homing.c:209-212 sets HOMED when the requested axes finish, whichever they were."""
     switches.mount("x", "min", at=-3.0)
