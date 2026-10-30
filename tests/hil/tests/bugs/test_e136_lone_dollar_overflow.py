@@ -25,7 +25,6 @@ def _text_until_prompts(tg, data: bytes, prompts: int, timeout=5.0) -> list[str]
     return lines
 
 
-@pytest.mark.bug("E136", on=["d449"])
 def test_lone_dollar_then_query_in_one_write(tg):
     try:
         for _ in range(3):

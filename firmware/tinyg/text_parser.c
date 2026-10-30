@@ -76,9 +76,11 @@ stat_t text_parser(char *str)
 		return (STAT_OK);
 	}
 
-	// pre-process the command
-	if ((str[0] == '$') && (str[1] == NUL)) {		// treat a lone $ as a sys request
-		strcat(str,"sys");
+	// A line-mode allocation for "$" has only two bytes; never expand it in place.
+	char sys_query[4];
+	if ((str[0] == '$') && (str[1] == NUL)) {
+		memcpy_P(sys_query, PSTR("sys"), sizeof(sys_query));
+		str = sys_query;
 	}
 
 	// parse and execute the command (only processes 1 command per line)
