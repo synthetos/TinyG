@@ -3,11 +3,16 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import types
+import importlib
 import tempfile
 import unittest
 from unittest.mock import patch
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'hil'))
-from tinyg_hil import evidence
+# Load the hardware-independent helpers without the package's serial-driver exports.
+package = types.ModuleType('_evidence_host')
+package.__path__ = [str(Path(__file__).resolve().parents[1]/'hil/tinyg_hil')]
+sys.modules[package.__name__] = package
+evidence = importlib.import_module('_evidence_host.evidence')
 
 
 class EvidencePromotion(unittest.TestCase):
