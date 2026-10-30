@@ -35,6 +35,9 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 // execute routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_aline_head(void);
@@ -260,7 +263,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                 cs.controller_state = CONTROLLER_READY;                 // remove controller readline() PAUSE
                 cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
                 cm.hold_fast = false;
-                cm.hold_escalate = false;
+                cm.hold_fast_request = false;           // the stop is complete: nothing left to escalate
             }
             return (STAT_OK);                                           // hold here. No more movement
         }
@@ -268,10 +271,26 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Cases (1a, 1b), Case (2), Case (4)
         // Build a tail-only move from here. Decelerate as fast as possible in the space we have.
         // Finish up the initialization in the case of a new deceleration_continue block.
-        if ((cm.hold_state == FEEDHOLD_SYNC) || cm.hold_escalate ||
+        // A limit switch (MED ISR) can arrive at any point of this (LO) code: take its request in a
+        // short interrupts-off window and use a stable copy for the decisions and math below. A
+        // request arriving after this snapshot stays pending for the next call (E031).
+        bool rebuild_fast = false;
+#ifdef __AVR
+        uint8_t sreg = SREG;
+        cli();
+#endif
+        if (cm.hold_fast_request) {
+            cm.hold_fast_request = false;
+            cm.hold_fast = true;
+            rebuild_fast = true;                    // rebuild the tail at the braking jerk, once
+        }
+#ifdef __AVR
+        SREG = sreg;
+#endif
+        bool fast = cm.hold_fast;
+        if ((cm.hold_state == FEEDHOLD_SYNC) || rebuild_fast ||
             ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
-            cm.hold_escalate = false;               // a limit during a normal hold rebuilds the tail once
-            if ((mr.section == SECTION_TAIL) && !cm.hold_fast) {   // already decelerating (a fast stop rebuilds the tail)
+            if ((mr.section == SECTION_TAIL) && !fast) {   // already decelerating (a fast stop rebuilds the tail)
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {
@@ -290,8 +309,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
                 float available_length = get_axis_vector_length(mr.target, mr.position);
                 mr.tail_length = mp_get_target_length(mr.cruise_velocity, 0, bf);   // braking length
-                float fast_ratio = cm.hold_fast ? _fast_stop_ratio(bf) : 1;
-                if (cm.hold_fast) {
+                float fast_ratio = fast ? _fast_stop_ratio(bf) : 1;
+                if (fast) {
                     mr.tail_length /= sqrt(fast_ratio);     // full stop at the braking jerk
                 }
 
