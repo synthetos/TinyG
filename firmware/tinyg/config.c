@@ -108,7 +108,8 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  *	layout marker that changes only when the persisted layout changes: NVM records are indexed by
  *	cfgArray position: inserting, removing or moving any earlier row changes persisted indexes.
  *	Layout 2 reserves the combined output/probe/reporting additions in one release bump.
- *	Only layout-1 firmware accepts the legacy 449.01 marker; layout 2 initializes defaults. An erased EEPROM (0xFFFFFFFF, a NaN) is never current.
+ *	Layout 2 migrates layout 1 (including legacy 449.01) because the old indexes are unchanged.
+ *	Erased EEPROM and unknown layouts initialize defaults.
  */
 #define CONFIG_NVM_LAYOUT			2
 #define CONFIG_NVM_LAYOUT_MARKER	(10000.0 + CONFIG_NVM_LAYOUT)	// can't be mistaken for a build number
@@ -125,6 +126,12 @@ static bool _nvm_layout_is_current(nvObj_t *nv)
 	return ((CONFIG_NVM_LAYOUT == 1) && fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD));
 }
 
+static bool _nvm_layout_is_legacy(nvObj_t *nv)
+{
+    return ((CONFIG_NVM_LAYOUT == 2) &&
+            (fp_EQ(nv->value_flt, 10001.0) || fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD)));
+}
+
 static void _write_nvm_layout_marker(nvObj_t *nv)
 {
 	nv->index = 0;
@@ -135,9 +142,8 @@ static void _write_nvm_layout_marker(nvObj_t *nv)
 /************************************************************************************
  * config_init() - called once on hard reset
  *
- * Performs one of 2 actions:
- *	(1) if persistence is set up or out-of-rev load RAM and NVM with settings.h defaults
- *	(2) if persistence is set up and at current config version use NVM data for config
+ * Load a current layout, migrate the append-only layout-1 prefix, or initialize defaults
+ * for an erased or unknown layout. Migration writes new initialized rows before its marker.
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by controller_init()
@@ -160,24 +166,43 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (!_nvm_layout_is_current(nv)) {			// case (1) NVM is not setup or has another layout
+    bool migrate = _nvm_layout_is_legacy(nv);
+	if (!_nvm_layout_is_current(nv) && !migrate) {			// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
+        index_t first_new = nv_index_max();
+        if (migrate) {
+            strcpy_P(nv->token, PSTR("spep"));
+            first_new = nv_get_index("", nv->token);
+            if (first_new == NO_MATCH) {
+                cm_panic_P(STAT_CONFIG_ASSERTION_FAILURE, PSTR("Missing layout-2 boundary"));
+                return;
+            }
+        }
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
             if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-				read_persistent_value(nv);
+                bool initialize = migrate && (nv->index >= first_new);
+                if (initialize) {
+                    nv->value_flt = GET_TABLE_FLOAT(default_value);
+                    if (cfg_is_type(nv->index) != TYPE_FLOAT) {
+                        nv->value_int = (uint32_t)nv->value_flt;
+                    }
+                } else {
+                    read_persistent_value(nv);
+                }
                 if (cfg_is_type(nv->index) == TYPE_FLOAT) {
                     nv->valuetype = TYPE_FLOAT;
                 } else {
                     nv->valuetype = TYPE_INTEGER;
                 }
 				nv_set(nv);
+                if (initialize) { nv_persist(nv); }
 			}
 		}
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
-		_write_nvm_layout_marker(nv);			// migrates a 449.01 record 0 to the marker
+        if (migrate) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
 #endif
 }

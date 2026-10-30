@@ -1,11 +1,15 @@
 # Configuration layout 2
 
-This integration makes one deliberate EEPROM compatibility change:
-`CONFIG_NVM_LAYOUT=2`, marker `10002`. A board with layout 1, an old build-number
-marker, or erased EEPROM loads defaults once. Subsequent builds with layout 2
-retain settings. Save and restore the machine configuration around the upgrade;
-verify motor geometry and switch polarity before motion. Flashing old firmware
-back can reset or misinterpret the newer layout, too.
+This integration uses `CONFIG_NVM_LAYOUT=2`, marker `10002`. Layout-1 markers
+`10001` and legacy `449.01` migrate without resetting existing settings: load the
+unchanged prefix through `se29`, initialize and persist only the active appended
+settings, then write marker `10002`. The boundary is looked up by the `spep` token.
+Already-current layout-2 settings are loaded without rewriting the marker.
+Erased EEPROM and unknown layouts still load profile defaults.
+
+Keep a backup when changing firmware. Downgrading to a firmware that does not
+understand the newer marker can still reset or misinterpret settings; this
+forward migration cannot change older firmware's behavior.
 
 All existing entries through `se29` retain their indexes. The additions follow
 in this fixed order, before group entries:
@@ -54,3 +58,28 @@ Reference: XMEGA A manual sections 25.3.3, 25.5, 25.13 and 25.16; A3 datasheet
 ADC electrical characteristics and the erratum "ADC has increased INL error for
 some operating conditions". The PB3/M105 interface follows commit `9520ddee`,
 with signed conversion, bounded polling and JSON-aware output added here.
+
+## Output levels during boot
+
+The GPIO1 pins used for spindle enable/direction and coolant remain inputs while
+settings load. `spindle_init_outputs()` latches the configured spindle OFF level
+before enabling the output drivers; driving a fixed low level earlier would
+briefly enable an active-low spindle. This deliberately leaves an input/high-
+impedance interval during boot. External pull resistors or the connected device
+must establish its inactive level during that interval; the firmware does not
+prove that a particular board has suitable pulls. Startup pulse/glitch behavior
+requires external capture. The logic ordering is host-tested.
+
+## Migration verification
+
+`tests/host/test_nvm_migration.py` runs the actual config initializer with a
+synthetic EEPROM: both legacy markers retain non-default motor geometry, offsets
+and switch settings, new active rows get defaults, placeholders stay untouched,
+and the migration marker is written once. A second boot preserves new settings.
+Unknown markers take the existing default path.
+
+The optional board test `test_e022_layout2_migration.py` needs
+`TINYG_LAYOUT1_SOURCE` pointing at a layout-1 checkout and `--allow-destructive`.
+It backs up settings, flashes layout 1, restores them, changes `1sa` to 0.9, flashes
+layout 2 and verifies the preserved value plus new defaults. Its cleanup restores
+the layout-2 image and saved settings. Board validation remains pending.
