@@ -97,11 +97,16 @@ def _restore_one(tg: TinyG, token: str, value, result: dict):
             return
     except StatusError:
         pass
-    try:
-        tg.set(token, want, allow="settings restore")
-        result["changed"].append(token)
-    except StatusError as e:
-        result["failed"].append((token, want, e.response.status))
+    for attempt in range(3):            # an EEPROM write can drop serial input: verify, retry
+        try:
+            tg.set(token, want, allow="settings restore")
+        except StatusError as e:
+            result["failed"].append((token, want, e.response.status))
+            return
+        if token == "jv" or tg.values_equal(token, tg.get(token), want):
+            result["changed"].append(token)
+            return
+    result["failed"].append((token, want, "readback mismatch"))
 
 
 def set_status_report(tg: TinyG, keys: list):
