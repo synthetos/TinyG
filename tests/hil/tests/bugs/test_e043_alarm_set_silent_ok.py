@@ -17,14 +17,12 @@ def alarmed(tg):
     tg.clear_alarm()
 
 
-@pytest.mark.bug("E043", on=["d449"])
 def test_gc_set_rejected_in_alarm(tg, alarmed):
     assert tg.send_json({"gc": "G91"}).status == tg.dialect.status("COMMAND_REJECTED_BY_ALARM")
     assert tg.get("dist") == 0
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E043", on=["d449"])
 def test_config_set_rejected_in_alarm(tg, alarmed, keep):
     keep("xvm")
     xvm = tg.get("xvm")     # write the current value so nothing changes even if the SET runs
