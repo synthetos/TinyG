@@ -57,6 +57,8 @@ def probe_zero(tg, keep):
     yield
     idle(tg)
     tg.drain()
+    if tg.stat() == tg.dialect.stat("ALARM"):       # a probe in free air misses, which alarms since E072
+        tg.clear_alarm()
     tg.send_gcode("G90 G1 X0 Y0 Z0 F600", check=True, allow="return to the G92 zero")
     idle(tg)
 
