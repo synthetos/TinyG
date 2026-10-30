@@ -19,17 +19,22 @@ pytestmark = pytest.mark.dialect("d449")     # tid and PANIC are 449-only; 440 g
 
 def _fill_planner(tg):
     """Queue a long dwell, then short dwells until the planner stops accepting lines."""
+    blocked_until = time.monotonic() + 5
     tg.send_gcode("G4 P5", check=True)
     for _ in range(40):
         try:
             tg.send_gcode("G4 P0.01", timeout=0.4)
         except NoResponse:
-            return      # this line now waits in an RX buffer; its response comes later
+            return blocked_until  # this line waits in RX; its response comes later
     pytest.fail("planner never reached its headroom limit")
 
 
 @pytest.mark.resets_board
-def test_json_gc_waits_for_planner_room(tg):
+@pytest.mark.persists
+@pytest.mark.parametrize("rxm", [1, 0], ids=["line-mode", "char-mode"])
+def test_json_gc_waits_for_planner_room(tg, keep, rxm):
+    keep("rxm")
+    tg.set("rxm", rxm, allow="test both receive modes")
     panic = tg.dialect.stat("PANIC")
     try:
         _fill_planner(tg)
@@ -47,5 +52,25 @@ def test_json_gc_waits_for_planner_room(tg):
         assert not bad, bad
         assert tids == [(k, 0) for k in range(1, 7)]
         assert tg.stat() != panic
+    finally:
+        tg.reset()
+
+
+@pytest.mark.resets_board
+@pytest.mark.persists
+def test_status_query_bypasses_full_planner(tg, keep):
+    keep("rxm")
+    tg.set("rxm", 1, allow="test control priority in line mode")
+    try:
+        blocked_until = _fill_planner(tg)
+        assert time.monotonic() + 1.0 < blocked_until, "not enough dwell remaining to test priority"
+        tg.transport.write((encode({"sr": None}) + "\n").encode())
+        # A DATA line cannot answer until the five-second dwell releases planner room.
+        ev = tg.wait_for(
+            lambda ev: ev.kind == "response" and "sr" in ev.body,
+            timeout=1.0,
+        )
+        assert ev.data["f"][1] == 0, ev.raw
+        assert time.monotonic() < blocked_until, "status arrived after planner room became available"
     finally:
         tg.reset()

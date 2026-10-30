@@ -90,8 +90,7 @@ static void _init_readline_linemode(void);
 
 static char *_readline_charmode(devflags_t *flags, uint16_t *size);
 static char *_readline_linemode(devflags_t *flags, uint16_t *size);
-static char *_json_value(char *line, const char *key_P);
-static bool _json_wraps_gcode(char *line);
+static devflags_t _classify_line(const char *line, uint16_t size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -540,59 +539,86 @@ static void _post_buffer()
     top->size = strlen(top->bufp) + 1;
 
     // set flags for buffer
-    if ((strchr("{$?!~%Hh", c) != NULL) &&  // a match indicates control line...
-        !((c == '{') && _json_wraps_gcode(top->bufp))) { // ...unless it is JSON-wrapped G-code
-        top->flags = DEV_IS_CTRL;
-    } else {
-        top->flags = DEV_IS_DATA;
-    }
+    top->flags = _classify_line(top->bufp, top->size);
     top->state = BUFFER_FULL;
 }
 
 /*
- * _json_value() - pointer to the value of a top-level JSON key (quoted or bare, key in PROGMEM), or NULL
- *
- *  Lightweight scan for line classification only: the key must follow '{' or ','.
+ * _json_wraps_gcode() - scan top-level keys without changing the input buffer
  */
 
-static char *_json_value(char *line, const char *key_P)
+static bool _json_space(char c)
 {
-    uint8_t klen = strlen_P(key_P);
-    for (char *p = line + 1; (p = strstr_P(p, key_P)) != NULL; p++) {
-        char *before = p - 1;
-        char *after = p + klen;
-        if (*before == '"') {
-            if (*after != '"') { continue; }
-            before--;
-            after++;
+    return (((c > NUL) && (c <= ' ')) || (c == 0x7f));
+}
+
+static bool _json_wraps_gcode(const char *line, const char *end)
+{
+    uint16_t depth = 1;
+    uint8_t key_length = 0;
+    bool key = true, quoted = false, gc = true, txt = true;
+
+    for (const char *p = line + 1; (p < end) && (*p != NUL); p++) {
+        char c = *p;
+        if ((uint8_t)c >= 0x80) { return (true); } // tokenizer normalizes non-ASCII input
+        if (key) {
+            if (c == '"') { continue; }
+            if (_json_space(c)) { continue; }    // tokenizer removes whitespace inside keys too
+            if (c == ':') {
+                const char *v = p + 1;
+                while ((v < end) && _json_space(*v)) { v++; }
+                if ((v == end) || (*v == NUL)) { return (false); }
+                if (gc && (key_length == 2) && (*v != 'n') && (*v != 'N')) {
+                    return (true);
+                }
+                if (txt && (key_length == 3) && (*v == '"') && (++v < end) && (*v != NUL) &&
+                    (*v != '"') && (strchr_P(PSTR("$?Hh"), *v) == NULL)) {
+                    return (true);              // nested JSON in txt also waits for planner room
+                }
+                key = false;
+                continue;
+            }
+            if (c == '}') { return (false); }
+            if ((c >= 'A') && (c <= 'Z')) { c += 'a' - 'A'; }
+            gc = gc && (key_length < 2) && (c == pgm_read_byte(PSTR("gc") + key_length));
+            txt = txt && (key_length < 3) && (c == pgm_read_byte(PSTR("txt") + key_length));
+            if (key_length < 4) { key_length++; }
+            continue;
         }
-        while ((before > line) && (*before <= ' ')) { before--; }
-        if ((*before != '{') && (*before != ',')) { continue; }
-        while (*after == ' ') { after++; }
-        if (*after != ':') { continue; }
-        for (after++; (*after == ' ') || (*after == '"'); after++);
-        return (after);
+        if (quoted) {
+            // Match the tokenizer: only a quote immediately following '\\' is escaped.
+            if (c == '\\') {
+                if ((p + 1 < end) && (p[1] == '"')) { p++; }
+            } else if (c == '"') {
+                quoted = false;
+            }
+            continue;
+        }
+        if (c == '"') { quoted = true; }
+        else if ((c == '{') || (c == '[')) { depth++; }
+        else if ((c == '}') || (c == ']')) {
+            if (--depth == 0) { return (false); }
+        } else if ((c == ',') && (depth == 1)) {
+            key = gc = txt = true;
+            key_length = 0;
+        }
     }
-    return (NULL);
+    return (false);
 }
 
 /*
- * _json_wraps_gcode() - true for {"gc":...} and for {"txt":...} unless the text is a $ or ? command
- *
- *  Such lines must wait behind earlier G-code and for planner room like any data line, or they
- *  are executed ahead of queued moves and can overrun the planner (PANIC).
+ * _classify_line() - use the same planner gate in line and character receive modes
  */
 
-static bool _json_wraps_gcode(char *line)
+static devflags_t _classify_line(const char *line, uint16_t size)
 {
-    char *v;
-    if (_json_value(line, PSTR("gc")) != NULL) {
-        return (true);
+    const char *end = line + size;
+    while ((line < end) && _json_space(*line)) { line++; }
+    if ((line == end) || (*line == NUL)) { return (DEV_IS_CTRL); }
+    if (*line == '{') {
+        return (_json_wraps_gcode(line, end) ? DEV_IS_DATA : DEV_IS_CTRL);
     }
-    if ((v = _json_value(line, PSTR("txt"))) != NULL) {
-        return (strchr_P(PSTR("$?{"), *v) == NULL);     // note: an empty value matches the terminating NUL
-    }
-    return (false);
+    return ((strchr_P(PSTR("$?!~%Hh"), *line) == NULL) ? DEV_IS_DATA : DEV_IS_CTRL);
 }
 
 /*
@@ -817,7 +843,7 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
 
-    if (strchr("{$?!~%Hh", *xio.bufp) != NULL) {        // true indicates control line
+    if (_classify_line(xio.bufp, xio.buf_size) == DEV_IS_CTRL) {
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
 	if (*flags & DEV_IS_DATA) {							// got a data line
