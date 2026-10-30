@@ -337,7 +337,11 @@ class Ice:
             return int.from_bytes(self.read(sp_io, 2), "little")
 
     def _bss_end(self):
-        return self.symbols.sym["__bss_end"][0] - self.board.sram_symbol_base
+        """End of static data (__bss_end, a linker symbol, so not in Symbols.sym's data objects)."""
+        for sym in self.symbols.elf.get_section_by_name(".symtab").iter_symbols():
+            if sym.name in ("__bss_end", "_end"):
+                return sym["st_value"] - self.board.sram_symbol_base
+        raise KeyError("__bss_end not in the ELF symbol table")
 
     def stack_paint(self, pattern=0xA5, guard=32, chunk=128):
         """Fill the free RAM between the end of static data and the stack pointer with a pattern.
