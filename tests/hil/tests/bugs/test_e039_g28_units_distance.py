@@ -24,7 +24,7 @@ def _store_g28_at_x(tg, x):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E039", on=["d440", "d449"])
+@pytest.mark.bug("E039", on=["d440"])
 def test_g28_in_inches(tg):
     try:
         _store_g28_at_x(tg, 0.1)
@@ -37,7 +37,7 @@ def test_g28_in_inches(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E039", on=["d440", "d449"])
+@pytest.mark.bug("E039", on=["d440"])
 def test_g28_in_incremental_mode(tg):
     try:
         _store_g28_at_x(tg, 0.1)
