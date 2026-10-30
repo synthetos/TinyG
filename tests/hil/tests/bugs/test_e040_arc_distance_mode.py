@@ -12,7 +12,7 @@ pytestmark = pytest.mark.dialect("d449")
 MOVE = "absolute-IJK arc test (2 mm semicircle from a G28.3 origin, returns to it)"
 
 
-@pytest.mark.bug("E040", on=["d449"])
+@pytest.mark.bug("E040", on=[])
 def test_g90_1_sets_absolute_arc_mode(tg):
     try:
         tg.send_gcode("G90.1", check=True)
@@ -27,7 +27,7 @@ def test_g91_1_reports_incremental(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E040", on=["d449"])
+@pytest.mark.bug("E040", on=[])
 def test_absolute_ijk_uses_work_coordinates(tg):
     # Work X10 = machine X0; centre at work X11, end at work X12 (machine 2). Both the current
     # firmware (incremental centre at work 21) and a fix without offsets reject the arc as an

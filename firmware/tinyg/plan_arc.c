@@ -229,10 +229,12 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
         arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
         arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
 
-        if (arc.gm.arc_distance_mode == ABSOLUTE_MODE) {    // adjust offsets if in absolute mode
-             arc.offset[OFS_I] -= arc.position[AXIS_X];
-             arc.offset[OFS_J] -= arc.position[AXIS_Y];
-             arc.offset[OFS_K] -= arc.position[AXIS_Z];
+        if (arc.gm.arc_distance_mode == ABSOLUTE_MODE) {    // adjust offsets if in absolute mode:
+            // IJK is a centre in work coordinates; work_offset (captured just above) maps work to
+            // machine coordinates with the coordinate system, G92 and tool offset already folded in
+             arc.offset[OFS_I] += arc.gm.work_offset[AXIS_X] - arc.position[AXIS_X];
+             arc.offset[OFS_J] += arc.gm.work_offset[AXIS_Y] - arc.position[AXIS_Y];
+             arc.offset[OFS_K] += arc.gm.work_offset[AXIS_Z] - arc.position[AXIS_Z];
         }
 
         if ((fp_ZERO(arc.offset[OFS_I])) &&             // it's an error if no offsets are provided

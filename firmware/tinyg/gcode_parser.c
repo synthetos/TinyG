@@ -518,6 +518,7 @@ static stat_t _execute_gcode_block()
 	EXEC_FUNC(cm_set_coord_system, coord_system);
 	EXEC_FUNC(cm_set_path_control, path_control);
 	EXEC_FUNC(cm_set_distance_mode, distance_mode);
+	EXEC_FUNC(cm_set_arc_distance_mode, arc_distance_mode);	// G90.1/G91.1 were parsed but never set (E040)
 	//--> set retract mode goes here
 
 	switch (cm.gn.next_action) {
