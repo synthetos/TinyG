@@ -741,11 +741,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #define NV_COUNT_GROUPS 		(STANDARD_GROUPS + MOTOR_GROUP_5 + MOTOR_GROUP_6 + DIAGNOSTIC_GROUPS)
 
-#define NV_COUNT_LEGACY_ROWS 3       // trailing direct-only compatibility entries
-
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define NV_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
-#define NV_INDEX_END_SINGLES		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS - NV_STATUS_REPORT_LEN - NV_COUNT_LEGACY_ROWS)
+// Status slots and appended settings are single-valued rows too; flags control initialization.
+#define NV_INDEX_END_SINGLES		(NV_INDEX_START_GROUPS - 1)
 #define NV_INDEX_START_GROUPS		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS)
 #define NV_INDEX_START_UBER_GROUPS (NV_INDEX_MAX - NV_COUNT_UBER_GROUPS)
 /* </DO NOT MESS WITH THESE DEFINES> */
