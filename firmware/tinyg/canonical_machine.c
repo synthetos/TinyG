@@ -1594,6 +1594,7 @@ static void _run_requested_queue_flush()
     cm_queue_flush();
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;
+        cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
     }
 }
 

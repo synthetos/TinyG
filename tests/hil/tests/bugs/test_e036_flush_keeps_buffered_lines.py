@@ -91,6 +91,8 @@ def test_flush_releases_xoff(tg, keep):
             assert time.monotonic() < end, "no XON after the flush emptied the receive buffer"
             time.sleep(0.02)
     finally:
+        tg.send_raw(bytes([XON]))       # never leave the board's output paused...
+        tg.send_raw(b"%")               # ...or the queue held, if the test failed before its own '%'
         end = time.monotonic() + 15
         while _query(tg, "qr")["qr"] != tg.planner_buffers and time.monotonic() < end:
             time.sleep(0.1)
