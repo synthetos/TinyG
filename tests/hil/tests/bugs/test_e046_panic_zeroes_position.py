@@ -12,7 +12,7 @@ pytestmark = pytest.mark.dialect("d449")
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E046", on=["d449"])
+@pytest.mark.bug("E046", on=[])
 def test_panic_keeps_machine_position(tg):
     tg.send_gcode("G28.3 X1 Y2", check=True)      # set machine position, no motion
     tg.wait_idle(5)
@@ -20,6 +20,21 @@ def test_panic_keeps_machine_position(tg):
     try:
         tg.send_json({"panic": None})
         assert tg.stat() == tg.dialect.stat("PANIC")
+        assert (tg.get("mpox"), tg.get("mpoy")) == pytest.approx((1, 2))
+    finally:
+        tg.reset()
+
+
+@pytest.mark.motion     # (no motion; SHUTDOWN stops the spindle/coolant outputs)
+@pytest.mark.resets_board
+@pytest.mark.bug("E046", on=[])
+def test_shutdown_keeps_machine_position(tg):
+    """Needs E045 ({clear:n} exits SHUTDOWN) to observe the position without a reset."""
+    tg.send_gcode("G28.3 X1 Y2", check=True)
+    tg.wait_idle(5)
+    try:
+        tg.send_json({"shutd": None})
+        tg.send_json({"clear": None}, check=True, timeout=3)
         assert (tg.get("mpox"), tg.get("mpoy")) == pytest.approx((1, 2))
     finally:
         tg.reset()
