@@ -40,23 +40,27 @@ def test_limit_hit_stops_fast_and_unhomes(tg, switches, keep, record):
     tg.send_gcode("G28.3 X0", check=True)           # mark X homed
     assert tg.get("homx") == 1
     switches.mount("x", "max", at=8.0)
-    seen = []
+    mark = len(tg.transport.history)
     try:
         tg.send_gcode(f"G91 G1 X20 F{FEED:.0f}", check=True, allow="X runs into a software limit switch at 8 mm")
         stop = _stopped(switches)
-        seen += tg.drain(quiet=0.3)
+        tg.drain(quiet=0.3)
+        seen = tg.transport.history[mark:]
         status = switches.mount_status("x", "max")
         v = FEED / 60.0                              # mm/s
         jerk = xjm * 1e6 / 216000.0                  # xjm is mm/min^3 / 1e6 -> mm/s^3
         normal = v * (v / jerk) ** 0.5               # jerk-limited stopping distance at the move's jerk
         overrun = stop - status["trip_at"]
+        # fast stop at xjh = 9 xjm brakes in normal/3; allow one 5 ms segment plus ISR/main-loop latency
+        # (10 ms at v) and two steps of quantization. A stock stop needs at least `normal`.
+        allowed = normal / 3 + v * 0.010 + 0.075
         record("stop", {"trip_at": status["trip_at"], "stop": stop, "overrun": overrun, "normal": normal,
-                        "xjm": xjm})
+                        "allowed": allowed, "xjm": xjm})
         limit = tg.dialect.status("LIMIT_SWITCH_HIT")
         assert any(e.kind == "exception" and e.data["er"].get("st") == limit for e in seen)
         assert tg.stat() == tg.dialect.stat("ALARM")
         assert tg.get("homx") == 0, "axes stay homed after a limit hit"
-        assert overrun < 0.6 * normal, f"overran {overrun:.3f} mm; a normal stop is {normal:.3f} mm"
+        assert overrun < allowed, f"overran {overrun:.3f} mm (allowed {allowed:.3f}); a normal stop is {normal:.3f} mm"
     finally:
         tg.clear_alarm()
         switches.unmount_all()
