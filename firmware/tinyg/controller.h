@@ -51,7 +51,7 @@ typedef struct controllerSingleton {	// main TG controller struct
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
 	uint8_t hw_platform;                // tinyg hardware compatibility - platform type
-	uint8_t hw_version;                 // tinyg hardware compatibility - platform revision
+	float hw_version;                 // tinyg hardware compatibility - platform revision
 
 	// communications state variables
 	uint8_t primary_src;				// primary input source device
