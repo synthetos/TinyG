@@ -272,8 +272,9 @@ class Ice:
 
     def poke(self, expr, value):
         addr, size, kind = self.symbols.resolve(expr)
-        current = self.read(addr, size) if kind.startswith("bits:") else None
-        self.write(addr, encode(value, size, kind, current))
+        with self.halted():                         # one halt: the firmware cannot touch neighbouring bits between
+            current = self.read(addr, size) if kind.startswith("bits:") else None
+            self.write(addr, encode(value, size, kind, current))
 
     def port_out(self, port):
         """PORTx.OUT register value."""

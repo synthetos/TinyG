@@ -9,7 +9,9 @@ import subprocess
 
 import pytest
 
-from tinyg_hil.ice import Symbols, decode, encode
+import threading
+
+from tinyg_hil.ice import Ice, Symbols, decode, encode
 
 SOURCE = r'''
 #include <stdint.h>
@@ -42,3 +44,28 @@ def test_bitfield_members_decode(tmp_path, dwarf):
             assert decode(bytes(other), kind) == 0
             assert decode(bytes(encode(value, n, kind, other)), kind) == value
             assert bytes(encode(value, n, kind, other)) == raw
+
+
+def test_bitfield_poke_is_one_halt():
+    """The read-modify-write of a bitfield must not let the CPU run between the read and the write."""
+    events, memory = [], {0x10: 0xE7}
+
+    class Protocol:
+        def stop(self): events.append("stop")
+        def run(self): events.append("run")
+        def memory_read(self, memtype, addr, n):
+            events.append("read")
+            return bytearray(memory[addr + i] for i in range(n))
+        def memory_write(self, memtype, addr, data):
+            events.append("write")
+            memory.update({addr + i: b for i, b in enumerate(data)})
+
+    class Syms:
+        def resolve(self, expr): return 0x10, 1, "bits:3:2"
+
+    ice = Ice.__new__(Ice)
+    ice.protocol, ice.symbols, ice.wire = Protocol(), Syms(), None
+    ice._mutex, ice._halt_depth = threading.RLock(), 0
+    ice.poke("v.b", 2)
+    assert events == ["stop", "read", "write", "run"]
+    assert memory[0x10] == 0xF7
