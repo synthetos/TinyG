@@ -23,10 +23,10 @@ def _reports(events):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E077", on=["d449"])
-def test_long_line_alarm_report_is_bounded(tg):
+@pytest.mark.parametrize("line", [LONG, 'G43 H1 ("quoted" \\ %s %n)'])
+def test_long_line_alarm_report_is_bounded(tg, line):
     try:
-        resp, events = _alarm_report(tg, LONG)
+        resp, events = _alarm_report(tg, line)
         assert resp.status == tg.dialect.status("GCODE_COMMAND_UNSUPPORTED")
         assert _reports(events) == ["exception"]
         alive = tg.send_json({"fb": None}, timeout=6, check=True)   # no crash, hang or restart
