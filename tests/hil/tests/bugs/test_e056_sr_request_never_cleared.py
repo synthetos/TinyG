@@ -24,7 +24,7 @@ def _status(stat=None, key=None):
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E056", on=["d449"])
+@pytest.mark.bug("E056", on=[])
 def test_report_after_gcode_respects_interval_in_ready(tg, keep):
     fields = list(tg.get("sr"))
     key = next((k for k in CHANGES if k in fields), None)

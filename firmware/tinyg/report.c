@@ -462,14 +462,15 @@ stat_t sr_status_report_callback() 		// called by controller dispatcher
     if (SysTickTimer_getValue() < sr.status_report_systick) {
         return (STAT_NOOP);
     }
-    if (sr.status_report_request == SR_VERBOSE) {
+    uint8_t request = sr.status_report_request;
+    sr.status_report_request = SR_OFF;              // a request is spent even if nothing changed (E056, as g2core)
+    if (request == SR_VERBOSE) {
         _populate_unfiltered_status_report("sr");
     } else {
         if (_populate_filtered_status_report() == false) {	// no new data
             return (STAT_OK);
         }
     }
-    sr.status_report_request = SR_OFF;
     nv_print_list(STAT_OK, TEXT_RESPONSE, JSON_OBJECT);
     return (STAT_OK);
 }
