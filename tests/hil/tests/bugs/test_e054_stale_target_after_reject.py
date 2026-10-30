@@ -15,8 +15,10 @@ def _mpo(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E054", on=["d440", "d449"])
+@pytest.mark.bug("E054", on=["d440"])
 def test_rejected_arc_does_not_leak_into_next_move(tg):
+    tg.wait_idle()
+    assert tg.get("qr") == tg.planner_buffers, "test requires an idle, empty planner"
     start = _mpo(tg)
     try:
         # centre (5,5) is 7.07 from the start but 5.66 from the end: rejected, no motion
