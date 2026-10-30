@@ -21,7 +21,7 @@ def test_block_with_seven_queued_items(tg):
         {tg.dialect.stat("PANIC")} if "PANIC" in tg.dialect.stat_names else set())
     try:
         for _ in range(30):
-            tg.send_gcode("G4 P2", check=True)
+            tg.send_gcode("G4 P2", check=True, timeout=10)   # waits for a free buffer once the queue is full
         resp = tg.send_gcode(BLOCK, timeout=15, allow="spindle/coolant outputs toggle on a bare bench")
         events = resp.events + tg.drain(quiet=0.3)
         assert resp.status == 0, resp.raw
@@ -37,7 +37,7 @@ def test_m30_behind_a_nearly_full_queue(tg):
     """M2/M30 queue their resets (offsets, coordinate system, M5, M9) and a finalize: five buffers."""
     try:
         for _ in range(30):
-            tg.send_gcode("G4 P2", check=True)
+            tg.send_gcode("G4 P2", check=True, timeout=10)   # waits for a free buffer once the queue is full
         resp = tg.send_gcode("M30", timeout=15)
         events = resp.events + tg.drain(quiet=0.3)
         assert resp.status == 0, resp.raw
@@ -52,7 +52,7 @@ def test_densest_block_with_program_end_behind_a_full_queue(tg):
     """Review case: S, M6, M3, M8, G54, a move and M30 in one block (eleven queued items before E069)."""
     try:
         for _ in range(30):
-            tg.send_gcode("G4 P2", check=True)
+            tg.send_gcode("G4 P2", check=True, timeout=10)   # waits for a free buffer once the queue is full
         resp = tg.send_gcode("S100 M6 M3 M8 G54 G1 X1 F60 M30", timeout=40,
                              allow="spindle/coolant outputs toggle on a bare bench; 1 mm move")
         events = resp.events + tg.drain(quiet=0.3)
