@@ -1798,20 +1798,8 @@ static void _exec_program_finalize(float *value, bool *flags)
     cm.end_hold_requested = false;					    // cancel any pending end hold request
 	mp_zero_segment_velocity();							// for reporting purposes
 
-	// perform the following resets if it's a program END
-	if (cm.machine_state == MACHINE_PROGRAM_END) {
-		cm_reset_origin_offsets();						// 1.  G92.1 - we do G91.1 instead of G92.2
-	//	cm_suspend_origin_offsets();					// 1.  G92.2 - as per NIST
-		cm_set_coord_system(cm.default_coord_system);	// 1a. reset to default coordinate system
-		cm_select_plane(cm.default_select_plane);		// 2.  reset to default arc plane
-		cm_set_distance_mode(cm.default_distance_mode); // 3.  reset to default distance mode
-		cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// 4.  G94
-		cm_spindle_control(SPINDLE_OFF);				// 7.  M5
-	//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// 8.  NIST specifies G1...
-		cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);  // 8.  but we cancel motion mode. Safer.
-		cm_flood_coolant_control(false);				// 9.  M9
-    //	cm_set_units_mode(cm.units_mode);				// 10. reset to default units mode +++ REMOVED +++
-	}
+	// A program END's model resets were applied when the M2/M30 was parsed (cm_program_end()).
+	// This runs from the stepper loader ISR, so it must not touch the gcode model or queue commands.
 	sr_request_status_report(SR_REQUEST_ASAP);		    // request a final status report (not unfiltered)
 }
 
@@ -1846,6 +1834,20 @@ void cm_optional_program_stop()
 
 void cm_program_end()
 {
+	// Reset the model now, in the main loop, so blocks parsed after the M2/M30 keep their modes;
+	// the queued commands below (offsets, M5, M9) run in order behind the moves before the M2/M30
+	cm_reset_origin_offsets();						// 1.  G92.1 - we do G91.1 instead of G92.2
+//	cm_suspend_origin_offsets();					// 1.  G92.2 - as per NIST
+	cm_set_coord_system(cm.default_coord_system);	// 1a. reset to default coordinate system
+	cm_select_plane(cm.default_select_plane);		// 2.  reset to default arc plane
+	cm_set_distance_mode(cm.default_distance_mode); // 3.  reset to default distance mode
+	cm_set_feed_rate_mode(UNITS_PER_MINUTE_MODE);	// 4.  G94
+	cm_spindle_control(SPINDLE_OFF);				// 7.  M5
+//	cm_set_motion_mode(MOTION_MODE_STRAIGHT_FEED);	// 8.  NIST specifies G1...
+	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);  // 8.  but we cancel motion mode. Safer.
+	cm_flood_coolant_control(false);				// 9.  M9
+//	cm_set_units_mode(cm.units_mode);				// 10. reset to default units mode +++ REMOVED +++
+
 	float value[] = { (float)MACHINE_PROGRAM_END };
 	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
 }

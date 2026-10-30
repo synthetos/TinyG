@@ -12,7 +12,7 @@ MOVE = "1 mm +X at F60 before M30, then back"
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E069", on=["d440", "d449"])
+@pytest.mark.bug("E069", on=["d440"])
 def test_modes_after_m30_survive(tg):
     # pick modes that differ from the $gco/$gdi defaults M30 restores
     coord, coord_word = (4, "G57") if tg.get("gco") == 3 else (3, "G56")
