@@ -160,7 +160,6 @@ float max4(float x1, float x2, float x3, float x4)
 
 /**** String utilities ****
  * isnumber() 	  - isdigit that also accepts plus, minus, and decimal point
- * str_escape()   - add escapes to a string - currently for quotes only
  * str_unescape() - strip the quotes around a tokenized JSON string (the tokenizer already unescaped it)
  * str_concat()   - concatenate src to dst string and return pointer to NUL of dst string
  * str_asciify()  - turn string into good old American 7 but ASCII - obliterate smart quotes
@@ -172,18 +171,6 @@ uint8_t isnumber(char c)
 	if (c == '-') { return (true); }
 	if (c == '+') { return (true); }
 	return (isdigit(c));
-}
-
-char *str_escape(char *dst, const char *src)
-{
-	char c;
-	char *start_dst = dst;
-
-	while ((c = *(src++)) != 0) {	// NUL
-		if (c == '"') { *(dst++) = '\\'; }
-		*(dst++) = c;
-	}
-	return (start_dst);
 }
 
 char *str_unescape(char *str)
@@ -330,13 +317,30 @@ char *pstr2str(const char *pgm_string)
  *    _ _P routines accept PSTR strings as input
  */
 
-char *strcat_string(char *str, const char *src)
+// strcat_string() escapes quote, backslash and control bytes so the output stays valid JSON (E102).
+// It writes nothing and returns NULL unless the whole quoted string and its NUL fit in capacity.
+char *strcat_string(char *str, const char *src, size_t capacity)
 {
+    size_t need = 3;                                // two quotes and the NUL
+    for (const char *s = src; *s != 0; s++) {
+        unsigned char c = *s;
+        need += (c < 0x20) ? 6 : ((c == '"') || (c == '\\')) ? 2 : 1;
+    }
+    if (need > capacity) { return (NULL); }
     *str++ = '"';
     while (*src != 0) {
-        *str++ = *src++;
+        unsigned char c = *src++;
+        if (c < 0x20) {
+            *str++ = '\\'; *str++ = 'u'; *str++ = '0'; *str++ = '0';
+            *str++ = "0123456789abcdef"[c >> 4];
+            *str++ = "0123456789abcdef"[c & 0x0F];
+            continue;
+        }
+        if ((c == '"') || (c == '\\')) { *str++ = '\\'; }
+        *str++ = c;
     }
     *str++ = '"';
+    *str = 0;
     return (str);
 }
 

@@ -647,6 +647,13 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
  *     - -1 if string overflowed buffer
  */
 
+// a quoted, escaped string (key or value) that must end before out_max, or NULL (E102)
+static char *_serialize_string(char *str, const char *src, const char *out_max)
+{
+    if (str >= out_max) { return (NULL); }
+    return (strcat_string(str, src, out_max - str));
+}
+
 int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 {
     char *str = out_buf;
@@ -669,6 +676,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
     // Serialize the list - Note: nv points to opening r{} or first usable object past continuation text
     while (true) {
+		if (str >= out_max) { return (-1); }        // the pad covers the curlies or comma below
         // write opening curlies, closing curlies, or leading comma for the current NV pair
         if (nv->depth > prev_depth) {               // one or more opening curlies
             while (nv->depth > prev_depth) {
@@ -686,7 +694,8 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
         }
 
         // serialize name
-        str += sprintf_P(str, PSTR("\"%s\":"), nv->token);
+        if ((str = _serialize_string(str, nv->token, out_max)) == NULL) { return (-1); }
+        *str++ = ':';
 
 		// serialize value
         switch (nv->valuetype) {
@@ -699,8 +708,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
 
             case TYPE_INTEGER : {   str = strcat_integer(str, nv->value_int); break; }
 
-            case TYPE_STRING :  {   if ((str + strlen(nv->str)) >= out_max) { return (-1); }
-                                    str = strcat_string(str, nv->str);
+            case TYPE_STRING :  {   if ((str = _serialize_string(str, nv->str, out_max)) == NULL) { return (-1); }
                                     break;
                                 }
 
@@ -715,7 +723,9 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
                                     str += sprintf_P(str, PSTR("\"0x%lx\""), *v); break; 
                                 }
 
-            case TYPE_ARRAY :   {   str += sprintf_P(str, PSTR("[%s]"), nv->str); break; }
+            case TYPE_ARRAY :   {   if ((str + strlen(nv->str) + 2) >= out_max) { return (-1); }
+                                    str += sprintf_P(str, PSTR("[%s]"), nv->str); break;
+                                }
 
             case TYPE_PARENT :  {   if (nv->nx->depth <= nv->depth) { str = strcat_literal_P(str, PSTR("{}")); }
                                     break;                     // handles parent with null child object ^
@@ -737,7 +747,7 @@ int16_t json_serialize(nvObj_t *nv, char *out_buf, int16_t out_size)
         *str++ = '}';
     }
 	str += sprintf(str, "}\n");	                    // sprintf ensures a NUL termination
-    json_relax(cs.out_buf);
+    json_relax(out_buf);
 	return (str - out_buf);
 }
 
@@ -786,7 +796,7 @@ void json_print_response(uint8_t status)
     }
 	nv = NV_BODY;	                                    // start body processing
 	if (status == STAT_JSON_SYNTAX_ERROR) {             // wrap syntax errors. These would blow up the host's JSON parser
-    	nv_add_string((const char *)"err", str_escape(cs.bufp, cs.saved_buf));
+    	nv_add_string((const char *)"err", cs.saved_buf);	// raw; the serializer escapes it (E102)
 	}
 
     // Filter the NV pairs down to the JSON verbosity reporting level
@@ -820,6 +830,7 @@ void json_print_response(uint8_t status)
             }
 		} while ((nv = nv_next(nv)) != NULL);
 	}
+	bool tid_present = js.tid_present;					// kept for the overflow reply below
 	if (js.tid_present) {								// the tid goes back at the top level, exactly,
 		for (nv = NV_BODY; nv != NULL; nv = nv_next(nv)) {	// whatever the JSON verbosity (E049)
 			if (nv->valuetype == TYPE_EMPTY) { break; }
@@ -845,7 +856,16 @@ void json_print_response(uint8_t status)
 	strcpy(nv->token, "f");                             // terminate the list
 
 	// serialize the JSON response and print it if there were no errors
-	if (json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf)) > 0) {
+	int16_t size = json_serialize(NV_HEAD, cs.out_buf, sizeof(cs.out_buf));
+	if (size < 0) {                                     // too big: still answer the line, with its tid and footer (E102)
+		char *str = cs.out_buf + sprintf_P(cs.out_buf, PSTR("{\"r\":{},"));
+		if (tid_present) { str += sprintf_P(str, PSTR("\"tid\":%lu,"), js.tid); }
+		// the body is lost, so an OK becomes BUFFER_FULL; the footer's other fields stay
+		sprintf_P(str, PSTR("\"f\":[%c,%d%s]}\n"), footer_string[0],
+				  (status == STAT_OK) ? STAT_BUFFER_FULL : status, strrchr(footer_string, ','));
+		json_relax(cs.out_buf);
+	}
+	if (size != 0) {
         fputs(cs.out_buf, stdout);
 	}
     nv->str = NULL;                                 // do not retain the stack-backed footer
@@ -898,7 +918,10 @@ char *json_relax(char *str)
 
     for (; *str != 0; *wr++ = *str, str++) {
         if (in_string) {
-            if ((*str == '"') && (*(str-1) != '\\')) {  // find closing quote
+            if (*str == '\\') {                         // copy an escape pair whole: \\ and \" do not close (E102)
+                *wr++ = *str++;
+                if (*str == 0) { break; }
+            } else if (*str == '"') {                   // find closing quote
                 in_string = false;
             }
             continue;
