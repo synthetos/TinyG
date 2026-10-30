@@ -116,6 +116,7 @@ cmSingleton_t cm;		// canonical machine controller singleton
 
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, bool *flags);
+static void _exec_g10_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_mist_coolant_control(float *value, bool *flags);
 static void _exec_flood_coolant_control(float *value, bool *flags);
@@ -894,23 +895,27 @@ stat_t cm_set_arc_distance_mode(const uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - G10 L2/L20 Pn (affects MODEL only)
+ * cm_set_coord_offsets() - G10 L2/L20 Pn (model now, runtime in queue order)
  *
  *	This function applies the offset to the GM model but does not persist the offsets
  *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
  *	has ended. You can also use $g54x - $g59c config functions to change offsets.
  *
- *	It also does not reset the work_offsets which may be accomplished by calling
- *	cm_set_work_offsets() immediately afterwards.
+ *	Edits to the active system capture new model offsets and queue a runtime snapshot.
  *
  *  Both L2 and L20 forms are supported
  */
 
-stat_t cm_set_coord_offsets(const uint8_t coord_system,
+stat_t cm_set_coord_offsets(const float coord_system,
                             const uint8_t L_word,
                             const float offset[], const bool flag[])
 {
-    if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
+    if ((!cm.gf.parameter) || !(coord_system >= 0 && coord_system <= COORD_SYSTEM_MAX) ||
+        (coord_system != floor(coord_system))) {
+        return (STAT_P_WORD_IS_INVALID);
+    }
+    uint8_t selected = (coord_system == 0) ? cm.gm.coord_system : (uint8_t)coord_system;
+    if ((selected < G54) || (selected > COORD_SYSTEM_MAX)) { // you can't set G53
         return (STAT_P_WORD_IS_INVALID);
     }
     if (!cm.gf.L_word) {
@@ -919,17 +924,33 @@ stat_t cm_set_coord_offsets(const uint8_t coord_system,
     if ((L_word != 2) && (L_word != 20)) {
         return (STAT_L_WORD_IS_INVALID);
     }
+    cm_set_work_offsets();
+    bool changed = false;
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
         if (flag[axis]) {
+            float value = (axis < AXIS_A) ? _to_millimeters(offset[axis]) : offset[axis];
             if (L_word == 2) {
-                cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
+                cm.offset[selected][axis] = value;
             } else {
-                cm.offset[coord_system][axis] = cm.gmx.position[axis] - _to_millimeters(offset[axis]);
+                // Isolate signed tool compensation using the same convention as the DRO.
+                float tool = cm.gm.work_offset[axis] - cm_get_active_coord_offset(axis);
+                float origin = cm.gmx.origin_offset_enable ? cm.gmx.origin_offset[axis] : 0;
+                cm.offset[selected][axis] = cm.gmx.position[axis] - value - origin - tool;
             }
-            cm.deferred_write_flag = true;                  // persist offsets once machining cycle is over
+            changed = true;
+            cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
     }
+    if (changed && (selected == cm.gm.coord_system)) {
+        cm_set_work_offsets();
+        mp_queue_command(_exec_g10_offset, cm.gm.work_offset, FLAGS_NONE);
+    }
     return (STAT_OK);
+}
+
+static void _exec_g10_offset(float *value, bool *flags)
+{
+    mp_set_runtime_work_offset(value); // use the queued snapshot, not later model edits
 }
 
 /******************************************************************************************

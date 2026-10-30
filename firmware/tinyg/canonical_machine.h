@@ -701,7 +701,7 @@ stat_t cm_select_plane(const uint8_t plane);                                // G
 stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
 stat_t cm_set_distance_mode(const uint8_t mode);                            // G90, G91
 stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
-stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
+stat_t cm_set_coord_offsets(const float coord_system,                     // G10
                             const uint8_t L_word,
                             const float offset[], const bool flag[]);
 
