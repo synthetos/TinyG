@@ -528,7 +528,7 @@ static void _post_buffer()
         c = *(top->bufp);
         if (c == NUL) {                     // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
             top->state = BUFFER_FREE;       // undo the buffer and return
-            if (top->pv != BUFFER_FREE) {   // drop the top down unless top == base
+            if (top != b->used_base) {      // drop the top down unless top == base
                 b->used_top = top->pv;
             }
             b->free_headers++;
@@ -699,9 +699,7 @@ static void _free_processed_buffer()
                 hdr->bufp = NULL;
                 hdr->state = BUFFER_FREE;
                 b->free_headers++;
-                if (hdr->pv->state == BUFFER_FREE) {        // adjust top
-                    b->used_top = hdr->pv;
-                }
+                b->used_top = hdr->pv;                      // pv is still in use (or a fragment)
             } else {                                        // buffer is in the middle of used list
                 hdr->state = BUFFER_FRAGMENT;
                 b->fragments++;
