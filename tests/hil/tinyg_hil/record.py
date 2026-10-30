@@ -69,8 +69,11 @@ class RunRecorder:
         t0 = rec["t0"]
         rec["sent"] = [{"t": round(t - t0, 4), "data": d.decode(errors="replace")}
                        for t, d in tg.transport.sent[rec.pop("sent_start"):]]
-        rec["events"] = [{"t": round(e.t - t0, 4), "kind": e.kind, "raw": e.raw}
-                         for e in tg.transport.history[rec.pop("history_start"):]]
+        events = tg.transport.history[rec.pop("history_start"):]
+        rec["events"] = [{"t": round(e.t - t0, 4), "kind": e.kind, "raw": e.raw,
+                          **({"damaged": e.damaged} if e.damaged is not None else {})} for e in events]
+        # salvaged lines are serial corruption (e.g. an ICE halt): the logical outcome stands, timing does not
+        rec["salvaged_lines"] = sum(e.damaged is not None for e in events)
 
     def report(self, report):
         rec = self.pending.setdefault(report.nodeid, {"nodeid": report.nodeid, "bugs": [], "markers": [],
