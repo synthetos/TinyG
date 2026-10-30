@@ -44,3 +44,19 @@ def test_m30_behind_a_nearly_full_queue(tg):
         assert not [e.raw for e in events if e.kind == "exception"]
     finally:
         tg.reset()
+
+
+@pytest.mark.motion
+@pytest.mark.resets_board
+def test_densest_block_with_program_end_behind_a_full_queue(tg):
+    """Review case: S, M6, M3, M8, G54, a move and M30 in one block (eleven queued items before E069)."""
+    try:
+        for _ in range(30):
+            tg.send_gcode("G4 P2", check=True)
+        resp = tg.send_gcode("S100 M6 M3 M8 G54 G1 X1 F60 M30", timeout=40,
+                             allow="spindle/coolant outputs toggle on a bare bench; 1 mm move")
+        events = resp.events + tg.drain(quiet=0.3)
+        assert resp.status == 0, resp.raw
+        assert not [e.raw for e in events if e.kind == "exception"]
+    finally:
+        tg.reset()
