@@ -60,6 +60,13 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
+// Reserved EEPROM slots for E060; do not advertise active pause behavior yet.
+static stat_t _get_reserved_hold_setting(nvObj_t *nv)
+{
+    nv->valuetype = TYPE_NULL;
+    return STAT_OK;
+}
+
 static stat_t _do_motors(nvObj_t *nv);		// print parameters for all motor groups
 static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
 static stat_t _do_offsets(nvObj_t *nv);		// print offset parameters for G54-G59,G92, G28, G30
@@ -626,6 +633,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
     { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
     { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
+    // Initialize/persist defaults now, but reject writes until E060 passes its timing gate.
+    { "sys","spph",_iipn,0,tx_print_nul,_get_reserved_hold_setting,set_nul,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },
+    { "sys","spde",_fipn,3,tx_print_nul,_get_reserved_hold_setting,set_nul,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },
+    { "sys","coph",_iipn,0,tx_print_nul,_get_reserved_hold_setting,set_nul,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },
 
     { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
 

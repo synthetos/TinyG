@@ -106,11 +106,11 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  *	NVM record 0 used to hold the firmware build number, and config_init() loaded defaults whenever it
  *	differed from the running build - so every release wiped every setting. Record 0 now holds a
  *	layout marker that changes only when the persisted layout changes: NVM records are indexed by
- *	cfgArray position, so bump CONFIG_NVM_LAYOUT whenever a persisted cfgArray row is added, removed
- *	or moved. Layout 1 is the 449.01 layout, so a board whose record 0 still says 449.01 keeps its
- *	settings. An erased EEPROM (0xFFFFFFFF, a NaN) is never current.
+ *	cfgArray position: inserting, removing or moving any earlier row changes persisted indexes.
+ *	Layout 2 reserves the combined output/probe/reporting additions in one release bump.
+ *	Only layout-1 firmware accepts the legacy 449.01 marker; layout 2 initializes defaults. An erased EEPROM (0xFFFFFFFF, a NaN) is never current.
  */
-#define CONFIG_NVM_LAYOUT			1
+#define CONFIG_NVM_LAYOUT			2
 #define CONFIG_NVM_LAYOUT_MARKER	(10000.0 + CONFIG_NVM_LAYOUT)	// can't be mistaken for a build number
 #define CONFIG_NVM_LAYOUT_1_BUILD	449.01							// record 0 of a layout-1 board before markers
 

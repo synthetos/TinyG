@@ -147,10 +147,11 @@ int main(void) {
         end = next(i for i, row in enumerate(old) if row[1] == "se29") + 1
         self.assertEqual(new[:end], old[:end])
         self.assertEqual(new[end:end+2], [("sys", "spep"), ("sys", "spdp")])
-        self.assertEqual(new[end+2], ("sys", "prbp"))
-        self.assertEqual(new[end+3], ("sys", "fstk"))
-        self.assertEqual(new[end+4], ("sys", "adc3"))
-        self.assertEqual(new[end+5:], old[end:])
+        self.assertEqual(new[end+2:end+5], [("sys", "spph"), ("sys", "spde"), ("sys", "coph")])
+        self.assertEqual(new[end+5], ("sys", "prbp"))
+        self.assertEqual(new[end+6], ("sys", "fstk"))
+        self.assertEqual(new[end+7], ("sys", "adc3"))
+        self.assertEqual(new[end+8:], old[end:])
 
 
 if __name__ == "__main__":
