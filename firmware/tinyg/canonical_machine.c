@@ -1928,8 +1928,7 @@ void cm_cycle_start()
 {
 	cm.machine_state = MACHINE_CYCLE;
 	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
-		cm.cycle_state = CYCLE_MACHINING;
-		qr_init_queue_report();							// clear queue reporting buffer counts
+		cm.cycle_state = CYCLE_MACHINING;			// keep qi/qo: buffers queued before the cycle started count (E091)
 	}
 }
 
