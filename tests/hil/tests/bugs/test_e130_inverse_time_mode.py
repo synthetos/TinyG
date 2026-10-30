@@ -23,3 +23,23 @@ def test_g93_survives_a_feed_move(tg):
         tg.send_gcode("G94", check=True)
         tg.send_gcode(f"G90 G53 G0 X{x0:.4f}", allow=MOVE)
         tg.wait_idle()
+
+
+@pytest.mark.motion
+@pytest.mark.bug('E130', on=['d440','d449'])
+@pytest.mark.parametrize('first',['G91 G1 X0.1 F60','F60'])
+def test_inverse_time_feed_does_not_leak_to_another_block(tg,first):
+    import time
+    x0=tg.get('mpox')
+    try:
+        tg.send_gcode('G21 G93',check=True)
+        tg.send_gcode(first,check=True,allow=MOVE)
+        if first.startswith('G91'):tg.wait_idle()
+        response=tg.send_gcode('G91 G1 X0.1',allow=MOVE)
+        assert response['f'][1]!=0, 'G93 motion without F was accepted'
+    finally:
+        # Unfixed firmware can accept a very slow move; stop it before return.
+        tg.send_raw(b'!');time.sleep(.3);tg.send_raw(b'%');time.sleep(.2)
+        tg.send_gcode('G94 G90',check=True)
+        tg.send_gcode(f'G53 G0 X{x0:.4f}',allow=MOVE)
+        tg.wait_idle()
