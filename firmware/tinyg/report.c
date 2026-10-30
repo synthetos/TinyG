@@ -402,13 +402,23 @@ static stat_t _set_srs(nvObj_t *nv)
         }
 	}
 
-    // copy the working list to the SR list; use i as read pointer, j as write pointer
-    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
+    // the result must fit the SR list, or nothing changes (see Error conditions above)
+    uint8_t live = 0;
+    for (i=0; i<SR_WORKING_LIST_LEN; i++) {
+        if (working_list[i] >= 0) { live++; }           // not NO_MATCH (-1) or deleted (-2)
+    }
+    if (live > NV_STATUS_REPORT_LEN) {
+        return (STAT_INPUT_EXCEEDS_MAX_LENGTH);
+    }
+    // copy the live entries to the SR list in order. value_flt and the SR list are only
+    // NV_STATUS_REPORT_LEN long; the working list is longer (E047: deletions wrote past sr)
+    for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
         sr.value_flt[i] = 8675309;                      // reset all filter terms
-        if (working_list[i] == -2) { continue; }        // skip deleted elements
-        sr.status_report_list[j] = working_list[i];
-        if (++j >= NV_STATUS_REPORT_LEN) {
-            break;
+        sr.status_report_list[i] = NO_MATCH;
+    }
+    for (i=0, j=0; i<SR_WORKING_LIST_LEN; i++) {
+        if (working_list[i] >= 0) {
+            sr.status_report_list[j++] = working_list[i];
         }
     }
     _persist_status_report_list();
