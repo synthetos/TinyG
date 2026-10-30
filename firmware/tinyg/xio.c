@@ -90,6 +90,8 @@ static void _init_readline_linemode(void);
 
 static char *_readline_charmode(devflags_t *flags, uint16_t *size);
 static char *_readline_linemode(devflags_t *flags, uint16_t *size);
+static char *_json_value(char *line, const char *key_P);
+static bool _json_wraps_gcode(char *line);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -538,12 +540,59 @@ static void _post_buffer()
     top->size = strlen(top->bufp) + 1;
 
     // set flags for buffer
-    if (strchr("{$?!~%Hh", c) != NULL) {    // a match indicates control line
+    if ((strchr("{$?!~%Hh", c) != NULL) &&  // a match indicates control line...
+        !((c == '{') && _json_wraps_gcode(top->bufp))) { // ...unless it is JSON-wrapped G-code
         top->flags = DEV_IS_CTRL;
     } else {
         top->flags = DEV_IS_DATA;
     }
     top->state = BUFFER_FULL;
+}
+
+/*
+ * _json_value() - pointer to the value of a top-level JSON key (quoted or bare, key in PROGMEM), or NULL
+ *
+ *  Lightweight scan for line classification only: the key must follow '{' or ','.
+ */
+
+static char *_json_value(char *line, const char *key_P)
+{
+    uint8_t klen = strlen_P(key_P);
+    for (char *p = line + 1; (p = strstr_P(p, key_P)) != NULL; p++) {
+        char *before = p - 1;
+        char *after = p + klen;
+        if (*before == '"') {
+            if (*after != '"') { continue; }
+            before--;
+            after++;
+        }
+        while ((before > line) && (*before <= ' ')) { before--; }
+        if ((*before != '{') && (*before != ',')) { continue; }
+        while (*after == ' ') { after++; }
+        if (*after != ':') { continue; }
+        for (after++; (*after == ' ') || (*after == '"'); after++);
+        return (after);
+    }
+    return (NULL);
+}
+
+/*
+ * _json_wraps_gcode() - true for {"gc":...} and for {"txt":...} unless the text is a $ or ? command
+ *
+ *  Such lines must wait behind earlier G-code and for planner room like any data line, or they
+ *  are executed ahead of queued moves and can overrun the planner (PANIC).
+ */
+
+static bool _json_wraps_gcode(char *line)
+{
+    char *v;
+    if (_json_value(line, PSTR("gc")) != NULL) {
+        return (true);
+    }
+    if ((v = _json_value(line, PSTR("txt"))) != NULL) {
+        return (strchr_P(PSTR("$?{"), *v) == NULL);     // note: an empty value matches the terminating NUL
+    }
+    return (false);
 }
 
 /*

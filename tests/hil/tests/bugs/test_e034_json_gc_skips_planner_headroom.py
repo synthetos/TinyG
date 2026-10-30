@@ -29,7 +29,6 @@ def _fill_planner(tg):
 
 
 @pytest.mark.resets_board
-@pytest.mark.bug("E034", on=["d449"])
 def test_json_gc_waits_for_planner_room(tg):
     panic = tg.dialect.stat("PANIC")
     try:
