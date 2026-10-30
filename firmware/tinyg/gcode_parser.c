@@ -283,7 +283,11 @@ static stat_t _parse_gcode_block(char *buf)
 	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
 		switch(letter) {
 			case 'G':
-			switch((uint8_t)value) {
+			if (!(value >= 0 && value <= 999)) {
+				status = STAT_GCODE_COMMAND_UNSUPPORTED;
+				break;
+			}
+			switch((uint16_t)value) {
 				case 0:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_STRAIGHT_TRAVERSE);
 				case 1:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_STRAIGHT_FEED);
 				case 2:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CW_ARC);
@@ -381,7 +385,11 @@ static stat_t _parse_gcode_block(char *buf)
 			break;
 
 			case 'M':
-			switch((uint8_t)value) {
+			if (!(value >= 0 && value <= 999)) {
+				status = STAT_MCODE_COMMAND_UNSUPPORTED;
+				break;
+			}
+			switch((uint16_t)value) {
 				case 0: case 1: case 60:
 						SET_MODAL (MODAL_GROUP_M4, program_flow, PROGRAM_STOP);
 				case 2: case 30:
