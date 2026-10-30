@@ -15,26 +15,26 @@ def _tid(resp):
     return resp.event.data.get("tid", resp.body.get("tid"))
 
 
-@pytest.mark.bug("E049", on=["d449"])
+@pytest.mark.bug("E049", on=[])
 def test_tid_echoed_on_error(tg):
     resp = tg.send_json('{"gc":"M200","tid":17}')
     assert resp.status == tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")
     assert _tid(resp) == 17
 
 
-@pytest.mark.bug("E049", on=["d449"])
+@pytest.mark.bug("E049", on=[])
 def test_tid_exact_above_float_precision(tg):
     assert _tid(tg.send_json('{"fb":null,"tid":16777217}', check=True)) == 16777217
 
 
-@pytest.mark.bug("E049", on=["d449"])
+@pytest.mark.bug("E049", on=[])
 def test_tid_at_top_level(tg):
     assert tg.send_json('{"fb":null,"tid":33}', check=True).event.data.get("tid") == 33
 
 
 @pytest.mark.persists
 @pytest.mark.parametrize("jv", [1, 2])
-@pytest.mark.bug("E049", on=["d449"])
+@pytest.mark.bug("E049", on=[])
 def test_tid_echoed_at_low_jv(tg, keep, jv):
     keep("jv")
     tg.set("jv", jv)

@@ -89,8 +89,35 @@ static stat_t _marshall_nv_pair(nvObj_t **nv, char **p_str, char *group, uint8_t
  */
 
 //void json_parser(char *str, nvObj_t *nv, bool display)
+/*
+ * _scan_tid() - find a top-level "tid" key before anything executes (E049)
+ *
+ *	Pairs execute one at a time and the first error returns, so a tid after the failing pair was
+ *	never marshalled. Scan the raw line instead: a 'tid' key follows '{', ',', '"' or a space and is
+ *	followed by ':' (relaxed or strict JSON); a 'tid' inside a string value is not a key.
+ */
+static void _scan_tid(const char *str)
+{
+	js.tid_present = false;
+	for (const char *p = str; (p = strstr(p, "tid")) != NULL; p += 3) {
+		char before = (p == str) ? '{' : *(p-1);
+		if ((before != '{') && (before != ',') && (before != '"') && (before != ' ')) { continue; }
+		const char *q = p + 3;
+		if (*q == '"') { q++; }
+		while (*q == ' ') { q++; }
+		if (*q++ != ':') { continue; }
+		while ((*q == ' ') || (*q == '"')) { q++; }
+		if ((*q >= '0') && (*q <= '9')) {
+			js.tid = strtoul(q, NULL, 10);
+			js.tid_present = true;
+			return;
+		}
+	}
+}
+
 void json_parser(char *str)
 {
+	_scan_tid(str);									// before the tokenizer edits the string
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = _json_parser_kernal(&nv, str);
 //    if (display) {
@@ -676,6 +703,16 @@ void json_print_response(uint8_t status)
 			    }
             }
 		} while ((nv = nv_next(nv)) != NULL);
+	}
+	if (js.tid_present) {								// the tid goes back at the top level, exactly,
+		for (nv = NV_BODY; nv != NULL; nv = nv_next(nv)) {	// whatever the JSON verbosity (E049)
+			if (nv->valuetype == TYPE_EMPTY) { break; }
+			if (strcmp(nv->token, "tid") == 0) { nv->valuetype = TYPE_SKIP; }	// not the float echo
+		}
+		if ((nv = nv_add_integer("tid", js.tid)) != NULL) {
+			nv->depth = 0;								// a peer of r{} and f[]
+		}
+		js.tid_present = false;
 	}
     nv = NV_FOOT;                                       // Add the footer
 	char footer_string[NV_FOOTER_LEN];
