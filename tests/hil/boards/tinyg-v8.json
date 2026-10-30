@@ -50,7 +50,13 @@
       "bothedges": "0x00",
       "rising": "0x01"
     },
-    "avr_libc_header": "avr/iox192a3.h"
+    "avr_libc_header": "avr/iox192a3.h",
+    "sram": {
+      "start": "0x2000",
+      "end": "0x5FFF",
+      "sp_io_address": "0x003D",
+      "note": "internal SRAM 16 KB; CPU.SPL/SPH at I/O 0x3D/0x3E (data space)"
+    }
   },
   "serial": {
     "usb_vid_pid": "0403:6015",

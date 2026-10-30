@@ -32,7 +32,7 @@ class SoftSwitches:
     def __init__(self, ice, normally_closed=False, interval=0.02, geometry=None):
         self.ice = ice
         self.geometry = geometry            # axis -> (motor index 0.., steps per unit), for firmware mounts
-        self.frames = {}                    # (axis, end) -> (steps at mount, position at mount, steps per unit)
+        self.frames = {}                    # (axis, end) -> (steps at mount, position at mount, steps per unit, motor)
         self.normally_closed = normally_closed
         self.interval = interval
         self.closed = {}                    # (axis, end) -> bool, as last driven
@@ -124,12 +124,12 @@ class SoftSwitches:
             self.ice.poke(f"{m}.trips", 0)
             self.ice.poke(f"{m}.at", round(steps + (at - pos) * spu))
             self.ice.poke(f"{m}.enabled", 1)
-        self.frames[(axis, end)] = (steps, pos, spu)
+        self.frames[(axis, end)] = (steps, pos, spu, motor)
         time.sleep(0.02)
 
     def mount_status(self, axis, end):
         """Firmware mount state; trip_at is the last trip position in the frame mount() was given."""
-        steps0, pos0, spu = self.frames[(axis, end)]
+        steps0, pos0, spu, _ = self.frames[(axis, end)]
         m = f"test_hook.mount[{self._mount_index(axis, end)}]"
         v = self.ice.peek_many([f"{m}.closed", f"{m}.trips", f"{m}.trip_steps"])
         trips = v[f"{m}.trips"]
@@ -138,10 +138,8 @@ class SoftSwitches:
 
     def physical_position(self, axis):
         """Position in the mount frame from the never-rewritten step count (test-hooks builds)."""
-        motor, spu = self.geometry(axis)
-        frame = next(f for (a, _), f in self.frames.items() if a == axis)
-        steps0, pos0, _ = frame
-        return pos0 + (self.ice.peek(f"test_hook.steps[{motor}]") - steps0) / spu
+        steps0, pos0, spu, motor = next(f for (a, _), f in self.frames.items() if a == axis)
+        return pos0 + (self.ice.peek(f"test_hook.steps[{motor}]") - steps0) / spu     # no serial traffic
 
     def unmount_all(self):
         if self.frames:
