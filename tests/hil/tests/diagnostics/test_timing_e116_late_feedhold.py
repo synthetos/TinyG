@@ -3,7 +3,7 @@
 E116: a '!' landing at the final-segment handoff left hold REQUESTED/SYNC, the cycle never ended, a
 later '!' was ignored and the next move was held immediately. The first move's duration is measured
 on the Saleae, then '!' is swept later in 5 ms steps until several trials land after the move ended,
-so some land on the final segment. 0.6 s after each '!' the hold must be HOLD (it engaged) or
+then twice in 0.3 ms steps across that boundary, so some land on the final segment. 0.6 s after each '!' the hold must be HOLD (it engaged) or
 OFF (the move had ended), never left REQUESTED/SYNC; then '~' and a second move must run, the analyzer
 counts the steps of both moves, and the machine must end idle with no hold.
 """
@@ -35,7 +35,7 @@ def _bench(tg):
     return bench, chan["M1 step"]
 
 
-@pytest.mark.timeout(900)
+@pytest.mark.timeout(1500)
 def test_late_feedhold_never_sticks(tg, record):
     bench, step = _bench(tg)
     assert tg.get("1ma") == 0, "X must be motor 1"
@@ -95,9 +95,10 @@ def test_late_feedhold_never_sticks(tg, record):
                     break
             else:
                 finished, boundary = 0, None
-        if boundary is not None:                             # fine: 0.5 ms steps over the 10 ms before it
-            for i in range(21):
-                trial(boundary - 0.010 + i * 0.0005)
+        if boundary is not None:                             # fine: 0.3 ms steps, 6 ms before to 3 ms after, twice
+            for _ in range(2):
+                for i in range(31):
+                    trial(boundary - 0.006 + i * 0.0003)
     finally:
         record("e116_sweep", {"move_duration_s": duration, "steps_per_mm": spm, "trials": trials,
                               "boundary_reached": finished >= FINISHED_RUN,
