@@ -84,6 +84,8 @@ Channel names are free strings (1-15 of `A-Z a-z 0-9 _ - .`); tests use `<axis><
 
 Hence the default map uses them last, for the A axis.
 
+**While the switchbox itself resets** (power-up, flashing, a crash; about 0.1-0.3 s until `setup()` runs), its pins are outside the firmware's control. They come up as inputs, but the ROM may drive some of them; GPIO2, for one, can carry UART1 boot output. Treat a switchbox reset like plugging switches in or out: the TinyG may see edges, most likely on `amin`/`amax`. Do not reset or flash it while the TinyG is homing or running.
+
 ## Build and flash
 
 ```

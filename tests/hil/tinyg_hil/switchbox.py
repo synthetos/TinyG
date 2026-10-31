@@ -136,6 +136,7 @@ class SwitchBox:
         self._lock = None
         self._rx = bytearray()
         self._next_id = 1
+        self.last_id = None
         self.traffic = collections.deque(maxlen=5000)    # (monotonic, direction, text)
         self.traffic_count = 0
         self.garbage = collections.deque(maxlen=50)      # non-JSON lines (ROM banner, noise)
@@ -256,7 +257,7 @@ class SwitchBox:
         """Sends one request and returns its result; raises SwitchBoxError / SwitchBoxTimeout."""
         if self.ser is None:
             raise RuntimeError("switchbox not connected")
-        rid = self._next_id
+        rid = self.last_id = self._next_id      # events this request causes carry it as "rid"
         self._next_id += 1
         params = {k: v for k, v in params.items() if v is not None}
         line = json.dumps({"id": rid, "op": op_name, **params}, separators=(",", ":"))
@@ -356,6 +357,10 @@ class SwitchBox:
         self.last_events_page = page
         return events
 
+    def head(self):
+        """The seq the next board event will get: pass it to events(since=...) to see only what follows."""
+        return self.call("getEvents", since=0xFFFFFFFF)["head"]
+
     @op("setWifi")
     def set_wifi(self, ssid, password=""):
         """Store station credentials on the board (never echoed; redacted in .traffic)."""
@@ -430,7 +435,7 @@ class SwitchBox:
 
     def mark(self):
         """A point to collect traffic and board events from (see since())."""
-        return {"traffic": self.traffic_count, "seq": self.call("getInfo")["events"]["head"]}
+        return {"traffic": self.traffic_count, "seq": self.head()}
 
     def since(self, mark):
         """Traffic and board events after mark(), for a run record."""

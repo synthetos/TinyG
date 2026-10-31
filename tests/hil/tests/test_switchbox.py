@@ -21,8 +21,10 @@ def edges_of(events, name, rid=None):
     return [e for e in events if e["event"] == "edge" and e.get("ch") == name and (rid is None or e.get("rid") == rid)]
 
 
-def last_rid(sb):
-    return sb._next_id - 1
+def edges_after(sb, since, name):
+    """Edges on `name` caused by the last request, among the board events from seq `since` on."""
+    rid = sb.last_id                        # before events() sends requests of its own
+    return edges_of(sb.events(since=since, all=True), name, rid)
 
 
 def test_identity_and_no_reset_on_connect(switchbox, record):
@@ -71,12 +73,13 @@ def test_semantic_actions_follow_the_channel_type(switchbox):
 
 
 def test_ttl_opens_the_contact_by_itself(switchbox):
+    since = switchbox.head()
     r = switchbox.contact("xmin", state="closed", ttl_ms=200)
-    rid = last_rid(switchbox)
+    rid = switchbox.last_id
     assert r["channel"]["ttl_until_us"] - r["channel"]["since_us"] == 200000
     time.sleep(0.35)
     assert switchbox.channel("xmin")["state"] == "open"
-    ttl = [e for e in edges_of(switchbox.events(since=0, all=True), "xmin", rid) if e["cause"] == "ttl"]
+    ttl = [e for e in edges_of(switchbox.events(since=since, all=True), "xmin", rid) if e["cause"] == "ttl"]
     assert len(ttl) == 1 and ttl[0]["src"] == "ttl"
 
 
@@ -84,9 +87,10 @@ def test_ttl_opens_the_contact_by_itself(switchbox):
 @pytest.mark.parametrize("kw, width_us, slack_us", [({"us": 20}, 20, 3), ({"us": 200}, 200, 25),
                                                     ({"ms": 20}, 20000, 50)])
 def test_pulse_edges_are_timed_on_the_board(switchbox, record, kw, width_us, slack_us):
-    switchbox.pulse("x", "min", **kw)
-    rid = last_rid(switchbox)
-    edges = edges_of(switchbox.events(since=0, all=True), "xmin", rid)
+    since = switchbox.head()
+    switchbox.pulse("x", "min", wait=False, **kw)
+    time.sleep(width_us / 1e6 + 0.01)
+    edges = edges_after(switchbox, since, "xmin")
     assert [e["state"] for e in edges] == ["closed", "open"]
     width = edges[1]["t_us"] - edges[0]["t_us"]
     record("pulse", {"requested_us": width_us, "board_measured_us": width})
@@ -96,9 +100,10 @@ def test_pulse_edges_are_timed_on_the_board(switchbox, record, kw, width_us, sla
 
 @pytest.mark.timing
 def test_bounce_sequence(switchbox, record):
-    r = switchbox.bounce("y", "min", edges=5, interval_us=300, final_state="closed")
-    rid = last_rid(switchbox)
-    edges = edges_of(switchbox.events(since=0, all=True), "ymin", rid)
+    since = switchbox.head()
+    r = switchbox.bounce("y", "min", edges=5, interval_us=300, final_state="closed", wait=False)
+    time.sleep(0.05)
+    edges = edges_after(switchbox, since, "ymin")
     assert [e["state"] for e in edges] == ["closed", "open", "closed", "open", "closed"]
     gaps = [b["t_us"] - a["t_us"] for a, b in zip(edges, edges[1:])]
     record("bounce_gaps_us", gaps)
@@ -139,7 +144,7 @@ def test_structured_errors(switchbox):
 
 
 def test_events_are_ordered_and_stamped(switchbox):
-    mark = switchbox.call("getInfo")["events"]["head"]
+    mark = switchbox.head()
     for _ in range(3):
         switchbox.close("x", "max")
         switchbox.open("x", "max")
