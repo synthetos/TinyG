@@ -45,7 +45,7 @@ def test_g38_2_with_probe_already_closed_is_an_error(tg, ice, switches):
 
     def prb_report(ev):
         seen.append(ev)
-        return ev.kind == "response" and "prb" in _body(ev)
+        return ev.kind in ("probe", "response") and "prb" in _body(ev)   # top-level since E101
     try:
         tg.send_gcode("G38.2 Z-1 F50", check=True, allow="probe with the contact already closed")
         assert tg.wait_for(prb_report, 10).body["prb"]["e"] == 0, "already-tripped probe reported success"

@@ -25,7 +25,7 @@ def test_successful_probe_leaves_spindle_on(tg, ice, switches):
     switches.mount("z", "min", at=-0.5)
     try:
         tg.send_gcode("G38.2 Z-2 F60", check=True, allow="probe 0.5 mm down onto a software probe")
-        prb = tg.wait_for(lambda e: e.kind == "response" and isinstance(e.body, dict) and "prb" in e.body,
+        prb = tg.wait_for(lambda e: e.kind in ("probe", "response") and isinstance(e.body, dict) and "prb" in e.body,
                           15).body["prb"]
         tg.wait_idle()
         assert prb["e"] == 1, "probe did not trip on the mounted switch"
