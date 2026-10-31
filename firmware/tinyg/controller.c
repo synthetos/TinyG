@@ -267,13 +267,31 @@ static void _reject_damaged_line()
 	}
 }
 
+/*
+ * _count_line() - add a line read to the bytes the next character-mode footer reports (E164)
+ *
+ *	A line that gets no reply (a blank line, the second byte of a CRLF) still took ring space: its
+ *	bytes ride on the next reply, so a host counting bytes never drifts. Line mode and text mode
+ *	report no byte count, so there it is just the line read.
+ */
+static void _count_line(uint16_t size)
+{
+	if ((xio.rx_mode == RX_MODE_CHAR) && (cs.comm_mode != TEXT_MODE)) {
+		cs.linelen += size;
+	} else {
+		cs.linelen = size;
+	}
+}
+
 static stat_t _dispatch_command()
 {
 	if (cm.queue_flush_input || cm.queue_flush_input_due) {
 		return (STAT_OK);						// a host '%' is pending: buffered lines came before it (E146)
 	}
 	devflags_t flags = DEV_IS_BOTH;
-	cs.bufp = readline(&flags, &cs.linelen);
+	uint16_t size = 0;
+	cs.bufp = readline(&flags, &size);
+	_count_line(size);
     if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
         _reject_damaged_line();
         return (STAT_OK);
@@ -292,7 +310,9 @@ static stat_t _dispatch_control()
 		return (STAT_OK);						// a host '%' is pending: buffered lines came before it (E146)
 	}
 	devflags_t flags = DEV_IS_CTRL;
-	cs.bufp = readline(&flags, &cs.linelen);
+	uint16_t size = 0;
+	cs.bufp = readline(&flags, &size);
+	_count_line(size);
 	if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
 		_reject_damaged_line();
 		return (STAT_OK);

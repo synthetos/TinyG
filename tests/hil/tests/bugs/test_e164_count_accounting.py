@@ -32,7 +32,7 @@ CASES = {
 }
 
 
-@pytest.mark.bug("E164", on=["d449"])
+@pytest.mark.bug("E164", on=[])
 @pytest.mark.parametrize("case", list(CASES))
 def test_byte_counts_add_up(tg, keep, record, case):
     data, replies = CASES[case]
