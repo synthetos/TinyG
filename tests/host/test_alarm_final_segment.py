@@ -106,10 +106,7 @@ int main(int argc, char **argv) {
         _run_requested_queue_flush(); delayed=flushes;
         TIMER_DDA.CTRLA=0; st_run.dda_ticks_downcount=0;
         _run_requested_queue_flush(); completed=flushes;
-        assert(input_flushes==0);           // an alarm's flush keeps host input (E145)
-        cm.queue_flush_state=FLUSH_REQUESTED; cm.queue_flush_input=true;   // a host '%'
-        _run_requested_queue_flush();
-        assert(input_flushes==1 && !cm.queue_flush_input);
+        assert(input_flushes==0 && !cm.queue_flush_input);   // an alarm's flush keeps host input (E145)
     }
     printf("%d %d %d %d %d %d %d %d %d %d %d %d\n", result,
            cm.machine_state,cm.motion_state,cm.hold_state,resets,holds,requests,

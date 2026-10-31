@@ -56,7 +56,7 @@ uint8_t SREG=128;
 #define PSTR(x) (x)
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
-        bool program_paused, end_hold_requested; uint8_t optional_stop_enabled;} cm;
+        bool program_paused, end_hold_requested, queue_flush_input; uint8_t optional_stop_enabled;} cm;
 static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
 static int fetched, ran, wakeups, finalized, queued_commands;
@@ -74,6 +74,7 @@ stat_t cm_panic_P(int status,const char *msg) {(void)msg;return status;}
 void sr_request_status_report(int state) {(void)state;}
 void qr_init_queue_report(void) {assert(SREG==0);}
 void qr_request_queue_report(int n) {(void)n;}
+void xio_flush_input(void) {assert(0);}   /* no host '%' in these scenarios */
 void mp_flush_planner(void) {queued=false;}
 float mp_get_runtime_absolute_position(int axis) {(void)axis;return 0;}
 void cm_set_position(int axis,float pos) {(void)axis;(void)pos;}

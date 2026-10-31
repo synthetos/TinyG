@@ -1780,7 +1780,8 @@ void cm_request_planner_flush()
  *
  *  Waits until motion has stopped and no hold is still decelerating, then flushes the planner and,
  *  for a host '%', drops all buffered input (lines received before the '%'). An alarm's flush keeps
- *  host input: those lines are rejected one by one while alarmed (E145). A hold that was requested but never
+ *  host input: those lines are rejected one by one while alarmed (E145). cm_queue_flush() consumes the
+ *  host's request atomically with the end of the flush. A hold that was requested but never
  *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
  *  cm_queue_flush() (homing, panic) keep the host input.
  */
@@ -1791,11 +1792,7 @@ static void _run_requested_queue_flush()
          (cm.hold_state != FEEDHOLD_HOLD))) {
         return;
     }
-    if (cm.queue_flush_input) {                     // only a host '%' drops buffered input: an alarm's flush
-        cm.queue_flush_input = false;               // would cut a line in flight and drop lines unanswered (E145)
-        xio_flush_input();
-    }
-    cm_queue_flush();
+    cm_queue_flush();                               // drops buffered input only for a host '%' (E145)
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;
         cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
@@ -1915,7 +1912,21 @@ void cm_queue_flush()
         if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
             cm_end_hold();
         }
+        // Consume a host '%' together with the state change: the RX ISR sets both (E145). A '%' that
+        // lands before this is serviced here; after it, the flush is over and the '%' is not honored.
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;
+        cli();
+#endif
+        bool drop_input = cm.queue_flush_input;
+        cm.queue_flush_input = false;
         cm.queue_flush_state = FLUSH_OFF;
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
+        if (drop_input) {
+            xio_flush_input();                      // a host '%': drop what it sent before the '%'
+        }
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }
