@@ -12,7 +12,7 @@ MOVE = "half-circle G2 to X+2 (radius 1 mm) at F300, then back"
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E090", on=["d440", "d449"])
+@pytest.mark.bug("E090", on=["d440"])
 def test_no_endpoint_report_before_arc_moves(tg):
     fields = tg.get("sr") or {}
     if not {"posx", "vel"} <= set(fields):

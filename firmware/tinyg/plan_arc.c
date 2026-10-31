@@ -266,6 +266,8 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 
 	cm_cycle_start();						            // if not already started
 	arc.run_state = BLOCK_RUNNING;				        // enable arc to be run from the callback
+	cm_arc_callback();									// queue the first segment now, as a G1 would: a status
+														// report must not show the endpoint before motion (E090)
 	cm_finalize_move();
 	return (STAT_OK);
 }
