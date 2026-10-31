@@ -61,10 +61,12 @@
 //#define RX_BUFFER_SIZE (buffer_t)1022			// 2046 is the practical upper limit
 //#define TX_BUFFER_SIZE (buffer_t)1022			// 2046 is practical upper limit given RAM
 
-// XON/XOFF hi and lo watermarks. At 115.200 the host has approx. 100 uSec per char
-// to react to an XOFF. 90% (0.9) of 255 chars gives 25 chars to react, or about 2.5 ms.
-#define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.8)	// % to issue XOFF
-#define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.1)	// % to issue XON
+// XON/XOFF (and RTS) hi and lo watermarks. At 115.200 a char takes ~87 uSec. A USB-serial host sees
+// an XOFF only after the adapter forwards it - the FTDI latency timer alone is 16 ms, ~180 chars - and
+// what it wrote meanwhile still arrives (E163). XOFF at 30% leaves 175 chars; XON at 15% keeps ~2 lines
+// queued while the host restarts. The planner's own queue covers far longer than the host's reaction.
+#define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.3)	// % to issue XOFF
+#define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.15)	// % to issue XON
 #define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF
 #define XOFF_TX_LO_WATER_MARK (TX_BUFFER_SIZE * 0.05)	// % to issue XON
 

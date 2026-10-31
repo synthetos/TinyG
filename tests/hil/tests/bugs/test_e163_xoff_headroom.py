@@ -29,7 +29,7 @@ def paused(tr):
     return bool(tr.flow) and tr.flow[-1][1] == XOFF
 
 
-@pytest.mark.bug("E163", on=["d449"])
+@pytest.mark.bug("E163", on=[])
 def test_host_honouring_xoff_loses_nothing(tg, keep, record):
     keep("rxm", "ex")
     for token, value in (("rxm", 0), ("ex", 1)):
