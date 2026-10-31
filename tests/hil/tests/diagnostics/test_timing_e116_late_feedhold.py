@@ -1,11 +1,17 @@
 """Timing gate E116: a feedhold that arrives while the last block finishes must not stick.
 
 E116: a '!' landing at the final-segment handoff left hold REQUESTED/SYNC, the cycle never ended, a
-later '!' was ignored and the next move was held immediately. The first move's duration is measured
-on the Saleae, then '!' is swept later in 5 ms steps until several trials land after the move ended,
-then twice in 0.3 ms steps across that boundary, so some land on the final segment. 0.6 s after each '!' the hold must be HOLD (it engaged) or
-OFF (the move had ended), never left REQUESTED/SYNC; then '~' and a second move must run, the analyzer
-counts the steps of both moves, and the machine must end idle with no hold.
+later '!' was ignored and the next move was held immediately. The move's first-to-last step span is
+measured on the Saleae; each trial writes the move, sleeps the span plus an offset on the host and
+sends '!'. The offset is a host sleep target: USB and scheduling jitter and the write-to-first-step
+latency move the real arrival, so trials are swept in 5 ms steps until several land after the move
+ended, then twice in 0.3 ms steps across that boundary, so some land on the final segment.
+
+The verdict is a coarse logical outcome, not a measured ISR window: 0.6 s after each '!' the hold must
+be HOLD (it engaged) or OFF (the move had ended), never left REQUESTED/SYNC; both outcomes must be
+seen; then '~' and a second move must run, the analyzer counts the steps of both moves, and the
+machine must end idle with no hold. Every capture (.sal) and its raw edges are kept in the run
+directory, with host timing markers per trial in the record.
 """
 import json
 from pathlib import Path
@@ -36,8 +42,11 @@ def _bench(tg):
 
 
 @pytest.mark.timeout(1500)
-def test_late_feedhold_never_sticks(tg, record):
+def test_late_feedhold_never_sticks(tg, record, request):
     bench, step = _bench(tg)
+    recorder = request.config._tinyg_recorder
+    assert recorder, "run records required: the captures are the evidence"
+    out = recorder.dir.resolve()
     assert tg.get("1ma") == 0, "X must be motor 1"
     spm = 360.0 / tg.get("1sa") * tg.get("1mi") / tg.get("1tr")
     feed = min(FEED, tg.get("xvm"), tg.get("xfr"))
@@ -45,22 +54,28 @@ def test_late_feedhold_never_sticks(tg, record):
     hold_off = tg.dialect.hold("OFF")
     tg.send_gcode("G21 G91 G94", check=True)
     tg.wait_idle()
-    # duration of one move, command written to last step pulse
-    with saleae.Capture(bench["saleae"], channels=[step], seconds=None) as cap:
+    # first-to-last step span of one move (not command-to-last step: the write-to-first-step latency is not in it)
+    with saleae.Capture(bench["saleae"], channels=[step], seconds=None, save_as=out / "e116-span") as cap:
         time.sleep(0.2)
         tg.send_gcode(f"G1 X{LENGTH:g} F{feed:g}", check=True, allow=MOVE)
         tg.wait_idle(timeout=30)
         time.sleep(0.2)
     rises = saleae.rising(cap.edges()[step])
+    tg.send_gcode(f"G1 X{-LENGTH:g} F{feed:g}", allow=MOVE)             # return the calibration move
+    tg.wait_idle(timeout=30)
     assert abs(len(rises) - per_move) <= 1, f"{len(rises)} pulses, expected {per_move}"
     duration = rises[-1] - rises[0]
     trials, bad, finished = [], [], 0
 
     def trial(offset):
-        with saleae.Capture(bench["saleae"], channels=[step], seconds=None) as cap:
+        name = f"e116-trial-{len(trials):03d}"
+        with saleae.Capture(bench["saleae"], channels=[step], seconds=None, save_as=out / name) as cap:
+            started = time.monotonic()
             time.sleep(0.2)
+            written = time.monotonic()
             tg.transport.write(f"G1 X{LENGTH:g} F{feed:g}\n".encode())
             time.sleep(max(0.0, duration + offset))
+            banged = time.monotonic()
             tg.send_raw(b"!")
             tg.wait_for(lambda e: e.kind == "response", 5.0)    # the G1's reply, before any getter
             time.sleep(0.6)                                  # a real hold has stopped by now
@@ -71,9 +86,16 @@ def test_late_feedhold_never_sticks(tg, record):
             tg.send_gcode(f"G1 X{LENGTH:g} F{feed:g}", check=True, allow=MOVE)
             tg.wait_idle(timeout=30)
             time.sleep(0.2)
-        pulses = len(saleae.rising(cap.edges()[step]))
+        trial_rises = saleae.rising(cap.edges()[step])
+        pulses = len(trial_rises)
         state = {"hold": tg.get("hold"), "cycs": tg.get("cycs")}
-        result = {"offset_s": round(offset, 4), "hold_after_bang": hold_after, "cycs_after_bang": cycs_after,
+        # host clock markers (not instrument time): capture start -> write -> '!' as the host issued them
+        result = {"capture": name + ".sal", "host_sleep_target_after_span_s": round(offset, 4),
+                  "host_write_after_capture_start_s": round(written - started, 6),
+                  "host_bang_after_write_s": round(banged - written, 6),
+                  "first_step_s": trial_rises[0] if trial_rises else None,
+                  "first_move_last_step_s": trial_rises[per_move - 1] if pulses >= per_move else None,
+                  "hold_after_bang": hold_after, "cycs_after_bang": cycs_after,
                   "pulses": pulses, "expected": 2 * per_move, **state}
         trials.append(result)
         # 0.6 s after '!' the hold has either completed (HOLD) or never started (OFF, the move had ended);
@@ -100,11 +122,15 @@ def test_late_feedhold_never_sticks(tg, record):
                 for i in range(31):
                     trial(boundary - 0.006 + i * 0.0003)
     finally:
-        record("e116_sweep", {"move_duration_s": duration, "steps_per_mm": spm, "trials": trials,
+        record("e116_sweep", {"first_to_last_step_s": duration, "span_capture": "e116-span.sal",
+                              "sample_rate": cap.rate, "step_channel": step, "steps_per_mm": spm,
+                              "verdict_kind": "logical outcome per trial; offsets are host sleep targets", "trials": trials,
                               "boundary_reached": finished >= FINISHED_RUN,
                               "held_then_finished": sorted({t["hold_after_bang"] for t in trials})})
         if tg.get("hold") != hold_off:
             tg.send_raw(b"~")
         tg.send_gcode("G90")
     assert finished >= FINISHED_RUN, "the sweep never reached the end of the move"
+    seen = {t["hold_after_bang"] for t in trials}
+    assert {hold_off, tg.dialect.hold("HOLD")} <= seen, f"sweep did not cover both outcomes: {sorted(seen)}"
     assert not bad, f"stuck or lost motion: {bad}"

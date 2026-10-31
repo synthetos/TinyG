@@ -55,9 +55,12 @@ class Capture:
     """A timed digital capture; start on enter, wait and export on exit (or call finish())."""
 
     def __init__(self, device_id, channels=range(8), seconds=5.0, rate=12_000_000, volts=None, url=URL,
-                 keep_open=False):
+                 keep_open=False, save_as=None):
+        """save_as: a path stem; finish() keeps <stem>.sal and <stem>-edges.json (sample rate, initial levels,
+        transitions) next to the run record, so the evidence outlives the capture tab."""
         self.device_id, self.channels, self.seconds = device_id, list(channels), seconds
         self.rate, self.volts, self.url, self.keep_open = rate, volts, url, keep_open
+        self.save_as = save_as
         self.capture_id = None
         self._edges = None
 
@@ -82,6 +85,13 @@ class Capture:
                     call("export_raw_data_csv", self.url, captureId=self.capture_id, directory=d,
                          logicChannels={"digitalChannels": self.channels}, analogDownsampleRatio=1)
                     self.initial, self._edges = _parse_csv(pathlib.Path(d), self.channels)
+                if self.save_as is not None:
+                    stem = pathlib.Path(self.save_as).resolve()
+                    stem.parent.mkdir(parents=True, exist_ok=True)
+                    call("save_capture", self.url, captureId=self.capture_id, filepath=str(stem) + ".sal", timeout=30)
+                    pathlib.Path(str(stem) + "-edges.json").write_text(json.dumps(
+                        {"sample_rate": self.rate, "channels": self.channels, "initial": self.initial,
+                         "transitions": self._edges}) + "\n")
             finally:
                 if self.keep_open:          # left on screen for a person; closed by the next capture
                     _KEPT.write_text(str(self.capture_id))
