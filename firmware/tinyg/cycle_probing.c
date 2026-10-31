@@ -255,10 +255,13 @@ static stat_t _probing_finish()
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis));
 		cm.probe_results[axis] = cm_get_work_position(ACTIVE_MODEL, axis); // store the probe results
 	}
-    char temp[16];
-    sprintf_P(temp, PSTR("{\"prb\":null}"));    // JSON parser needs a fresh string every time
-	json_parser(temp);
-//	json_parser("{\"prb\":null}", NV_BODY, true);
+	// The completion report is a top-level {"prb":{...}} object, as g2core sends it, not an r/f
+	// reply that hosts (UGS, SPJS) would take as the answer to their command in flight (E101).
+	nvObj_t *nv = nv_reset_nv_list("");
+	strcpy_P(nv->token, PSTR("prb"));
+	nv->index = nv_get_index((const char *)"", nv->token);
+	nv_get(nv);									// the prb group expands into its members
+	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT);
 	return (_set_pb_func(_probing_finalize_exit));
 }
 

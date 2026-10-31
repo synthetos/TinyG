@@ -37,7 +37,7 @@ def test_ugs_connect_sequence(tg, keep):
 # to trigger; that is not an error and still produces the probe report.
 @pytest.mark.motion
 @pytest.mark.persists
-@pytest.mark.bug("E101", on=["d440", "d449"])
+@pytest.mark.bug("E101", on=["d440"])
 def test_probe_report_is_not_an_r_response(tg, keep):
     keep("st", "zsn")
     tg.set("st", 0)
