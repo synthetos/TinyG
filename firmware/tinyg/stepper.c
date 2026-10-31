@@ -1338,9 +1338,19 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 /*
  * st_get_pwr()	- get motor enable power state
  */
+// pwr rows sit in the "pwr" group, so the motor is the token's last digit, not group[0] (E108)
+static int8_t _get_pwr_motor(const nvObj_t *nv)
+{
+    return (nv->token[strlen(nv->token) - 1] - '1');
+}
+
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	nv->value_int = _motor_is_enabled(_get_motor(nv));
+    int8_t motor = _get_pwr_motor(nv);
+    if ((motor < 0) || (motor >= MOTORS)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+	nv->value_int = _motor_is_enabled(motor);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1411,7 +1421,7 @@ static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16lu [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=disabled,1=always on,2=in cycle,3=when moving]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
-static const char fmt_pwr[] PROGMEM = "Motor %c power enabled state:%2.0f\n";
+static const char fmt_pwr[] PROGMEM = "Motor %c power enabled state:%2d\n";
 
 void st_print_mt(nvObj_t *nv) { text_print_flt(nv, fmt_mt);}
 void st_print_me(nvObj_t *nv) { text_print_nul(nv, fmt_me);}
@@ -1448,7 +1458,7 @@ static void _print_motor_flt(nvObj_t *nv, const char *format)
 static void _print_motor_pwr(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->token[0], nv->value_flt);
+    sprintf_P(msg, format, nv->token[strlen(nv->token) - 1], (int)nv->value_int);	// motor digit, integer state (E108)
     text_finalize_message(msg);
 }
 
