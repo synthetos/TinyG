@@ -172,19 +172,20 @@ def coverage(samples, pts):
         return {"path_mm": round(total, 2), "samples": len(samples)}
     proj, last = [], 0.0
     for px, py in samples:                       # time order: the machine only moves forward along the path
-        best = None
+        cands = []
         for (ax, ay), (bx, by), s0, L in segs:
             if s0 + L < last - 0.5:
                 continue
             dx, dy = bx - ax, by - ay
             t = 0.0 if L == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (L * L)))
-            d = math.hypot(px - (ax + t * dx), py - (ay + t * dy))
-            if best is None or d < best[0]:
-                best = (d, s0 + t * L)
-        if best is None:
+            cands.append((math.hypot(px - (ax + t * dx), py - (ay + t * dy)), s0 + t * L))
+        if not cands:
             continue
-        proj.append(best[1])
-        last = max(last, best[1])
+        near = min(d for d, _ in cands)
+        # where the path comes back over itself, the earliest equally close place is the one reached
+        best = min(s for d, s in cands if d <= near + 0.05)
+        proj.append(best)
+        last = max(last, best)
     proj.sort()
     gaps = [b - a for a, b in zip(proj, proj[1:])]
     return {"path_mm": round(total, 2), "samples": len(samples), "first_mm": round(proj[0], 2),

@@ -191,7 +191,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     tr = tg.transport
     todo = _payload(lines)
     res = StreamResult(mode=mode, lines=len(todo))
-    sr = {}
+    sr = {k: tg.get(k) for k in ("posx", "posy", "posz")}   # filtered reports carry only what changed: start known
     inflight = []                    # byte lengths (count mode) or 1s (line mode), oldest first
     free = tg.get("rx") if mode == "line" else None   # free line slots before the first footer
     credit = G2_PRIME                # g2 mode: lines the host may send; +1 per response, ignoring the footer
