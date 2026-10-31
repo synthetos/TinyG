@@ -34,7 +34,7 @@ struct gcodeParserSingleton {	 	  // struct to manage globals
 // local helper functions and macros
 static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *block_delete_flag);
 static void _parse_clear(const char *str);
-static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value);
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, uint8_t *decimals);
 static stat_t _point(float value);
 static stat_t _validate_gcode_block(void);
 static stat_t _parse_gcode_block(char *line);	// Parse the block into the GN/GF structs
@@ -199,7 +199,7 @@ static void _parse_clear(const char *str)
  *	Normalization must remove any leading zeros or they will be converted to Octal
  *	G0X... is not interpreted as hexadecimal. This is trapped.
  */
-static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
+static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, uint8_t *decimals)
 {
 	if (**pstr == NUL) {
         return (STAT_COMPLETE);    // no more words to process
@@ -210,6 +210,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
     }
 	*letter = **pstr;
 	(*pstr)++;
+	*decimals = 0;
 
 	// X-axis-becomes-a-hexadecimal-number get-value case, e.g. G0X100 --> G255
 	if ((**pstr == '0') && (*(*pstr+1) == 'X')) {
@@ -223,6 +224,16 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	*value = strtof(*pstr, &end);
 	if(end == *pstr)
         return(STAT_BAD_NUMBER_FORMAT); // more robust test then checking for value=0;
+	// significant decimal digits as written (trailing zeros dropped): G92.10 has 1, G92.1005 has 4 (E150)
+	for (char *p = *pstr; p < end; p++) {
+		if (*p != '.') { continue; }
+		uint8_t n = 0;
+		for (char *d = p+1; (d < end) && isdigit(*d); d++) {
+			n++;
+			if (*d != '0') { *decimals = n; }
+		}
+		break;
+	}
 	*pstr = end;
 	return (STAT_OK);			// pointer points to next character after the word
 }
@@ -233,15 +244,6 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 static uint8_t _point(float value)
 {
 	return((uint8_t)(value*10 - trunc(value)*10 + 0.5));	// the tenths digit, rounded (G59.1 is 59.0999 in float)
-}
-
-/*
- * _one_decimal() - the code has at most one decimal digit: G28.3 and G28.30, not G28.01 or G92.19 (E150)
- */
-static bool _one_decimal(float value)
-{
-	float tenths = value * 10;
-	return (fabs(tenths - trunc(tenths + 0.5)) < 0.01);
 }
 
 /*
@@ -299,6 +301,7 @@ static stat_t _parse_gcode_block(char *buf)
 	char *pstr = (char *)buf;		// persistent pointer into gcode block for parsing words
   	char letter;					// parsed letter, eg.g. G or X or Y
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
+	uint8_t decimals = 0;			// significant decimal digits of the value as written (E150)
 	stat_t status = STAT_OK;
 
 	// set initial state for new move
@@ -308,14 +311,14 @@ static stat_t _parse_gcode_block(char *buf)
 	cm.gn.motion_mode = cm_get_motion_mode(MODEL);	// get motion mode from previous block
 
 	// extract commands and parameters
-	while((status = _get_next_gcode_word(&pstr, &letter, &value)) == STAT_OK) {
+	while((status = _get_next_gcode_word(&pstr, &letter, &value, &decimals)) == STAT_OK) {
 		switch(letter) {
 			case 'G':
 			if (!(value >= 0 && value <= 999)) {
 				status = STAT_GCODE_COMMAND_UNSUPPORTED;
 				break;
 			}
-			if ((value != trunc(value)) && (!_takes_subcode('G', (uint16_t)value) || !_one_decimal(value))) {
+			if ((decimals > 1) || ((decimals == 1) && !_takes_subcode('G', (uint16_t)value))) {
 				status = STAT_GCODE_COMMAND_UNSUPPORTED;	// e.g. G59.1: not G59 (E150)
 				break;
 			}
@@ -421,7 +424,7 @@ static stat_t _parse_gcode_block(char *buf)
 				status = STAT_MCODE_COMMAND_UNSUPPORTED;
 				break;
 			}
-			if ((value != trunc(value)) && (!_takes_subcode('M', (uint16_t)value) || !_one_decimal(value))) {
+			if ((decimals > 1) || ((decimals == 1) && !_takes_subcode('M', (uint16_t)value))) {
 				status = STAT_MCODE_COMMAND_UNSUPPORTED;	// e.g. M3.1: not M3 (E150)
 				break;
 			}
