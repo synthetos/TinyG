@@ -29,7 +29,8 @@ def get(tg, token, timeout=2.0):
 
 
 def wait_prb(tg, timeout=10.0):
-    return tg.wait_for(lambda e: e.kind == "response" and "prb" in _body(e), timeout).body["prb"]
+    """The probe report: top-level {"prb":...} on edge since E101, r.prb on master."""
+    return tg.wait_for(lambda e: e.kind in ("probe", "response") and "prb" in _body(e), timeout).body["prb"]
 
 
 def idle(tg, timeout=15.0):
