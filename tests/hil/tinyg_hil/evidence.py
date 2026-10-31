@@ -160,8 +160,8 @@ def _timing_plot(edges, captures_label, destination, marker=None):
     if not rises:return
     t0=rises[0];bins={}
     for t in rises:bins[int((t-t0)/.005)]=bins.get(int((t-t0)/.005),0)+1
-    xs=sorted(bins);fig,ax=plt.subplots(figsize=(9,3.6),layout='constrained')
-    ax.step([k*.005 for k in xs],[bins[k]/.005 for k in xs],where='post',color='#087c89',lw=1)
+    xs=list(range(0,max(bins)+2));fig,ax=plt.subplots(figsize=(9,3.6),layout='constrained')   # empty bins kept: a stop shows as zero
+    ax.step([k*.005 for k in xs],[bins.get(k,0)/.005 for k in xs],where='post',color='#087c89',lw=1)
     if marker is not None:
         falls=[t for t,level in tr[str(marker)] if level==0]
         if falls:ax.axvline(falls[0]-t0,color='#bd342d',lw=.9,ls='--',label='switch trip (ch%s low)'%marker);ax.legend()
@@ -169,8 +169,11 @@ def _timing_plot(edges, captures_label, destination, marker=None):
     ax.set_title(captures_label,fontsize=10);fig.savefig(destination,dpi=90);plt.close(fig)
 
 
-def promote_timing(run, finding, label, captures, dest_root=None, marker=None, plot=True):
-    """Promote named timing-diagnostic captures (stems in the run directory) with the test records that cite them."""
+def promote_timing(run, finding, label, captures, dest_root=None, marker=None, plot=True, stopfit=None):
+    """Promote named timing-diagnostic captures (stems in the run directory) with the test records that cite them.
+
+    stopfit=(step channel, steps/mm, cruise guess mm/s, xjm jerk mm/s^3): also fit each capture's stop after the
+    marker channel's first falling edge with tinyg_hil.stopfit and store the result in stopfit.json."""
     if not re.fullmatch(r'E\d{3}',finding):raise ValueError('finding must look like E089')
     if label not in ('before','after'):raise ValueError('label must be before or after')
     run=Path(run).resolve();record=_json(run/'run.json');firmware=record.get('firmware',{})
@@ -194,6 +197,18 @@ def promote_timing(run, finding, label, captures, dest_root=None, marker=None, p
         shutil.copy2(sal,destination/sal.name);edges=_json(edge)
         (destination/(edge.name+'.gz')).write_bytes(gzip.compress(json.dumps(edges,separators=(',',':')).encode(),mtime=0))
         if plot:_timing_plot(edges,f'{finding} {label} {commit} {stem}',destination/f'{stem}.png',marker)
+    if stopfit:
+        from . import stopfit as sf
+        step,spm,guess,xjm_jerk=stopfit;fits={}
+        for stem in captures:
+            tr=_json(run/f'{stem}-edges.json')['transitions'];trip=[t for t,level in tr[str(marker)] if level==0][0]
+            after=[t-trip for t,level in tr[str(step)] if level==1 and t>=trip]
+            v,d,T,rms=sf.fit(after,guess,spm)
+            fits[stem]={'fit_cruise_mm_s':v,'fit_delay_s':d,'fit_tail_s':T,'fit_jerk_over_xjm':sf.jerk_eff(v,T)/xjm_jerk,
+                        'fit_rms_mm':rms,'overrun_mm':len(after)/spm}
+        _write(destination/'stopfit.json',{'model':'tinyg_hil.stopfit segmented quintic tail, fitted cruise',
+               'stopfit_source_sha256':hashlib.sha256(Path(sf.__file__).read_bytes()).hexdigest(),
+               'estimator_error':'see tests/test_stopfit_offline.py (synthetic firmware-profile traces)','fits':fits})
     artifacts=_manifest(destination)
     revision=subprocess.run(['git','-C',str(Path(__file__).resolve().parents[3]),'rev-parse','HEAD'],capture_output=True,text=True)
     summary={'promoter_source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -210,10 +225,11 @@ def promote_timing(run, finding, label, captures, dest_root=None, marker=None, p
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);subs=parser.add_subparsers(dest='action',required=True)
     p=subs.add_parser('promote');p.add_argument('run');p.add_argument('--finding',required=True);p.add_argument('--label',required=True,choices=['before','after']);p.add_argument('--dest-root');p.add_argument('--representative',type=float,nargs='+',default=[.05,1.,10.]);p.add_argument('--before',help='promoted before directory for overlays')
-    t=subs.add_parser('promote-timing');t.add_argument('run');t.add_argument('--finding',required=True);t.add_argument('--label',required=True,choices=['before','after']);t.add_argument('--capture',action='append',required=True,help='capture stem in the run, repeatable');t.add_argument('--marker',type=int,help='analyzer channel whose first falling edge is marked');t.add_argument('--dest-root')
+    t=subs.add_parser('promote-timing');t.add_argument('run');t.add_argument('--finding',required=True);t.add_argument('--label',required=True,choices=['before','after']);t.add_argument('--capture',action='append',required=True,help='capture stem in the run, repeatable');t.add_argument('--marker',type=int,help='analyzer channel whose first falling edge is marked');t.add_argument('--dest-root');t.add_argument('--stopfit',type=float,nargs=4,metavar=('STEP_CH','SPM','V','XJM_JERK'))
     args=parser.parse_args(argv)
     if args.action=='promote-timing':
-        destination,summary=promote_timing(args.run,args.finding,args.label,args.capture,args.dest_root,args.marker)
+        destination,summary=promote_timing(args.run,args.finding,args.label,args.capture,args.dest_root,args.marker,
+                                           stopfit=(int(args.stopfit[0]),*args.stopfit[1:]) if args.stopfit else None)
         print(destination)
         for name in summary['large_artifacts']:print(f'WARNING artifact exceeds 1 MB: {name}')
         return 0

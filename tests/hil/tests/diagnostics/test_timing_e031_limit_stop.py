@@ -2,53 +2,36 @@
 
 A firmware switch mount (test-hooks build, --ice) drives the X-min input low when the step count crosses
 8 mm; the Saleae records that pin (ch0) with the M1 step pulses, so the trip edge and the steps are on
-one instrument clock. The step positions after the trip are fitted with a jerk-limited stop from cruise
-(a delay, then braking at a constant jerk); single step intervals are not used, since DDA tick jitter is
-far larger than the first percent of braking. Measured: the fitted delay and jerk, trip to last step,
-and the steps after the trip as overrun. Agreed behaviour
+one instrument clock. The step positions after the trip are fitted with the firmware's own stop
+profile (tinyg_hil.stopfit: segmented quintic tail, fitted cruise velocity, delay to the first tail
+segment); single step intervals are not used, since DDA tick jitter is far larger than the first percent
+of braking. The estimator's error on synthetic firmware-profile traces with DDA quantization is
+STOPFIT_DELAY_ERROR_S / STOPFIT_JERK_REL_ERROR (tests/test_stopfit_offline.py). Measured: the fitted
+delay and planned jerk, trip to last step, and the steps after the trip as overrun. Agreed behaviour
 (maintainer, 2026-10-30): the switch ISR requests the hold and it brakes at the homing jerk (xjh, here
 9 xjm, a third of the normal stopping distance). The capture (.sal) and raw edges are kept in the run
 directory beside run.json.
 """
 import json
-import math
 from pathlib import Path
 import time
 
 import pytest
 
-from tinyg_hil import saleae
+from tinyg_hil import saleae, stopfit
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.ice, pytest.mark.motion, pytest.mark.dialect("d449")]
 
 FEED = 600.0            # mm/min: cruise is reached long before the switch at these jerks
 TRIP_MM = 8.0
-SEGMENT_S = 0.005       # NOM_SEGMENT_USEC: the running segment, the prepared one and the one the stop is
-                        # computed into are already committed, so the stop can start no sooner than this:
-PIPELINE_S = 3 * SEGMENT_S
-
-
-def _stop_position(t, v, jerk):
-    """Distance covered t seconds into a jerk-limited stop from v (no acceleration cap)."""
-    total = 2 * math.sqrt(v / jerk)
-    if t <= 0:
-        return 0.0
-    if t <= total / 2:
-        return v * t - jerk * t ** 3 / 6
-    return v * total / 2 - jerk * max(0.0, total - t) ** 3 / 6
-
-
-def _fit_stop(times, spm, v, xjm_jerk):
-    """Least-squares (delay s, jerk as a multiple of xjm) for step positions after the trip."""
-    points = [(t, (i + 1) / spm) for i, t in enumerate(times)][::10]
-    best = None
-    for jm in [x / 10 for x in range(5, 151)]:
-        for dm in range(0, 80):
-            d, jerk = dm / 1000, xjm_jerk * jm
-            err = sum((x - (v * min(t, d) + _stop_position(t - d, v, jerk))) ** 2 for t, x in points)
-            if best is None or err < best[0]:
-                best = (err, d, jm)
-    return best[1], best[2], math.sqrt(best[0] / len(points))
+XJH_OVER_XJM = 9
+# When the switch trips, one segment is running and the next is already prepared (prep buffer owned by
+# the loader); the stop is computed into the segment after that, so braking starts within the rest of the
+# running segment plus one: at most two NOM_SEGMENT_USEC segments.
+PIPELINE_S = 2 * stopfit.NOM_SEGMENT_S
+STOPFIT_DELAY_ERROR_S = 0.0006          # measured by stopfit.validate (tests/test_stopfit_offline.py)
+STOPFIT_JERK_REL_ERROR = 0.01
+FIT_RMS_LIMIT_MM = 0.0005               # synthetic firmware-profile traces fit to <= 0.24 um
 
 
 def _bench(tg):
@@ -71,7 +54,7 @@ def test_limit_trip_to_stop(tg, switches, keep, record, request):
     assert tg.get("1ma") == 0, "X must be motor 1"
     keep("xjh")
     xjm = tg.get("xjm")
-    tg.set("xjh", xjm * 9)
+    tg.set("xjh", xjm * XJH_OVER_XJM)
     spm = 360.0 / tg.get("1sa") * tg.get("1mi") / tg.get("1tr")
     feed = min(FEED, tg.get("xvm"), tg.get("xfr"))
     tg.send_gcode("G28.3 X0", check=True)
@@ -100,22 +83,26 @@ def test_limit_trip_to_stop(tg, switches, keep, record, request):
     before = [t for t in rises if t < trip]
     after = [t for t in rises if t >= trip]
     assert len(before) > 20 and after, f"{len(before)} steps before the trip, {len(after)} after"
-    cruise = (before[-1] - before[-11]) / 10                 # mean interval over the last 10 steps before it
+    cruise = (before[-1] - before[-101]) / 100               # mean interval over the last 100 steps before it
     v = feed / 60.0
     jerk = xjm * 1e6 / 216000.0                              # mm/s^3
-    normal = v * (v / jerk) ** 0.5                           # jerk-limited stop at the move's jerk
-    delay, jerk_ratio, rms = _fit_stop([t - trip for t in after], spm, v, jerk)
+    normal = v * (v / jerk) ** 0.5                           # stop length at the move's jerk (mp_get_target_length)
+    fv, delay, tail_s, rms = stopfit.fit([t - trip for t in after], v, spm)
+    jerk_ratio = stopfit.jerk_eff(fv, tail_s) / jerk
     result = {"capture": "e031-limit-stop.sal", "edges": "e031-limit-stop-edges.json", "sample_rate": cap.rate,
               "channels": {"step": step, "x_min": xmin}, "steps_per_mm": spm, "feed_mm_min": feed, "xjm": xjm,
               "trip_s": trip, "cruise_interval_s": cruise, "cruise_mm_s": 1 / cruise / spm,
-              "fit_delay_s": delay, "fit_jerk_over_xjm": jerk_ratio, "fit_rms_mm": rms, "xjh_over_xjm": 9,
+              "fit_cruise_mm_s": fv, "fit_delay_s": delay, "fit_tail_s": tail_s, "fit_jerk_over_xjm": jerk_ratio,
+              "fit_rms_mm": rms, "fit_model": "stopfit segmented quintic", "xjh_over_xjm": XJH_OVER_XJM,
+              "estimator_error": {"delay_s": STOPFIT_DELAY_ERROR_S, "jerk_rel": STOPFIT_JERK_REL_ERROR},
               "trip_to_last_step_s": after[-1] - trip, "steps_after_trip": len(after),
-              "overrun_mm": len(after) / spm, "normal_stop_mm": normal, "fast_stop_mm": normal / 3,
+              "overrun_mm": len(after) / spm, "normal_stop_mm": normal, "fast_stop_mm": normal / XJH_OVER_XJM ** 0.5,
               "firmware_trip_at": status.get("trip_at")}
     record("e031_limit_stop", result)
-    assert rms < 0.01, f"the stop does not fit a jerk-limited profile: {result}"
-    # the ISR starts the hold: braking starts at the segment pipeline's floor (2 ms margin), at no less than
-    # 90% of the homing jerk; the run-out is the fast-stop distance plus that delay at cruise and two steps
-    assert delay <= PIPELINE_S + 0.002, f"slow to start braking: {result}"
-    assert jerk_ratio >= 0.9 * 9, f"braked softer than xjh: {result}"
-    assert result["overrun_mm"] <= normal / 3 + v * (PIPELINE_S + 0.002) + 2 / spm, f"overran: {result}"
+    assert rms <= FIT_RMS_LIMIT_MM, f"the stop does not follow the firmware's tail profile: {result}"
+    # the ISR requests the hold: braking starts within the segment pipeline (plus estimator error), at the
+    # homing jerk (within estimator error and 5%), and runs out no further than the fast stop plus that delay
+    assert delay <= PIPELINE_S + STOPFIT_DELAY_ERROR_S, f"slow to start braking: {result}"
+    assert abs(jerk_ratio / XJH_OVER_XJM - 1) <= 0.05 + STOPFIT_JERK_REL_ERROR, f"braked at the wrong jerk: {result}"
+    fast = normal / XJH_OVER_XJM ** 0.5
+    assert result["overrun_mm"] <= fast + v * (PIPELINE_S + STOPFIT_DELAY_ERROR_S) + 2 / spm, f"overran: {result}"
