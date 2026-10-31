@@ -1407,7 +1407,7 @@ static const char fmt_mt[] PROGMEM = "[mt]  motor idle timeout%14.2f Sec\n";
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%10.4f%s\n";
-static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
+static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16lu [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=disabled,1=always on,2=in cycle,3=when moving]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
@@ -1421,6 +1421,13 @@ static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value_int);
+    text_finalize_message(msg);
+}
+
+static void _print_motor_u32(nvObj_t *nv, const char *format)		// microsteps are a uint32_t (E111)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint32_t)nv->value_int);
     text_finalize_message(msg);
 }
 
@@ -1448,7 +1455,7 @@ static void _print_motor_pwr(nvObj_t *nv, const char *format)
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
 void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
 void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
-void st_print_mi(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0mi);}
+void st_print_mi(nvObj_t *nv) { _print_motor_u32(nv, fmt_0mi);}
 void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
 void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}
 void st_print_pl(nvObj_t *nv) { _print_motor_flt(nv, fmt_0pl);}

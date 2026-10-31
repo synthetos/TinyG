@@ -220,7 +220,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
 	{ "1","1tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
-	{ "1","1mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
+	{ "1","1mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
 	{ "1","1po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_1].polarity,	M1_POLARITY },
 	{ "1","1pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_1].power_mode,	M1_POWER_MODE },
 #ifdef __ARM
@@ -230,7 +230,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "2","2ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
 	{ "2","2tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
-	{ "2","2mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
+	{ "2","2mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
 	{ "2","2po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_2].polarity,	M2_POLARITY },
 	{ "2","2pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_2].power_mode,	M2_POWER_MODE },
 #ifdef __ARM
@@ -241,7 +241,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "3","3ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ "3","3sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_3].step_angle,	M3_STEP_ANGLE },
 	{ "3","3tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
-	{ "3","3mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
+	{ "3","3mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
 	{ "3","3po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_3].polarity,	M3_POLARITY },
 	{ "3","3pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_3].power_mode,	M3_POWER_MODE },
 #ifdef __ARM
@@ -252,7 +252,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "4","4ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ "4","4sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_4].step_angle,	M4_STEP_ANGLE },
 	{ "4","4tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
-	{ "4","4mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
+	{ "4","4mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
 	{ "4","4po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_4].polarity,	M4_POLARITY },
 	{ "4","4pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_4].power_mode,	M4_POWER_MODE },
 #ifdef __ARM
@@ -263,7 +263,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "5","5ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
 	{ "5","5sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
 	{ "5","5tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
-	{ "5","5mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
+	{ "5","5mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
 	{ "5","5po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_5].polarity,	M5_POLARITY },
 	{ "5","5pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_5].power_mode,	M5_POWER_MODE },
 #ifdef __ARM
@@ -274,7 +274,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "6","6ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
 	{ "6","6sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
 	{ "6","6tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
-	{ "6","6mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
+	{ "6","6mi",_iip,  0, st_print_mi, get_u32, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
 	{ "6","6po",_bip,  0, st_print_po, get_ui8, set_01,    (uint32_t *)&st_cfg.mot[MOTOR_6].polarity,	M6_POLARITY },
 	{ "6","6pm",_iip,  0, st_print_pm, get_ui8, st_set_pm, (uint32_t *)&st_cfg.mot[MOTOR_6].power_mode,	M6_POWER_MODE },
 #ifdef __ARM
