@@ -2568,6 +2568,9 @@ stat_t cm_set_jerk(const float target[], const bool flags[])
 
 stat_t cm_set_xjm(nvObj_t *nv)
 {
+	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// a zero jerk breaks the planner (E158)
+		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+	}
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
@@ -2582,6 +2585,9 @@ stat_t cm_set_xjm(nvObj_t *nv)
 
 stat_t cm_set_xjh(nvObj_t *nv)
 {
+	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// a zero jerk breaks the planner (E158)
+		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+	}
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
