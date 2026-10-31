@@ -76,6 +76,7 @@ char *strcat_integer(char *d,uint32_t n){return d+sprintf(d,"%u",n);}
 char *strcat_signed(char *d,uint32_t n){return d+sprintf(d,"%d",(int32_t)n);}
 char *strcat_float(char *d,float n,int p){return d+sprintf(d,"%.*f",p,n);}
 bool prep_float(nvObj_t *n){(void)n;return true;}
+bool controller_defer_motion_response(int s,bool j){(void)s;(void)j;return false;}
 char *json_relax(char *str);
 '''
 
