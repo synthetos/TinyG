@@ -414,6 +414,7 @@ typedef enum {
 #define NUL (char)0x00		//  ASCII NUL char (0) (not "NULL" which is a pointer)
 #define STX (char)0x02		// ^b - STX
 #define ETX (char)0x03		// ^c - ETX
+#define EOT (char)0x04		// ^d - EOT, kill job
 #define ENQ (char)0x05		// ^e - ENQuire
 #define BEL (char)0x07		// ^g - BEL
 #define BS  (char)0x08		// ^h - backspace
@@ -435,6 +436,7 @@ typedef enum {
 
 #define CHAR_RESET CAN
 #define CHAR_ENQUIRY ENQ
+#define CHAR_KILL_JOB EOT
 #define CHAR_FEEDHOLD (char)'!'
 #define CHAR_END_HOLD (char)'~'
 #define CHAR_QUEUE_FLUSH (char)'%'

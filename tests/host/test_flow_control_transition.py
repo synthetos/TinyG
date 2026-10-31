@@ -29,6 +29,7 @@ enum {FC_IN_XON,FC_IN_XOFF};
 #define CHAR_QUEUE_FLUSH '%'
 #define CHAR_END_HOLD '~'
 #define CHAR_ENQUIRY 5
+#define CHAR_KILL_JOB 4
 #define ISR(name) void name(void)
 #define USB_RX_ISR_vect receive
 static uint8_t SREG;
@@ -52,6 +53,7 @@ static void cm_request_feedhold(void) {}
 static void cm_request_queue_flush(void) {}
 static void cm_request_end_hold(void) {}
 static void controller_request_enquiry(void) {}
+static void cm_request_job_kill(void) {}
 '''
 EXERCISE=r'''
 static void init(unsigned old,unsigned tx,unsigned rx,unsigned high,unsigned saved) {

@@ -1742,6 +1742,18 @@ void cm_message(char *message)
  * cm_request_end_hold() - cycle restart
  * cm_request_queue_flush()
  */
+/*
+ * cm_request_job_kill() - ^d from the RX ISR (E096)
+ *
+ *	The job kill is an ALARM (g2core Job-Exception-Handling): motion stops, spindle and coolant stop,
+ *	the planner is flushed and commands are rejected until {clear:n}, $clear, M2 or M30, in or out of
+ *	a feedhold. The ISR only flags it; cm_feedhold_sequencing_callback() raises the alarm.
+ */
+void cm_request_job_kill(void)
+{
+    cm.job_kill_requested = true;
+}
+
 void cm_request_feedhold(void) {
     if (mp_hold_startup()) { return; }
     // honor request if not already in a feedhold and you are moving
@@ -1831,6 +1843,10 @@ static void _run_requested_queue_flush()
 
 stat_t cm_feedhold_sequencing_callback()
 {
+    if (cm.job_kill_requested) {
+        cm.job_kill_requested = false;
+        cm_alarm_P(STAT_KILL_JOB, PSTR("job kill"));  // requests the hold and flush handled below
+    }
 	if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
 		cm_start_hold();                            // feed won't run unless the machine is moving
 	}

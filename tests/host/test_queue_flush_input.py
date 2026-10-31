@@ -30,7 +30,11 @@ enum { FLUSH_OFF, FLUSH_REQUESTED };
 #define AXES 6
 #define STAT_OK 0
 typedef int stat_t;
-struct { int hold_state, queue_flush_state; bool end_hold_requested; volatile bool queue_flush_input, queue_flush_input_due; } cm;
+struct { int hold_state, queue_flush_state; bool end_hold_requested; volatile bool queue_flush_input, queue_flush_input_due, job_kill_requested; } cm;
+#define STAT_KILL_JOB 207
+#define PSTR(s) (s)
+static int kill_alarms;
+static int cm_alarm_P(int status, const char *msg) { (void)msg; kill_alarms += (status == STAT_KILL_JOB); return status; }
 uint8_t SREG = 0x80;
 static int input_flushes, planner_flushes, input_before_planner;
 static int inject, in_direct_flush;                          /* 1: '%' during the planner flush, 2: '%' in cm_end_hold */
@@ -85,6 +89,10 @@ int main(void) {
     /* a direct flush with no '%' pending hands nothing off */
     reset(); in_direct_flush = 1; cm_queue_flush(); in_direct_flush = 0; cm_feedhold_sequencing_callback();
     assert(input_flushes == 0 && !cm.queue_flush_input_due);
+    /* ^d: the callback raises one kill-job alarm and consumes the request (E096) */
+    reset(); cm.job_kill_requested = true; cm_feedhold_sequencing_callback();
+    assert(kill_alarms == 1 && !cm.job_kill_requested);
+    cm_feedhold_sequencing_callback(); assert(kill_alarms == 1);
     return 0;
 }
 '''

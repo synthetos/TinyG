@@ -23,6 +23,7 @@ class RealtimeFraming(unittest.TestCase):
 #define NUL 0
 #define CHAR_RESET 24
 #define CHAR_ENQUIRY 5
+#define CHAR_KILL_JOB 4
 #define CHAR_FEEDHOLD '!'
 #define CHAR_END_HOLD '~'
 #define CHAR_QUEUE_FLUSH '%'
@@ -41,8 +42,9 @@ struct {bool queue_flush_input;} cm;
 struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked;
         char rx_buf[RX_BUFFER_SIZE];} USBu={.usart=&port,.rx_buf_head=1,.rx_buf_tail=1};
 volatile bool rx_in_line;
-int holds,resumes,flushes,resets,enquiries;
+int holds,resumes,flushes,resets,enquiries,kills;
 void cm_request_feedhold(void) {holds++;}
+void cm_request_job_kill(void) {kills++;}
 void cm_request_end_hold(void) {resumes++;}
 void cm_request_queue_flush(void) {flushes++; cm.queue_flush_input=true;}
 void hw_request_hard_reset(void) {resets++;}
@@ -58,7 +60,7 @@ void xio_xoff_usart(void *unused) {(void)unused;}
         code += r'''
 void send_byte(unsigned char c) {port.DATA=c;USB_RX_ISR_vect();}
 void send(const char *s) {while(*s) send_byte(*s++);}
-void fresh(void) {xio_reset_usb_rx_buffers(); assert(!USBu.rx_flush_marked); USBu.rx_buf_count=0; cm.queue_flush_input=false; holds=resumes=flushes=resets=enquiries=0;}
+void fresh(void) {xio_reset_usb_rx_buffers(); assert(!USBu.rx_flush_marked); USBu.rx_buf_count=0; cm.queue_flush_input=false; holds=resumes=flushes=resets=enquiries=kills=0;}
 void expect_data(const char *s) {
     assert((int)strlen(s)==USBu.rx_buf_count);
     for (int i=0;s[i];i++) assert(USBu.rx_buf[i+2]==s[i]);
@@ -86,6 +88,8 @@ int main(void) {
     send("!~%"); assert(holds==1 && !resumes && !flushes);
     expect_data("partial line~%");
     send("\r!\n~%"); assert(holds==2 && resumes==1 && flushes==1);
+    /* ^d is trapped in and out of a line and never reaches the ring (E096) */
+    fresh(); send("G1 X\x04""5\n\x04"); assert(kills==2); expect_data("G1 X5\n");
     fresh(); send("unfinished ("); xio_reset_usb_rx_buffers(); send("!");
     assert(holds==1);
 }
