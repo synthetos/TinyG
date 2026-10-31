@@ -223,6 +223,17 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
 	*value = strtof(*pstr, &end);
 	if(end == *pstr)
         return(STAT_BAD_NUMBER_FORMAT); // more robust test then checking for value=0;
+	// strtof takes an exponent, but E is a word letter: X10E5 is X10 then E5, not X=1000000 (E159)
+	for (char *p = *pstr; p < end; p++) {
+		if ((*p == 'E') || (*p == 'e')) {
+			char letter_e = *p;
+			*p = NUL;
+			*value = strtof(*pstr, &end);
+			*p = letter_e;
+			if (end == *pstr) { return(STAT_BAD_NUMBER_FORMAT); }
+			break;
+		}
+	}
 	*pstr = end;
 	return (STAT_OK);			// pointer points to next character after the word
 }

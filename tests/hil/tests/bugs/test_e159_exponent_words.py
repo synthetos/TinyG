@@ -12,7 +12,6 @@ import pytest
 pytestmark = [pytest.mark.motion, pytest.mark.dialect("d449")]
 
 
-@pytest.mark.bug("E159", on=["d449"])
 def test_e_word_is_not_an_exponent(tg):
     start = tg.get("posx")
     try:

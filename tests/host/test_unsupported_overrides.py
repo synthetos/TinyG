@@ -50,6 +50,13 @@ int main(void) {
         assert(_parse_gcode_block(line)==STAT_MCODE_COMMAND_UNSUPPORTED);
         assert(executions==0 && alarms==0);
     }
+    /* an E after a value is a word, not an exponent (E159) */
+    const char *exponents[]={"G1X10E5","G1X1E-3F100","G0X0.001E3","G1X1F1E2"};
+    for(unsigned i=0;i<sizeof(exponents)/sizeof(exponents[0]);i++) {
+        memset(&cm,0,sizeof(cm)); executions=0; char line[40]; strcpy(line,exponents[i]);
+        assert(_parse_gcode_block(line)==STAT_GCODE_COMMAND_UNSUPPORTED && executions==0);
+    }
+    memset(&cm,0,sizeof(cm)); executions=0;
     char supported[]="G1X1F120";
     assert(_parse_gcode_block(supported)==STAT_OK && executions==1);
     assert(cm.gf.target[AXIS_X] && cm.gn.target[AXIS_X]==1);
