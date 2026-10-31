@@ -29,6 +29,7 @@ enum {TYPE_NULL,TYPE_PARENT,TYPE_FLOAT,TYPE_INTEGER};
 typedef struct {char token[6],group[4];int index,valuetype;float value_flt;uint32_t value_int;} nvObj_t;
 static struct {const char *group;} cfgArray[]={{"x"},{"1"}};
 static struct {int machine_state;} cm;
+static int cm_is_alarmed(void) { return (cm.machine_state == MACHINE_ALARM) ? STAT_ALARMED : STAT_OK; }
 static nvObj_t obj;
 static unsigned gets,sets,persists;
 static nvObj_t *nv_reset_nv_list(int ignored) {(void)ignored;memset(&obj,0,sizeof(obj));return &obj;}

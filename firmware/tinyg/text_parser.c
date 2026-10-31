@@ -91,9 +91,7 @@ stat_t text_parser(char *str)
 			return (STAT_OK);						// return for uber-group displays so they don't print twice
 		}
 	} else { 										// process SET and RUN commands
-		if (cm.machine_state == MACHINE_ALARM) {
-            return (STAT_ALARMED);
-        }
+		ritorno(cm_is_alarmed());					// ALARM, SHUTDOWN or PANIC reject SETs, as in JSON (E153)
 		status = nv_set(nv);						// set (or run) single value
 		if (status == STAT_OK) {
 			nv_persist(nv);							// conditionally persist depending on flags in array

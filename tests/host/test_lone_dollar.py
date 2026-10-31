@@ -19,6 +19,7 @@ enum {STAT_OK,STAT_NO_DISPLAY,STAT_ALARMED,TYPE_NULL,TYPE_PARENT,MACHINE_ALARM};
 #define memcpy_P memcpy
 #define ritorno(call) do {int s=(call);if(s!=STAT_OK)return s;}while(0)
 static struct {int machine_state;} cm;
+static int cm_is_alarmed(void) { return (cm.machine_state == MACHINE_ALARM) ? STAT_ALARMED : STAT_OK; }
 static nvObj_t object;
 static int gets;
 static nvObj_t *nv_reset_nv_list(int ignored) {(void)ignored;return &object;}

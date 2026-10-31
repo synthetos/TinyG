@@ -11,7 +11,6 @@ pytestmark = pytest.mark.dialect("d449")
 
 @pytest.mark.persists
 @pytest.mark.resets_board
-@pytest.mark.bug("E153", on=["d449"])
 def test_text_set_rejected_in_shutdown(tg, keep):
     keep("sv")
     sv = tg.get("sv")
