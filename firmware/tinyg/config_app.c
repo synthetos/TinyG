@@ -78,6 +78,8 @@ static stat_t set_ec(nvObj_t *nv);			// expand CRLF on TX output
 static stat_t set_ee(nvObj_t *nv);			// enable character echo
 static stat_t set_ex(nvObj_t *nv);			// enable XON/XOFF and RTS/CTS flow control
 static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
+static stat_t set_gco(nvObj_t *nv);		// default coordinate system, G54..G59 (E112)
+static stat_t set_ma(nvObj_t *nv);			// motor to axis map, an axis index (E112)
 static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t get_tick(nvObj_t *nv);		// get system tick count
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
@@ -217,7 +219,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 */
 	// Motor parameters
-	{ "1","1ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
+	{ "1","1ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
 	{ "1","1tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_1].travel_rev,	M1_TRAVEL_PER_REV },
 	{ "1","1mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_1].microsteps,	M1_MICROSTEPS },
@@ -227,7 +229,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "1","1pl",_fip,  3, st_print_pl, get_flt, st_set_pl, (uint32_t *)&st_cfg.mot[MOTOR_1].power_level,M1_POWER_LEVEL },
 #endif
 #if (MOTORS >= 2)
-	{ "2","2ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
+	{ "2","2ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_2].motor_map,	M2_MOTOR_MAP },
 	{ "2","2sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_2].step_angle,	M2_STEP_ANGLE },
 	{ "2","2tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_2].travel_rev,	M2_TRAVEL_PER_REV },
 	{ "2","2mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_2].microsteps,	M2_MICROSTEPS },
@@ -238,7 +240,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #endif
 #if (MOTORS >= 3)
-	{ "3","3ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
+	{ "3","3ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_3].motor_map,	M3_MOTOR_MAP },
 	{ "3","3sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_3].step_angle,	M3_STEP_ANGLE },
 	{ "3","3tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_3].travel_rev,	M3_TRAVEL_PER_REV },
 	{ "3","3mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_3].microsteps,	M3_MICROSTEPS },
@@ -249,7 +251,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #endif
 #if (MOTORS >= 4)
-	{ "4","4ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
+	{ "4","4ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_4].motor_map,	M4_MOTOR_MAP },
 	{ "4","4sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_4].step_angle,	M4_STEP_ANGLE },
 	{ "4","4tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_4].travel_rev,	M4_TRAVEL_PER_REV },
 	{ "4","4mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_4].microsteps,	M4_MICROSTEPS },
@@ -260,7 +262,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #endif
 #if (MOTORS >= 5)
-	{ "5","5ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
+	{ "5","5ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_5].motor_map,	M5_MOTOR_MAP },
 	{ "5","5sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_5].step_angle,	M5_STEP_ANGLE },
 	{ "5","5tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_5].travel_rev,	M5_TRAVEL_PER_REV },
 	{ "5","5mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_5].microsteps,	M5_MICROSTEPS },
@@ -271,7 +273,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 #endif
 #if (MOTORS >= 6)
-	{ "6","6ma",_iip,  0, st_print_ma, get_ui8, set_ui8,   (uint32_t *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
+	{ "6","6ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_6].motor_map,	M6_MOTOR_MAP },
 	{ "6","6sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_6].step_angle,	M6_STEP_ANGLE },
 	{ "6","6tr",_fipc, 4, st_print_tr, get_flt, st_set_tr, (uint32_t *)&st_cfg.mot[MOTOR_6].travel_rev,	M6_TRAVEL_PER_REV },
 	{ "6","6mi",_iip,  0, st_print_mi, get_ui8, st_set_mi, (uint32_t *)&st_cfg.mot[MOTOR_6].microsteps,	M6_MICROSTEPS },
@@ -527,7 +529,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// NOTE: The ordering within the gcode defaults is important for token resolution
 	{ "sys","gpl", _iipn, 0, cm_print_gpl, get_ui8, set_012, (uint32_t *)&cm.default_select_plane,	GCODE_DEFAULT_PLANE },
 	{ "sys","gun", _iipn, 0, cm_print_gun, get_ui8, set_01,  (uint32_t *)&cm.default_units_mode,	GCODE_DEFAULT_UNITS },
-	{ "sys","gco", _iipn, 0, cm_print_gco, get_ui8, set_ui8, (uint32_t *)&cm.default_coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
+	{ "sys","gco", _iipn, 0, cm_print_gco, get_ui8, set_gco, (uint32_t *)&cm.default_coord_system,	GCODE_DEFAULT_COORD_SYSTEM },
 	{ "sys","gpa", _iipn, 0, cm_print_gpa, get_ui8, set_012, (uint32_t *)&cm.default_path_control,	GCODE_DEFAULT_PATH_CONTROL },
 	{ "sys","gdi", _iipn, 0, cm_print_gdi, get_ui8, set_01,  (uint32_t *)&cm.default_distance_mode, GCODE_DEFAULT_DISTANCE_MODE },
 	{ "",   "gc",  _s0,   0, tx_print_nul, get_nul, gc_run_gc,(uint32_t *)&cs.null, 0 }, // gcode block - must be last in this group
@@ -1010,11 +1012,11 @@ static const char *const msg_baud[] PROGMEM = { msg_baud0, msg_baud1, msg_baud2,
 
 static stat_t set_baud(nvObj_t *nv)
 {
-	uint8_t baud = nv->value_int;
-	if ((baud < 1) || (baud > 6)) {
+	if ((nv->value_int < 1) || (nv->value_int > 6)) {	// check before narrowing: 257 is not 1 (E112)
 		nv_add_message_P(PSTR("*** WARNING *** Unsupported baud rate specified"));
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
+	uint8_t baud = nv->value_int;
 	xio.usb_baud_rate = baud;
 	xio.usb_baud_flag = true;
 
@@ -1023,6 +1025,26 @@ static stat_t set_baud(nvObj_t *nv)
 	nv_add_message(msg);
 
 	return (STAT_OK);
+}
+
+/*
+ * set_gco() - default coordinate system: it indexes cm.offset[] at every reset and M2 (E112)
+ * set_ma()  - motor to axis map: kinematics writes travel[motor_map] (E112)
+ */
+static stat_t set_gco(nvObj_t *nv)
+{
+	if ((nv->value_int < G54) || (nv->value_int > G59)) {
+		return (STAT_INPUT_VALUE_RANGE_ERROR);
+	}
+	return (set_ui8(nv));
+}
+
+static stat_t set_ma(nvObj_t *nv)
+{
+	if (nv->value_int >= AXES) {
+		return (STAT_INPUT_VALUE_RANGE_ERROR);
+	}
+	return (set_ui8(nv));
 }
 
 stat_t set_baud_callback(void)

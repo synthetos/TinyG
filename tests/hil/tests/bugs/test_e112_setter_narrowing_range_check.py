@@ -9,7 +9,7 @@ import pytest
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E112", on=["d440", "d449"])
+@pytest.mark.bug("E112", on=["d440"])
 def test_gco_out_of_range_rejected(tg, keep):
     keep("gco")
     original = tg.get("gco")
