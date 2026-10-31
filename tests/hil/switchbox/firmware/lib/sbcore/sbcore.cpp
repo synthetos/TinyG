@@ -21,7 +21,7 @@ namespace sb {
 
 static const char *const OP_NAMES[] = {
     "getInfo", "getState", "setChannel", "pulseChannel", "bounceChannel", "releaseAll", "idleAll",
-    "getConfig", "setConfig", "getEvents", "setWifi", "getSpec", "subscribe", "invalid"};
+    "getConfig", "setConfig", "getEvents", "setWifi", "scanWifi", "getSpec", "subscribe", "invalid"};
 static const char *const ERR_NAMES[] = {
     "none", "bad_json", "bad_request", "unknown_op", "unknown_param", "missing_param", "bad_param",
     "conflicting_params", "unknown_channel", "no_change", "busy", "invalid_config", "line_too_long",
@@ -599,6 +599,7 @@ static bool mutating(Op op) {
     case Op::getState:
     case Op::getConfig:
     case Op::getEvents:
+    case Op::scanWifi:
     case Op::getSpec: return false;
     default: return true;
     }
@@ -651,6 +652,7 @@ void Core::handle(Source src, JsonVariantConst req, Reply &r) {
         case Op::setConfig: err = op_set_config(src, req, rid, res); break;
         case Op::getEvents: err = op_events(req, res); break;
         case Op::setWifi: err = op_wifi(req, res); break;
+        case Op::scanWifi: err = op_scan(res); break;
         case Op::subscribe: err = op_subscribe(src, req, res); break;
         case Op::getSpec:
             if (src == Source::ws)
@@ -974,6 +976,13 @@ Err Core::op_wifi(JsonVariantConst q, JsonObject res) {
     res["ssid"] = ssid;                                 // the password is never echoed or logged
     res["cleared"] = sl == 0;
     res["reconnecting"] = true;
+    return Err::none;
+}
+
+Err Core::op_scan(JsonObject res) {
+    JsonArray nets = res["networks"].to<JsonArray>();
+    if (!hal::wifi_scan(nets, msg_, sizeof msg_)) return Err::busy;
+    res["count"] = nets.size();
     return Err::none;
 }
 

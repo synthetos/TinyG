@@ -10,6 +10,7 @@
 //   @src serial|http|ws   source for the following requests
 //   @long                 the reply to an overlong line
 //   @savefail <0|1>       make save_config fail
+//   @scanfail <0|1>       make wifi_scan fail
 //   @wifi                 what save_wifi stored (password length only)
 //   @names                the core's op/error/source/kind/cause names
 //   @status               clock, armed timer, spins
@@ -29,6 +30,7 @@ uint64_t armed_at = 0;
 int irq_depth = 0;
 unsigned spins = 0;
 bool save_ok = true;
+bool scan_ok = true;
 unsigned saves = 0;
 std::string wifi_ssid, wifi_password;
 struct Pin {
@@ -82,6 +84,22 @@ bool save_config(const Config &) {
 bool save_wifi(const char *ssid, const char *password) {
     wifi_ssid = ssid;
     wifi_password = password;
+    return true;
+}
+bool wifi_scan(JsonArray out, char *why, size_t why_len) {
+    if (!scan_ok) {
+        snprintf(why, why_len, "scan refused by the test");
+        return false;
+    }
+    static const struct { const char *ssid; int rssi, channel; } nets[] = {{"ExampleNet", -48, 6}, {"other", -80, 11}};
+    for (const auto &n : nets) {
+        JsonObject o = out.add<JsonObject>();
+        o["ssid"] = n.ssid;
+        o["rssi"] = n.rssi;
+        o["channel"] = n.channel;
+        o["encryption"] = "wpa2";
+        o["hidden"] = false;
+    }
     return true;
 }
 }  // namespace hal
@@ -172,6 +190,10 @@ int main() {
         } else if (line == "@long") {
             sb::core().line_too_long(src, reply);
             print(reply.doc);
+        } else if (line.rfind("@scanfail ", 0) == 0) {
+            scan_ok = line[10] == '0';
+            out["scan_ok"] = scan_ok;
+            print(out);
         } else if (line.rfind("@savefail ", 0) == 0) {
             save_ok = line[10] == '0';
             out["save_ok"] = save_ok;

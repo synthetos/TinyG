@@ -400,6 +400,16 @@ class SwitchboxCore(unittest.TestCase):
         self.assertEqual(out[6]["ssid"], "")
         self.assertNotIn("hunter2", json.dumps(out) + json.dumps(ev))
 
+    def test_wifi_scan_is_read_only_and_reports_busy(self):
+        out, ev = self.events({"id": 1, "op": "scanWifi"}, "@scanfail 1", {"id": 2, "op": "scanWifi"},
+                              {"id": 3, "op": "scanWifi", "all": True})
+        self.assertEqual(out[0]["result"]["count"], 2)
+        self.assertEqual([n["ssid"] for n in out[0]["result"]["networks"]], ["ExampleNet", "other"])
+        self.assertError(out[2], "busy")
+        self.assertError(out[3], "unknown_param")
+        self.assertEqual([(e["op"], e["error"]) for e in ev if e["event"] == "command"],
+                         [("scanWifi", "busy"), ("scanWifi", "unknown_param")])    # successes are not logged
+
     def test_spec_and_subscribe_by_transport(self):
         out = self.run_script({"id": 1, "op": "getSpec"}, {"id": 2, "op": "subscribe"}, "@src ws",
                               {"id": 3, "op": "getSpec"}, {"id": 4, "op": "subscribe", "on": False},

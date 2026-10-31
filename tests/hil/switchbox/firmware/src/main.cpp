@@ -300,6 +300,31 @@ bool save_wifi(const char *ssid, const char *password) {
     return true;
 }
 
+bool wifi_scan(JsonArray out, char *why, size_t why_len) {
+    if (wifi_state == Wifi::connecting || wifi_scanning) {
+        snprintf(why, why_len, "a station connection attempt is in progress; retry in a few seconds");
+        return false;
+    }
+    WiFiMode_t mode = WiFi.getMode();
+    if (mode == WIFI_AP) WiFi.mode(WIFI_AP_STA);    // scanning needs the station interface
+    int n = WiFi.scanNetworks(false, true);         // blocks ~2-4 s; hidden networks too
+    if (mode == WIFI_AP) WiFi.mode(WIFI_AP);
+    if (n < 0) {
+        snprintf(why, why_len, "WiFi scan failed");
+        return false;
+    }
+    for (int i = 0; i < n && i < 24; i++) {
+        JsonObject o = out.add<JsonObject>();
+        o["ssid"] = WiFi.SSID(i);
+        o["rssi"] = WiFi.RSSI(i);
+        o["channel"] = WiFi.channel(i);
+        o["encryption"] = encryption_name(WiFi.encryptionType(i));
+        o["hidden"] = WiFi.isHidden(i);
+    }
+    WiFi.scanDelete();
+    return true;
+}
+
 }  // namespace hal
 }  // namespace sb
 
@@ -579,6 +604,7 @@ void http_setup() {
     server.on("/api/config", HTTP_PUT, [] { http_op("setConfig", false); });
     server.on("/api/events", HTTP_GET, [] { http_op("getEvents", false); });
     server.on("/api/wifi", HTTP_PUT, [] { http_op("setWifi", false); });
+    server.on("/api/wifi/scan", HTTP_GET, [] { http_op("scanWifi", false); });
     server.onNotFound(not_found);
 }
 

@@ -566,6 +566,51 @@
     }
    }
   },
+  "/api/wifi/scan": {
+   "get": {
+    "operationId": "scanWifi",
+    "summary": "Networks the board can see",
+    "description": "A blocking scan (about 2-4 s; up to 24 networks). Refused with busy while a station connection attempt or its failure scan is running. The ESP8266 sees 2.4 GHz networks only. Names are SSIDs broadcast nearby; tinyg_hil.switchbox masks them in traffic logs and run records.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WifiScanResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Channel busy or already in the requested state",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/openapi.json": {
    "get": {
     "operationId": "getSpec",
@@ -1551,6 +1596,50 @@
      },
      "reconnecting": {
       "type": "boolean"
+     }
+    }
+   },
+   "WifiScanResult": {
+    "type": "object",
+    "required": [
+     "networks",
+     "count"
+    ],
+    "properties": {
+     "networks": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+       "type": "object",
+       "properties": {
+        "ssid": {
+         "type": "string"
+        },
+        "rssi": {
+         "type": "integer"
+        },
+        "channel": {
+         "type": "integer"
+        },
+        "encryption": {
+         "type": "string",
+         "enum": [
+          "open",
+          "wep",
+          "wpa",
+          "wpa2",
+          "wpa/wpa2",
+          "other"
+         ]
+        },
+        "hidden": {
+         "type": "boolean"
+        }
+       }
+      }
+     },
+     "count": {
+      "type": "integer"
      }
     }
    },

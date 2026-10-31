@@ -55,7 +55,7 @@ enum class Type : uint8_t { no, nc };
 enum class Source : uint8_t { boot, serial, http, ws, ttl, poll, sys, COUNT };
 enum class Op : uint8_t {
     getInfo, getState, setChannel, pulseChannel, bounceChannel, releaseAll, idleAll,
-    getConfig, setConfig, getEvents, setWifi, getSpec, subscribe, invalid, COUNT
+    getConfig, setConfig, getEvents, setWifi, scanWifi, getSpec, subscribe, invalid, COUNT
 };
 enum class Kind : uint8_t { boot, command, edge, line, config, wifi, COUNT };
 enum class Cause : uint8_t { set, pulse, bounce, ttl, release_all, idle_all, config, COUNT };
@@ -198,6 +198,7 @@ class Core {
     Err op_set_config(Source src, JsonVariantConst q, uint32_t rid, JsonObject res);
     Err op_events(JsonVariantConst q, JsonObject res);
     Err op_wifi(JsonVariantConst q, JsonObject res);
+    Err op_scan(JsonObject res);
     Err op_subscribe(Source src, JsonVariantConst q, JsonObject res);
     Err fail(Err e, const char *fmt, ...);
 
@@ -227,6 +228,7 @@ void pin_reset(uint8_t gpio);               // pin no longer used by a channel: 
 void info(JsonObject out);                  // platform fields for getInfo (heap, WiFi, versions)
 bool save_config(const Config &cfg);        // persist; false on storage failure
 bool save_wifi(const char *ssid, const char *password);   // persist and reconnect
+bool wifi_scan(JsonArray out, char *why, size_t why_len);  // blocking scan; false (why) if busy/failed
 }  // namespace hal
 
 }  // namespace sb
