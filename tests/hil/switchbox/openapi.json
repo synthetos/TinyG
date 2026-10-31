@@ -1000,7 +1000,7 @@
      "levels",
      "driven"
     ],
-    "description": "boot: board started (fw, reason, boot_id). command: a request was executed (op, ok, error, arg = ttl_ms / duration_us / edges). edge: a contact changed (state, cause). line: an undriven line changed level, or a driven line read high (level, state); polled every 10 ms. config: mapping replaced (channels). wifi: network state (state). levels/driven are sampled when the event is recorded; for an edge that is right at the edge, before a released line has risen (the following line event shows the rise).",
+    "description": "boot: board started (fw, reason, boot_id). command: a request was executed (op, ok, error, arg = ttl_ms / duration_us / edges). edge: a contact changed (state, cause). line: an undriven line changed level, or a driven line read high (level, state); polled every 10 ms; an undriven input that toggles by itself (floating) is no longer logged after 4 changes within 1-2 s, until it has been quiet for that long. config: mapping replaced (channels). wifi: network state (state). levels/driven are sampled when the event is recorded; for an edge that is right at the edge, before a released line has risen (the following line event shows the rise).",
     "properties": {
      "event": {
       "type": "string",

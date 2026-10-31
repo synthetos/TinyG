@@ -341,9 +341,10 @@ void Core::poll_lines() {
         }
         if (level == r.last_level) continue;
         r.last_level = level;
-        bool ours = now - since < 20000;                // the line following our own edge
+        bool ours = since && now - since < 20000;       // the line following our own edge
+        bool floating = r.flaps + r.flaps_prev >= 4;    // toggling by itself: stop logging it
         if (!closed && !ours && r.flaps < 255) r.flaps++;
-        if (!closed || level)                           // released line moved, or a driven line is high
+        if ((!closed && !floating) || (closed && level))  // released line moved, or a driven line is high
             ring_.push((uint8_t)Kind::line, (uint8_t)Source::poll, 0, (int8_t)i, level, 0, 0, 0, now,
                        levels(), driven());
     }

@@ -48,6 +48,7 @@ class SwitchboxCore(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.exe = pathlib.Path(cls.tmp.name) / "sb_host"
         subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-g", "-fsanitize=address,undefined",
+                        "-DARDUINOJSON_USE_LONG_LONG=1",
                         "-fno-sanitize-recover=all", f"-I{FW / 'lib/sbcore'}", f"-I{inc}",
                         str(FW / "lib/sbcore/sbcore.cpp"), str(FW / "test/host/sb_host.cpp"), "-o", str(cls.exe)],
                        check=True)
@@ -366,16 +367,21 @@ class SwitchboxCore(unittest.TestCase):
         self.assertEqual((future["events"], future["next"], future["more"]), ([], 999, False))
 
     def test_line_watch_and_warnings(self):
+        def toggle(level):
+            return [f"@ext 12 {level}", "@advance 30000", "@poll"]
         out, ev = self.events("@ext 12 0", "@advance 2000", "@poll", {"id": 1, "op": "getState"},
-                              "@ext 12 1", "@advance 30000", "@poll", "@ext 12 0", "@advance 30000", "@poll",
-                              "@ext 12 1", "@advance 30000", "@poll", "@ext 12 0", "@advance 30000", "@poll",
-                              {"id": 2, "op": "getState"})
+                              *toggle(1), *toggle(0), *toggle(1), *toggle(0), *toggle(1),
+                              {"id": 2, "op": "getState"},
+                              *("@advance 600000", "@poll") * 4, *toggle(0), {"id": 3, "op": "getState"})
         ymin = out[3]["result"]["channels"][2]
         self.assertEqual((ymin["name"], ymin["level"]), ("ymin", 0))
         self.assertIn("reads low", ymin["warning"])
-        self.assertIn("floating", out[-1]["result"]["channels"][2]["warning"])
+        self.assertIn("floating", out[19]["result"]["channels"][2]["warning"])
+        self.assertIn("reads low", out[-1]["result"]["channels"][2]["warning"])     # quiet again
         lines = [e for e in ev if e["event"] == "line"]
+        # a floating input stops being logged after 4 changes in 1-2 s, and is logged again once quiet
         self.assertEqual([e["level"] for e in lines], [0, 1, 0, 1, 0])
+        self.assertGreater(lines[-1]["t_us"], 2000000)
         self.assertTrue(all(e["ch"] == "ymin" and e["src"] == "poll" and e["state"] == "open" for e in lines))
 
     # ---- wifi, spec, subscribe -------------------------------------------------------------
