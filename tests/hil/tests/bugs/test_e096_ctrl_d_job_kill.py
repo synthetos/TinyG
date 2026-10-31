@@ -40,7 +40,7 @@ def _restore(tg, start):
     tg.wait_idle()
 
 
-@pytest.mark.bug("E096", on=["d440", "d449"])
+@pytest.mark.bug("E096", on=["d440"])
 def test_ctrl_d_kills_job(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X5 F120", check=True, allow="5 mm move at 2 mm/s")
@@ -55,7 +55,7 @@ def test_ctrl_d_kills_job(tg):
         _restore(tg, start)
 
 
-@pytest.mark.bug("E096", on=["d440", "d449"])
+@pytest.mark.bug("E096", on=["d440"])
 def test_ctrl_d_kills_job_in_feedhold(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X5 F120", check=True, allow="5 mm move at 2 mm/s")
