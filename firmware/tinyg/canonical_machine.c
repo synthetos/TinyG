@@ -1083,7 +1083,7 @@ stat_t cm_set_absolute_origin(const float origin[], bool flags[])
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (flags[axis]) {
-			value[axis] = _to_millimeters(origin[axis]);
+			value[axis] = (axis < AXIS_A) ? _to_millimeters(origin[axis]) : origin[axis];	// rotary words are degrees (E155)
 			cm.gmx.position[axis] = value[axis];		// set model position
 			cm.gm.target[axis] = value[axis];			// reset model target
 			mp_set_planner_position(axis, value[axis]);	// set mm position
@@ -1120,7 +1120,7 @@ stat_t cm_set_origin_offsets(const float offset[], bool flags[])
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (flags[axis]) {
 			cm.gmx.origin_offset[axis] = cm.gmx.position[axis] - cm.offset[cm.gm.coord_system][axis] -
-									  cm.gmx.tool_offset[axis] - _to_millimeters(offset[axis]);	// work position = offset
+									  cm.gmx.tool_offset[axis] - ((axis < AXIS_A) ? _to_millimeters(offset[axis]) : offset[axis]);	// work position = offset
 		}
 	}
 	// now pass the offset to the callback - setting the coordinate system also applies the offsets
@@ -1504,7 +1504,7 @@ stat_t cm_tool_offset_set(const float target[], const bool flags[])
         if (!flags[axis]) {
             continue;
         }
-        cm.gmx.tool_offset[axis] = _to_millimeters(target[axis]);
+        cm.gmx.tool_offset[axis] = (axis < AXIS_A) ? _to_millimeters(target[axis]) : target[axis];   // degrees for A/B/C (E155)
         flag = true;
     }
     if (!flag) {

@@ -15,7 +15,6 @@ def _a_enabled(tg):
         pytest.skip("A axis disabled")
 
 
-@pytest.mark.bug("E155", on=["d449"])
 def test_g20_rotary_origin_and_offsets_are_degrees(tg):
     _a_enabled(tg)
     try:
