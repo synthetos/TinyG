@@ -8,9 +8,10 @@ import pytest
 
 pytestmark = pytest.mark.dialect("d449")
 
-G_UNSUPPORTED = ["G54.1", "G59.1", "G59.2", "G59.3", "G17.1", "G21.5", "G64.1", "G4.1 P0.1", "G0.5 X0", "G1.1 X0 F100"]
+G_UNSUPPORTED = ["G54.1", "G59.1", "G59.2", "G59.3", "G17.1", "G21.5", "G64.1", "G4.1 P0.1", "G0.5 X0", "G1.1 X0 F100",
+                 "G92.19", "G61.15", "G90.11"]
 M_UNSUPPORTED = ["M3.1", "M5.5", "M30.1", "M7.2"]
-STILL_SUPPORTED = ["G61.1", "G61", "G90.1", "G91.1", "G90", "G92.1", "G43.1 Z0", "G49"]
+STILL_SUPPORTED = ["G61.1", "G61.10", "G61", "G90.1", "G91.1", "G90", "G92.1", "G92.10", "G43.1 Z0", "G49"]
 
 
 def test_unimplemented_dotted_codes_are_rejected(tg):

@@ -232,7 +232,16 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value)
  */
 static uint8_t _point(float value)
 {
-	return((uint8_t)(value*10 - trunc(value)*10));	// isolate the decimal point as an int
+	return((uint8_t)(value*10 - trunc(value)*10 + 0.5));	// the tenths digit, rounded (G59.1 is 59.0999 in float)
+}
+
+/*
+ * _one_decimal() - the code has at most one decimal digit: G28.3 and G28.30, not G28.01 or G92.19 (E150)
+ */
+static bool _one_decimal(float value)
+{
+	float tenths = value * 10;
+	return (fabs(tenths - trunc(tenths + 0.5)) < 0.01);
 }
 
 /*
@@ -306,7 +315,7 @@ static stat_t _parse_gcode_block(char *buf)
 				status = STAT_GCODE_COMMAND_UNSUPPORTED;
 				break;
 			}
-			if ((value != trunc(value)) && !_takes_subcode('G', (uint16_t)value)) {
+			if ((value != trunc(value)) && (!_takes_subcode('G', (uint16_t)value) || !_one_decimal(value))) {
 				status = STAT_GCODE_COMMAND_UNSUPPORTED;	// e.g. G59.1: not G59 (E150)
 				break;
 			}
@@ -412,7 +421,7 @@ static stat_t _parse_gcode_block(char *buf)
 				status = STAT_MCODE_COMMAND_UNSUPPORTED;
 				break;
 			}
-			if ((value != trunc(value)) && !_takes_subcode('M', (uint16_t)value)) {
+			if ((value != trunc(value)) && (!_takes_subcode('M', (uint16_t)value) || !_one_decimal(value))) {
 				status = STAT_MCODE_COMMAND_UNSUPPORTED;	// e.g. M3.1: not M3 (E150)
 				break;
 			}
