@@ -1,0 +1,15 @@
+{
+  "model": "tinyg_hil.stopfit segmented quintic tail, fitted cruise",
+  "stopfit_source_sha256": "7b6a13c381663423974302b0166021a13de129c20fbee9a5ab1b75d548e67515",
+  "estimator_error": "see tests/test_stopfit_offline.py (synthetic firmware-profile traces)",
+  "fits": {
+    "e031-limit-stop": {
+      "fit_cruise_mm_s": 9.99,
+      "fit_delay_s": 0.0079,
+      "fit_tail_s": 0.21912242242242239,
+      "fit_jerk_over_xjm": 8.988259328377756,
+      "fit_rms_mm": 0.0001033649780341747,
+      "overrun_mm": 1.1734375
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+ "started": "20261031T135431Z",
+ "branch": "test/saleae-timing",
+ "commit": "94df07f1",
+ "identity": {
+  "fb": 449.01,
+  "fv": 0.97,
+  "hp": 1,
+  "hv": 8,
+  "id": "0BENCH-TWO"
+ },
+ "dialect": "d449",
+ "tests": {
+  "tests/diagnostics/test_timing_e116_late_feedhold.py::test_late_feedhold_never_sticks[default]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_timing_e116_late_feedhold.py_test_late_feedhold_never_sticks_default_.json"
+  }
+ },
+ "firmware": {
+  "known": true,
+  "commit": "4619ae44705e",
+  "branch": "",
+  "tree": "424bf71361095a36ed124bd0825947d2983443e5",
+  "dirty": false,
+  "stock": false,
+  "stock_ref": "origin/edge-0.97",
+  "elf": "firmware/tinyg/build/tinyg.elf",
+  "elf_sha256": "ea92f10fe5a623e9756a0ee9fb2f7a637f75c7d7dcd34a3639ec254cee518572",
+  "hex_sha256": "fd110a66205397caec6c0e3992968766378914a8c6fca53b17bf497438545201",
+  "flashed_at": "2026-10-31T13:53:53+00:00",
+  "build_dir": "build",
+  "test_hooks": false
+ },
+ "purpose": "fix-verify",
+ "finished": "20261031T140033Z"
+}
