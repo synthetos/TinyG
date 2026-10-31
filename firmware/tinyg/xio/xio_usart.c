@@ -265,6 +265,13 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     char c = NUL;
     bool lost_open_now = false, lost_close_now = false, lost_inside = false;
 
+    if (dx->rx_gap_report) {                    // whole lines were lost after the last good one: report it
+        dx->rx_gap_report = false;              // now, not when the host sends again (E162)
+        d->flag_in_line = false;
+        d->len = 0;
+        return (XIO_LINE_DAMAGED);
+    }
+
     // One critical section for the checks and the dequeue: the RX ISR may mark a '%' at any point (E146)
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
@@ -302,16 +309,20 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
-    // A line that lost bytes must not run (E162). Bytes lost right after a line end damage the next
-    // line instead; a line end between the two marks ends a damaged line and starts another.
+    // A line that lost bytes must not run, and lost input is reported where the reader meets it (E162).
+    // c is the last byte kept before a loss at a gap; inside the stretch a loss may precede c.
     bool eol = (c == CR) || (c == LF);
-    if (lost_inside) {
-        if (eol && (lost_open_now || lost_close_now)) {
-            dx->rx_damage_next = true;          // the gap starts the following line
-        } else if (!eol || !lost_open_now) {
-            dx->rx_line_damaged = true;
-        }
+    bool gap = lost_open_now || lost_close_now;
+    if (lost_inside && (!lost_open_now || !eol)) {
+        dx->rx_line_damaged = true;
     }
+    if (gap && !eol) {                          // the line breaks here: report it now; its tail comes back
+        d->flag_in_line = false;                // as a damaged line of its own
+        d->len = 0;
+        dx->rx_line_damaged = true;
+        return (XIO_LINE_DAMAGED);
+    }
+    bool damaged = dx->rx_line_damaged;         // at a line end: a gap after it damages the next line
 
     if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
         if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't
@@ -321,27 +332,17 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;                // reset in-line state
         d->len = 0;                             // reset length counter
-        if (dx->rx_line_damaged) {              // lost bytes outrank an overlong line (E162)
-            dx->rx_line_damaged = dx->rx_damage_next;
-            dx->rx_damage_next = false;
-            return (XIO_LINE_DAMAGED);
-        }
-        dx->rx_line_damaged = dx->rx_damage_next;
-        dx->rx_damage_next = false;
-        return (XIO_BUFFER_FULL);               // reported once, at the end of the line
+        dx->rx_line_damaged = gap;
+        dx->rx_gap_report = gap && !damaged;
+        return (damaged ? XIO_LINE_DAMAGED : XIO_BUFFER_FULL);  // lost bytes outrank an overlong line (E162)
     }
     if ((c == CR) || (c == LF)) {				// handle CR, LF termination
         d->buf[(d->len)++] = NUL;
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;				// clear in-line state (reset)
-        if (dx->rx_line_damaged) {              // spliced across lost bytes: never run it (E162)
-            dx->rx_line_damaged = dx->rx_damage_next;
-            dx->rx_damage_next = false;
-            return (XIO_LINE_DAMAGED);
-        }
-        dx->rx_line_damaged = dx->rx_damage_next;
-        dx->rx_damage_next = false;
-        return (XIO_EOL);						// return for end-of-line
+        dx->rx_line_damaged = gap;
+        dx->rx_gap_report = gap && !damaged;    // a good line, then lost input: report that next
+        return (damaged ? XIO_LINE_DAMAGED : XIO_EOL);  // never run a line spliced across lost bytes (E162)
     }
     //	d->buf[(d->len)++] = c;						// write character to buffer
     d->buf[d->len] = c;						    // write character to buffer

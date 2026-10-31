@@ -3,7 +3,9 @@
 The real USB RX ISR (xio_usb.c), _gets_helper()/xio_gets_usart() (xio_usart.c),
 xio_reset_usb_rx_buffers() and xio_drop_usb_rx_before_mark() (xio_usb.c) run on the firmware's own
 ring macro with a 16-byte ring. Every line that loses bytes, or starts right after lost bytes, must
-come back XIO_LINE_DAMAGED; lines before and after the loss must come back intact; a '%' flush must
+come back XIO_LINE_DAMAGED, reported where the reader meets the loss (a line broken by a loss ends
+there, and a loss right after a good line is reported on the next read even with nothing more to
+read); lines before and after the loss must come back intact; a '%' flush must
 forget losses before its mark and keep the ones after it. A seeded stream with random host bursts
 and reader calls checks that no spliced line is ever returned as XIO_OK and that the loss state
 always clears once the reader catches up.
@@ -52,7 +54,7 @@ enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
 struct {uint8_t CTRLA; char DATA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx, fc_state_tx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
-                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_damage_next;
+                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;
                 typeof(uart) *usart; typeof(port) *port; char rx_buf[RX_BUFFER_SIZE];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo,flag_xoff;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
@@ -90,7 +92,7 @@ static void stream(unsigned seed, int nlines) {
     char text[600][16]; int sent = 0, pos = 0, expect_next = 0, ok = 0, damaged = 0; bool ended = false;
     for (int k = 0; k < nlines; k++) snprintf(text[k], sizeof(text[k]), "N%04dY%04d\n", k, (k * 7919) % 10000);
     rng = seed; fresh();
-    while (sent < nlines || USBu.rx_buf_head != USBu.rx_buf_tail || (USB.flag_in_line && USB.len)) {   /* len: a partial line */
+    while (sent < nlines || USBu.rx_buf_head != USBu.rx_buf_tail || (USB.flag_in_line && USB.len) || USBu.rx_gap_report) {   /* len: a partial line */
         for (int n = rnd() % 24; n > 0 && sent < nlines; n--) {
             uart.DATA = text[sent][pos++]; USB_RX_ISR_vect();
             if (!text[sent][pos]) { sent++; pos = 0; }
@@ -109,8 +111,8 @@ static void stream(unsigned seed, int nlines) {
             tx("\n"); ended = true;                     /* the last line lost its end: the host sends more later */
         }
     }
-    assert(!USBu.rx_lost && !USBu.rx_lost_open);          /* caught up: no loss left to account for */
-    assert(ok > 0 && damaged > 0 && ok + damaged <= nlines);
+    assert(!USBu.rx_lost && !USBu.rx_lost_open && !USBu.rx_gap_report);   /* caught up: no loss left to account for */
+    assert(ok > 0 && damaged > 0 && ok <= nlines);
 }
 
 int main(void) {
@@ -122,9 +124,9 @@ int main(void) {
     tx("G1 X1\nG1 Y119.5\n"); tx("G1 X2\n");             /* "5\n" and "G1 X2\n" tossed */
     assert(USBu.rx_lost);
     expect(XIO_OK, "G1 X1");
-    expect(XIO_EAGAIN, NULL);                             /* "G1 Y119." so far */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1 Y119." ends at the loss */
     tx("G1 X3\n");
-    expect(XIO_LINE_DAMAGED, NULL);
+    expect(XIO_LINE_DAMAGED, NULL);                       /* its tail, "G1 X3" */
     tx("G1 X4\n");
     expect(XIO_OK, "G1 X4");
     assert(!USBu.rx_lost && !USBu.rx_line_damaged);
@@ -134,6 +136,7 @@ int main(void) {
     expect(XIO_OK, "G1 X1");
     tx("9\n");
     expect(XIO_OK, "G1 X222");
+    expect(XIO_LINE_DAMAGED, NULL);                       /* the loss itself, reported at once */
     expect(XIO_LINE_DAMAGED, NULL);                       /* "9" */
     tx("G1 X5\n");
     expect(XIO_OK, "G1 X5");
@@ -143,7 +146,8 @@ int main(void) {
     expect(XIO_OK, "AAAA");
     tx("DDDD\nEEEE");                                     /* "EEEE" tossed: last loss right after a line end */
     expect(XIO_OK, "BBBB");
-    expect(XIO_LINE_DAMAGED, NULL);                       /* "CCCDDDD" */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "CCC" ends at the first loss */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "DDDD", inside the stretch */
     tx("FF\nGG\n");
     expect(XIO_LINE_DAMAGED, NULL);                       /* "FF", which lost its "EEEE" */
     expect(XIO_OK, "GG");
@@ -151,10 +155,11 @@ int main(void) {
     fresh();
     USB.flag_in_line = true; USB.len = 0; USB.buf = line; USB.size = 4; USB.signal = XIO_SIG_OK;
     tx("ABCDEFGHIJKLMN"); tx("O");                        /* tossed */
-    assert(_gets_helper(&USB, &USBu) == XIO_EAGAIN);
-    while (USBu.rx_buf_head != USBu.rx_buf_tail) assert(_gets_helper(&USB, &USBu) == XIO_EAGAIN);
+    int st = XIO_EAGAIN;
+    while (st == XIO_EAGAIN && USBu.rx_buf_head != USBu.rx_buf_tail) st = _gets_helper(&USB, &USBu);
+    assert(st == XIO_LINE_DAMAGED && !USB.flag_in_line && USBu.rx_buf_head == USBu.rx_buf_tail);
     tx("\n");
-    assert(_gets_helper(&USB, &USBu) == XIO_LINE_DAMAGED && !USB.flag_in_line);
+    assert(_gets_helper(&USB, &USBu) == XIO_LINE_DAMAGED);  /* the (empty) tail */
     tx("ok\n");
     expect(XIO_OK, "ok");
     /* a reset forgets everything */
@@ -178,9 +183,9 @@ int main(void) {
     drop_at_mark();
     assert(USBu.rx_lost);
     expect(XIO_OK, "G1 X2");
-    expect(XIO_EAGAIN, NULL);                             /* "G1" so far */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1" ends at the loss */
     tx("G1 X9\n");
-    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1G1 X9" */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* its tail, "G1 X9" */
     tx("G1 X10\n");
     expect(XIO_OK, "G1 X10");
     /* losses on both sides of the '%': only the one after it counts */
@@ -192,14 +197,16 @@ int main(void) {
     drop_at_mark();
     assert(USBu.rx_lost);
     expect(XIO_OK, "DD");
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "EE" ends at the loss */
     tx("\nFF\n");
-    expect(XIO_LINE_DAMAGED, NULL);                       /* "EE" */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* its (empty) tail */
     expect(XIO_OK, "FF");
     assert(!USBu.rx_lost);
     /* a full ring, then '%', then a loss: the loss sits at the mark itself but came after the '%' */
     fresh();
     tx("G1 X1\nG1 X222\n"); tx("%"); tx("G91 ");           /* "G91 " tossed */
     drop_at_mark();
+    expect(XIO_LINE_DAMAGED, NULL);                       /* the loss, reported at once */
     tx("G1 Y583\n");
     expect(XIO_LINE_DAMAGED, NULL);                       /* not "G1 Y583" in G91 */
     tx("G1 X5\n");
@@ -211,10 +218,11 @@ int main(void) {
     expect(XIO_OK, "G1 X1");                              /* before the mark: still read */
     tx("Y5\nG1 X7\n");                                    /* "X7\n" tossed */
     drop_at_mark();
+    expect(XIO_LINE_DAMAGED, NULL);                       /* the loss, reported at once */
     expect(XIO_LINE_DAMAGED, NULL);                       /* "Y5", which lost its "G91 " */
-    expect(XIO_EAGAIN, NULL);                             /* "G1 " so far */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1 " ends at the last loss */
     tx("Z\n");
-    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1 Z" */
+    expect(XIO_LINE_DAMAGED, NULL);                       /* its tail, "Z" */
     tx("ok\n");
     expect(XIO_OK, "ok");
     assert(!USBu.rx_lost && !USBu.rx_lost_open);

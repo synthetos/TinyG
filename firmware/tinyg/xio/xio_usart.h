@@ -179,7 +179,7 @@ typedef struct xioUSART {
 	volatile buffer_t rx_lost_post_first;	// last byte kept before the first such loss (may be the mark)
 	uint8_t rx_lost_open;					// reader is between the two marks
 	uint8_t rx_line_damaged;				// the line being read lost bytes: it must not run
-	uint8_t rx_damage_next;					// bytes were lost right after a line end: the next line is damaged
+	uint8_t rx_gap_report;					// lost input after a good line end: the next read reports it
 
 	volatile buffer_t tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile buffer_t tx_buf_head;			// TX buffer write index

@@ -259,7 +259,7 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_lost_after_mark = false;
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
-	USBu.rx_damage_next = false;
+	USBu.rx_gap_report = false;
 }
 
 /*
@@ -278,11 +278,12 @@ void xio_drop_usb_rx_before_mark(void)
 	// The ISR records the order, since a loss right after the '%' sits at the mark itself.
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
-	USBu.rx_damage_next = false;
+	USBu.rx_gap_report = false;
 	if (!USBu.rx_lost_after_mark) {
 		USBu.rx_lost = false;
 	} else if (USBu.rx_lost_post_first == USBu.rx_flush_mark) {	// lost right after the '%': the first line read lost its head
 		USBu.rx_line_damaged = true;
+		USBu.rx_gap_report = true;								// and the loss is reported at once
 		USBu.rx_lost_open = (USBu.rx_lost_last != USBu.rx_flush_mark);	// later losses: inside the stretch from the start
 		USBu.rx_lost = USBu.rx_lost_open;
 	} else {
