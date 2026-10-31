@@ -27,6 +27,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "json_parser.h"
+#include "controller.h"
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "spindle.h"
@@ -245,6 +246,30 @@ static stat_t _probing_start()
  * _probing_finish()
  */
 
+/*
+ * _probe_report() - the completion report as a top-level {"prb":{...}} object (E101)
+ *
+ *	As g2core sends it, not an r/f reply that hosts (UGS, SPJS) would take as the answer to their
+ *	command in flight. Same keys and precision as the prb group; a non-finite coordinate is null,
+ *	as the serializer's prep_float makes it.
+ */
+static void _probe_report()
+{
+	char *out = cs.out_buf;
+	out += sprintf_P(out, PSTR("{\"prb\":{\"e\":%d"), (int)cm.probe_state);
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		float value = cm.probe_results[axis];
+		if (isnan(value) || isinf(value)) {
+			out += sprintf_P(out, PSTR(",\"%c\":null"), "xyzabc"[axis]);
+		} else {
+			out += sprintf_P(out, PSTR(",\"%c\":%0.3f"), "xyzabc"[axis], (double)value);
+		}
+	}
+	sprintf_P(out, PSTR("}}\n"));
+	json_relax(cs.out_buf);
+	fputs(cs.out_buf, stdout);
+}
+
 static stat_t _probing_finish()
 {
 	int8_t probe = sw.s[pb.probe_switch].state;
@@ -255,10 +280,7 @@ static stat_t _probing_finish()
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis));
 		cm.probe_results[axis] = cm_get_work_position(ACTIVE_MODEL, axis); // store the probe results
 	}
-    char temp[16];
-    sprintf_P(temp, PSTR("{\"prb\":null}"));    // JSON parser needs a fresh string every time
-	json_parser(temp);
-//	json_parser("{\"prb\":null}", NV_BODY, true);
+	_probe_report();
 	return (_set_pb_func(_probing_finalize_exit));
 }
 
