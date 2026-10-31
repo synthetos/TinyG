@@ -58,14 +58,18 @@ def _salvage(raw: str):
 
 def parse_line(raw: str, t: float) -> Event:
     damaged = None
+    if raw.startswith("\0") and raw.lstrip("\0").startswith("{"):
+        # Leading NUL bytes only (seen once in regression 95f797f0, cause unconfirmed; an Atmel-ICE halt
+        # mid-byte is the suspect): keep the JSON after them, marked damaged. Embedded NULs stay malformed.
+        damaged, raw = raw, raw.lstrip("\0")
     if raw.startswith("{"):
         try:
             data = loads(raw)
         except ValueError:
             found = _salvage(raw)
             if found is None:
-                return Event("malformed", t, raw)
-            damaged, (raw, data) = raw, found
+                return Event("malformed", t, damaged or raw)
+            damaged, (raw, data) = damaged or raw, found
         if not isinstance(data, dict):
             return Event("malformed", t, raw, damaged=damaged)
         if "r" in data or "f" in data:
