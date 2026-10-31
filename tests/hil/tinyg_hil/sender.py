@@ -19,8 +19,11 @@ lines in order. Status reports are collected with their arrival time for path re
 from dataclasses import dataclass, field
 import time
 
-MODES = {"line": {"rxm": 1, "ex": 1}, "xon": {"rxm": 0, "ex": 1}, "rts": {"rxm": 0, "ex": 2},
-         "count": {"rxm": 0, "ex": 0}}
+MODES = {"line": {"rxm": 1, "ex": 1}, "g2": {"rxm": 1, "ex": 1}, "xon": {"rxm": 0, "ex": 1},
+         "xon-app": {"rxm": 0, "ex": 1}, "rts": {"rxm": 0, "ex": 2}, "count": {"rxm": 0, "ex": 0}}
+G2_PRIME = 4                # g2 mode: g2core's line-mode protocol - send 4, then one line per {r:} response
+# "blast": no flow control and no pacing - a misbehaving host, used to force RX overruns on purpose
+BLAST = {"rxm": 0, "ex": 0}
 RESERVE = 2                 # line mode: slots kept free for control commands
 RX_COUNT_LIMIT = 200        # count mode: bytes in flight (RX ring is 250, leave headroom)
 CHUNK = 16                  # xon mode: write granularity, so an XOFF stops us within a few bytes
@@ -115,6 +118,7 @@ class StreamResult:
     errors: list = field(default_factory=list)      # (line index, status, text)
     status: list = field(default_factory=list)      # (t, merged sr dict) after each report
     queue: list = field(default_factory=list)       # (t, free planner buffers) from queue reports (qv=1)
+    footers: list = field(default_factory=list)     # (f[2], status) of each line response, in order
     exceptions: list = field(default_factory=list)
     started: float = 0.0
     sent_done: float = 0.0
@@ -122,6 +126,30 @@ class StreamResult:
     max_inflight: int = 0
     xoff_count: int = 0
     min_free: int | None = None
+
+
+def _with(res, exc):
+    exc.result = res              # the partial result, for diagnosis
+    return exc
+
+
+def splices(res, lines):
+    """Char mode only: footer f[2] is the processed line's length + 1. Walk responses against the sent
+    lines and report each response whose length is not its line's - two lines run together (bytes lost
+    in between) - with its status: status 0 means the corrupted line was executed."""
+    todo = _payload(lines)
+    want = [len(t) + 1 for t in todo]
+    got = [(ev_len, st) for ev_len, st in res.footers]
+    out, k = [], 0
+    for idx, (length, status) in enumerate(got):
+        if k < len(want) and length == want[k]:
+            k += 1
+            continue
+        # find how many sent lines this response swallowed (best effort: up to 4)
+        out.append({"response": idx, "line": k, "len": length, "expected": want[k] if k < len(want) else None,
+                    "status": status, "text": todo[k] if k < len(todo) else None})
+        k += 2 if k + 1 < len(want) else 1
+    return out
 
 
 def _outside(sr, bounds):
@@ -166,6 +194,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     sr = {}
     inflight = []                    # byte lengths (count mode) or 1s (line mode), oldest first
     free = tg.get("rx") if mode == "line" else None   # free line slots before the first footer
+    credit = G2_PRIME                # g2 mode: lines the host may send; +1 per response, ignoring the footer
     flow_seen = len(tr.flow)
     xoff = False
     res.started = time.monotonic()
@@ -184,8 +213,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             if now > deadline:
                 raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
             if now - progress > STALL:
-                raise StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
-                                    f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}")
+                raise _with(res, StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
+                                    f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}"))
             # flow bytes from the board (the reader thread strips them from the line stream)
             while flow_seen < len(tr.flow):
                 xoff = tr.flow[flow_seen][1] == XOFF
@@ -201,14 +230,19 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 elif mode == "count":
                     if inflight and sum(inflight) + len(data) > RX_COUNT_LIMIT:
                         break
+                elif mode == "g2" and credit <= 0:
+                    break
+                elif mode == "xon-app" and xoff:
+                    break                   # the application honours XOFF, as terminal programs do
                 # rts/xon: the board may hold host output back for a long time; the stall watchdog covers them
                 tr.write(data, drain_timeout=None if mode in ("rts", "xon") else 2.0)
                 inflight.append(len(data) if mode == "count" else 1)
+                credit -= 1
                 res.max_inflight = max(res.max_inflight, len(inflight))
                 i += 1
                 if i == res.lines:
                     res.sent_done = time.monotonic()
-                if mode in ("xon", "rts"):
+                if mode in ("xon", "xon-app", "rts"):
                     break                   # one line per pass so responses are read promptly
             # read whatever arrived
             ev = tr.next_event(0.005)
@@ -221,8 +255,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                         tr.write(b"!", drain_timeout=None)
                         time.sleep(0.3)
                         tr.write(b"%", drain_timeout=None)
-                        raise StreamRunaway(f"{mode}: machine left the program's box at line {res.acked} of {res.lines} "
-                                            f"(last sent {todo[i - 1]!r}): status {sr}; feedhold and flush sent")
+                        raise _with(res, StreamRunaway(f"{mode}: machine left the program's box at line {res.acked} of {res.lines} "
+                                            f"(last sent {todo[i - 1]!r}): status {sr}; feedhold and flush sent"))
                     res.status.append((ev.t, dict(sr, _raw=ev.raw, _damaged=bool(getattr(ev, "damaged", False)))))
                     if on_status:
                         on_status(ev.t, sr)
@@ -232,10 +266,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     res.exceptions.append(ev.raw)
                 elif ev.kind == "response":
                     f = ev.data.get("f", [0, 0, 0])
+                    res.footers.append((f[2] if len(f) > 2 else None, f[1]))
                     if f[1] != 0:
                         res.errors.append((res.acked, f[1], todo[res.acked] if res.acked < res.lines else ev.raw))
                     if inflight:
                         inflight.pop(0)
+                    credit += 1
                     if mode == "line" and len(f) > 2:
                         free = f[2]
                         res.min_free = free if res.min_free is None else min(res.min_free, free)

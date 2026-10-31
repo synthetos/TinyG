@@ -1,7 +1,7 @@
 """Stream whole G-code files with every flow-control scheme and check they run through.
 
-For each mode in tinyg_hil.sender.MODES (packet line mode, XON/XOFF, RTS/CTS, Grbl-style character
-counting) and each demo program in tinyg_hil.gcodeplay, the program is streamed from a work origin
+For each mode in tinyg_hil.sender.MODES (packet line mode by free slots, g2core's line-mode protocol,
+XON/XOFF in the tty and in the application, RTS/CTS, Grbl-style character counting) and each demo program in tinyg_hil.gcodeplay, the program is streamed from a work origin
 set with G92 at the current position. Pass: every line is answered with status 0, no exception
 report arrives, the machine stops back at the work origin, and every status-report position lies on
 the commanded path (within PATH_TOL). The status-report trace is plotted against the commanded path
@@ -10,6 +10,7 @@ no status report) fails at once; with --ice the board's serial, planner and mach
 the Atmel-ICE into the record first.
 """
 import json
+import sys
 import time
 
 import pytest
@@ -54,6 +55,8 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
     recorder = request.config._tinyg_recorder
     keep("ej", "rxm", "ex", "qv", "sl", "xtn", "xtm", "ytn", "ytm", "ztn", "ztm")
     original_sr = _sr_list(tg)
+    if mode == "xon" and sys.platform == "darwin":
+        pytest.skip("the macOS tty misses the board's XON and stops host output for good (xon-app covers XON/XOFF)")
     if program in gcodeplay.LARGE_PROGRAMS and not request.config.getoption("--large-travel"):
         pytest.skip("needs about 110 mm of free X/Y travel; pass --large-travel")
     lines = {**gcodeplay.PROGRAMS, **gcodeplay.LARGE_PROGRAMS}[program]()
