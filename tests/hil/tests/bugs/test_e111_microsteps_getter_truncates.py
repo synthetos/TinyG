@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E111", on=["d440", "d449"])
+@pytest.mark.bug("E111", on=["d440"])
 def test_microsteps_256_reads_back_or_is_rejected(tg, keep):
     keep("1mi")
     resp = tg.send_json({"1mi": 256})
