@@ -58,7 +58,6 @@ int main(void) {
 
 
 class PwmSpeedRange(unittest.TestCase):
-    @unittest.expectedFailure       # E149: known bug; the fix removes this marker
     def test_zero_width_range_is_finite(self):
         cc = shutil.which("cc")
         if not cc:
