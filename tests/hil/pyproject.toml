@@ -32,6 +32,8 @@ markers = [
     "ice: needs the Atmel-ICE on the PDI header; skipped unless --ice",
     "timing: timing-pending until independently confirmed by external capture",
     "diagnostic: investigation test that records observations; skipped unless --diagnostics",
+    "streaming: streams whole G-code files with each flow-control mode; skipped unless --streaming",
+    "large_travel: needs ~110 mm of free X/Y travel; skipped unless --large-travel",
     "profile(*names): config profiles (tests/hil/config/profiles) layered for this test",
     "matrix(*names): config matrices (tests/hil/config/matrices); one run per combination",
     "settings(**tokens): inline settings for this test (prefer a profile)",

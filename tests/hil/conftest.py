@@ -35,6 +35,8 @@ def pytest_addoption(parser):
     g.addoption("--list-configs", action="store_true", help="print the configurations each test would run under, then exit")
     g.addoption("--ice", action="store_true", help="enable Atmel-ICE tests (peek/poke over PDI)")
     g.addoption("--diagnostics", action="store_true", help="run investigation tests marked diagnostic")
+    g.addoption("--streaming", action="store_true", help="run the G-code file streaming tests (several minutes)")
+    g.addoption("--large-travel", action="store_true", help="the bench has ~110 mm of free X/Y travel (braid stream)")
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
                 help="seconds to wait for another user of the board to finish [default 600]")
@@ -100,6 +102,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="destructive; pass --allow-destructive"))
         if item.get_closest_marker("diagnostic") and not config.getoption("--diagnostics"):
             item.add_marker(pytest.mark.skip(reason="investigation test; pass --diagnostics"))
+        if item.get_closest_marker("streaming") and not config.getoption("--streaming"):
+            item.add_marker(pytest.mark.skip(reason="file streaming test; pass --streaming"))
         if item.get_closest_marker("ice") and not config.getoption("--ice"):
             item.add_marker(pytest.mark.skip(reason="needs the Atmel-ICE; pass --ice"))
         if item.get_closest_marker("resets_board") and config.getoption("--no-reset"):
