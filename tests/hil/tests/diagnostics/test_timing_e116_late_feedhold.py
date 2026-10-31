@@ -3,8 +3,9 @@
 E116: a '!' landing at the final-segment handoff left hold REQUESTED/SYNC, the cycle never ended, a
 later '!' was ignored and the next move was held immediately. The first move's duration is measured
 on the Saleae, then '!' is swept later in 5 ms steps until several trials land after the move ended,
-so some land on the final segment. After each trial '~' and a second move must run:
-the analyzer counts the steps of both moves, and the machine must end idle with no hold.
+so some land on the final segment. 0.6 s after each '!' the hold must be HOLD (it engaged) or
+OFF (the move had ended), never left REQUESTED/SYNC; then '~' and a second move must run, the analyzer
+counts the steps of both moves, and the machine must end idle with no hold.
 """
 import json
 from pathlib import Path
@@ -34,6 +35,7 @@ def _bench(tg):
     return bench, chan["M1 step"]
 
 
+@pytest.mark.timeout(900)
 def test_late_feedhold_never_sticks(tg, record):
     bench, step = _bench(tg)
     assert tg.get("1ma") == 0, "X must be motor 1"
@@ -63,6 +65,7 @@ def test_late_feedhold_never_sticks(tg, record):
             tg.wait_for(lambda e: e.kind == "response", 5.0)    # the G1's reply, before any getter
             time.sleep(0.6)                                  # a real hold has stopped by now
             hold_after = tg.get("hold")
+            cycs_after = tg.get("cycs")
             tg.send_raw(b"~")
             time.sleep(0.3)
             tg.send_gcode(f"G1 X{LENGTH:g} F{feed:g}", check=True, allow=MOVE)
@@ -70,10 +73,13 @@ def test_late_feedhold_never_sticks(tg, record):
             time.sleep(0.2)
         pulses = len(saleae.rising(cap.edges()[step]))
         state = {"hold": tg.get("hold"), "cycs": tg.get("cycs")}
-        result = {"offset_s": round(offset, 4), "hold_after_bang": hold_after, "pulses": pulses,
-                  "expected": 2 * per_move, **state}
+        result = {"offset_s": round(offset, 4), "hold_after_bang": hold_after, "cycs_after_bang": cycs_after,
+                  "pulses": pulses, "expected": 2 * per_move, **state}
         trials.append(result)
-        if abs(pulses - 2 * per_move) > 2 or state["hold"] != hold_off or state["cycs"] != 0:
+        # 0.6 s after '!' the hold has either completed (HOLD) or never started (OFF, the move had ended);
+        # REQUESTED/SYNC with nothing moving is the stuck request E116 describes
+        stuck = hold_after not in (hold_off, tg.dialect.hold("HOLD"))
+        if stuck or abs(pulses - 2 * per_move) > 2 or state["hold"] != hold_off or state["cycs"] != 0:
             bad.append(result)
         tg.send_gcode(f"G1 X{-2 * LENGTH:g} F{feed:g}", allow=MOVE)
         tg.wait_idle(timeout=30)
