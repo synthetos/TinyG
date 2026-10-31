@@ -208,7 +208,7 @@ void stepper_init()
 
 	// setup ports and data structures
 	for (uint8_t i=0; i<MOTORS; i++) {
-		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
+		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm & ~GPIO1_OUT_BIT_bm; // GPIO waits for configured OFF levels
 		hw.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
 	// setup DDA timer
@@ -426,6 +426,7 @@ static uint8_t _motor_is_enabled(uint8_t motor)
 
 static void _deenergize_motor(const uint8_t motor)
 {
+    st_run.energize_mask &= ~(1 << motor);
 #ifdef __AVR
 	switch (motor) {
 		case (MOTOR_1): { PORT_MOTOR_1_VPORT.OUT |= MOTOR_ENABLE_BIT_bm; break; }
@@ -536,6 +537,19 @@ stat_t st_motor_power_callback() 	// called by controller
 			if (! _motor_is_enabled(m)) _energize_motor(m);
 			continue;
 		}
+
+        if (st_run.energize_mask & (1 << m)) {
+            if ((uint32_t)(SysTickTimer_getValue() - st_run.energize_start) < st_run.energize_duration) {
+                continue;
+            }
+            st_run.energize_mask &= ~(1 << m);
+            // An explicit timeout must not cut torque while a move or feedhold is active.
+            if (!st_runtime_isbusy() && cm_get_motion_state() != MOTION_HOLD) {
+                _deenergize_motor(m);
+                sr_request_status_report(SR_REQUEST_TIMED);
+                continue;
+            }
+        }
 
 		// start a countdown if MOTOR_POWERED_IN_CYCLE or MOTOR_POWERED_ONLY_WHEN_MOVING
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
@@ -1324,9 +1338,19 @@ stat_t st_set_pl(nvObj_t *nv)	// motor power level
 /*
  * st_get_pwr()	- get motor enable power state
  */
+// pwr rows sit in the "pwr" group, so the motor is the token's last digit, not group[0] (E108)
+static int8_t _get_pwr_motor(const nvObj_t *nv)
+{
+    return (nv->token[strlen(nv->token) - 1] - '1');
+}
+
 stat_t st_get_pwr(nvObj_t *nv)
 {
-	nv->value_int = _motor_is_enabled(_get_motor(nv));
+    int8_t motor = _get_pwr_motor(nv);
+    if ((motor < 0) || (motor >= MOTORS)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+	nv->value_int = _motor_is_enabled(motor);
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -1339,12 +1363,13 @@ stat_t st_get_pwr(nvObj_t *nv)
  *
  * Calling me or md with NULL will enable or disable all motors
  * Setting a value of 0 will enable or disable all motors
- * Setting a value from 1 to MOTORS will enable or disable that motor only
+ * me=N holds all enabled motors for N seconds; md=N disables only motor N.
  */
 
 stat_t st_set_mt(nvObj_t *nv)
 {
-	st_cfg.motor_power_timeout = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value_flt, MOTOR_TIMEOUT_SECONDS_MIN));
+	nv->value_flt = min(MOTOR_TIMEOUT_SECONDS_MAX, max(nv->value_flt, MOTOR_TIMEOUT_SECONDS_MIN));
+	st_cfg.motor_power_timeout = nv->value_flt;	// clamp in place so the echo and the persisted value match (E076)
 	return (STAT_OK);
 }
 
@@ -1353,27 +1378,24 @@ stat_t st_set_md(nvObj_t *nv)	// Make sure this function is not part of initiali
 	if ((nv->value_int == 0) || (nv->valuetype == TYPE_NULL)) {
 		st_deenergize_motors();
 	} else {
-        uint8_t motor = nv->value_int;
-        if (motor > MOTORS) {
+        if (nv->value_int > MOTORS) {		// check before narrowing: 256 is not motor 0 (E112)
             return (STAT_INPUT_VALUE_RANGE_ERROR);
         }
+        uint8_t motor = nv->value_int;
         _deenergize_motor(motor-1);     // adjust so that motor 1 is actually 0 (etc)
 	}
 	return (STAT_OK);
 }
 
-stat_t st_set_me(nvObj_t *nv)	// Make sure this function is not part of initialization --> f00
+stat_t st_set_me(nvObj_t *nv) // seconds of explicit hold, or zero/null for the configured idle timeout
 {
-	if ((nv->value_int == 0) || (nv->valuetype == TYPE_NULL)) {
-		st_energize_motors();
-	} else {
-        uint8_t motor = nv->value_int;
-        if (motor > MOTORS) {
-            return (STAT_INPUT_VALUE_RANGE_ERROR);
-        }
-		_energize_motor(motor-1);     // adjust so that motor 1 is actually 0 (etc)
-	}
-	return (STAT_OK);
+    uint32_t seconds = (nv->valuetype == TYPE_NULL) ? 0 : nv->value_int;
+    if (seconds > 4294967UL) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    st_run.energize_start = SysTickTimer_getValue();
+    st_run.energize_duration = seconds * 1000UL;
+    st_run.energize_mask = seconds ? ((1 << MOTORS) - 1) : 0;
+    st_energize_motors();
+    return (STAT_OK);
 }
 
 /***********************************************************************************
@@ -1395,11 +1417,11 @@ static const char fmt_mt[] PROGMEM = "[mt]  motor idle timeout%14.2f Sec\n";
 static const char fmt_0ma[] PROGMEM = "[%s%s] m%s map to axis%15d [0=X,1=Y,2=Z...]\n";
 static const char fmt_0sa[] PROGMEM = "[%s%s] m%s step angle%20.3f%s\n";
 static const char fmt_0tr[] PROGMEM = "[%s%s] m%s travel per revolution%10.4f%s\n";
-static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16d [1,2,4,8]\n";
+static const char fmt_0mi[] PROGMEM = "[%s%s] m%s microsteps%16lu [1,2,4,8]\n";
 static const char fmt_0po[] PROGMEM = "[%s%s] m%s polarity%18d [0=normal,1=reverse]\n";
 static const char fmt_0pm[] PROGMEM = "[%s%s] m%s power management%10d [0=disabled,1=always on,2=in cycle,3=when moving]\n";
 static const char fmt_0pl[] PROGMEM = "[%s%s] m%s motor power level%13.3f [0.000=minimum, 1.000=maximum]\n";
-static const char fmt_pwr[] PROGMEM = "Motor %c power enabled state:%2.0f\n";
+static const char fmt_pwr[] PROGMEM = "Motor %c power enabled state:%2d\n";
 
 void st_print_mt(nvObj_t *nv) { text_print_flt(nv, fmt_mt);}
 void st_print_me(nvObj_t *nv) { text_print_nul(nv, fmt_me);}
@@ -1409,6 +1431,13 @@ static void _print_motor_ui8(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint8_t)nv->value_int);
+    text_finalize_message(msg);
+}
+
+static void _print_motor_u32(nvObj_t *nv, const char *format)		// microsteps are a uint32_t (E111)
+{
+    char msg[NV_MESSAGE_LEN];
+    sprintf_P(msg, format, nv->group, nv->token, nv->group, (uint32_t)nv->value_int);
     text_finalize_message(msg);
 }
 
@@ -1429,14 +1458,14 @@ static void _print_motor_flt(nvObj_t *nv, const char *format)
 static void _print_motor_pwr(nvObj_t *nv, const char *format)
 {
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, format, nv->token[0], nv->value_flt);
+    sprintf_P(msg, format, nv->token[strlen(nv->token) - 1], (int)nv->value_int);	// motor digit, integer state (E108)
     text_finalize_message(msg);
 }
 
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
 void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
 void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
-void st_print_mi(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0mi);}
+void st_print_mi(nvObj_t *nv) { _print_motor_u32(nv, fmt_0mi);}
 void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
 void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}
 void st_print_pl(nvObj_t *nv) { _print_motor_flt(nv, fmt_0pl);}

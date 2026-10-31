@@ -213,7 +213,7 @@ typedef void (*x_flow_t)(xioDev_t *d);
  */
 
 #define RX_HEADERS                12        // buffer headers in the list
-#define RX_BUFFER_MIN_SIZE       200        // minimum requested buffer size (they are usually larger)
+#define RX_BUFFER_MIN_SIZE       255        // minimum requested buffer size (they are usually larger)
 #define RX_BUFFER_POOL_SIZE     1000        // total size of RX buffer memory pool
 /*
 #define RX_HEADERS                26        // buffer headers in the list
@@ -288,6 +288,7 @@ typedef struct xioSingleton {
 
     uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO ctrl bits)
     uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO ctrl bits)
+    uint8_t json_escape;				// USB output is inside a {"txt":"..."} string: escape it (E137)
     uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
 
@@ -330,6 +331,7 @@ uint8_t xio_test_assertions(void);
 uint8_t xio_isbusy(void);
 
 char *readline(devflags_t *flags, uint16_t *size);
+uint8_t xio_prepare_pgm_source(void);
 void xio_reset_readline_linemode(void);
 void xio_flush_input(void);
 uint8_t xio_get_line_buffers_available(void);
