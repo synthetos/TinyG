@@ -83,6 +83,10 @@ int main(void) {
     expect("G80G80", T, V);  expect("G0G1G80X1", T, V);
     /* axis words used by other codes while G80 is in effect */
     expect("G43.1Z1", C, STAT_OK);  expect("G92Z0", C, STAT_OK);
+    /* separately tracked modes (review): arc distance is not G3; G43.1/G49 and G53 with group 0 */
+    expect("G90G91.1", T, STAT_OK);  expect("G91G90.1", T, STAT_OK);  expect("G90.1G91.1", T, V);
+    expect("G80G92X0", T, STAT_OK);  expect("G43.1G49Z1", T, V);  expect("G49G49", T, V);  expect("G43.1Z1G43.1Z2", T, V);
+    expect("G53G10L2P1X0", T, V);  expect("G53G4P1", T, V);  expect("G53G92X0", T, V);  expect("G53G28.2X0", T, V);
     expect("M7M8", T, STAT_OK);  expect("G0X1", C, STAT_OK);  expect("G90G21G17G54G61G94G0X1", T, STAT_OK);
     expect("G92X0", C, STAT_OK);  expect("G28.2X0", C, STAT_OK);  expect("G28.3X0", C, STAT_OK);
     expect("G53G0X0", C, STAT_OK);  expect("G53X0", T, STAT_OK);  expect("X5", T, STAT_OK);  expect("G80", T, STAT_OK);

@@ -43,6 +43,7 @@ static stat_t _execute_gcode_block(void);		// Execute the gcode block
 // A second code of one modal group, or a second next action, on a line is an error (NIST 3.3.5) (E152)
 #define SET_MODAL(m,parm,val) ({if (cm.gf.modals[m] || cm.gf.parm) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.parm=val; cm.gf.parm=true; cm.gf.modals[m]=true; break;})
 #define SET_NEXT_ACTION(val) ({if (cm.gf.next_action) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.next_action=val; cm.gf.next_action=true; break;})
+#define SET_ARC_DISTANCE(val) ({if (cm.gf.arc_distance_mode) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.arc_distance_mode=val; cm.gf.arc_distance_mode=true; break;})
 // M7 and M8 may share a line (NIST 3.4); either with M9, or repeated, may not
 #define SET_COOLANT_ON(parm) ({if (cm.gf.parm || (cm.gf.flood_coolant && !cm.gn.flood_coolant)) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.parm=true; cm.gf.parm=true; cm.gf.modals[MODAL_GROUP_M8]=true; break;})
 #define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=true; break;})
@@ -263,8 +264,20 @@ static stat_t _validate_gcode_block()
 			default: break;
 		}
 	}
-	if (axis_words && group0_axes && cm.gf.modals[MODAL_GROUP_G1]) {
+	if (axis_words && group0_axes && cm.gf.modals[MODAL_GROUP_G1] && (cm.gn.motion_mode != MOTION_MODE_CANCEL)) {
 		return (STAT_GCODE_MODAL_GROUP_VIOLATION);
+	}
+	// G53 is itself a group 0 code: not with G4, G10, G28.x, G30.x or G92.x on one line
+	if (cm.gf.absolute_override && cm.gf.next_action) {
+		switch (cm.gn.next_action) {
+			case NEXT_ACTION_DWELL: case NEXT_ACTION_SET_COORD_DATA: case NEXT_ACTION_SEARCH_HOME:
+			case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: case NEXT_ACTION_HOMING_NO_SET: case NEXT_ACTION_SET_G28_POSITION:
+			case NEXT_ACTION_GOTO_G28_POSITION: case NEXT_ACTION_SET_G30_POSITION: case NEXT_ACTION_GOTO_G30_POSITION:
+			case NEXT_ACTION_SET_ORIGIN_OFFSETS: case NEXT_ACTION_RESET_ORIGIN_OFFSETS:
+			case NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS: case NEXT_ACTION_RESUME_ORIGIN_OFFSETS:
+				return (STAT_GCODE_MODAL_GROUP_VIOLATION);
+			default: break;
+		}
 	}
 	// NIST 3.5.12: G53 is used with G0 or G1
 	if (cm.gf.absolute_override && !cm.gf.next_action &&
@@ -351,12 +364,12 @@ static stat_t _parse_gcode_block(char *buf)
 				case 40: break;	// ignore cancel cutter radius compensation
                 case 43: {
 					switch (_point(value)) {
-    					case 1: { cm.gf.tool_offset_set=1; break; }     // set flag for set
+    					case 1: { if (cm.gf.tool_offset_set || cm.gf.tool_offset_cancel) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gf.tool_offset_set=1; break; }     // set flag for set
     					default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
                     break;
                 }
-				case 49: { cm.gf.tool_offset_cancel=1; break; }         // set flag for cancel
+				case 49: { if (cm.gf.tool_offset_set || cm.gf.tool_offset_cancel) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gf.tool_offset_cancel=1; break; }         // set flag for cancel
 				case 53: SET_NON_MODAL (absolute_override, true);
 				case 54: SET_MODAL (MODAL_GROUP_G12, coord_system, G54);
 				case 55: SET_MODAL (MODAL_GROUP_G12, coord_system, G55);
@@ -377,7 +390,7 @@ static stat_t _parse_gcode_block(char *buf)
 				case 90: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
-        				case 1: SET_MODAL (MODAL_GROUP_G3, arc_distance_mode, ABSOLUTE_MODE);
+        				case 1: SET_ARC_DISTANCE (ABSOLUTE_MODE);		// G90.1: its own mode, not G3 (E152)
         				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
     				}
     				break;
@@ -385,7 +398,7 @@ static stat_t _parse_gcode_block(char *buf)
 				case 91: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, INCREMENTAL_MODE);
-        				case 1: SET_MODAL (MODAL_GROUP_G3, arc_distance_mode, INCREMENTAL_MODE);
+        				case 1: SET_ARC_DISTANCE (INCREMENTAL_MODE);
         				default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
     				}
     				break;
