@@ -226,13 +226,16 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, uint
         return(STAT_BAD_NUMBER_FORMAT); // more robust test then checking for value=0;
 	// significant decimal digits as written (trailing zeros dropped): G92.10 has 1, G92.1005 has 4 (E150)
 	for (char *p = *pstr; p < end; p++) {
+		if ((*p == 'E') || (*p == 'e')) {	// strtof takes exponents: G591E-1 is not a G59.1 spelling
+			*decimals = UINT8_MAX;
+			break;
+		}
 		if (*p != '.') { continue; }
 		uint8_t n = 0;
 		for (char *d = p+1; (d < end) && isdigit(*d); d++) {
 			n++;
 			if (*d != '0') { *decimals = n; }
 		}
-		break;
 	}
 	*pstr = end;
 	return (STAT_OK);			// pointer points to next character after the word
