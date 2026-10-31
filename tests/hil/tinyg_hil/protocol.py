@@ -80,8 +80,8 @@ def parse_line(raw: str, t: float) -> Event:
         if "sr" in data:
             sr = data["sr"]
             return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data, damaged)
-        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack")):
-            if key in data:
+        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack"), ("prb", "probe")):
+            if key in data:                     # prb: edge's top-level probe report since E101
                 return Event(kind, t, raw, data, damaged)
         return Event("malformed", t, raw, data, damaged)
     if PROMPT.match(raw):

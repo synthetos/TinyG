@@ -37,6 +37,7 @@ def test_parse_banners():
 @pytest.mark.parametrize("line, kind", [
     ('{"sr":{"stat":3}}', "status"), ('{"qr":32}', "queue"), ('{"rx":254}', "rx"),
     ('{"er":{"st":29}}', "exception"), ('{"ack":true}', "ack"), ("tinyg [mm] ok> ", "prompt"),
+    ('{"prb":{"e":1,"x":0.000,"z":-1.000}}', "probe"), ('{prb:{e:0,z:-1.000}}', "probe"),
     ("[fb]  firmware build            440.20", "text"), ('{"r":{"fb":', "malformed"),
 ])
 def test_classify(line, kind):
