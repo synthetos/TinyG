@@ -34,7 +34,6 @@ def short_vectors():
 
 
 class QueueCommandVectors(unittest.TestCase):
-    @unittest.expectedFailure       # E148: known bug; the fix removes this marker
     def test_value_vectors_hold_axes_floats(self):
         self.assertEqual(short_vectors(), [])
 

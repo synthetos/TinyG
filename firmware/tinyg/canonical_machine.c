@@ -1018,7 +1018,7 @@ stat_t cm_set_coord_system(const uint8_t coord_system)
 {
     cm.gm.coord_system = (cmCoordSystem)coord_system;
 
-    float value[] = { (float)coord_system };	            // pass coordinate system in value[0] element
+    float value[AXES] = { (float)coord_system };	            // pass coordinate system in value[0] element
     mp_queue_command(_exec_offset, value, FLAGS_ONE);	    // NB: flags vector is not actually used
 	return (STAT_OK);
 }
@@ -1135,7 +1135,7 @@ stat_t cm_reset_origin_offsets()
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		cm.gmx.origin_offset[axis] = 0;
 	}
-	float value[] = { (float)cm.gm.coord_system };
+	float value[AXES] = { (float)cm.gm.coord_system };
 	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
@@ -1143,7 +1143,7 @@ stat_t cm_reset_origin_offsets()
 stat_t cm_suspend_origin_offsets()
 {
 	cm.gmx.origin_offset_enable = 0;
-	float value[] = { (float)cm.gm.coord_system };
+	float value[AXES] = { (float)cm.gm.coord_system };
 	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
@@ -1151,7 +1151,7 @@ stat_t cm_suspend_origin_offsets()
 stat_t cm_resume_origin_offsets()
 {
 	cm.gmx.origin_offset_enable = 1;
-	float value[] = { (float)cm.gm.coord_system };
+	float value[AXES] = { (float)cm.gm.coord_system };
 	mp_queue_command(_exec_offset, value, FLAGS_ONE);
 	return (STAT_OK);
 }
@@ -1461,7 +1461,7 @@ stat_t cm_select_tool(const uint8_t tool_select)
 
 stat_t cm_change_tool(const uint8_t tool_change)
 {
-	float value[] = { (float)cm.gm.tool_select };
+	float value[AXES] = { (float)cm.gm.tool_select };
 	mp_queue_command(_exec_change_tool, value, FLAGS_ONE);
 	return (STAT_OK);
 }
@@ -1531,7 +1531,7 @@ stat_t cm_tool_offset_cancel()
 
 stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
 {
-	float value[] = { (float)mist_coolant };
+	float value[AXES] = { (float)mist_coolant };
 	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }
@@ -1558,7 +1558,7 @@ static void _exec_mist_coolant_control(float *value, bool *flags)
 
 stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
 {
-	float value[] = { (float)flood_coolant };
+	float value[AXES] = { (float)flood_coolant };
 	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }

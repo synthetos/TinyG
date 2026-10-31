@@ -137,7 +137,7 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 
 stat_t cm_spindle_control(uint8_t spindle_mode)
 {
-	float value[] = { (float)spindle_mode };
+	float value[AXES] = { (float)spindle_mode };
 	mp_queue_command(_exec_spindle_control, value, FLAGS_ONE);
 	return(STAT_OK);
 }
@@ -184,7 +184,7 @@ stat_t cm_set_spindle_speed(float speed)
 //	if (speed > cfg.max_spindle speed) {    // test not currently performed
 //        return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);
 //  }
-	float value[] = { speed };
+	float value[AXES] = { speed };
 	mp_queue_command(_exec_spindle_speed, value, FLAGS_ONE);
 	return (STAT_OK);
 }
