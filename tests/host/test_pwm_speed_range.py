@@ -3,7 +3,8 @@
 The real cm_get_spindle_pwm() (spindle.c) and pwm_set_duty() (pwm.c, AVR path, on a stub timer) are
 extracted. With csl == csh the normalisation was 0/0; the NaN passed pwm_set_duty()'s < 0 and > 1
 checks and the AVR float-to-integer conversion wrote CCB = 1 (measured on bench 2: ~0% duty, below
-the 10% off phase). A zero-width range now maps any S to phase_hi, and a non-finite duty is refused.
+the 10% off phase). An exactly zero-width range now maps any S to phase_hi; NaN bounds or phases stay NaN and
+the non-finite duty is refused, leaving the PWM output unchanged.
 """
 from pathlib import Path
 import shutil
@@ -47,6 +48,17 @@ int main(void) {
     pwm.c[0].cw_speed_hi = 1000;
     assert(isfinite(duty(1000)) && fabsf(duty(1000) - 0.2f) < 1e-6f);
     assert(fabsf(duty(5000) - 0.2f) < 1e-6f && fabsf(duty(0) - 0.2f) < 1e-6f);
+    /* invalid (NaN) bounds or phases are not turned into a valid duty: the PWM keeps its value */
+    timer.CCB = 1234;
+    pwm.c[0].cw_speed_lo = NAN; pwm.c[0].cw_speed_hi = 2000;
+    assert(pwm_set_duty(PWM_1, duty(1500)) != STAT_OK && timer.CCB == 1234);
+    pwm.c[0].cw_speed_lo = 1000; pwm.c[0].cw_speed_hi = NAN;
+    assert(pwm_set_duty(PWM_1, duty(1500)) != STAT_OK && timer.CCB == 1234);
+    pwm.c[0].cw_speed_lo = NAN; pwm.c[0].cw_speed_hi = NAN;
+    assert(pwm_set_duty(PWM_1, duty(1500)) != STAT_OK && timer.CCB == 1234);
+    pwm.c[0].cw_speed_lo = 1000; pwm.c[0].cw_speed_hi = 2000; pwm.c[0].cw_phase_hi = NAN;
+    assert(pwm_set_duty(PWM_1, duty(1500)) != STAT_OK && timer.CCB == 1234);
+    pwm.c[0].cw_phase_hi = 0.2f;
     /* a non-finite duty is refused and leaves the compare register alone */
     timer.CCB = 1234;
     assert(pwm_set_duty(PWM_1, NAN) != STAT_OK && timer.CCB == 1234);
