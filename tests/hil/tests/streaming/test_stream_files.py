@@ -19,6 +19,7 @@ from tinyg_hil import gcodeplay, sender
 pytestmark = [pytest.mark.streaming, pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449")]
 
 PATH_TOL = 0.05             # mm: SR positions print 3 decimals; arcs follow ct = 0.01 mm
+SR_INTERVAL = 0.1           # s: si; coverage allows the distance two reports apart can span at top speed
 SR_FIELDS = ["posx", "posy", "posz", "line", "stat", "vel"]
 
 
@@ -51,7 +52,7 @@ def _plot(path, samples, title, dest):
 @pytest.mark.parametrize("mode", list(sender.MODES))
 def test_stream_runs_through(tg, keep, record, request, mode, program):
     recorder = request.config._tinyg_recorder
-    keep("ej", "rxm", "ex", "qv")
+    keep("ej", "rxm", "ex", "qv", "sl", "xtn", "xtm", "ytn", "ytm", "ztn", "ztm")
     original_sr = _sr_list(tg)
     if program in gcodeplay.LARGE_PROGRAMS and not request.config.getoption("--large-travel"):
         pytest.skip("needs about 110 mm of free X/Y travel; pass --large-travel")
@@ -61,11 +62,20 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
             if tg.get(token) != value:
                 tg.set(token, value, allow="streaming mode")
         tg.send_json({"sr": {k: True for k in SR_FIELDS}}, check=True)
+        if program in gcodeplay.PROGRAMS:
+            # Soft limits as a backstop: mark the axes homed here (G28.3) and fence the program's box, so a
+            # corrupted line that targets outside it alarms instead of moving (a 583 mm Y runaway was seen).
+            tg.send_gcode("G21 G90 G28.3 X0 Y0 Z0", check=True)
+            for token, value in {"xtn": -2, "xtm": gcodeplay.SIZE + 2, "ytn": -2, "ytm": gcodeplay.SIZE + 2,
+                                 "ztn": -2, "ztm": 3, "sl": 1}.items():
+                tg.set(token, value, allow="soft-limit fence for streaming")
         tg.send_gcode("G21 G90 G17 G92 X0 Y0 Z0", check=True)
         tg.guard.check_gcode("G1 X20 Y20", allow=f"stream {program}")
+        pts = [p for p in gcodeplay.path(lines) if p is not None]
+        box = ((min(p[0] for p in pts) - 2, max(p[0] for p in pts) + 2), (min(p[1] for p in pts) - 2, max(p[1] for p in pts) + 2))
         try:
-            res = sender.stream(tg, lines, mode)
-        except sender.StreamStalled:
+            res = sender.stream(tg, lines, mode, bounds=box)
+        except (sender.StreamStalled, sender.StreamRunaway):
             if request.config.getoption("--ice"):            # read the hung board's state before anything changes it
                 record("stall_snapshot", sender.stall_snapshot(request.getfixturevalue("ice")))
             raise
@@ -80,6 +90,9 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
     scored = sorted(((gcodeplay.distance_to_path((st["posx"], st["posy"]), path), t - res.started, st)
                      for t, st in res.status if "posx" in st and "posy" in st), key=lambda r: -r[0])
     worst = scored[0][0] if scored else 0.0
+    cover = gcodeplay.coverage(samples, path)
+    top_mm_s = max((st.get("vel", 0) for _, st in res.status), default=0) / 60.0
+    gap_limit = max(2.0, 3 * SR_INTERVAL * top_mm_s)
     plot = _plot(path, samples, f"{program} via {mode}: {res.acked}/{res.lines} lines, "
                  f"{res.finished - res.started:.1f} s", recorder.dir / f"stream-{mode}-{program}.png") if recorder else None
     result = {"mode": mode, "program": program, "lines": res.lines, "acked": res.acked, "errors": res.errors[:10],
@@ -90,6 +103,7 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
               "planner_queue": sender.queue_profile(res),
               "peak_vel_mm_min": max((st.get("vel", 0) for _, st in res.status), default=0),
               "max_path_deviation_mm": round(worst, 4), "end": end, "plot": plot,
+              "coverage": cover,
               "worst_samples": [{"dev": round(d, 4), "t": round(t, 3), "sr": st} for d, t, st in scored[:5]]}
     record("stream", result)
     assert res.acked == res.lines and not res.errors, f"{len(res.errors)} errors: {res.errors[:5]}"
@@ -97,3 +111,5 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
     last = next(p for p in reversed(path) if p is not None)
     assert end["posx"] == pytest.approx(last[0], abs=0.01) and end["posy"] == pytest.approx(last[1], abs=0.01), (end, last)
     assert worst <= PATH_TOL, f"a status report was {worst:.3f} mm off the commanded path"
+    assert cover.get("max_gap_mm", 0) <= gap_limit, \
+        f"part of the path has no status report on it ({cover}, limit {gap_limit:.1f} mm): it did not run"

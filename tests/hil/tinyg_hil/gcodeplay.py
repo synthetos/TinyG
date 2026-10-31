@@ -151,3 +151,41 @@ def distance_to_path(p, pts):
         t = 0.0 if L == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L))
         best = min(best, math.hypot(px - (ax + t * dx), py - (ay + t * dy)))
     return best
+
+
+def coverage(samples, pts):
+    """How completely status-report samples cover the commanded path.
+
+    Samples must be in time order. Each is projected onto the polyline by arc length (pieces split by
+    G92 are concatenated), never behind the furthest point already reached, so a path that crosses or
+    retraces itself is not mistaken for a gap.
+    Returns the path length, the arc-length positions reached at the start and end, and the longest
+    stretch of path with no sample on it - a skipped or unexecuted part shows up as a large gap."""
+    segs, total = [], 0.0
+    for a, b in zip(pts, pts[1:]):
+        if a is None or b is None:
+            continue
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        segs.append((a, b, total, L))
+        total += L
+    if not segs or not samples:
+        return {"path_mm": round(total, 2), "samples": len(samples)}
+    proj, last = [], 0.0
+    for px, py in samples:                       # time order: the machine only moves forward along the path
+        best = None
+        for (ax, ay), (bx, by), s0, L in segs:
+            if s0 + L < last - 0.5:
+                continue
+            dx, dy = bx - ax, by - ay
+            t = 0.0 if L == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (L * L)))
+            d = math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+            if best is None or d < best[0]:
+                best = (d, s0 + t * L)
+        if best is None:
+            continue
+        proj.append(best[1])
+        last = max(last, best[1])
+    proj.sort()
+    gaps = [b - a for a, b in zip(proj, proj[1:])]
+    return {"path_mm": round(total, 2), "samples": len(samples), "first_mm": round(proj[0], 2),
+            "last_mm": round(proj[-1], 2), "max_gap_mm": round(max(gaps + [proj[0], total - proj[-1]]), 2)}

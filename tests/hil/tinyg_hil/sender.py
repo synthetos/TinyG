@@ -32,6 +32,10 @@ class StreamStalled(AssertionError):
     pass
 
 
+class StreamRunaway(AssertionError):
+    """A status report put the machine outside the program's bounding box: it was stopped at once."""
+
+
 # Firmware state worth reading over the Atmel-ICE when a stream hangs (one halt, consistent snapshot)
 # USB is ds[XIO_DEV_USB] and USBu is us[XIO_DEV_USB - XIO_DEV_USART_OFFSET]: index 0 on the v8 (xio.h)
 STALL_SYMBOLS = ["rtc.sys_ticks", "xio.buf_state", "cm.queue_flush_input", "cm.queue_flush_input_due", "us[0].rx_buf_head", "us[0].rx_buf_tail", "us[0].rx_buf_count", "us[0].fc_state_rx", "us[0].fc_state_tx",
@@ -120,6 +124,12 @@ class StreamResult:
     min_free: int | None = None
 
 
+def _outside(sr, bounds):
+    (x0, x1), (y0, y1) = bounds
+    x, y = sr.get("posx"), sr.get("posy")
+    return (x is not None and not x0 <= x <= x1) or (y is not None and not y0 <= y <= y1)
+
+
 def queue_profile(res, buffers=32):
     """Planner occupancy while lines were being sent: time-weighted share of the send phase with the
     queue full (<= 4 free), empty (>= buffers - 4 free) and the median free count."""
@@ -145,8 +155,11 @@ def _payload(lines):
     return out
 
 
-def stream(tg, lines, mode, timeout=600.0, on_status=None):
-    """Send `lines` with `mode`; return a StreamResult once every line is answered and motion stops."""
+def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
+    """Send `lines` with `mode`; return a StreamResult once every line is answered and motion stops.
+
+    bounds = ((xmin, xmax), (ymin, ymax)) in work coordinates: a status report outside them sends a
+    feedhold and a queue flush immediately and raises StreamRunaway (a corrupted line must not run on)."""
     tr = tg.transport
     todo = _payload(lines)
     res = StreamResult(mode=mode, lines=len(todo))
@@ -204,6 +217,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None):
                     progress = ev.t
                 if ev.kind == "status" and isinstance(ev.body, dict):
                     sr.update(ev.body)
+                    if bounds and _outside(sr, bounds):
+                        tr.write(b"!", drain_timeout=None)
+                        time.sleep(0.3)
+                        tr.write(b"%", drain_timeout=None)
+                        raise StreamRunaway(f"{mode}: machine left the program's box at line {res.acked} of {res.lines} "
+                                            f"(last sent {todo[i - 1]!r}): status {sr}; feedhold and flush sent")
                     res.status.append((ev.t, dict(sr, _raw=ev.raw, _damaged=bool(getattr(ev, "damaged", False)))))
                     if on_status:
                         on_status(ev.t, sr)
