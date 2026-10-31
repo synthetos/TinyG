@@ -2412,9 +2412,29 @@ stat_t cm_get_feed(nvObj_t *nv)
 	return (STAT_OK);
 }
 
+/*
+ * _position_model() - the model a position report reads (E090)
+ *
+ *	Motion that has been accepted but has not started yet (a cycle running with motion stopped:
+ *	a move or arc queued but not executing, a refused arc segment, a paused program) has already
+ *	moved the model to its end point. The runtime still holds where the machine is.
+ */
+static GCodeState_t *_position_model()
+{
+	if ((cm.motion_state == MOTION_STOP) && (cm.cycle_state != CYCLE_OFF)) {
+		return (RUNTIME);
+	}
+	return (ACTIVE_MODEL);
+}
+
 stat_t cm_get_pos(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
+	const GCodeState_t *gcode_state = _position_model();
+	uint8_t axis = _get_axis(nv->index);
+	nv->value_flt = cm_get_work_position(gcode_state, axis);
+	if ((axis <= AXIS_Z) && (gcode_state->units_mode != ACTIVE_MODEL->units_mode)) {	// match the unit report
+		nv->value_flt = (ACTIVE_MODEL->units_mode == INCHES) ? nv->value_flt / MM_PER_INCH : nv->value_flt * MM_PER_INCH;
+	}
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2422,7 +2442,7 @@ stat_t cm_get_pos(nvObj_t *nv)
 
 stat_t cm_get_mpo(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_absolute_position(_position_model(), _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2430,7 +2450,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 
 stat_t cm_get_ofs(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_work_offset(_position_model(), _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
