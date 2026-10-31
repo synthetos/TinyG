@@ -77,7 +77,12 @@ void xio_xoff_usart(xioUsart_t *dx);
 EXERCISE = r'''
 static char line[64];
 static void tx(const char *s) { for (; *s; s++) { uart.DATA = *s; USB_RX_ISR_vect(); } }   /* host bytes through the ISR */
-static int rd(void) { return xio_gets_usart(&USB, line, sizeof(line)); }
+static int rd(void) {                                    /* every return leaves a terminated buffer: line mode scans it */
+    if (!USB.flag_in_line) memset(line, 'A', sizeof(line));
+    int status = xio_gets_usart(&USB, line, sizeof(line));
+    if (status != XIO_EAGAIN) assert(memchr(line, NUL, sizeof(line)));
+    return status;
+}
 static void fresh(void) { xio_reset_usb_rx_buffers(); USBu.rx_buf_count = 0; USB.flag_in_line = false; rx_in_line = false; cm.queue_flush_input = false; }
 static void expect(int status, const char *text) {
     int got = rd();
@@ -153,11 +158,13 @@ int main(void) {
     expect(XIO_OK, "GG");
     /* an overlong line that also lost bytes is reported as damaged */
     fresh();
+    memset(line, 'A', sizeof(line));
     USB.flag_in_line = true; USB.len = 0; USB.buf = line; USB.size = 4; USB.signal = XIO_SIG_OK;
     tx("ABCDEFGHIJKLMN"); tx("O");                        /* tossed */
     int st = XIO_EAGAIN;
     while (st == XIO_EAGAIN && USBu.rx_buf_head != USBu.rx_buf_tail) st = _gets_helper(&USB, &USBu);
     assert(st == XIO_LINE_DAMAGED && !USB.flag_in_line && USBu.rx_buf_head == USBu.rx_buf_tail);
+    assert(memchr(line, NUL, sizeof(line)));
     tx("\n");
     assert(_gets_helper(&USB, &USBu) == XIO_LINE_DAMAGED);  /* the (empty) tail */
     tx("ok\n");

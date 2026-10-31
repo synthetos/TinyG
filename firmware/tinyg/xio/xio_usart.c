@@ -267,6 +267,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 
     if (dx->rx_gap_report) {                    // whole lines were lost after the last good one: report it
         dx->rx_gap_report = false;              // now, not when the host sends again (E162)
+        d->buf[0] = NUL;                        // line mode posts the buffer, which scans it
         d->flag_in_line = false;
         d->len = 0;
         return (XIO_LINE_DAMAGED);
@@ -317,7 +318,8 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         dx->rx_line_damaged = true;
     }
     if (gap && !eol) {                          // the line breaks here: report it now; its tail comes back
-        d->flag_in_line = false;                // as a damaged line of its own
+        d->buf[0] = NUL;                        // as a damaged line of its own; terminated, as above
+        d->flag_in_line = false;
         d->len = 0;
         dx->rx_line_damaged = true;
         return (XIO_LINE_DAMAGED);

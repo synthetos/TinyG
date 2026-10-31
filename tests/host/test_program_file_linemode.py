@@ -89,3 +89,76 @@ int main(void) {
             p=Path(tmp)/'reader.c';exe=Path(tmp)/'reader';p.write_text(code)
             subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
+
+    def test_damaged_usb_line_is_discarded_once(self):
+        """E162: a line that lost RX bytes comes back as _FDEV_ERR once and its pool buffer is freed -
+        not posted as an overflow, which the controller would answer a second time."""
+        source=(ROOT/'firmware/tinyg/xio.c').read_text()
+        code='#define RX_HEADERS 10\n#define RX_BUFFER_POOL_SIZE 1000\n#define RX_BUFFER_MIN_SIZE 200\n'+PRELUDE
+        code+=r'''
+#define STAT_OK 0
+#define STAT_COMMAND_NOT_ACCEPTED 106
+#define STAT_EOF 8
+#define XIO_EOF 8
+#define XIO_OK 0
+#define XIO_EAGAIN 2
+#define XIO_BUFFER_FULL 3
+#define XIO_LINE_DAMAGED 20
+#define _FDEV_ERR (-1)
+#define XIO_DEV_USB 0
+#define XIO_DEV_PGM 1
+#define RX_MODE_LINE 1
+#define TEXT_MODE 0
+#define PSTR(x) x
+#define printf_P printf
+#define strcpy_P strcpy
+#define min(a,b) ((a)<(b)?(a):(b))
+typedef int stat_t;
+typedef struct {bool flag_in_line;unsigned len;} xioDev_t;
+xioDev_t ds[2];
+struct {int rx_mode,primary_src;} xio;
+struct {int comm_mode;} cs;
+void controller_reset_source(void) {xio.primary_src=XIO_DEV_USB;}
+void rpt_exception(int status,const char *msg) {(void)status;(void)msg;assert(0);}
+static const struct {int status; const char *text;} script[]={
+    {XIO_OK,"G1 X1"},{XIO_LINE_DAMAGED,"G1 Y5"},{XIO_LINE_DAMAGED,""},{XIO_OK,"G1 X2"}};
+static unsigned reads;
+int xio_gets(int dev,char *buf,int size) {
+    (void)dev;(void)size;
+    if(reads>=sizeof(script)/sizeof(script[0])) return XIO_EAGAIN;
+    strcpy(buf,script[reads].text);
+    return script[reads++].status;
+}
+'''
+        for name in ('_get_free_buffer','_get_filling_buffer','_post_buffer','_post_overflow','_next_buffer_to_process','_free_processed_buffer','_readline_source','_readline_linemode'):
+            code+=function(source,r'(?:static )?(?:stat_t|uint8_t|char \*|void)\s*'+name+r'\([^;{]*\)(?=\s*\{)')
+        code+=r'''
+static char *next(void) { uint16_t size=200; devflags_t flags=DEV_IS_CTRL|DEV_IS_DATA; char *p=_readline_linemode(&flags,&size);
+    assert(p==(char *)_FDEV_ERR || p==NULL || !(flags & DEV_IS_OVERFLOW)); return p; }
+int main(void) {
+    bm.pool_base=pool;bm.pool_top=pool+sizeof(pool);
+    bm.used_base=bm.used_top=&bm.buf[0];bm.free_headers=RX_HEADERS;
+    bm.requested_size=RX_BUFFER_MIN_SIZE;
+    for(unsigned i=0;i<RX_HEADERS;i++) {
+        bm.buf[i].bufnum=i;bm.buf[i].bufp=pool;
+        bm.buf[i].pv=&bm.buf[(i+RX_HEADERS-1)%RX_HEADERS];
+        bm.buf[i].nx=&bm.buf[(i+1)%RX_HEADERS];
+    }
+    xio.rx_mode=RX_MODE_LINE;xio.primary_src=XIO_DEV_USB;cs.comm_mode=1;
+    char *p=next(); assert(p && p!=(char *)_FDEV_ERR && !strcmp(p,"G1 X1"));
+    assert(next()==(char *)_FDEV_ERR);                    /* "G1 Y5" lost bytes */
+    assert(next()==(char *)_FDEV_ERR);                    /* a loss reported with no text */
+    p=next(); assert(p && p!=(char *)_FDEV_ERR && !strcmp(p,"G1 X2"));
+    assert(next()==NULL);                                 /* nothing else: no overflow left to answer */
+    unsigned held=0;                                      /* the damaged lines gave their buffers back: */
+    for(unsigned i=0;i<RX_HEADERS;i++) {                  /* only the one waiting for input is claimed */
+        assert(bm.buf[i].state==BUFFER_FREE || bm.buf[i].state==BUFFER_FILLING);
+        held+=(bm.buf[i].state!=BUFFER_FREE);
+    }
+    assert(held==1 && bm.free_headers==RX_HEADERS-1);
+}
+'''
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)/'damaged.c';exe=Path(tmp)/'damaged';p.write_text(code)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run([str(exe)],check=True)

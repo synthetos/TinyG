@@ -866,8 +866,9 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
     	if (status == XIO_LINE_DAMAGED) {
-            _post_overflow(bufp);                       // keep the pool consistent; it is never run
-            return ((char *)_FDEV_ERR);                 // lost input: the controller alarms (E162)
+            *bufp = NUL;                                // discard it: a blank line frees its buffer
+            _post_buffer();
+            return ((char *)_FDEV_ERR);                 // lost input: answered once by the controller (E162)
     	}
     	if (status == XIO_BUFFER_FULL) {
             _post_overflow(bufp);                       // truncated: the controller rejects it
@@ -888,8 +889,9 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
     if (status == XIO_LINE_DAMAGED) {
-        _post_overflow(bufp);                           // keep the pool consistent; it is never run
-        return ((char *)_FDEV_ERR);                     // lost input: the controller alarms (E162)
+        *bufp = NUL;                                    // discard it: a blank line frees its buffer
+        _post_buffer();
+        return ((char *)_FDEV_ERR);                     // lost input: answered once by the controller (E162)
     }
     if (status == XIO_BUFFER_FULL) {
         _post_overflow(bufp);                           // truncated: the controller rejects it

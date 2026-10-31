@@ -8,8 +8,9 @@ bytes, or follows lost bytes, with the existing overflow alarm (ALARM 13, 'Buffe
 controller.c _dispatch_command); such a line never runs.
 
 No motion: dwells fill the planner so the controller stops reading lines, then a burst of dwell
-lines with flow control off overruns the ring. Char mode answers each line with its length + 1 in
-the footer (f[2]), so a spliced line that ran shows up as an OK response whose length no sent line has.
+lines with flow control off overruns the ring, in char mode and in line mode (which posts each
+damaged line to its buffer pool). Char mode answers each line with its length + 1 in the footer
+(f[2]), so a spliced line that ran shows up as an OK response whose length no sent line has.
 """
 import time
 
@@ -29,9 +30,10 @@ def burst_lines():
 
 
 @pytest.mark.bug("E162", on=[])
-def test_overrun_lines_alarm_instead_of_running(tg, keep, record):
+@pytest.mark.parametrize("rxm", [0, 1], ids=["char-mode", "line-mode"])
+def test_overrun_lines_alarm_instead_of_running(tg, keep, record, rxm):
     keep("rxm", "ex")
-    for token, value in (("rxm", 0), ("ex", 0)):             # char mode, no flow control: nothing paces the host
+    for token, value in (("rxm", rxm), ("ex", 0)):           # no flow control: nothing paces the host
         if tg.get(token) != value:
             tg.set(token, value, allow="E162: flow control off for an overrun, no motion")
     lines = burst_lines()
@@ -52,8 +54,8 @@ def test_overrun_lines_alarm_instead_of_running(tg, keep, record):
         responses = [Footer.from_event(e) for e in events if e.kind == "response"]
         alarms = [e.data["er"] for e in events if e.kind == "exception" and isinstance(e.data.get("er"), dict)]
         lengths = {len(line) + 1 for line in lines}
-        spliced_ran = [f.count for f in responses if f and f.status == 0 and f.count not in lengths]
-        record("rx_overrun", {"sent": BURST, "responses": len(responses), "alarms": alarms[:5],
+        spliced_ran = [f.count for f in responses if f and f.status == 0 and f.count not in lengths] if rxm == 0 else []
+        record("rx_overrun", {"rxm": rxm, "sent": BURST, "responses": len(responses), "alarms": alarms[:5],
                               "spliced_ran": spliced_ran[:10],
                               "statuses": sorted({f.status for f in responses if f}),
                               "next_line": [f.status for f in answer if f]})
