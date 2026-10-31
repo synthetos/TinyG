@@ -778,6 +778,7 @@ void json_print_response(uint8_t status)
 {
 	if (js.json_verbosity == JV_SILENT) {               // silent responses
 		js.tid_present = false;							// a tid belongs to this line only (E049)
+		cs.linelen = 0;									// nothing reported: no bytes carried to a later footer (E164)
         return;
     }
 	if (status == STAT_NO_DISPLAY) {                    // upstream function has already performed output
