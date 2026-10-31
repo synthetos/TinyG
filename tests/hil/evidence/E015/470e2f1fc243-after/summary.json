@@ -1,0 +1,416 @@
+{
+  "promoter_source_sha256": "dc60799d6345b5aea4a2ac4377a07eed956607fc90017dda9cfd2904c6690aa5",
+  "promoter_commit": null,
+  "finding": "E015",
+  "label": "after",
+  "result": "measurement; gate verdict requires review",
+  "firmware": {
+    "known": true,
+    "commit": "470e2f1fc243",
+    "branch": "fix/E015-jerk-length-formula",
+    "tree": "57a187e434d06697755a213fcc5bb369abd0fa7e",
+    "dirty": false,
+    "stock": false,
+    "stock_ref": "origin/edge-0.97",
+    "elf": "firmware/tinyg/build/tinyg.elf",
+    "elf_sha256": "6dc30d4f55786977d7eeaa22634fe2796900439133172db68ac178019789795c",
+    "hex_sha256": "4f98108883bcdda9280fa7ac7e3b1be8c7978bf1da6998cb3568957cf7711d18",
+    "flashed_at": "2026-10-30T16:09:07+00:00",
+    "build_dir": "build",
+    "test_hooks": false
+  },
+  "harness_commit": "e9f0ecd6",
+  "bench": {
+    "fb": 449.01,
+    "fv": 0.97,
+    "hp": 1,
+    "hv": 8,
+    "id": "0BENCH-TWO"
+  },
+  "run_record": ".analysis/hil-runs/20261030T160910Z-test_motion-profile/run.json",
+  "source_artifacts": [
+    {
+      "file": "profile-X-0.01mm-analysis.json",
+      "sha256": "b42afabb1c318e64b4ff61a8c29b841e779df41ee659fd39220ddb22ce54ca3b",
+      "bytes": 4315
+    },
+    {
+      "file": "profile-X-0.01mm-edges.json",
+      "sha256": "8203969292b81dfbc4750667d83e2f83ae0d0d77374a8fc86340cfb1c4df3e69",
+      "bytes": 726
+    },
+    {
+      "file": "profile-X-0.01mm.sal",
+      "sha256": "9833319c86638dca7b5012c113ef0020bb105c596ecfd29e4473a1893e354270",
+      "bytes": 3121
+    },
+    {
+      "file": "profile-X-0.02mm-analysis.json",
+      "sha256": "efdaaa5951837c5714748be47f2ca9c6dbac2b9c2d38e23ebdcf291d681791ea",
+      "bytes": 8550
+    },
+    {
+      "file": "profile-X-0.02mm-edges.json",
+      "sha256": "f7048f7a228aceb57a521a17f9e0efe9981f8b677298f87eb42c08764cc8c40a",
+      "bytes": 1378
+    },
+    {
+      "file": "profile-X-0.02mm.sal",
+      "sha256": "8781b204ede3e88c98e0234b1fb55f57746013d6927e26624ff5064b2dcc78b3",
+      "bytes": 3210
+    },
+    {
+      "file": "profile-X-0.05mm-analysis.json",
+      "sha256": "ae8c78ca72810836b6bd072e9f66ad990ce50d2135347916db513d2e5a22ed4f",
+      "bytes": 22878
+    },
+    {
+      "file": "profile-X-0.05mm-edges.json",
+      "sha256": "0e7f0e9c564ecb228ae7e780ec58af8d9f273a7d3d124a04865105a2870f0dba",
+      "bytes": 3166
+    },
+    {
+      "file": "profile-X-0.05mm.sal",
+      "sha256": "184e988fb9cc89092278ac868d510c4beb4792d7cde9f67a27f7cc658029de10",
+      "bytes": 3350
+    },
+    {
+      "file": "profile-X-0.1mm-analysis.json",
+      "sha256": "37cff1ece631b6530dcf05c1128318f8139dd32b78186d00b6d5698175d7881f",
+      "bytes": 50206
+    },
+    {
+      "file": "profile-X-0.1mm-edges.json",
+      "sha256": "62e678d9078654a4187f658ca1d0811bc21be63b7e6af44e3443c674e128c4e0",
+      "bytes": 6225
+    },
+    {
+      "file": "profile-X-0.1mm.sal",
+      "sha256": "ee145a9e919a9fd222e1be7cfbcaa2de74370c95538ea4a19fdd2d85b5ad2139",
+      "bytes": 3516
+    },
+    {
+      "file": "profile-X-0.25mm-analysis.json",
+      "sha256": "cb7f53689c8f0d0a5e36ad45405231c0d1f56399c012d889fff8c55a0b5d890c",
+      "bytes": 118638
+    },
+    {
+      "file": "profile-X-0.25mm-edges.json",
+      "sha256": "12301d4faaac84274434e0ef49cb3e4452b9807830f05a2dfb16bb57823f8c90",
+      "bytes": 15291
+    },
+    {
+      "file": "profile-X-0.25mm.sal",
+      "sha256": "ecbe0e972bf522ad6e71f4a956e8eee88f84739f7c530c9d8e32bb1134007e09",
+      "bytes": 3926
+    },
+    {
+      "file": "profile-X-0.5mm-analysis.json",
+      "sha256": "c7e31d1ea1a1edd188691bae136ab82b59805187928e02d175a425429bf24d7d",
+      "bytes": 203331
+    },
+    {
+      "file": "profile-X-0.5mm-edges.json",
+      "sha256": "70bf4a48ee7d82ef9c4302ad6ba421260b2dd9ac530a784280238038e0f09680",
+      "bytes": 30383
+    },
+    {
+      "file": "profile-X-0.5mm.sal",
+      "sha256": "566080f7f44f684d08637b7fd1451957778afcd6078215f9a624ff71c924d28e",
+      "bytes": 4361
+    },
+    {
+      "file": "profile-X-10mm-analysis.json",
+      "sha256": "159286986bfb94aa6d7c07f4788ab24e474171496c411910caf2a2bb0be44f73",
+      "bytes": 2700964
+    },
+    {
+      "file": "profile-X-10mm-edges.json",
+      "sha256": "ed0bdc5e6a857473fc8e7a9b9a1d521ba413542abe52d5cbdf1cf34a3830ebb1",
+      "bytes": 604218
+    },
+    {
+      "file": "profile-X-10mm.sal",
+      "sha256": "6116a7a8f2aaa5f9ebcf8911404f3419cb465a37e21b6357912345e67fecc8fc",
+      "bytes": 13149
+    },
+    {
+      "file": "profile-X-1mm-analysis.json",
+      "sha256": "c003055b11b522ca92ab7250473386584556e561fd9875b1fb5b60e4de5519f1",
+      "bytes": 346930
+    },
+    {
+      "file": "profile-X-1mm-edges.json",
+      "sha256": "12330d3dead1f1189fe5683cae9df28c636af250dc3a755ebde61da3b9ba3514",
+      "bytes": 60661
+    },
+    {
+      "file": "profile-X-1mm.sal",
+      "sha256": "9309e43f085e4b781cf7af3261b86869322024680275104dec8ca19b9c65b265",
+      "bytes": 5032
+    },
+    {
+      "file": "profile-X-2mm-analysis.json",
+      "sha256": "9a01379e70c73c326de7f09735ce71b00b93da858539bc9aa181298dd7b3cb71",
+      "bytes": 617117
+    },
+    {
+      "file": "profile-X-2mm-edges.json",
+      "sha256": "2cf8f7683cf261c24d8a862cbf07ff181eb2fe6cf5599ed77567d0c2fd0305fc",
+      "bytes": 121110
+    },
+    {
+      "file": "profile-X-2mm.sal",
+      "sha256": "d9a93a048382c47a124046a269d91290c89ecdf17f36ee988d40b319e1226758",
+      "bytes": 6165
+    },
+    {
+      "file": "profile-X-5mm-analysis.json",
+      "sha256": "a2d8accd216dbc31527f1ef94d3f68b29acdd1118fec7d66960003b0a34de494",
+      "bytes": 1401062
+    },
+    {
+      "file": "profile-X-5mm-edges.json",
+      "sha256": "a7f4ff6571355891f0fc5f5832f273f2a8f3936c512449d614513bc5ddd3bf10",
+      "bytes": 302065
+    },
+    {
+      "file": "profile-X-5mm.sal",
+      "sha256": "9a29db8a7aa52ea2a93b2f552edcc895e527c786c1b3a19ea7eb47048719f854",
+      "bytes": 9156
+    }
+  ],
+  "method": {
+    "sample_rate": 12000000,
+    "channels": {
+      "6": "M1 step",
+      "7": "M1 direction"
+    },
+    "fit": "degree-5 local position polynomial; >=12 edges, >=80% window coverage",
+    "window_rule": "baseline-selected by move length, unchanged for after",
+    "raw": "adjacent step intervals then finite differences",
+    "time": "first-to-last step, not command-to-rest"
+  },
+  "limits_and_tolerance": "Configured J comes from xjm; no unconditional pass inferred. Empirical phase calibration is recorded separately. Conservative step-quantization bound does not include model bias. .01 mm unresolved; .02 mm biased low. No mechanical jerk claim.",
+  "representative_lengths_mm": [
+    0.05,
+    1.0,
+    10.0
+  ],
+  "cases": [
+    {
+      "length_mm": 0.01,
+      "window_s": null,
+      "peak_jerk_ratio": null,
+      "pulse_span_s": 0.13147241699999998,
+      "plot": null,
+      "analysis": "profile-X-0.01mm-analysis.json"
+    },
+    {
+      "length_mm": 0.02,
+      "window_s": 0.08,
+      "peak_jerk_ratio": 0.9474007803574358,
+      "pulse_span_s": 0.17804766699999997,
+      "plot": null,
+      "analysis": "profile-X-0.02mm-analysis.json"
+    },
+    {
+      "length_mm": 0.05,
+      "window_s": 0.08,
+      "peak_jerk_ratio": 0.9988708884682334,
+      "pulse_span_s": 0.240241583,
+      "plot": "profile-X-0.05mm.png",
+      "analysis": "profile-X-0.05mm-analysis.json"
+    },
+    {
+      "length_mm": 0.1,
+      "window_s": 0.08,
+      "peak_jerk_ratio": 1.0037058795411673,
+      "pulse_span_s": 0.313806916,
+      "plot": null,
+      "analysis": "profile-X-0.1mm-analysis.json"
+    },
+    {
+      "length_mm": 0.25,
+      "window_s": 0.12,
+      "peak_jerk_ratio": 0.9916715983071479,
+      "pulse_span_s": 0.44160666699999995,
+      "plot": null,
+      "analysis": "profile-X-0.25mm-analysis.json"
+    },
+    {
+      "length_mm": 0.5,
+      "window_s": 0.12,
+      "peak_jerk_ratio": 1.0067278081356297,
+      "pulse_span_s": 0.5682780839999999,
+      "plot": null,
+      "analysis": "profile-X-0.5mm-analysis.json"
+    },
+    {
+      "length_mm": 1.0,
+      "window_s": 0.16,
+      "peak_jerk_ratio": 0.9979435189366597,
+      "pulse_span_s": 0.72860375,
+      "plot": "profile-X-1mm.png",
+      "analysis": "profile-X-1mm-analysis.json"
+    },
+    {
+      "length_mm": 2.0,
+      "window_s": 0.24,
+      "peak_jerk_ratio": 0.9981954322190846,
+      "pulse_span_s": 0.9380021669999999,
+      "plot": null,
+      "analysis": "profile-X-2mm-analysis.json"
+    },
+    {
+      "length_mm": 5.0,
+      "window_s": 0.24,
+      "peak_jerk_ratio": 0.9852957636203364,
+      "pulse_span_s": 1.2843015,
+      "plot": null,
+      "analysis": "profile-X-5mm-analysis.json"
+    },
+    {
+      "length_mm": 10.0,
+      "window_s": 0.24,
+      "peak_jerk_ratio": 0.9999405597974382,
+      "pulse_span_s": 1.662905,
+      "plot": "profile-X-10mm.png",
+      "analysis": "profile-X-10mm-analysis.json"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "baseline-fixed-comparison.json",
+      "bytes": 141846,
+      "sha256": "74b35c2caf4c36614540e6e05077aa0ed62e4e0b4c1e30fa6eface806282d6d7"
+    },
+    {
+      "file": "profile-X-0.01mm-analysis.json",
+      "bytes": 1271,
+      "sha256": "28e04ac0785f073713c2d67e2b69f0651e2a6f8be434a937e59caeb18a18b26d"
+    },
+    {
+      "file": "profile-X-0.02mm-analysis.json",
+      "bytes": 1551,
+      "sha256": "48fb6868d657595bc185f0bc760c79b37db6482af1097234fd0c3c3ddaa0e3f0"
+    },
+    {
+      "file": "profile-X-0.05mm-analysis.json",
+      "bytes": 1588,
+      "sha256": "34e6d6cef0471eafb175bc89a5ba119d9daed8a59762df829d950d408fbef8c6"
+    },
+    {
+      "file": "profile-X-0.05mm-edges.json.gz",
+      "bytes": 825,
+      "sha256": "e09a9173c53ec1c143a17769559e725a8bb80714dcc1a7814c0cd4cc01d85a63"
+    },
+    {
+      "file": "profile-X-0.05mm-overlay.png",
+      "bytes": 68017,
+      "sha256": "fdad40e77844d85abe1f4f0462a7b4b58bf5f9c9a6bd9e829b630137a4c21895"
+    },
+    {
+      "file": "profile-X-0.05mm.png",
+      "bytes": 95877,
+      "sha256": "7ba4b863c90bd05d0596ecd0bfa9d81672a1f96e7f80e1e1640d2401d545ddb8"
+    },
+    {
+      "file": "profile-X-0.05mm.sal",
+      "bytes": 3350,
+      "sha256": "184e988fb9cc89092278ac868d510c4beb4792d7cde9f67a27f7cc658029de10"
+    },
+    {
+      "file": "profile-X-0.1mm-analysis.json",
+      "bytes": 1538,
+      "sha256": "4925a81954111fa55ffa0dbca91188c65d072afa93c8a2a23193b6871b5b11f5"
+    },
+    {
+      "file": "profile-X-0.25mm-analysis.json",
+      "bytes": 1549,
+      "sha256": "a535d0e873b9f0217f8fe686dc41daefefd6fdc3192486508803d65e549ee09f"
+    },
+    {
+      "file": "profile-X-0.5mm-analysis.json",
+      "bytes": 1547,
+      "sha256": "5449bba92749b24373fd698fcd83b5dc4559041312bd2d7787f6e88e8c7625c9"
+    },
+    {
+      "file": "profile-X-10mm-analysis.json",
+      "bytes": 1538,
+      "sha256": "8744b6ab3e5daf76ab82517e217c5a74e157cfb994349853a359b69f11c13e3f"
+    },
+    {
+      "file": "profile-X-10mm-edges.json.gz",
+      "bytes": 149744,
+      "sha256": "c38bf102aaaf370e7df50b6438b0981a7f808f0ff0f18aca4ec7813ad3bfa25c"
+    },
+    {
+      "file": "profile-X-10mm-overlay.png",
+      "bytes": 75652,
+      "sha256": "541e07bb80e181f9868c6bb66bad1158552ec698cfb73f61842f90def9fd4195"
+    },
+    {
+      "file": "profile-X-10mm.png",
+      "bytes": 116101,
+      "sha256": "a87d0e0bd5f72f7ce55a654cb81443542af56faa4450960f790774645fbfd5c2"
+    },
+    {
+      "file": "profile-X-10mm.sal",
+      "bytes": 13149,
+      "sha256": "6116a7a8f2aaa5f9ebcf8911404f3419cb465a37e21b6357912345e67fecc8fc"
+    },
+    {
+      "file": "profile-X-1mm-analysis.json",
+      "bytes": 1575,
+      "sha256": "3adb1023f97724f09fc852461393dd88c8394b700476c5aae7c0041068f2a216"
+    },
+    {
+      "file": "profile-X-1mm-edges.json.gz",
+      "bytes": 14555,
+      "sha256": "a708abf947dae1b490f7d629b88365a75410ec7b567c6a56ef666eb821db6700"
+    },
+    {
+      "file": "profile-X-1mm-overlay.png",
+      "bytes": 74242,
+      "sha256": "02046aac46c518e217fbaec4f4c6ec349eb447d3f153df278ed91566d3a36f7d"
+    },
+    {
+      "file": "profile-X-1mm.png",
+      "bytes": 116455,
+      "sha256": "c42dd9446d77ae457274eddaf83390d5d2ca78d85bbd4f1213bb3bc77ce2112a"
+    },
+    {
+      "file": "profile-X-1mm.sal",
+      "bytes": 5032,
+      "sha256": "9309e43f085e4b781cf7af3261b86869322024680275104dec8ca19b9c65b265"
+    },
+    {
+      "file": "profile-X-2mm-analysis.json",
+      "bytes": 1541,
+      "sha256": "ec3422f224e77c2f3fba49f22edb063d31dd238fbfc9942fdc3b73d9957a43b0"
+    },
+    {
+      "file": "profile-X-5mm-analysis.json",
+      "bytes": 1571,
+      "sha256": "f2a9fe6a57ce4dd79d5228ceef2ede0b61c9ddda7d62544a54efe51bdda82e09"
+    },
+    {
+      "file": "profile-calibration.json",
+      "bytes": 36833,
+      "sha256": "1379e9caf0e86cfbdd0fa049650e1ecfa1655d49e5944fd32d43793bdec61969"
+    },
+    {
+      "file": "source-run.json",
+      "bytes": 3130,
+      "sha256": "6129083a53e2e6cd012f38c60362c39149e06dbb112f515a93656b87c37febc3"
+    }
+  ],
+  "large_artifacts": [],
+  "overlay_before": "evidence/E015/e9f0ecd6a216-before",
+  "overlays": [
+    "profile-X-0.05mm-overlay.png",
+    "profile-X-1mm-overlay.png",
+    "profile-X-10mm-overlay.png"
+  ]
+}

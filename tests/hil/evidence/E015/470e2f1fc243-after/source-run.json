@@ -1,0 +1,82 @@
+{
+ "started": "20261030T160910Z",
+ "branch": "test/motion-profile",
+ "commit": "e9f0ecd6",
+ "identity": {
+  "fb": 449.01,
+  "fv": 0.97,
+  "hp": 1,
+  "hv": 8,
+  "id": "0BENCH-TWO"
+ },
+ "dialect": "d449",
+ "tests": {
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.01]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.01_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.02]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.02_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.05]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.05_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.1]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.1_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.25]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.25_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-0.5]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-0.5_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-1.0]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-1.0_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-2.0]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-2.0_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-5.0]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-5.0_.json"
+  },
+  "tests/diagnostics/test_motion_profile.py::test_x_motion_profile[default-10.0]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_motion_profile.py_test_x_motion_profile_default-10.0_.json"
+  }
+ },
+ "firmware": {
+  "known": true,
+  "commit": "470e2f1fc243",
+  "branch": "fix/E015-jerk-length-formula",
+  "tree": "57a187e434d06697755a213fcc5bb369abd0fa7e",
+  "dirty": false,
+  "stock": false,
+  "stock_ref": "origin/edge-0.97",
+  "elf": "firmware/tinyg/build/tinyg.elf",
+  "elf_sha256": "6dc30d4f55786977d7eeaa22634fe2796900439133172db68ac178019789795c",
+  "hex_sha256": "4f98108883bcdda9280fa7ac7e3b1be8c7978bf1da6998cb3568957cf7711d18",
+  "flashed_at": "2026-10-30T16:09:07+00:00",
+  "build_dir": "build",
+  "test_hooks": false
+ },
+ "purpose": "fix-verify",
+ "finished": "20261030T160951Z"
+}
