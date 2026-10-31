@@ -59,7 +59,7 @@ class ReceiveModeSwitch(unittest.TestCase):
 #define printf_P printf
 #define _FDEV_ERR -1
 #define advance_buffer(p,n) do { if(--(p)==0) (p)=(n)-1; } while(0)
-enum {XIO_OK=0,XIO_EAGAIN=1,XIO_BUFFER_EMPTY=2,XIO_BUFFER_FULL=3,XIO_EOL=4,STAT_EOF=5,XIO_SIG_OK=6,XIO_SIG_EOL=7,XIO_EOF=8};
+enum {XIO_OK=0,XIO_EAGAIN=1,XIO_BUFFER_EMPTY=2,XIO_BUFFER_FULL=3,XIO_EOL=4,STAT_EOF=5,XIO_SIG_OK=6,XIO_SIG_EOL=7,XIO_EOF=8,XIO_LINE_DAMAGED=9};
 enum {BUFFER_FREE,BUFFER_FRAGMENT,BUFFER_FILLING,BUFFER_FULL,BUFFER_PROCESSING};
 typedef uint8_t devflags_t;
 typedef int stat_t;
@@ -73,7 +73,7 @@ struct { char rx_pool[RX_BUFFER_POOL_SIZE]; } bufpool;
 struct { uint8_t rx_mode,buf_state,primary_src; uint16_t buf_size; char *bufp; } xio;
 static uint8_t active_rx_mode;
 struct { int comm_mode; } cs;
-typedef struct { unsigned rx_buf_head,rx_buf_tail,rx_buf_count,rx_flush_mark; bool rx_flush_marked; char rx_buf[RX_BUFFER_SIZE]; } xioUsart_t;
+typedef struct { unsigned rx_buf_head,rx_buf_tail,rx_buf_count,rx_flush_mark; bool rx_flush_marked; unsigned rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report; char rx_buf[RX_BUFFER_SIZE]; } xioUsart_t;
 typedef struct dev { xioUsart_t *x; bool flag_in_line,flag_echo; int size,signal; uint8_t len;
  char *buf; void (*x_flow)(struct dev*); int (*x_putc)(char,FILE*); } xioDev_t;
 xioUsart_t ring;

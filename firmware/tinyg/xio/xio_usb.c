@@ -174,6 +174,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		if (cm.queue_flush_input) {				// honored: what the ring holds now came before the '%'
 			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
 			USBu.rx_flush_marked = true;
+			USBu.rx_lost_after_mark = false;		// losses so far came before the '%' (E162)
 		}
 		return;
 	}
@@ -217,6 +218,16 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
 		}
+		// Remember where input was lost: the reader must not splice what follows onto this line (E162)
+		if (!USBu.rx_lost) {
+			USBu.rx_lost = true;
+			USBu.rx_lost_first = USBu.rx_buf_head;
+		}
+		USBu.rx_lost_last = USBu.rx_buf_head;
+		if (USBu.rx_flush_marked && !USBu.rx_lost_after_mark) {	// lost after a '%': the flush must keep it
+			USBu.rx_lost_after_mark = true;
+			USBu.rx_lost_post_first = USBu.rx_buf_head;		// may equal the mark if nothing was kept since
+		}
 	}
 }
 
@@ -244,6 +255,11 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
 	USBu.rx_flush_marked = false;
+	USBu.rx_lost = false;		// nothing kept: no lost input to account for (E162)
+	USBu.rx_lost_after_mark = false;
+	USBu.rx_lost_open = false;
+	USBu.rx_line_damaged = false;
+	USBu.rx_gap_report = false;
 }
 
 /*
@@ -258,6 +274,22 @@ void xio_drop_usb_rx_before_mark(void)
 		xio_reset_usb_rx_buffers();
 		return;
 	}
+	// Lost input before the '%' goes with the dropped bytes; lost input after it still counts (E162).
+	// The ISR records the order, since a loss right after the '%' sits at the mark itself.
+	USBu.rx_lost_open = false;
+	USBu.rx_line_damaged = false;
+	USBu.rx_gap_report = false;
+	if (!USBu.rx_lost_after_mark) {
+		USBu.rx_lost = false;
+	} else if (USBu.rx_lost_post_first == USBu.rx_flush_mark) {	// lost right after the '%': the first line read lost its head
+		USBu.rx_line_damaged = true;
+		USBu.rx_gap_report = true;								// and the loss is reported at once
+		USBu.rx_lost_open = (USBu.rx_lost_last != USBu.rx_flush_mark);	// later losses: inside the stretch from the start
+		USBu.rx_lost = USBu.rx_lost_open;
+	} else {
+		USBu.rx_lost_first = USBu.rx_lost_post_first;
+	}
+	USBu.rx_lost_after_mark = false;
 	USBu.rx_buf_tail = USBu.rx_flush_mark;
 	USBu.rx_flush_marked = false;
 	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);

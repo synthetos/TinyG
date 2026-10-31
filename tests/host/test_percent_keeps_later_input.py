@@ -37,13 +37,13 @@ PRELUDE = r'''
 #define BUFFER_FREE 0
 #define min(a,b) ((a)<(b)?(a):(b))
 #define advance_buffer(buf,len) { if ((--(buf)) == 0) buf = len-1;}
-enum {XIO_OK=0,XIO_EAGAIN,XIO_BUFFER_EMPTY,XIO_BUFFER_FULL,XIO_EOL,XIO_SIG_EOL,XIO_SIG_OK};
+enum {XIO_OK=0,XIO_EAGAIN,XIO_BUFFER_EMPTY,XIO_BUFFER_FULL,XIO_EOL,XIO_SIG_EOL,XIO_SIG_OK,XIO_LINE_DAMAGED};
 enum {FC_IN_XON, FC_IN_XOFF};
 enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
 struct {uint8_t CTRLA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
-                uint8_t rx_flush_marked; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
+                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
 struct {int enable_flow_control, buf_state;} xio;

@@ -172,6 +172,14 @@ typedef struct xioUSART {
 	volatile buffer_t rx_buf_count;			// RX buffer counter for flow control
 	volatile buffer_t rx_flush_mark;		// head when a host '%' was honored: bytes up to it came first (E146)
 	volatile uint8_t rx_flush_marked;		// set by the RX ISR, cleared by the flush
+	volatile buffer_t rx_lost_first;		// last byte kept before the ring overran: bytes after it were lost (E162)
+	volatile buffer_t rx_lost_last;			// the same for the latest overrun before the reader caught up
+	volatile uint8_t rx_lost;				// set by the RX ISR on an overrun, cleared once the reader passes rx_lost_last
+	volatile uint8_t rx_lost_after_mark;	// a loss came after the honored '%' (the flush must keep it)
+	volatile buffer_t rx_lost_post_first;	// last byte kept before the first such loss (may be the mark)
+	uint8_t rx_lost_open;					// reader is between the two marks
+	uint8_t rx_line_damaged;				// the line being read lost bytes: it must not run
+	uint8_t rx_gap_report;					// lost input after a good line end: the next read reports it
 
 	volatile buffer_t tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile buffer_t tx_buf_head;			// TX buffer write index
