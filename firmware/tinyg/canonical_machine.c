@@ -604,6 +604,7 @@ void canonical_machine_reset()
 //	cm.cycle_start_requested = false;               //+++++ TO BE REMOVED
 
     cm.queue_flush_state = FLUSH_OFF;
+    cm.queue_flush_input = false;
     cm.program_paused = false;
     cm.end_hold_requested = false;
     cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
@@ -822,7 +823,8 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
     } else {
         cm_request_feedhold();                  // stop motion
-        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+        cm_request_planner_flush();             // flush the planner once runtime is not busy; host input is
+                                                // kept and rejected line by line while alarmed (E145)
     }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
@@ -1755,9 +1757,17 @@ void cm_request_end_hold(void)
 
 void cm_request_queue_flush()
 {
+    cm_request_planner_flush();
+    if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
+        cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
+    }
+}
+
+void cm_request_planner_flush()
+{
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
-        cm.queue_flush_state = FLUSH_REQUESTED;     // input and planner are flushed from the main loop
+        cm.queue_flush_state = FLUSH_REQUESTED;     // flushed from the main loop
     }
 }
 
@@ -1768,8 +1778,9 @@ void cm_request_queue_flush()
 /*
  * _run_requested_queue_flush() - complete a host-requested flush ('%' or alarm) from the main loop
  *
- *  Waits until motion has stopped and no hold is still decelerating, then drops all buffered input
- *  (lines received before the '%') and flushes the planner. A hold that was requested but never
+ *  Waits until motion has stopped and no hold is still decelerating, then flushes the planner and,
+ *  for a host '%', drops all buffered input (lines received before the '%'). An alarm's flush keeps
+ *  host input: those lines are rejected one by one while alarmed (E145). A hold that was requested but never
  *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
  *  cm_queue_flush() (homing, panic) keep the host input.
  */
@@ -1780,7 +1791,10 @@ static void _run_requested_queue_flush()
          (cm.hold_state != FEEDHOLD_HOLD))) {
         return;
     }
-    xio_flush_input();
+    if (cm.queue_flush_input) {                     // only a host '%' drops buffered input: an alarm's flush
+        cm.queue_flush_input = false;               // would cut a line in flight and drop lines unanswered (E145)
+        xio_flush_input();
+    }
     cm_queue_flush();
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;

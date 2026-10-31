@@ -38,12 +38,12 @@ enum { BLOCK_TYPE_NULL, BLOCK_TYPE_ALINE, BLOCK_TYPE_DWELL };
 #define STEP_TIMER_DISABLE 0
 typedef int stat_t;
 struct { int machine_state, motion_state, hold_state, queue_flush_state;
-         bool end_hold_requested; } cm;
+         bool end_hold_requested, queue_flush_input; } cm;
 struct { unsigned dda_ticks_downcount; } st_run;
 struct { int block_type, buffer_state; } st_pre;
 struct { uint8_t CTRLA; } TIMER_DDA;
 uint8_t SREG;
-int resets, holds, requests, spindle_off, coolant_off, reports, flushes;
+int resets, holds, requests, spindle_off, coolant_off, reports, flushes, input_flushes;
 int inject_running;
 void fake_cli(void) {
     // A pending HI loader can run before interrupts are masked.
@@ -60,12 +60,12 @@ void stepper_reset(void) {
     st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;
 }
 void cm_request_feedhold(void) { holds++; }
-void cm_request_queue_flush(void) { requests++; }
+void cm_request_planner_flush(void) { requests++; }
 void spindle_reset(void) { spindle_off++; }
 void cm_coolant_off_immediate(void) { coolant_off++; }
 void rpt_exception(int status, const char *msg) { (void)status; (void)msg; reports++; }
-void xio_flush_input(void) { flushes++; }
-void cm_queue_flush(void) { cm.queue_flush_state=FLUSH_OFF; }
+void xio_flush_input(void) { input_flushes++; }
+void cm_queue_flush(void) { cm.queue_flush_state=FLUSH_OFF; flushes++; }
 '''
         for source, signature in (
             (stepper, r'bool st_aline_in_flight\(\)'),
@@ -106,6 +106,10 @@ int main(int argc, char **argv) {
         _run_requested_queue_flush(); delayed=flushes;
         TIMER_DDA.CTRLA=0; st_run.dda_ticks_downcount=0;
         _run_requested_queue_flush(); completed=flushes;
+        assert(input_flushes==0);           // an alarm's flush keeps host input (E145)
+        cm.queue_flush_state=FLUSH_REQUESTED; cm.queue_flush_input=true;   // a host '%'
+        _run_requested_queue_flush();
+        assert(input_flushes==1 && !cm.queue_flush_input);
     }
     printf("%d %d %d %d %d %d %d %d %d %d %d %d\n", result,
            cm.machine_state,cm.motion_state,cm.hold_state,resets,holds,requests,

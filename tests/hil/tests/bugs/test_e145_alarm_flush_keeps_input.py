@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.dialect("d449"), pytest.mark.motion]
 MOVE = "5 mm X move stopped by an alarm, then back"
 
 
-@pytest.mark.bug("E145", on=["d449"])
 def test_line_split_across_alarm_stop_is_answered(tg):
     tg.send_gcode("G21 G91", check=True)
     try:
