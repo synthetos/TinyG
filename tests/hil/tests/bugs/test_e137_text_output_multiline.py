@@ -5,6 +5,7 @@ controller.c:325-333 opens {"r":{"txt":" and runs text_parser in JSON_MODE_TXT_O
 then printf_P's multi-line help (and help.c:77 a SYSTEM READY message) unescaped. report.c:433
 prints automatic reports with TEXT_RESPONSE (text_parser.c:193-206); master report.c:300 used TEXT_INLINE_PAIRS.
 """
+import json
 import re
 
 import pytest
@@ -23,6 +24,15 @@ def _lines_after(tg, data: bytes, quiet: float = 0.6, limit: float = 6.0):
 def test_txt_help_is_one_json_response(tg):
     replies = [e for e in _lines_after(tg, b'{"txt":"$h"}\n') if e.kind not in ASYNC]
     assert [e.kind for e in replies] == ["response"]
+
+
+@pytest.mark.dialect("d449")
+@pytest.mark.parametrize("cmd", ["$h", "$fb"])     # direct help output, and a text_finalize_message report
+def test_txt_contents_decode_to_text(tg, cmd):
+    replies = [e for e in _lines_after(tg, json.dumps({"txt": cmd}).encode() + b"\n") if e.kind == "response"]
+    assert len(replies) == 1, [e.raw for e in replies]
+    txt = replies[0].data["r"]["txt"]
+    assert "\n" in txt and "\\n" not in txt, txt[:160]   # real line breaks, escaped exactly once
 
 
 @pytest.mark.motion
