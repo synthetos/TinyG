@@ -122,8 +122,9 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 		if( cm.gm.spindle_speed < speed_lo ) cm.gm.spindle_speed = speed_lo;
 		if( cm.gm.spindle_speed > speed_hi ) cm.gm.spindle_speed = speed_hi;
 
-		// normalize speed to [0..1]
-		float speed = (cm.gm.spindle_speed - speed_lo) / (speed_hi - speed_lo);
+		// normalize speed to [0..1]; only an exactly zero-width range ($p1csl == $p1csh) is all-on, not 0/0 (E149)
+		float range = speed_hi - speed_lo;
+		float speed = (range == 0) ? 1.0 : (cm.gm.spindle_speed - speed_lo) / range;  // NaN bounds stay NaN: refused
 		return (speed * (phase_hi - phase_lo)) + phase_lo;
 	} else {
 		return pwm.c[PWM_1].phase_off;

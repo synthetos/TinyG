@@ -191,7 +191,7 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 
 stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-	if (duty < 0.0) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}
+	if (!(duty >= 0.0)) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}	// also refuses NaN (E149)
 	if (duty > 1.0) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 
 	#ifdef __AVR
