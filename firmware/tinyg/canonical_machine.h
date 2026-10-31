@@ -323,6 +323,12 @@ typedef enum {					    // axis modes (ordered: see _cm_get_feed_time())
  *	 G92 offsets. cfg has the power-on / reset gcode default values, but gm has
  *	 the operating state for the values (which may have changed).
  */
+#ifdef __BITFIELDS
+#define TOOL_SELECT_MAX 31				// tool and tool_select are 5-bit fields below (E154)
+#else
+#define TOOL_SELECT_MAX 255
+#endif
+
 typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
 	uint32_t linenum;					// Gcode block line number
 	float target[AXES]; 				// XYZABC where the move should go

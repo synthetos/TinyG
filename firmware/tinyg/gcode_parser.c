@@ -438,7 +438,7 @@ static stat_t _parse_gcode_block(char *buf)
 			}
 			break;
 
-			case 'T': if (!(value >= 0) || (value > UINT8_MAX) || (value != trunc(value))) { status = STAT_T_WORD_IS_INVALID; break; }	// T256 was tool 0 (E154)
+			case 'T': if (!(value >= 0) || (value > TOOL_SELECT_MAX) || (value != trunc(value))) { status = STAT_T_WORD_IS_INVALID; break; }	// T40 was tool 8, T256 tool 0 (E154)
 					  SET_NON_MODAL (tool_select, (uint8_t)value);
 			case 'F': if (!(value >= 0)) { status = STAT_INPUT_LESS_THAN_MIN_VALUE; break; }	// negative F is an error (NIST 3.7) (E154)
 					  SET_NON_MODAL (feed_rate, value);
