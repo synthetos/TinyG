@@ -381,7 +381,7 @@ char *readline(devflags_t *flags, uint16_t *size)
         return (_readline_charmode(flags, size));
     }
     char *line = _readline_linemode(flags, size);
-    if (line != (char *)_FDEV_ERR) { *size = line ? strlen(line) + 1 : 0; }
+    *size = (line && (line != (char *)_FDEV_ERR)) ? strlen(line) + 1 : 0;   // a damaged line has no length (E162)
     return (line);
 }
 

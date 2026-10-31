@@ -249,6 +249,24 @@ static void _reject_overlong_line()
 	}
 }
 
+/*
+ * _reject_damaged_line() - a line lost bytes in an RX ring overrun: it never runs (E162)
+ *
+ *	The first one raises ALARM 13. Each one also gets its own error response, so none vanishes
+ *	silently while the machine is alarmed - including a host line that follows lost bytes.
+ */
+static void _reject_damaged_line()
+{
+	cm_alarm(STAT_BUFFER_FULL, "input lost");		// no-op if already alarmed
+	cs.saved_buf[0] = NUL;
+	if (cs.comm_mode == TEXT_MODE) {
+		text_response(STAT_BUFFER_FULL, cs.saved_buf);
+	} else {
+		nv_reset_nv_list("");
+		nv_print_list(STAT_BUFFER_FULL, TEXT_RESPONSE, JSON_RESPONSE);
+	}
+}
+
 static stat_t _dispatch_command()
 {
 	if (cm.queue_flush_input || cm.queue_flush_input_due) {
@@ -256,8 +274,9 @@ static stat_t _dispatch_command()
 	}
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
-    if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-        return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
+    if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
+        _reject_damaged_line();
+        return (STAT_OK);
     }
     if ((cs.bufp != (char *)NULL) && (flags & DEV_IS_OVERFLOW)) {
         _reject_overlong_line();
@@ -274,8 +293,9 @@ static stat_t _dispatch_control()
 	}
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
-	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
-    	return(cm_alarm(STAT_BUFFER_FULL, cs.saved_buf));
+	if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
+		_reject_damaged_line();
+		return (STAT_OK);
 	}
 	if ((cs.bufp != (char *)NULL) && (flags & DEV_IS_OVERFLOW)) {
 		_reject_overlong_line();

@@ -43,19 +43,26 @@ def test_overrun_lines_alarm_instead_of_running(tg, keep, record):
         tg.transport.write("".join(line + "\n" for line in lines).encode())
         time.sleep(FILL * 0.1 + 1.0)                          # every dwell has run
         tg.drain(quiet=1.0, limit=20.0)
-        events = tg.transport.history[mark:]
+        after = len(tg.transport.history)
+        tg.transport.write(b'{"stat":null}\n')                 # the host's next line: it follows lost bytes
+        time.sleep(0.5)
+        tg.drain(quiet=0.3)
+        answer = [Footer.from_event(e) for e in tg.transport.history[after:] if e.kind == "response"]
+        events = tg.transport.history[mark:after]
         responses = [Footer.from_event(e) for e in events if e.kind == "response"]
         alarms = [e.data["er"] for e in events if e.kind == "exception" and isinstance(e.data.get("er"), dict)]
         lengths = {len(line) + 1 for line in lines}
         spliced_ran = [f.count for f in responses if f and f.status == 0 and f.count not in lengths]
         record("rx_overrun", {"sent": BURST, "responses": len(responses), "alarms": alarms[:5],
                               "spliced_ran": spliced_ran[:10],
-                              "statuses": sorted({f.status for f in responses if f})})
-        if len(responses) >= BURST:
+                              "statuses": sorted({f.status for f in responses if f}),
+                              "next_line": [f.status for f in answer if f]})
+        if len(responses) >= BURST and not alarms:
             pytest.skip("the burst did not overrun the RX ring")
         assert not spliced_ran, f"spliced lines ran: footer lengths {spliced_ran[:10]}"
         assert any(a.get("st") == tg.dialect.status("BUFFER_FULL") for a in alarms), \
             f"lost input raised no ALARM 13: {alarms[:3]}"
+        assert answer, "the line after the overrun vanished without a response"
     finally:
         tg.drain(quiet=0.3)
         if tg.stat() == tg.dialect.stat("ALARM"):
