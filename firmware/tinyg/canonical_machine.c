@@ -1787,6 +1787,31 @@ void cm_request_planner_flush()
  *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
  *  cm_queue_flush() (homing, panic) keep the host input unless a '%' was pending.
  */
+// Hand a pending host '%' to queue_flush_input_due, atomically against the RX ISR that sets it (E145)
+static void _take_input_flush_request()
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (cm.queue_flush_input) {
+        cm.queue_flush_input = false;
+        cm.queue_flush_input_due = true;
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+// Drop the input a host '%' asked for; main loop only, never inside a direct flush (E145)
+static void _service_input_flush()
+{
+    if (cm.queue_flush_input_due) {
+        cm.queue_flush_input_due = false;
+        xio_flush_input();
+    }
+}
+
 static void _run_requested_queue_flush()
 {
     if (!mp_runtime_is_idle() ||
@@ -1794,7 +1819,9 @@ static void _run_requested_queue_flush()
          (cm.hold_state != FEEDHOLD_HOLD))) {
         return;
     }
-    cm_queue_flush();                               // drops buffered input only for a host '%' (E145)
+    _take_input_flush_request();                    // drop a host '%''s input before the planner work below,
+    _service_input_flush();                         // so a line sent right after the '%' is not cut (E145)
+    cm_queue_flush();                               // a '%' landing meanwhile is handed off and serviced next
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;
         cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
@@ -1809,10 +1836,7 @@ stat_t cm_feedhold_sequencing_callback()
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
         _run_requested_queue_flush();               // runs once motion has stopped
 	}
-	if (cm.queue_flush_input_due) {                 // a flush consumed a host '%': drop its input here, the
-		cm.queue_flush_input_due = false;           // safe main-loop point, never inside a direct flush (E145)
-		xio_flush_input();
-	}
+	_service_input_flush();                         // a flush consumed a host '%': drop its input here (E145)
 	if (cm.end_hold_requested) {
         if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
 			cm_end_hold();
@@ -1925,10 +1949,7 @@ void cm_queue_flush()
         uint8_t saved_sreg = SREG;
         cli();
 #endif
-        if (cm.queue_flush_input) {
-            cm.queue_flush_input = false;
-            cm.queue_flush_input_due = true;
-        }
+        _take_input_flush_request();                // nests: restores the cleared SREG
         cm.queue_flush_state = FLUSH_OFF;
 #ifdef __AVR
         SREG = saved_sreg;

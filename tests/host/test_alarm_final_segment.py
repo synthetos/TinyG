@@ -38,7 +38,7 @@ enum { BLOCK_TYPE_NULL, BLOCK_TYPE_ALINE, BLOCK_TYPE_DWELL };
 #define STEP_TIMER_DISABLE 0
 typedef int stat_t;
 struct { int machine_state, motion_state, hold_state, queue_flush_state;
-         bool end_hold_requested, queue_flush_input; } cm;
+         bool end_hold_requested, queue_flush_input, queue_flush_input_due; } cm;
 struct { unsigned dda_ticks_downcount; } st_run;
 struct { int block_type, buffer_state; } st_pre;
 struct { uint8_t CTRLA; } TIMER_DDA;
@@ -72,6 +72,8 @@ void cm_queue_flush(void) { cm.queue_flush_state=FLUSH_OFF; flushes++; }
             (stepper, r'uint8_t st_runtime_isbusy\(\)'),
             ((firmware / "plan_line.c").read_text(), r'bool mp_runtime_is_idle\(\)'),
             (machine, r'stat_t cm_alarm\(const stat_t status, const char \*msg\)'),
+            (machine, r'static void _take_input_flush_request\(\)(?=\s*\{)'),
+            (machine, r'static void _service_input_flush\(\)(?=\s*\{)'),
             (machine, r'static void _run_requested_queue_flush\(\)(?=\s*\{)'),
         ):
             code += function(source, signature) + "\n"

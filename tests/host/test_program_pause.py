@@ -95,7 +95,8 @@ void mp_exit_hold_state(void);
 static stat_t run(mpBuf_t *bf) {(void)bf;ran++;return STAT_OK;}
 '''
         for name in ('_exec_program_stop', 'cm_program_stop', 'cm_optional_program_stop',
-                     'cm_cycle_start', 'cm_cycle_end', 'cm_request_end_hold', 'cm_end_hold', 'cm_queue_flush'):
+                     'cm_cycle_start', 'cm_cycle_end', 'cm_request_end_hold', 'cm_end_hold',
+                     '_take_input_flush_request', 'cm_queue_flush'):
             code += '\n' + function(canonical, name)
         for name in ('mp_exec_move', 'mp_exit_hold_state'):
             code += '\n' + function(executor, name)

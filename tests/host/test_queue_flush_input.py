@@ -31,14 +31,14 @@ enum { FLUSH_OFF, FLUSH_REQUESTED };
 typedef int stat_t;
 struct { int hold_state, queue_flush_state; bool end_hold_requested; volatile bool queue_flush_input, queue_flush_input_due; } cm;
 uint8_t SREG = 0x80;
-static int input_flushes, planner_flushes;
+static int input_flushes, planner_flushes, input_before_planner;
 static int inject, in_direct_flush;                          /* 1: '%' during the planner flush, 2: '%' in cm_end_hold */
 void cm_request_queue_flush(void);
 void cm_request_planner_flush(void);
 static void isr_percent(void) { cm_request_queue_flush(); }
 static void cli(void) { SREG &= ~0x80; }
 bool mp_runtime_is_idle(void) { return true; }
-void mp_flush_planner(void) { planner_flushes++; if (inject == 1) { inject = 0; isr_percent(); } }
+void mp_flush_planner(void) { planner_flushes++; input_before_planner = input_flushes; if (inject == 1) { inject = 0; isr_percent(); } }
 float mp_get_runtime_absolute_position(int axis) { (void)axis; return 0; }
 void cm_set_position(int axis, float position) { (void)axis; (void)position; }
 void cm_end_hold(void) { cm.hold_state = FEEDHOLD_OFF; if (inject == 2) { inject = 0; isr_percent(); } }
@@ -57,9 +57,10 @@ int main(void) {
     /* an alarm's flush (planner only) keeps input */
     reset(); cm_request_planner_flush(); cm_feedhold_sequencing_callback();
     assert(planner_flushes == 1 && input_flushes == 0 && cm.queue_flush_state == FLUSH_OFF && !cm.queue_flush_input);
-    /* a host '%' drops input once */
+    /* a host '%' drops input once, before the planner work, so a line sent right after it is not cut */
     reset(); isr_percent(); cm_feedhold_sequencing_callback();
     assert(input_flushes == 1 && !cm.queue_flush_input && cm.queue_flush_state == FLUSH_OFF);
+    assert(input_before_planner == 1);
     /* '%' while an alarm's flush is pending: input dropped */
     reset(); cm_request_planner_flush(); isr_percent(); cm_feedhold_sequencing_callback();
     assert(input_flushes == 1 && !cm.queue_flush_input);
@@ -95,7 +96,8 @@ class QueueFlushInput(unittest.TestCase):
             self.skipTest("host C compiler not installed")
         source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
         code = PRELUDE
-        for signature in (r"void cm_request_queue_flush\(\)", r"void cm_request_planner_flush\(\)",
+        for signature in (r"static void _take_input_flush_request\(\)", r"static void _service_input_flush\(\)",
+                          r"void cm_request_queue_flush\(\)", r"void cm_request_planner_flush\(\)",
                           r"void cm_queue_flush\(\)", r"static void _run_requested_queue_flush\(\)",
                           r"stat_t cm_feedhold_sequencing_callback\(\)"):
             code += function(source, signature + r"(?=\s*\{)") + "\n"
