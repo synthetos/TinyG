@@ -12,7 +12,6 @@ pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449")]
 BAD = [("1sa", 0), ("1sa", -1.8), ("1tr", 0), ("1tr", -1), ("1mi", 0), ("xjm", 0), ("xjm", -5), ("xjh", 0), ("xjh", -5)]
 
 
-@pytest.mark.bug("E158", on=["d449"])
 def test_non_positive_motion_settings_are_refused(tg, keep):
     keep("1sa", "1tr", "1mi", "xjm", "xjh")
     low = tg.dialect.status("INPUT_LESS_THAN_MIN_VALUE")

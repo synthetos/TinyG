@@ -1266,6 +1266,9 @@ stat_t st_set_sa(nvObj_t *nv)			// motor step angle
     if (_stepper_configuration_busy()) {
         return (STAT_COMMAND_NOT_ACCEPTED);
     }
+	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// 0 or less made steps/unit infinite or negative (E158)
+		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+	}
 
 	set_flt(nv);
 	_set_motor_steps_per_unit(nv);
@@ -1277,6 +1280,9 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
     if (_stepper_configuration_busy()) {
         return (STAT_COMMAND_NOT_ACCEPTED);
     }
+	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// 0 or less made steps/unit infinite or negative (E158)
+		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+	}
 
 	set_flu(nv);
 	_set_motor_steps_per_unit(nv);
@@ -1290,6 +1296,9 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
     }
 
     uint32_t mi = nv->value_int;
+	if (mi == 0) {						// no steps at all (E158)
+		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+	}
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
