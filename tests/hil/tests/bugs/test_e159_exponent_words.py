@@ -20,7 +20,7 @@ def test_e_word_is_not_an_exponent(tg):
         assert r.status == tg.dialect.status("GCODE_COMMAND_UNSUPPORTED"), r.status
         time.sleep(0.5)
         assert tg.get("posx") == pytest.approx(start, abs=0.001), "the E word scaled X and it moved"
-        assert tg.send_gcode("G1 X10 E5 F300").status == tg.dialect.status("GCODE_COMMAND_UNSUPPORTED")
+        assert tg.send_gcode("G1 X0.00001 E5 F300", allow="1 mm at most").status == tg.dialect.status("GCODE_COMMAND_UNSUPPORTED")
     finally:
         tg.wait_idle()
         tg.send_gcode(f"G90 G0 X{start:.3f}", allow="return")
