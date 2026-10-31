@@ -604,6 +604,8 @@ void canonical_machine_reset()
 //	cm.cycle_start_requested = false;               //+++++ TO BE REMOVED
 
     cm.queue_flush_state = FLUSH_OFF;
+    cm.queue_flush_input = false;
+    cm.queue_flush_input_due = false;
     cm.program_paused = false;
     cm.end_hold_requested = false;
     cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
@@ -822,7 +824,8 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
     } else {
         cm_request_feedhold();                  // stop motion
-        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+        cm_request_planner_flush();             // flush the planner once runtime is not busy; host input is
+                                                // kept and rejected line by line while alarmed (E145)
     }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
@@ -1755,9 +1758,17 @@ void cm_request_end_hold(void)
 
 void cm_request_queue_flush()
 {
+    cm_request_planner_flush();
+    if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
+        cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
+    }
+}
+
+void cm_request_planner_flush()
+{
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
-        cm.queue_flush_state = FLUSH_REQUESTED;     // input and planner are flushed from the main loop
+        cm.queue_flush_state = FLUSH_REQUESTED;     // flushed from the main loop
     }
 }
 
@@ -1768,11 +1779,39 @@ void cm_request_queue_flush()
 /*
  * _run_requested_queue_flush() - complete a host-requested flush ('%' or alarm) from the main loop
  *
- *  Waits until motion has stopped and no hold is still decelerating, then drops all buffered input
- *  (lines received before the '%') and flushes the planner. A hold that was requested but never
+ *  Waits until motion has stopped and no hold is still decelerating, then flushes the planner and,
+ *  for a host '%', drops all buffered input (lines received before the '%'). An alarm's flush keeps
+ *  host input: those lines are rejected one by one while alarmed (E145). cm_queue_flush() consumes the
+ *  host's request atomically with the end of the flush and cm_feedhold_sequencing_callback() drops the
+ *  input. A hold that was requested but never
  *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
- *  cm_queue_flush() (homing, panic) keep the host input.
+ *  cm_queue_flush() (homing, panic) keep the host input unless a '%' was pending.
  */
+// Hand a pending host '%' to queue_flush_input_due, atomically against the RX ISR that sets it (E145)
+static void _take_input_flush_request()
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (cm.queue_flush_input) {
+        cm.queue_flush_input = false;
+        cm.queue_flush_input_due = true;
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+// Drop the input a host '%' asked for; main loop only, never inside a direct flush (E145)
+static void _service_input_flush()
+{
+    if (cm.queue_flush_input_due) {
+        cm.queue_flush_input_due = false;
+        xio_flush_input();
+    }
+}
+
 static void _run_requested_queue_flush()
 {
     if (!mp_runtime_is_idle() ||
@@ -1780,8 +1819,9 @@ static void _run_requested_queue_flush()
          (cm.hold_state != FEEDHOLD_HOLD))) {
         return;
     }
-    xio_flush_input();
-    cm_queue_flush();
+    _take_input_flush_request();                    // drop a host '%''s input before the planner work below,
+    _service_input_flush();                         // so a line sent right after the '%' is not cut (E145)
+    cm_queue_flush();                               // a '%' landing meanwhile is handed off and serviced next
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;
         cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
@@ -1796,6 +1836,7 @@ stat_t cm_feedhold_sequencing_callback()
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
         _run_requested_queue_flush();               // runs once motion has stopped
 	}
+	_service_input_flush();                         // a flush consumed a host '%': drop its input here (E145)
 	if (cm.end_hold_requested) {
         if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
 			cm_end_hold();
@@ -1901,7 +1942,18 @@ void cm_queue_flush()
         if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
             cm_end_hold();
         }
+        // Consume a host '%' together with the state change: the RX ISR sets both (E145). A '%' that
+        // lands before this is handed off; after it, the flush is over and the '%' is not honored.
+        // Callers include panic paths, so the input pool is reset later, by the sequencing callback.
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;
+        cli();
+#endif
+        _take_input_flush_request();                // nests: restores the cleared SREG
         cm.queue_flush_state = FLUSH_OFF;
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }

@@ -585,6 +585,8 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     cmFeedholdState hold_state;             // hold: feedhold state machine
     cmOverrideState mfo_state;              // feed override state machine
     cmQueueFlushState queue_flush_state;    // master queue flush state machine
+    volatile bool queue_flush_input;        // a host '%' also drops buffered input; an alarm's flush does not (E145)
+    volatile bool queue_flush_input_due;    // a flush consumed that request: drop input at the main-loop point
 
     uint8_t safety_interlock_disengaged;    // set non-zero to start interlock processing (value is input number)
     uint8_t safety_interlock_reengaged;     // set non-zero to end interlock processing (value is input number)
@@ -772,6 +774,7 @@ void cm_message(char *message);								                // msg to console (e.g. G
 void cm_request_feedhold(void);
 void cm_request_end_hold(void);
 void cm_request_queue_flush(void);
+void cm_request_planner_flush(void);
 void cm_request_end_queue_flush(void);
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
 
