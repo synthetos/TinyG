@@ -1,0 +1,1682 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "TinyG HIL switchbox",
+  "version": "1.0.0",
+  "summary": "Feather HUZZAH ESP8266 that opens and closes TinyG limit/homing switch inputs electrically.",
+  "description": "Each channel is one ESP8266 GPIO wired to one TinyG switch input (plus a common GND). It emulates an open-drain switch contact: `closed` sinks the line to GND, `open` leaves the pin high-Z so TinyG's pull-up raises it. The pin is never driven high.\n\nA channel's `type` (`no`/`nc`) maps the semantic actions onto the contact: NO: trip = closed, release = open; NC: trip = open, release = closed. Ops accept either the contact level (`state`) or the semantic action (`action`).\n\nOne executor serves three transports with the same operations: newline-delimited JSON over the USB serial port (`x-serial-protocol`), this REST API, and a WebSocket at `/ws` (`x-websocket`). A serial or WebSocket request is `{\"id\":N,\"op\":\"<operationId>\",...params}`.\n\nEvery state change and every command that changes something (or fails) becomes an event with a sequence number and a 64-bit microsecond timestamp; successful read-only queries (get*) are not logged, so polling cannot evict history."
+ },
+ "servers": [
+  {
+   "url": "http://tinyg-switchbox.local",
+   "description": "mDNS (station or AP mode)"
+  },
+  {
+   "url": "http://192.168.4.1",
+   "description": "fallback access point tinyg-switchbox-XXXX"
+  }
+ ],
+ "paths": {
+  "/api/info": {
+   "get": {
+    "operationId": "getInfo",
+    "summary": "Firmware, uptime, heap and network status",
+    "description": "`uptime_ms` and `boot_id` let a client tell whether the board reset (e.g. when the serial port was opened).",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Info"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/state": {
+   "get": {
+    "operationId": "getState",
+    "summary": "Every channel's contact state and actual line level",
+    "description": "Line levels are read when the request runs. A released (open) line reads high only when TinyG is powered and wired; see the channel `warning`.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/State"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/channels/{name}": {
+   "put": {
+    "operationId": "setChannel",
+    "summary": "Close/open a contact, or trip/release a switch",
+    "description": "Give exactly one of `state` (contact level) or `action` (semantic). Ends any pulse or bounce on the channel and replaces its ttl. With `ttl_ms` and a resulting closed contact, the contact opens by itself after that long (source `ttl`), so a crashed test cannot leave a limit stuck closed.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SetChannelResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Unknown channel",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "description": "Channel name, e.g. xmin.",
+      "schema": {
+       "$ref": "#/components/schemas/ChannelName"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SetChannelParams"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/channels/{name}/pulse": {
+   "post": {
+    "operationId": "pulseChannel",
+    "summary": "Timed pulse, timed on the board",
+    "description": "Moves the contact to the target for `ms` or `us`, then back to its previous state; both edges are timed in firmware (timer interrupt, or a masked spin below 50 us), never by two host commands. Default action is `trip`. The reply returns at once; the actual edge times are in the events. `no_change` if the contact is already in the target state; `busy` if a pulse or bounce is running on the channel. A pending ttl still applies.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PulseResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Unknown channel",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Channel busy or already in the requested state",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "description": "Channel name, e.g. xmin.",
+      "schema": {
+       "$ref": "#/components/schemas/ChannelName"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PulseParams"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/channels/{name}/bounce": {
+   "post": {
+    "operationId": "bounceChannel",
+    "summary": "Switch-bounce simulation",
+    "description": "Toggles the contact `edges` times, `interval_us` apart, starting at once; `interval_us` after the last toggle it is set to `final_state` (one more edge if it is not there already). Exactly one of `final_state` or `final_action`.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BounceResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Unknown channel",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "Channel busy or already in the requested state",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "description": "Channel name, e.g. xmin.",
+      "schema": {
+       "$ref": "#/components/schemas/ChannelName"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BounceParams"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/release_all": {
+   "post": {
+    "operationId": "releaseAll",
+    "summary": "Open every contact (nothing driven)",
+    "description": "Cancels every pulse, bounce and ttl and opens every contact: the power-on state. NC channels then read as tripped; use idleAll to un-trip everything.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChangedResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/idle_all": {
+   "post": {
+    "operationId": "idleAll",
+    "summary": "Every switch released (untripped) for its type",
+    "description": "Cancels every pulse, bounce and ttl; NO channels open, NC channels close.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChangedResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/config": {
+   "get": {
+    "operationId": "getConfig",
+    "summary": "Channel mapping and switch types",
+    "description": "As persisted in LittleFS.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Config"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "operationId": "setConfig",
+    "summary": "Replace the channel mapping",
+    "description": "Validated as a whole (GPIO15, 1, 3 and 6-11 are rejected; names and GPIOs must be unique), then every contact is opened, the new mapping applied and persisted. `defaults: true` restores the default mapping.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SetConfigResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SetConfigParams"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/events": {
+   "get": {
+    "operationId": "getEvents",
+    "summary": "Event history since a sequence number",
+    "description": "Returns events with `seq >= since` (default: the oldest held), at most `limit`. Pass `next` back as `since` to continue. `lost` counts events that were overwritten before they could be read.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EventsPage"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "parameters": [
+     {
+      "name": "since",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 4294967295
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 32,
+       "default": 16
+      }
+     }
+    ]
+   }
+  },
+  "/api/wifi": {
+   "put": {
+    "operationId": "setWifi",
+    "summary": "Store WiFi station credentials",
+    "description": "Stored in LittleFS and never echoed or logged. The board reconnects about 300 ms after the reply. An empty `ssid` clears the credentials (access-point mode). If the station connection fails within 20 s the board falls back to its access point.",
+    "x-transports": [
+     "serial",
+     "http",
+     "ws"
+    ],
+    "x-logged": "always",
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WifiResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request (see error.code)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Storage failure",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      }
+     }
+    },
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WifiParams"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/openapi.json": {
+   "get": {
+    "operationId": "getSpec",
+    "summary": "This document",
+    "description": "Over serial the result is the whole document on one line, so a client can learn the API without WiFi. Not available over the WebSocket (too large for one message).",
+    "x-transports": [
+     "serial",
+     "http"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "The OpenAPI document",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "ChannelName": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9_.-]{1,15}$",
+    "description": "Free string; tests use <axis><min|max>, e.g. xmin."
+   },
+   "Gpio": {
+    "type": "integer",
+    "enum": [
+     0,
+     2,
+     4,
+     5,
+     12,
+     13,
+     14,
+     16
+    ],
+    "description": "Usable ESP8266 GPIOs. 0 and 2 are boot-strap pins (see Config caveat)."
+   },
+   "SwitchType": {
+    "type": "string",
+    "enum": [
+     "no",
+     "nc"
+    ]
+   },
+   "ContactState": {
+    "type": "string",
+    "enum": [
+     "closed",
+     "open"
+    ],
+    "description": "closed = pin sinks the line to GND; open = pin high-Z."
+   },
+   "Action": {
+    "type": "string",
+    "enum": [
+     "trip",
+     "release"
+    ],
+    "description": "Semantic: NO trip = closed; NC trip = open."
+   },
+   "Clamped": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    },
+    "description": "Parameters that were out of range and clamped (present only if any)."
+   },
+   "ErrorCode": {
+    "type": "string",
+    "enum": [
+     "bad_json",
+     "bad_request",
+     "unknown_op",
+     "unknown_param",
+     "missing_param",
+     "bad_param",
+     "conflicting_params",
+     "unknown_channel",
+     "no_change",
+     "busy",
+     "invalid_config",
+     "line_too_long",
+     "unsupported_transport",
+     "storage"
+    ]
+   },
+   "Error": {
+    "type": "object",
+    "required": [
+     "code",
+     "msg"
+    ],
+    "properties": {
+     "code": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ErrorCode"
+       },
+       {
+        "const": "not_found"
+       }
+      ]
+     },
+     "msg": {
+      "type": "string"
+     }
+    }
+   },
+   "ErrorBody": {
+    "type": "object",
+    "required": [
+     "error"
+    ],
+    "properties": {
+     "error": {
+      "$ref": "#/components/schemas/Error"
+     }
+    }
+   },
+   "ChannelState": {
+    "type": "object",
+    "required": [
+     "name",
+     "gpio",
+     "type",
+     "state",
+     "tripped",
+     "level",
+     "since_us",
+     "pending",
+     "ttl_until_us",
+     "warning"
+    ],
+    "properties": {
+     "name": {
+      "$ref": "#/components/schemas/ChannelName"
+     },
+     "gpio": {
+      "$ref": "#/components/schemas/Gpio"
+     },
+     "type": {
+      "$ref": "#/components/schemas/SwitchType"
+     },
+     "state": {
+      "$ref": "#/components/schemas/ContactState"
+     },
+     "tripped": {
+      "type": "boolean",
+      "description": "Semantic state commanded (from state and type)."
+     },
+     "level": {
+      "type": "integer",
+      "enum": [
+       0,
+       1
+      ],
+      "description": "Actual line level read now."
+     },
+     "since_us": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time of the last contact change."
+     },
+     "pending": {
+      "oneOf": [
+       {
+        "type": "null"
+       },
+       {
+        "type": "object",
+        "properties": {
+         "kind": {
+          "type": "string",
+          "enum": [
+           "pulse",
+           "bounce"
+          ]
+         },
+         "until_us": {
+          "type": "integer",
+          "minimum": 0
+         }
+        }
+       }
+      ]
+     },
+     "ttl_until_us": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "minimum": 0,
+      "description": "When the ttl will open the contact."
+     },
+     "warning": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "Readback warning, not an error: closed but high (contention or fault); open but low (a real switch, wiring fault, or TinyG unpowered/disconnected); open line toggling by itself (floating input)."
+     }
+    }
+   },
+   "ChannelConfig": {
+    "type": "object",
+    "required": [
+     "name",
+     "gpio"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "$ref": "#/components/schemas/ChannelName"
+     },
+     "gpio": {
+      "$ref": "#/components/schemas/Gpio"
+     },
+     "type": {
+      "$ref": "#/components/schemas/SwitchType",
+      "default": "no"
+     },
+     "caveat": {
+      "type": "string",
+      "readOnly": true,
+      "description": "Set for boot-strap pins; ignored on input."
+     }
+    }
+   },
+   "Config": {
+    "type": "object",
+    "required": [
+     "channels",
+     "is_default"
+    ],
+    "properties": {
+     "channels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+       "$ref": "#/components/schemas/ChannelConfig"
+      }
+     },
+     "is_default": {
+      "type": "boolean"
+     }
+    }
+   },
+   "Info": {
+    "type": "object",
+    "required": [
+     "fw_version",
+     "api_version",
+     "uptime_ms",
+     "uptime_us",
+     "boot_id"
+    ],
+    "properties": {
+     "fw_version": {
+      "type": "string"
+     },
+     "api_version": {
+      "type": "string"
+     },
+     "spec_sha256": {
+      "type": "string",
+      "description": "SHA-256 of the minified embedded spec."
+     },
+     "uptime_ms": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "uptime_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "boot_id": {
+      "type": "string",
+      "description": "Random per boot (8 hex digits)."
+     },
+     "reset_reason": {
+      "type": "string"
+     },
+     "channels": {
+      "type": "integer"
+     },
+     "events": {
+      "type": "object",
+      "properties": {
+       "head": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+       },
+       "oldest": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+       },
+       "capacity": {
+        "type": "integer"
+       }
+      }
+     },
+     "serial_subscribed": {
+      "type": "boolean"
+     },
+     "heap_free": {
+      "type": "integer"
+     },
+     "heap_max_block": {
+      "type": "integer"
+     },
+     "heap_fragmentation": {
+      "type": "integer"
+     },
+     "cpu_mhz": {
+      "type": "integer"
+     },
+     "chip_id": {
+      "type": "string"
+     },
+     "core_version": {
+      "type": "string"
+     },
+     "sdk_version": {
+      "type": "string"
+     },
+     "mdns": {
+      "type": "string"
+     },
+     "ws_clients": {
+      "type": "integer"
+     },
+     "wifi": {
+      "type": "object",
+      "properties": {
+       "state": {
+        "type": "string",
+        "enum": [
+         "off",
+         "connecting",
+         "sta",
+         "ap",
+         "sta_failed"
+        ]
+       },
+       "mode": {
+        "type": "string",
+        "enum": [
+         "sta",
+         "ap",
+         "off"
+        ]
+       },
+       "ssid": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "ip": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "rssi": {
+        "type": "integer"
+       },
+       "mac": {
+        "type": "string"
+       },
+       "ap_clients": {
+        "type": "integer"
+       },
+       "credentials_stored": {
+        "type": "boolean"
+       }
+      }
+     }
+    }
+   },
+   "LevelMask": {
+    "type": "string",
+    "pattern": "^[01]{1,8}$",
+    "description": "One character per channel in config order."
+   },
+   "State": {
+    "type": "object",
+    "required": [
+     "t_us",
+     "levels",
+     "driven",
+     "channels"
+    ],
+    "properties": {
+     "t_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "levels": {
+      "$ref": "#/components/schemas/LevelMask"
+     },
+     "driven": {
+      "$ref": "#/components/schemas/LevelMask"
+     },
+     "channels": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ChannelState"
+      }
+     }
+    }
+   },
+   "Event": {
+    "type": "object",
+    "required": [
+     "event",
+     "seq",
+     "t_us",
+     "src",
+     "levels",
+     "driven"
+    ],
+    "description": "boot: board started (fw, reason, boot_id). command: a request was executed (op, ok, error, arg = ttl_ms / duration_us / edges). edge: a contact changed (state, cause). line: an undriven line changed level, or a driven line read high (level, state); polled every 10 ms. config: mapping replaced (channels). wifi: network state (state). levels/driven are sampled when the event is recorded; for an edge that is right at the edge, before a released line has risen (the following line event shows the rise).",
+    "properties": {
+     "event": {
+      "type": "string",
+      "enum": [
+       "boot",
+       "command",
+       "edge",
+       "line",
+       "config",
+       "wifi"
+      ]
+     },
+     "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "t_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "src": {
+      "type": "string",
+      "enum": [
+       "boot",
+       "serial",
+       "http",
+       "ws",
+       "ttl",
+       "poll",
+       "sys"
+      ]
+     },
+     "rid": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "The request id that caused it, when that id was a positive integer."
+     },
+     "ch": {
+      "$ref": "#/components/schemas/ChannelName"
+     },
+     "op": {
+      "type": "string"
+     },
+     "ok": {
+      "type": "boolean"
+     },
+     "error": {
+      "$ref": "#/components/schemas/ErrorCode"
+     },
+     "arg": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "state": {
+      "type": "string"
+     },
+     "cause": {
+      "type": "string",
+      "enum": [
+       "set",
+       "pulse",
+       "bounce",
+       "ttl",
+       "release_all",
+       "idle_all",
+       "config"
+      ]
+     },
+     "level": {
+      "type": "integer",
+      "enum": [
+       0,
+       1
+      ]
+     },
+     "fw": {
+      "type": "string"
+     },
+     "reason": {
+      "type": "string"
+     },
+     "boot_id": {
+      "type": "string"
+     },
+     "channels": {
+      "type": "integer"
+     },
+     "levels": {
+      "$ref": "#/components/schemas/LevelMask"
+     },
+     "driven": {
+      "$ref": "#/components/schemas/LevelMask"
+     }
+    }
+   },
+   "Dropped": {
+    "type": "object",
+    "required": [
+     "event",
+     "count",
+     "next"
+    ],
+    "properties": {
+     "event": {
+      "const": "dropped"
+     },
+     "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "next": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     }
+    },
+    "description": "Events this subscriber missed (getEvents may still have them)."
+   },
+   "Snapshot": {
+    "type": "object",
+    "required": [
+     "event",
+     "info",
+     "config",
+     "state"
+    ],
+    "properties": {
+     "event": {
+      "const": "snapshot"
+     },
+     "info": {
+      "$ref": "#/components/schemas/Info"
+     },
+     "config": {
+      "$ref": "#/components/schemas/Config"
+     },
+     "state": {
+      "$ref": "#/components/schemas/State"
+     }
+    }
+   },
+   "StateMessage": {
+    "type": "object",
+    "required": [
+     "event",
+     "state"
+    ],
+    "properties": {
+     "event": {
+      "const": "state"
+     },
+     "state": {
+      "$ref": "#/components/schemas/State"
+     }
+    }
+   },
+   "SetChannelParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "state": {
+      "$ref": "#/components/schemas/ContactState"
+     },
+     "action": {
+      "$ref": "#/components/schemas/Action"
+     },
+     "ttl_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600000,
+      "description": "0 or absent: no ttl. Applies only when the contact ends closed."
+     }
+    },
+    "oneOf": [
+     {
+      "required": [
+       "state"
+      ]
+     },
+     {
+      "required": [
+       "action"
+      ]
+     }
+    ]
+   },
+   "SetChannelResult": {
+    "type": "object",
+    "required": [
+     "changed",
+     "ttl_ms",
+     "channel"
+    ],
+    "properties": {
+     "changed": {
+      "type": "boolean"
+     },
+     "ttl_ms": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "channel": {
+      "$ref": "#/components/schemas/ChannelState"
+     },
+     "clamped": {
+      "$ref": "#/components/schemas/Clamped"
+     }
+    }
+   },
+   "PulseParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60000
+     },
+     "us": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+     },
+     "action": {
+      "$ref": "#/components/schemas/Action",
+      "default": "trip"
+     },
+     "state": {
+      "$ref": "#/components/schemas/ContactState"
+     }
+    },
+    "oneOf": [
+     {
+      "required": [
+       "ms"
+      ]
+     },
+     {
+      "required": [
+       "us"
+      ]
+     }
+    ]
+   },
+   "PulseResult": {
+    "type": "object",
+    "required": [
+     "start_us",
+     "end_us",
+     "duration_us",
+     "channel"
+    ],
+    "properties": {
+     "start_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "end_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "duration_us": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "channel": {
+      "$ref": "#/components/schemas/ChannelState"
+     },
+     "clamped": {
+      "$ref": "#/components/schemas/Clamped"
+     }
+    }
+   },
+   "BounceParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "edges",
+     "interval_us"
+    ],
+    "properties": {
+     "edges": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64
+     },
+     "interval_us": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 100000
+     },
+     "final_state": {
+      "$ref": "#/components/schemas/ContactState"
+     },
+     "final_action": {
+      "$ref": "#/components/schemas/Action"
+     },
+     "ttl_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600000
+     }
+    },
+    "oneOf": [
+     {
+      "required": [
+       "final_state"
+      ]
+     },
+     {
+      "required": [
+       "final_action"
+      ]
+     }
+    ]
+   },
+   "BounceResult": {
+    "type": "object",
+    "required": [
+     "start_us",
+     "end_us",
+     "edges",
+     "interval_us",
+     "final_state",
+     "channel"
+    ],
+    "properties": {
+     "start_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "end_us": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "edges": {
+      "type": "integer"
+     },
+     "interval_us": {
+      "type": "integer"
+     },
+     "final_state": {
+      "$ref": "#/components/schemas/ContactState"
+     },
+     "ttl_ms": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "channel": {
+      "$ref": "#/components/schemas/ChannelState"
+     },
+     "clamped": {
+      "$ref": "#/components/schemas/Clamped"
+     }
+    }
+   },
+   "ChangedResult": {
+    "type": "object",
+    "required": [
+     "changed"
+    ],
+    "properties": {
+     "changed": {
+      "type": "integer",
+      "description": "Channels whose contact changed."
+     }
+    }
+   },
+   "SetConfigParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "channels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+       "$ref": "#/components/schemas/ChannelConfig"
+      }
+     },
+     "defaults": {
+      "const": true
+     }
+    },
+    "oneOf": [
+     {
+      "required": [
+       "channels"
+      ]
+     },
+     {
+      "required": [
+       "defaults"
+      ]
+     }
+    ]
+   },
+   "SetConfigResult": {
+    "allOf": [
+     {
+      "$ref": "#/components/schemas/Config"
+     },
+     {
+      "type": "object",
+      "required": [
+       "persisted"
+      ],
+      "properties": {
+       "persisted": {
+        "type": "boolean",
+        "description": "False if LittleFS failed (the mapping is still applied)."
+       }
+      }
+     }
+    ]
+   },
+   "EventsPage": {
+    "type": "object",
+    "required": [
+     "events",
+     "next",
+     "oldest",
+     "head",
+     "lost",
+     "more"
+    ],
+    "properties": {
+     "events": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Event"
+      }
+     },
+     "next": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "oldest": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "head": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "lost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+     },
+     "more": {
+      "type": "boolean"
+     }
+    }
+   },
+   "WifiParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "ssid"
+    ],
+    "properties": {
+     "ssid": {
+      "type": "string",
+      "maxLength": 32
+     },
+     "password": {
+      "type": "string",
+      "writeOnly": true,
+      "description": "Empty (open network) or 8-63 characters."
+     }
+    }
+   },
+   "WifiResult": {
+    "type": "object",
+    "required": [
+     "ssid",
+     "cleared",
+     "reconnecting"
+    ],
+    "properties": {
+     "ssid": {
+      "type": "string"
+     },
+     "cleared": {
+      "type": "boolean"
+     },
+     "reconnecting": {
+      "type": "boolean"
+     }
+    }
+   },
+   "SubscribeParams": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "on": {
+      "type": "boolean",
+      "default": true
+     }
+    }
+   },
+   "SubscribeResult": {
+    "type": "object",
+    "required": [
+     "subscribed",
+     "next"
+    ],
+    "properties": {
+     "subscribed": {
+      "type": "boolean"
+     },
+     "next": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295,
+      "description": "seq of the first event this subscriber gets."
+     }
+    }
+   },
+   "Request": {
+    "type": "object",
+    "required": [
+     "op"
+    ],
+    "additionalProperties": true,
+    "properties": {
+     "id": {
+      "type": [
+       "integer",
+       "string"
+      ],
+      "description": "Echoed in the response; positive integers also tag the events the request causes (rid)."
+     },
+     "op": {
+      "type": "string",
+      "description": "An operationId of this document."
+     }
+    }
+   },
+   "Response": {
+    "oneOf": [
+     {
+      "type": "object",
+      "required": [
+       "id",
+       "ok",
+       "result"
+      ],
+      "properties": {
+       "id": {
+        "type": [
+         "integer",
+         "string",
+         "null"
+        ]
+       },
+       "ok": {
+        "const": true
+       },
+       "result": {}
+      }
+     },
+     {
+      "type": "object",
+      "required": [
+       "id",
+       "ok",
+       "error"
+      ],
+      "properties": {
+       "id": {
+        "type": [
+         "integer",
+         "string",
+         "null"
+        ]
+       },
+       "ok": {
+        "const": false
+       },
+       "error": {
+        "$ref": "#/components/schemas/Error"
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "x-serial-protocol": {
+  "baud": 115200,
+  "framing": "8N1. One JSON object per line, terminated by \\n (\\r also ends a line). Request lines up to 1024 bytes; longer ones get line_too_long. Blank lines are ignored; other non-JSON lines get bad_json with id null.",
+  "request": {
+   "$ref": "#/components/schemas/Request"
+  },
+  "response": {
+   "$ref": "#/components/schemas/Response"
+  },
+  "params": "An op's parameters are its requestBody members plus its path parameter (name) and query parameters (since, limit), all at the top level of the request object next to id and op. Unknown parameters are rejected (unknown_param).",
+  "events": "Only after a subscribe op: Event (or Dropped) objects interleaved with responses. Responses carry id, events carry event.",
+  "boot": "After every reset the board prints one Event line with event=boot, plus api_version, config (stored, default, or invalid: <why>) and fs. The ESP8266 ROM first prints a banner at 74880 baud, which reads as garbage at 115200; clients skip lines that are not JSON objects.",
+  "reset": "The CP2104's DTR and RTS lines drive the ESP8266 EN/GPIO0 auto-reset transistors. Open the port with both deasserted and keep them deasserted, or the board resets. getInfo's uptime_ms and boot_id tell whether it did.",
+  "operations": {
+   "subscribe": {
+    "operationId": "subscribe",
+    "summary": "Start or stop asynchronous event lines on this serial connection",
+    "description": "Events recorded from the reply on are sent as lines (at most 2 per main-loop pass); a subscriber that falls more than 128 events behind gets a Dropped line. WebSocket clients always receive events; HTTP has no event stream.",
+    "x-transports": [
+     "serial",
+     "ws"
+    ],
+    "x-logged": "always",
+    "params": {
+     "$ref": "#/components/schemas/SubscribeParams"
+    },
+    "result": {
+     "$ref": "#/components/schemas/SubscribeResult"
+    }
+   }
+  }
+ },
+ "x-websocket": {
+  "path": "/ws",
+  "framing": "Text messages; client requests use the serial framing (Request) and get a Response.",
+  "on_connect": "A Snapshot message, then up to 16 recent events.",
+  "server_messages": {
+   "oneOf": [
+    {
+     "$ref": "#/components/schemas/Response"
+    },
+    {
+     "$ref": "#/components/schemas/Event"
+    },
+    {
+     "$ref": "#/components/schemas/Dropped"
+    },
+    {
+     "$ref": "#/components/schemas/Snapshot"
+    },
+    {
+     "$ref": "#/components/schemas/StateMessage"
+    }
+   ]
+  },
+  "throttle": "Events are pushed at most 6 per client every 20 ms, and only while the client's TCP buffer has room, so a slow client never blocks the board. A client more than 24 events behind skips to the newest 4 and gets a Dropped message followed by a StateMessage. Pushes pause while free heap is below 8 KB.",
+  "limits": "At most 3 clients; incoming messages up to 2048 bytes. getSpec is not available here (GET /openapi.json)."
+ },
+ "x-limits": {
+  "channels": 8,
+  "event_ring": 128,
+  "events_page_max": 32,
+  "ttl_ms_max": 3600000,
+  "pulse_ms_max": 60000,
+  "pulse_us_max": 1000000,
+  "bounce_edges_max": 64,
+  "bounce_interval_us": [
+   2,
+   100000
+  ],
+  "inline_us": 50,
+  "note": "Numeric parameters out of range are clamped and listed in the result's clamped array; negative, non-integer and wrongly typed values are rejected."
+ },
+ "x-future": {
+  "mount": "Reserved: a mountChannel op that counts TinyG step/dir pulses on two input GPIOs and trips a channel at a step position. Not implemented; see the README for the ESP8266 interrupt-rate limits."
+ }
+}

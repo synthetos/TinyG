@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TinyG switchbox</title>
+<style>
+:root{--bg:#f4f5f2;--panel:#fff;--ink:#1d2321;--mute:#68716d;--line:#d9ddd8;--trip:#c2410c;--tripbg:#fff1e8;
+--ok:#15803d;--okbg:#ecf8f0;--warn:#a16207;--warnbg:#fdf6e0;--bad:#b91c1c;--accent:#0f5e6e;--mono:ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#121614;--panel:#1b201e;--ink:#e6ebe8;--mute:#93a09a;--line:#2d3532;
+--trip:#fb923c;--tripbg:#3a2316;--ok:#4ade80;--okbg:#14291c;--warn:#facc15;--warnbg:#332b10;--bad:#f87171;--accent:#5cc8d8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:17px;margin:0;letter-spacing:.02em}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.conn.live i{background:var(--ok)}.conn.offline i{background:var(--bad)}.conn.connecting i{background:var(--warn)}
+#info{font:12px var(--mono);color:var(--mute)}
+main{padding:16px;display:grid;gap:16px;max-width:1200px;margin:0 auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:5px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+input,select{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+input[type=number]{width:80px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ch{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--ok);border-radius:8px;padding:10px 12px;cursor:pointer;user-select:none}
+.ch.tripped{border-left-color:var(--trip);background:var(--tripbg)}
+.ch .top{display:flex;justify-content:space-between;align-items:baseline}
+.ch .name{font:600 18px var(--mono)}.ch .meta{font-size:12px;color:var(--mute)}
+.chips{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.chip{font:11px var(--mono);padding:2px 7px;border-radius:4px;border:1px solid var(--line)}
+.chip.closed{border-color:var(--trip);color:var(--trip)}.chip.tripped{background:var(--trip);color:var(--panel);border-color:var(--trip)}
+.chip.low{border-color:var(--accent);color:var(--accent)}
+.ch .warn{font-size:12px;color:var(--warn);background:var(--warnbg);border-radius:4px;padding:3px 6px;margin-bottom:6px}
+.ch .pend{font-size:12px;color:var(--accent)}
+.ch .acts{display:flex;gap:6px}.ch .acts button{padding:3px 9px;font-size:12px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+section h2{font-size:13px;margin:0;padding:8px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+#log{height:300px;overflow:auto;font:12px var(--mono)}
+#log table{border-collapse:collapse;width:100%}
+#log td{padding:2px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+#log td.d{white-space:normal;width:100%}
+#log tr.err td{color:var(--bad)}#log tr.edge td.k{color:var(--trip)}#log tr.line td.k{color:var(--accent)}
+#log tr.dropped td{color:var(--warn)}
+details summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13px}
+#cfg{padding:0 12px 12px}#cfg table{border-collapse:collapse}#cfg td{padding:3px 4px}
+#cfgmsg{font-size:12px;margin-top:6px}.bad{color:var(--bad)}.good{color:var(--ok)}
+#toast{position:fixed;bottom:14px;right:14px;max-width:420px;background:var(--panel);border:1px solid var(--bad);color:var(--bad);border-radius:6px;padding:8px 12px;display:none}
+</style>
+</head>
+<body>
+<header>
+<h1>TinyG switchbox</h1>
+<span id="conn" class="conn connecting"><i></i><span>connecting</span></span>
+<span id="info"></span>
+</header>
+<main>
+<div class="bar">
+<button id="relall" title="Open every contact: nothing driven (NC channels read tripped)">Release all (open)</button>
+<button id="idleall" title="Every switch untripped for its type: NO open, NC closed">Idle all (untripped)</button>
+<label>pulse <input id="pms" type="number" min="1" max="60000" value="20"> ms</label>
+<label><input id="paused" type="checkbox"> pause log</label>
+</div>
+<div id="grid"></div>
+<section>
+<h2><span>Live log</span><span id="logn" class="meta"></span></h2>
+<div id="log"><table><tbody id="logb"></tbody></table></div>
+</section>
+<section>
+<details id="cfgd"><summary>Channel mapping</summary>
+<div id="cfg"><table><thead><tr><th>name</th><th>GPIO</th><th>type</th><th></th></tr></thead><tbody id="cfgb"></tbody></table>
+<div class="bar" style="margin-top:8px"><button id="cfgadd">Add channel</button><button id="cfgsave" class="primary">Save mapping</button><button id="cfgdef">Restore defaults</button></div>
+<div id="cfgmsg"></div></div>
+</details>
+</section>
+</main>
+<div id="toast"></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s),GPIOS=[4,5,12,13,14,16,0,2],CAVEAT={0:"boot-strap pin, red LED",2:"boot-strap pin, blue LED"};
+let ws=null,nextId=1,pending=new Map(),info=null,config=null,state=null,refreshTimer=0,logCount=0;
+function setConn(s){const c=$("#conn");c.className="conn "+s;c.lastChild.textContent=s}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",4000)}
+function connect(){
+  setConn("connecting");
+  ws=new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen=()=>setConn("live");
+  ws.onclose=()=>{setConn("offline");for(const p of pending.values())p.rej(new Error("disconnected"));pending.clear();setTimeout(connect,1500)};
+  ws.onmessage=m=>{let d;try{d=JSON.parse(m.data)}catch(e){return}onMessage(d)};
+}
+function call(op,params={}){
+  return new Promise((res,rej)=>{
+    if(!ws||ws.readyState!==1)return rej(new Error("not connected"));
+    const id=nextId++;pending.set(id,{res,rej});ws.send(JSON.stringify({id,op,...params}));
+    setTimeout(()=>{if(pending.delete(id))rej(new Error(op+": timeout"))},5000);
+  });
+}
+const act=(op,params)=>call(op,params).catch(e=>toast(`${op}: ${e.code?e.code+": ":""}${e.message}`));
+function onMessage(d){
+  if(d.id!==undefined&&d.id!==null&&pending.has(d.id)){const p=pending.get(d.id);pending.delete(d.id);
+    if(d.ok)p.res(d.result);else p.rej(Object.assign(new Error(d.error.msg),{code:d.error.code}));return}
+  if(d.id!==undefined)return;
+  if(d.event==="snapshot"){info=d.info;config=d.config;state=d.state;renderInfo();renderGrid();renderConfig();return}
+  if(d.event==="state"){state=d.state;renderGrid();return}
+  if(d.event==="dropped"){logRow("dropped","",d.next,"","dropped",`${d.count} events skipped (WebSocket throttle)`);return}
+  logEvent(d);applyMasks(d);
+  if(d.event==="config"){call("getConfig").then(c=>{config=c;renderConfig()});scheduleRefresh(0)}
+  else if(d.event==="command"||d.event==="edge")scheduleRefresh(150);
+}
+function applyMasks(e){
+  if(!state||!e.levels||e.levels.length!==state.channels.length)return;
+  state.channels.forEach((c,i)=>{c.level=+e.levels[i];c.state=e.driven[i]==="1"?"closed":"open";c.tripped=c.type==="nc"?c.state==="open":c.state==="closed"});
+  renderGrid();
+}
+function scheduleRefresh(ms){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>call("getState").then(s=>{state=s;renderGrid()}).catch(()=>{}),ms)}
+function fmtT(us){return (Number(us)/1e6).toFixed(6)}
+function renderInfo(){
+  if(!info)return;const w=info.wifi||{};
+  $("#info").textContent=`fw ${info.fw_version} · api ${info.api_version} · up ${Math.round(info.uptime_ms/1000)} s · heap ${info.heap_free} · ${w.mode||"?"} ${w.ssid||""} ${w.ip||""}${w.rssi!==undefined?" "+w.rssi+" dBm":""}`;
+}
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+function renderGrid(){
+  const g=$("#grid");g.textContent="";if(!state)return;
+  for(const c of state.channels){
+    const card=el("div","ch"+(c.tripped?" tripped":""));
+    const top=el("div","top");top.append(el("span","name",c.name),el("span","meta",`GPIO${c.gpio} · ${c.type.toUpperCase()}`));
+    const chips=el("div","chips");
+    chips.append(el("span","chip "+c.state,c.state==="closed"?"CLOSED (driving low)":"OPEN (high-Z)"),
+                 el("span","chip"+(c.tripped?" tripped":""),c.tripped?"TRIPPED":"released"),
+                 el("span","chip"+(c.level?"":" low"),c.level?"line HIGH":"line LOW"));
+    card.append(top,chips);
+    const warn=c.warning||(c.state==="closed"&&c.level?"closed but the line reads high":"");
+    if(warn)card.append(el("div","warn",warn));
+    if(c.pending)card.append(el("div","pend",`${c.pending.kind} until ${fmtT(c.pending.until_us)} s`));
+    if(c.ttl_until_us)card.append(el("div","pend",`ttl opens at ${fmtT(c.ttl_until_us)} s`));
+    const acts=el("div","acts"),tog=el("button","",c.tripped?"Release":"Trip"),pul=el("button","","Pulse");
+    tog.onclick=ev=>{ev.stopPropagation();act("setChannel",{name:c.name,action:c.tripped?"release":"trip"})};
+    pul.onclick=ev=>{ev.stopPropagation();act("pulseChannel",{name:c.name,ms:Math.max(1,+$("#pms").value||20)})};
+    acts.append(tog,pul);card.append(acts);
+    card.onclick=()=>act("setChannel",{name:c.name,action:c.tripped?"release":"trip"});
+    g.append(card);
+  }
+}
+function logRow(cls,seq,t,src,kind,detail){
+  if($("#paused").checked)return;
+  const box=$("#log"),stick=box.scrollTop+box.clientHeight>=box.scrollHeight-4,tr=el("tr",cls);
+  tr.append(el("td","",seq),el("td","",t),el("td","",src),el("td","k",kind),el("td","d",detail));
+  const b=$("#logb");b.append(tr);while(b.children.length>400)b.firstChild.remove();
+  $("#logn").textContent=`${++logCount} events`;if(stick)box.scrollTop=box.scrollHeight;
+}
+function logEvent(e){
+  let d="",cls=e.event;
+  if(e.event==="command"){d=`${e.op}${e.ch?" "+e.ch:""}${e.arg?" arg="+e.arg:""} → ${e.ok?"ok":e.error}`;if(!e.ok)cls+=" err"}
+  else if(e.event==="edge")d=`${e.ch} ${e.state} (${e.cause})`;
+  else if(e.event==="line")d=`${e.ch} line ${e.level?"HIGH":"LOW"} while ${e.state}`;
+  else if(e.event==="boot")d=`fw ${e.fw} reset: ${e.reason} boot ${e.boot_id}`;
+  else if(e.event==="config")d=`${e.channels} channels`;
+  else if(e.event==="wifi")d=`wifi ${e.state}`;
+  logRow(cls,e.seq,fmtT(e.t_us),e.src+(e.rid?" #"+e.rid:""),e.event,d+`  levels ${e.levels}`);
+}
+function cfgRow(c){
+  const tr=el("tr"),name=el("input"),gpio=el("select","gpio"),type=el("select"),del=el("button","","✕");
+  name.value=c.name;name.maxLength=15;name.size=8;
+  for(const g of GPIOS){const o=el("option","",`GPIO${g}${CAVEAT[g]?" ⚠ "+CAVEAT[g]:""}`);o.value=g;gpio.append(o)}
+  gpio.value=c.gpio;
+  for(const t of ["no","nc"]){const o=el("option","",t.toUpperCase());o.value=t;type.append(o)}
+  type.value=c.type||"no";del.onclick=()=>tr.remove();
+  for(const x of [name,gpio,type,del]){const td=el("td");td.append(x);tr.append(td)}
+  return tr;
+}
+function renderConfig(){const b=$("#cfgb");b.textContent="";if(config)for(const c of config.channels)b.append(cfgRow(c))}
+function saveConfig(params){
+  const m=$("#cfgmsg");m.className="";m.textContent="saving…";
+  call("setConfig",params).then(r=>{config=r;renderConfig();m.className="good";m.textContent=r.persisted?"saved and persisted":"applied, but NOT persisted (storage error)"})
+    .catch(e=>{m.className="bad";m.textContent=`${e.code||"error"}: ${e.message}`});
+}
+$("#relall").onclick=()=>act("releaseAll");
+$("#idleall").onclick=()=>act("idleAll");
+$("#cfgadd").onclick=()=>{const used=[...document.querySelectorAll("#cfgb select.gpio")].map(s=>+s.value);
+  $("#cfgb").append(cfgRow({name:"ch"+($("#cfgb").children.length+1),gpio:GPIOS.find(g=>!used.includes(g))??4,type:"no"}))};
+$("#cfgsave").onclick=()=>saveConfig({channels:[...$("#cfgb").children].map(tr=>{const [n,g,t]=tr.querySelectorAll("input,select");return{name:n.value,gpio:+g.value,type:t.value}})});
+$("#cfgdef").onclick=()=>saveConfig({defaults:true});
+setInterval(()=>{if(ws&&ws.readyState===1)call("getInfo").then(i=>{info=i;renderInfo()}).catch(()=>{})},5000);
+setInterval(()=>{if(ws&&ws.readyState===1)scheduleRefresh(0)},2000);
+connect();
+</script>
+</body>
+</html>
