@@ -27,7 +27,6 @@ def _get(tg, token, timeout=2.0):
     return tg.wait_for(lambda e: e.kind == "response" and token in _body(e), timeout).body[token]
 
 
-@pytest.mark.bug("E156", on=["d449"])
 def test_homing_search_miss_is_reported(tg, keep):
     keep(*SMALL_HOMING)
     for token, value in SMALL_HOMING.items():
