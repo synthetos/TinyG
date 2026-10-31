@@ -20,7 +20,7 @@ def _round_trip(tg, keep, units, token, value):
         tg.send_gcode("G21", check=True)
 
 
-@pytest.mark.bug("E110", on=["d440", "d449"])
+@pytest.mark.bug("E110", on=["d440"])
 @pytest.mark.parametrize("token, value", [("atn", -1.0), ("ara", 5.305), ("ajm", 324000.0)])
 def test_rotary_setting_round_trips_in_inches(tg, keep, token, value):
     assert _round_trip(tg, keep, "G20", token, value) == pytest.approx(value, abs=1e-3)
