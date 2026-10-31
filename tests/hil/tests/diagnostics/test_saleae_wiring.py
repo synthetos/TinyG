@@ -1,4 +1,4 @@
-"""Diagnostic: are the Saleae channels wired to this board's step/dir pins as config/benches.json says?
+"""Diagnostic: are the Saleae channels wired to this board's step/dir pins as the bench file (tinyg_hil.benches) says?
 
 One capture (left open in Logic 2 for a person to inspect): each motor in turn moves forward and
 back. Its step channel must pulse about the step count its geometry predicts each way, every other
@@ -11,18 +11,18 @@ import time
 
 import pytest
 
-from tinyg_hil import saleae
+from tinyg_hil import benches, saleae
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.persists]
 
-BENCHES = json.loads((pathlib.Path(__file__).resolve().parents[2] / "config" / "benches.json").read_text())
+BENCHES = benches.load()
 STEPS = {"linear": 400, "rotary": 100}      # target pulses per direction
 
 
 def test_step_dir_wiring(tg, record, keep):
     bench = BENCHES.get(tg.transport.port) or {}
     if not bench.get("saleae"):
-        pytest.skip(f"no Saleae recorded for {tg.transport.port} in config/benches.json")
+        pytest.skip(f"no Saleae recorded for {tg.transport.port} in {benches.path()}")
     names = {int(k): v for k, v in bench["saleae_channels"].items()}
     chan = {v: k for k, v in names.items()}
     tg.send_gcode("G21 G91", check=True)

@@ -19,7 +19,7 @@ import time
 
 import pytest
 
-from tinyg_hil import saleae
+from tinyg_hil import benches, saleae
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.dialect("d449")]
 
@@ -31,7 +31,7 @@ MOVE = "2 mm +X moves with a feedhold swept across the end, then back"
 
 
 def _bench(tg):
-    config = json.loads((Path(__file__).resolve().parents[2] / "config/benches.json").read_text())
+    config = benches.load()
     bench = config.get(tg.transport.port) or {}
     if not bench.get("saleae"):
         pytest.skip(f"no Saleae recorded for {tg.transport.port}")

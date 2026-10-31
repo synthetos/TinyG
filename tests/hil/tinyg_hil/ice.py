@@ -12,6 +12,7 @@ build that is on the board; struct members need DWARF (the Makefile builds with 
 
 Holding the board lock is the caller's job (pytest's tg fixture already holds it; the CLI takes it).
 """
+import os
 import pathlib
 import struct
 import threading
@@ -147,12 +148,11 @@ def encode(value, size, kind, current=None):
 
 
 def ice_serial_for(port):
-    """Atmel-ICE serial wired to the board on `port` (config/benches.json); refuses to guess if unknown."""
-    import json, pathlib
-    benches = json.loads((pathlib.Path(__file__).resolve().parent.parent / "config" / "benches.json").read_text())
-    bench = benches.get(port)
-    if not bench or not bench.get("ice_serial"):
-        raise RuntimeError(f"no Atmel-ICE recorded for {port} in config/benches.json")
+    """Atmel-ICE serial wired to the board on `port` (tinyg_hil.benches); refuses to guess if unknown."""
+    from . import benches
+    bench = benches.bench(port)
+    if not bench.get("ice_serial"):
+        raise RuntimeError(f"no Atmel-ICE recorded for {port} in {benches.path()}")
     return bench["ice_serial"]
 
 
@@ -436,7 +436,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="tinyg_hil.ice", description="Atmel-ICE peek/poke on the TinyG")
     p.add_argument("command", choices=["peek", "poke", "watch", "where", "eeprom"])
     p.add_argument("args", nargs="*", help="peek: EXPR...; poke: EXPR VALUE; watch: EXPR...; eeprom: [OUTFILE]")
-    p.add_argument("--port", default="/dev/cu.usbserial-BENCH1", help="serial port whose board lock to take")
+    p.add_argument("--port", default=os.environ.get("TINYG_PORT"), required=not os.environ.get("TINYG_PORT"),
+                   help="serial port whose board lock to take (default: $TINYG_PORT)")
     p.add_argument("--elf", help="ELF of the flashed build (default: the one recorded at flash time)")
     p.add_argument("--interval", type=float, default=0.25)
     p.add_argument("--count", type=int, default=0, help="watch: stop after N samples (0 = until Ctrl-C)")

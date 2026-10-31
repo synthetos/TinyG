@@ -12,7 +12,7 @@ from pathlib import Path
 import time
 
 import pytest
-from tinyg_hil import saleae
+from tinyg_hil import benches, saleae
 from tinyg_hil.motion_profile import analyze
 
 pytestmark=[pytest.mark.diagnostic,pytest.mark.motion,pytest.mark.dialect('d449')]
@@ -20,10 +20,11 @@ LENGTHS=[.01,.02,.05,.1,.25,.5,1.,2.,5.,10.]
 
 @pytest.mark.parametrize('length',LENGTHS)
 def test_x_motion_profile(tg,record,request,length):
-    assert tg.transport.port=='/dev/cu.usbserial-BENCH2'
-    holder=json.loads(Path('/tmp/tinyg-hil-cu.usbserial-BENCH2.lock').read_text())
+    holder=json.loads(Path(f'/tmp/tinyg-hil-{Path(tg.transport.port).name}.lock').read_text())
     assert holder['pid']==os.getpid() and holder['owner']==os.environ.get('TINYG_OWNER')
-    config=json.loads((Path(__file__).resolve().parents[2]/'config/benches.json').read_text())[tg.transport.port]
+    config=benches.bench(tg.transport.port)
+    if not config.get('saleae'):
+        pytest.skip(f'no Saleae recorded for {tg.transport.port}')
     assert config['saleae_channels']['6']=='M1 step' and config['saleae_channels']['7']=='M1 dir'
     assert '1' not in config['saleae_channels']
     settings={t:tg.get(t) for t in ('1ma','1sa','1mi','1tr','1po','xjm','xvm','xfr','xam')}
