@@ -34,6 +34,10 @@ int main(void) {
     check("g1\tx1 \r", "G1X1", "");
     check("G1 X+1.5", "G1X+1.5", "");
     check("%", "", "");
+    check("  % ", "", "");
+    check("%(start)", "", "start");
+    check("G1 X0.001%9 F100", "G1X0.001%9F100", "");     /* embedded %: kept for rejection */
+    check("%G1X1", "%G1X1", "");
     check("G1 X1 (a * # comment)", "G1X1", "a * # comment");
     check("G1 X1 ; note", "G1X1", " note");
     check("/G1 X1", "/G1X1", "");

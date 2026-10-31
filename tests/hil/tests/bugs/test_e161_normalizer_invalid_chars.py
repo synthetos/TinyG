@@ -12,7 +12,8 @@ import pytest
 pytestmark = [pytest.mark.motion, pytest.mark.dialect("d449")]
 
 BAD = ["G91 G1 X0.001*9 F100", "G91 G1 X0.001 F100*5", "G91 G1 X0.0#01 F100", "G91 G1 X0.0'01 F100",
-       "G91 G1 X0.00[1] F100", "G91 G1 X0.00=1 F100"]
+       "G91 G1 X0.00[1] F100", "G91 G1 X0.00=1 F100",
+       "G91 G1 X0.001%9 F100"]
 
 
 def test_invalid_characters_are_not_spliced(tg):

@@ -142,10 +142,13 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 		else if ((isalnum((char)*rd)) || (strchr("-.+", *rd))) { // all valid characters
 			*(wr++) = (char)toupper((char)*(rd));
 		}
-		else if (!isspace((unsigned char)*rd) && (*rd != '%')) {	// keep anything else so the line fails as malformed:
+		else if (!isspace((unsigned char)*rd)) {			// keep anything else so the line fails as malformed:
 			*(wr++) = *rd;							// deleting it spliced X0.001*9 into X0.0019 (E161)
 		}
 	}
+
+	// a '%' alone on the line is the program delimiter; anywhere else it is kept and rejected (E161)
+	if ((str[0] == '%') && (str[1] == NUL)) { str[0] = NUL; }
 
 	// Perform Octal stripping - remove invalid leading zeros in number strings
 	rd = str;
