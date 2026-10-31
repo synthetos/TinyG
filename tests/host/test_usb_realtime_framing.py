@@ -39,7 +39,7 @@ class RealtimeFraming(unittest.TestCase):
 struct {unsigned char DATA; int CTRLA;} port;
 struct {int len; bool flag_in_line, flag_xoff;} USB;
 struct {bool queue_flush_input;} cm;
-struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_open,rx_line_damaged,rx_damage_next;
+struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_damage_next;
         char rx_buf[RX_BUFFER_SIZE];} USBu={.usart=&port,.rx_buf_head=1,.rx_buf_tail=1};
 volatile bool rx_in_line;
 int holds,resumes,flushes,resets,enquiries,kills;

@@ -43,7 +43,7 @@ enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
 struct {uint8_t CTRLA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
-                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_open,rx_line_damaged,rx_damage_next; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
+                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_damage_next; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
 struct {int enable_flow_control, buf_state;} xio;
@@ -128,7 +128,6 @@ class PercentKeepsLaterInput(unittest.TestCase):
         for source, signature in ((usart, r"buffer_t xio_get_rx_bufcount_usart\("), (usart, r"void xio_xon_usart\("),
                                   (usart, r"void xio_fc_usart\("), (usart, r"static int _gets_helper\("),
                                   (usart, r"int xio_gets_usart\("), (usb, r"void xio_reset_usb_rx_buffers\("),
-                                  (usb, r"static buffer_t _ring_ahead\("),
                                   (usb, r"void xio_drop_usb_rx_before_mark\("), (xio, r"void xio_flush_input\(")):
             code += function(source, signature + r"[^;{}]*\)(?=[^\n{;]*\n?\s*\{)") + "\n"   # a comment may follow
         code += EXERCISE

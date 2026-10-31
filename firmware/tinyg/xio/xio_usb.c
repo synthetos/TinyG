@@ -174,6 +174,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		if (cm.queue_flush_input) {				// honored: what the ring holds now came before the '%'
 			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
 			USBu.rx_flush_marked = true;
+			USBu.rx_lost_after_mark = false;		// losses so far came before the '%' (E162)
 		}
 		return;
 	}
@@ -223,6 +224,10 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_lost_first = USBu.rx_buf_head;
 		}
 		USBu.rx_lost_last = USBu.rx_buf_head;
+		if (USBu.rx_flush_marked && !USBu.rx_lost_after_mark) {	// lost after a '%': the flush must keep it
+			USBu.rx_lost_after_mark = true;
+			USBu.rx_lost_post_first = USBu.rx_buf_head;		// may equal the mark if nothing was kept since
+		}
 	}
 }
 
@@ -251,6 +256,7 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_buf_tail = 1;
 	USBu.rx_flush_marked = false;
 	USBu.rx_lost = false;		// nothing kept: no lost input to account for (E162)
+	USBu.rx_lost_after_mark = false;
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
 	USBu.rx_damage_next = false;
@@ -262,27 +268,27 @@ void xio_reset_usb_rx_buffers(void)
  *	Caller masks interrupts. Unread ring bytes up to the mark and the line being read go; bytes the
  *	host sent after the '%' stay in the ring. With no mark (a '%' line or {qf}) everything goes.
  */
-static buffer_t _ring_ahead(buffer_t tail, buffer_t pos)	// reads from tail until pos (the ring fills downward, 0 unused)
-{
-	return ((tail >= pos) ? (tail - pos) : (tail + (RX_BUFFER_SIZE - 1) - pos));
-}
-
 void xio_drop_usb_rx_before_mark(void)
 {
 	if (!USBu.rx_flush_marked) {
 		xio_reset_usb_rx_buffers();
 		return;
 	}
-	// Lost input in the dropped part no longer matters; lost input after the '%' still does (E162).
-	// Ring distance from the new tail decides which side of the mark each loss is on.
-	if (USBu.rx_lost && (_ring_ahead(USBu.rx_buf_tail, USBu.rx_lost_last) <= _ring_ahead(USBu.rx_buf_tail, USBu.rx_flush_mark))) {
-		USBu.rx_lost = false;
-	} else if (USBu.rx_lost && (_ring_ahead(USBu.rx_buf_tail, USBu.rx_lost_first) <= _ring_ahead(USBu.rx_buf_tail, USBu.rx_flush_mark))) {
-		USBu.rx_lost_first = (USBu.rx_flush_mark == 1) ? RX_BUFFER_SIZE-1 : USBu.rx_flush_mark-1;	// first kept byte
-	}
+	// Lost input before the '%' goes with the dropped bytes; lost input after it still counts (E162).
+	// The ISR records the order, since a loss right after the '%' sits at the mark itself.
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
 	USBu.rx_damage_next = false;
+	if (!USBu.rx_lost_after_mark) {
+		USBu.rx_lost = false;
+	} else if (USBu.rx_lost_post_first == USBu.rx_flush_mark) {	// lost right after the '%': the first line read lost its head
+		USBu.rx_line_damaged = true;
+		USBu.rx_lost_open = (USBu.rx_lost_last != USBu.rx_flush_mark);	// later losses: inside the stretch from the start
+		USBu.rx_lost = USBu.rx_lost_open;
+	} else {
+		USBu.rx_lost_first = USBu.rx_lost_post_first;
+	}
+	USBu.rx_lost_after_mark = false;
 	USBu.rx_buf_tail = USBu.rx_flush_mark;
 	USBu.rx_flush_marked = false;
 	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);

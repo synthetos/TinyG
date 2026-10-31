@@ -175,6 +175,8 @@ typedef struct xioUSART {
 	volatile buffer_t rx_lost_first;		// last byte kept before the ring overran: bytes after it were lost (E162)
 	volatile buffer_t rx_lost_last;			// the same for the latest overrun before the reader caught up
 	volatile uint8_t rx_lost;				// set by the RX ISR on an overrun, cleared once the reader passes rx_lost_last
+	volatile uint8_t rx_lost_after_mark;	// a loss came after the honored '%' (the flush must keep it)
+	volatile buffer_t rx_lost_post_first;	// last byte kept before the first such loss (may be the mark)
 	uint8_t rx_lost_open;					// reader is between the two marks
 	uint8_t rx_line_damaged;				// the line being read lost bytes: it must not run
 	uint8_t rx_damage_next;					// bytes were lost right after a line end: the next line is damaged

@@ -39,7 +39,7 @@ static volatile bool rx_in_line;
 static struct {uint8_t flag_xoff;} USB;
 typedef struct {uint8_t CTRLA,DATA;} usart_t;
 typedef struct {uint8_t OUTCLR,OUTSET;} port_t;
-typedef struct {uint8_t fc_state_rx,fc_state_tx,fc_char_rx;usart_t *usart;port_t *port;uint8_t rx_buf_head,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_open,rx_line_damaged,rx_damage_next;} xioUsart_t;
+typedef struct {uint8_t fc_state_rx,fc_state_tx,fc_char_rx;usart_t *usart;port_t *port;uint8_t rx_buf_head,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_damage_next;} xioUsart_t;
 struct {bool queue_flush_input;} cm;
 static usart_t uart;
 static port_t port;

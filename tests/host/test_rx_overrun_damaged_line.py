@@ -52,7 +52,7 @@ enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
 struct {uint8_t CTRLA; char DATA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx, fc_state_tx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
-                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_open,rx_line_damaged,rx_damage_next;
+                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_damage_next;
                 typeof(uart) *usart; typeof(port) *port; char rx_buf[RX_BUFFER_SIZE];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo,flag_xoff;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
@@ -183,19 +183,47 @@ int main(void) {
     expect(XIO_LINE_DAMAGED, NULL);                       /* "G1G1 X9" */
     tx("G1 X10\n");
     expect(XIO_OK, "G1 X10");
-    /* losses on both sides of the '%': what came after it up to the last loss is suspect */
+    /* losses on both sides of the '%': only the one after it counts */
     fresh();
     tx("AAAA\nBBBB\nCCC"); tx("C\n");                     /* first loss before the mark */
     tx("%");
     expect(XIO_OK, "AAAA");
-    tx("DD\nEEEEE");                                      /* "EEE" tossed: last loss after the mark */
+    tx("DD\nEEEEE");                                      /* "EEE" tossed: a loss after the mark */
     drop_at_mark();
     assert(USBu.rx_lost);
-    expect(XIO_LINE_DAMAGED, NULL);                       /* "DD": a loss in the stretch may precede it */
+    expect(XIO_OK, "DD");
     tx("\nFF\n");
     expect(XIO_LINE_DAMAGED, NULL);                       /* "EE" */
     expect(XIO_OK, "FF");
     assert(!USBu.rx_lost);
+    /* a full ring, then '%', then a loss: the loss sits at the mark itself but came after the '%' */
+    fresh();
+    tx("G1 X1\nG1 X222\n"); tx("%"); tx("G91 ");           /* "G91 " tossed */
+    drop_at_mark();
+    tx("G1 Y583\n");
+    expect(XIO_LINE_DAMAGED, NULL);                       /* not "G1 Y583" in G91 */
+    tx("G1 X5\n");
+    expect(XIO_OK, "G1 X5");
+    assert(!USBu.rx_lost && !USBu.rx_lost_open);
+    /* the same, and the reader frees room before the mark so a later loss lands elsewhere */
+    fresh();
+    tx("G1 X1\nG1 X222\n"); tx("%"); tx("G91 ");
+    expect(XIO_OK, "G1 X1");                              /* before the mark: still read */
+    tx("Y5\nG1 X7\n");                                    /* "X7\n" tossed */
+    drop_at_mark();
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "Y5", which lost its "G91 " */
+    expect(XIO_EAGAIN, NULL);                             /* "G1 " so far */
+    tx("Z\n");
+    expect(XIO_LINE_DAMAGED, NULL);                       /* "G1 Z" */
+    tx("ok\n");
+    expect(XIO_OK, "ok");
+    assert(!USBu.rx_lost && !USBu.rx_lost_open);
+    /* a second '%' moves the mark: losses between the two are dropped with the input */
+    fresh();
+    tx("G1 X1\nG1 X222\n"); tx("%"); tx("G91\n"); tx("%");  /* "G91\n" tossed; the second '%' starts a line */
+    drop_at_mark();
+    tx("G1 X8\n");
+    expect(XIO_OK, "G1 X8");
     /* seeded streams */
     for (unsigned seed = 1; seed <= 200; seed++) stream(seed, 400);
     return 0;
@@ -216,7 +244,7 @@ class RxOverrunDamagedLine(unittest.TestCase):
                                   (usart, r"void xio_xoff_usart\("), (usart, r"void xio_fc_usart\("),
                                   (usart, r"static int _gets_helper\("), (usart, r"int xio_gets_usart\("),
                                   (usb, r"ISR\(USB_RX_ISR_vect\)"), (usb, r"void xio_reset_usb_rx_buffers\("),
-                                  (usb, r"static buffer_t _ring_ahead\("), (usb, r"void xio_drop_usb_rx_before_mark\(")):
+                                  (usb, r"void xio_drop_usb_rx_before_mark\(")):
             if signature.startswith("ISR"):
                 code += function(source, signature) + "\n"
             else:
