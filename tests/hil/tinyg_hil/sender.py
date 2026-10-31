@@ -20,7 +20,11 @@ from dataclasses import dataclass, field
 import time
 
 MODES = {"line": {"rxm": 1, "ex": 1}, "g2": {"rxm": 1, "ex": 1}, "xon": {"rxm": 0, "ex": 1},
-         "xon-app": {"rxm": 0, "ex": 1}, "rts": {"rxm": 0, "ex": 2}, "count": {"rxm": 0, "ex": 0}}
+         "xon-app": {"rxm": 0, "ex": 1}, "rts": {"rxm": 0, "ex": 2}, "count": {"rxm": 0, "ex": 0},
+         "count-crlf": {"rxm": 0, "ex": 0}}
+# count-crlf: a byte-counting host fed a Windows file - CRLF endings and a blank line after every 7th
+# line - that keeps (bytes sent - bytes the footers report removed) under RX_COUNT_LIMIT. Exact only if
+# every byte read is reported, answered line or not (E164); otherwise it drifts until it stalls.
 G2_PRIME = 4                # g2 mode: g2core's line-mode protocol - send 4, then one line per {r:} response
 # "blast": no flow control and no pacing - a misbehaving host, used to force RX overruns on purpose
 BLAST = {"rxm": 0, "ex": 0}
@@ -195,6 +199,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     inflight = []                    # byte lengths (count mode) or 1s (line mode), oldest first
     free = tg.get("rx") if mode == "line" else None   # free line slots before the first footer
     credit = G2_PRIME                # g2 mode: lines the host may send; +1 per response, ignoring the footer
+    sent_bytes = reported = 0        # count-crlf: bytes written, bytes the footers reported removed
     flow_seen = len(tr.flow)
     xoff = False
     res.started = time.monotonic()
@@ -223,12 +228,17 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             # send as much as the scheme allows
             while i < res.lines:
                 data = (todo[i] + "\n").encode()
+                if mode == "count-crlf":
+                    data = (todo[i] + "\r\n").encode() + (b"\r\n" if i % 7 == 6 else b"")
                 if mode == "line":
                     room = free - len(inflight)
                     if room <= RESERVE:
                         break
                 elif mode == "count":
                     if inflight and sum(inflight) + len(data) > RX_COUNT_LIMIT:
+                        break
+                elif mode == "count-crlf":
+                    if sent_bytes - reported and sent_bytes - reported + len(data) > RX_COUNT_LIMIT:
                         break
                 elif mode == "g2" and credit <= 0:
                     break
@@ -238,6 +248,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 tr.write(data, drain_timeout=None if mode in ("rts", "xon") else 2.0)
                 inflight.append(len(data) if mode == "count" else 1)
                 credit -= 1
+                sent_bytes += len(data)
                 res.max_inflight = max(res.max_inflight, len(inflight))
                 i += 1
                 if i == res.lines:
@@ -272,6 +283,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     if inflight:
                         inflight.pop(0)
                     credit += 1
+                    if len(f) > 2 and isinstance(f[2], int):
+                        reported += f[2]
                     if mode == "line" and len(f) > 2:
                         free = f[2]
                         res.min_free = free if res.min_free is None else min(res.min_free, free)
