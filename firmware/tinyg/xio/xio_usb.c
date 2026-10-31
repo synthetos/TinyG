@@ -161,12 +161,12 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		hw_hard_reset();             // a blocked main loop must not defer reset
 		return;
 	}
-	if (c == CHAR_KILL_JOB) {					// trap job kill (^d), in or out of a line: alarm from the main loop (E096)
-		cm_request_job_kill();
-		return;
-	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
 		cm_request_feedhold();
+		return;
+	}
+	if (c == CHAR_KILL_JOB) {					// trap job kill (^d), in or out of a line: alarm from the main loop (E096)
+		cm_request_job_kill();
 		return;
 	}
 	if (!rx_in_line && c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
