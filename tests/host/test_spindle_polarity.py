@@ -149,8 +149,8 @@ int main(void) {
         self.assertEqual(new[end:end+2], [("sys", "spep"), ("sys", "spdp")])
         self.assertEqual(new[end+2:end+5], [("sys", "spph"), ("sys", "spde"), ("sys", "coph")])
         self.assertEqual(new[end+5], ("sys", "prbp"))
-        self.assertEqual(new[end+6], ("sys", "fstk"))
-        self.assertEqual(new[end+7], ("sys", "adc3"))
+        self.assertEqual(new[end+6], ("", "fstk"))                                  # E151: not in {sys:n}
+        self.assertEqual(new[end+7], ("", "adc3"))
         self.assertEqual(new[end+8:end+11], [("", "net"), ("", "fd"), ("", "ma")])   # E099, not persisted
         self.assertEqual(new[end+11], ("sys", "os"))                                # E020, session only
         self.assertEqual(new[end+12:end+16], [("pwr", f"pwr{m}") for m in range(1, 5)])   # E108, read-only

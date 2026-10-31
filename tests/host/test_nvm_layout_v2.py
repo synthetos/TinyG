@@ -49,6 +49,7 @@ int main(void) {
 #define TYPE_INTEGER 2
 #define TYPE_FLOAT 5
 #define TYPE_EMPTY -1
+#define TYPE_SKIP -2
 #define STAT_FUNCTION_IS_STUBBED 17
 #define CYCLE_OFF 0
 #define MILLIMETERS 1
@@ -97,7 +98,7 @@ int main(void) {
  for(int i=1;i<4;i++) {
   assert(records[i]==0xdeadbeef);nv.index=i;nv.value_int=42;
   assert(nv_persist(&nv)==0 && records[i]==0xdeadbeef);
-  assert(_reserved_hold_setting(&nv)==STAT_FUNCTION_IS_STUBBED && nv.valuetype==TYPE_EMPTY);
+  assert(_reserved_hold_setting(&nv)==STAT_FUNCTION_IS_STUBBED && nv.valuetype==TYPE_SKIP);
  }
 }
 '''
