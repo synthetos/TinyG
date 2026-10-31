@@ -953,6 +953,55 @@
        },
        "credentials_stored": {
         "type": "boolean"
+       },
+       "last_failure": {
+        "type": "object",
+        "description": "Present after a station connection failed: the WiFi status at the 20 s timeout, then a scan for the SSID. ssid_seen false usually means a 5 GHz-only network (the ESP8266 is 2.4 GHz only) or out of range; wrong_password or a WPA3-only network shows as seen but not connected.",
+        "properties": {
+         "status": {
+          "type": "string",
+          "enum": [
+           "idle",
+           "no_ssid_avail",
+           "connected",
+           "connect_failed",
+           "connection_lost",
+           "wrong_password",
+           "disconnected",
+           "other"
+          ]
+         },
+         "scanned": {
+          "type": "boolean"
+         },
+         "networks_seen": {
+          "type": "integer"
+         },
+         "ssid_seen": {
+          "type": "boolean"
+         },
+         "similar_ssid_seen": {
+          "type": "boolean",
+          "description": "An SSID equal to the stored one ignoring case and surrounding spaces was seen."
+         },
+         "rssi": {
+          "type": "integer"
+         },
+         "channel": {
+          "type": "integer"
+         },
+         "encryption": {
+          "type": "string",
+          "enum": [
+           "open",
+           "wep",
+           "wpa",
+           "wpa2",
+           "wpa/wpa2",
+           "other"
+          ]
+         }
+        }
        }
       }
      }
@@ -1615,7 +1664,7 @@
   "params": "An op's parameters are its requestBody members plus its path parameter (name) and query parameters (since, limit), all at the top level of the request object next to id and op. Unknown parameters are rejected (unknown_param).",
   "events": "Only after a subscribe op: Event (or Dropped) objects interleaved with responses. Responses carry id, events carry event.",
   "boot": "After every reset the board prints one Event line with event=boot, plus api_version, config (stored, default, or invalid: <why>) and fs. The ESP8266 ROM first prints a banner at 74880 baud, which reads as garbage at 115200; clients skip lines that are not JSON objects.",
-  "reset": "The CP2104's DTR and RTS lines drive the ESP8266 EN/GPIO0 auto-reset transistors. Open the port with both deasserted and keep them deasserted, or the board resets. getInfo's uptime_ms and boot_id tell whether it did.",
+  "reset": "The CP2104's DTR and RTS lines drive the ESP8266 EN/GPIO0 auto-reset transistors: RTS asserted alone resets the board, DTR asserted alone pulls GPIO0 low. macOS asserts both when the port opens, so never drop DTR before RTS (pyserial does exactly that if both are preset False, and the board resets). Preset both asserted so the open changes nothing, then drop RTS, then DTR. getInfo's uptime_ms and boot_id tell whether the board reset.",
   "operations": {
    "subscribe": {
     "operationId": "subscribe",

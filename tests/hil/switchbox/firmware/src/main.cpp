@@ -69,6 +69,16 @@ uint32_t wifi_deadline = 0;
 bool wifi_restart_pending = false;
 uint32_t wifi_restart_at = 0;
 bool mdns_started = false;
+// Why the last station connection failed, and whether a scan then saw the SSID (getInfo.wifi.last_failure).
+struct WifiFailure {
+    bool valid, scanned, seen, similar;
+    uint8_t status, encryption;
+    int32_t rssi, channel;
+    int networks;
+};
+WifiFailure wifi_failure = {};
+bool wifi_scanning = false;
+uint32_t wifi_scan_deadline = 0;
 char ap_ssid[24];
 
 uint32_t last_poll = 0, last_ws = 0;
@@ -92,6 +102,30 @@ class BufferedClient : public Print {
     uint8_t buf_[512];
     size_t n_ = 0;
 };
+
+const char *wl_status_name(uint8_t s) {
+    switch (s) {
+    case WL_IDLE_STATUS: return "idle";
+    case WL_NO_SSID_AVAIL: return "no_ssid_avail";
+    case WL_CONNECTED: return "connected";
+    case WL_CONNECT_FAILED: return "connect_failed";
+    case WL_CONNECTION_LOST: return "connection_lost";
+    case WL_WRONG_PASSWORD: return "wrong_password";
+    case WL_DISCONNECTED: return "disconnected";
+    default: return "other";
+    }
+}
+
+const char *encryption_name(uint8_t e) {
+    switch (e) {
+    case ENC_TYPE_NONE: return "open";
+    case ENC_TYPE_WEP: return "wep";
+    case ENC_TYPE_TKIP: return "wpa";
+    case ENC_TYPE_CCMP: return "wpa2";
+    case ENC_TYPE_AUTO: return "wpa/wpa2";
+    default: return "other";
+    }
+}
 
 void write_spec(Print &out) {
     char buf[256];
@@ -196,6 +230,19 @@ void info(JsonObject out) {
     JsonObject w = out["wifi"].to<JsonObject>();
     w["state"] = wifi_name(wifi_state);
     w["credentials_stored"] = have_creds;
+    if (wifi_failure.valid) {
+        JsonObject f = w["last_failure"].to<JsonObject>();
+        f["status"] = wl_status_name(wifi_failure.status);
+        f["scanned"] = wifi_failure.scanned;
+        f["networks_seen"] = wifi_failure.networks;
+        f["ssid_seen"] = wifi_failure.seen;
+        f["similar_ssid_seen"] = wifi_failure.similar;     // differs only in case or surrounding spaces
+        if (wifi_failure.seen) {
+            f["rssi"] = wifi_failure.rssi;
+            f["channel"] = wifi_failure.channel;
+            f["encryption"] = encryption_name(wifi_failure.encryption);
+        }
+    }
     w["mac"] = WiFi.macAddress();
     if (wifi_state == Wifi::ap) {
         w["mode"] = "ap";
@@ -314,6 +361,10 @@ void wifi_start() {
         start_ap();
         return;
     }
+    if (wifi_scanning) {                    // a new attempt supersedes the failure scan
+        WiFi.scanDelete();
+        wifi_scanning = false;
+    }
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_STA);
     WiFi.begin(creds.ssid, creds.password);
@@ -329,7 +380,38 @@ void wifi_loop() {
     if (wifi_state == sb::Wifi::connecting) {
         if (WiFi.status() == WL_CONNECTED) {
             set_wifi_state(sb::Wifi::sta);
-        } else if ((int32_t)(millis() - wifi_deadline) >= 0) {
+        } else if (!wifi_scanning && (int32_t)(millis() - wifi_deadline) >= 0) {
+            wifi_failure = {};
+            wifi_failure.valid = true;
+            wifi_failure.status = WiFi.status();
+            WiFi.disconnect();              // stop retrying, then look for the SSID before falling back
+            WiFi.scanNetworks(true, true);  // async, hidden networks too
+            wifi_scanning = true;
+            wifi_scan_deadline = millis() + 10000;
+        }
+    }
+    if (wifi_scanning) {
+        int n = WiFi.scanComplete();
+        if (n >= 0 || n == WIFI_SCAN_FAILED || (int32_t)(millis() - wifi_scan_deadline) >= 0) {
+            wifi_failure.scanned = n >= 0;
+            wifi_failure.networks = n;
+            String want(creds.ssid);
+            want.trim();
+            for (int i = 0; i < n; i++) {
+                String got = WiFi.SSID(i);
+                if (got != creds.ssid) {
+                    got.trim();
+                    wifi_failure.similar = wifi_failure.similar || got.equalsIgnoreCase(want);
+                    continue;
+                }
+                if (wifi_failure.seen && WiFi.RSSI(i) <= wifi_failure.rssi) continue;
+                wifi_failure.seen = true;
+                wifi_failure.rssi = WiFi.RSSI(i);
+                wifi_failure.channel = WiFi.channel(i);
+                wifi_failure.encryption = WiFi.encryptionType(i);
+            }
+            WiFi.scanDelete();
+            wifi_scanning = false;
             sb::core().log_wifi(sb::Wifi::sta_failed);
             start_ap();
         }
