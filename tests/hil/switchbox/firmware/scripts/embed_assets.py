@@ -16,8 +16,8 @@ import json
 import pathlib
 
 try:
-    Import("env")  # noqa: F821 - provided by SCons when PlatformIO runs this script
-    PROJECT = pathlib.Path(env.subst("$PROJECT_DIR"))  # noqa: F821
+    Import("env")                     # provided by SCons when PlatformIO runs this script
+    PROJECT = pathlib.Path(env.subst("$PROJECT_DIR"))
 except NameError:                     # run directly: python scripts/embed_assets.py
     PROJECT = pathlib.Path(__file__).resolve().parent.parent
 

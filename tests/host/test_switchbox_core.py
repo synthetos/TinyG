@@ -58,15 +58,14 @@ class SwitchboxCore(unittest.TestCase):
 
     def run_script(self, *lines, boot=True):
         script = (["@boot"] if boot else []) + [json.dumps(x) if isinstance(x, dict) else x for x in lines]
-        proc = subprocess.run([str(self.exe)], input="\n".join(script) + "\n", capture_output=True, text=True)
+        proc = subprocess.run([str(self.exe)], check=False, input="\n".join(script) + "\n", capture_output=True, text=True)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         out = [json.loads(line) for line in proc.stdout.splitlines()]
         return out[1:] if boot else out
 
     def events(self, *lines):
         """Runs the script, then returns every event (paging through getEvents)."""
-        out = self.run_script(*lines, *({"id": 9000 + i, "op": "getEvents", "since": 0, "limit": 32}
-                                        for i in range(1)))
+        out = self.run_script(*lines, {"id": 9000, "op": "getEvents", "since": 0, "limit": 32})
         page = out[-1]["result"]
         self.assertFalse(page["more"], "test produced more than one page of events")
         return out[:-1], page["events"]
@@ -245,7 +244,7 @@ class SwitchboxCore(unittest.TestCase):
         self.assertError(out[5], "no_change")
 
     def test_release_pulse_returns_to_closed(self):
-        out, ev = self.events({"id": 1, "op": "setChannel", "name": "zmin", "state": "closed"},
+        out = self.run_script({"id": 1, "op": "setChannel", "name": "zmin", "state": "closed"},
                               {"id": 2, "op": "pulseChannel", "name": "zmin", "action": "release", "ms": 2},
                               "@advance 2000", "@pins")
         self.assertEqual(out[1]["result"]["channel"]["state"], "open")
