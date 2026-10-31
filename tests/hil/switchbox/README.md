@@ -9,6 +9,7 @@ An Adafruit Feather HUZZAH ESP8266 whose GPIOs are wired to a TinyG v8's limit/h
 | `firmware/lib/sbcore/` | the core: request validation, channel model, edge sequencer, event ring. Plain C++, compiled on the host by `tests/host/test_switchbox_core.py` |
 | `firmware/src/main.cpp` | ESP8266 layer: pins, timer, serial, WiFi, HTTP, WebSocket, LittleFS |
 | `firmware/ui/index.html` | the web UI served at `/` |
+| `docs/` | Adafruit schematic (Eagle, CC BY-SA), source list, re-fetch script for the non-redistributable datasheets, and [pins.md](docs/pins.md): which ESP8266 pins can be channels and why |
 | `../tinyg_hil/switchbox.py` | Python client `SwitchBox` and a CLI |
 
 ## Electrical model
@@ -70,17 +71,36 @@ Default mapping (configurable at runtime with `setConfig`, persisted in LittleFS
 
 Channel names are free strings (1-15 of `A-Z a-z 0-9 _ - .`); tests use `<axis><min|max>`.
 
-**Pins that are refused** (`setConfig` returns `invalid_config`):
-- **GPIO15** must be low when the ESP8266 boots. TinyG's pull-up would hold it high and the ESP would not boot from flash.
-- GPIO1 and GPIO3 are the USB serial port.
-- GPIO6-11 are wired to the SPI flash.
-- The ADC pin (A0) is analog-only.
+**Why only these 8 pins.** The Feather's headers carry 11 digital GPIOs: 0-5, 12-16 (from Adafruit's Rev G schematic; per-pin evidence and options for more channels are in [docs/pins.md](docs/pins.md)):
+- 1 and 3 are the USB serial link;
+- 15 cannot present an open contact;
+- the other 8 are all in use;
+- GPIO6-11 never leave the module.
 
-**GPIO0 and GPIO2 are usable with caveats.** They must be high when the ESP8266 boots. TinyG's pull-up keeps them high, and an open channel is high-Z, so normally they are fine. But:
-- a closed contact, or a real switch closed on that input, while the ESP resets stops it booting;
-- they carry the Feather's LEDs (GPIO0 red, GPIO2 blue; lit while the contact is closed) and GPIO0 its button. Pressing the button grounds `amin`;
-- the CP2104 auto-reset circuit pulls GPIO0 low whenever DTR is asserted without RTS. Flashing the board does exactly that to enter the bootloader, and some serial tools do it on open/close. TinyG then sees `amin` close. Do not flash the switchbox while TinyG is homing or running;
-- when TinyG is unpowered, the LED path can back-feed a small current into its input clamp.
+The TinyG v8 has exactly 8 switch inputs, so 8 channels cover it one-to-one.
+
+**Pins that are refused** (`setConfig` returns `invalid_config`):
+- **GPIO15** must be low when the ESP8266 boots, so the Feather pulls it down with 4.7 kΩ (R7). Wired to a TinyG input, that pull-down and TinyG's pull-up form a divider:
+  - TinyG would never see the contact open: about 0.5 V against the xmega's internal pull-up;
+  - with a stronger board pull-up the line can sit above the ESP's 0.83 V input-low limit at boot, and the ESP then fails to boot from flash.
+  - It works through an N-MOSFET (docs/pins.md, option 1).
+- GPIO1 and GPIO3 are the USB serial port: TX goes straight to the CP2104; RX is driven by the CP2104 through 1 kΩ.
+- GPIO6-11 are the ESP-12 module's SPI flash and have no pad on the Feather.
+- The ADC pin (A0) is analog-only (0-1.0 V).
+
+**GPIO0 and GPIO2 are usable with caveats.** They must be high when the ESP8266 boots:
+- GPIO2 has a 10 kΩ pull-up on the Feather;
+- GPIO0 has only the red LED with 4.7 kΩ to 3.3 V;
+- TinyG's pull-up keeps both high, and an open channel is high-Z, so normally they are fine.
+
+But:
+- a closed contact, or a real switch closed on that input, while the ESP resets stops it booting (GPIO0 low = UART download mode);
+- LEDs: GPIO0 drives the Feather's red LED (D3), and GPIO2 the ESP-12 module's own blue LED. Both are lit while the contact is closed. The Feather's only push button (SW2) is RESET, not GPIO0;
+- the CP2104 auto-reset circuit (transistor Q2) pulls GPIO0 low whenever DTR is asserted without RTS:
+  - flashing the board does exactly that to enter the bootloader, and some serial tools do it on open/close;
+  - TinyG then sees `amin` close;
+  - do not flash the switchbox while TinyG is homing or running;
+- when TinyG is unpowered, GPIO0's LED path and GPIO2's 10 kΩ pull-up feed a small current from the Feather's 3.3 V into its input clamp.
 
 Hence the default map uses them last, for the A axis.
 

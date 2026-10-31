@@ -85,15 +85,15 @@ void default_config(Config &c) {
 
 const char *gpio_forbidden(long gpio) {
     if (gpio == 1 || gpio == 3) return "is the USB serial port (TX/RX)";
-    if (gpio >= 6 && gpio <= 11) return "is wired to the SPI flash";
-    if (gpio == 15) return "is a boot-strap pin that must be low at boot; TinyG's pull-up would stop the ESP8266 booting";
+    if (gpio >= 6 && gpio <= 11) return "is the ESP-12 module's SPI flash (no pad on the Feather)";
+    if (gpio == 15) return "has the Feather's 4.7k boot-strap pull-down: TinyG's input would never read open, and its pull-up can stop the boot";
     if (gpio < 0 || gpio > 16) return "is not an ESP8266 GPIO (A0 is analog-only)";
     return nullptr;
 }
 
 const char *gpio_caveat(long gpio) {
-    if (gpio == 0) return "boot-strap pin (must be high at boot) and the red LED/button; a closed contact or real switch during ESP reset stops it booting, and the USB-serial auto-reset circuit can pull it low";
-    if (gpio == 2) return "boot-strap pin (must be high at boot) and the blue LED; a closed contact or real switch during ESP reset stops it booting";
+    if (gpio == 0) return "boot-strap pin (must be high at boot) with the red LED; a closed contact or real switch during ESP reset stops it booting, and the USB-serial auto-reset circuit can pull it low";
+    if (gpio == 2) return "boot-strap pin (must be high at boot) with a 10k pull-up and the module's blue LED; a closed contact or real switch during ESP reset stops it booting";
     return nullptr;
 }
 
