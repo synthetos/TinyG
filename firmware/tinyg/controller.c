@@ -250,6 +250,9 @@ static void _reject_overlong_line()
 
 static stat_t _dispatch_command()
 {
+	if (cm.queue_flush_input || cm.queue_flush_input_due) {
+		return (STAT_OK);						// a host '%' is pending: buffered lines came before it (E146)
+	}
 	devflags_t flags = DEV_IS_BOTH;
 	cs.bufp = readline(&flags, &cs.linelen);
     if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition
@@ -265,6 +268,9 @@ static stat_t _dispatch_command()
 
 static stat_t _dispatch_control()
 {
+	if (cm.queue_flush_input || cm.queue_flush_input_due) {
+		return (STAT_OK);						// a host '%' is pending: buffered lines came before it (E146)
+	}
 	devflags_t flags = DEV_IS_CTRL;
 	cs.bufp = readline(&flags, &cs.linelen);
 	if (cs.bufp == (char *)_FDEV_ERR) {     // buffer overflow condition

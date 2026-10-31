@@ -156,6 +156,10 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	}
 	if (!rx_in_line && c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
 		cm_request_queue_flush();
+		if (cm.queue_flush_input) {				// honored: what the ring holds now came before the '%'
+			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
+			USBu.rx_flush_marked = true;
+		}
 		return;
 	}
 	if (!rx_in_line && c == CHAR_END_HOLD) {				    // trap cycle start signal
@@ -224,4 +228,24 @@ void xio_reset_usb_rx_buffers(void)
 	// reset RX interrupt circular buffer
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
+	USBu.rx_flush_marked = false;
+}
+
+/*
+ * xio_drop_usb_rx_before_mark() - drop what arrived before a host '%', keep what followed (E146)
+ *
+ *	Caller masks interrupts. Unread ring bytes up to the mark and the line being read go; bytes the
+ *	host sent after the '%' stay in the ring. With no mark (a '%' line or {qf}) everything goes.
+ */
+void xio_drop_usb_rx_before_mark(void)
+{
+	if (!USBu.rx_flush_marked) {
+		xio_reset_usb_rx_buffers();
+		return;
+	}
+	USBu.rx_buf_tail = USBu.rx_flush_mark;
+	USBu.rx_flush_marked = false;
+	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);
+	USB.len = 0;				// the partial line was read before the mark
+	USB.flag_in_line = false;	// rx_in_line stays: it follows the bytes kept in the ring
 }
