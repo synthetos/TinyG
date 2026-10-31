@@ -340,7 +340,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","btn",_fip,  3, cm_print_tn, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].travel_min,		B_TRAVEL_MIN },
 	{ "b","btm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].travel_max,		B_TRAVEL_MAX },
 	{ "b","bjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
-	{ "b","bjd",_fip,  0, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
+	{ "b","bjd",_fip,  4, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
 	{ "b","bra",_fipc, 3, cm_print_ra, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_B].radius,			B_RADIUS },
 
 #ifdef __ARM	// B axis extended parameters
@@ -359,7 +359,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","ctn",_fip,  3, cm_print_tn, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","ctm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
-	{ "c","cjd",_fip,  0, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
+	{ "c","cjd",_fip,  4, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
 	{ "c","cra",_fipc, 3, cm_print_ra, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_C].radius,			C_RADIUS },
 #ifdef __ARM	// C axis extended parameters
 	{ "c","csn",_iip,  0, cm_print_sn, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_C][SW_MIN].mode,	C_SWITCH_MODE_MIN },
@@ -467,7 +467,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "sys","jv",  _iipn, 0, js_print_jv,  get_ui8,   json_set_jv,(uint32_t *)&js.json_verbosity,		   JSON_VERBOSITY },
 	{ "sys","js",  _iipn, 0, js_print_js,  get_ui8,   set_01,     (uint32_t *)&js.json_syntax, 		       JSON_SYNTAX },
 	{ "sys","tv",  _iipn, 0, tx_print_tv,  get_ui8,   set_01,     (uint32_t *)&txt.text_verbosity,		   TEXT_VERBOSITY },
-	{ "sys","qv",  _iipn, 0, qr_print_qv,  get_ui8,   set_0123,   (uint32_t *)&qr.queue_report_verbosity,  QUEUE_REPORT_VERBOSITY },
+	{ "sys","qv",  _iipn, 0, qr_print_qv,  get_ui8,   set_012,    (uint32_t *)&qr.queue_report_verbosity,  QUEUE_REPORT_VERBOSITY },
 	{ "sys","sv",  _iipn, 0, sr_print_sv,  get_ui8,   set_012,    (uint32_t *)&sr.status_report_verbosity, STATUS_REPORT_VERBOSITY },
 	{ "sys","si",  _iipn, 0, sr_print_si,  get_u32,   sr_set_si,  (uint32_t *)&sr.status_report_interval,  STATUS_REPORT_INTERVAL_MS },
 

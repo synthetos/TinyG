@@ -534,7 +534,8 @@ static stat_t _parse_gcode_block(char *buf)
 			case 'I': SET_NON_MODAL (arc_offset[0], value);
 			case 'J': SET_NON_MODAL (arc_offset[1], value);
 			case 'K': SET_NON_MODAL (arc_offset[2], value);
-            case 'L': SET_NON_MODAL (L_word, value);
+            case 'L': if (!(value >= 0) || (value > UINT8_MAX) || (value != trunc(value))) { status = STAT_L_WORD_IS_INVALID; break; }	// L258, L2.5 were L2 (E160)
+                      SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
 			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
     	    default: return (STAT_GCODE_COMMAND_UNSUPPORTED);	// an error for this block, not an alarm (E042)

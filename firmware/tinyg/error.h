@@ -411,7 +411,7 @@ static const char stat_23[] PROGMEM = "Divide by zero";
 static const char stat_24[] PROGMEM = "Invalid Address";
 static const char stat_25[] PROGMEM = "Read-only address";
 static const char stat_26[] PROGMEM = "Initialization failure";
-static const char stat_27[] PROGMEM = "27";
+static const char stat_27[] PROGMEM = "Command rejected by ALARM";
 static const char stat_28[] PROGMEM = "Failed to get planner buffer";
 static const char stat_29[] PROGMEM = "Generic exception report";
 
@@ -603,7 +603,7 @@ static const char stat_200[] PROGMEM = "Generic error";
 static const char stat_201[] PROGMEM = "Move < min length";
 static const char stat_202[] PROGMEM = "Move < min time";
 //--------------------------------------1--------10--------20--------30--------40--------50--------60-64
-static const char stat_203[] PROGMEM = "Limit hit [$clear to reset, $lim=0 to override]";
+static const char stat_203[] PROGMEM = "Limit hit [$clear to reset]";
 static const char stat_204[] PROGMEM = "Command rejected by ALARM [$clear to reset]";
 static const char stat_205[] PROGMEM = "Command rejected by SHUTDOWN [$clear to reset]";
 static const char stat_206[] PROGMEM = "Command rejected by PANIC [^x to reset]";
@@ -648,7 +648,7 @@ static const char stat_241[] PROGMEM = "Homing Err - Bad or no axis specified";
 static const char stat_242[] PROGMEM = "Homing Err - Search velocity is zero";
 static const char stat_243[] PROGMEM = "Homing Err - Latch velocity is zero";
 static const char stat_244[] PROGMEM = "Homing Err - Travel min & max are the same";
-static const char stat_245[] PROGMEM = "245";
+static const char stat_245[] PROGMEM = "Homing Err - Latch backoff is negative";
 static const char stat_246[] PROGMEM = "Homing Err - Homing input is misconfigured";
 static const char stat_247[] PROGMEM = "Homing Err - Must clear switches before homing";
 static const char stat_248[] PROGMEM = "248";
