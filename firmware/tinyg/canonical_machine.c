@@ -2652,8 +2652,28 @@ float cm_get_jogging_dest(void)
 	return cm.jogging_dest;
 }
 
+/*
+ * _jog_allowed() - a jog starts only from idle or from a completed feedhold (E157)
+ *
+ *	While a program runs, the jogging cycle would wait for the current move and then flush the queued
+ *	program; during homing, probing or another jog it would overwrite the cycle and its saved modes.
+ *	Jogging out of a feedhold discards the held queue, as before.
+ */
+static stat_t _jog_allowed(void)
+{
+	if (cm.hold_state == FEEDHOLD_HOLD) {
+		return ((cm.cycle_state == CYCLE_MACHINING) || (cm.cycle_state == CYCLE_OFF)) ? STAT_OK : STAT_COMMAND_NOT_ACCEPTED;
+	}
+	if ((cm.cycle_state != CYCLE_OFF) || (cm.hold_state != FEEDHOLD_OFF) || (cm.motion_state != MOTION_STOP) ||
+		mp_has_runnable_buffer()) {
+		return (STAT_COMMAND_NOT_ACCEPTED);
+	}
+	return (STAT_OK);
+}
+
 stat_t cm_run_jogx(nvObj_t *nv)
 {
+	ritorno(_jog_allowed());
 	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_X);
 	return (STAT_OK);
@@ -2661,6 +2681,7 @@ stat_t cm_run_jogx(nvObj_t *nv)
 
 stat_t cm_run_jogy(nvObj_t *nv)
 {
+	ritorno(_jog_allowed());
 	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_Y);
 	return (STAT_OK);
@@ -2668,6 +2689,7 @@ stat_t cm_run_jogy(nvObj_t *nv)
 
 stat_t cm_run_jogz(nvObj_t *nv)
 {
+	ritorno(_jog_allowed());
 	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_Z);
 	return (STAT_OK);
@@ -2675,6 +2697,7 @@ stat_t cm_run_jogz(nvObj_t *nv)
 
 stat_t cm_run_joga(nvObj_t *nv)
 {
+	ritorno(_jog_allowed());
 	set_flt(nv);
 	cm_jogging_cycle_start(AXIS_A);
 	return (STAT_OK);

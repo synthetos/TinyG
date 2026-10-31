@@ -19,7 +19,6 @@ def _settle(tg, timeout=30):
         time.sleep(0.2)
 
 
-@pytest.mark.bug("E157", on=["d449"])
 def test_jog_refused_while_program_runs(tg):
     tg.send_gcode("G90 G21 G0 X0", allow="X to 0")
     _settle(tg)
