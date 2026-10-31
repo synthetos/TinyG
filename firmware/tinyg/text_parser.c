@@ -294,23 +294,7 @@ void tx_print(nvObj_t *nv) {
 
 void text_finalize_message(char *msg)
 {
-    char *start = msg;
-
-    // if running text strings in JSON mode do JSON escaping
-    if (cs.comm_mode == JSON_MODE_TXT_OVERRIDE) {
-        while (*msg != NUL) {
-
-            // substitute \n for LFs (and exit)
-            if (*msg == LF) {
-                *msg = '\\';
-                *(++msg) = 'n';
-                *(++msg) = NUL;
-                break;
-            }
-            msg++;
-        }
-    }
-    fputs(start, stdout);
+    fputs(msg, stdout);         // inside {"txt":"..."} the port escapes it (xio.json_escape, E137)
 }
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string

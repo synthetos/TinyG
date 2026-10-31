@@ -288,6 +288,7 @@ typedef struct xioSingleton {
 
     uint8_t enable_cr;					// enable CR in CRFL expansion on TX (shadow setting for XIO ctrl bits)
     uint8_t enable_echo;				// enable text-mode echo (shadow setting for XIO ctrl bits)
+    uint8_t json_escape;				// USB output is inside a {"txt":"..."} string: escape it (E137)
     uint8_t enable_flow_control;		// enable XON/XOFF or RTS/CTS flow control (shadow setting for XIO ctrl bits)
     xioRXMode rx_mode;			        // 0=RX_MODE_STREAM, 1=RX_MODE_PACKET
 

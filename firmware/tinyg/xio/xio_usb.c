@@ -55,7 +55,7 @@ static volatile bool rx_in_line;
  *	an interrupt.
  */
 
-int xio_putc_usb(const char c, FILE *stream)
+static int _putc_usb_raw(const char c)
 {
 	buffer_t next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
 	if (next_tx_buf_head == 0)
@@ -79,6 +79,17 @@ int xio_putc_usb(const char c, FILE *stream)
 	// finish up
 	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
 	return (XIO_OK);
+}
+
+int xio_putc_usb(const char c, FILE *stream)
+{
+	if (xio.json_escape) {						// inside a {"txt":"..."} string: keep the reply one valid JSON line (E137)
+		if ((c == '"') || (c == '\\')) { _putc_usb_raw('\\'); return (_putc_usb_raw(c)); }
+		if (c == '\n') { _putc_usb_raw('\\'); return (_putc_usb_raw('n')); }
+		if (c == '\t') { _putc_usb_raw('\\'); return (_putc_usb_raw('t')); }
+		if ((uint8_t)c < 0x20) { return (XIO_OK); }	// other control bytes have no place in the string
+	}
+	return (_putc_usb_raw(c));
 }
 
 ISR(USB_TX_ISR_vect) //ISR(USARTC0_DRE_vect)		// USARTC0 data register empty
