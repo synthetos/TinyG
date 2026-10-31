@@ -1,0 +1,37 @@
+{
+ "started": "20261031T141116Z",
+ "branch": "undefined",
+ "commit": "9c55357e",
+ "identity": {
+  "fb": 449.01,
+  "fv": 0.97,
+  "hp": 1,
+  "hv": 8,
+  "id": "0BENCH-TWO"
+ },
+ "dialect": "d449",
+ "tests": {
+  "tests/diagnostics/test_timing_e089_junction.py::test_first_move_keeps_speed_through_junction[default]": {
+   "outcome": "passed",
+   "bugs": [],
+   "file": "tests/tests_diagnostics_test_timing_e089_junction.py_test_first_move_keeps_speed_through_junction_default_.json"
+  }
+ },
+ "firmware": {
+  "known": true,
+  "commit": "9c55357e428c",
+  "branch": "",
+  "tree": "63c43526faa31e3f63972eb7a95dba93d6facc00",
+  "dirty": false,
+  "stock": false,
+  "stock_ref": "origin/edge-0.97",
+  "elf": "firmware/tinyg/build/tinyg.elf",
+  "elf_sha256": "9e0978b3125bb4d40a140673cc3cf5743d80c39fd21dad56520704967db4b629",
+  "hex_sha256": "3897430052efeb55f842371668e1396a4e90996ee1ae255c2758ba8035cabbcb",
+  "flashed_at": "2026-10-31T14:11:03+00:00",
+  "build_dir": "build",
+  "test_hooks": false
+ },
+ "purpose": "fix-verify",
+ "finished": "20261031T141131Z"
+}

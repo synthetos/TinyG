@@ -150,10 +150,74 @@ def overlay(before,after):
     return pairs
 
 
+TIMING_CHANNELS={'step':'M1 step','x_min':'X min'}
+
+
+def _timing_plot(edges, captures_label, destination, marker=None):
+    """Step rate in 5 ms bins from the stored transitions; marker = a channel whose first falling edge is drawn."""
+    plt=_plot_module();tr=edges['transitions'];step=[c for c in tr if c!=str(marker)][0] if marker is not None else next(iter(tr))
+    rises=[t for t,level in tr[step] if level==1]
+    if not rises:return
+    t0=rises[0];bins={}
+    for t in rises:bins[int((t-t0)/.005)]=bins.get(int((t-t0)/.005),0)+1
+    xs=sorted(bins);fig,ax=plt.subplots(figsize=(9,3.6),layout='constrained')
+    ax.step([k*.005 for k in xs],[bins[k]/.005 for k in xs],where='post',color='#087c89',lw=1)
+    if marker is not None:
+        falls=[t for t,level in tr[str(marker)] if level==0]
+        if falls:ax.axvline(falls[0]-t0,color='#bd342d',lw=.9,ls='--',label='switch trip (ch%s low)'%marker);ax.legend()
+    ax.set_xlabel('Time from first step (s)');ax.set_ylabel('Steps/s (5 ms bins)');ax.grid(alpha=.2)
+    ax.set_title(captures_label,fontsize=10);fig.savefig(destination,dpi=90);plt.close(fig)
+
+
+def promote_timing(run, finding, label, captures, dest_root=None, marker=None, plot=True):
+    """Promote named timing-diagnostic captures (stems in the run directory) with the test records that cite them."""
+    if not re.fullmatch(r'E\d{3}',finding):raise ValueError('finding must look like E089')
+    if label not in ('before','after'):raise ValueError('label must be before or after')
+    run=Path(run).resolve();record=_json(run/'run.json');firmware=record.get('firmware',{})
+    commit=firmware.get('commit','')
+    if not firmware.get('known') or not re.fullmatch(r'[0-9a-f]{7,40}',commit):raise ValueError('record needs known firmware commit')
+    if firmware.get('dirty'):raise ValueError('refuse to promote an unidentified dirty firmware build')
+    if plot:_plot_module()
+    root=Path(dest_root) if dest_root else Path(__file__).resolve().parents[1]/'evidence'
+    destination=root/finding/f'{commit}-{label}'
+    if destination.exists():raise FileExistsError(destination)
+    destination.mkdir(parents=True)
+    shutil.copy2(run/'run.json',destination/'source-run.json')
+    tests=sorted((run/'tests').glob('*.json'))
+    source=[]
+    for t in tests:
+        shutil.copy2(t,destination/('test-'+t.name))
+    for p in sorted(run.glob('*.sal'))+sorted(run.glob('*-edges.json')):
+        source.append({'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
+    for stem in captures:
+        sal,edge=run/f'{stem}.sal',run/f'{stem}-edges.json'
+        shutil.copy2(sal,destination/sal.name);edges=_json(edge)
+        (destination/(edge.name+'.gz')).write_bytes(gzip.compress(json.dumps(edges,separators=(',',':')).encode(),mtime=0))
+        if plot:_timing_plot(edges,f'{finding} {label} {commit} {stem}',destination/f'{stem}.png',marker)
+    artifacts=_manifest(destination)
+    revision=subprocess.run(['git','-C',str(Path(__file__).resolve().parents[3]),'rev-parse','HEAD'],capture_output=True,text=True)
+    summary={'promoter_source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+             'promoter_commit':revision.stdout.strip() if revision.returncode==0 else None,'finding':finding,'label':label,
+             'result':'measurement; gate verdict is the diagnostic test outcome in the copied test record, reviewed',
+             'firmware':firmware,'harness_commit':record.get('commit'),'bench':record.get('identity'),
+             'run_record':str(run/'run.json'),'representative_captures':list(captures),'source_artifacts':source,
+             'method':'tinyg_hil.saleae Capture(save_as=...): Saleae Logic 8 digital capture; sample rate and channels in each edges file',
+             'artifacts':artifacts,'large_artifacts':[a['file'] for a in artifacts if a['bytes']>1_000_000]}
+    _write(destination/'summary.json',summary)
+    return destination,summary
+
+
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);subs=parser.add_subparsers(dest='action',required=True)
     p=subs.add_parser('promote');p.add_argument('run');p.add_argument('--finding',required=True);p.add_argument('--label',required=True,choices=['before','after']);p.add_argument('--dest-root');p.add_argument('--representative',type=float,nargs='+',default=[.05,1.,10.]);p.add_argument('--before',help='promoted before directory for overlays')
-    args=parser.parse_args(argv);destination,summary=promote(args.run,args.finding,args.label,args.dest_root,args.representative)
+    t=subs.add_parser('promote-timing');t.add_argument('run');t.add_argument('--finding',required=True);t.add_argument('--label',required=True,choices=['before','after']);t.add_argument('--capture',action='append',required=True,help='capture stem in the run, repeatable');t.add_argument('--marker',type=int,help='analyzer channel whose first falling edge is marked');t.add_argument('--dest-root')
+    args=parser.parse_args(argv)
+    if args.action=='promote-timing':
+        destination,summary=promote_timing(args.run,args.finding,args.label,args.capture,args.dest_root,args.marker)
+        print(destination)
+        for name in summary['large_artifacts']:print(f'WARNING artifact exceeds 1 MB: {name}')
+        return 0
+    destination,summary=promote(args.run,args.finding,args.label,args.dest_root,args.representative)
     if args.before:overlay(args.before,destination);summary=_json(destination/'summary.json')
     print(destination)
     for name in summary['large_artifacts']:print(f'WARNING artifact exceeds 1 MB: {name}')
