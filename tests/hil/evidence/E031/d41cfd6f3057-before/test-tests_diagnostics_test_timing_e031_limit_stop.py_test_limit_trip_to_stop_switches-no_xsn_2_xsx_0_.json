@@ -1,0 +1,891 @@
+{
+ "nodeid": "tests/diagnostics/test_timing_e031_limit_stop.py::test_limit_trip_to_stop[switches-no+xsn=2,xsx=0]",
+ "bugs": [],
+ "markers": [
+  "diagnostic",
+  "dialect",
+  "hardware",
+  "ice",
+  "motion",
+  "profile",
+  "settings"
+ ],
+ "phases": {
+  "setup": {
+   "outcome": "passed",
+   "duration": 12.365,
+   "longrepr": ""
+  },
+  "call": {
+   "outcome": "failed",
+   "duration": 5.779,
+   "longrepr": "       assert tg.get(\"1ma\") == 0, \"X must be motor 1\"\n        keep(\"xjh\")\n        xjm = tg.get(\"xjm\")\n        tg.set(\"xjh\", xjm * 9)\n        spm = 360.0 / tg.get(\"1sa\") * tg.get(\"1mi\") / tg.get(\"1tr\")\n        feed = min(FEED, tg.get(\"xvm\"), tg.get(\"xfr\"))\n        tg.send_gcode(\"G28.3 X0\", check=True)\n        switches.mount(\"x\", \"min\", at=-TRIP_MM)\n        try:\n            with saleae.Capture(bench[\"saleae\"], channels=[xmin, step], seconds=None,\n                                save_as=recorder.dir / \"e031-limit-stop\") as cap:\n                time.sleep(0.2)\n                tg.send_gcode(f\"G91 G1 X-20 F{feed:g}\", check=True, allow=\"X runs into a software X-min limit at 8 mm\")\n                end = time.monotonic() + 15\n                while time.monotonic() < end and tg.stat() != tg.dialect.stat(\"ALARM\"):\n                    time.sleep(0.1)\n                time.sleep(0.5)                                  # braking has finished well before this\n            edges = cap.edges()\n            status = switches.mount_status(\"x\", \"min\")\n        finally:\n            tg.clear_alarm()\n            switches.unmount_all()\n            tg.send_gcode(\"G91 G1 X20 F1200\", allow=\"back off the limit\")\n            tg.wait_idle(timeout=30)\n            tg.send_gcode(\"G90\", check=True)\n        falls = [t for t, level in edges[xmin] if level == 0]\n        assert falls, \"the X-min input never went low on the analyzer\"\n        trip = falls[0]\n        rises = saleae.rising(edges[step])\n        before = [t for t in rises if t < trip]\n        after = [t for t in rises if t >= trip]\n        assert len(before) > 20 and after, f\"{len(before)} steps before the trip, {len(after)} after\"\n        cruise = (before[-1] - before[-11]) / 10                 # mean interval over the last 10 steps before it\n        onset = next((after[i] for i in range(1, len(after)) if after[i] - after[i - 1] > ONSET * cruise), None)\n        v = feed / 60.0\n        jerk = xjm * 1e6 / 216000.0                              # mm/s^3\n        normal = v * (v / jerk) ** 0.5                           # jerk-limited stop at the move's jerk\n        result = {\"capture\": \"e031-limit-stop.sal\", \"edges\": \"e031-limit-stop-edges.json\", \"sample_rate\": cap.rate,\n                  \"channels\": {\"step\": step, \"x_min\": xmin}, \"steps_per_mm\": spm, \"feed_mm_min\": feed, \"xjm\": xjm,\n                  \"trip_s\": trip, \"cruise_interval_s\": cruise, \"cruise_mm_s\": 1 / cruise / spm,\n                  \"trip_to_braking_onset_s\": None if onset is None else onset - trip,\n                  \"trip_to_last_step_s\": after[-1] - trip, \"steps_after_trip\": len(after),\n                  \"overrun_mm\": len(after) / spm, \"normal_stop_mm\": normal, \"fast_stop_mm\": normal / 3,\n                  \"firmware_trip_at\": status.get(\"trip_at\")}\n        record(\"e031_limit_stop\", result)\n        assert onset is not None, f\"no braking seen after the trip: {result}\"\n        # the ISR starts the hold: braking within one 5 ms segment plus 2 ms; the run-out within the fast-stop\n        # distance plus that latency at cruise and two steps of quantization\n        assert result[\"trip_to_braking_onset_s\"] <= 0.007, f\"slow to start braking: {result}\"\n>       assert result[\"overrun_mm\"] <= normal / 3 + v * 0.007 + 2 / spm, f\"overran: {result}\"\nE       AssertionError: overran: {'capture': 'e031-limit-stop.sal', 'edges': 'e031-limit-stop-edges.json', 'sample_rate': 12000000, 'channels': {'step': 6, 'x_min': 0}, 'steps_per_mm': 1280.0, 'feed_mm_min': 600.0, 'xjm': 20, 'trip_s': 1.347986083, 'cruise_interval_s': 7.812500000001777e-05, 'cruise_mm_s': 9.999999999997726, 'trip_to_braking_onset_s': 0.0028608340000000343, 'trip_to_last_step_s': 0.5348031670000002, 'steps_after_trip': 4281, 'overrun_mm': 3.34453125, 'normal_stop_mm': 3.286335345030997, 'fast_stop_mm': 1.0954451150103324, 'firmware_trip_at': -8.0}\nE       assert 3.34453125 <= (((3.286335345030997 / 3) + (10.0 * 0.007)) + (2 / 1280.0))\n\ntests/diagnostics/test_timing_e031_limit_stop.py:92: AssertionError"
+  },
+  "teardown": {
+   "outcome": "passed",
+   "duration": 4.7,
+   "longrepr": ""
+  }
+ },
+ "start_position": {
+  "posx": 0.0,
+  "posy": 0.0,
+  "posz": 0.0,
+  "mpox": 0.0,
+  "mpoy": 0.0,
+  "mpoz": 0.0
+ },
+ "config": {
+  "label": "switches-no+xsn=2,xsx=0",
+  "layers": [
+   "switches-no",
+   "xsn=2,xsx=0"
+  ],
+  "settings": {
+   "1ma": 0,
+   "1mi": 8,
+   "1sa": 1.8,
+   "1tr": 1.25,
+   "2ma": 1,
+   "2mi": 8,
+   "2sa": 1.8,
+   "2tr": 1.25,
+   "3ma": 2,
+   "3mi": 8,
+   "3sa": 1.8,
+   "3tr": 1.25,
+   "4ma": 3,
+   "4mi": 8,
+   "4sa": 1.8,
+   "4tr": 360.0,
+   "st": 0,
+   "xsn": 2,
+   "xsx": 0
+  }
+ },
+ "observations": {
+  "e031_limit_stop": {
+   "capture": "e031-limit-stop.sal",
+   "edges": "e031-limit-stop-edges.json",
+   "sample_rate": 12000000,
+   "channels": {
+    "step": 6,
+    "x_min": 0
+   },
+   "steps_per_mm": 1280.0,
+   "feed_mm_min": 600.0,
+   "xjm": 20,
+   "trip_s": 1.347986083,
+   "cruise_interval_s": 7.812500000001777e-05,
+   "cruise_mm_s": 9.999999999997726,
+   "trip_to_braking_onset_s": 0.0028608340000000343,
+   "trip_to_last_step_s": 0.5348031670000002,
+   "steps_after_trip": 4281,
+   "overrun_mm": 3.34453125,
+   "normal_stop_mm": 3.286335345030997,
+   "fast_stop_mm": 1.0954451150103324,
+   "firmware_trip_at": -8.0
+  }
+ },
+ "sent": [
+  {
+   "t": 0.1266,
+   "data": "{\"st\":null}\n"
+  },
+  {
+   "t": 1.5481,
+   "data": "{\"1ma\":null}\n"
+  },
+  {
+   "t": 1.57,
+   "data": "{\"xjh\":null}\n"
+  },
+  {
+   "t": 1.5863,
+   "data": "{\"xjm\":null}\n"
+  },
+  {
+   "t": 1.6052,
+   "data": "{\"xjh\":180}\n"
+  },
+  {
+   "t": 1.7144,
+   "data": "{\"1sa\":null}\n"
+  },
+  {
+   "t": 1.7354,
+   "data": "{\"1mi\":null}\n"
+  },
+  {
+   "t": 1.7577,
+   "data": "{\"1tr\":null}\n"
+  },
+  {
+   "t": 1.7785,
+   "data": "{\"xvm\":null}\n"
+  },
+  {
+   "t": 1.7977,
+   "data": "{\"xfr\":null}\n"
+  },
+  {
+   "t": 1.8172,
+   "data": "G28.3 X0\n"
+  },
+  {
+   "t": 1.8324,
+   "data": "{\"1ma\":null}\n"
+  },
+  {
+   "t": 1.8546,
+   "data": "{\"1sa\":null}\n"
+  },
+  {
+   "t": 1.8712,
+   "data": "{\"1mi\":null}\n"
+  },
+  {
+   "t": 1.8935,
+   "data": "{\"1tr\":null}\n"
+  },
+  {
+   "t": 2.4801,
+   "data": "G91 G1 X-20 F600\n"
+  },
+  {
+   "t": 2.4981,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 2.6249,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 2.747,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 2.8688,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 2.9925,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 3.114,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 3.2433,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 3.3693,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 3.4982,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 3.625,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 4.8614,
+   "data": "{\"clear\":null}\n"
+  },
+  {
+   "t": 4.9093,
+   "data": "G91 G1 X20 F1200\n"
+  },
+  {
+   "t": 4.9279,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 4.9499,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.0726,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.0898,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.2181,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.2355,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.3639,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.3824,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.5071,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.5279,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.655,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.677,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.8051,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.8258,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 5.9543,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 5.9735,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.0949,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.1153,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.2339,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.2557,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.3822,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.4019,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.532,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.5516,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.6721,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.6937,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.8203,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.8416,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 6.9656,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 6.987,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 7.1129,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 7.1334,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 7.2636,
+   "data": "{\"stat\":null}\n"
+  },
+  {
+   "t": 7.2833,
+   "data": "{\"qr\":null}\n"
+  },
+  {
+   "t": 7.3053,
+   "data": "G90\n"
+  },
+  {
+   "t": 7.4142,
+   "data": "{\"xjh\":null}\n"
+  },
+  {
+   "t": 7.4303,
+   "data": "{\"xjh\":40}\n"
+  }
+ ],
+ "events": [
+  {
+   "t": 0.1338,
+   "kind": "response",
+   "raw": "{\"r\":{\"st\":0},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 1.5596,
+   "kind": "response",
+   "raw": "{\"r\":{\"1ma\":0},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.5757,
+   "kind": "response",
+   "raw": "{\"r\":{\"xjh\":40},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.5917,
+   "kind": "response",
+   "raw": "{\"r\":{\"xjm\":20},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.6559,
+   "kind": "response",
+   "raw": "{\"r\":{\"xjh\":180},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 1.7199,
+   "kind": "response",
+   "raw": "{\"r\":{\"1sa\":1.800},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.7519,
+   "kind": "response",
+   "raw": "{\"r\":{\"1mi\":8},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.7679,
+   "kind": "response",
+   "raw": "{\"r\":{\"1tr\":1.2500},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.7839,
+   "kind": "response",
+   "raw": "{\"r\":{\"xvm\":800},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.816,
+   "kind": "response",
+   "raw": "{\"r\":{\"xfr\":800},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.8321,
+   "kind": "response",
+   "raw": "{\"r\":{},\"f\":[2,0,9]}"
+  },
+  {
+   "t": 1.8482,
+   "kind": "response",
+   "raw": "{\"r\":{\"1ma\":0},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.8641,
+   "kind": "response",
+   "raw": "{\"r\":{\"1sa\":1.800},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.8801,
+   "kind": "response",
+   "raw": "{\"r\":{\"1mi\":8},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 1.9121,
+   "kind": "response",
+   "raw": "{\"r\":{\"1tr\":1.2500},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 2.4889,
+   "kind": "response",
+   "raw": "{\"r\":{},\"f\":[2,0,17]}"
+  },
+  {
+   "t": 2.505,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 2.585,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-0.009}}"
+  },
+  {
+   "t": 2.6331,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 2.6811,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-0.093}}"
+  },
+  {
+   "t": 2.7613,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 2.7774,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-0.377}}"
+  },
+  {
+   "t": 2.8894,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 2.8894,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-0.896}}"
+  },
+  {
+   "t": 2.9856,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-1.690}}"
+  },
+  {
+   "t": 3.0016,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.0816,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-2.640}}"
+  },
+  {
+   "t": 3.1297,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.1777,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-3.586}}"
+  },
+  {
+   "t": 3.258,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.274,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-4.584}}"
+  },
+  {
+   "t": 3.372,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-5.533}}"
+  },
+  {
+   "t": 3.3864,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.4663,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-6.531}}"
+  },
+  {
+   "t": 3.5143,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.5624,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-7.479}}"
+  },
+  {
+   "t": 3.63,
+   "kind": "exception",
+   "raw": "{\"er\":{\"fb\":449.01,\"st\":203,\"msg\":\"Limit hit [$clear to reset, $lim=0 to override] - input 1\"}}"
+  },
+  {
+   "t": 3.6455,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":2},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 3.6615,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-8.476}}"
+  },
+  {
+   "t": 3.7576,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-9.400}}"
+  },
+  {
+   "t": 3.8537,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-10.254}}"
+  },
+  {
+   "t": 3.9498,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-10.851}}"
+  },
+  {
+   "t": 4.062,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.212}}"
+  },
+  {
+   "t": 4.1581,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.345}}"
+  },
+  {
+   "t": 4.2542,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.364}}"
+  },
+  {
+   "t": 4.8788,
+   "kind": "response",
+   "raw": "{\"r\":{\"clear\":null},\"f\":[2,0,15]}"
+  },
+  {
+   "t": 4.927,
+   "kind": "response",
+   "raw": "{\"r\":{},\"f\":[2,0,17]}"
+  },
+  {
+   "t": 4.9429,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 4.9591,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.0232,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.357}}"
+  },
+  {
+   "t": 5.0873,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.1034,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.1193,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.278}}"
+  },
+  {
+   "t": 5.2155,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-11.003}}"
+  },
+  {
+   "t": 5.2315,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.2475,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.3116,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-10.470}}"
+  },
+  {
+   "t": 5.3756,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.3917,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.4077,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-9.598}}"
+  },
+  {
+   "t": 5.5038,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-8.521}}"
+  },
+  {
+   "t": 5.5197,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.5359,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.5999,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-7.235}}"
+  },
+  {
+   "t": 5.664,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.6961,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.6961,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-5.973}}"
+  },
+  {
+   "t": 5.808,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-4.647}}"
+  },
+  {
+   "t": 5.8242,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.8402,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 5.9043,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-3.387}}"
+  },
+  {
+   "t": 5.9684,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 5.9844,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.0004,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-2.061}}"
+  },
+  {
+   "t": 6.0971,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":-0.735}}"
+  },
+  {
+   "t": 6.1126,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.1286,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.1927,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":0.525}}"
+  },
+  {
+   "t": 6.2408,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.2727,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.2888,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":1.852}}"
+  },
+  {
+   "t": 6.3849,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":3.112}}"
+  },
+  {
+   "t": 6.401,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.4171,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.481,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":4.440}}"
+  },
+  {
+   "t": 6.5452,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.5612,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.5773,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":5.730}}"
+  },
+  {
+   "t": 6.6747,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":6.817}}"
+  },
+  {
+   "t": 6.6893,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.7053,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.7855,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":7.705}}"
+  },
+  {
+   "t": 6.8336,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.8496,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 6.8816,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":8.253}}"
+  },
+  {
+   "t": 6.9778,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":8.541}}"
+  },
+  {
+   "t": 6.9778,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 6.9937,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 7.0738,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":8.626}}"
+  },
+  {
+   "t": 7.1219,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":5},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 7.154,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":31},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 7.17,
+   "kind": "status",
+   "raw": "{\"sr\":{\"posx\":8.635}}"
+  },
+  {
+   "t": 7.2822,
+   "kind": "response",
+   "raw": "{\"r\":{\"stat\":3},\"f\":[2,0,14]}"
+  },
+  {
+   "t": 7.2982,
+   "kind": "response",
+   "raw": "{\"r\":{\"qr\":32},\"f\":[2,0,12]}"
+  },
+  {
+   "t": 7.3142,
+   "kind": "response",
+   "raw": "{\"r\":{},\"f\":[2,0,4]}"
+  },
+  {
+   "t": 7.4262,
+   "kind": "response",
+   "raw": "{\"r\":{\"xjh\":180},\"f\":[2,0,13]}"
+  },
+  {
+   "t": 7.4744,
+   "kind": "response",
+   "raw": "{\"r\":{\"xjh\":40},\"f\":[2,0,11]}"
+  }
+ ],
+ "salvaged_lines": 0,
+ "outcome": "failed"
+}

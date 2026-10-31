@@ -1,0 +1,1435 @@
+{
+  "limitations": "Calibrate the edge estimator on ideal quintic ramps, with DDA timestamp quantization.\nThis does not model step correction, executor segmentation or motor dynamics.\n",
+  "rows": [
+    {
+      "length_mm": 0.01,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.01mm.sal",
+      "first_to_last_step_s": 0.078420083,
+      "raw_peak_jerk_ratio": 1.6240327142363127,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.08,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.12,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.16,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.24,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.1708641845992083,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": null
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.1708641845992083,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": null
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.1511905259873848,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": null
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.1511905259873848,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": null
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 0.02,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.02mm.sal",
+      "first_to_last_step_s": 0.152673417,
+      "raw_peak_jerk_ratio": 3.4205607026798748,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.3732496389041826,
+          "upper_assumed_ratio": 31.387482809484776
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.0005415161659599,
+          "upper_assumed_ratio": 10.083674331356752
+        },
+        {
+          "width_s": 0.16,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        },
+        {
+          "width_s": 0.24,
+          "ratio": null,
+          "upper_assumed_ratio": null
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.2152753828496659,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 0.9654963383906506
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.6986410982769161
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.2152753828496659,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 0.9714865222111844
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.6968322184600748
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.19048812623618397,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.3714966203966217
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.19048812623618397,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": null
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.360668412129981
+            },
+            {
+              "width_s": 0.12,
+              "ratio": null
+            },
+            {
+              "width_s": 0.16,
+              "ratio": null
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 0.05,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.05mm.sal",
+      "first_to_last_step_s": 0.25263466700000003,
+      "raw_peak_jerk_ratio": 34.632471569791484,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 1.5170107638384196,
+          "upper_assumed_ratio": 257.9849532788469
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.4138526335835837,
+          "upper_assumed_ratio": 60.31327504110518
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.271568597437796,
+          "upper_assumed_ratio": 11.065405693895688
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.0417672470079986,
+          "upper_assumed_ratio": 4.579608853125017
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.1467895571678641,
+          "upper_assumed_ratio": 2.267577153949803
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.29217364581317307,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.1184293582728122
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 0.9970027832843597
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9310026937985217
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.7889429133209002
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.7178275485380856
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.29217364581317307,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.3040483644649103
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0125957970695487
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9335477180433372
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.7890333151727729
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.7177885898148662
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.25853216280382607,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.6250145110766505
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4343646350985375
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.2894409351181402
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.029564677451331
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.25853216280382607,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.5826225902327402
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4215301418032855
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.2781874758746705
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0269962756673137
+            },
+            {
+              "width_s": 0.24,
+              "ratio": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 0.1,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.1mm.sal",
+      "first_to_last_step_s": 0.27759516700000003,
+      "raw_peak_jerk_ratio": 210.6838094034542,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 1.752146094590843,
+          "upper_assumed_ratio": 248.46996036774098
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.4311787907179205,
+          "upper_assumed_ratio": 53.02618077032538
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.3546727779067127,
+          "upper_assumed_ratio": 10.090204082109828
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.252895816579547,
+          "upper_assumed_ratio": 4.27694722334253
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.0706586687853357,
+          "upper_assumed_ratio": 1.9229495277170114
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.3681157265845459,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.1520354691864876
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 0.9980948873741995
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9719206060021135
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.9165798814972344
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.7209496875657355
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.3681157265845459,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.1823468321675386
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.00747879030002
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9791141419402352
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.9169164714901594
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.7213229357443428
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.3257301139913888,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.661969067776932
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.44613699793669
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.3903447276499894
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.2602149793639745
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.0745742071743223
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.3257301139913888,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.7438278475123563
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4389993061037516
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.3881345931784697
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.2589544916684114
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.048544214674784
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 0.25,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.25mm.sal",
+      "first_to_last_step_s": 0.39134566600000004,
+      "raw_peak_jerk_ratio": 2562.099107869991,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 1.9206766833106983,
+          "upper_assumed_ratio": 262.7222970885384
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.4599177313559781,
+          "upper_assumed_ratio": 59.86164189462703
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.4449438655174451,
+          "upper_assumed_ratio": 11.747080542225046
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.3872288486485107,
+          "upper_assumed_ratio": 4.34629231513157
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.1846205852553056,
+          "upper_assumed_ratio": 2.0526925732757393
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.49960990659336263,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.2183343516970924
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0220804652229414
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9895572060849402
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.9875235647784137
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.8774748242908693
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.49960990659336263,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.2004897172090707
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0092733434899532
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9983861013746738
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.9858075208162347
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.8781119946374956
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.4420837798368464,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.6600324400795996
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.449850918121068
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4206333925066876
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.3940688446173743
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.1928900738665096
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.4420837798368464,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.6626369066779065
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4469037151766335
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4267365247798647
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.394652194988272
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.1921940542434482
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 0.5,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-0.5mm.sal",
+      "first_to_last_step_s": 0.502939083,
+      "raw_peak_jerk_ratio": 12958.341847501031,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 1.953386928874058,
+          "upper_assumed_ratio": 246.7770736712525
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.471498641428311,
+          "upper_assumed_ratio": 28.18252105149
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.4381828377822095,
+          "upper_assumed_ratio": 12.258336381849036
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.4049905627826336,
+          "upper_assumed_ratio": 4.942198673858693
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.2806302536666732,
+          "upper_assumed_ratio": 2.1225273787053363
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.6294690380529889,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.494046122254723
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0273173008287042
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9976246014052671
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0012913980908775
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.9528548089285995
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.6294690380529889,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.3243760531829987
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0519845578026015
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9957505045832622
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.999848994386944
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.952549262537128
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.5569906600335335,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.6994759955206131
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4732104778367823
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4356553304989084
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4152064866567924
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.3257430088339464
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.5569906600335335,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.8181683829587787
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.480550308394791
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4325276270700074
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4165948841355542
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.326683300927234
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 1.0,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-1mm.sal",
+      "first_to_last_step_s": 0.6444945,
+      "raw_peak_jerk_ratio": 80287.83759860082,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 2.3455303429911223,
+          "upper_assumed_ratio": 228.25111487199285
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.4712914994833532,
+          "upper_assumed_ratio": 29.34928476618184
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.4367042482924808,
+          "upper_assumed_ratio": 12.614916281917724
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.4216409578424398,
+          "upper_assumed_ratio": 5.2303241503555435
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.3731298560809322,
+          "upper_assumed_ratio": 2.216189262747024
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.7930812913000377,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.6314007439699607
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0756936127274548
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.0018883856185408
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0003921185156137
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.9941925048583962
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.7930812913000377,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.7201774850329223
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0032827188459896
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9933621228846059
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 0.9974136907807558
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.9926180566384892
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.7017642571710879,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.399287231128229
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.4498880022596747
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.441712937394635
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4364343546593579
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4014333572107105
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.7017642571710879,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.86573308890083
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.478584974280037
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4590496021196608
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4401105661459845
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4005074500549222
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 2.0,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-2mm.sal",
+      "first_to_last_step_s": 0.8251328329999998,
+      "raw_peak_jerk_ratio": 578237.343853131,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 2.125914888871656,
+          "upper_assumed_ratio": 253.7169371424861
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.5135285118655226,
+          "upper_assumed_ratio": 32.76072729052206
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.4380096238792883,
+          "upper_assumed_ratio": 14.175062542850242
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.4343373200595613,
+          "upper_assumed_ratio": 5.700959426549601
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.430350081771298,
+          "upper_assumed_ratio": 2.416501199660003
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 0.9992198131867253,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 1.3667826716283384
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0632833030768298
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.0127140974067084
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0016430040532542
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.0073866226890662
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.9992198131867253,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.0963893831108655
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0931103073001227
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 0.9966136494621061
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.005210527549787
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.9983018862366023
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 0.8841675596736928,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.065044445587349
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.5390419007651228
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4598598107930754
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4478326083223136
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4296835764293807
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 0.8841675596736928,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.1954523865987974
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.511020826203
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4346123872246654
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4415106304649372
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.431307765928275
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 5.0,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-5mm.sal",
+      "first_to_last_step_s": 1.134893417,
+      "raw_peak_jerk_ratio": 5979763.990015562,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 4.454464391891624,
+          "upper_assumed_ratio": 268.457459705824
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.5157952698978228,
+          "upper_assumed_ratio": 34.918602052665975
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.4710986490984679,
+          "upper_assumed_ratio": 16.468175779151835
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.4435625382714317,
+          "upper_assumed_ratio": 6.319030599246325
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.4408501700331644,
+          "upper_assumed_ratio": 2.639011378150989
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 1.3561499318823593,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 3.1368324876642895
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.0779461995350408
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.0298883800830856
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0120497066964718
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 0.9970885521615737
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 1.3561499318823593,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.131621301196437
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.178976283565676
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.020354313136618
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0002326328005293
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.008275317038726
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 1.2000000000000002,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.44876554012704
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.6072330666490784
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.4930025450308415
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4393291703491344
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4386185769134532
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 1.2000000000000002,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.687775640514333
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.5721551758963672
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.469156878622291
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4469563866892117
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4459953739085876
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "length_mm": 10.0,
+      "capture": ".analysis/hil-runs/20261030T155623Z-test_motion-profile/profile-X-10mm.sal",
+      "first_to_last_step_s": 1.589606,
+      "raw_peak_jerk_ratio": 15834678.79111122,
+      "observed": [
+        {
+          "width_s": 0.04,
+          "ratio": 6.070839775672197,
+          "upper_assumed_ratio": 287.76537446742435
+        },
+        {
+          "width_s": 0.08,
+          "ratio": 1.6661607713192645,
+          "upper_assumed_ratio": 38.9185147210635
+        },
+        {
+          "width_s": 0.12,
+          "ratio": 1.462960174565176,
+          "upper_assumed_ratio": 16.95953487423877
+        },
+        {
+          "width_s": 0.16,
+          "ratio": 1.453921569148691,
+          "upper_assumed_ratio": 6.449244998532057
+        },
+        {
+          "width_s": 0.24,
+          "ratio": 1.4419349342731147,
+          "upper_assumed_ratio": 2.848588017447242
+        }
+      ],
+      "calibration": [
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 0,
+          "duration_s": 1.7896444077714955,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 2.4544116407944587
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.2550071394255444
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.052536259676714
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.0234388451964096
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.0011808723088933
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.0,
+          "dda_phase_s": 1e-05,
+          "duration_s": 1.7896444077714955,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 3.844981718048631
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.1627596991792548
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.0268327074340335
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.003274215153051
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.0033227170400507
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 0,
+          "duration_s": 1.6572670690061995,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 4.509958771956777
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.5700442267404313
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.5017022783674672
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4718163946731553
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4440637199925666
+            }
+          ]
+        },
+        {
+          "true_jerk_ratio": 1.4433756729740645,
+          "dda_phase_s": 1e-05,
+          "duration_s": 1.6572670690061995,
+          "windows": [
+            {
+              "width_s": 0.04,
+              "ratio": 4.16276946635487
+            },
+            {
+              "width_s": 0.08,
+              "ratio": 1.5863146991486137
+            },
+            {
+              "width_s": 0.12,
+              "ratio": 1.5217168512102643
+            },
+            {
+              "width_s": 0.16,
+              "ratio": 1.4449167978342479
+            },
+            {
+              "width_s": 0.24,
+              "ratio": 1.4397472990019977
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

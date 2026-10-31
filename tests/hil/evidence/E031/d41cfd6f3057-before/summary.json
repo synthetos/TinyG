@@ -1,0 +1,80 @@
+{
+  "promoter_source_sha256": "78cf2327f97682dda754778d7134da9189ddc0cc99f9f886b495f9bb3077c39d",
+  "promoter_commit": "fbc287a5b7f525a7c28c7bcb1b48f683399505f0",
+  "finding": "E031",
+  "label": "before",
+  "result": "measurement; gate verdict is the diagnostic test outcome in the copied test record, reviewed",
+  "firmware": {
+    "known": true,
+    "commit": "d41cfd6f3057",
+    "branch": "",
+    "tree": "b53adf136d1a83a61bbdfe63bf603655c5d7b1d1",
+    "dirty": false,
+    "stock": false,
+    "stock_ref": "origin/edge-0.97",
+    "elf": "firmware/tinyg/build-testhooks/tinyg.elf",
+    "elf_sha256": "9f2a93745437f83787e1968256221fe13bed6e57021bc53e1338eed94b4540ed",
+    "hex_sha256": "25c635c9025253f5193d928d37a4b0451cead9f557165e4c6e8773f82a9f034d",
+    "flashed_at": "2026-10-31T14:09:43+00:00",
+    "build_dir": "build-testhooks",
+    "test_hooks": true
+  },
+  "harness_commit": "d41cfd6f",
+  "bench": {
+    "fb": 449.01,
+    "fv": 0.97,
+    "hp": 1,
+    "hv": 8,
+    "id": "0BENCH-TWO"
+  },
+  "run_record": "20261031T140946Z-undefined/run.json",
+  "representative_captures": [
+    "e031-limit-stop"
+  ],
+  "source_artifacts": [
+    {
+      "file": "e031-limit-stop.sal",
+      "sha256": "b6dc4b8ecbab6f5620c97ede85e16e26ec7334298208d7fe8822da948d1529da",
+      "bytes": 15128
+    },
+    {
+      "file": "e031-limit-stop-edges.json",
+      "sha256": "4d87b39d5a807f950fb168b5d4db5ba2fde93a701bcc9d1df3bd6e73a6eb6600",
+      "bytes": 505863
+    }
+  ],
+  "method": "tinyg_hil.saleae Capture(save_as=...): Saleae Logic 8 digital capture; sample rate and channels in each edges file",
+  "artifacts": [
+    {
+      "file": "e031-limit-stop-edges.json.gz",
+      "bytes": 111579,
+      "sha256": "0ac9bc0e962c833d4fe69e96ec1952ded382cf338daa8a962208e443edfc1c1c"
+    },
+    {
+      "file": "e031-limit-stop.png",
+      "bytes": 25346,
+      "sha256": "951dbc221652a81aed2db7b705e2f718626bac8c718816bdd1e80b835848be4b"
+    },
+    {
+      "file": "e031-limit-stop.sal",
+      "bytes": 15128,
+      "sha256": "b6dc4b8ecbab6f5620c97ede85e16e26ec7334298208d7fe8822da948d1529da"
+    },
+    {
+      "file": "source-run.json",
+      "bytes": 1180,
+      "sha256": "384aad7c08d35cdd4b5af689141bb8972f000cbeff2be8092afc18a61dabf7e7"
+    },
+    {
+      "file": "stopfit.json",
+      "bytes": 531,
+      "sha256": "96af8a9a162daf2a1c60c163e8313987155cc742d809a9a94aa1e43792fa9000"
+    },
+    {
+      "file": "test-tests_diagnostics_test_timing_e031_limit_stop.py_test_limit_trip_to_stop_switches-no_xsn_2_xsx_0_.json",
+      "bytes": 19283,
+      "sha256": "e98cf0a4fb75aab37dea58f394b43940d204472c37a0efc48dc6fb2d9edd7099"
+    }
+  ],
+  "large_artifacts": []
+}

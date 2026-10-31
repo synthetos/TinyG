@@ -22,6 +22,10 @@ DEFAULT_OUT = pathlib.Path(__file__).resolve().parent.parent / ".snapshots"
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "evidence":
+        from .evidence import main as evidence_main
+        return evidence_main(argv[1:])
     p = argparse.ArgumentParser(prog="tinyg_hil")
     p.add_argument("command", choices=["info", "snapshot", "restore", "flash", "text", "json"])
     p.add_argument("file", nargs="?", help="snapshot file for restore; the line to send for text/json")
