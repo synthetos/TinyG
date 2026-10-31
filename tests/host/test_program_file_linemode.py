@@ -20,6 +20,8 @@ class ProgramFileLineMode(unittest.TestCase):
 #define XIO_OK 0
 #define XIO_EAGAIN 2
 #define XIO_BUFFER_FULL 3
+#define XIO_LINE_DAMAGED 20
+#define _FDEV_ERR (-1)
 #define XIO_DEV_USB 0
 #define XIO_DEV_PGM 1
 #define RX_MODE_LINE 1

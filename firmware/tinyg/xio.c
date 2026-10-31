@@ -865,6 +865,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
+    	if (status == XIO_LINE_DAMAGED) {
+            _post_overflow(bufp);                       // keep the pool consistent; it is never run
+            return ((char *)_FDEV_ERR);                 // lost input: the controller alarms (E162)
+    	}
     	if (status == XIO_BUFFER_FULL) {
             _post_overflow(bufp);                       // truncated: the controller rejects it
     	} else {
@@ -882,6 +886,10 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
     }
     if ((status = _readline_source(bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
+    }
+    if (status == XIO_LINE_DAMAGED) {
+        _post_overflow(bufp);                           // keep the pool consistent; it is never run
+        return ((char *)_FDEV_ERR);                     // lost input: the controller alarms (E162)
     }
     if (status == XIO_BUFFER_FULL) {
         _post_overflow(bufp);                           // truncated: the controller rejects it
@@ -954,6 +962,11 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 	stat_t status;
 	if ((status = xio_gets(xio.primary_src, xio.bufp, RX_BUFFER_POOL_SIZE)) == XIO_EAGAIN) {
 		return(_exit_null(flags, size));
+	}
+	if (status == XIO_LINE_DAMAGED) {					// lost input: never run it; the controller alarms (E162)
+		*size = 0;
+		*flags = DEV_IS_NONE;
+		return ((char *)_FDEV_ERR);
 	}
 	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
     if (status == XIO_BUFFER_FULL) {

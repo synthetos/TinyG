@@ -263,6 +263,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
+    bool lost_open_now = false, lost_close_now = false, lost_inside = false;
 
     // One critical section for the checks and the dequeue: the RX ISR may mark a '%' at any point (E146)
 #ifdef __AVR
@@ -275,6 +276,19 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
         dx->rx_buf_count--;
         c = dx->rx_buf[dx->rx_buf_tail];		// get char from RX Q
+        // Bytes were lost after the marked positions (E162): note them with the dequeue, under the same cli
+        if (dx->rx_lost && !dx->rx_lost_open && (dx->rx_buf_tail == dx->rx_lost_first)) {
+            dx->rx_lost_open = true;
+            lost_open_now = true;
+        }
+        if (dx->rx_lost_open) {
+            lost_inside = true;
+            if (dx->rx_buf_tail == dx->rx_lost_last) {
+                dx->rx_lost_open = false;
+                dx->rx_lost = false;
+                lost_close_now = true;
+            }
+        }
     } else if (empty) {
         dx->rx_buf_count = 0;					// reset count for good measure
     }
@@ -288,6 +302,17 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
+    // A line that lost bytes must not run (E162). Bytes lost right after a line end damage the next
+    // line instead; a line end between the two marks ends a damaged line and starts another.
+    bool eol = (c == CR) || (c == LF);
+    if (lost_inside) {
+        if (eol && (lost_open_now || lost_close_now)) {
+            dx->rx_damage_next = true;          // the gap starts the following line
+        } else if (!eol || !lost_open_now) {
+            dx->rx_line_damaged = true;
+        }
+    }
+
     if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
         if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't
             return (XIO_EAGAIN);                // come back as a separate line (E087)
@@ -296,12 +321,26 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;                // reset in-line state
         d->len = 0;                             // reset length counter
+        if (dx->rx_line_damaged) {              // lost bytes outrank an overlong line (E162)
+            dx->rx_line_damaged = dx->rx_damage_next;
+            dx->rx_damage_next = false;
+            return (XIO_LINE_DAMAGED);
+        }
+        dx->rx_line_damaged = dx->rx_damage_next;
+        dx->rx_damage_next = false;
         return (XIO_BUFFER_FULL);               // reported once, at the end of the line
     }
     if ((c == CR) || (c == LF)) {				// handle CR, LF termination
         d->buf[(d->len)++] = NUL;
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;				// clear in-line state (reset)
+        if (dx->rx_line_damaged) {              // spliced across lost bytes: never run it (E162)
+            dx->rx_line_damaged = dx->rx_damage_next;
+            dx->rx_damage_next = false;
+            return (XIO_LINE_DAMAGED);
+        }
+        dx->rx_line_damaged = dx->rx_damage_next;
+        dx->rx_damage_next = false;
         return (XIO_EOL);						// return for end-of-line
     }
     //	d->buf[(d->len)++] = c;						// write character to buffer
@@ -325,6 +364,7 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 		switch (_gets_helper(d,dx)) {
 			case (XIO_BUFFER_EMPTY): return (XIO_EAGAIN);       // empty condition
 			case (XIO_BUFFER_FULL): return (XIO_BUFFER_FULL);   // overrun err
+			case (XIO_LINE_DAMAGED): return (XIO_LINE_DAMAGED); // lost bytes in this line (E162)
 			case (XIO_EOL): return (XIO_OK);                    // got complete line
 			case (XIO_EAGAIN): break;                           // loop for next character
 		}

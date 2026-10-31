@@ -467,7 +467,7 @@ typedef enum {
 	XIO_BUFFER_FULL,
 	XIO_BUFFER_FULL_FATAL,
 	XIO_INITIALIZING,		// system initializing, not ready for use
-	XIO_ERROR_16,			// reserved
+	XIO_LINE_DAMAGED,		// the line lost bytes in an RX ring overrun (E162)
 	XIO_ERROR_17,			// reserved
 	XIO_ERROR_18,			// reserved
 	XIO_ERROR_19			// NOTE: XIO codes align to here

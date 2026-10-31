@@ -217,6 +217,12 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
 		}
+		// Remember where input was lost: the reader must not splice what follows onto this line (E162)
+		if (!USBu.rx_lost) {
+			USBu.rx_lost = true;
+			USBu.rx_lost_first = USBu.rx_buf_head;
+		}
+		USBu.rx_lost_last = USBu.rx_buf_head;
 	}
 }
 
@@ -244,6 +250,10 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
 	USBu.rx_flush_marked = false;
+	USBu.rx_lost = false;		// nothing kept: no lost input to account for (E162)
+	USBu.rx_lost_open = false;
+	USBu.rx_line_damaged = false;
+	USBu.rx_damage_next = false;
 }
 
 /*
@@ -252,12 +262,27 @@ void xio_reset_usb_rx_buffers(void)
  *	Caller masks interrupts. Unread ring bytes up to the mark and the line being read go; bytes the
  *	host sent after the '%' stay in the ring. With no mark (a '%' line or {qf}) everything goes.
  */
+static buffer_t _ring_ahead(buffer_t tail, buffer_t pos)	// reads from tail until pos (the ring fills downward, 0 unused)
+{
+	return ((tail >= pos) ? (tail - pos) : (tail + (RX_BUFFER_SIZE - 1) - pos));
+}
+
 void xio_drop_usb_rx_before_mark(void)
 {
 	if (!USBu.rx_flush_marked) {
 		xio_reset_usb_rx_buffers();
 		return;
 	}
+	// Lost input in the dropped part no longer matters; lost input after the '%' still does (E162).
+	// Ring distance from the new tail decides which side of the mark each loss is on.
+	if (USBu.rx_lost && (_ring_ahead(USBu.rx_buf_tail, USBu.rx_lost_last) <= _ring_ahead(USBu.rx_buf_tail, USBu.rx_flush_mark))) {
+		USBu.rx_lost = false;
+	} else if (USBu.rx_lost && (_ring_ahead(USBu.rx_buf_tail, USBu.rx_lost_first) <= _ring_ahead(USBu.rx_buf_tail, USBu.rx_flush_mark))) {
+		USBu.rx_lost_first = (USBu.rx_flush_mark == 1) ? RX_BUFFER_SIZE-1 : USBu.rx_flush_mark-1;	// first kept byte
+	}
+	USBu.rx_lost_open = false;
+	USBu.rx_line_damaged = false;
+	USBu.rx_damage_next = false;
 	USBu.rx_buf_tail = USBu.rx_flush_mark;
 	USBu.rx_flush_marked = false;
 	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);

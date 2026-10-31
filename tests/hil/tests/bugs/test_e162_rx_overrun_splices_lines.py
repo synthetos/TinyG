@@ -28,7 +28,7 @@ def burst_lines():
     return [f"G4 P0.{'0' * (k % 5)}{k % 9 + 1}" for k in range(BURST)]
 
 
-@pytest.mark.bug("E162", on=["d449"])
+@pytest.mark.bug("E162", on=[])
 def test_overrun_lines_alarm_instead_of_running(tg, keep, record):
     keep("rxm", "ex")
     for token, value in (("rxm", 0), ("ex", 0)):             # char mode, no flow control: nothing paces the host
