@@ -56,7 +56,7 @@ uint8_t SREG=128;
 #define PSTR(x) (x)
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
-        bool program_paused, end_hold_requested, queue_flush_input; uint8_t optional_stop_enabled;} cm;
+        bool program_paused, end_hold_requested, queue_flush_input, queue_flush_input_due; uint8_t optional_stop_enabled;} cm;
 static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
 static int fetched, ran, wakeups, finalized, queued_commands;
