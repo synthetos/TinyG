@@ -27,7 +27,6 @@ def test_txt_help_is_one_json_response(tg):
 
 
 @pytest.mark.motion
-@pytest.mark.bug("E137", on=["d449"])
 def test_text_mode_auto_status_report_is_inline(tg):
     if "posx" not in (tg.get("sr") or {}):
         pytest.skip("posx is not in the status-report list")
