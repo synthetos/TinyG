@@ -63,7 +63,7 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 // Reserve E060 indexes only; omit from group reports and reject direct GET/SET.
 static stat_t _reserved_hold_setting(nvObj_t *nv)
 {
-    nv->valuetype = TYPE_EMPTY;
+    nv->valuetype = TYPE_SKIP;      // not serialized; TYPE_EMPTY ended text group listings here (E151)
     return STAT_FUNCTION_IS_STUBBED;
 }
 
