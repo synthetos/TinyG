@@ -11,7 +11,7 @@ class MotionSyncContract(unittest.TestCase):
     def test_contract(self):
         json=(ROOT/'firmware/tinyg/json_parser.c').read_text()
         gc=(ROOT/'firmware/tinyg/gcode_parser.c').read_text()
-        case=re.search(r'case 400:\s*\{(.*?)SET_NON_MODAL \(next_action, NEXT_ACTION_WAIT_FOR_COMPLETION\);',gc,re.S)
+        case=re.search(r'case 400:\s*\{(.*?)SET_(?:NON_MODAL \(next_action, |NEXT_ACTION \()NEXT_ACTION_WAIT_FOR_COMPLETION\);',gc,re.S)
         self.assertIsNotNone(case)
         code=r'''
 #include <stdint.h>
