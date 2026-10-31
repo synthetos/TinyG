@@ -112,6 +112,7 @@ Credentials never go in source or git. Provision over USB serial:
 ```
 cd tests/hil
 uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "ShopNet"   # prompts for the password
+uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "ShopNet" --password-stdin < pw.txt
 uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid ""          # forget them
 ```
 

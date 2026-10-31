@@ -1,4 +1,5 @@
 """Switchbox client and spec, without hardware: a fake serial port stands in for the board."""
+import io
 import json
 import os
 import re
@@ -23,6 +24,7 @@ from tinyg_hil.switchbox import (
     resolve_port,
     spec_digest,
 )
+from tinyg_hil.switchbox import main as switchbox_cli
 
 FIRMWARE = SPEC_PATH.parent / "firmware"
 ROM_BANNER = b"\x00\xe0\x1c\x8c\xff ets Jan  8 2013,rst cause:2, boot mode:(3,6)\r\n\xf2\x8c\x00\n"
@@ -293,6 +295,17 @@ def test_wifi_password_is_redacted_in_traffic():
     sb.set_wifi("shop", "hunter2hunter2")
     assert board.written[-1]["password"] == "hunter2hunter2"
     assert "hunter2" not in json.dumps(list(sb.traffic))
+
+
+def test_cli_reads_the_wifi_password_from_stdin(monkeypatch, capsys):
+    board = FakeBoard({"setWifi": lambda req: FakeBoard.ok(req, {"ssid": req["ssid"], "cleared": False,
+                                                                 "reconnecting": True})})
+    monkeypatch.setattr(sys, "stdin", io.StringIO("placeholder-pw\n"))
+    switchbox_cli(["wifi", "--port", "/dev/cu.fake-switchbox", "--ssid", "example-net", "--password-stdin"],
+                  serial_factory=lambda: board, lock=False, timeout=0.3)
+    assert board.written[-1] == {"id": board.written[-1]["id"], "op": "setWifi", "ssid": "example-net",
+                                 "password": "placeholder-pw"}
+    assert "placeholder-pw" not in capsys.readouterr().out
 
 
 def test_decode_mask():

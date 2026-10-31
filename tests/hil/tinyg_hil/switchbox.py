@@ -449,17 +449,19 @@ class SwitchBox:
 
 # ---- CLI: python -m tinyg_hil.switchbox <command> --port P -------------------------------------
 
-def main(argv=None):
+def main(argv=None, **client_kwargs):
     ap = argparse.ArgumentParser(prog="python -m tinyg_hil.switchbox",
                                  description="Switchbox over USB serial (takes the board lock).")
     ap.add_argument("command", choices=["info", "state", "events", "config", "defaults", "release-all", "wifi",
                                         "spec-check"])
     ap.add_argument("--port", required=True, help="switchbox serial port (never guessed)")
     ap.add_argument("--ssid", help="for wifi: network name ('' clears); the password is prompted for")
+    ap.add_argument("--password-stdin", action="store_true",
+                    help="for wifi: read the password from the first line of stdin instead of prompting")
     ap.add_argument("--since", type=int, default=0)
     ap.add_argument("--lock-wait", type=float, default=0.0)
     args = ap.parse_args(argv)
-    with SwitchBox(args.port, lock_wait=args.lock_wait, purpose=f"cli {args.command}") as sb:
+    with SwitchBox(args.port, lock_wait=args.lock_wait, purpose=f"cli {args.command}", **client_kwargs) as sb:
         if args.command == "info":
             out = sb.info()
         elif args.command == "state":
@@ -478,7 +480,12 @@ def main(argv=None):
         else:
             if args.ssid is None:
                 ap.error("wifi needs --ssid")
-            password = getpass.getpass(f"password for {args.ssid!r} (empty = open network): ") if args.ssid else ""
+            if not args.ssid:
+                password = ""
+            elif args.password_stdin:
+                password = sys.stdin.readline().rstrip("\r\n")
+            else:
+                password = getpass.getpass(f"password for {args.ssid!r} (empty = open network): ")
             out = sb.set_wifi(args.ssid, password)
     json.dump(out, sys.stdout, indent=1)
     print()
