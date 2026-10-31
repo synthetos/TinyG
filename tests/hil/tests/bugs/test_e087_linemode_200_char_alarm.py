@@ -38,11 +38,11 @@ def test_190_char_line(tg):
 
 @pytest.mark.bug("E087", on=[])
 def test_whitespace_only_overlong_line_gets_its_own_error(tg):
-    """Review case: a valid command, a >200-space line, then recovery. The spaces line must get exactly
+    """Review case: a valid command, a >254-space line, then recovery. The spaces line must get exactly
     one error (107) of its own; the commands around it are answered normally, with no alarm."""
     tg.drain(quiet=0.1)
     mark = len(tg.transport.history)
-    tg.transport.write(b"G90\n" + b" " * 210 + b"\nG21\n")
+    tg.transport.write(b"G90\n" + b" " * 270 + b"\nG21\n")
     time.sleep(0.8)
     tg.drain(quiet=0.3)
     responses = [e for e in tg.transport.history[mark:] if e.kind == "response"]

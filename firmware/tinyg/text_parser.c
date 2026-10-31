@@ -26,6 +26,7 @@
  */
 
 #include "tinyg.h"
+#include <errno.h>
 #include "config.h"
 #include "controller.h"
 #include "canonical_machine.h"
@@ -76,9 +77,11 @@ stat_t text_parser(char *str)
 		return (STAT_OK);
 	}
 
-	// pre-process the command
-	if ((str[0] == '$') && (str[1] == NUL)) {		// treat a lone $ as a sys request
-		strcat(str,"sys");
+	// A line-mode allocation for "$" has only two bytes; never expand it in place.
+	char sys_query[4];
+	if ((str[0] == '$') && (str[1] == NUL)) {
+		memcpy_P(sys_query, PSTR("sys"), sizeof(sys_query));
+		str = sys_query;
 	}
 
 	// parse and execute the command (only processes 1 command per line)
@@ -138,14 +141,37 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
     	    return (STAT_UNRECOGNIZED_NAME);
 	    }
-        if (cfg_is_type(nv->index) == TYPE_FLOAT) { // copy value as a float
-  		    str = ++rd;
-		    nv->value_flt = strtof(str, &rd);       // rd used as end pointer
-		    nv->valuetype = TYPE_FLOAT;
-	    } else {                                    // copy value as integer
-		    str = ++rd;
-            nv->value_int = atol(str);
-    		nv->valuetype = TYPE_INTEGER;
+        str = rd + 1;
+        str += strspn(str, separators);
+        nv->valuetype = TYPE_NULL;             // empty values are display requests
+        if (*str != NUL) {
+            errno = 0;
+            if (cfg_is_type(nv->index) == TYPE_FLOAT) {
+                nv->value_flt = strtof(str, &rd);
+                if (errno == ERANGE || !isfinite(nv->value_flt)) {
+                    return (STAT_INPUT_VALUE_RANGE_ERROR);
+                }
+                nv->valuetype = TYPE_FLOAT;
+            } else {
+                // Keep signed text values available to setters that use int32_t storage.
+                if (*str == '-') {
+                    long value = strtol(str, &rd, 10);
+                    if (errno == ERANGE || value < INT32_MIN || value > INT32_MAX) {
+                        return (STAT_INPUT_VALUE_RANGE_ERROR);
+                    }
+                    nv->value_int = (uint32_t)value;
+                } else {
+                    unsigned long value = strtoul(str, &rd, 10);
+                    if (errno == ERANGE || value > UINT32_MAX) {
+                        return (STAT_INPUT_VALUE_RANGE_ERROR);
+                    }
+                    nv->value_int = (uint32_t)value;
+                }
+                nv->valuetype = TYPE_INTEGER;
+            }
+            if (rd == str) { return (STAT_BAD_NUMBER_FORMAT); }
+            while (isspace((unsigned char)*rd)) { rd++; }
+            if (*rd != NUL) { return (STAT_BAD_NUMBER_FORMAT); }
         }
 	}
 
@@ -169,6 +195,7 @@ static const char prompt_err[] PROGMEM = "tinyg [%s] err: %s: %s ";
 void text_response(const stat_t status, char *buf)
 {
 	if (txt.text_verbosity == TV_SILENT) { return; } // skip all this
+	if (controller_defer_motion_response(status, false)) { return; }
 
 	char units[] = "inch";
 	if (cm_get_units_mode(MODEL) != INCHES) { strcpy(units, "mm"); }
@@ -181,7 +208,7 @@ void text_response(const stat_t status, char *buf)
 	nvObj_t *nv = NV_BODY+1;
 
 	if (nv_get_type(nv) == NV_TYPE_MESSAGE) {
-		printf(nv->str);
+		fputs(nv->str, stdout);
 	}
 	printf_P(PSTR("\n"));
 }
@@ -190,9 +217,42 @@ void text_response(const stat_t status, char *buf)
  * text_print_list() - produce text formatted output from an NV list
  */
 
+static void _text_print_inline_pairs(nvObj_t *nv)
+{
+    bool separator = false;
+    for (uint8_t i=0; (i<NV_BODY_LEN-1) && (nv != NULL); i++, nv=nv_next(nv)) {
+        if (nv->valuetype == TYPE_EMPTY) { break; }
+        if ((nv->valuetype == TYPE_PARENT) || (nv->valuetype == TYPE_SKIP)) { continue; }
+        if (nv->valuetype == TYPE_FLOAT) { prep_float(nv); }
+        if (separator) { putchar(','); }
+        separator = true;
+        fputs(nv->token, stdout);                    // SR population has already flattened group names
+        putchar(':');
+        switch ((int8_t)nv->valuetype) {
+            case TYPE_BOOLEAN:
+            case TYPE_INTEGER: printf_P(PSTR("%lu"), (unsigned long)nv->value_int); break;
+            case TYPE_SIGNED: printf_P(PSTR("%ld"), (long)(int32_t)nv->value_int); break;
+            case TYPE_FLOAT:
+                fntoa(cs.out_buf, nv->value_flt, nv->precision);
+                fputs(cs.out_buf, stdout);
+                break;
+            case TYPE_STRING: if (nv->str != NULL) { fputs(nv->str, stdout); } break;
+            case TYPE_DATA: {
+                uint32_t value;
+                memcpy(&value, &nv->value_flt, sizeof(value));
+                printf_P(PSTR("%lu"), (unsigned long)value);
+                break;
+            }
+            default: printf_P(PSTR("null")); break;
+        }
+    }
+    putchar('\n');
+}
+
 void text_print_list(stat_t status, uint8_t flags)
 {
     if (flags == TEXT_NO_DISPLAY) { return; }
+    if (flags == TEXT_INLINE_PAIRS) { _text_print_inline_pairs(NV_BODY); return; }
 
     nvObj_t *nv = NV_BODY;
     for (uint8_t i=0; i<NV_BODY_LEN-1; i++) {
@@ -234,23 +294,7 @@ void tx_print(nvObj_t *nv) {
 
 void text_finalize_message(char *msg)
 {
-    char *start = msg;
-
-    // if running text strings in JSON mode do JSON escaping
-    if (cs.comm_mode == JSON_MODE_TXT_OVERRIDE) {
-        while (*msg != NUL) {
-
-            // substitute \n for LFs (and exit)
-            if (*msg == LF) {
-                *msg = '\\';
-                *(++msg) = 'n';
-                *(++msg) = NUL;
-                break;
-            }
-            msg++;
-        }
-    }
-    printf(start);
+    fputs(msg, stdout);         // inside {"txt":"..."} the port escapes it (xio.json_escape, E137)
 }
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string

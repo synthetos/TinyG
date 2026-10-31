@@ -27,6 +27,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "json_parser.h"
+#include "controller.h"
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "spindle.h"
@@ -34,6 +35,10 @@
 #include "switch.h"
 #include "util.h"
 #include "planner.h"
+#include "stepper.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 /**** Probe singleton structure ****/
 
@@ -60,6 +65,7 @@ static stat_t _probing_init();
 static stat_t _probing_start();
 static stat_t _probing_finish();
 static stat_t _probing_finalize_exit();
+static stat_t _probing_error_exit(stat_t status);
 
 /****************************************************************************************
  *
@@ -69,13 +75,10 @@ static stat_t _probing_finalize_exit();
 uint8_t cm_straight_probe(const float target[], const bool flags[])
 {
 	// trap various errors
-    if (!cm.gf.feed_rate) {                                         // trap missing or zero feed rate
-        return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+    if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
+        return (STAT_GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED);
     }
-	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {				// RS274NGC 3.5.9.1: an error in G93
-		return (STAT_GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED);
-	}
-	if (fp_ZERO(cm.gm.feed_rate)) {
+    if (fp_ZERO(cm.gm.feed_rate)) { // a modal F is valid; it need not be on this line
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
     if (flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C]) {	        // trap illegal ABC axis movement
@@ -120,6 +123,9 @@ uint8_t cm_straight_probe(const float target[], const bool flags[])
 		pb.saved_jerk[axis] = cm_get_axis_jerk(axis);
         length += square(cm_get_work_position(MODEL,axis) - pb.target[axis]);
 	}
+	if (cm_get_units_mode(MODEL) == INCHES) {	// positions above are in current units; the limit is mm
+		length *= (MM_PER_INCH * MM_PER_INCH);
+	}
 	if (sqrt(length) < MINIMUM_PROBE_TRAVEL) {  // test the actual length (which is the sqrt())
         return(STAT_PROBE_TRAVEL_TOO_SMALL);
 	}
@@ -153,9 +159,30 @@ uint8_t cm_probe_callback(void)
 	if ((cm.cycle_state != CYCLE_PROBE) && (cm.probe_state != PROBE_WAITING)) {
 		return (STAT_NOOP);				// exit if not in a probe cycle or waiting for one
 	}
-	if (cm_get_runtime_busy()) {        // sync to planner move ends
+    // A completed probe hold retains its run buffer until finalization flushes it.
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool held_probe = (cm.cycle_state == CYCLE_PROBE) && (cm.hold_state == FEEDHOLD_HOLD) &&
+                      (cm.probe_state != PROBE_WAITING);
+    bool busy = !mp_runtime_is_idle() || (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) ||
+                (!held_probe && mp_has_runnable_buffer());
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (busy) {
         return (STAT_EAGAIN);
     }
+	if (cm_is_alarmed() != STAT_OK) {   // an alarm ends the probe: don't queue its move
+		cm.probe_state = PROBE_FAILED;
+		if (cm.cycle_state == CYCLE_PROBE) {
+			cm.cycle_state = CYCLE_OFF;	// first, so the finalize's cm_cycle_end() keeps the ALARM
+			pb.already_tripped = false;
+			_probing_finalize_exit();	// restore jerk and distance mode
+		}
+		return (STAT_OK);
+	}
 	return (pb.func());                 // execute the staged homing move
 }
 
@@ -191,7 +218,8 @@ static uint8_t _probing_init()
 
 	// probe in workspace coordinate system, absolute distance
 	cm_set_distance_mode(ABSOLUTE_MODE);
-	cm_spindle_control(SPINDLE_OFF);
+	// the spindle and coolant are left alone (as in g2core): a probe cycle must not drop a PnP
+	// vacuum or silently stop a spindle (E061)
 	return (_set_pb_func(_probing_start));							// start the move
 }
 
@@ -206,7 +234,10 @@ static stat_t _probing_start()
 	// contact: it fails the cycle and alarms rather than reporting the current position.
 	pb.already_tripped = (read_switch(pb.probe_switch) != SW_INACTIVE);  // reads and sets initial switch state
     if (!pb.already_tripped) {
-        ritorno(cm_straight_feed(pb.target, pb.flags));
+        stat_t status = cm_straight_feed(pb.target, pb.flags);
+        if (status != STAT_OK) {
+            return (_probing_error_exit(status));
+        }
     }
 	return (_set_pb_func(_probing_finish));
 }
@@ -214,6 +245,30 @@ static stat_t _probing_start()
 /*
  * _probing_finish()
  */
+
+/*
+ * _probe_report() - the completion report as a top-level {"prb":{...}} object (E101)
+ *
+ *	As g2core sends it, not an r/f reply that hosts (UGS, SPJS) would take as the answer to their
+ *	command in flight. Same keys and precision as the prb group; a non-finite coordinate is null,
+ *	as the serializer's prep_float makes it.
+ */
+static void _probe_report()
+{
+	char *out = cs.out_buf;
+	out += sprintf_P(out, PSTR("{\"prb\":{\"e\":%d"), (int)cm.probe_state);
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		float value = cm.probe_results[axis];
+		if (isnan(value) || isinf(value)) {
+			out += sprintf_P(out, PSTR(",\"%c\":null"), "xyzabc"[axis]);
+		} else {
+			out += sprintf_P(out, PSTR(",\"%c\":%0.3f"), "xyzabc"[axis], (double)value);
+		}
+	}
+	sprintf_P(out, PSTR("}}\n"));
+	json_relax(cs.out_buf);
+	fputs(cs.out_buf, stdout);
+}
 
 static stat_t _probing_finish()
 {
@@ -225,10 +280,7 @@ static stat_t _probing_finish()
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis));
 		cm.probe_results[axis] = cm_get_work_position(ACTIVE_MODEL, axis); // store the probe results
 	}
-    char temp[16];
-    sprintf_P(temp, PSTR("{\"prb\":null}"));    // JSON parser needs a fresh string every time
-	json_parser(temp);
-//	json_parser("{\"prb\":null}", NV_BODY, true);
+	_probe_report();
 	return (_set_pb_func(_probing_finalize_exit));
 }
 
@@ -249,14 +301,33 @@ static stat_t _probing_finalize_exit()
 
 	// update the model with actual position
 	cm_set_motion_mode(MODEL, MOTION_MODE_CANCEL);
-	cm_cycle_end();
-	cm.cycle_state = CYCLE_OFF;
+    if (cm_is_alarmed() == STAT_OK) {
+        cm_cycle_end();
+    }
+    cm.cycle_state = CYCLE_OFF;
+    pb.func = NULL;
 
-	if (pb.already_tripped) {					// after cm_cycle_end(), which would end the alarm state
-		cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe already tripped"));
-	} else if (cm.probe_state == PROBE_FAILED) {	// RS274NGC 3.5.9.1: an error if the probe does not trip;
-		cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe did not trip"));	// stop the job before it zeroes in the air
-	}
+    if (cm_is_alarmed() == STAT_OK) {
+        if (pb.already_tripped) {					// after cm_cycle_end(), which would end the alarm state
+            cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe already tripped"));
+        } else if (cm.probe_state == PROBE_FAILED) {	// RS274NGC 3.5.9.1: an error if the probe does not trip;
+            cm_alarm_P(STAT_PROBE_CYCLE_FAILED, PSTR("Probe did not trip"));	// stop the job before it zeroes in the air
+        }
+    }
 	return (STAT_OK);
 }
 
+
+static stat_t _probing_error_exit(stat_t status)
+{
+    cm.probe_state = PROBE_FAILED;
+    for (uint8_t axis=0; axis<AXES; axis++) {
+        cm_set_position(axis, mp_get_runtime_absolute_position(axis));
+    }
+    cm.cycle_state = CYCLE_OFF; // finalization must preserve this error, not report a probe miss
+    if (cm_is_alarmed() == STAT_OK) {
+        cm_alarm_P(status, PSTR("Probe move failed"));
+    }
+    _probing_finalize_exit();
+    return (status);
+}

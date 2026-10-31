@@ -35,7 +35,8 @@ typedef enum {
 
 typedef enum {					    // text output display modes
 	TEXT_NO_DISPLAY = 0,			// don't print anything if you find yourself in TEXT mode
-	TEXT_RESPONSE		            // print formatted values on separate lines with formatted print per line
+	TEXT_RESPONSE,		            // print formatted values on separate lines with formatted print per line
+    TEXT_INLINE_PAIRS              // automatic reports: comma-separated token:value pairs
 } textDisplays;
 
 typedef struct txtSingleton {		// text mode data

@@ -261,6 +261,7 @@ typedef enum {						    // value typing for config and JSON parsing
 #define _b0     (TYPE_BOOLEAN)      // boolean data types (only listing the ones we use)
 #define _bip    (TYPE_BOOLEAN | F_INITIALIZE | F_PERSIST)
 
+#define _sip    (TYPE_SIGNED | F_PERSIST)
 #define _ip     (TYPE_INTEGER | F_PERSIST)
 #define _i0     (TYPE_INTEGER)      // integer data types (only listing the ones we use)
 #define _in     (TYPE_INTEGER | F_NOSTRIP)
@@ -351,6 +352,7 @@ extern const cfgItem_t cfgArray[];
 /**** Prototypes for generic config functions - see individual modules for application-specific functions  ****/
 
 void config_init(void);
+void config_report_load_failure(void); // call only after startup enables TX
 stat_t set_defaults(nvObj_t *nv);			// reset config to default values
 void config_init_assertions(void);
 stat_t config_test_assertions(void);

@@ -29,7 +29,8 @@ def get(tg, token, timeout=2.0):
 
 
 def wait_prb(tg, timeout=10.0):
-    return tg.wait_for(lambda e: e.kind == "response" and "prb" in _body(e), timeout).body["prb"]
+    """The probe report: top-level {"prb":...} on edge since E101, r.prb on master."""
+    return tg.wait_for(lambda e: e.kind in ("probe", "response") and "prb" in _body(e), timeout).body["prb"]
 
 
 def idle(tg, timeout=15.0):
@@ -95,3 +96,19 @@ def test_g38_2_in_inverse_time_mode_is_an_error(tg, keep):
         assert r.status == tg.dialect.status("GCODE_INVERSE_TIME_MODE_CANNOT_BE_USED")
     finally:
         tg.send_gcode("G94", check=True)
+
+
+@pytest.mark.bug("E071", on=[])
+def test_g20_short_probe_above_minimum_is_accepted(tg, probe_zero):
+    """RS274NGC 3.5.9.1: error only if the move is < 0.254 mm or 0.01 inch. The check compared a
+    current-unit distance (inches in G20) against 0.254, so 0.02 inch (0.508 mm) was rejected."""
+    try:
+        r = tg.send_gcode("G20 G91 G38.2 Z-0.02 F1", allow="0.5 mm probe in free air")
+        assert r.status != tg.dialect.status("PROBE_TRAVEL_TOO_SMALL")
+        wait_prb(tg, 60)
+    finally:
+        idle(tg, 60)
+        tg.drain()
+        if tg.stat() == tg.dialect.stat("ALARM"):
+            tg.clear_alarm()
+        tg.send_gcode("G21 G90", check=True)

@@ -31,6 +31,8 @@ def main(argv=None):
     p.add_argument("--build", help="checkout to build with make (firmware/tinyg)")
     p.add_argument("--make", action="append", default=[], help="extra make arguments, e.g. --make TEST_HOOKS=1")
     p.add_argument("--restore", help="snapshot to restore after flashing (default: the one just taken)")
+    p.add_argument("--no-snapshot", action="store_true",
+                   help="flash without reading settings first (board in PANIC); needs --restore FILE")
     p.add_argument("--no-restore", action="store_true")
     p.add_argument("--transcript", help="write a timestamped raw serial transcript here")
     args = p.parse_args(argv)
@@ -59,8 +61,13 @@ def main(argv=None):
             print(f"built {hex_path} (fb {expect})")
         if not hex_path:
             p.error("flash needs --hex or --build")
-        snap = snapshot.take(tg)
-        print("snapshot", snapshot.save(snap, args.out))
+        snap = None
+        if args.no_snapshot:            # a board in PANIC rejects the snapshot's commands; recover from a file
+            if not args.restore and not args.no_restore:
+                p.error("--no-snapshot needs --restore FILE (or --no-restore)")
+        else:
+            snap = snapshot.take(tg)
+            print("snapshot", snapshot.save(snap, args.out))
         ident = flasher.flash(tg, hex_path, expect_fb=expect)
         print(f"flashed: {json.dumps(ident)} dialect {tg.dialect.name}")
         if not args.no_restore:

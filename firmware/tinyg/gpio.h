@@ -28,6 +28,8 @@
 #ifndef gpio_h
 #define gpio_h
 
+void gpio_init_outputs(void);
+
 void IndicatorLed_set(void);
 void IndicatorLed_clear(void);
 void IndicatorLed_toggle(void);
