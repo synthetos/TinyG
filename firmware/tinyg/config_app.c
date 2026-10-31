@@ -206,18 +206,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 //	{ "jog","jogb",_i0, 0, tx_print_nul, get_nul, cm_run_jogb, (uint32_t *)&cm.jogging_dest, 0},    // FYI
 //	{ "jog","jogc",_i0, 0, tx_print_nul, get_nul, cm_run_jogc, (uint32_t *)&cm.jogging_dest, 0},    // FYI
 
-/*
-	{ "pwr","pwr1",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},	// motor power enable readouts
-	{ "pwr","pwr2",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
-	{ "pwr","pwr3",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
-	{ "pwr","pwr4",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
-#if (MOTORS >= 5)
-	{ "pwr","pwr5",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
-#endif
-#if (MOTORS >= 6)
-	{ "pwr","pwr6",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
-#endif
-*/
+	// pwr1..pwr6 motor power readouts are appended after se29 so persisted indexes stay put (E108)
 	// Motor parameters
 	{ "1","1ma",_iip,  0, st_print_ma, get_ui8, set_ma,    (uint32_t *)&st_cfg.mot[MOTOR_1].motor_map,	M1_MOTOR_MAP },
 	{ "1","1sa",_fip,  3, st_print_sa, get_flt, st_set_sa, (uint32_t *)&st_cfg.mot[MOTOR_1].step_angle,	M1_STEP_ANGLE },
@@ -675,6 +664,17 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
     // Session optional-stop switch; append to preserve existing persistent indexes.
     { "sys","os",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
+    // Motor power readouts (E108): read-only, not initialized or persisted
+	{ "pwr","pwr1",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+	{ "pwr","pwr2",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+	{ "pwr","pwr3",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+	{ "pwr","pwr4",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+#if (MOTORS >= 5)
+	{ "pwr","pwr5",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+#endif
+#if (MOTORS >= 6)
+	{ "pwr","pwr6",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
+#endif
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***

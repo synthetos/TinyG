@@ -7,7 +7,6 @@ Master has the rows (master config_app.c:175-178).
 import pytest
 
 
-@pytest.mark.bug("E108", on=["d449"])
 def test_pwr_group_has_motors(tg):
     body = tg.send_json({"pwr": None}, check=True).body["pwr"]
     keys = {k if k.startswith("pwr") else f"pwr{k}" for k in body}    # group members may be prefix-stripped
@@ -15,7 +14,6 @@ def test_pwr_group_has_motors(tg):
     assert all(v in (0, 1) for v in body.values()), body
 
 
-@pytest.mark.bug("E108", on=["d449"])
 def test_pwr_reads_off_after_md(tg):
     tg.send_json({"md": None}, check=True)
     assert [tg.get(f"pwr{m}") for m in range(1, 5)] == [0, 0, 0, 0]
