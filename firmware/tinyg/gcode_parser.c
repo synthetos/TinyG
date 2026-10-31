@@ -271,8 +271,8 @@ static stat_t _validate_gcode_block()
 		(cm.gn.motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) && (cm.gn.motion_mode != MOTION_MODE_STRAIGHT_FEED)) {
 		return (STAT_GCODE_G53_WITHOUT_G0_OR_G1);
 	}
-	// NIST 3.5.15: axis words with G80 in effect are an error (unless a group 0 code uses them)
-	if (axis_words && !group0_axes && (cm.gn.motion_mode == MOTION_MODE_CANCEL)) {
+	// NIST 3.5.15: axis words with G80 in effect are an error, unless another code uses them (group 0, G43.1, M201.3)
+	if (axis_words && !cm.gf.next_action && !cm.gf.tool_offset_set && (cm.gn.motion_mode == MOTION_MODE_CANCEL)) {
 		return (STAT_GCODE_AXIS_CANNOT_BE_PRESENT);
 	}
 	return (STAT_OK);
@@ -294,6 +294,7 @@ static stat_t _parse_gcode_block(char *buf)
   	char letter;					// parsed letter, eg.g. G or X or Y
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
 	stat_t status = STAT_OK;
+	bool g80_on_line = false;		// G80 with G0-G3 on one line (safety lines like G0 G17 G40 G49 G80 G90): the motion code wins (E152)
 
 	// set initial state for new move
 	memset(&gp, 0, sizeof(gp));						// clear all parser values
@@ -372,7 +373,7 @@ static stat_t _parse_gcode_block(char *buf)
 					break;
 				}
 				case 64: SET_MODAL (MODAL_GROUP_G13,path_control, PATH_CONTINUOUS);
-				case 80: SET_MODAL (MODAL_GROUP_G1, motion_mode,  MOTION_MODE_CANCEL);
+				case 80: { if (g80_on_line) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; } g80_on_line = true; break; }	// applied after the line (E152)
 				case 90: {
     				switch (_point(value)) {
         				case 0: SET_MODAL (MODAL_GROUP_G3, distance_mode, ABSOLUTE_MODE);
@@ -482,6 +483,11 @@ static stat_t _parse_gcode_block(char *buf)
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);
     }
+	if (g80_on_line && !cm.gf.motion_mode) {		// G80 alone in group 1 cancels the motion mode
+		cm.gn.motion_mode = MOTION_MODE_CANCEL;
+		cm.gf.motion_mode = true;
+		cm.gf.modals[MODAL_GROUP_G1] = true;
+	}
 	ritorno(_validate_gcode_block());
 	return (_execute_gcode_block());		// if successful execute the block
 }

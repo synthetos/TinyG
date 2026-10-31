@@ -76,6 +76,13 @@ int main(void) {
     /* G53 needs G0 or G1 */
     expect("G53X0", C, STAT_GCODE_G53_WITHOUT_G0_OR_G1);  expect("G53X0", A, STAT_GCODE_G53_WITHOUT_G0_OR_G1);
     /* still accepted */
+    /* G80 with one motion code: the motion code wins (CAM safety lines); G80 twice is still an error */
+    expect("G00G17G21G40G49G80G90", C, STAT_OK);  assert(cm.gn.motion_mode == T);
+    expect("G80G1X1F100", C, STAT_OK);  assert(cm.gn.motion_mode == MOTION_MODE_STRAIGHT_FEED);
+    expect("G80", T, STAT_OK);  assert(cm.gn.motion_mode == C);
+    expect("G80G80", T, V);  expect("G0G1G80X1", T, V);
+    /* axis words used by other codes while G80 is in effect */
+    expect("G43.1Z1", C, STAT_OK);  expect("G92Z0", C, STAT_OK);
     expect("M7M8", T, STAT_OK);  expect("G0X1", C, STAT_OK);  expect("G90G21G17G54G61G94G0X1", T, STAT_OK);
     expect("G92X0", C, STAT_OK);  expect("G28.2X0", C, STAT_OK);  expect("G28.3X0", C, STAT_OK);
     expect("G53G0X0", C, STAT_OK);  expect("G53X0", T, STAT_OK);  expect("X5", T, STAT_OK);  expect("G80", T, STAT_OK);
