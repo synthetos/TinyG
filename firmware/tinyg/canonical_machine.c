@@ -2538,7 +2538,11 @@ stat_t cm_set_xjm(nvObj_t *nv)
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
-	set_flu(nv);
+	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+		set_flu(nv);
+	} else {
+		set_flt(nv);
+	}
 	cm_set_axis_jerk(_get_axis(nv->index), nv->value_flt);
 	return(STAT_OK);
 }
@@ -2548,7 +2552,11 @@ stat_t cm_set_xjh(nvObj_t *nv)
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
-	set_flu(nv);
+	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+		set_flu(nv);
+	} else {
+		set_flt(nv);
+	}
 	return(STAT_OK);
 }
 
