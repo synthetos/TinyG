@@ -39,6 +39,7 @@ class ConfigDefaults(unittest.TestCase):
 #define __AVR 1
 #define PSTR(s) (s)
 #define MM_PER_INCH 25.4
+#define AXES 6
 #define MODEL 0
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
@@ -96,7 +97,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
 '''
         selections = {
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],
-            'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex'],
+            'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex','set_gco','set_ma'],
             'stepper.c': ['st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
             'canonical_machine.c': ['cm_set_am','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
