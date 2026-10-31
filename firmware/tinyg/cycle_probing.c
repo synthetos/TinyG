@@ -27,6 +27,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "json_parser.h"
+#include "controller.h"
 #include "text_parser.h"
 #include "canonical_machine.h"
 #include "spindle.h"
@@ -257,11 +258,14 @@ static stat_t _probing_finish()
 	}
 	// The completion report is a top-level {"prb":{...}} object, as g2core sends it, not an r/f
 	// reply that hosts (UGS, SPJS) would take as the answer to their command in flight (E101).
-	nvObj_t *nv = nv_reset_nv_list("");
-	strcpy_P(nv->token, PSTR("prb"));
-	nv->index = nv_get_index((const char *)"", nv->token);
-	nv_get(nv);									// the prb group expands into its members
-	nv_print_list(STAT_OK, TEXT_INLINE_PAIRS, JSON_OBJECT);
+	char *out = cs.out_buf;
+	out += sprintf_P(out, PSTR("{\"prb\":{\"e\":%d"), (int)cm.probe_state);
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		out += sprintf_P(out, PSTR(",\"%c\":%0.3f"), "xyzabc"[axis], (double)cm.probe_results[axis]);
+	}
+	sprintf_P(out, PSTR("}}\n"));
+	json_relax(cs.out_buf);
+	fputs(cs.out_buf, stdout);
 	return (_set_pb_func(_probing_finalize_exit));
 }
 

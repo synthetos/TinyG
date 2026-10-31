@@ -34,7 +34,7 @@ def test_ugs_connect_sequence(tg, keep):
 
 
 # st=0 (normally open) leaves an unwired probe input inactive, so G38.2 really moves 1 mm and fails
-# to trigger; that is not an error and still produces the probe report.
+# to trigger; it still produces the probe report (and, since E072, an alarm).
 @pytest.mark.motion
 @pytest.mark.persists
 @pytest.mark.bug("E101", on=["d440"])
@@ -50,6 +50,8 @@ def test_probe_report_is_not_an_r_response(tg, keep):
         if report is None:
             report = tg.wait_for(lambda e: '"prb"' in e.raw, 10.0)
     finally:
+        if tg.stat() == tg.dialect.stat("ALARM"):      # since E072 a missed probe is an alarm
+            tg.clear_alarm()
         tg.wait_idle(timeout=15)
         tg.send_gcode(f"G90 G1 Z{z0:.3f} F300", check=True, allow="return to start")
         tg.wait_idle()
