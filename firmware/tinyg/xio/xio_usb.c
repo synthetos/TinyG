@@ -35,6 +35,11 @@
 #include "../controller.h"
 #include "../canonical_machine.h"		// trapped characters communicate directly with the canonical machine
 
+// Resume and queue flush are recognized between lines (leading space is allowed).
+// Feedhold remains immediate even mid-line; it does not change the framing state.
+// Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
+static volatile bool rx_in_line;
+
 /*
  * xio_putc_usb()
  * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
@@ -142,18 +147,22 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
-		hw_request_hard_reset();
+		hw_hard_reset();             // a blocked main loop must not defer reset
 		return;
 	}
 	if (c == CHAR_FEEDHOLD) {					// trap feedhold signal
 		cm_request_feedhold();
 		return;
 	}
-	if (c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
+	if (!rx_in_line && c == CHAR_QUEUE_FLUSH) {				// trap queue flush signal
 		cm_request_queue_flush();
+		if (cm.queue_flush_input) {				// honored: what the ring holds now came before the '%'
+			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
+			USBu.rx_flush_marked = true;
+		}
 		return;
 	}
-	if (c == CHAR_END_HOLD) {				    // trap cycle start signal
+	if (!rx_in_line && c == CHAR_END_HOLD) {				    // trap cycle start signal
 		cm_request_end_hold();
 		return;
 	}
@@ -161,7 +170,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
     	controller_request_enquiry();
     	return;
 	}
-	if (USB.flag_xoff) {
+	if (USB.flag_xoff && xio.enable_flow_control == FLOW_CONTROL_XON) {
 		if (c == XOFF) {						// trap incoming XON/XOFF signals
 			USBu.fc_state_tx = FC_IN_XOFF;
 			return;
@@ -172,6 +181,13 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			return;
 		}
 	}
+
+    // Keep reset, enquiry and flow control independent of line framing.
+    if (c == '\r' || c == '\n') {
+        rx_in_line = false;
+    } else if (c != ' ' && c != '\t') {
+        rx_in_line = true;
+    }
 
 	// normal character path
 	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
@@ -204,6 +220,7 @@ buffer_t xio_get_usb_rx_free(void)
  */
 void xio_reset_usb_rx_buffers(void)
 {
+    rx_in_line = false;
 	// reset xio_gets() buffer
 	USB.len = 0;
 	USB.flag_in_line = false;
@@ -211,4 +228,24 @@ void xio_reset_usb_rx_buffers(void)
 	// reset RX interrupt circular buffer
 	USBu.rx_buf_head = 1;		// can't use location 0 in circular buffer
 	USBu.rx_buf_tail = 1;
+	USBu.rx_flush_marked = false;
+}
+
+/*
+ * xio_drop_usb_rx_before_mark() - drop what arrived before a host '%', keep what followed (E146)
+ *
+ *	Caller masks interrupts. Unread ring bytes up to the mark and the line being read go; bytes the
+ *	host sent after the '%' stay in the ring. With no mark (a '%' line or {qf}) everything goes.
+ */
+void xio_drop_usb_rx_before_mark(void)
+{
+	if (!USBu.rx_flush_marked) {
+		xio_reset_usb_rx_buffers();
+		return;
+	}
+	USBu.rx_buf_tail = USBu.rx_flush_mark;
+	USBu.rx_flush_marked = false;
+	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);
+	USB.len = 0;				// the partial line was read before the mark
+	USB.flag_in_line = false;	// rx_in_line stays: it follows the bytes kept in the ring
 }

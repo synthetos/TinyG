@@ -32,6 +32,7 @@ PRELUDE = r'''
 #define DEV_IS_NONE 0
 #define DEV_IS_CTRL 1
 #define DEV_IS_DATA 2
+#define DEV_IS_OVERFLOW 8
 typedef uint8_t devflags_t;
 enum {BUFFER_FREE,BUFFER_FRAGMENT,BUFFER_FILLING,BUFFER_FULL,BUFFER_PROCESSING};
 typedef struct hdr {uint8_t bufnum;struct hdr *pv,*nx;int state;
@@ -41,6 +42,8 @@ typedef struct {buf_hdr_t *used_base,*used_top;uint16_t requested_size;
     buf_hdr_t buf[RX_HEADERS];} buf_mgr_t;
 static buf_mgr_t bm;
 static char pool[RX_BUFFER_POOL_SIZE];
+/* _post_buffer() classifies each line (E103); classification does not matter to the allocator */
+static devflags_t _classify_line(const char *line, uint16_t size) {(void)line;(void)size;return DEV_IS_DATA;}
 '''
 
 EXERCISE = r'''
@@ -68,15 +71,15 @@ static void verify_payloads(void) {
 }
 static bool append(unsigned length) {
     assert(length+1<RX_BUFFER_MIN_SIZE);
-    char *p=_get_free_buffer(RX_BUFFER_MIN_SIZE);
+    char *p=_get_free_buffer(bm.requested_size);
     if(!p) {verify_payloads();return false;}
     buf_hdr_t *allocated=bm.used_top;
-    assert(p>=pool&&p+RX_BUFFER_MIN_SIZE<=pool+sizeof(pool));
-    assert(allocated->size>=RX_BUFFER_MIN_SIZE);
+    assert(p>=pool&&p+bm.requested_size<=pool+sizeof(pool));
+    assert(allocated->size>=bm.requested_size);
     for(unsigned i=0;i<RX_HEADERS;i++) {
         buf_hdr_t *h=&bm.buf[i];
         if(h==allocated||h->state==BUFFER_FREE)continue;
-        if(p<h->bufp+h->size&&h->bufp<p+RX_BUFFER_MIN_SIZE) {
+        if(p<h->bufp+h->size&&h->bufp<p+bm.requested_size) {
             fprintf(stderr,"E094: allocation at %td overlaps queued header %u at %td (line %u)\n",
                     p-pool,i,h->bufp-pool,next_id);
             exit(2);
@@ -95,7 +98,7 @@ static bool consume(void) {
 }
 int main(void) {
     /* Eleven 72-byte lines, then reclaim three: the next wrap exposes E094. */
-    init();for(int i=0;i<11;i++)assert(append(72));
+    init();bm.requested_size=200;for(int i=0;i<11;i++)assert(append(72));
     for(int i=0;i<3;i++)assert(consume());
     assert(append(72));
     assert(!append(72)); /* there is less than one full receive buffer before used_base */

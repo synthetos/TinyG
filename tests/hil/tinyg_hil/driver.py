@@ -73,16 +73,34 @@ class TinyG:
             raise StatusError(resp, self.status_name(resp.status))
         return resp
 
+    # Persisting a setting writes EEPROM with every interrupt disabled, and serial input that arrives
+    # meanwhile is lost; the wiki asks hosts to wait for each config response and pause >= 30 ms
+    # (TinyG-Command-Line.md, TinyG-Configuration-for-Firmware-Version-0.94-and-Earlier.md).
+    persist_pause = 0.05
+
+    @staticmethod
+    def _is_set(obj) -> bool:
+        if isinstance(obj, dict):
+            return any(v is not None and (not isinstance(v, dict) or TinyG._is_set(v)) for v in obj.values())
+        return isinstance(obj, str) and re.search(r':\s*(?!null\b)[^\s{]', obj) is not None
+
     def send_json(self, obj, *, timeout: float = 2.0, check: bool = False, allow: str | None = None) -> Response:
+        setting = self._is_set(obj)
         if not isinstance(obj, str):
             self.guard.check_json(obj, allow)
             obj = encode(obj)
-        return self.send_line(obj, timeout=timeout, check=check)
+        resp = self.send_line(obj, timeout=timeout, check=check)
+        if setting:
+            time.sleep(self.persist_pause)          # let the EEPROM write finish before the next line
+        return resp
 
     def send_gcode(self, line: str, *, timeout: float = 2.0, check: bool = False,
                    allow: str | None = None) -> Response:
         self.guard.check_gcode(line, allow)
-        return self.send_line(line, timeout=timeout, check=check)
+        resp = self.send_line(line, timeout=timeout, check=check)
+        if re.search(r"\bG10\b", line, re.IGNORECASE):
+            time.sleep(self.persist_pause)          # G10 offsets are written to EEPROM too
+        return resp
 
     def get(self, token: str, *, timeout: float = 2.0):
         resp = self.send_json({token: None}, timeout=timeout, check=True)
@@ -106,6 +124,8 @@ class TinyG:
             lines.append(ev.raw)
             if ev.kind == "prompt":
                 break
+        if "=" in line:                             # a text-mode SET ($xvm=...) persists too
+            time.sleep(self.persist_pause)
         self.get("fb")
         return lines
 
@@ -157,11 +177,12 @@ class TinyG:
                     return stat
                 # "Idle" with commands left in the queue (E069/E033): either nothing will start them,
                 # or stat is wrong while a move runs (E033 reports program-end during motion, and qr
-                # does not change until a move finishes). Accept once queue and position are still for 0.5 s.
+                # does not change until a move finishes). Accept once queue and position are still for
+                # stuck_window s; a dwell keeps both still too, so the window outlasts the dwells tests use.
                 now = (qr, self.get("pos"))
                 if now != last or stuck_since is None:
                     stuck_since = time.monotonic()
-                elif time.monotonic() - stuck_since >= 0.5:
+                elif time.monotonic() - stuck_since >= self.stuck_window:
                     return stat
                 last = now
             else:
@@ -170,6 +191,7 @@ class TinyG:
                 raise NoResponse(f"not idle after {timeout}s (stat {stat}, qr {qr})")
             time.sleep(poll)
 
+    stuck_window = 2.5      # s of unchanged queue and position that count as a stuck (never started) queue
     planner_buffers = 32    # PLANNER_BUFFER_POOL_SIZE on both builds; qr reads this when idle
 
     def clear_alarm(self):

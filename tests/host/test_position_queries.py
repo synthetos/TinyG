@@ -74,14 +74,14 @@ int main(void) {
     cm.gmx.position[0]=34.4f; offsets[0]=10; cm.gmx.tool_offset[0]=1;
     cm.gmx.position[3]=180; cm.gm.target[0]=999;
     assert(cm_get_position()==0 && used==6);
-    assert(fabsf(objects[0].value_flt-25.4f)<.0001f);
+    assert(fabsf(objects[0].value_flt-23.4f)<.0001f);   /* 34.4 - 10 - 1: G43.1 subtracts (E037) */
     assert(objects[3].value_flt==180);
     for (int i=0;i<6;i++) {
         assert(objects[i].depth==1 && objects[i].precision==4 && objects[i].group[0]==0);
     }
     assert(!strcmp(objects[0].token,"posx") && !strcmp(objects[5].token,"posc"));
     cm.gm.units_mode=INCHES; used=0;
-    assert(cm_get_position()==0 && fabsf(objects[0].value_flt-1)<.0001f);
+    assert(cm_get_position()==0 && fabsf(objects[0].value_flt-23.4f/25.4f)<.0001f);
     assert(objects[3].value_flt==180);
     GCodeState_t runtime={.units_mode=INCHES}; cm.am=&runtime;
     runtime_pos[0]=50.8f; runtime_pos[3]=270; used=0;

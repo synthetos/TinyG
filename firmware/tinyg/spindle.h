@@ -32,6 +32,15 @@
  * Global Scope Functions
  */
 
+typedef struct spindleConfig {
+    uint8_t enable_polarity;
+    uint8_t direction_polarity;
+} spindleConfig_t;
+extern spindleConfig_t spindle_cfg;
+
+void spindle_config_init(void);
+void spindle_init_outputs(void);
+stat_t spindle_set_polarity(nvObj_t *nv);
 void spindle_init();
 void spindle_reset();
 stat_t cm_set_spindle_speed(float speed);			// S parameter

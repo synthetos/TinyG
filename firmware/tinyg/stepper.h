@@ -374,6 +374,9 @@ typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	uint32_t dda_ticks_downcount;		// tick down-counter (unscaled)
 	uint32_t dda_ticks_X_substeps;		// ticks multiplied by scaling factor
 	stRunMotor_t mot[MOTORS];			// runtime motor structures
+    uint32_t energize_start;            // explicit me timeout, main-loop owned
+    uint32_t energize_duration;         // milliseconds; subtraction handles tick rollover
+    uint8_t energize_mask;              // motors still covered by the explicit timeout
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -418,11 +421,13 @@ extern stPrepSingleton_t st_pre;		// only used by config_app diagnostics
 /**** FUNCTION PROTOTYPES ****/
 
 void stepper_init(void);
+void stepper_init_complete(void); // finish the boot-only configuration window
 void stepper_reset(void);
 void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 
 uint8_t st_runtime_isbusy(void);
+bool st_aline_in_flight(void);
 void st_cycle_start(void);
 void st_cycle_end(void);
 stat_t st_clc(nvObj_t *nv);

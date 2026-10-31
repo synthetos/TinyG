@@ -84,11 +84,10 @@ float max4(float x1, float x2, float x3, float x4);
 //#endif
 
 uint8_t isnumber(char c);
-char *str_escape(char *dst, const char *src);
 char *str_unescape(char *str);
 char *str_asciify(char *str);
 
-char *strcat_string(char *str, const char *src);
+char *strcat_string(char *str, const char *src, size_t capacity);
 char *strcat_string_P(char *str, const char *src);
 char *strcat_literal_P(char *str, const char *src);
 char *strcat_integer(char *str, const uint32_t value);

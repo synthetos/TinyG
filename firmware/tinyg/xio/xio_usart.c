@@ -264,23 +264,39 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
 
-    if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
+    // One critical section for the checks and the dequeue: the RX ISR may mark a '%' at any point (E146)
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool at_mark = dx->rx_flush_marked && (dx->rx_buf_tail == dx->rx_flush_mark);
+    bool empty = (dx->rx_buf_head == dx->rx_buf_tail);
+    if (!at_mark && !empty) {
+        advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
+        dx->rx_buf_count--;
+        c = dx->rx_buf[dx->rx_buf_tail];		// get char from RX Q
+    } else if (empty) {
         dx->rx_buf_count = 0;					// reset count for good measure
-        return(XIO_BUFFER_EMPTY);				// stop reading
     }
-    advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
-    dx->rx_buf_count--;
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (at_mark || empty) {
+        return(XIO_BUFFER_EMPTY);				// stop: nothing to read, or at a pending '%' (later bytes outlive the flush)
+    }
     d->x_flow(d);								// run flow control
-	c = dx->rx_buf[dx->rx_buf_tail];			    // get char from RX Q
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
     if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
-    if (d->len >= d->size) {                    // handle buffer overruns
+    if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
+        if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't
+            return (XIO_EAGAIN);                // come back as a separate line (E087)
+        }
         d->buf[d->size-1] = NUL;                // terminate line (d->size is zero based)
         d->signal = XIO_SIG_EOL;
         d->flag_in_line = false;                // reset in-line state
         d->len = 0;                             // reset length counter
-        return (XIO_BUFFER_FULL);
+        return (XIO_BUFFER_FULL);               // reported once, at the end of the line
     }
     if ((c == CR) || (c == LF)) {				// handle CR, LF termination
         d->buf[(d->len)++] = NUL;
@@ -302,7 +318,7 @@ int xio_gets_usart(xioDev_t *d, char *buf, const int size)
 		d->flag_in_line = true;					// yes, we are busy getting a line
 		d->len = 0;								// zero buffer
 		d->buf = buf;
-		d->size = size;
+		d->size = min(size, UINT8_MAX);      // len is uint8_t; reserve a countable terminating NUL
 		d->signal = XIO_SIG_OK;					// reset signal register
 	}
 	while (true) {

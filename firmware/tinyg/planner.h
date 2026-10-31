@@ -81,7 +81,12 @@ typedef enum {
 /*** Most of these factors are the result of a lot of tweaking. Change with caution.***/
 
 #define PLANNER_BUFFER_POOL_SIZE 32
-#define PLANNER_BUFFER_HEADROOM 4			// buffers to reserve in planner before processing new input line
+#define PLANNER_BUFFER_HEADROOM 12			// buffers to reserve before processing a new input line (E088):
+											// the most one block can queue, from _execute_gcode_block():
+											// S, T, M6, M3/4/5, M7, M8/9, G4, G43.1/G49, G54-59 (1 each, 9),
+											// then G28/G30 (2 legs) or a G92/G10 offset (1) or one move (1;
+											// arcs queue their segments from their own callback), plus M0/M1
+											// or M2/M30 (1 since E069): at most 12. Leaves 20 for lookahead.
 
 #define ARC_SEGMENT_LENGTH      ((float)0.1)		// Arc segment size (mm).(0.03)
 #define MIN_ARC_RADIUS          ((float)0.1)

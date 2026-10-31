@@ -20,6 +20,7 @@ testpaths = ["tests"]
 timeout = 120
 addopts = "-ra"
 markers = [
+    "timing: timing assertions need external capture before final validation",
     "hardware: needs a TinyG on --port (applied automatically to tests using the tg fixture)",
     "motion: moves axes; skipped unless --allow-motion",
     "resets_board: resets the board (^X)",

@@ -34,6 +34,9 @@
 #include "json_parser.h"
 #include "text_parser.h"
 #include "settings.h"
+#include "spindle.h"
+#include "adc_report.h"
+#include "stack_report.h"
 #include "planner.h"
 #include "stepper.h"
 #include "switch.h"
@@ -57,6 +60,13 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
+// Reserve E060 indexes only; omit from group reports and reject direct GET/SET.
+static stat_t _reserved_hold_setting(nvObj_t *nv)
+{
+    nv->valuetype = TYPE_EMPTY;
+    return STAT_FUNCTION_IS_STUBBED;
+}
+
 static stat_t _do_motors(nvObj_t *nv);		// print parameters for all motor groups
 static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
 static stat_t _do_offsets(nvObj_t *nv);		// print offset parameters for G54-G59,G92, G28, G30
@@ -71,6 +81,29 @@ static stat_t set_baud(nvObj_t *nv);		// set USB baud rate
 static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
 //static stat_t get_tick(nvObj_t *nv);		// get system tick count
 //static stat_t run_sx(nvObj_t *nv);		// send XOFF, XON
+
+// Retired master settings are accepted only for backup compatibility.
+static stat_t get_legacy_zero(nvObj_t *nv)
+{
+    nv->valuetype = cfg_is_type(nv->index);
+    nv->value_int = 0;
+    nv->precision = 4;
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_zero(nvObj_t *nv)
+{
+    if (nv->value_int != 0) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    return (STAT_OK);
+}
+
+static stat_t set_legacy_arc_length(nvObj_t *nv)
+{
+    if (!isfinite(nv->value_flt) || nv->value_flt < 0) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (STAT_OK);
+}
 
 /***********************************************************************************
  **** CONFIG TABLE  ****************************************************************
@@ -98,9 +131,10 @@ static stat_t get_rx(nvObj_t *nv);			// get bytes in RX buffer
  */
 
 const cfgItem_t cfgArray[] PROGMEM = {
+    // Read-only identity/position rows are initialized by their owning subsystems.
 	// group token flags   p, print_func, get_func, set_func, target for get/set,   	  default value
-	{ "sys", "fb", _fipn, 2, hw_print_fb, get_flt,  set_nul,  (uint32_t *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
-	{ "sys", "fv", _fipn, 3, hw_print_fv, get_flt,  set_nul,  (uint32_t *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
+	{ "sys", "fb", (_fipn & ~F_INITIALIZE), 2, hw_print_fb, get_flt,  set_nul,  (uint32_t *)&cs.fw_build,   TINYG_FIRMWARE_BUILD }, // MUST BE FIRST!
+	{ "sys", "fv", (_fipn & ~F_INITIALIZE), 3, hw_print_fv, get_flt,  set_nul,  (uint32_t *)&cs.fw_version, TINYG_FIRMWARE_VERSION },
 	{ "sys", "hp", _iipn, 0, hw_print_hp, get_ui8,  set_ui8,  (uint32_t *)&cs.hw_platform,TINYG_HARDWARE_PLATFORM },
 	{ "sys", "hv", _fipn, 0, hw_print_hv, get_flt,  hw_set_hv,(uint32_t *)&cs.hw_version, TINYG_HARDWARE_VERSION },
 	{ "sys", "id", _sn0,  0, hw_print_id, hw_get_id,set_nul,  (uint32_t *)&cs.null, 0 },        // device ID (ASCII signature)
@@ -401,27 +435,27 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "g59","g59b",_fip,  3, cm_print_cofs, get_flt, set_flt,(uint32_t *)&cm.offset[G59][AXIS_B], G59_B_OFFSET },
 	{ "g59","g59c",_fip,  3, cm_print_cofs, get_flt, set_flt,(uint32_t *)&cm.offset[G59][AXIS_C], G59_C_OFFSET },
 
-	{ "g92","g92x",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
-	{ "g92","g92y",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Y], 0 },
-	{ "g92","g92z",_fic, 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Z], 0 },
-	{ "g92","g92a",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_A], 0 },
-	{ "g92","g92b",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_B], 0 },
-	{ "g92","g92c",_fi,  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_C], 0 },
+	{ "g92","g92x",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_X], 0 },// G92 handled differently
+	{ "g92","g92y",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Y], 0 },
+	{ "g92","g92z",(_fic & ~F_INITIALIZE), 3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_Z], 0 },
+	{ "g92","g92a",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_A], 0 },
+	{ "g92","g92b",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_B], 0 },
+	{ "g92","g92c",(_fi & ~F_INITIALIZE),  3, cm_print_cofs, get_flt, set_nul,(uint32_t *)&cm.gmx.origin_offset[AXIS_C], 0 },
 
 	// Coordinate positions (G28, G30)
-	{ "g28","g28x",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_X], 0 },// g28 handled differently
-	{ "g28","g28y",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Y], 0 },
-	{ "g28","g28z",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Z], 0 },
-	{ "g28","g28a",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_A], 0 },
-	{ "g28","g28b",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_B], 0 },
-	{ "g28","g28c",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_C], 0 },
+	{ "g28","g28x",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_X], 0 },// g28 handled differently
+	{ "g28","g28y",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Y], 0 },
+	{ "g28","g28z",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_Z], 0 },
+	{ "g28","g28a",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_A], 0 },
+	{ "g28","g28b",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_B], 0 },
+	{ "g28","g28c",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g28_position[AXIS_C], 0 },
 
-	{ "g30","g30x",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_X], 0 },// g30 handled differently
-	{ "g30","g30y",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Y], 0 },
-	{ "g30","g30z",_fic, 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Z], 0 },
-	{ "g30","g30a",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_A], 0 },
-	{ "g30","g30b",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_B], 0 },
-	{ "g30","g30c",_fi,  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_C], 0 },
+	{ "g30","g30x",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_X], 0 },// g30 handled differently
+	{ "g30","g30y",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Y], 0 },
+	{ "g30","g30z",(_fic & ~F_INITIALIZE), 3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_Z], 0 },
+	{ "g30","g30a",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_A], 0 },
+	{ "g30","g30b",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_B], 0 },
+	{ "g30","g30c",(_fi & ~F_INITIALIZE),  3, cm_print_cpos, get_flt, set_nul,(uint32_t *)&cm.gmx.g30_position[AXIS_C], 0 },
 
 	// this is a 128bit UUID for identifying a previously committed job state
 	{ "jid","jida",_d0, 0, tx_print_nul, get_data, set_data, (uint32_t *)&cs.job_id[0], 0},
@@ -474,7 +508,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // special functions
 	{ "", "txt", _t0, 0, tx_print_nul, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Text wrapper (container)
 	{ "", "tid", _fi, 0, tx_print_int, get_nul, set_not,  (uint32_t *)&cs.null, 0 },    // Transaction id
-	{ "", "test",_b0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
+	{ "", "test",_i0, 0, tx_print_nul, help_test, run_test, (uint32_t *)&cs.null,0 },	// run tests, print test help screen
 	{ "", "defa",_b0, 0, tx_print_nul, help_defa, set_defaults,(uint32_t *)&cs.null,0 },// set defaults / help screen
 	{ "", "boot",_b0, 0, tx_print_nul, help_boot, hw_run_boot, (uint32_t *)&cs.null,0 },
 	{ "", "help",_n0, 0, tx_print_nul, help_config, help_config, (uint32_t *)&cs.null,0 },  // prints config help screen
@@ -588,37 +622,57 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 	// Persistence for status report - must be in sequence
 	// *** Count must agree with NV_STATUS_REPORT_LEN in config.h ***
-	{ "","se00",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[0], 0 },
-	{ "","se01",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[1], 0 },
-	{ "","se02",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[2], 0 },
-	{ "","se03",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[3], 0 },
-	{ "","se04",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[4], 0 },
-	{ "","se05",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[5], 0 },
-	{ "","se06",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[6], 0 },
-	{ "","se07",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[7], 0 },
-	{ "","se08",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[8], 0 },
-	{ "","se09",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[9], 0 },
-	{ "","se10",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[10], 0 },
-	{ "","se11",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[11], 0 },
-	{ "","se12",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[12], 0 },
-	{ "","se13",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[13], 0 },
-	{ "","se14",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[14], 0 },
-	{ "","se15",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[15], 0 },
-	{ "","se16",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[16], 0 },
-	{ "","se17",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[17], 0 },
-	{ "","se18",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[18], 0 },
-	{ "","se19",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[19], 0 },
-	{ "","se20",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[20], 0 },
-	{ "","se21",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[21], 0 },
-	{ "","se22",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[22], 0 },
-	{ "","se23",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[23], 0 },
-	{ "","se24",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[24], 0 },
-	{ "","se25",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[25], 0 },
-	{ "","se26",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[26], 0 },
-	{ "","se27",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[27], 0 },
-	{ "","se28",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[28], 0 },
-	{ "","se29",_ip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
+	{ "","se00",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[0], 0 },
+	{ "","se01",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[1], 0 },
+	{ "","se02",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[2], 0 },
+	{ "","se03",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[3], 0 },
+	{ "","se04",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[4], 0 },
+	{ "","se05",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[5], 0 },
+	{ "","se06",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[6], 0 },
+	{ "","se07",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[7], 0 },
+	{ "","se08",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[8], 0 },
+	{ "","se09",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[9], 0 },
+	{ "","se10",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[10], 0 },
+	{ "","se11",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[11], 0 },
+	{ "","se12",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[12], 0 },
+	{ "","se13",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[13], 0 },
+	{ "","se14",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[14], 0 },
+	{ "","se15",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[15], 0 },
+	{ "","se16",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[16], 0 },
+	{ "","se17",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[17], 0 },
+	{ "","se18",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[18], 0 },
+	{ "","se19",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[19], 0 },
+	{ "","se20",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[20], 0 },
+	{ "","se21",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[21], 0 },
+	{ "","se22",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[22], 0 },
+	{ "","se23",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[23], 0 },
+	{ "","se24",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[24], 0 },
+	{ "","se25",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[25], 0 },
+	{ "","se26",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[26], 0 },
+	{ "","se27",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[27], 0 },
+	{ "","se28",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[28], 0 },
+	{ "","se29",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
+
+    // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
+    { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
+    { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
+    // No initialization or persistence until E060 passes its timing gate.
+    { "sys","spph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },
+    { "sys","spde",_f0,3,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },
+    { "sys","coph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },
+
+    { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
+
+    { "sys","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
+    { "sys","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
+    // Direct legacy lookups only: no initialization, persistence, or group export.
+    // Keep these after se29 so every existing EEPROM index stays unchanged.
+    { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "fd",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
+    { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
+    // Session optional-stop switch; append to preserve existing persistent indexes.
+    { "sys","os",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
@@ -714,7 +768,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
 /* <DO NOT MESS WITH THESE DEFINES> */
 #define NV_INDEX_MAX (sizeof cfgArray / sizeof(cfgItem_t))
-#define NV_INDEX_END_SINGLES		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS - NV_STATUS_REPORT_LEN)
+// Status slots and appended settings are single-valued rows too; flags control initialization.
+#define NV_INDEX_END_SINGLES		(NV_INDEX_START_GROUPS - 1)
 #define NV_INDEX_START_GROUPS		(NV_INDEX_MAX - NV_COUNT_UBER_GROUPS - NV_COUNT_GROUPS)
 #define NV_INDEX_START_UBER_GROUPS (NV_INDEX_MAX - NV_COUNT_UBER_GROUPS)
 /* </DO NOT MESS WITH THESE DEFINES> */
@@ -884,8 +939,28 @@ static stat_t set_ex(nvObj_t *nv)				// enable XON/XOFF or RTS/CTS flow control
 	if (nv->value_int > FLOW_CONTROL_RTS) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-	xio.enable_flow_control = (uint8_t)nv->value_int; // the cast is required
-	return(_set_comm_helper(nv, XIO_XOFF, XIO_NOXOFF));
+    uint8_t mode = (uint8_t)nv->value_int;
+    uint8_t saved_sreg = SREG;
+    cli();
+    (void)xio_ctrl(XIO_DEV_USB, mode == FLOW_CONTROL_OFF ? XIO_NOXOFF : XIO_XOFF);
+    if (mode != xio.enable_flow_control) {
+        // Release an old software pause even if another mode change precedes its TX interrupt.
+        bool release_xon = USBu.fc_char_rx == XON ||
+            (xio.enable_flow_control == FLOW_CONTROL_XON &&
+             (USBu.fc_state_rx == FC_IN_XOFF || USBu.fc_char_rx == XOFF));
+        USBu.fc_char_rx = release_xon ? XON : NUL;
+        USBu.port->OUTCLR = USB_RTS_bm;
+        USBu.fc_state_rx = FC_IN_XON;
+        USBu.fc_state_tx = FC_IN_XON;
+        xio.enable_flow_control = mode;
+        if (mode != FLOW_CONTROL_OFF &&
+            xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK) {
+            xio_xoff_usart(&USBu);
+        }
+        USBu.usart->CTRLA = CTRLA_RXON_TXON;
+    }
+    SREG = saved_sreg;
+    return (STAT_OK);
 }
 
 static stat_t get_rx(nvObj_t *nv)

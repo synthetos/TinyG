@@ -59,8 +59,12 @@ class Symbols:
         return die
 
     def resolve(self, expr):
-        """'name', 'name.member[.member]', 'name[3]' or 'name+offset' -> (sram address, size, kind)."""
+        """'name', 'name.member[.member]', 'name[3]' or 'name+offset' -> (sram address, size, kind).
+
+        A bitfield member gets kind 'bits:<shift>:<width>' over the size bytes holding it (little-endian),
+        so decode()/encode() extract or merge just those bits (the firmware builds with __BITFIELDS)."""
         offset = 0
+        bits = None
         if "+" in expr:
             expr, extra = expr.split("+", 1)
             offset = int(extra, 0)
@@ -84,10 +88,21 @@ class Symbols:
             for child in die.iter_children():
                 if child.tag == "DW_TAG_member" and child.attributes.get("DW_AT_name") and \
                         child.attributes["DW_AT_name"].value.decode() == part:
-                    loc = child.attributes["DW_AT_data_member_location"].value
+                    a = child.attributes
+                    loc = a["DW_AT_data_member_location"].value if "DW_AT_data_member_location" in a else 0
                     addr += loc if isinstance(loc, int) else loc[-1]
                     die = self._strip(child.get_DIE_from_attribute("DW_AT_type"))
                     size = die.attributes["DW_AT_byte_size"].value if "DW_AT_byte_size" in die.attributes else size
+                    bits = None
+                    if "DW_AT_bit_size" in a:
+                        width = a["DW_AT_bit_size"].value
+                        if "DW_AT_data_bit_offset" in a:     # DWARF 4+: bits from the start of the struct
+                            shift = a["DW_AT_data_bit_offset"].value
+                        else:                                # DWARF 2/3: bits from the storage unit's MSB
+                            unit = a["DW_AT_byte_size"].value if "DW_AT_byte_size" in a else size
+                            shift = unit * 8 - a["DW_AT_bit_offset"].value - width
+                        addr, shift = addr + shift // 8, shift % 8    # packed structs can straddle bytes
+                        size, bits = (shift + width + 7) // 8, (shift, width)
                     break
             else:
                 raise KeyError(f"{expr}: no member {part!r}")
@@ -96,6 +111,8 @@ class Symbols:
             kind = {4: "float", 5: "int", 6: "int", 7: "uint", 8: "uint", 2: "uint"}.get(enc, "bytes")
         elif die is not None and die.tag in ("DW_TAG_enumeration_type", "DW_TAG_pointer_type"):
             kind = "uint"
+        if bits is not None:
+            kind = f"bits:{bits[0]}:{bits[1]}"
         return addr, size, kind
 
     def function_at(self, byte_addr):
@@ -106,6 +123,9 @@ class Symbols:
 
 
 def decode(raw, kind):
+    if kind.startswith("bits:"):
+        _, shift, width = kind.split(":")
+        return (int.from_bytes(raw, "little") >> int(shift)) & ((1 << int(width)) - 1)
     if kind == "float" and len(raw) == 4:
         return struct.unpack("<f", raw)[0]
     if kind in ("int", "uint") and len(raw) in (1, 2, 4):
@@ -113,7 +133,12 @@ def decode(raw, kind):
     return bytes(raw)
 
 
-def encode(value, size, kind):
+def encode(value, size, kind, current=None):
+    if kind.startswith("bits:"):                    # merge into the bytes around it (current = their raw value)
+        shift, width = (int(x) for x in kind.split(":")[1:])
+        mask = ((1 << width) - 1) << shift
+        word = (int.from_bytes(current, "little") & ~mask) | ((int(value) << shift) & mask)
+        return bytearray(word.to_bytes(size, "little"))
     if kind == "float":
         return bytearray(struct.pack("<f", float(value)))
     if isinstance(value, (bytes, bytearray)):
@@ -121,8 +146,20 @@ def encode(value, size, kind):
     return bytearray(int(value).to_bytes(size, "little", signed=(kind == "int" and int(value) < 0)))
 
 
+def ice_serial_for(port):
+    """Atmel-ICE serial wired to the board on `port` (config/benches.json); refuses to guess if unknown."""
+    import json, pathlib
+    benches = json.loads((pathlib.Path(__file__).resolve().parent.parent / "config" / "benches.json").read_text())
+    bench = benches.get(port)
+    if not bench or not bench.get("ice_serial"):
+        raise RuntimeError(f"no Atmel-ICE recorded for {port} in config/benches.json")
+    return bench["ice_serial"]
+
+
 class Ice:
-    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None):
+    def __init__(self, elf=None, serial=None, board: Board | None = None, wire=None, port=None):
+        if serial is None and port is not None:
+            serial = ice_serial_for(port)   # never "the first ICE": with two benches that is a coin toss
         self.board = board or load_board()
         self.symbols = Symbols(elf, self.board.sram_symbol_base) if elf else None
         self.serial = serial
@@ -137,8 +174,12 @@ class Ice:
         from pyedbglib.hidtransport.hidtransportfactory import hid_transport
         from pymcuprog.avr8target import XmegaAvrTarget
         self.transport = hid_transport()
+        if self.serial is None:
+            found = [d.serial_number for d in self.transport.get_matching_tools(product="atmel-ice")]
+            if len(found) != 1:         # with two benches attached, "the first one" may be the other board's
+                raise RuntimeError(f"Atmel-ICE serial needed (pass serial= or port=): attached {found}")
         if not self.transport.connect(serial_number=self.serial, product="atmel-ice"):
-            raise RuntimeError("Atmel-ICE not found on USB")
+            raise RuntimeError(f"Atmel-ICE {self.serial or ''} not found on USB")
         self.target = XmegaAvrTarget(self.transport)
         self.protocol = self.target.protocol
         for stale in (self.protocol.detach, self.target.deactivate_physical):   # left by an aborted session
@@ -231,7 +272,9 @@ class Ice:
 
     def poke(self, expr, value):
         addr, size, kind = self.symbols.resolve(expr)
-        self.write(addr, encode(value, size, kind))
+        with self.halted():                         # one halt: the firmware cannot touch neighbouring bits between
+            current = self.read(addr, size) if kind.startswith("bits:") else None
+            self.write(addr, encode(value, size, kind, current))
 
     def port_out(self, port):
         """PORTx.OUT register value."""
@@ -337,7 +380,11 @@ class Ice:
             return int.from_bytes(self.read(sp_io, 2), "little")
 
     def _bss_end(self):
-        return self.symbols.sym["__bss_end"][0] - self.board.sram_symbol_base
+        """End of static data (__bss_end, a linker symbol, so not in Symbols.sym's data objects)."""
+        for sym in self.symbols.elf.get_section_by_name(".symtab").iter_symbols():
+            if sym.name in ("__bss_end", "_end"):
+                return sym["st_value"] - self.board.sram_symbol_base
+        raise KeyError("__bss_end not in the ELF symbol table")
 
     def stack_paint(self, pattern=0xA5, guard=32, chunk=128):
         """Fill the free RAM between the end of static data and the stack pointer with a pattern.
@@ -399,7 +446,7 @@ def main(argv=None):
         p.error("no ELF: pass --elf or flash through tinyg_hil first")
     lock = BoardLock(a.port).acquire(f"ice {a.command} {' '.join(a.args)}"[:120], wait=60)
     try:
-        with Ice(elf=elf) as ice:
+        with Ice(elf=elf, port=a.port) as ice:
             if a.command == "peek":
                 print(json.dumps(ice.peek_many(a.args), default=lambda b: b.hex(" ")))
             elif a.command == "poke":
