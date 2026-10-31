@@ -357,7 +357,7 @@ char *readline(devflags_t *flags, uint16_t *size)
             if (usb->flag_in_line && usb->len) {
                 memmove(bufpool.rx_pool, usb->buf, usb->len);
                 usb->buf = bufpool.rx_pool;
-                usb->size = RX_BUFFER_POOL_SIZE;
+                usb->size = min(RX_BUFFER_POOL_SIZE, UINT8_MAX);  // as xio_gets_usart(): len is uint8_t
             } else {
                 usb->flag_in_line = false;
                 usb->len = 0;
