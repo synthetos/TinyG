@@ -267,6 +267,9 @@ void mp_end_dwell(void);
 uint8_t mp_get_planner_buffers_available(void);
 bool mp_planner_is_full(void);
 bool mp_has_runnable_buffer(void);
+bool mp_startup_is_pending(void);
+bool mp_hold_startup(void);
+stat_t mp_startup_callback(void);
 //bool mp_is_phat_city_time(void);
 
 // planner buffer primitives

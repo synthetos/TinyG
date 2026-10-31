@@ -74,6 +74,7 @@ stat_t cm_panic_P(int status,const char *msg) {(void)msg;return status;}
 void sr_request_status_report(int state) {(void)state;}
 void qr_init_queue_report(void) {assert(SREG==0);}
 void qr_request_queue_report(int n) {(void)n;}
+bool mp_startup_is_pending(void) {return false;}   /* E089 start-up lookahead: not exercised here */
 void xio_flush_input(void) {assert(0);}   /* no host '%' in these scenarios */
 void mp_flush_planner(void) {queued=false;}
 float mp_get_runtime_absolute_position(int axis) {(void)axis;return 0;}

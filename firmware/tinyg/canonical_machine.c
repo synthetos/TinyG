@@ -1743,6 +1743,7 @@ void cm_message(char *message)
  * cm_request_queue_flush()
  */
 void cm_request_feedhold(void) {
+    if (mp_hold_startup()) { return; }
     // honor request if not already in a feedhold and you are moving
     if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
         cm.hold_state = FEEDHOLD_REQUESTED;

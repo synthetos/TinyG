@@ -54,6 +54,7 @@ stat_t mp_exec_move()
 {
     // A program stop also blocks queued dwells and output commands.
     if (cm.program_paused) { return (STAT_NOOP); }
+    if (mp_startup_is_pending()) { return (STAT_NOOP); }
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) {			// NULL means nothing's running
