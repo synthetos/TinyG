@@ -11,7 +11,6 @@ import pytest
 pytestmark = [pytest.mark.motion, pytest.mark.dialect("d449")]
 
 
-@pytest.mark.bug("E154", on=["d449"])
 def test_negative_and_out_of_range_words_are_rejected(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X0.5 F300", check=True, allow="0.5 mm at 5 mm/s")   # a valid feed is set

@@ -438,10 +438,13 @@ static stat_t _parse_gcode_block(char *buf)
 			}
 			break;
 
-			case 'T': SET_NON_MODAL (tool_select, (uint8_t)trunc(value));
-			case 'F': SET_NON_MODAL (feed_rate, value);
+			case 'T': if (!(value >= 0) || (value > UINT8_MAX) || (value != trunc(value))) { status = STAT_T_WORD_IS_INVALID; break; }	// T256 was tool 0 (E154)
+					  SET_NON_MODAL (tool_select, (uint8_t)value);
+			case 'F': if (!(value >= 0)) { status = STAT_INPUT_LESS_THAN_MIN_VALUE; break; }	// negative F is an error (NIST 3.7) (E154)
+					  SET_NON_MODAL (feed_rate, value);
 			case 'P': SET_NON_MODAL (parameter, value);				// used for dwell time, G10 coord select, rotations
-			case 'S': SET_NON_MODAL (spindle_speed, value);
+			case 'S': if (!(value >= 0)) { status = STAT_S_WORD_IS_INVALID; break; }		// negative S is an error (NIST 3.7) (E154)
+					  SET_NON_MODAL (spindle_speed, value);
 			case 'X': SET_NON_MODAL (target[AXIS_X], value);
 			case 'Y': SET_NON_MODAL (target[AXIS_Y], value);
 			case 'Z': SET_NON_MODAL (target[AXIS_Z], value);
