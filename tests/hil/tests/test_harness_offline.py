@@ -76,3 +76,38 @@ def test_tables(name, fb):
     assert d.status("MCODE_COMMAND_UNSUPPORTED") == 132
     assert "xvm" in d.persisted_tokens() and "fb" in d.tokens
     assert d.stat("SHUTDOWN") == (11 if name == "d440" else 12)
+
+
+
+@pytest.mark.parametrize("raw, kind, body", [
+    ('\x00{"r":{"1ma":0},"f":[3,0,10]}', "response", {"1ma": 0}),          # leading NUL: salvaged
+    ('\x00\x00{"sr":{"stat":4}}', "status", None),                          # several leading NULs
+])
+def test_leading_nul_is_salvaged_and_marked(raw, kind, body):
+    ev = protocol.parse_line(raw, 0.0)
+    assert ev.kind == kind and ev.damaged == raw and not ev.raw.startswith("\x00")
+    if body is not None:
+        assert ev.body == body
+
+
+@pytest.mark.parametrize("raw", [
+    '{"r":{"x":1\x002},"f":[3,0,10]}',             # embedded in a number: never {"x":12}
+    '{"r":{"msg":"a\x00b"},"f":[3,0,10]}',         # embedded in a string
+    '\x00{"r":{"x":1\x002},"f":[3,0,10]}',         # leading and embedded
+])
+def test_embedded_nul_stays_malformed(raw):
+    ev = protocol.parse_line(raw, 0.0)
+    assert ev.kind == "malformed"
+
+
+def test_salvaged_nul_line_is_recorded():
+    """The run record keeps the line as received and counts it as salvaged."""
+    from types import SimpleNamespace
+    from tinyg_hil.record import RunRecorder
+    ev = protocol.parse_line('\x00{"r":{"1ma":0},"f":[3,0,10]}', 1.0)
+    tg = SimpleNamespace(transport=SimpleNamespace(sent=[], history=[ev]))
+    rec = RunRecorder.__new__(RunRecorder)
+    rec.pending = {"n": {"nodeid": "n", "t0": 0.0, "sent_start": 0, "history_start": 0}}
+    rec.end("n", tg)
+    out = rec.pending["n"]
+    assert out["salvaged_lines"] == 1 and out["events"][0]["damaged"].startswith("\x00")
