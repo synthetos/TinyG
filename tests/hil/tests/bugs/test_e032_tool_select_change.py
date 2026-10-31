@@ -33,7 +33,6 @@ def test_t_and_m6_on_separate_lines_behind_dwell(tg):
     assert tg.get("tool") == 3
 
 
-@pytest.mark.bug("E032", on=["d449"])
-def test_g43_h_does_not_alarm(tg):
+def test_g43_h_does_not_alarm(tg):    # an error since E042, not an ALARM
     tg.send_gcode("G43 H1")
     assert tg.stat() != tg.dialect.stat("ALARM")
