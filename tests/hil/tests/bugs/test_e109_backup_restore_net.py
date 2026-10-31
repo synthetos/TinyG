@@ -8,7 +8,6 @@ import pytest
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E109", on=["d449"])
 def test_sys_group_with_net_restores(tg, keep):
     keep("mt")
     mt = tg.get("mt")
