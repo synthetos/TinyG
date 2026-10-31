@@ -55,6 +55,9 @@ void config_init(void){
  configured++;
 }
 void controller_init(int a,int b,int c){}
+struct {bool configured;} sw;
+void adc_init(void){}
+void spindle_init_outputs(void){}
 void switch_init(void){}
 void canonical_machine_reset(void){queued=true;}
 void spindle_init(void){}

@@ -49,6 +49,8 @@
 #include "canonical_machine.h"
 #include "text_parser.h"
 #include "report.h"
+#include "planner.h"
+#include "stepper.h"
 
 static bool _read_raw_switch(const uint8_t sw_num);
 static void _dispatch_switch(const uint8_t sw_num);
@@ -125,7 +127,7 @@ void reset_switches()
             continue;
         }
         if (sw.s[i].mode == SW_MODE_PROBE) {
-            sw.s[i].type = SW_ACTIVE_LO;            // This is a hack. Not all probes are NO
+            sw.s[i].type = sw.probe_type;           // independent of the homing/limit switch convention
         }
         else {
             sw.s[i].type = sw.switch_type;          // switches inherit global switch type
@@ -288,9 +290,25 @@ int8_t find_probe_switch()
  * These functions are not part of the NIST defined functions
  ***********************************************************************************/
 
+stat_t sw_set_prbp(nvObj_t *nv)
+{
+    if (nv->value_int > 1) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    uint8_t saved_sreg = SREG;
+    cli();
+    stat_t status = STAT_COMMAND_NOT_ACCEPTED;
+    if (!sw.configured || ((cm.cycle_state == CYCLE_OFF) && !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+        (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER))) {
+        sw.probe_type = (uint8_t)nv->value_int;
+        switch_init();
+        status = STAT_OK;
+    }
+    SREG = saved_sreg;
+    return (status);
+}
+
 stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
 {
-	set_01(nv);
+	ritorno(set_01(nv));
 	switch_init();
 	return (STAT_OK);
 }

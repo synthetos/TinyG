@@ -61,6 +61,9 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 // Allocate planner structures
 
@@ -72,6 +75,10 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
  * Local Scope Data and Functions
  */
 #define _bump(a) ((a<PLANNER_BUFFER_POOL_SIZE-1)?(a+1):0) // buffer incr & wrap
+#define PLANNER_STARTUP_MS 50
+static volatile bool startup_pending;
+static uint32_t startup_started;
+
 #define spindle_speed move_time	    // local alias for spindle_speed to the time variable
 #define value_vector gm.target	    // alias for vector of values
 
@@ -390,6 +397,7 @@ void mp_init_buffers(void)
 		pv = &mb.bf[i];
 	}
 	mb.buffers_available = PLANNER_BUFFER_POOL_SIZE;
+    startup_pending = false;
 }
 
 mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
@@ -422,16 +430,74 @@ void mp_unget_write_buffer()
 			  once it has been queued. Action may start on the buffer immediately,
 			  invalidating its contents ***/
 
+bool mp_startup_is_pending(void)
+{
+    return (startup_pending);
+}
+
+bool mp_hold_startup(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool held = startup_pending;
+    if (held) {
+        startup_pending = false;
+        cm_set_motion_state(MOTION_HOLD);
+        cm.hold_state = FEEDHOLD_HOLD;        // no step has been prepared, so no deceleration is needed
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return (held);
+}
+
+stat_t mp_startup_callback(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (startup_pending && !cm_is_alarmed() && (cm.hold_state == FEEDHOLD_OFF) &&
+        ((uint32_t)(SysTickTimer_getValue() - startup_started) >= PLANNER_STARTUP_MS)) {
+        startup_pending = false;
+        st_request_exec_move();
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return (STAT_OK);
+}
+
 void mp_commit_write_buffer(const uint8_t block_type)
 {
-	mb.q->block_type = block_type;
-	mb.q->block_state = BLOCK_INITIALIZING;
-	mb.q->buffer_state = MP_BUFFER_QUEUED;
-	mb.q = mb.q->nx;							// advance the queued buffer pointer
-	qr_request_queue_report(+1);				// request a QR and add to the "added buffers" count
-	st_request_exec_move();						// requests an exec if the runtime is not busy
-												// NB: BEWARE! the exec may result in the planner buffer being
-												// processed immediately and then freed - invalidating the contents
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // Publish the startup gate before the block: an already-pending exec must not freeze it.
+    if ((block_type == BLOCK_TYPE_ALINE) && (mb.q == mb.r) &&
+        (mb.buffers_available == PLANNER_BUFFER_POOL_SIZE - 1) &&
+        (cm.cycle_state <= CYCLE_MACHINING) && (cm.hold_state == FEEDHOLD_OFF) &&
+        mp_runtime_is_idle() && (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_EXEC)) {
+        startup_started = SysTickTimer_getValue();
+        startup_pending = true;
+    }
+    mb.q->block_type = block_type;
+    mb.q->block_state = BLOCK_INITIALIZING;
+    mb.q->buffer_state = MP_BUFFER_QUEUED;
+    mb.q = mb.q->nx;
+    qr_request_queue_report(+1);
+    // Only a committed successor counts; a reserved LOADING buffer is not lookahead.
+    if (startup_pending && ((mb.r->nx->buffer_state == MP_BUFFER_QUEUED) ||
+                            (mb.r->nx->buffer_state == MP_BUFFER_PENDING))) {
+        startup_pending = false;
+    }
+    if (!startup_pending) { st_request_exec_move(); }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 mpBuf_t * mp_get_run_buffer()

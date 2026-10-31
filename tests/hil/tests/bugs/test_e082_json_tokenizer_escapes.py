@@ -26,7 +26,7 @@ def test_escaped_backslash_before_closing_quote(tg):
 # The quotes have to survive the tokenizer (E082) and be re-escaped on output (E102).
 # 440 has no escape handling at all: its string ends at the first quote.
 @pytest.mark.bug("E082", on=["d440"])
-@pytest.mark.bug("E102", on=["d440", "d449"])
+@pytest.mark.bug("E102", on=["d440"])
 def test_escaped_quote_kept_in_message(tg):
     ev = _send_any(tg, r'{"gc":"G90 (MSG say \"hi\")"}')
     assert ev.kind == "response", ev.raw

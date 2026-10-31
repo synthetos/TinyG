@@ -54,7 +54,7 @@ def test_missed_probe_raises_alarm(tg, keep):
 
     def prb_report(ev):
         seen.append(ev)
-        return ev.kind == "response" and "prb" in _body(ev)
+        return ev.kind in ("probe", "response") and "prb" in _body(ev)   # top-level since E101
     try:
         tg.send_gcode("G38.2 Z-1 F60", check=True, allow="1 mm probe in free air")
         assert tg.wait_for(prb_report, 10).body["prb"]["e"] == 0

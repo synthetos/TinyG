@@ -116,12 +116,14 @@ cmSingleton_t cm;		// canonical machine controller singleton
 
 // command execution callbacks from planner queue
 static void _exec_offset(float *value, bool *flags);
+static void _exec_g10_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
 static void _exec_mist_coolant_control(float *value, bool *flags);
 static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 static void _exec_program_end(float *value, bool *flags);
+static void _exec_program_stop(float *value, bool *flags);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
@@ -412,7 +414,8 @@ void cm_finalize_move() {
 	copy_vector(cm.gmx.position, cm.gm.target);		// update model position
 
 	// if in inverse time mode reset feed rate so next block requires an explicit feed rate setting
-	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && (cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED)) {
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) && ((cm.gm.motion_mode == MOTION_MODE_STRAIGHT_FEED) ||
+        (cm.gm.motion_mode == MOTION_MODE_CW_ARC) || (cm.gm.motion_mode == MOTION_MODE_CCW_ARC))) {
 		cm.gm.feed_rate = 0;
 	}
 }
@@ -601,6 +604,9 @@ void canonical_machine_reset()
 //	cm.cycle_start_requested = false;               //+++++ TO BE REMOVED
 
     cm.queue_flush_state = FLUSH_OFF;
+    cm.queue_flush_input = false;
+    cm.queue_flush_input_due = false;
+    cm.program_paused = false;
     cm.end_hold_requested = false;
     cm.limit_requested = 0;                     // resets switch closures that occurred during initialization
     cm.safety_interlock_disengaged = 0;         // ditto
@@ -689,6 +695,28 @@ void cm_clear()
 {
     if (cm.machine_state == MACHINE_ALARM) {
         cm.machine_state = MACHINE_PROGRAM_STOP;
+        // An alarm latches a hold (E044). Once nothing is left to run (e.g. after a '%' flush)
+        // no '~' will come, so clearing also ends the hold and the cycle; otherwise the cycle stays
+        // MACHINING and persisted settings are refused as 'moving' until a reset (E144).
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;
+        cli();
+#endif
+        // Drained means no queued block, an idle runtime AND no prepared segment waiting for the
+        // loader (the last block can be freed before its final segment loads); snapshot together.
+        bool drained = !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+                       (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER);
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
+        // once drained only the main loop (this code) can queue motion, so act outside the cli window
+        if (drained) {
+            if (cm.hold_state != FEEDHOLD_OFF) {
+                cm.end_hold_requested = false;
+                mp_exit_hold_state();
+            }
+            cm_cycle_end();                     // no-op if the cycle already ended
+        }
     } else if (cm.machine_state == MACHINE_SHUTDOWN) {
         cm.machine_state = MACHINE_READY;
     }
@@ -796,7 +824,8 @@ stat_t cm_alarm(const stat_t status, const char *msg)
         cm.queue_flush_state = FLUSH_REQUESTED; // flush input and planner once the runtime is idle
     } else {
         cm_request_feedhold();                  // stop motion
-        cm_request_queue_flush();               // do a queue flush once runtime is not busy
+        cm_request_planner_flush();             // flush the planner once runtime is not busy; host input is
+                                                // kept and rejected line by line while alarmed (E145)
     }
 
     spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
@@ -920,23 +949,27 @@ stat_t cm_set_arc_distance_mode(const uint8_t mode)
 }
 
 /*
- * cm_set_coord_offsets() - G10 L2/L20 Pn (affects MODEL only)
+ * cm_set_coord_offsets() - G10 L2/L20 Pn (model now, runtime in queue order)
  *
  *	This function applies the offset to the GM model but does not persist the offsets
  *	during the Gcode cycle. The persist flag is used to persist offsets once the cycle
  *	has ended. You can also use $g54x - $g59c config functions to change offsets.
  *
- *	It also does not reset the work_offsets which may be accomplished by calling
- *	cm_set_work_offsets() immediately afterwards.
+ *	Edits to the active system capture new model offsets and queue a runtime snapshot.
  *
  *  Both L2 and L20 forms are supported
  */
 
-stat_t cm_set_coord_offsets(const uint8_t coord_system,
+stat_t cm_set_coord_offsets(const float coord_system,
                             const uint8_t L_word,
                             const float offset[], const bool flag[])
 {
-    if ((coord_system < G54) || (coord_system > COORD_SYSTEM_MAX)) {	// you can't set G53
+    if ((!cm.gf.parameter) || !(coord_system >= 0 && coord_system <= COORD_SYSTEM_MAX) ||
+        (coord_system != floor(coord_system))) {
+        return (STAT_P_WORD_IS_INVALID);
+    }
+    uint8_t selected = (coord_system == 0) ? cm.gm.coord_system : (uint8_t)coord_system;
+    if ((selected < G54) || (selected > COORD_SYSTEM_MAX)) { // you can't set G53
         return (STAT_P_WORD_IS_INVALID);
     }
     if (!cm.gf.L_word) {
@@ -945,17 +978,33 @@ stat_t cm_set_coord_offsets(const uint8_t coord_system,
     if ((L_word != 2) && (L_word != 20)) {
         return (STAT_L_WORD_IS_INVALID);
     }
+    cm_set_work_offsets();
+    bool changed = false;
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
         if (flag[axis]) {
+            float value = (axis < AXIS_A) ? _to_millimeters(offset[axis]) : offset[axis];
             if (L_word == 2) {
-                cm.offset[coord_system][axis] = _to_millimeters(offset[axis]);
+                cm.offset[selected][axis] = value;
             } else {
-                cm.offset[coord_system][axis] = cm.gmx.position[axis] - _to_millimeters(offset[axis]);
+                // Isolate signed tool compensation using the same convention as the DRO.
+                float tool = cm.gm.work_offset[axis] - cm_get_active_coord_offset(axis);
+                float origin = cm.gmx.origin_offset_enable ? cm.gmx.origin_offset[axis] : 0;
+                cm.offset[selected][axis] = cm.gmx.position[axis] - value - origin - tool;
             }
-            cm.deferred_write_flag = true;                  // persist offsets once machining cycle is over
+            changed = true;
+            cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
     }
+    if (changed && (selected == cm.gm.coord_system)) {
+        cm_set_work_offsets();
+        mp_queue_command(_exec_g10_offset, cm.gm.work_offset, FLAGS_NONE);
+    }
     return (STAT_OK);
+}
+
+static void _exec_g10_offset(float *value, bool *flags)
+{
+    mp_set_runtime_work_offset(value); // use the queued snapshot, not later model edits
 }
 
 /******************************************************************************************
@@ -1297,7 +1346,10 @@ stat_t cm_goto_g30_position(const float target[], const bool flags[])
 stat_t cm_set_feed_rate(const float feed_rate)
 {
 	if (cm.gm.feed_rate_mode == INVERSE_TIME_MODE) {
-		cm.gm.feed_rate = 1 / feed_rate;	// normalize to minutes (NB: active for this gcode block only)
+        if (!(feed_rate > 0) || !isfinite(feed_rate)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        float inverse_time = 1 / feed_rate;
+        if (!isfinite(inverse_time)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        cm.gm.feed_rate = inverse_time;	// minutes, active for this block only
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
 	}
@@ -1357,10 +1409,6 @@ stat_t cm_dwell(const float seconds)
  */
 stat_t cm_straight_feed(const float target[], const bool flags[])
 {
-	// trap zero feed rate condition
-	if ((cm.gm.feed_rate_mode != INVERSE_TIME_MODE) && (fp_ZERO(cm.gm.feed_rate))) {
-		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
-	}
 	cm.gm.motion_mode = MOTION_MODE_STRAIGHT_FEED;
 
     // it's legal for a G1 to have no axis words but we don't want to process it
@@ -1368,6 +1416,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
           flags[AXIS_A] || flags[AXIS_B] || flags[AXIS_C])) {
         return(STAT_OK);
     }
+	// trap zero feed rate condition
+	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
+		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
+	}
 	cm_set_model_target(target, flags);
 
 	// test soft limits
@@ -1691,6 +1743,7 @@ void cm_message(char *message)
  * cm_request_queue_flush()
  */
 void cm_request_feedhold(void) {
+    if (mp_hold_startup()) { return; }
     // honor request if not already in a feedhold and you are moving
     if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
         cm.hold_state = FEEDHOLD_REQUESTED;
@@ -1706,9 +1759,17 @@ void cm_request_end_hold(void)
 
 void cm_request_queue_flush()
 {
+    cm_request_planner_flush();
+    if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
+        cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
+    }
+}
+
+void cm_request_planner_flush()
+{
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
-        cm.queue_flush_state = FLUSH_REQUESTED;     // input and planner are flushed from the main loop
+        cm.queue_flush_state = FLUSH_REQUESTED;     // flushed from the main loop
     }
 }
 
@@ -1719,11 +1780,39 @@ void cm_request_queue_flush()
 /*
  * _run_requested_queue_flush() - complete a host-requested flush ('%' or alarm) from the main loop
  *
- *  Waits until motion has stopped and no hold is still decelerating, then drops all buffered input
- *  (lines received before the '%') and flushes the planner. A hold that was requested but never
+ *  Waits until motion has stopped and no hold is still decelerating, then flushes the planner and,
+ *  for a host '%', drops all buffered input (lines received before the '%'). An alarm's flush keeps
+ *  host input: those lines are rejected one by one while alarmed (E145). cm_queue_flush() consumes the
+ *  host's request atomically with the end of the flush and cm_feedhold_sequencing_callback() drops the
+ *  input. A hold that was requested but never
  *  started (nothing was moving) is cancelled rather than waited for. Direct callers of
- *  cm_queue_flush() (homing, panic) keep the host input.
+ *  cm_queue_flush() (homing, panic) keep the host input unless a '%' was pending.
  */
+// Hand a pending host '%' to queue_flush_input_due, atomically against the RX ISR that sets it (E145)
+static void _take_input_flush_request()
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (cm.queue_flush_input) {
+        cm.queue_flush_input = false;
+        cm.queue_flush_input_due = true;
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+// Drop the input a host '%' asked for; main loop only, never inside a direct flush (E145)
+static void _service_input_flush()
+{
+    if (cm.queue_flush_input_due) {
+        cm.queue_flush_input_due = false;
+        xio_flush_input();
+    }
+}
+
 static void _run_requested_queue_flush()
 {
     if (!mp_runtime_is_idle() ||
@@ -1731,8 +1820,9 @@ static void _run_requested_queue_flush()
          (cm.hold_state != FEEDHOLD_HOLD))) {
         return;
     }
-    xio_flush_input();
-    cm_queue_flush();
+    _take_input_flush_request();                    // drop a host '%''s input before the planner work below,
+    _service_input_flush();                         // so a line sent right after the '%' is not cut (E145)
+    cm_queue_flush();                               // a '%' landing meanwhile is handed off and serviced next
     if (cm.hold_state == FEEDHOLD_REQUESTED) {
         cm.hold_state = FEEDHOLD_OFF;
         cm.end_hold_requested = false;              // a '~' for the cancelled hold must not resume a later one
@@ -1747,6 +1837,7 @@ stat_t cm_feedhold_sequencing_callback()
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
         _run_requested_queue_flush();               // runs once motion has stopped
 	}
+	_service_input_flush();                         // a flush consumed a host '%': drop its input here (E145)
 	if (cm.end_hold_requested) {
         if (cm.queue_flush_state == FLUSH_OFF) {    // either no flush or wait until it's done flushing
 			cm_end_hold();
@@ -1774,6 +1865,7 @@ void cm_start_hold()
 void cm_end_hold()
 {
 	if (cm.hold_state == FEEDHOLD_HOLD) {
+        cm.program_paused = false;
         cm.end_hold_requested = false;
         mp_replan_held_block();                     // the held block resumes from zero velocity
 	    mp_exit_hold_state();
@@ -1851,7 +1943,18 @@ void cm_queue_flush()
         if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
             cm_end_hold();
         }
+        // Consume a host '%' together with the state change: the RX ISR sets both (E145). A '%' that
+        // lands before this is handed off; after it, the flush is over and the '%' is not honored.
+        // Callers include panic paths, so the input pool is reset later, by the sequencing callback.
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;
+        cli();
+#endif
+        _take_input_flush_request();                // nests: restores the cleared SREG
         cm.queue_flush_state = FLUSH_OFF;
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
         qr_request_queue_report(0);                 // request a queue report, since we've changed the number of buffers available
     }
 }
@@ -1926,31 +2029,57 @@ static void _exec_program_finalize(float *value, bool *flags)
 
 void cm_cycle_start()
 {
-	cm.machine_state = MACHINE_CYCLE;
-	if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
-		cm.cycle_state = CYCLE_MACHINING;
-		qr_init_queue_report();							// clear queue reporting buffer counts
-	}
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // Program-stop callbacks run in the HI loader, so masking only LO/MED is insufficient.
+    if (!cm.program_paused) {
+        cm.machine_state = MACHINE_CYCLE;
+        if (cm.cycle_state == CYCLE_OFF) {					// don't (re)start homing, probe or other canned cycles
+            cm.cycle_state = CYCLE_MACHINING;		// keep qi/qo: buffers queued before the cycle started count (E091)
+        }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 void cm_cycle_end()
 {
-	if (cm.cycle_state != CYCLE_OFF) {
-		float value[] = { (float)MACHINE_PROGRAM_STOP };
-		_exec_program_finalize(value, FLAGS_ONE);
-	}
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // Program-stop callbacks run in the HI loader, so masking only LO/MED is insufficient.
+    if (!cm.program_paused) {
+        if (cm.cycle_state != CYCLE_OFF) {
+            float value[] = { (float)MACHINE_PROGRAM_STOP };
+            _exec_program_finalize(value, FLAGS_ONE);
+        }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+static void _exec_program_stop(float *value, bool *flags)
+{
+    _exec_program_finalize(value, flags);
+    cm.program_paused = true;
+    cm.hold_state = FEEDHOLD_HOLD;
+    cm_set_motion_state(MOTION_HOLD);
 }
 
 void cm_program_stop()
 {
-	float value[] = { (float)MACHINE_PROGRAM_STOP };
-	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
+	float value[AXES] = { (float)MACHINE_PROGRAM_STOP };
+	mp_queue_command(_exec_program_stop, value, FLAGS_ONE);
 }
 
 void cm_optional_program_stop()
 {
-	float value[] = { (float)MACHINE_PROGRAM_STOP };
-	mp_queue_command(_exec_program_finalize, value, FLAGS_ONE);
+    if (cm.optional_stop_enabled) { cm_program_stop(); }
 }
 
 void cm_program_end()
@@ -2284,9 +2413,29 @@ stat_t cm_get_feed(nvObj_t *nv)
 	return (STAT_OK);
 }
 
+/*
+ * _position_model() - the model a position report reads (E090)
+ *
+ *	Motion that has been accepted but has not started yet (a cycle running with motion stopped:
+ *	a move or arc queued but not executing, a refused arc segment, a paused program) has already
+ *	moved the model to its end point. The runtime still holds where the machine is.
+ */
+static GCodeState_t *_position_model()
+{
+	if ((cm.motion_state == MOTION_STOP) && (cm.cycle_state != CYCLE_OFF)) {
+		return (RUNTIME);
+	}
+	return (ACTIVE_MODEL);
+}
+
 stat_t cm_get_pos(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_work_position(ACTIVE_MODEL, _get_axis(nv->index));
+	const GCodeState_t *gcode_state = _position_model();
+	uint8_t axis = _get_axis(nv->index);
+	nv->value_flt = cm_get_work_position(gcode_state, axis);
+	if ((axis <= AXIS_Z) && (gcode_state->units_mode != ACTIVE_MODEL->units_mode)) {	// match the unit report
+		nv->value_flt = (ACTIVE_MODEL->units_mode == INCHES) ? nv->value_flt / MM_PER_INCH : nv->value_flt * MM_PER_INCH;
+	}
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2294,7 +2443,7 @@ stat_t cm_get_pos(nvObj_t *nv)
 
 stat_t cm_get_mpo(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_absolute_position(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_absolute_position(_position_model(), _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2302,7 +2451,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 
 stat_t cm_get_ofs(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_work_offset(ACTIVE_MODEL, _get_axis(nv->index));
+	nv->value_flt = cm_get_work_offset(_position_model(), _get_axis(nv->index));
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2365,12 +2514,36 @@ void cm_set_axis_jerk(const uint8_t axis, const float jerk)
 	cm.a[axis].recip_jerk = 1/(jerk * JERK_MULTIPLIER);
 }
 
+/* M201.3 uses units/second^3; stored jerk uses million units/minute^3. */
+stat_t cm_set_jerk(const float target[], const bool flags[])
+{
+    float jerk[AXES];
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (!flags[axis]) { continue; }
+        float scale = (60.f * 60.f * 60.f) / JERK_MULTIPLIER;
+        if (axis <= AXIS_Z && cm.gm.units_mode == INCHES) { scale *= MM_PER_INCH; }
+        jerk[axis] = target[axis] * scale;
+        if (!isfinite(jerk[axis])) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+        jerk[axis] = max(1, jerk[axis]);
+        if (!isfinite(jerk[axis] * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    }
+    // Validate the whole block before changing any axis; do not persist the values.
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (flags[axis]) { cm_set_axis_jerk(axis, jerk[axis]); }
+    }
+    return (STAT_OK);
+}
+
 stat_t cm_set_xjm(nvObj_t *nv)
 {
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
-	set_flu(nv);
+	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+		set_flu(nv);
+	} else {
+		set_flt(nv);
+	}
 	cm_set_axis_jerk(_get_axis(nv->index), nv->value_flt);
 	return(STAT_OK);
 }
@@ -2380,7 +2553,11 @@ stat_t cm_set_xjh(nvObj_t *nv)
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
-	set_flu(nv);
+	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+		set_flu(nv);
+	} else {
+		set_flt(nv);
+	}
 	return(STAT_OK);
 }
 

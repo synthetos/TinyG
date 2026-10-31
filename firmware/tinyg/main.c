@@ -22,6 +22,7 @@
 
 #include "tinyg.h"					// #1 There are some dependencies
 #include "config.h"					// #2
+#include "adc_report.h"
 #include "hardware.h"
 #include "persistence.h"
 #include "controller.h"
@@ -139,6 +140,7 @@ static void _application_init_machine(void)
 {
     cm.machine_state = MACHINE_INITIALIZING;
 
+    spindle_config_init();           // defaults survive erased/invalid new EEPROM slots
 	stepper_init(); 				// stepper subsystem - must precede gpio_init()
 	encoder_init();					// virtual encoders
 //    switch_init();                    // switches
@@ -152,12 +154,14 @@ static void _application_init_startup(void)
 {
     // start the application
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // FIRST:  depends on xio_init()
+    adc_init();                                // PB3 raw ADC, before config queries or interrupts
 	config_init();					            // SECOND: read config records from eeprom
     stepper_init_complete();                    // runtime geometry guards apply from here
 	switch_init();                              // switch setup relies on config settings
+    sw.configured = true;
 	canonical_machine_reset();                  // depends on config_init()
     spindle_init();                             // depends on config_init()
-    spindle_reset();
+    spindle_init_outputs();                     // latch configured OFF before enabling outputs
 #ifdef TINYG_TEST_HOOKS
     testhooks_init();                           // HIL test hooks (test builds only)
 #endif

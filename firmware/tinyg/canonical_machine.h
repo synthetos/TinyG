@@ -160,7 +160,10 @@ typedef enum {						    // these are in order to optimized CASE statement
 	NEXT_ACTION_DWELL,					// G4
 	NEXT_ACTION_STRAIGHT_PROBE,			// G38.2
 	NEXT_ACTION_GET_POSITION,			// M114
-	NEXT_ACTION_GET_FIRMWARE			// M115
+	NEXT_ACTION_GET_FIRMWARE,			// M115
+	NEXT_ACTION_WAIT_FOR_COMPLETION,	// M400
+	NEXT_ACTION_SET_JERK,				// M201.3
+    NEXT_ACTION_GET_ADC                 // M105
 } cmNextAction;
 
 typedef enum {						    // G Modal Group 1
@@ -258,7 +261,8 @@ typedef enum {
 
 typedef enum {
 	PROGRAM_STOP = 0,
-	PROGRAM_END
+	PROGRAM_END,
+	PROGRAM_OPTIONAL_STOP					// M1: stops only when the optional-stop switch ($os) is on (E020)
 } cmProgramFlow;
 
 typedef enum {				        // spindle state settings (See hardware.h for bit settings)
@@ -581,6 +585,8 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     cmFeedholdState hold_state;             // hold: feedhold state machine
     cmOverrideState mfo_state;              // feed override state machine
     cmQueueFlushState queue_flush_state;    // master queue flush state machine
+    volatile bool queue_flush_input;        // a host '%' also drops buffered input; an alarm's flush does not (E145)
+    volatile bool queue_flush_input_due;    // a flush consumed that request: drop input at the main-loop point
 
     uint8_t safety_interlock_disengaged;    // set non-zero to start interlock processing (value is input number)
     uint8_t safety_interlock_reengaged;     // set non-zero to end interlock processing (value is input number)
@@ -598,6 +604,8 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     bool g28_flag;                          // true = complete a G28 move
     bool g30_flag;                          // true = complete a G30 move
     bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
+    volatile bool program_paused;          // explicit M0/M1/M60 requires cycle start
+    uint8_t optional_stop_enabled;          // session M1 switch, default off after board reset
     bool end_hold_requested;                // request restart after feedhold
     uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
     uint8_t shutdown_requested;             // set non-zero to request shutdown in support of external estop (value is input number)
@@ -701,7 +709,7 @@ stat_t cm_select_plane(const uint8_t plane);                                // G
 stat_t cm_set_units_mode(const uint8_t mode);                               // G20, G21
 stat_t cm_set_distance_mode(const uint8_t mode);                            // G90, G91
 stat_t cm_set_arc_distance_mode(const uint8_t mode);                        // G90.1, G91.1
-stat_t cm_set_coord_offsets(const uint8_t coord_system,                     // G10
+stat_t cm_set_coord_offsets(const float coord_system,                     // G10
                             const uint8_t L_word,
                             const float offset[], const bool flag[]);
 
@@ -727,6 +735,7 @@ stat_t cm_get_position(void);                                            // M114
 stat_t cm_get_firmware(void);                                            // M115
 
 // Machining Attributes (4.3.5)
+stat_t cm_set_jerk(const float target[], const bool flags[]);              // M201.3
 stat_t cm_set_feed_rate(const float feed_rate);                             // F parameter
 stat_t cm_set_feed_rate_mode(const uint8_t mode);                           // G93, G94, (G95 unimplemented)
 stat_t cm_set_path_control(const uint8_t mode);						        // G61, G61.1, G64
@@ -765,6 +774,7 @@ void cm_message(char *message);								                // msg to console (e.g. G
 void cm_request_feedhold(void);
 void cm_request_end_hold(void);
 void cm_request_queue_flush(void);
+void cm_request_planner_flush(void);
 void cm_request_end_queue_flush(void);
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
 

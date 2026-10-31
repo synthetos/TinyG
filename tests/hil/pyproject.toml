@@ -20,12 +20,14 @@ testpaths = ["tests"]
 timeout = 120
 addopts = "-ra"
 markers = [
+    "timing: timing assertions need external capture before final validation",
     "hardware: needs a TinyG on --port (applied automatically to tests using the tg fixture)",
     "motion: moves axes; skipped unless --allow-motion",
     "resets_board: resets the board (^X)",
     "persists: writes EEPROM; the session restores settings afterwards",
     "destructive: flashing or $defa; skipped unless --allow-destructive",
     "ice: needs the Atmel-ICE on the PDI header; skipped unless --ice",
+    "timing: timing-pending until independently confirmed by external capture",
     "diagnostic: investigation test that records observations; skipped unless --diagnostics",
     "profile(*names): config profiles (tests/hil/config/profiles) layered for this test",
     "matrix(*names): config matrices (tests/hil/config/matrices); one run per combination",

@@ -37,7 +37,7 @@
 #define FOOTER_REVISION 1
 
 #define JSON_INPUT_STRING_MAX 254   // tokenizer length check, no allocation (was an arbitrary 128, E078); the
-                                    // line-mode reader still delivers at most 199 chars; JSON_PAIRS_MAX is the structural limit
+                                    // line-mode reader delivers at most 254 chars; JSON_PAIRS_MAX is the structural limit
 #define JSON_OUTPUT_STRING_MAX (OUTPUT_BUFFER_LEN)
 
 #define JSON_DEPTH_MAX 4            // maximum nesting level
@@ -85,6 +85,7 @@ typedef struct jsSingleton {
 	/*** config values (PUBLIC) ***/
 	jsonVerbosity json_verbosity;   // see enum in this file for settings
 	uint32_t tid;					// transaction id of the line being answered (exact: a uint32, E049)
+    bool motion_sync_allowed; // standalone gc plus optional tid, intersected across nesting
 	bool tid_present;
 	jsonSyntax json_syntax;         // 0=relaxed syntax, 1=strict syntax
 

@@ -44,6 +44,14 @@ CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
           -ffunction-sections -fdata-sections -I. $(TEST_DEFS) \
           -MMD -MP
 
+# avr-gcc 12 and 13 assume the first 4 KiB of memory is an unmapped null page, so every access to
+# the xmega I/O registers there draws -Warray-bounds/-Wstringop-overflow warnings;
+# --param=min-pagesize=0 drops that assumption. Older and newer versions don't need it.
+GCC_MAJOR := $(firstword $(subst ., ,$(shell $(CC) -dumpversion 2>/dev/null)))
+ifneq (,$(filter 12 13,$(GCC_MAJOR)))
+CFLAGS += --param=min-pagesize=0
+endif
+
 LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
           -Wl,--start-group -lm -lprintf_flt -Wl,--end-group -Wl,--gc-sections
 
@@ -62,6 +70,14 @@ $(BUILDDIR)/%.o: %.c
 size: $(BUILDDIR)/tinyg.elf
 	$(SIZE) $<
 
+# Format-string lint: compile every source with lint.h forced in, so GCC checks the PSTR() formats
+# of printf_P/sprintf_P (avr-libc gives them no format attribute). Needs -O2 -c: the overflow and
+# truncation checks run in an optimisation pass. Output is discarded; nothing is built.
+LINT_FLAGS = -include lint.h -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
+             -Wno-format-nonliteral -Wno-format-security
+lint:
+	@for f in $(SRCS); do $(CC) $(filter-out -MMD -MP,$(CFLAGS)) $(LINT_FLAGS) -c $$f -o /dev/null || exit 1; done
+
 # Flash via the xboot bootloader (avr109 protocol). Set PORT to your device,
 # e.g. make flash PORT=/dev/tty.usbserial-XXXX
 PORT ?= /dev/tty.usbserial*
@@ -73,4 +89,4 @@ clean:
 
 -include $(OBJS:.o=.d)
 
-.PHONY: all size flash clean
+.PHONY: all size lint flash clean
