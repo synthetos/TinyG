@@ -12,3 +12,4 @@ def function(source, signature):
         if depth == 0:
             return source[match.start():token.end()]
     raise AssertionError(signature)
+

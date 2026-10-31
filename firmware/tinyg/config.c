@@ -43,6 +43,42 @@
 #include "xio.h"
 
 static void _set_defa(nvObj_t *nv);
+static index_t config_load_failure; // first rejected row + 1; zero means no pending report
+
+static void _record_config_load_failure(nvObj_t *nv)
+{
+    if (config_load_failure == 0) {
+        config_load_failure = nv->index + 1;
+    }
+}
+
+static stat_t _load_config_default(nvObj_t *nv)
+{
+    nv->value_flt = GET_TABLE_FLOAT(default_value);
+    if (cfg_is_type(nv->index) != TYPE_FLOAT) {
+        nv->value_int = (uint32_t)nv->value_flt;
+        nv->valuetype = TYPE_INTEGER;
+    } else {
+        nv->valuetype = TYPE_FLOAT;
+    }
+    stat_t status = nv_set(nv);
+    if (status != STAT_OK) {
+        _record_config_load_failure(nv);
+    }
+    return (status);
+}
+
+void config_report_load_failure(void)
+{
+    if (config_load_failure == 0) {
+        return;
+    }
+    char token[TOKEN_LEN+1];
+    strncpy_P(token, cfgArray[config_load_failure-1].token, TOKEN_LEN);
+    token[TOKEN_LEN] = NUL;
+    config_load_failure = 0;
+    rpt_exception(STAT_CONFIG_ASSERTION_FAILURE, token);
+}
 
 /***********************************************************************************
  **** STRUCTURE ALLOCATIONS ********************************************************
@@ -70,7 +106,11 @@ stat_t nv_set(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	return (((fptrCmd)GET_TABLE_WORD(set))(nv));
+	stat_t status = ((fptrCmd)GET_TABLE_WORD(set))(nv);
+	if ((status == STAT_OK) && nv_index_is_single(nv->index)) {
+		nv->precision = (int8_t)GET_TABLE_WORD(precision);	// SET echoes use the row's display precision, as GETs do (E076)
+	}
+	return (status);
 }
 
 stat_t nv_get(nvObj_t *nv)
@@ -101,11 +141,49 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
 }
 
 /************************************************************************************
+ * NVM layout version (E022)
+ *
+ *	NVM record 0 used to hold the firmware build number, and config_init() loaded defaults whenever it
+ *	differed from the running build - so every release wiped every setting. Record 0 now holds a
+ *	layout marker that changes only when the persisted layout changes: NVM records are indexed by
+ *	cfgArray position: inserting, removing or moving any earlier row changes persisted indexes.
+ *	Layout 2 reserves the combined output/probe/reporting additions in one release bump.
+ *	Layout 2 migrates layout 1 (including legacy 449.01) because the old indexes are unchanged.
+ *	Erased EEPROM and unknown layouts initialize defaults.
+ */
+#define CONFIG_NVM_LAYOUT			2
+#define CONFIG_NVM_LAYOUT_MARKER	(10000.0 + CONFIG_NVM_LAYOUT)	// can't be mistaken for a build number
+#define CONFIG_NVM_LAYOUT_1_BUILD	449.01							// record 0 of a layout-1 board before markers
+
+static bool _nvm_layout_is_current(nvObj_t *nv)
+{
+	if (nv->value_int == 0xFFFFFFFF) {
+		return (false);
+	}
+	if (fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_MARKER)) {
+		return (true);
+	}
+	return ((CONFIG_NVM_LAYOUT == 1) && fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD));
+}
+
+static bool _nvm_layout_is_legacy(nvObj_t *nv)
+{
+    return ((CONFIG_NVM_LAYOUT == 2) &&
+            (fp_EQ(nv->value_flt, 10001.0) || fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD)));
+}
+
+static void _write_nvm_layout_marker(nvObj_t *nv)
+{
+	nv->index = 0;
+	nv->value_flt = CONFIG_NVM_LAYOUT_MARKER;
+	write_persistent_value(nv);
+}
+
+/************************************************************************************
  * config_init() - called once on hard reset
  *
- * Performs one of 2 actions:
- *	(1) if persistence is set up or out-of-rev load RAM and NVM with settings.h defaults
- *	(2) if persistence is set up and at current config version use NVM data for config
+ * Load a current layout, migrate the append-only layout-1 prefix, or initialize defaults
+ * for an erased or unknown layout. Migration writes new initialized rows before its marker.
  *
  *	You can assume the cfg struct has been zeroed by a hard reset.
  *	Do not clear it as the version and build numbers have already been set by controller_init()
@@ -128,23 +206,42 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
-	if (fp_NE(nv->value_flt, cs.fw_build)) {    // case (1) NVM is not setup or not in revision
+    bool migrate = _nvm_layout_is_legacy(nv);
+	if (!_nvm_layout_is_current(nv) && !migrate) {			// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
+        bool initialized = true;
+        index_t first_new = nv_index_max();
+        if (migrate) {
+            strcpy_P(nv->token, PSTR("spep"));
+            first_new = nv_get_index("", nv->token);
+            if (first_new == NO_MATCH) {
+                cm_panic_P(STAT_CONFIG_ASSERTION_FAILURE, PSTR("Missing layout-2 boundary"));
+                return;
+            }
+        }
 		rpt_print_loading_configs_message();
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
             if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-				read_persistent_value(nv);
-                if (cfg_is_type(nv->index) == TYPE_FLOAT) {
-                    nv->valuetype = TYPE_FLOAT;
+                if (migrate && (nv->index >= first_new)) {
+                    if (_load_config_default(nv) == STAT_OK) {
+                        nv_persist(nv);
+                    } else {
+                        initialized = false;
+                    }
                 } else {
-                    nv->valuetype = TYPE_INTEGER;
+                    read_persistent_value(nv);
+                    nv->valuetype = (cfg_is_type(nv->index) == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INTEGER;
+                    if (nv_set(nv) != STAT_OK) {
+                        _record_config_load_failure(nv);
+                        _load_config_default(nv);
+                    }
                 }
-				nv_set(nv);
 			}
 		}
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
+        if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
 #endif
 }
@@ -163,19 +260,14 @@ static void _set_defa(nvObj_t *nv)
 	cm_set_units_mode(MILLIMETERS);				// must do inits in MM mode
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
         if (cfg_has_flag(nv->index, F_INITIALIZE)) {
-    		nv->value_flt = GET_TABLE_FLOAT(default_value); // get default as float
-            if (cfg_is_type(nv->index) != TYPE_FLOAT) {
-                nv->value_int = (uint32_t)nv->value_flt;    // cast in place to int if required
-                nv->valuetype = TYPE_INTEGER;
-            } else {
-                nv->valuetype = TYPE_FLOAT;
+            strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
+            if (_load_config_default(nv) == STAT_OK) {
+                nv_persist(nv);
             }
-			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
-			nv_set(nv);                         // sets value
-			nv_persist(nv);
 		}
 	}
     sr_init_status_report_P(SR_DEFAULTS);       // reset status reports to defaults
+	_write_nvm_layout_marker(nv);               // (...and the layout marker replaces it)
 	rpt_print_initializing_message();           // don't start TX until all the NVM persistence is done
 }
 
@@ -788,7 +880,7 @@ void nv_populate_nv_by_index(nvObj_t *nv, index_t index)
  */
 stat_t nv_copy_string(nvObj_t *nv, const char *src)
 {
-	if ((nvStr.wp + strlen(src)) > NV_SHARED_STRING_LEN) {
+	if ((nvStr.wp + strlen(src) + 1) > NV_SHARED_STRING_LEN) {	// room for the NUL too (E048)
         return (STAT_BUFFER_FULL);
     }
 	char *dst = &(nvStr.string[nvStr.wp]);

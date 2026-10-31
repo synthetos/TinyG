@@ -335,7 +335,6 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
 		if (gms->feed_rate_mode == INVERSE_TIME_MODE) {
 			inv_time = gms->feed_rate;	// NB: feed rate was un-inverted to minutes by cm_set_feed_rate()
-			gms->feed_rate_mode = UNITS_PER_MINUTE_MODE;
 		} else {
 			// compute length of linear move in millimeters. Feed rate is provided as mm/min
 			xyz_time = sqrt(axis_square[AXIS_X] + axis_square[AXIS_Y] + axis_square[AXIS_Z]) / gms->feed_rate;
@@ -474,7 +473,6 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
  */
-/*
 static void _reset_replannable_list()
 {
 	mpBuf_t *bf = mp_get_first_buffer();
@@ -482,9 +480,28 @@ static void _reset_replannable_list()
 	mpBuf_t *bp = bf;
 	do {
 		bp->replannable = true;
-	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->move_state != MOVE_OFF));
+	} while (((bp = mp_get_next_buffer(bp)) != bf) && (bp->buffer_state != MP_BUFFER_EMPTY));
 }
-*/
+
+/*
+ * mp_replan_held_block() - replan the held block, and everything queued behind it, from zero velocity
+ *
+ *	At the hold point the exec shortens the held block to its remaining length and marks it to be
+ *	re-initialized (plan_exec.c, feedhold case 6), but its head/body/tail lengths and velocities
+ *	are still those of the original move, so resuming would overshoot. Call from the main loop
+ *	before the hold is released.
+ */
+void mp_replan_held_block()
+{
+	mpBuf_t *bf = mp_get_run_buffer();
+	if ((bf == NULL) || (bf->block_type != BLOCK_TYPE_ALINE)) { return; }
+
+	bf->entry_vmax = 0;
+	bf->delta_vmax = mp_get_target_velocity(0, bf->length, bf);
+	_reset_replannable_list();
+	uint8_t mr_flag = true;                         // first block enters at its entry_vmax (zero)
+	_plan_block_list(mp_get_last_buffer(), &mr_flag);
+}
 
 /*
  * _get_junction_vmax() - Sonny's algorithm - simple

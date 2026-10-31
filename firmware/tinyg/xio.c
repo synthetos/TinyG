@@ -76,6 +76,7 @@
 #include <string.h>					// for memset()
 #include <stdio.h>					// precursor for xio.h
 #include <avr/pgmspace.h>			// precursor for xio.h
+#include <avr/interrupt.h>			// cli() in xio_flush_input()
 
 #include "xio.h"					// all device includes are nested here
 #include "tinyg.h"					// needed by init() for default source
@@ -90,6 +91,7 @@ static void _init_readline_linemode(void);
 
 static char *_readline_charmode(devflags_t *flags, uint16_t *size);
 static char *_readline_linemode(devflags_t *flags, uint16_t *size);
+static devflags_t _classify_line(const char *line, uint16_t size);
 
 /********************************************************************************
  * XIO Initializations, Resets and Assertions
@@ -410,6 +412,24 @@ void xio_reset_readline_linemode()
 }
 
 /*
+ * xio_flush_input() - drop the input a host '%' asked for: RX ring bytes before its mark (all of them
+ *	without a mark), the line being read, line-mode buffers and a held char-mode line (E146)
+ *
+ *  Main loop only (requested queue flush). The RX ISR also writes the ring and line state.
+ */
+
+void xio_flush_input()
+{
+    uint8_t sreg = SREG;
+    cli();
+    xio_drop_usb_rx_before_mark();          // a host '%' keeps what was sent after it (E146)
+    xio_fc_usart(&USB);                     // release XOFF/RTS only if what is kept is under the low mark
+    SREG = sreg;
+    _init_readline_linemode();
+    xio.buf_state = BUFFER_FREE;
+}
+
+/*
  * xio_get_line_buffers_available()
  */
 
@@ -471,12 +491,17 @@ static char *_get_free_buffer(uint16_t requested_size)
         free->bufp = b->pool_base;                      // never supposed to happen, but protects against memory faults
     }
 
-    // attempt to allocate free RAM above used_top
-    if ((b->pool_top - free->bufp) > requested_size) {      // is there enough RAM at the top?
-        free->size = b->pool_top - free->bufp -1;           // claim all available RAM (no reason not to)
+    bool wrapped = (top->state != BUFFER_FREE) && (b->used_base->state != BUFFER_FREE) &&
+                   (top->bufp < b->used_base->bufp);
+    char *limit = wrapped ? b->used_base->bufp : b->pool_top;
+
+    // A wrapped allocation must stop before the oldest live buffer.
+    if ((limit - free->bufp) > requested_size) {      // is there enough RAM at the top?
+        free->size = limit - free->bufp -1;           // claim all available RAM (no reason not to)
 
     // if not, attempt to allocate free RAM below the used_base (wraparound case)
-    } else if ((b->used_base->bufp - b->pool_base) > requested_size) {
+    } else if (!wrapped && (b->used_base->state != BUFFER_FREE) &&
+               ((b->used_base->bufp - b->pool_base) > requested_size)) {
         free->bufp = b->pool_base;                          // reset the pointer to the base
         free->size = b->used_base->bufp - b->pool_base -1;  // claim all available RAM
 
@@ -522,7 +547,7 @@ static void _post_buffer()
         c = *(top->bufp);
         if (c == NUL) {                     // blank line. NOTE: LFs and CRs were replaced w/NUL during xio_gets_usart()
             top->state = BUFFER_FREE;       // undo the buffer and return
-            if (top->pv != BUFFER_FREE) {   // drop the top down unless top == base
+            if (top != b->used_base) {      // drop the top down unless top == base
                 b->used_top = top->pv;
             }
             b->free_headers++;
@@ -538,17 +563,113 @@ static void _post_buffer()
     top->size = strlen(top->bufp) + 1;
 
     // set flags for buffer
-    if (strchr("{$?!~%Hh", c) != NULL) {    // a match indicates control line
-        top->flags = DEV_IS_CTRL;
-    } else {
-        top->flags = DEV_IS_DATA;
-    }
+    top->flags = _classify_line(top->bufp, top->size);
     top->state = BUFFER_FULL;
+}
+
+/*
+ * _json_wraps_gcode() - scan top-level keys without changing the input buffer
+ */
+
+static bool _json_space(char c)
+{
+    return (((c > NUL) && (c <= ' ')) || (c == 0x7f));
+}
+
+static bool _json_wraps_gcode(const char *line, const char *end)
+{
+    uint16_t depth = 1;
+    uint8_t key_length = 0;
+    bool key = true, quoted = false, gc = true, txt = true;
+
+    for (const char *p = line + 1; (p < end) && (*p != NUL); p++) {
+        char c = *p;
+        if ((uint8_t)c >= 0x80) { return (true); } // tokenizer normalizes non-ASCII input
+        if (key) {
+            if (c == '"') { continue; }
+            if (_json_space(c)) { continue; }    // tokenizer removes whitespace inside keys too
+            if (c == ':') {
+                const char *v = p + 1;
+                while ((v < end) && _json_space(*v)) { v++; }
+                if ((v == end) || (*v == NUL)) { return (false); }
+                if (gc && (key_length == 2) && (*v != 'n') && (*v != 'N')) {
+                    return (true);
+                }
+                if (txt && (key_length == 3) && (*v == '"') && (++v < end) && (*v != NUL) &&
+                    (*v != '"') && (strchr_P(PSTR("$?Hh"), *v) == NULL)) {
+                    return (true);              // nested JSON in txt also waits for planner room
+                }
+                key = false;
+                continue;
+            }
+            if (c == '}') { return (false); }
+            if ((c >= 'A') && (c <= 'Z')) { c += 'a' - 'A'; }
+            gc = gc && (key_length < 2) && (c == pgm_read_byte(PSTR("gc") + key_length));
+            txt = txt && (key_length < 3) && (c == pgm_read_byte(PSTR("txt") + key_length));
+            if (key_length < 4) { key_length++; }
+            continue;
+        }
+        if (quoted) {
+            // Match the tokenizer: only a quote immediately following '\\' is escaped.
+            if (c == '\\') {
+                if ((p + 1 < end) && (p[1] == '"')) { p++; }
+            } else if (c == '"') {
+                quoted = false;
+            }
+            continue;
+        }
+        if (c == '"') { quoted = true; }
+        else if ((c == '{') || (c == '[')) { depth++; }
+        else if ((c == '}') || (c == ']')) {
+            if (--depth == 0) { return (false); }
+        } else if ((c == ',') && (depth == 1)) {
+            key = gc = txt = true;
+            key_length = 0;
+        }
+    }
+    return (false);
+}
+
+/*
+ * _classify_line() - use the same planner gate in line and character receive modes
+ */
+
+static devflags_t _classify_line(const char *line, uint16_t size)
+{
+    const char *end = line + size;
+    while ((line < end) && _json_space(*line)) { line++; }
+    if ((line == end) || (*line == NUL)) { return (DEV_IS_CTRL); }
+    if ((*line == '?') && ((line+1) < end) && (line[1] != NUL)) {
+        line++;                 // the dispatcher drops one stray '?' and runs the rest: classify the rest,
+    }                           // so '?G1' waits for planner room like 'G1' (E053); a lone '?' stays CTRL
+    if (*line == '{') {
+        return (_json_wraps_gcode(line, end) ? DEV_IS_DATA : DEV_IS_CTRL);
+    }
+    return ((strchr_P(PSTR("$?!~%Hh"), *line) == NULL) ? DEV_IS_DATA : DEV_IS_CTRL);
 }
 
 /*
  * _next_buffer_to_process() - Search ctrl first, then data; send NULL if nothing to process
  */
+
+/*
+ * _post_overflow() - post a truncated (overlong) line, flagged so the controller rejects it
+ *
+ *	The line is answered with one error and never run, so its text doesn't matter - but it must be
+ *	posted: _post_buffer() drops a blank line, and an overlong line of only spaces would then get no
+ *	answer (and flagging used_top afterwards would hit the previous command).
+ */
+static void _post_overflow(char *bufp)
+{
+    buf_hdr_t *hdr = bm.used_top;                       // the overflowing line's own header
+    char *c = bufp;
+    while ((*c != NUL) && (*c <= ' ')) { c++; }
+    if (*c == NUL) {
+        strcpy_P(bufp, PSTR("(line too long)"));        // whitespace only: give it text so it is posted
+    }
+    _post_buffer();
+    hdr->flags |= DEV_IS_OVERFLOW;
+}
 
 static char *_next_buffer_to_process(devflags_t *flags)
 {
@@ -561,7 +682,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_CTRL)) {
-                *flags = (DEV_IS_CTRL);                     // set as control only
+                *flags = (DEV_IS_CTRL) | (hdr->flags & DEV_IS_OVERFLOW);                     // set as control only
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -576,7 +697,7 @@ static char *_next_buffer_to_process(devflags_t *flags)
                 break;
             }
             if ((hdr->state == BUFFER_FULL) && (hdr->flags & DEV_IS_DATA)) {
-                *flags = (DEV_IS_DATA);
+                *flags = (DEV_IS_DATA) | (hdr->flags & DEV_IS_OVERFLOW);
                 hdr->state = BUFFER_PROCESSING;
                 return (hdr->bufp);
             }
@@ -619,9 +740,7 @@ static void _free_processed_buffer()
                 hdr->bufp = NULL;
                 hdr->state = BUFFER_FREE;
                 b->free_headers++;
-                if (hdr->pv->state == BUFFER_FREE) {        // adjust top
-                    b->used_top = hdr->pv;
-                }
+                b->used_top = hdr->pv;                      // pv is still in use (or a fragment)
             } else {                                        // buffer is in the middle of used list
                 hdr->state = BUFFER_FRAGMENT;
                 b->fragments++;
@@ -653,6 +772,32 @@ static void _free_processed_buffer()
  *    6. get next buffer to process and return as char *
  */
 
+/* A file must not inherit a partially received USB line or its saved buffer pointer. */
+uint8_t xio_prepare_pgm_source(void)
+{
+    if (xio.primary_src == XIO_DEV_PGM) { return (STAT_COMMAND_NOT_ACCEPTED); }
+    if (ds[XIO_DEV_USB].flag_in_line && ds[XIO_DEV_USB].len != 0) {
+        return (STAT_COMMAND_NOT_ACCEPTED);
+    }
+    ds[XIO_DEV_USB].flag_in_line = false;
+    return (STAT_OK);
+}
+
+static stat_t _readline_source(char *bufp, uint16_t size)
+{
+    stat_t status = xio_gets(xio.primary_src, bufp, size);
+    if (status == XIO_EOF) {
+        bufp[0] = NUL;                 // fgets leaves stale bytes at EOF: never post them
+        controller_reset_source();
+        if (cs.comm_mode == TEXT_MODE) {
+            printf_P(PSTR("End of command file\n"));
+        } else {
+            rpt_exception(STAT_EOF, "");
+        }
+    }
+    return (status);
+}
+
 static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 {
     char *bufp;         // local pointer to allocated buffer
@@ -661,31 +806,46 @@ static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 
 	// Free a previously processing buffer (assumes calling readline means a free should occur)
     _free_processed_buffer();                           // 1. Free a buffer is one is processing
+    bool file_source = (xio.primary_src == XIO_DEV_PGM);
+    if (file_source) {
+        // Do not read ahead across file commands: a later CTRL must not overtake DATA.
+        for (uint8_t i=0; i<RX_HEADERS; i++) {
+            if (b->buf[i].state == BUFFER_FULL) {
+                return (_next_buffer_to_process(flags));
+            }
+        }
+    }
 
 	// Resume a partially filled buffer if one exists
 	// NB: xio_gets_usart() can return overflowed lines, these are truncated and terminated
     if ((bufp = _get_filling_buffer()) != NULL) {       // 2. Get a buffer if one is filling
-    	status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size);
+        status = _readline_source(bufp, min(b->used_top->size, b->requested_size));
     	if (status == XIO_EAGAIN) {
             return(_next_buffer_to_process(flags));     // no more chars to read
     	}
     	if (status == XIO_BUFFER_FULL) {
-        	return ((char *)_FDEV_ERR);                 // buffer overflow occurred
-    	}
-        _post_buffer();                                 // post your newly filled buffer
+            _post_overflow(bufp);                       // truncated: the controller rejects it
+    	} else {
+            _post_buffer();                             // post your newly filled buffer
+        }
+    }
+
+    if (file_source && bufp != NULL) {
+        return (_next_buffer_to_process(flags));
     }
 
     // Get a new free buffer
     if ((bufp = _get_free_buffer(b->requested_size)) == NULL) { // 3. get a FREE buffer
         return(_next_buffer_to_process(flags));         // no buffer available
     }
-    if ((status = xio_gets_usart(&ds[XIO_DEV_USB], bufp, b->requested_size)) == XIO_EAGAIN) { // 4.
+    if ((status = _readline_source(bufp, min(b->used_top->size, b->requested_size))) == XIO_EAGAIN) { // 4.
         return(_next_buffer_to_process(flags));         // 4a. buffer is not yet full
     }
     if (status == XIO_BUFFER_FULL) {
-        return ((char *)_FDEV_ERR);                     // buffer overflow occurred
+        _post_overflow(bufp);                           // truncated: the controller rejects it
+    } else {
+        _post_buffer();                                 // 5. post newly filled buffer
     }
-    _post_buffer();                                     // 5. post newly filled buffer
     return(_next_buffer_to_process(flags));             // 6. return the next buffer to process
 }
 
@@ -754,6 +914,9 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 		return(_exit_null(flags, size));
 	}
 	xio.buf_size = strlen(xio.bufp)+1;                  // set size. Add 1 to account for the terminating CR or LF
+    if (status == XIO_BUFFER_FULL) {
+        return (_exit_line(DEV_IS_OVERFLOW | DEV_IS_CTRL, flags, size));
+    }
 
 	//*** got a full buffer ***
 	if (status == STAT_EOF) {							// EOF can come from file devices only
@@ -763,12 +926,14 @@ static char *_readline_charmode(devflags_t *flags, uint16_t *size)
 			rpt_exception(STAT_EOF, "");				// not really an exception
 		}
 		controller_reset_source();						// reset to active source to default source
+		xio.bufp[0] = NUL;              // immediate EOF leaves the previously executed line intact
+		return (_exit_null(flags, size));
 	}
 	if (*(xio.bufp) == NUL) {                           // look for lines with no data (nul)
 		return (_exit_line(DEV_IS_NONE, flags, size));
 	}
 
-    if (strchr("{$?!~%Hh", *xio.bufp) != NULL) {        // true indicates control line
+    if (_classify_line(xio.bufp, xio.buf_size) == DEV_IS_CTRL) {
 		return (_exit_line(DEV_IS_CTRL, flags, size));
 	}
 	if (*flags & DEV_IS_DATA) {							// got a data line

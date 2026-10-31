@@ -33,9 +33,52 @@
 #include "hardware.h"
 #include "pwm.h"
 #include "util.h"
+#include "settings.h"
+#include "stepper.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
+
+spindleConfig_t spindle_cfg;
+static bool spindle_configured;
 
 static void _exec_spindle_control(float *value, bool *flags);
 static void _exec_spindle_speed(float *value, bool *flags);
+
+void spindle_config_init(void)
+{
+    spindle_configured = false;
+    spindle_cfg.enable_polarity = SPINDLE_ENABLE_POLARITY;
+    spindle_cfg.direction_polarity = SPINDLE_DIR_POLARITY;
+}
+
+void spindle_init_outputs(void)
+{
+    spindle_reset();
+    gpio_init_outputs();
+    spindle_configured = true;
+}
+
+stat_t spindle_set_polarity(nvObj_t *nv)
+{
+    if (nv->value_int > 1) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool busy = spindle_configured &&
+                ((cm.gm.spindle_mode != SPINDLE_OFF) || mp_has_runnable_buffer() ||
+                 !mp_runtime_is_idle() || (st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER));
+    stat_t status = STAT_COMMAND_NOT_ACCEPTED;
+    if (!busy) {
+        status = set_01(nv);
+        if (status == STAT_OK) { spindle_reset(); }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return (status);
+}
 
 /*
  * spindle_init()
@@ -52,7 +95,8 @@ void spindle_init()
 
 void spindle_reset()
 {
-    return;
+    float value[] = { (float)SPINDLE_OFF };
+    _exec_spindle_control(value, FLAGS_NONE);   // immediate, not queued: used by alarm, shutdown and panic
 }
 
 /*
@@ -101,19 +145,18 @@ stat_t cm_spindle_control(uint8_t spindle_mode)
 //static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
 static void _exec_spindle_control(float *value, bool *flags)
 {
-	uint8_t spindle_mode = (uint8_t)value[0];
+	uint8_t spindle_mode = cm_outputs_inhibited() ? SPINDLE_OFF : (uint8_t)value[0];  // a queued M3/M4 may run after an alarm
 	cm_set_spindle_mode(MODEL, spindle_mode);
 
- #ifdef __AVR
-	if (spindle_mode == SPINDLE_CW) {
-		gpio_set_bit_on(SPINDLE_BIT);
-		gpio_set_bit_off(SPINDLE_DIR);
-	} else if (spindle_mode == SPINDLE_CCW) {
-		gpio_set_bit_on(SPINDLE_BIT);
-		gpio_set_bit_on(SPINDLE_DIR);
-	} else {
-		gpio_set_bit_off(SPINDLE_BIT);	// failsafe: any error causes stop
-	}
+#ifdef __AVR
+    bool on = (spindle_mode == SPINDLE_CW) || (spindle_mode == SPINDLE_CCW);
+    if (on) {
+        bool direction_high = (spindle_mode == SPINDLE_CW) == spindle_cfg.direction_polarity;
+        if (direction_high) { gpio_set_bit_on(SPINDLE_DIR); }
+        else                { gpio_set_bit_off(SPINDLE_DIR); }
+    }
+    if (on == spindle_cfg.enable_polarity) { gpio_set_bit_on(SPINDLE_BIT); }
+    else                                  { gpio_set_bit_off(SPINDLE_BIT); }
 #endif // __AVR
 #ifdef __ARM
 	if (spindle_mode == SPINDLE_CW) {

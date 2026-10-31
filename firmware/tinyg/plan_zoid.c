@@ -291,7 +291,8 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 	// If the body is a standalone make the cruise velocity match the entry velocity
 	// This removes a potential velocity discontinuity at the expense of top speed
-	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length))) {
+	} else if ((fp_ZERO(bf->head_length)) && (fp_ZERO(bf->tail_length)) &&
+               fp_NOT_ZERO(bf->entry_velocity)) {
 		bf->cruise_velocity = bf->entry_velocity;
 	}
 }

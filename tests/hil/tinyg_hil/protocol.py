@@ -15,6 +15,7 @@ class Event:
     t: float            # host monotonic time the line completed
     raw: str
     data: Any = None    # parsed JSON object (None for text)
+    damaged: str | None = None  # the line as received, when `raw` is a JSON object salvaged from its tail
 
     @property
     def body(self):
@@ -41,26 +42,48 @@ def loads(raw: str):
         return json.loads(_BARE_KEY.sub(r'\1"\2":', raw))
 
 
+def _salvage(raw: str):
+    """A line whose start was mangled (an Atmel-ICE halt can freeze the USART mid-byte while the board
+    transmits) may still end with a whole JSON object; return the last one that parses, or None."""
+    for i in range(len(raw) - 1, 0, -1):
+        if raw[i] == "{" and raw[i:i + 2] == '{"':
+            try:
+                data = loads(raw[i:])
+            except ValueError:
+                continue
+            if isinstance(data, dict) and data:
+                return raw[i:], data
+    return None
+
+
 def parse_line(raw: str, t: float) -> Event:
+    damaged = None
+    if raw.startswith("\0") and raw.lstrip("\0").startswith("{"):
+        # Leading NUL bytes only (seen once in regression 95f797f0, cause unconfirmed; an Atmel-ICE halt
+        # mid-byte is the suspect): keep the JSON after them, marked damaged. Embedded NULs stay malformed.
+        damaged, raw = raw, raw.lstrip("\0")
     if raw.startswith("{"):
         try:
             data = loads(raw)
         except ValueError:
-            return Event("malformed", t, raw)
+            found = _salvage(raw)
+            if found is None:
+                return Event("malformed", t, damaged or raw)
+            damaged, (raw, data) = damaged or raw, found
         if not isinstance(data, dict):
-            return Event("malformed", t, raw)
+            return Event("malformed", t, raw, damaged=damaged)
         if "r" in data or "f" in data:
             r = data.get("r")
             if isinstance(r, dict) and r.get("msg") == "SYSTEM READY":
-                return Event("banner", t, raw, data)
-            return Event("response", t, raw, data)
+                return Event("banner", t, raw, data, damaged)
+            return Event("response", t, raw, data, damaged)
         if "sr" in data:
             sr = data["sr"]
-            return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data)
-        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack")):
-            if key in data:
-                return Event(kind, t, raw, data)
-        return Event("malformed", t, raw, data)
+            return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data, damaged)
+        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack"), ("prb", "probe")):
+            if key in data:                     # prb: edge's top-level probe report since E101
+                return Event(kind, t, raw, data, damaged)
+        return Event("malformed", t, raw, data, damaged)
     if PROMPT.match(raw):
         return Event("prompt", t, raw)
     return Event("text", t, raw)

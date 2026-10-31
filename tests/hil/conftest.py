@@ -1,3 +1,4 @@
+import math
 import os
 import pathlib
 import time
@@ -130,6 +131,11 @@ def tg(request):
     snap["values"].update({t: v for t, v in original.items() if v is not None})
     board.snapshot = snap
     board.snapshot_path = snapshot.save(snap, config.getoption("--snapshot-dir"))
+    bad = _broken_geometry(snap["values"])
+    if bad:     # a defaulted/zeroed config makes every motion result meaningless; stop before testing
+        board.close()
+        pytest.exit(f"board settings look reset (motor geometry {bad}); restore a good snapshot first "
+                    f"(this session's: {board.snapshot_path})", returncode=3)
     yield board
     board.drain()
     recover(board)
@@ -139,6 +145,14 @@ def tg(request):
         transcript.close()
     if result["failed"]:
         pytest.fail(f"settings restore failed: {result['failed']} (snapshot {board.snapshot_path})")
+
+
+def _broken_geometry(values):
+    """Motor 1-4 geometry tokens that are missing, non-numeric, non-finite or not positive, as {token: value}."""
+    def ok(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v > 0
+    return {f"{m}{t}": values.get(f"{m}{t}") for m in range(1, 5) for t in ("sa", "tr", "mi")
+            if not ok(values.get(f"{m}{t}"))}
 
 
 def recover(board):
@@ -206,7 +220,7 @@ def ice(request, tg, board):
     elf = request.config.getoption("--elf") or flashed_elf(tg.transport.port)
     if not elf:
         pytest.skip("no ELF for the flashed build: pass --elf or flash through tinyg_hil")
-    session = Ice(elf=elf, board=board, wire=tg.transport.wire).open()
+    session = Ice(elf=elf, board=board, wire=tg.transport.wire, port=tg.transport.port).open()
     tg.transport.wire_margin = 0.012          # a halt must not start while bytes sit in the FT230X
     yield session
     tg.transport.wire_margin = 0.0

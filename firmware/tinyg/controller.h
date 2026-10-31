@@ -51,9 +51,10 @@ typedef struct controllerSingleton {	// main TG controller struct
 	float fw_build;						// tinyg firmware build number
 	float fw_version;					// tinyg firmware version number
 	uint8_t hw_platform;                // tinyg hardware compatibility - platform type
-	uint8_t hw_version;                 // tinyg hardware compatibility - platform revision
+	float hw_version;                 // tinyg hardware compatibility - platform revision
 
 	// communications state variables
+	volatile bool enquiry_requested;	// set by the RX ISR on ENQ, answered by the main loop
 	uint8_t primary_src;				// primary input source device
 	uint8_t secondary_src;				// secondary input source device
 	uint8_t default_src;				// default source device
@@ -89,7 +90,9 @@ void controller_init_assertions(void);
 stat_t controller_test_assertions(void);
 
 void controller_run(void);
-void controller_dispatch_txt_container (nvObj_t *nv, char *str);
+stat_t controller_request_motion_sync(void);
+bool controller_defer_motion_response(const stat_t status, bool json);
+stat_t controller_dispatch_txt_container (nvObj_t *nv, char *str);
 void controller_reset_source(void);
 void controller_set_primary_source(uint8_t dev);
 void controller_set_secondary_source(uint8_t dev);

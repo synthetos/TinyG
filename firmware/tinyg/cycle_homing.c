@@ -194,6 +194,14 @@ stat_t cm_homing_callback(void)
 	if (cm_get_runtime_busy() == true) {        // sync to planner move ends
         return (STAT_EAGAIN);
     }
+	if (cm_is_alarmed() != STAT_OK) {           // an alarm (limit, {alarm}, ...) ends the cycle: never
+		cm.cycle_state = CYCLE_OFF;				// queue the next homing move. CYCLE_OFF first, so the
+		if (hm.axis >= 0) {						// finalize's cm_cycle_end() can't clear the ALARM
+			cm_set_axis_jerk(hm.axis, hm.saved_jerk);
+		}
+		_homing_finalize_exit(hm.axis);			// restore coordinate system, units, modes
+		return (STAT_OK);						// homing state stays HOMING_NOT_HOMED
+	}
 	return (hm.func(hm.axis));                  // execute the current homing move
 }
 
@@ -208,7 +216,15 @@ static stat_t _homing_axis_start(int8_t axis)
 	// get the first or next axis
 	if ((axis = _get_next_axis(axis)) < 0) {    // axes are done or error
 		if (axis == -1) {						// -1 is done
+			// the machine is homed only when every axis with a homing switch is homed,
+			// not whenever the axes requested by this G28.2 are done
 			cm.homing_state = HOMING_HOMED;
+			for (uint8_t i=0; i<NUM_SWITCH_PAIRS; i++) {
+				if (((get_switch_mode(MIN_SWITCH(i)) | get_switch_mode(MAX_SWITCH(i))) & SW_HOMING_BIT) &&
+					(cm.homed[i] == false)) {
+					cm.homing_state = HOMING_NOT_HOMED;
+				}
+			}
 			return (_set_homing_func(_homing_finalize_exit));
 		} else if (axis == -2) { 							// -2 is error
 			return (_homing_error_exit(-2, STAT_HOMING_ERROR_BAD_OR_NO_AXIS));
@@ -229,6 +245,11 @@ static stat_t _homing_axis_start(int8_t axis)
     }
 	// calculate and test travel distance
 	float travel_distance = fabs(cm.a[axis].travel_max - cm.a[axis].travel_min) + cm.a[axis].latch_backoff;
+	if (fp_EQ(cm.a[axis].travel_max, cm.a[axis].travel_min) && (cm.a[axis].axis_mode == AXIS_RADIUS)) {
+		// a cyclic rotary axis (tn == tm: infinite travel) searches one full rotation (g2core 0112c81);
+		// radius-mode homing distances are linear, so one rotation is 2*pi*radius (E075)
+		travel_distance = 2 * M_PI * cm.a[axis].radius;
+	}
 	if (fp_ZERO(travel_distance)) {
         return (_homing_error_exit(axis, STAT_HOMING_ERROR_TRAVEL_MIN_MAX_IDENTICAL));
     }
@@ -288,6 +309,13 @@ static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 
 static stat_t _homing_axis_search(int8_t axis)				// start the search
 {
+	// The switch states are cached and only change on ISR edges. Re-read them now that the clear
+	// move is done: a switch still active never opened (an open NC wire, a stuck or unwired input),
+	// and searching would end on its stale level and mark the axis homed anywhere.
+	if ((read_switch(hm.homing_switch) == SW_ACTIVE) ||
+		((hm.limit_switch >= 0) && (read_switch(hm.limit_switch) == SW_ACTIVE))) {
+		return (_homing_error_exit(axis, STAT_HOMING_ERROR_MUST_CLEAR_SWITCHES_BEFORE_HOMING));
+	}
 	cm_set_axis_jerk(axis, cm.a[axis].jerk_homing);			// use the homing jerk for search onward
 	_homing_axis_move(axis, hm.search_travel, hm.search_velocity);
     return (_set_homing_func(_homing_axis_latch));
@@ -316,8 +344,9 @@ static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 		cm_set_position(axis, 0);
 		cm.homed[axis] = true;
 	} else {
-        // do not set axis if in G28.4 cycle
-		cm_set_position(axis, cm_get_work_position(RUNTIME, axis));
+        // G28.4 keeps the machine coordinates: resync to the runtime absolute (machine) position,
+        // not the work position, which differs by any G92 or tool offset
+		cm_set_position(axis, cm_get_absolute_position(RUNTIME, axis));
 	}
 	cm_set_axis_jerk(axis, hm.saved_jerk);					// restore the max jerk value
 	return (_set_homing_func(_homing_axis_start));
@@ -364,13 +393,13 @@ static stat_t _homing_error_exit(int8_t axis, stat_t status)
 		nv_add_message_P(PSTR("Homing error - Bad or no axis(es) specified"));
 	} else {
 		char message[NV_MESSAGE_LEN];
-		sprintf_P(message, PSTR("Homing error - %c axis settings misconfigured"), cm_get_axis_char(axis));
+		sprintf_P(message, PSTR("Homing error - %c axis"), cm_get_axis_char(axis));
 		nv_add_message((char *)message);
 	}
-	nv_print_list(STAT_HOMING_CYCLE_FAILED, TEXT_RESPONSE, JSON_RESPONSE);
+	nv_print_list(status, TEXT_RESPONSE, JSON_RESPONSE);	// the specific STAT_HOMING_ERROR_xxx
 
 	_homing_finalize_exit(axis);
-	return (STAT_HOMING_CYCLE_FAILED);						// homing state remains HOMING_NOT_HOMED
+	return (status);										// homing state remains HOMING_NOT_HOMED
 }
 
 /*
