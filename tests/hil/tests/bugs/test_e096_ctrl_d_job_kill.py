@@ -33,9 +33,10 @@ def _killed(tg, start, mark):
 
 
 def _restore(tg, start):
-    tg.wait_idle(timeout=10)
+    time.sleep(1.0)                 # any stop has finished; an alarmed machine is never idle until cleared
     if tg.stat() in (tg.dialect.stat("ALARM"), tg.dialect.stat("SHUTDOWN")):
         tg.clear_alarm()
+    tg.wait_idle(timeout=10)
     tg.send_gcode(f"G90 G1 X{start:.3f} F300", check=True, allow="return to start")
     tg.wait_idle()
 
