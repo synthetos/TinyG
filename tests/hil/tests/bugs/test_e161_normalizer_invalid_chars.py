@@ -15,7 +15,6 @@ BAD = ["G91 G1 X0.001*9 F100", "G91 G1 X0.001 F100*5", "G91 G1 X0.0#01 F100", "G
        "G91 G1 X0.00[1] F100", "G91 G1 X0.00=1 F100"]
 
 
-@pytest.mark.bug("E161", on=["d449"])
 def test_invalid_characters_are_not_spliced(tg):
     start = tg.get("posx")
     try:

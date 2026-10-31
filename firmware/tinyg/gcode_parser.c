@@ -139,8 +139,11 @@ static void _normalize_gcode_block(char *str, char **com, char **msg, uint8_t *b
 	for (; *wr != NUL; rd++) {
 		if (*rd == NUL) { *wr = NUL; }
 		else if ((*rd == '(') || (*rd == ';')) { *wr = NUL; *com = rd+1; }
-		else if ((isalnum((char)*rd)) || (strchr("-.", *rd))) { // all valid characters
+		else if ((isalnum((char)*rd)) || (strchr("-.+", *rd))) { // all valid characters
 			*(wr++) = (char)toupper((char)*(rd));
+		}
+		else if (!isspace((unsigned char)*rd) && (*rd != '%')) {	// keep anything else so the line fails as malformed:
+			*(wr++) = *rd;							// deleting it spliced X0.001*9 into X0.0019 (E161)
 		}
 	}
 
