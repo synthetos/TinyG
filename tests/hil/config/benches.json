@@ -10,6 +10,7 @@
   "ice_serial": "ICE-BENCH2",
   "saleae": "SALEAE-BENCH2",
   "saleae_channels": {
+   "0": "X min",
    "6": "M1 step",
    "7": "M1 dir",
    "2": "M2 step",
@@ -20,6 +21,6 @@
   "saleae_faulty_channels": [
    1
   ],
-  "saleae_note": "ch1 faulty (lead-swap confirmed 2026-10-30). M1 on ch6 (step)/ch7 (dir); ch0/ch1 unused; M4 not monitored."
+  "saleae_note": "ch1 faulty (lead-swap confirmed 2026-10-30). M1 on ch6 (step)/ch7 (dir); ch0 = X-min switch (confirmed by the bench owner 2026-10-31); ch1 unused; M4 not monitored."
  }
 }
