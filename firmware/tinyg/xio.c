@@ -412,7 +412,8 @@ void xio_reset_readline_linemode()
 }
 
 /*
- * xio_flush_input() - drop all received input: USB RX ring, line-mode buffers and a held char-mode line
+ * xio_flush_input() - drop the input a host '%' asked for: RX ring bytes before its mark (all of them
+ *	without a mark), the line being read, line-mode buffers and a held char-mode line (E146)
  *
  *  Main loop only (requested queue flush). The RX ISR also writes the ring and line state.
  */
@@ -422,7 +423,7 @@ void xio_flush_input()
     uint8_t sreg = SREG;
     cli();
     xio_drop_usb_rx_before_mark();          // a host '%' keeps what was sent after it (E146)
-    xio_xon_usart(&USBu);                   // the ring is empty: release an XOFF or RTS sent to the host
+    xio_fc_usart(&USB);                     // release XOFF/RTS only if what is kept is under the low mark
     SREG = sreg;
     _init_readline_linemode();
     xio.buf_state = BUFFER_FREE;
