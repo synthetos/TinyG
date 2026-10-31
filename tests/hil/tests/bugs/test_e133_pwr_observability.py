@@ -7,7 +7,6 @@ markers together.
 import pytest
 
 
-@pytest.mark.bug("E133", on=["d449"])
 def test_motor_power_observable(tg):
     tg.send_json({"md": None}, check=True)
     for m in range(1, 5):
