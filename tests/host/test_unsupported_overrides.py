@@ -14,10 +14,10 @@ FIRMWARE = Path(os.environ.get('TINYG_FIRMWARE', ROOT/'firmware/tinyg'))
 class UnsupportedOverrides(unittest.TestCase):
     def test_parser_rejects_inert_controls(self):
         source = (FIRMWARE/'gcode_parser.c').read_text()
-        names = ['_get_next_gcode_word', '_point', '_validate_gcode_block', '_parse_gcode_block']
+        names = ['_get_next_gcode_word', '_point', '_takes_subcode', '_validate_gcode_block', '_parse_gcode_block']
         definitions = []
         for name in names:
-            sig = r'static (?:stat_t|uint8_t) ' + name + r'\([^;{}]*\)\s*\{'
+            sig = r'static (?:stat_t|uint8_t|bool) ' + name + r'\([^;{}]*\)\s*\{'
             match = re.search(sig, source)
             assert match, name
             definitions.append(function(source[match.start():], sig[:-5]))

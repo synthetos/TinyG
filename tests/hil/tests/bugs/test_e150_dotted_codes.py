@@ -13,7 +13,6 @@ M_UNSUPPORTED = ["M3.1", "M5.5", "M30.1", "M7.2"]
 STILL_SUPPORTED = ["G61.1", "G61", "G90.1", "G91.1", "G90", "G92.1", "G43.1 Z0", "G49"]
 
 
-@pytest.mark.bug("E150", on=["d449"])
 def test_unimplemented_dotted_codes_are_rejected(tg):
     g_err = tg.dialect.status("GCODE_COMMAND_UNSUPPORTED")
     m_err = tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")

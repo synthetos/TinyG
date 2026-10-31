@@ -236,6 +236,21 @@ static uint8_t _point(float value)
 }
 
 /*
+ * _takes_subcode() - true for the codes whose decimal selects a sub-code below (E150)
+ *
+ *	Any other code with a decimal (G59.1, M3.1, ...) is unsupported; running it as its integer code
+ *	selected the wrong coordinate system, started the spindle or ended the program.
+ */
+static bool _takes_subcode(char letter, uint16_t code)
+{
+	if (letter == 'M') { return (code == 201); }
+	switch (code) {
+		case 28: case 30: case 38: case 43: case 61: case 90: case 91: case 92: return (true);
+		default: return (false);
+	}
+}
+
+/*
  * _validate_gcode_block() - check for some gross Gcode block semantic violations
  */
 
@@ -289,6 +304,10 @@ static stat_t _parse_gcode_block(char *buf)
 			case 'G':
 			if (!(value >= 0 && value <= 999)) {
 				status = STAT_GCODE_COMMAND_UNSUPPORTED;
+				break;
+			}
+			if ((value != trunc(value)) && !_takes_subcode('G', (uint16_t)value)) {
+				status = STAT_GCODE_COMMAND_UNSUPPORTED;	// e.g. G59.1: not G59 (E150)
 				break;
 			}
 			switch((uint16_t)value) {
@@ -391,6 +410,10 @@ static stat_t _parse_gcode_block(char *buf)
 			case 'M':
 			if (!(value >= 0 && value <= 999)) {
 				status = STAT_MCODE_COMMAND_UNSUPPORTED;
+				break;
+			}
+			if ((value != trunc(value)) && !_takes_subcode('M', (uint16_t)value)) {
+				status = STAT_MCODE_COMMAND_UNSUPPORTED;	// e.g. M3.1: not M3 (E150)
 				break;
 			}
 			switch((uint16_t)value) {
