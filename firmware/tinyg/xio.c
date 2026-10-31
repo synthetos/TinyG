@@ -86,6 +86,9 @@
 #include "util.h"
 #include "canonical_machine.h"      // for assertions cm_panic
 
+static uint8_t active_rx_mode;
+static void _free_processed_buffer(void);
+static char *_next_buffer_to_process(devflags_t *flags);
 static void _init_readline_charmode(void);
 static void _init_readline_linemode(void);
 
@@ -104,6 +107,7 @@ void xio_init()
 	// set memory integrity check
 	xio_set_stderr(0);				// set a bogus value; may be overwritten with a real value
 
+    active_rx_mode = RX_MODE_CHAR;
 	memset(&xio, 0, sizeof(xioSingleton_t));	// clear all values
 
 	// setup device types
@@ -337,10 +341,48 @@ void xio_set_stderr(const uint8_t dev)
 
 char *readline(devflags_t *flags, uint16_t *size)
 {
-    if (xio.rx_mode == RX_MODE_CHAR) {
+    if (active_rx_mode != xio.rx_mode) {
+        xioDev_t *usb = &ds[XIO_DEV_USB];
+        if (active_rx_mode == RX_MODE_LINE) {
+            // The controller has released its line. Drain posted lines before reusing the pool.
+            _free_processed_buffer();
+            for (uint8_t i=0; i<RX_HEADERS; i++) {
+                if (bm.buf[i].state == BUFFER_FULL) {
+                    char *line = _next_buffer_to_process(flags);
+                    *size = line ? strlen(line) + 1 : 0;
+                    return (line);
+                }
+            }
+            // A USART read may already have started the following line in another pool slot.
+            if (usb->flag_in_line && usb->len) {
+                memmove(bufpool.rx_pool, usb->buf, usb->len);
+                usb->buf = bufpool.rx_pool;
+                usb->size = min(RX_BUFFER_POOL_SIZE, UINT8_MAX);  // as xio_gets_usart(): len is uint8_t
+            } else {
+                usb->flag_in_line = false;
+                usb->len = 0;
+            }
+        } else {
+            // Finish a retained/partial character-mode line before changing its reader.
+            if ((xio.buf_state == BUFFER_FULL) ||
+                (usb->flag_in_line && usb->len)) {
+                return (_readline_charmode(flags, size));
+            }
+            usb->flag_in_line = false;
+            usb->len = 0;
+        }
+        _init_readline_linemode();
+        _init_readline_charmode();
+        xio.buf_state = BUFFER_FREE;
+        xio.buf_size = 0;
+        active_rx_mode = xio.rx_mode;
+    }
+    if (active_rx_mode == RX_MODE_CHAR) {
         return (_readline_charmode(flags, size));
     }
-    return (_readline_linemode(flags, size));
+    char *line = _readline_linemode(flags, size);
+    if (line != (char *)_FDEV_ERR) { *size = line ? strlen(line) + 1 : 0; }
+    return (line);
 }
 
 // ****************************************************************************
