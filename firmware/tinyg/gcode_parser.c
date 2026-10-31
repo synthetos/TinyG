@@ -40,7 +40,11 @@ static stat_t _validate_gcode_block(void);
 static stat_t _parse_gcode_block(char *line);	// Parse the block into the GN/GF structs
 static stat_t _execute_gcode_block(void);		// Execute the gcode block
 
-#define SET_MODAL(m,parm,val) ({cm.gn.parm=val; cm.gf.parm=true; cm.gf.modals[m]=true; break;})
+// A second code of one modal group, or a second next action, on a line is an error (NIST 3.3.5) (E152)
+#define SET_MODAL(m,parm,val) ({if (cm.gf.modals[m] || cm.gf.parm) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.parm=val; cm.gf.parm=true; cm.gf.modals[m]=true; break;})
+#define SET_NEXT_ACTION(val) ({if (cm.gf.next_action) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.next_action=val; cm.gf.next_action=true; break;})
+// M7 and M8 may share a line (NIST 3.4); either with M9, or repeated, may not
+#define SET_COOLANT_ON(parm) ({if (cm.gf.parm || (cm.gf.flood_coolant && !cm.gn.flood_coolant)) { status = STAT_GCODE_MODAL_GROUP_VIOLATION; break; } cm.gn.parm=true; cm.gf.parm=true; cm.gf.modals[MODAL_GROUP_M8]=true; break;})
 #define SET_NON_MODAL(parm,val) ({cm.gn.parm=val; cm.gf.parm=true; break;})
 #define EXEC_FUNC(f,v) if(cm.gf.v) { status=f(cm.gn.v);}
 
@@ -241,22 +245,36 @@ static uint8_t _point(float value)
 
 static stat_t _validate_gcode_block()
 {
-	//	Check for modal group violations. From NIST, section 3.4 "It is an error to put
-	//	a G-code from group 1 and a G-code from group 0 on the same line if both of them
-	//	use axis words. If an axis word-using G-code from group 1 is implicitly in effect
-	//	on a line (by having been activated on an earlier line), and a group 0 G-code that
-	//	uses axis words appears on the line, the activity of the group 1 G-code is suspended
-	//	for that line. The axis word-using G-codes from group 0 are G10, G28, G30, and G92"
-
-//	if ((gp.modals[MODAL_GROUP_G0] == true) && (gp.modals[MODAL_GROUP_G1] == true)) {
-//		return (STAT_MODAL_GROUP_VIOLATION);
-//	}
-
-	// look for commands that require an axis word to be present
-//	if ((gp.modals[MODAL_GROUP_G0] == true) || (gp.modals[MODAL_GROUP_G1] == true)) {
-//		if (_axis_changed() == false)
-//		return (STAT_GCODE_AXIS_IS_MISSING);
-//	}
+	//	From NIST, section 3.4 "It is an error to put a G-code from group 1 and a G-code from group 0 on
+	//	the same line if both of them use axis words. If an axis word-using G-code from group 1 is implicitly
+	//	in effect on a line (by having been activated on an earlier line), and a group 0 G-code that uses
+	//	axis words appears on the line, the activity of the group 1 G-code is suspended for that line. The
+	//	axis word-using G-codes from group 0 are G10, G28, G30, and G92" (G28.2-G28.4 and G38.2 here too) (E152)
+	bool axis_words = false;
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		if (cm.gf.target[axis]) { axis_words = true; }
+	}
+	bool group0_axes = false;
+	if (cm.gf.next_action) {
+		switch (cm.gn.next_action) {
+			case NEXT_ACTION_SEARCH_HOME: case NEXT_ACTION_SET_ABSOLUTE_ORIGIN: case NEXT_ACTION_HOMING_NO_SET:
+			case NEXT_ACTION_GOTO_G28_POSITION: case NEXT_ACTION_GOTO_G30_POSITION: case NEXT_ACTION_SET_COORD_DATA:
+			case NEXT_ACTION_SET_ORIGIN_OFFSETS: case NEXT_ACTION_STRAIGHT_PROBE: group0_axes = true; break;
+			default: break;
+		}
+	}
+	if (axis_words && group0_axes && cm.gf.modals[MODAL_GROUP_G1]) {
+		return (STAT_GCODE_MODAL_GROUP_VIOLATION);
+	}
+	// NIST 3.5.12: G53 is used with G0 or G1
+	if (cm.gf.absolute_override && !cm.gf.next_action &&
+		(cm.gn.motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) && (cm.gn.motion_mode != MOTION_MODE_STRAIGHT_FEED)) {
+		return (STAT_GCODE_G53_WITHOUT_G0_OR_G1);
+	}
+	// NIST 3.5.15: axis words with G80 in effect are an error (unless a group 0 code uses them)
+	if (axis_words && !group0_axes && (cm.gn.motion_mode == MOTION_MODE_CANCEL)) {
+		return (STAT_GCODE_AXIS_CANNOT_BE_PRESENT);
+	}
 	return (STAT_OK);
 }
 
@@ -296,7 +314,7 @@ static stat_t _parse_gcode_block(char *buf)
 				case 1:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_STRAIGHT_FEED);
 				case 2:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CW_ARC);
 				case 3:  SET_MODAL (MODAL_GROUP_G1, motion_mode, MOTION_MODE_CCW_ARC);
-				case 4:  SET_NON_MODAL (next_action, NEXT_ACTION_DWELL);
+				case 4:  SET_NEXT_ACTION (NEXT_ACTION_DWELL);
 				case 10: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_COORD_DATA);
 				case 17: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XY);
 				case 18: SET_MODAL (MODAL_GROUP_G2, select_plane, CANON_PLANE_XZ);
@@ -307,9 +325,9 @@ static stat_t _parse_gcode_block(char *buf)
 					switch (_point(value)) {
 						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_GOTO_G28_POSITION);
 						case 1: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_G28_POSITION);
-						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SEARCH_HOME);
-						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
-						case 4: SET_NON_MODAL (next_action, NEXT_ACTION_HOMING_NO_SET);
+						case 2: SET_NEXT_ACTION (NEXT_ACTION_SEARCH_HOME);
+						case 3: SET_NEXT_ACTION (NEXT_ACTION_SET_ABSOLUTE_ORIGIN);
+						case 4: SET_NEXT_ACTION (NEXT_ACTION_HOMING_NO_SET);
 						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
@@ -324,7 +342,7 @@ static stat_t _parse_gcode_block(char *buf)
 				}
 				case 38: {
 					switch (_point(value)) {
-						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_STRAIGHT_PROBE);
+						case 2: SET_NEXT_ACTION (NEXT_ACTION_STRAIGHT_PROBE);
 						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
@@ -374,9 +392,9 @@ static stat_t _parse_gcode_block(char *buf)
 				case 92: {
 					switch (_point(value)) {
 						case 0: SET_MODAL (MODAL_GROUP_G0, next_action, NEXT_ACTION_SET_ORIGIN_OFFSETS);
-						case 1: SET_NON_MODAL (next_action, NEXT_ACTION_RESET_ORIGIN_OFFSETS);
-						case 2: SET_NON_MODAL (next_action, NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
-						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_RESUME_ORIGIN_OFFSETS);
+						case 1: SET_NEXT_ACTION (NEXT_ACTION_RESET_ORIGIN_OFFSETS);
+						case 2: SET_NEXT_ACTION (NEXT_ACTION_SUSPEND_ORIGIN_OFFSETS);
+						case 3: SET_NEXT_ACTION (NEXT_ACTION_RESUME_ORIGIN_OFFSETS);
 						default: status = STAT_GCODE_COMMAND_UNSUPPORTED;
 					}
 					break;
@@ -403,16 +421,16 @@ static stat_t _parse_gcode_block(char *buf)
 				case 4: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_CCW);
 				case 5: SET_MODAL (MODAL_GROUP_M7, spindle_mode, SPINDLE_OFF);
 				case 6: SET_NON_MODAL (tool_change, true);
-				case 7: SET_MODAL (MODAL_GROUP_M8, mist_coolant, true);
-				case 8: SET_MODAL (MODAL_GROUP_M8, flood_coolant, true);
+				case 7: SET_COOLANT_ON (mist_coolant);
+				case 8: SET_COOLANT_ON (flood_coolant);
 				case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
 				// No planner or spindle consumer applies these override settings yet.
 				case 48: case 49: case 50: case 51:
 					status = STAT_MCODE_COMMAND_UNSUPPORTED;
 					break;
-                case 105: SET_NON_MODAL (next_action, NEXT_ACTION_GET_ADC);
-				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
-				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
+                case 105: SET_NEXT_ACTION (NEXT_ACTION_GET_ADC);
+				case 114: SET_NEXT_ACTION (NEXT_ACTION_GET_POSITION);
+				case 115: SET_NEXT_ACTION (NEXT_ACTION_GET_FIRMWARE);
 				case 400: {
                         const char *command = buf;
                         if (*command == 'N') {
@@ -425,11 +443,11 @@ static stat_t _parse_gcode_block(char *buf)
                         if ((value != 400) || strcmp_P(command, PSTR("M400"))) {
                             return (STAT_COMMAND_NOT_ACCEPTED);
                         }
-                        SET_NON_MODAL (next_action, NEXT_ACTION_WAIT_FOR_COMPLETION);
+                        SET_NEXT_ACTION (NEXT_ACTION_WAIT_FOR_COMPLETION);
                     }
 				case 201: {
 					switch (_point(value)) {
-						case 3: SET_NON_MODAL (next_action, NEXT_ACTION_SET_JERK);
+						case 3: SET_NEXT_ACTION (NEXT_ACTION_SET_JERK);
 						default: status = STAT_MCODE_COMMAND_UNSUPPORTED;
 					}
 					break;

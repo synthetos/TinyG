@@ -18,7 +18,6 @@ FIRMWARE = Path(os.environ.get('TINYG_FIRMWARE', ROOT/'firmware/tinyg'))
 
 
 class ModalGroups(unittest.TestCase):
-    @unittest.expectedFailure       # E152: known bug; the fix removes this marker
     def test_modal_group_rules(self):
         source = (FIRMWARE/'gcode_parser.c').read_text()
         definitions = []
