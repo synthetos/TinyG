@@ -20,6 +20,8 @@ class ConfigLoadRecovery(unittest.TestCase):
 #define NUL 0
 #define PSTR(s) (s)
 #define strncpy_P strncpy
+#define strcpy_P strcpy
+#define NO_MATCH 65535
 #define TOKEN_LEN 5
 #define F_INITIALIZE 1
 #define TYPE_FLOAT 1
@@ -49,6 +51,9 @@ nvObj_t *nv_reset_nv_list(int n){memset(&object,0,sizeof(object));return &object
 void cm_set_units_mode(int n){}
 void read_persistent_value(nvObj_t *nv){nv->value_flt=9.0f;nv->value_int=8;}
 bool _nvm_layout_is_current(nvObj_t *nv){return current;}
+bool _nvm_layout_is_legacy(nvObj_t *nv){return false;}
+index_t nv_index_max(void){return 3;}
+index_t nv_get_index(const char *g,const char *t){assert(0);return NO_MATCH;}
 bool nv_index_is_single(int index){return index<3;}
 bool cfg_has_flag(int index,int flag){return index>0;}
 int cfg_is_type(int index){return index==1?TYPE_FLOAT:TYPE_INTEGER;}

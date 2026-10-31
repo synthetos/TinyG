@@ -94,6 +94,8 @@ typedef struct swSwitch {
 
 typedef struct swSingleton {
 	swType switch_type;             // global setting for switch type
+    bool configured;               // boot config loads before runtime interlocks apply
+    uint8_t probe_type;             // 0=NO/active low, 1=NC/active high
     switch_t s[NUM_SWITCHES];       // switch objects
 } switches_t;
 switches_t sw;
@@ -108,6 +110,7 @@ uint8_t get_switch_mode(const uint8_t sw_num);
 int8_t find_probe_switch(void);
 
 // Switch config accessors and text functions
+stat_t sw_set_prbp(nvObj_t *nv);
 stat_t sw_set_st(nvObj_t *nv);
 stat_t sw_set_sw(nvObj_t *nv);
 

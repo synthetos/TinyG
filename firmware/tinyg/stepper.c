@@ -208,7 +208,7 @@ void stepper_init()
 
 	// setup ports and data structures
 	for (uint8_t i=0; i<MOTORS; i++) {
-		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm;  // sets outputs for motors & GPIO1, and GPIO2 inputs
+		hw.st_port[i]->DIR = MOTOR_PORT_DIR_gm & ~GPIO1_OUT_BIT_bm; // GPIO waits for configured OFF levels
 		hw.st_port[i]->OUT = MOTOR_ENABLE_BIT_bm;// zero port bits AND disable motor
 	}
 	// setup DDA timer

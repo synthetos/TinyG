@@ -78,7 +78,7 @@
 #define SPI_SS2_bm 		(1<<SPI_SS2_bp)
 
 #define SPI_INBITS_bm 	(SPI_MISO_bm)
-#define SPI_OUTBITS_bm 	(SPI_MOSI_bm | SPI_SCK_bm | SPI_SS1_bm | SPI_SS2_bm)
+#define SPI_OUTBITS_bm 	(SPI_MOSI_bm | SPI_SCK_bm | SPI_SS1_bm) // PB3/SS2 is the ADC input
 #define SPI_OUTCLR_bm 	(0)					// outputs init'd to 0
 #define SPI_OUTSET_bm 	(SPI_OUTBITS_bm)		// outputs init'd to 1
 

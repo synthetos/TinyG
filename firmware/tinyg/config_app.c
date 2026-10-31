@@ -34,6 +34,9 @@
 #include "json_parser.h"
 #include "text_parser.h"
 #include "settings.h"
+#include "spindle.h"
+#include "adc_report.h"
+#include "stack_report.h"
 #include "planner.h"
 #include "stepper.h"
 #include "switch.h"
@@ -56,6 +59,13 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 // TinyG or the motion control application domain
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
+
+// Reserve E060 indexes only; omit from group reports and reject direct GET/SET.
+static stat_t _reserved_hold_setting(nvObj_t *nv)
+{
+    nv->valuetype = TYPE_EMPTY;
+    return STAT_FUNCTION_IS_STUBBED;
+}
 
 static stat_t _do_motors(nvObj_t *nv);		// print parameters for all motor groups
 static stat_t _do_axes(nvObj_t *nv);		// print parameters for all axis groups
@@ -644,6 +654,18 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","se29",_sip, 0, tx_print_nul, sr_get_se, sr_set_se, (uint32_t *)&sr.status_report_list[29], 0 },
     // Count is 30, since se00 counts as one.
 
+    // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
+    { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
+    { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
+    // No initialization or persistence until E060 passes its timing gate.
+    { "sys","spph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },
+    { "sys","spde",_f0,3,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },
+    { "sys","coph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },
+
+    { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
+
+    { "sys","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
+    { "sys","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
     // Direct legacy lookups only: no initialization, persistence, or group export.
     // Keep these after se29 so every existing EEPROM index stays unchanged.
     { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },

@@ -55,7 +55,11 @@ static uint32_t storage[512];
 struct {uint32_t dda_ticks_downcount;} st_run;
 struct {int buffer_state;} st_pre;
 struct {float motor_power_timeout;struct {float step_angle,travel_rev,steps_per_unit,units_per_step;uint32_t microsteps;} mot[4];} st_cfg;
-struct {struct {float jerk_max,recip_jerk;} a[6];} cm;
+struct {int cycle_state;struct {int spindle_mode;} gm;struct {float jerk_max,recip_jerk;} a[6];} cm;
+struct {bool configured;uint8_t probe_type;} sw;
+static bool spindle_configured;
+void spindle_reset(void){}
+bool mp_runtime_is_idle(void){return true;}
 struct {uint32_t status_report_interval;} sr;
 struct {uint8_t json_verbosity;bool echo_json_footer,echo_json_messages,echo_json_configs,echo_json_linenum,echo_json_gcode_block;} js;
 struct {uint8_t enable_cr,enable_echo,enable_flow_control;} xio;
@@ -95,7 +99,8 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex'],
             'stepper.c': ['st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
             'canonical_machine.c': ['cm_set_am','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh'],
-            'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw'],
+            'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
+            'spindle.c': ['spindle_set_polarity'],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}
         extracted = []
         for file, names in selections.items():

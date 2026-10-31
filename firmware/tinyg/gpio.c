@@ -57,6 +57,15 @@
 #include "canonical_machine.h"
 #include "xio.h"						// signals
 
+void gpio_init_outputs(void)
+{
+#ifdef __AVR
+    for (uint8_t i=0; i<MOTORS; i++) {
+        hw.st_port[i]->DIRSET = GPIO1_OUT_BIT_bm;
+    }
+#endif
+}
+
 //======================== Parallel IO Functions ===============================
 
 /*

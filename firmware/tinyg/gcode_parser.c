@@ -20,6 +20,7 @@
 #include "config.h"			// #2
 #include "controller.h"
 #include "gcode_parser.h"
+#include "adc_report.h"
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "spindle.h"
@@ -409,6 +410,7 @@ static stat_t _parse_gcode_block(char *buf)
 				case 48: case 49: case 50: case 51:
 					status = STAT_MCODE_COMMAND_UNSUPPORTED;
 					break;
+                case 105: SET_NON_MODAL (next_action, NEXT_ACTION_GET_ADC);
 				case 114: SET_NON_MODAL (next_action, NEXT_ACTION_GET_POSITION);
 				case 115: SET_NON_MODAL (next_action, NEXT_ACTION_GET_FIRMWARE);
 				case 400: {
@@ -554,6 +556,7 @@ static stat_t _execute_gcode_block()
 	//--> set retract mode goes here
 
 	switch (cm.gn.next_action) {
+        case NEXT_ACTION_GET_ADC: { status = adc_report(); break;}
 		case NEXT_ACTION_GET_POSITION: { status = cm_get_position(); break;}
 		case NEXT_ACTION_GET_FIRMWARE: { status = cm_get_firmware(); break;}
 		case NEXT_ACTION_WAIT_FOR_COMPLETION: { status = controller_request_motion_sync(); break;}

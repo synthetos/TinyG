@@ -13,5 +13,11 @@
   ],
   "optional_stop": [
     "{ \"sys\",\"os\",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },"
+  ],
+  "legacy_source": "4139f5d1:firmware/tinyg/config_app.c",
+  "legacy": [
+    "{ \"\", \"net\", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },",
+    "{ \"\", \"fd\",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },",
+    "{ \"\", \"ma\",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },"
   ]
 }
