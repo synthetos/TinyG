@@ -12,7 +12,7 @@ import time
 
 import pytest
 
-from tinyg_hil.switchbox import SwitchBoxError, load_spec, spec_digest
+from tinyg_hil.switchbox import SwitchBoxError, load_spec, redact, spec_digest
 
 pytestmark = pytest.mark.switchbox
 
@@ -31,7 +31,7 @@ def test_identity_and_no_reset_on_connect(switchbox, record):
     a = switchbox.info()
     time.sleep(0.2)
     b = switchbox.info()
-    record("info", a)
+    record("info", redact(a))
     assert switchbox.reset_on_connect is False
     assert a["boot_id"] == b["boot_id"] == switchbox.info_at_connect["boot_id"]
     assert b["uptime_us"] - a["uptime_us"] >= 200000

@@ -21,8 +21,9 @@ release_all() opens every contact (nothing driven: NC channels then read tripped
 every channel. Channels are named "<axis><min|max>"; methods take (axis, end) or one channel name.
 
 Serial: newline-delimited JSON at 115200. The CP2104's DTR/RTS lines drive the ESP8266's
-auto-reset transistors, so the port is opened with both deasserted, and connect() checks with
-getInfo (uptime, boot line) that opening did not reset the board. Lines that are not JSON objects
+auto-reset transistors. connect() sets both asserted before opening (macOS asserts them on open, so
+open() changes nothing), then drops RTS before DTR, so RTS is never asserted alone; it checks with
+getInfo (uptime, boot line) that opening did not reset the board (see LINE_STRATEGIES). Lines that are not JSON objects
 (the ROM prints a banner at 74880 baud after a reset) are skipped and kept in .garbage.
 
 The port is never guessed. connect() refuses TinyG bench ports and the ports listed under
@@ -36,6 +37,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 import time
 
@@ -47,6 +49,16 @@ from .lock import BoardLock
 HERE = pathlib.Path(__file__).resolve().parent.parent
 SPEC_PATH = HERE / "switchbox" / "openapi.json"
 LINE_MAX = 1024                 # the firmware's request line limit
+# How connect() handles the CP2104's DTR/RTS, which drive the ESP8266 auto-reset transistors
+# (RTS asserted alone pulls EN low = reset; DTR asserted alone pulls GPIO0 low). macOS asserts both
+# when the port opens, and pyserial then applies DTR before RTS.
+#   "release-after-open" (default): set both True before open, so open() changes nothing, then
+#                         drop RTS before DTR. No resets on open or close (diagnostic
+#                         test_switchbox_reset_on_open, 2026-10-31).
+#   "deasserted":         set both False before open. pyserial drops DTR first, leaving RTS asserted
+#                         alone: the board reset on every open.
+#   "asserted":           set both True before open and keep them (the OS drops them on close).
+LINE_STRATEGIES = ("release-after-open", "deasserted", "asserted")
 SPEC_TIMEOUT = 15.0             # getSpec sends ~26 KB at 115200 (~2.3 s)
 
 
@@ -119,6 +131,20 @@ def resolve_port(explicit=None, tinyg_port=None, benches=None):
     return sb.get("port") if isinstance(sb, dict) else None
 
 
+# WiFi credentials never go into traffic logs or run records: every "ssid"/"password" value is masked
+# except the switchbox's own access-point name.
+_SECRET = re.compile(r'"(ssid|password)":\s*"(?!tinyg-switchbox-)(?:[^"\\]|\\.)*"')
+
+
+def redact_text(text):
+    return _SECRET.sub(lambda m: f'"{m.group(1)}":"***"', text)
+
+
+def redact(obj):
+    """A copy of a reply/result with WiFi SSIDs and passwords masked (for records)."""
+    return json.loads(redact_text(json.dumps(obj)))
+
+
 def decode_mask(mask, names):
     """A levels/driven mask ("0111...") as {channel name: 0/1}."""
     return {n: int(c) for n, c in zip(names, mask)}
@@ -126,11 +152,14 @@ def decode_mask(mask, names):
 
 class SwitchBox:
     def __init__(self, port, baud=115200, timeout=2.0, lock=True, lock_wait=0.0, purpose="switchbox",
-                 serial_factory=serial.Serial, allow_reset=False, benches=None):
+                 serial_factory=serial.Serial, allow_reset=False, benches=None, lines="release-after-open"):
         self.port, self.baud, self.timeout = port, baud, timeout
         self.lock, self.lock_wait, self.purpose = lock, lock_wait, purpose
         self.serial_factory = serial_factory
         self.allow_reset = allow_reset
+        if lines not in LINE_STRATEGIES:
+            raise ValueError(f"lines must be one of {LINE_STRATEGIES}")
+        self.lines = lines
         self.benches = benches
         self.ser = None
         self._lock = None
@@ -158,9 +187,11 @@ class SwitchBox:
             ser = self.serial_factory()          # unopened, so DTR/RTS are set before the port opens
             ser.port, ser.baudrate = self.port, self.baud
             ser.timeout, ser.write_timeout = 0.05, 2.0
-            ser.dtr = False                      # CP2104 auto-reset: RTS -> EN, DTR -> GPIO0;
-            ser.rts = False                      # both deasserted leaves the ESP8266 running
+            ser.dtr = ser.rts = self.lines != "deasserted"      # set on the unopened port, applied by open()
             ser.open()
+            if self.lines == "release-after-open":
+                ser.rts = False                  # RTS first: DTR alone only pulls GPIO0, never EN
+                ser.dtr = False
             self.ser = ser
             opened = time.monotonic()
             self.boot_seen = False
@@ -207,7 +238,7 @@ class SwitchBox:
     # ---- framing ------------------------------------------------------------------------
 
     def _log(self, direction, text):
-        self.traffic.append((time.monotonic(), direction, text))
+        self.traffic.append((time.monotonic(), direction, redact_text(text)))
         self.traffic_count += 1
 
     def _readline(self, deadline):
@@ -263,10 +294,8 @@ class SwitchBox:
         line = json.dumps({"id": rid, "op": op_name, **params}, separators=(",", ":"))
         if len(line) > LINE_MAX:
             raise ValueError(f"request is {len(line)} bytes; the switchbox takes at most {LINE_MAX}")
-        logged = line if "password" not in params else json.dumps(
-            {"id": rid, "op": op_name, **params, "password": "***"}, separators=(",", ":"))
         self.ser.write(line.encode() + b"\n")
-        self._log(">>", logged)
+        self._log(">>", line)
         deadline = time.monotonic() + (self.timeout if timeout is None else timeout)
         while True:
             raw = self._readline(deadline)
@@ -427,7 +456,7 @@ class SwitchBox:
     # ---- records ------------------------------------------------------------------------
 
     def identity(self):
-        info = self.info_at_connect or {}
+        info = redact(self.info_at_connect or {})
         return {"port": self.port, "reset_on_connect": self.reset_on_connect,
                 **{k: info.get(k) for k in ("fw_version", "api_version", "spec_sha256", "boot_id", "chip_id",
                                             "reset_reason", "uptime_ms")},
@@ -444,7 +473,7 @@ class SwitchBox:
         t0 = traffic[0][0] if traffic else time.monotonic()
         events = self.events(since=mark["seq"], limit=32, all=True)
         return {"traffic": [{"t": round(t - t0, 4), "dir": d, "line": s} for t, d, s in traffic],
-                "events": events, "garbage_lines": self.garbage_count}
+                "events": redact(events), "garbage_lines": self.garbage_count}
 
 
 # ---- CLI: python -m tinyg_hil.switchbox <command> --port P -------------------------------------

@@ -122,6 +122,13 @@ uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "
   - SSID `tinyg-switchbox-XXXX` (last MAC bytes), password `tinyg-switchbox` (documented default);
   - the board is at `192.168.4.1`.
 - mDNS name: `tinyg-switchbox.local`, in both modes.
+- **When the station connection fails**, the board scans before falling back. `getInfo.wifi.last_failure` then reports:
+  - the WiFi status at the timeout (e.g. `no_ssid_avail`, `wrong_password`);
+  - whether the SSID was seen, and if so its channel, RSSI and encryption;
+  - `similar_ssid_seen`: a network whose name differs only in case or surrounding spaces is in range. SSIDs are case-sensitive.
+
+  The ESP8266 is 2.4 GHz-only and WPA2-only, so a 5 GHz-only or WPA3-only network never connects. No network names are reported beyond this flag.
+- Station SSIDs and passwords are masked (`***`) in `SwitchBox.traffic` and in run records (`tinyg_hil.switchbox.redact`).
 - `getInfo` reports the WiFi mode, SSID, IP and RSSI.
 
 **Security.** HTTP and the WebSocket have no authentication. Anyone on the same network, or anyone in range of the AP who knows the documented password, can trip the CNC's limit switches. Use station mode on a trusted network, or leave the board on USB only.
@@ -157,7 +164,12 @@ One executor, three transports, the same operations. The `op` names are the spec
 
 - After a reset the board prints one `{"event":"boot",...}` line. The ESP8266 ROM first prints a banner at 74880 baud; clients skip lines that are not JSON objects.
 - Event lines (`{"event":...}`) only come after `subscribe`.
-- Opening the port must not reset the board. Open it with DTR and RTS deasserted (pyserial: create `Serial()` unopened, set `dtr = rts = False`, then `open()`). `SwitchBox` does this and verifies it with `getInfo` (uptime against time since open, plus the boot line).
+- Opening the port must not reset the board. The CP2104's DTR/RTS drive the auto-reset transistors: RTS asserted alone resets the ESP8266, DTR asserted alone pulls GPIO0 low.
+  - macOS asserts both when the port opens, and pyserial then applies DTR before RTS. Presetting both False (`dtr = rts = False` before `open()`) therefore leaves RTS asserted alone for an instant, and the board reset on 3 of 3 opens.
+  - What works (0 resets on 3 opens and 3 closes, as did keeping both asserted): preset both True on the unopened `Serial()`, so `open()` changes nothing, then set `rts = False`, then `dtr = False`.
+  - `SwitchBox` does this (`lines="release-after-open"`) and verifies it with `getInfo` (uptime against time since open, plus the boot line). The evidence is the diagnostic `tests/diagnostics/test_switchbox_reset_on_open.py`.
+  - Dropping RTS first briefly leaves DTR asserted alone, which pulls GPIO0 (`amin`) low for that instant. The 10 ms line poll did not catch it; a scope or Saleae would be needed to measure it.
+  - `pio device monitor` and other terminals may still reset the board when they open the port.
 
 **REST**: `curl -X PUT -H 'Content-Type: application/json' -d '{"action":"trip","ttl_ms":500}' http://tinyg-switchbox.local/api/channels/xmin`. The response body is the op's result, or `{"error":{"code","msg"}}` with 400/404/409/500.
 

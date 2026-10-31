@@ -20,6 +20,7 @@ from tinyg_hil.switchbox import (
     decode_mask,
     load_spec,
     operation_ids,
+    redact,
     refuse_port,
     resolve_port,
     spec_digest,
@@ -109,13 +110,30 @@ def sent(board, op_name):
 
 # ---- connection --------------------------------------------------------------------------------
 
-def test_connect_deasserts_dtr_and_rts_before_opening():
+def lines_log(board):
+    opened = board.log.index(("open",))
+    before = {(e[1], e[2]) for e in board.log[:opened] if e[0] == "set"}
+    after = [(e[1], e[2]) for e in board.log[opened:] if e[0] == "set" and e[1] in ("dtr", "rts")]
+    return before, after
+
+
+def test_connect_never_leaves_rts_asserted_alone():
+    """Default: both asserted before open (as macOS opens the port), then RTS dropped before DTR."""
     board = FakeBoard()
     connect(board)
-    opened = board.log.index(("open",))
-    before = {(a, v) for _, a, v in (e for e in board.log[:opened] if e[0] == "set")}
-    assert {("dtr", False), ("rts", False), ("port", "/dev/cu.fake-switchbox"), ("baudrate", 115200)} <= before
-    assert not any(e[0] == "set" and e[1] in ("dtr", "rts") for e in board.log[opened:])
+    before, after = lines_log(board)
+    assert {("dtr", True), ("rts", True), ("port", "/dev/cu.fake-switchbox"), ("baudrate", 115200)} <= before
+    assert after == [("rts", False), ("dtr", False)]
+
+
+def test_other_line_strategies():
+    for lines, level in (("deasserted", False), ("asserted", True)):
+        board = FakeBoard()
+        connect(board, lines=lines)
+        before, after = lines_log(board)
+        assert {("dtr", level), ("rts", level)} <= before and after == []
+    with pytest.raises(ValueError):
+        SwitchBox("/dev/cu.fake-switchbox", lines="toggle")
 
 
 def test_rom_banner_and_non_json_lines_are_skipped():
@@ -289,12 +307,17 @@ def test_events_pages_until_the_newest():
     assert [e["seq"] for e in sb.events()] == [1, 2]
 
 
-def test_wifi_password_is_redacted_in_traffic():
-    board = FakeBoard({"setWifi": lambda req: FakeBoard.ok(req, {"ssid": req["ssid"], "cleared": False})})
+def test_wifi_credentials_are_redacted_in_traffic_and_records():
+    board = FakeBoard({"setWifi": lambda req: FakeBoard.ok(req, {"ssid": req["ssid"], "cleared": False}),
+                       "getState": lambda req: FakeBoard.ok(req, {"wifi": {"ssid": "examplenet", "mode": "sta"}})})
     sb = connect(board)
-    sb.set_wifi("shop", "hunter2hunter2")
+    sb.set_wifi("examplenet", "hunter2hunter2")
     assert board.written[-1]["password"] == "hunter2hunter2"
-    assert "hunter2" not in json.dumps(list(sb.traffic))
+    assert sb.state()["wifi"]["ssid"] == "examplenet"            # the caller still sees the reply as sent
+    logged = json.dumps(list(sb.traffic))
+    assert "hunter2" not in logged and "examplenet" not in logged
+    assert redact({"wifi": {"ssid": "examplenet", "ap": {"ssid": "tinyg-switchbox-ABCD"}}}) == \
+        {"wifi": {"ssid": "***", "ap": {"ssid": "tinyg-switchbox-ABCD"}}}
 
 
 def test_cli_reads_the_wifi_password_from_stdin(monkeypatch, capsys):
