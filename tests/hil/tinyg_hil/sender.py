@@ -53,6 +53,7 @@ def _ixon_only(ser):
 def _restore_tty(ser, saved):
     import termios
     termios.tcsetattr(ser.fd, termios.TCSANOW, saved)
+    termios.tcflow(ser.fd, termios.TCOON)     # an XOFF that arrived under IXON must not leave output stopped
 
 
 FC = {0: "disabled", 1: "XON (flowing)", 2: "XOFF (paused)"}
@@ -158,8 +159,10 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None):
     deadline = res.started + timeout
     progress = res.started           # last response or status report
     i = 0
+    saved_write_timeout = tr.ser.write_timeout
     if mode == "rts":
         tr.ser.rtscts = True
+        tr.ser.write_timeout = None     # CTS may hold writes back for as long as the board is full
     elif mode == "xon":
         saved_tty = _ixon_only(tr.ser)   # the tty now consumes the board's XON/XOFF; the reader no longer sees them
     try:
@@ -185,7 +188,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None):
                 elif mode == "count":
                     if inflight and sum(inflight) + len(data) > RX_COUNT_LIMIT:
                         break
-                tr.write(data)
+                # rts/xon: the board may hold host output back for a long time; the stall watchdog covers them
+                tr.write(data, drain_timeout=None if mode in ("rts", "xon") else 2.0)
                 inflight.append(len(data) if mode == "count" else 1)
                 res.max_inflight = max(res.max_inflight, len(inflight))
                 i += 1
@@ -236,6 +240,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None):
                 break
         res.finished = time.monotonic()
     finally:
+        tr.ser.write_timeout = saved_write_timeout
         if mode == "rts":
             tr.ser.rtscts = False
         elif mode == "xon":

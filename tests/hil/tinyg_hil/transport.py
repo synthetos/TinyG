@@ -8,6 +8,20 @@ import serial
 from .protocol import XOFF, XON, Event, parse_line
 
 
+def restart_output(ser):
+    """Resume tty output. A board XOFF received while IXON was on leaves the macOS tty's output
+    stopped, and that state outlives the process and a board reset: every later write blocks."""
+    try:
+        import termios
+        termios.tcflow(ser.fd, termios.TCOON)
+    except (ImportError, OSError, AttributeError):
+        pass
+
+
+class HostOutputStalled(RuntimeError):
+    """Bytes accepted by the host serial driver are not leaving it: the host side is wedged, not the board."""
+
+
 class Transport:
     def __init__(self, port: str, baud: int = 115200, transcript=None):
         self.port, self.baud = port, baud
@@ -26,7 +40,8 @@ class Transport:
         self.wire_margin = 0.0                  # extra hold after a write; Ice sets it (USB bridge FIFO + 1 ms frames)
 
     def open(self):
-        self.ser = serial.Serial(self.port, self.baud, timeout=0.02, xonxoff=False, rtscts=False)
+        self.ser = serial.Serial(self.port, self.baud, timeout=0.02, xonxoff=False, rtscts=False, write_timeout=5)
+        restart_output(self.ser)
         self._stop.clear()
         self._thread = threading.Thread(target=self._reader, name="tinyg-reader", daemon=True)
         self._thread.start()
@@ -43,14 +58,36 @@ class Transport:
     def is_open(self):
         return self.ser is not None
 
-    def write(self, data: bytes):
+    def write(self, data: bytes, drain_timeout: float | None = 2.0):
         self.sent.append((time.monotonic(), data))
         self._log(">>", data)
         with self.wire:
-            self.ser.write(data)
-            self.ser.flush()                    # handed to the USB bridge; still has to cross the UART
+            try:
+                self.ser.write(data)
+            except serial.SerialTimeoutException as e:
+                raise HostOutputStalled(self._stall_text()) from e
+            if drain_timeout is not None and not self._drained(drain_timeout):
+                raise HostOutputStalled(self._stall_text())
             if self.wire_margin:
                 time.sleep(len(data) * 10 / self.baud + self.wire_margin)
+
+    def _drained(self, timeout: float) -> bool:
+        """Wait until the driver's output queue is empty (the bytes reached the USB bridge)."""
+        end = time.monotonic() + timeout
+        while self.ser.out_waiting:
+            if time.monotonic() > end:
+                return False
+            time.sleep(0.002)
+        return True
+
+    def _stall_text(self) -> str:
+        try:
+            waiting, cts = self.ser.out_waiting, self.ser.cts
+        except (serial.SerialException, OSError):
+            waiting, cts = "?", "?"
+        return (f"{self.port}: {waiting} byte(s) stuck in the host serial driver (CTS {cts}). The board is not "
+                "receiving: the macOS tty/FTDI driver output is stopped (seen after an IXON stream met a board "
+                "XOFF). Replug the USB cable; check the board itself with an ICE snapshot.")
 
     def cts(self) -> bool:
         return self.ser.cts
