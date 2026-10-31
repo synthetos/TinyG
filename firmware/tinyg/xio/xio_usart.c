@@ -264,6 +264,10 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
 
+    if (dx->rx_flush_marked && (dx->rx_buf_tail == dx->rx_flush_mark)) {
+        return(XIO_BUFFER_EMPTY);				// stop at a pending '%': later bytes outlive the flush (E146)
+    }
+
     if (dx->rx_buf_head == dx->rx_buf_tail) {	// RX ISR buffer empty
         dx->rx_buf_count = 0;					// reset count for good measure
         return(XIO_BUFFER_EMPTY);				// stop reading

@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.dialect("d449"), pytest.mark.motion]
 MOVE = "20 mm +X at F600, held and flushed mid-move, then back"
 
 
-@pytest.mark.bug("E146", on=["d449"])
 def test_line_split_across_percent_flush_is_kept(tg):
     start = tg.get("posx")
     tg.send_gcode("G91 G1 X20 F600", check=True, allow=MOVE)

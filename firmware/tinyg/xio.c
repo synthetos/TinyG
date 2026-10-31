@@ -421,7 +421,7 @@ void xio_flush_input()
 {
     uint8_t sreg = SREG;
     cli();
-    xio_reset_usb_rx_buffers();
+    xio_drop_usb_rx_before_mark();          // a host '%' keeps what was sent after it (E146)
     xio_xon_usart(&USBu);                   // the ring is empty: release an XOFF or RTS sent to the host
     SREG = sreg;
     _init_readline_linemode();

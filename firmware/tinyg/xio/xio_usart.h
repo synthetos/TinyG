@@ -170,6 +170,8 @@ typedef struct xioUSART {
 	volatile buffer_t rx_buf_tail;			// RX buffer read index
 	volatile buffer_t rx_buf_head;			// RX buffer write index (written by ISR)
 	volatile buffer_t rx_buf_count;			// RX buffer counter for flow control
+	volatile buffer_t rx_flush_mark;		// head when a host '%' was honored: bytes up to it came first (E146)
+	volatile uint8_t rx_flush_marked;		// set by the RX ISR, cleared by the flush
 
 	volatile buffer_t tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile buffer_t tx_buf_head;			// TX buffer write index
@@ -204,6 +206,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_usb_rx_free(void);
 void xio_reset_usb_rx_buffers(void);
+void xio_drop_usb_rx_before_mark(void);
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);

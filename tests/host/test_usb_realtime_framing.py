@@ -37,13 +37,14 @@ class RealtimeFraming(unittest.TestCase):
 #define advance_buffer(i,size) ((i)=((i)+1)%(size))
 struct {unsigned char DATA; int CTRLA;} port;
 struct {int len; bool flag_in_line, flag_xoff;} USB;
-struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx;
+struct {bool queue_flush_input;} cm;
+struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked;
         char rx_buf[RX_BUFFER_SIZE];} USBu={.usart=&port,.rx_buf_head=1,.rx_buf_tail=1};
 volatile bool rx_in_line;
 int holds,resumes,flushes,resets,enquiries;
 void cm_request_feedhold(void) {holds++;}
 void cm_request_end_hold(void) {resumes++;}
-void cm_request_queue_flush(void) {flushes++;}
+void cm_request_queue_flush(void) {flushes++; cm.queue_flush_input=true;}
 void hw_request_hard_reset(void) {resets++;}
 void hw_hard_reset(void) {resets++;}
 enum {FLOW_CONTROL_OFF,FLOW_CONTROL_XON,FLOW_CONTROL_RTS};
@@ -57,7 +58,7 @@ void xio_xoff_usart(void *unused) {(void)unused;}
         code += r'''
 void send_byte(unsigned char c) {port.DATA=c;USB_RX_ISR_vect();}
 void send(const char *s) {while(*s) send_byte(*s++);}
-void fresh(void) {xio_reset_usb_rx_buffers(); USBu.rx_buf_count=0; holds=resumes=flushes=resets=enquiries=0;}
+void fresh(void) {xio_reset_usb_rx_buffers(); assert(!USBu.rx_flush_marked); USBu.rx_buf_count=0; cm.queue_flush_input=false; holds=resumes=flushes=resets=enquiries=0;}
 void expect_data(const char *s) {
     assert((int)strlen(s)==USBu.rx_buf_count);
     for (int i=0;s[i];i++) assert(USBu.rx_buf[i+2]==s[i]);
@@ -72,6 +73,7 @@ int main(void) {
         fresh(); send(lines[i]); expect_data(expected);
         assert(holds==1 && !resumes && !flushes);
         send("!~%"); assert(holds==2 && resumes==1 && flushes==1);
+        assert(USBu.rx_flush_marked && USBu.rx_flush_mark==USBu.rx_buf_head);   /* honored %: ring marked (E146) */
     }
     fresh(); send(" \t!~%"); expect_data(" \t");
     assert(holds==1 && resumes==1 && flushes==1);
