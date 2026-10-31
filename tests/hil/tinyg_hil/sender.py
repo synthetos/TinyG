@@ -293,6 +293,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 res.queue.append((ev.t, ev.data["qr"]))
             elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in (1, 3, 4):
                 break
+            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in (2, 12, 13):
+                break                       # alarmed, shutdown or panicked: nothing more will run, don't wait it out
         res.finished = time.monotonic()
     finally:
         tr.ser.write_timeout = saved_write_timeout

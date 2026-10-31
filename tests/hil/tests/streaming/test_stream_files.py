@@ -84,6 +84,8 @@ def test_stream_runs_through(tg, keep, record, request, mode, program):
             raise
         end = {t: tg.get(t) for t in ("posx", "posy", "posz", "stat")}
     finally:
+        if tg.stat() == tg.dialect.stat("ALARM"):       # e.g. lost input (E162): restores are rejected while alarmed
+            tg.clear_alarm()
         tg.send_gcode("G92.1")
         tg.send_json({"sr": False})
         tg.send_json({"sr": {k: True for k in original_sr}})
