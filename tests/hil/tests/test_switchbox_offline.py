@@ -328,7 +328,41 @@ def test_cli_reads_the_wifi_password_from_stdin(monkeypatch, capsys):
                   serial_factory=lambda: board, lock=False, timeout=0.3)
     assert board.written[-1] == {"id": board.written[-1]["id"], "op": "setWifi", "ssid": "example-net",
                                  "password": "placeholder-pw"}
-    assert "placeholder-pw" not in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "placeholder-pw" not in out and "example-net" not in out
+
+
+def scan_board(*ssids):
+    nets = [{"ssid": s, "rssi": -50, "channel": 6, "encryption": "wpa2", "hidden": False} for s in ssids]
+    return FakeBoard({"scanWifi": lambda req: FakeBoard.ok(req, {"networks": nets, "count": len(nets)}),
+                      "setWifi": lambda req: FakeBoard.ok(req, {"ssid": req["ssid"], "cleared": False,
+                                                                "reconnecting": True})})
+
+
+def test_match_ssid_needs_exactly_one_distinct_name():
+    sb = connect(scan_board("ExampleNet", "ExampleNet", "other"))     # one name from two access points
+    assert sb.match_ssid(" examplenet ") == "ExampleNet"
+    for ssids in (("other",), ("ExampleNet", "examplenet ")):
+        with pytest.raises(LookupError) as e:
+            connect(scan_board(*ssids)).match_ssid("examplenet")
+        assert "ExampleNet" not in str(e.value)
+    assert "ExampleNet" not in json.dumps(list(sb.traffic))
+
+
+def test_cli_wifi_match_ignore_case(monkeypatch, capsys):
+    board = scan_board("ExampleNet", "other")
+    monkeypatch.setattr(sys, "stdin", io.StringIO("placeholder-pw\n"))
+    switchbox_cli(["wifi", "--port", "/dev/cu.fake-switchbox", "--ssid", "examplenet", "--password-stdin",
+                   "--match-ignore-case"], serial_factory=lambda: board, lock=False, timeout=0.3)
+    assert sent(board, "setWifi") == [{"op": "setWifi", "ssid": "ExampleNet", "password": "placeholder-pw"}]
+    out = json.loads(capsys.readouterr().out)
+    assert out == {"ssid": "***", "cleared": False, "reconnecting": True, "matched": "ignoring case/spaces"}
+    board = scan_board("ExampleNet", "EXAMPLENET")
+    monkeypatch.setattr(sys, "stdin", io.StringIO("placeholder-pw\n"))
+    with pytest.raises(LookupError):
+        switchbox_cli(["wifi", "--port", "/dev/cu.fake-switchbox", "--ssid", "examplenet", "--password-stdin",
+                       "--match-ignore-case"], serial_factory=lambda: board, lock=False, timeout=0.3)
+    assert not sent(board, "setWifi")
 
 
 def test_decode_mask():

@@ -113,6 +113,8 @@ Credentials never go in source or git. Provision over USB serial:
 cd tests/hil
 uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "ShopNet"   # prompts for the password
 uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "ShopNet" --password-stdin < pw.txt
+uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "shopnet" --password-stdin --match-ignore-case
+uv run python -m tinyg_hil.switchbox scan-wifi --port /dev/cu.usbserial-XXXX [--show-names]
 uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid ""          # forget them
 ```
 
@@ -129,6 +131,7 @@ uv run python -m tinyg_hil.switchbox wifi --port /dev/cu.usbserial-XXXX --ssid "
 
   The ESP8266 is 2.4 GHz-only and WPA2-only, so a 5 GHz-only or WPA3-only network never connects. No network names are reported beyond this flag.
 - Station SSIDs and passwords are masked (`***`) in `SwitchBox.traffic` and in run records (`tinyg_hil.switchbox.redact`).
+- `--match-ignore-case` has the board scan (`scanWifi`). It stores the one SSID equal to `--ssid` ignoring case and surrounding spaces, and refuses if none or several distinct SSIDs match. The exact name is never printed. `scan-wifi` lists what the board sees, with names masked unless `--show-names` is given.
 - `getInfo` reports the WiFi mode, SSID, IP and RSSI.
 
 **Security.** HTTP and the WebSocket have no authentication. Anyone on the same network, or anyone in range of the AP who knows the documented password, can trip the CNC's limit switches. Use station mode on a trusted network, or leave the board on USB only.
@@ -149,6 +152,7 @@ One executor, three transports, the same operations. The `op` names are the spec
 | `getConfig` / `setConfig` | `GET/PUT /api/config` | mapping and types; validated as a whole, persisted; `{"defaults": true}` |
 | `getEvents` | `GET /api/events?since=&limit=` | event history (pages of up to 32) |
 | `setWifi` | `PUT /api/wifi` | station credentials |
+| `scanWifi` | `GET /api/wifi/scan` | networks the board sees (blocks it ~2-4 s; refused while a connection attempt runs) |
 | `getSpec` | `GET /openapi.json` | the spec; over serial, one line, so the API is learnable without WiFi |
 | `subscribe` | (serial only) | event lines on the serial connection |
 
@@ -258,3 +262,5 @@ The ESP8266 constrains it:
 | `tests/host/test_switchbox_core.py` | `c++`, ArduinoJson (pinned; from `.pio/libdeps` or fetched by `pio`) | the core under ASan/UBSan with faked pins, clock and timer |
 | `tests/hil/tests/test_switchbox_offline.py` | nothing | client framing, reset check, ports, the spec ↔ client parity, the firmware's embedded spec |
 | `tests/hil/tests/test_switchbox.py` | the Feather on USB, `--switchbox` | the real board: readback, ttl, pulses, bounce, config validation, errors, events |
+| `tests/hil/tests/test_switchbox_network.py` | the board in station mode, `--switchbox` | mDNS, REST (same executor as serial, structured errors), `/openapi.json`, the UI page, WebSocket snapshot/requests/live events |
+| `tests/hil/tests/diagnostics/test_switchbox_reset_on_open.py` | `--switchbox --diagnostics` | which DTR/RTS handling opens the port without resetting the board |

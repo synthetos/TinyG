@@ -395,6 +395,22 @@ class SwitchBox:
         """Store station credentials on the board (never echoed; redacted in .traffic)."""
         return self.call("setWifi", ssid=ssid, password=password)
 
+    @op("scanWifi")
+    def scan_wifi(self):
+        """Networks the board sees (blocks the board ~2-4 s). SSIDs are masked in .traffic."""
+        return self.call("scanWifi", timeout=12.0)
+
+    def match_ssid(self, ssid):
+        """The one scanned SSID equal to `ssid` ignoring case and surrounding spaces.
+
+        Raises LookupError when none or more than one distinct SSID matches; the message gives counts
+        only, never names."""
+        want = ssid.strip().casefold()
+        names = {n["ssid"] for n in self.scan_wifi()["networks"] if n["ssid"].strip().casefold() == want}
+        if len(names) != 1:
+            raise LookupError(f"{len(names)} scanned SSIDs match ignoring case and spaces; need exactly one")
+        return names.pop()
+
     @op("getSpec")
     def spec(self):
         return self.call("getSpec", timeout=SPEC_TIMEOUT)
@@ -482,11 +498,15 @@ def main(argv=None, **client_kwargs):
     ap = argparse.ArgumentParser(prog="python -m tinyg_hil.switchbox",
                                  description="Switchbox over USB serial (takes the board lock).")
     ap.add_argument("command", choices=["info", "state", "events", "config", "defaults", "release-all", "wifi",
-                                        "spec-check"])
+                                        "scan-wifi", "spec-check"])
     ap.add_argument("--port", required=True, help="switchbox serial port (never guessed)")
     ap.add_argument("--ssid", help="for wifi: network name ('' clears); the password is prompted for")
     ap.add_argument("--password-stdin", action="store_true",
                     help="for wifi: read the password from the first line of stdin instead of prompting")
+    ap.add_argument("--match-ignore-case", action="store_true",
+                    help="for wifi: store the one scanned SSID equal to --ssid ignoring case and surrounding spaces "
+                         "(refused if none or several match)")
+    ap.add_argument("--show-names", action="store_true", help="for scan-wifi: print SSIDs instead of ***")
     ap.add_argument("--since", type=int, default=0)
     ap.add_argument("--lock-wait", type=float, default=0.0)
     args = ap.parse_args(argv)
@@ -503,19 +523,26 @@ def main(argv=None, **client_kwargs):
             out = sb.set_config(defaults=True)
         elif args.command == "release-all":
             out = sb.release_all()
+        elif args.command == "scan-wifi":
+            out = sb.scan_wifi()
+            out = out if args.show_names else redact(out)
         elif args.command == "spec-check":
             board, local = sb.spec(), load_spec()
             out = {"same": board == local, "board_sha256": spec_digest(board), "checkout_sha256": spec_digest(local)}
         else:
             if args.ssid is None:
                 ap.error("wifi needs --ssid")
-            if not args.ssid:
+            ssid = args.ssid
+            if ssid and args.match_ignore_case:
+                ssid = sb.match_ssid(ssid)
+            if not ssid:
                 password = ""
             elif args.password_stdin:
                 password = sys.stdin.readline().rstrip("\r\n")
             else:
                 password = getpass.getpass(f"password for {args.ssid!r} (empty = open network): ")
-            out = sb.set_wifi(args.ssid, password)
+            out = redact(sb.set_wifi(ssid, password))
+            out["matched"] = "exact" if ssid == args.ssid else "ignoring case/spaces"
     json.dump(out, sys.stdout, indent=1)
     print()
 
