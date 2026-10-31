@@ -8,7 +8,6 @@ import pytest
 pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449")]
 
 
-@pytest.mark.bug("E160", on=["d449"])
 def test_l_word_and_qv_are_validated(tg, keep):
     keep("g54x", "qv")
     before = tg.get("g54x")
@@ -20,7 +19,6 @@ def test_l_word_and_qv_are_validated(tg, keep):
     assert tg.get("qv") == qv
 
 
-@pytest.mark.bug("E160", on=["d449"])
 def test_b_c_junction_deviation_keep_decimals(tg):
     for token in ("bjd", "cjd"):
         tg.transport.write(('{"%s":null}\n' % token).encode())

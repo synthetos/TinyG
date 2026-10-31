@@ -7,7 +7,6 @@ ERROR_H = Path(__file__).resolve().parents[2] / "firmware/tinyg/error.h"
 
 
 class StatusMessages(unittest.TestCase):
-    @unittest.expectedFailure       # E160: known bug; the fix removes this marker
     def test_reported_statuses_have_messages(self):
         text = ERROR_H.read_text()
         strings = dict(re.findall(r'stat_(\d+)\[\] PROGMEM = "([^"]*)"', text))
