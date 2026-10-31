@@ -2661,14 +2661,21 @@ float cm_get_jogging_dest(void)
  */
 static stat_t _jog_allowed(void)
 {
-	if (cm.hold_state == FEEDHOLD_HOLD) {
-		return ((cm.cycle_state == CYCLE_MACHINING) || (cm.cycle_state == CYCLE_OFF)) ? STAT_OK : STAT_COMMAND_NOT_ACCEPTED;
-	}
-	if ((cm.cycle_state != CYCLE_OFF) || (cm.hold_state != FEEDHOLD_OFF) || (cm.motion_state != MOTION_STOP) ||
-		mp_has_runnable_buffer()) {
-		return (STAT_COMMAND_NOT_ACCEPTED);
-	}
-	return (STAT_OK);
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	// Snapshot together: the exec can free the last block and end the cycle before its final
+	// segment is delivered, so stopped and empty alone do not mean the motors are idle (as cm_clear).
+	bool hold_done = (cm.hold_state == FEEDHOLD_HOLD) &&
+	                 ((cm.cycle_state == CYCLE_MACHINING) || (cm.cycle_state == CYCLE_OFF));
+	bool idle = (cm.cycle_state == CYCLE_OFF) && (cm.hold_state == FEEDHOLD_OFF) &&
+	            (cm.motion_state == MOTION_STOP) && !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+	            (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER);
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	return ((hold_done || idle) ? STAT_OK : STAT_COMMAND_NOT_ACCEPTED);
 }
 
 stat_t cm_run_jogx(nvObj_t *nv)
