@@ -1831,7 +1831,7 @@ static void _run_requested_queue_flush()
 
 stat_t cm_feedhold_sequencing_callback()
 {
-	if (cm.hold_state == FEEDHOLD_REQUESTED) {
+	if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
 		cm_start_hold();                            // feed won't run unless the machine is moving
 	}
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
@@ -1854,12 +1854,26 @@ stat_t cm_feedhold_sequencing_callback()
 
 void cm_start_hold()
 {
-    if (mp_has_runnable_buffer()) {                         // meaning there's something running
-//        cm_spindle_optional_pause(spindle.pause_on_hold);   // pause if this option is selected
-//        cm_coolant_optional_pause(coolant.pause_on_hold);   // pause if this option is selected
-        cm_set_motion_state(MOTION_HOLD);
-        cm.hold_state = FEEDHOLD_SYNC;	                    // invokes hold from aline execution
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    // The exec may free the last block before its prepared segment reaches the loader.
+    // Decide and latch together; an empty queue alone does not mean the motor has stopped.
+    if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
+        bool runnable = mp_has_runnable_buffer();
+        if ((cm.hold_state == FEEDHOLD_REQUESTED) && runnable) {
+            cm_set_motion_state(MOTION_HOLD);
+            cm.hold_state = FEEDHOLD_SYNC;
+        } else if (!runnable && mp_runtime_is_idle() &&
+                   (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER)) {
+            cm_set_motion_state(MOTION_HOLD);
+            cm.hold_state = FEEDHOLD_HOLD;           // let pending '~' or '%' finish normally
+        }
     }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 void cm_end_hold()
