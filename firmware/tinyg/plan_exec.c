@@ -35,6 +35,9 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 // execute routines (NB: These are all called from the LO interrupt)
 static stat_t _exec_aline_head(void);
@@ -163,6 +166,25 @@ stat_t mp_exec_move()
  **
  **** NOTICE ** NOTICE ** NOTICE ****/
 
+/*
+ * _fast_stop_ratio() - braking jerk ratio for a limit-switch stop (E031)
+ *
+ *	The smallest jerk_homing / jerk_max over the axes in motion, never below 1 (never softer than a
+ *	normal hold). A jerk-limited stop from v takes v * sqrt(v / J), so the full-stop tail scales by
+ *	sqrt(1/ratio); over a given length L the velocity shed, (L^2 J)^(1/3), scales by cbrt(ratio).
+ */
+static float _fast_stop_ratio(const mpBuf_t *bf)
+{
+	float ratio = 0;
+	for (uint8_t axis=0; axis<AXES; axis++) {
+		if (fabs(bf->unit[axis]) > EPSILON && cm.a[axis].jerk_max > EPSILON) {
+			float r = cm.a[axis].jerk_homing / cm.a[axis].jerk_max;
+			if (ratio == 0 || r < ratio) { ratio = r; }
+		}
+	}
+	return ((ratio > 1) ? ratio : 1);
+}
+
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
 	if (bf->block_state == BLOCK_IDLE) {
@@ -243,6 +265,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                 sr_request_status_report(SR_REQUEST_ASAP);
                 cs.controller_state = CONTROLLER_READY;                 // remove controller readline() PAUSE
                 cm.hold_state = FEEDHOLD_HOLD;                          // Now you are actually in the HOLD
+                cm.hold_fast = false;
+                cm.hold_fast_request = false;           // the stop is complete: nothing left to escalate
             }
             return (STAT_OK);                                           // hold here. No more movement
         }
@@ -250,9 +274,26 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         // Cases (1a, 1b), Case (2), Case (4)
         // Build a tail-only move from here. Decelerate as fast as possible in the space we have.
         // Finish up the initialization in the case of a new deceleration_continue block.
-        if ((cm.hold_state == FEEDHOLD_SYNC) ||
+        // A limit switch (MED ISR) can arrive at any point of this (LO) code: take its request in a
+        // short interrupts-off window and use a stable copy for the decisions and math below. A
+        // request arriving after this snapshot stays pending for the next call (E031).
+        bool rebuild_fast = false;
+#ifdef __AVR
+        uint8_t sreg = SREG;
+        cli();
+#endif
+        if (cm.hold_fast_request) {
+            cm.hold_fast_request = false;
+            cm.hold_fast = true;
+            rebuild_fast = true;                    // rebuild the tail at the braking jerk, once
+        }
+#ifdef __AVR
+        SREG = sreg;
+#endif
+        bool fast = cm.hold_fast;
+        if ((cm.hold_state == FEEDHOLD_SYNC) || rebuild_fast ||
             ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
-            if (mr.section == SECTION_TAIL) {   // if already in a tail don't decelerate. You already are
+            if ((mr.section == SECTION_TAIL) && !fast) {   // already decelerating (a fast stop rebuilds the tail)
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {
@@ -271,13 +312,18 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
                 float available_length = get_axis_vector_length(mr.target, mr.position);
                 mr.tail_length = mp_get_target_length(mr.cruise_velocity, 0, bf);   // braking length
+                float fast_ratio = fast ? _fast_stop_ratio(bf) : 1;
+                if (fast) {
+                    mr.tail_length /= sqrt(fast_ratio);     // full stop at the braking jerk
+                }
 
                 if (available_length >= mr.tail_length) {   // cases (1a) and (1c)
                     mr.exit_velocity = 0;
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {                                    // case (1b)
                     mr.tail_length = available_length;
-                    mr.exit_velocity = mr.cruise_velocity - mp_get_target_velocity(0, mr.tail_length, bf);
+                    mr.exit_velocity = mr.cruise_velocity - mp_get_target_velocity(0, mr.tail_length, bf) * cbrt(fast_ratio);
+                    if (mr.exit_velocity < 0) { mr.exit_velocity = 0; }
                     cm.hold_state = FEEDHOLD_DECEL_CONTINUE;
                 }
             }

@@ -2049,6 +2049,8 @@ static void _exec_program_finalize(float *value, bool *flags)
 		cm.cycle_state = CYCLE_OFF;						// don't end cycle if homing, probing, etc.
 	}
 	cm.hold_state = FEEDHOLD_OFF;						// end feedhold (if in feed hold)
+	cm.hold_fast = false;
+	cm.hold_fast_request = false;
     cm.end_hold_requested = false;					    // cancel any pending end hold request
 	mp_zero_segment_velocity();							// for reporting purposes
 

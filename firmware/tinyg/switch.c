@@ -223,6 +223,14 @@ static void _dispatch_switch(const uint8_t sw_num)
         return;
     }											// ...any other switch keeps its limit action
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {
+		if (!cm.hold_fast && !cm.hold_fast_request) {	// once per stop: ask the exec to brake fast
+			cm.hold_fast_request = true;				// (it consumes this atomically, then rebuilds)
+			if (((cm.hold_state == FEEDHOLD_OFF) || (cm.hold_state == FEEDHOLD_REQUESTED)) &&
+				(cm.motion_state == MOTION_RUN)) {		// start the hold here, not in the main loop
+				cm_set_motion_state(MOTION_HOLD);		// (same as cm_start_hold()); the exec picks
+				cm.hold_state = FEEDHOLD_SYNC;			// it up at the next segment
+			}
+		}
     	controller_assert_limit_condition(sw_num+1);
 	}
 }
