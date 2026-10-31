@@ -20,7 +20,6 @@ def _lines_after(tg, data: bytes, quiet: float = 0.6, limit: float = 6.0):
 
 
 @pytest.mark.dialect("d449")
-@pytest.mark.bug("E137", on=["d449"])
 def test_txt_help_is_one_json_response(tg):
     replies = [e for e in _lines_after(tg, b'{"txt":"$h"}\n') if e.kind not in ASYNC]
     assert [e.kind for e in replies] == ["response"]

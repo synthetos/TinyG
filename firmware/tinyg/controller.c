@@ -388,7 +388,9 @@ stat_t controller_dispatch_txt_container (nvObj_t *nv, char *str)
             printf_P(PSTR("{\"r\":{\"txt\":\""));
         }
         cs.comm_mode = JSON_MODE_TXT_OVERRIDE;      // override JSON mode for this output only
+        xio.json_escape = true;                     // the text goes inside the JSON string (E137)
         text_parser(str);
+        xio.json_escape = false;
         cs.comm_mode = JSON_MODE;                   // restore JSON mode
         printf_P(PSTR("\""));                       // close quote
         nv_reset_nv_list(NUL);                      // reset the list to start at the head
