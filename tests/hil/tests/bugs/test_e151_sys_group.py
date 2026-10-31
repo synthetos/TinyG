@@ -13,7 +13,6 @@ EXPECTED = ["fb", "fv", "hp", "hv", "id", "ja", "ct", "sl", "st", "mt", "ej", "j
             "si", "ec", "ee", "ex", "rxm", "baud", "gpl", "gun", "gco", "gpa", "gdi", "spep", "spdp", "prbp", "os"]
 
 
-@pytest.mark.bug("E151", on=["d449"])
 def test_sys_group_is_whole(tg):
     tg.transport.write(b'{"sys":n}\n')
     ev = tg.wait_for(lambda e: e.kind == "response" and isinstance(e.body, dict) and "sys" in e.body, 5.0)
@@ -25,7 +24,6 @@ def test_sys_group_is_whole(tg):
 
 
 @pytest.mark.persists
-@pytest.mark.bug("E151", on=["d449"])
 def test_text_sys_labels_every_setting(tg, keep):
     keep("ej")
     tg.set("ej", 0)

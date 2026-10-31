@@ -646,24 +646,25 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // Count is 30, since se00 counts as one.
 
     // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
-    { "sys","spep",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
-    { "sys","spdp",_iipn,0,tx_print_int,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
+    { "sys","spep",_iipn,0,cfg_print_spep,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
+    { "sys","spdp",_iipn,0,cfg_print_spdp,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
     // No initialization or persistence until E060 passes its timing gate.
     { "sys","spph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },
     { "sys","spde",_f0,3,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },
     { "sys","coph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },
 
-    { "sys","prbp",_iipn,0,tx_print_int,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
+    { "sys","prbp",_iipn,0,cfg_print_prbp,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
 
-    { "sys","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
-    { "sys","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
+    // Diagnostic readouts: direct lookups only, kept out of {sys:n} so the sys group fits the nv body (E151)
+    { "","fstk",_i0,0,tx_print_int,hw_get_fstk,set_nul,(uint32_t *)&cs.null,0 },
+    { "","adc3",_f0,0,tx_print_flt,hw_get_adc3,set_nul,(uint32_t *)&cs.null,0 },
     // Direct legacy lookups only: no initialization, persistence, or group export.
     // Keep these after se29 so every existing EEPROM index stays unchanged.
     { "", "net", _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
     { "", "fd",  _i0, 0, tx_print_int, get_legacy_zero, set_legacy_zero, (uint32_t *)&cs.null, 0 },
     { "", "ma",  _f0, 4, tx_print_flt, get_legacy_zero, set_legacy_arc_length, (uint32_t *)&cs.null, 0 },
     // Session optional-stop switch; append to preserve existing persistent indexes.
-    { "sys","os",_i0,0,tx_print_int,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
+    { "sys","os",_in,0,cfg_print_os,get_ui8,set_01,(uint32_t *)&cm.optional_stop_enabled,0 },
     // Motor power readouts (E108): read-only, not initialized or persisted
 	{ "pwr","pwr1",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
 	{ "pwr","pwr2",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
@@ -1067,6 +1068,10 @@ static const char fmt_ec[] PROGMEM = "[ec]  expand LF to CRLF on TX%6d [0=off,1=
 static const char fmt_ee[] PROGMEM = "[ee]  enable echo%18d [0=off,1=on]\n";
 static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON/XOFF,2=RTS/CTS]\n";
 static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=char_mode,1=line_mode]\n";
+static const char fmt_spep[] PROGMEM = "[spep] spindle enable polarity%5d [0=active_low,1=active_high]\n";
+static const char fmt_spdp[] PROGMEM = "[spdp] spindle direction polarity%2d [0=CW_low,1=CW_high]\n";
+static const char fmt_prbp[] PROGMEM = "[prbp] probe input polarity%8d [0=normally_open,1=normally_closed]\n";
+static const char fmt_os[] PROGMEM = "[os]  optional stop (M1)%11d [0=off,1=on]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
 static const char fmt_rx[] PROGMEM = "rx:%d\n";
 
@@ -1074,6 +1079,10 @@ void cfg_print_ec(nvObj_t *nv) { text_print(nv, fmt_ec);}
 void cfg_print_ee(nvObj_t *nv) { text_print(nv, fmt_ee);}
 void cfg_print_ex(nvObj_t *nv) { text_print(nv, fmt_ex);}
 void cfg_print_rxm(nvObj_t *nv) { text_print(nv, fmt_rxm);}
+void cfg_print_spep(nvObj_t *nv) { text_print(nv, fmt_spep);}
+void cfg_print_spdp(nvObj_t *nv) { text_print(nv, fmt_spdp);}
+void cfg_print_prbp(nvObj_t *nv) { text_print(nv, fmt_prbp);}
+void cfg_print_os(nvObj_t *nv) { text_print(nv, fmt_os);}
 void cfg_print_baud(nvObj_t *nv) { text_print(nv, fmt_baud);}
 void cfg_print_rx(nvObj_t *nv) { text_print(nv, fmt_rx);}
 
