@@ -120,10 +120,10 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 //	nv_reset_nv(nv);								// initialize config object
 	nv_copy_string(nv, str);						// make a copy for eventual reporting
 	if (*str == '$') str++;							// ignore leading $
-	for (rd = wr = str; *rd != NUL; rd++, wr++) {
-		*wr = tolower(*rd);							// convert string to lower case
-		if (*rd == ',') { *wr = *(++rd);}			// skip over commas
-	}
+	for (rd = wr = str; *rd != NUL; rd++) {
+        if (*rd == ',') { continue; }
+        *wr++ = tolower(*rd);
+    }
 	*wr = NUL;										// terminate the name string
 
 	// parse fields into the nv struct
