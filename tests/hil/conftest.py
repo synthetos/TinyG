@@ -40,6 +40,11 @@ def pytest_addoption(parser):
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
                 help="seconds to wait for another user of the board to finish [default 600]")
+    g.addoption("--switchbox", action="store_true",
+                help="enable switchbox tests (ESP8266 driving the switch inputs electrically)")
+    g.addoption("--switchbox-port", default=os.environ.get("TINYG_SWITCHBOX_PORT"),
+                help="switchbox serial port [TINYG_SWITCHBOX_PORT]; default: the switchbox entry of --port's "
+                     "bench in the bench file (tinyg_hil.benches), or its top-level one without --port. Never guessed.")
 
 
 def pytest_configure(config):
@@ -106,6 +111,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="file streaming test; pass --streaming"))
         if item.get_closest_marker("ice") and not config.getoption("--ice"):
             item.add_marker(pytest.mark.skip(reason="needs the Atmel-ICE; pass --ice"))
+        if item.get_closest_marker("switchbox") and not config.getoption("--switchbox"):
+            item.add_marker(pytest.mark.skip(reason="needs the switchbox; pass --switchbox"))
         if item.get_closest_marker("resets_board") and config.getoption("--no-reset"):
             item.add_marker(pytest.mark.skip(reason="--no-reset"))
 
@@ -247,6 +254,46 @@ def switches(tg, ice):
     time.sleep(0.1)                         # let the firmware's switch lockout expire
     yield soft
     soft.release_all()
+
+
+@pytest.fixture(scope="session")
+def switchbox_session(request):
+    """The ESP8266 switchbox (needs --switchbox), connected once per session under its own board lock."""
+    from tinyg_hil import benches
+    from tinyg_hil.switchbox import SwitchBox, resolve_port
+    config = request.config
+    if not config.getoption("--switchbox"):
+        pytest.skip("needs the switchbox; pass --switchbox")
+    port = resolve_port(config.getoption("--switchbox-port"), config.getoption("--port"))
+    if not port:
+        pytest.skip(f"no switchbox port: pass --switchbox-port or add a switchbox entry to {benches.path()}")
+    if not os.path.exists(port):
+        pytest.skip(f"switchbox port {port} is not present")
+    sb = SwitchBox(port, lock_wait=config.getoption("--lock-wait"),
+                   purpose=f"pytest {' '.join(config.invocation_params.args)[:200]}")
+    sb.connect()
+    if config._tinyg_recorder:
+        config._tinyg_recorder.instrument("switchbox", sb.identity())
+    yield sb
+    try:
+        sb.release_all()
+    finally:
+        sb.disconnect()
+
+
+@pytest.fixture
+def switchbox(switchbox_session, record):
+    """SwitchBox with every contact released before and after the test, and every channel idle
+    (untripped for its type) at the start. Its traffic and board events go into the run record."""
+    sb = switchbox_session
+    sb.release_all()
+    sb.idle()
+    mark = sb.mark()
+    yield sb
+    try:
+        sb.release_all()
+    finally:
+        record("switchbox", sb.since(mark))
 
 
 @pytest.fixture
