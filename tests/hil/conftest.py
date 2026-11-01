@@ -258,9 +258,10 @@ def switches(tg, ice):
 
 @pytest.fixture(scope="session")
 def switchbox_session(request):
-    """The ESP8266 switchbox (needs --switchbox), connected once per session under its own board lock."""
+    """The ESP8266 switchbox (needs --switchbox), connected once per session under its own board lock.
+    A box whose API differs from the vendored spec fails here, before any contact is touched."""
     from tinyg_hil import benches
-    from tinyg_hil.switchbox import SwitchBox, resolve_port
+    from tinyg_hil.switchbox import resolve_port, session_box
     config = request.config
     if not config.getoption("--switchbox"):
         pytest.skip("needs the switchbox; pass --switchbox")
@@ -269,31 +270,20 @@ def switchbox_session(request):
         pytest.skip(f"no switchbox port: pass --switchbox-port or add a switchbox entry to {benches.path()}")
     if not os.path.exists(port):
         pytest.skip(f"switchbox port {port} is not present")
-    sb = SwitchBox(port, lock_wait=config.getoption("--lock-wait"),
-                   purpose=f"pytest {' '.join(config.invocation_params.args)[:200]}")
-    sb.connect()
-    if config._tinyg_recorder:
-        config._tinyg_recorder.instrument("switchbox", sb.identity())
-    yield sb
-    try:
-        sb.release_all()
-    finally:
-        sb.disconnect()
+    recorder = config._tinyg_recorder
+    identity = (lambda ident: recorder.instrument("switchbox", ident)) if recorder else None
+    with session_box(port, identity=identity, lock_wait=config.getoption("--lock-wait"),
+                     purpose=f"pytest {' '.join(config.invocation_params.args)[:200]}") as sb:
+        yield sb
 
 
 @pytest.fixture
 def switchbox(switchbox_session, record):
     """SwitchBox with every contact released before and after the test, and every channel idle
     (untripped for its type) at the start. Its traffic and board events go into the run record."""
-    sb = switchbox_session
-    sb.release_all()
-    sb.idle()
-    mark = sb.mark()
-    yield sb
-    try:
-        sb.release_all()
-    finally:
-        record("switchbox", sb.since(mark))
+    from tinyg_hil.switchbox import prepared
+    with prepared(switchbox_session, record) as sb:
+        yield sb
 
 
 @pytest.fixture

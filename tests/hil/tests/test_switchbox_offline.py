@@ -15,13 +15,17 @@ from tinyg_hil.switchbox import (
     SwitchBox,
     SwitchBoxError,
     SwitchBoxRebooted,
+    SwitchBoxSpecMismatch,
     SwitchBoxTimeout,
     decode_mask,
     load_spec,
     operation_ids,
+    prepared,
     redact,
+    redact_text,
     refuse_port,
     resolve_port,
+    session_box,
     spec_digest,
     spec_mismatch,
     vendored_from,
@@ -423,3 +427,142 @@ def test_spec_mismatch_explains_which_side_to_update():
     assert "different API version" in other and "API 9.9.9" in other and vendored_from()["commit"][:12] in other
     same_version = spec_mismatch({"api_version": spec["info"]["version"], "spec_sha256": "f" * 64})
     assert "same API version" in same_version and "switchbox-openapi.json" in same_version
+
+
+# ---- credentials in logs (review follow-up) -----------------------------------------------------
+
+def test_passwords_are_always_masked_and_only_an_ssid_may_be_the_access_point_name():
+    ap = "tinyg-switchbox-ABCD"
+    assert redact({"password": ap, "ssid": ap, "sta": {"ssid": "examplenet", "password": 12345}}) == \
+        {"password": "***", "ssid": ap, "sta": {"ssid": "***", "password": "***"}}
+    text = redact_text(json.dumps({"ssid": ap, "password": ap + "-secret", "other": {"ssid": "examplenet"}}))
+    assert "secret" not in text and "examplenet" not in text and f'"ssid": "{ap}"' in text
+    assert redact_text('{"password": null, "ssid": 7}') == '{"password":"***", "ssid":"***"}'
+
+
+def test_cut_off_values_are_masked_to_the_end():
+    for line in ('{"id":1,"password":"examplepw', '{"ssid": "examplenet\\"more', '{"ssid":"tinyg-switchbox-AB'):
+        assert "example" not in redact_text(line) and "AB" not in redact_text(line)
+
+
+def test_lines_are_redacted_before_they_are_shortened():
+    """A line cut inside a credential must not leave its first characters in the traffic log."""
+    def event_line(limit, key="ssid"):
+        head = '{"event": "wifi", "pad": "'
+        tail = f'", "{key}": "examplenet-private"}}'
+        pad = limit - len(head) - len(f'", "{key}": "exam')
+        return (head + "x" * pad + tail).encode() + b"\n"
+    garbage = b'not json "password": "examplepw-private" ' + b"y" * 300 + b"\n"
+    cut = b'not json ' + b"z" * (200 - len('not json "password": "exam')) + b'"password": "examplepw-private"\n'
+    reply = lambda req: [event_line(400), event_line(400, "password"), garbage, cut] + FakeBoard.ok(req, {})
+    sb = connect(FakeBoard({"getState": reply}))
+    sb.state()
+    logged = json.dumps(list(sb.traffic))
+    assert "exam" not in logged, logged
+    assert any(d == "ev" and len(s) == 400 for _, d, s in sb.traffic)
+
+
+# ---- cleanup when connecting or preparing fails -------------------------------------------------
+
+class LineFailBoard(FakeBoard):
+    """Raises when connect() drops RTS after opening, like a USB adapter vanishing mid-setup."""
+
+    def __setattr__(self, name, value):
+        if name == "rts" and value is False and self.__dict__.get("is_open"):
+            raise OSError("adapter went away")
+        super().__setattr__(name, value)
+
+
+class CloseFailBoard(FakeBoard):
+    def close(self):
+        super().close()
+        raise OSError("close failed")
+
+
+def lock_port(tag):
+    return f"/dev/cu.fake-switchbox-{tag}-{os.getpid()}"
+
+
+def test_a_failed_line_setup_closes_the_port_and_releases_the_lock():
+    port, board = lock_port("lines"), LineFailBoard()
+    try:
+        with pytest.raises(OSError, match="adapter went away"):
+            SwitchBox(port, serial_factory=lambda: board, timeout=0.3, benches=NO_BENCHES).connect()
+        assert ("open",) in board.log and not board.is_open          # it was opened, then closed
+        BoardLock(port).acquire("after a failed connect", wait=0).release()
+    finally:
+        BoardLock(port).path.unlink(missing_ok=True)
+
+
+def test_disconnect_releases_the_lock_even_if_close_fails():
+    port = lock_port("close")
+    try:
+        sb = SwitchBox(port, serial_factory=CloseFailBoard, timeout=0.3, benches=NO_BENCHES).connect()
+        with pytest.raises(OSError, match="close failed"):
+            sb.disconnect()
+        assert sb.ser is None
+        BoardLock(port).acquire("after a failed close", wait=0).release()
+    finally:
+        BoardLock(port).path.unlink(missing_ok=True)
+
+
+def session_kwargs(board):
+    return {"serial_factory": lambda: board, "timeout": 0.3, "lock": False, "benches": NO_BENCHES}
+
+
+def test_session_box_refuses_a_box_with_another_spec_before_touching_contacts():
+    board = FakeBoard()
+    board.info = lambda: {**FakeBoard.info(board), "api_version": "9.9.9", "spec_sha256": "0" * 64}
+    seen = []
+    with pytest.raises(SwitchBoxSpecMismatch, match="API 9.9.9"):
+        with session_box("/dev/cu.fake-switchbox", identity=seen.append, **session_kwargs(board)):
+            pytest.fail("a mismatched box was handed to a test")
+    assert seen and seen[0]["api_version"] == "9.9.9"            # identity still recorded
+    assert {r["op"] for r in board.written} == {"getInfo"} and not board.is_open
+
+
+def test_session_box_cleans_up_when_recording_the_identity_fails():
+    port, board = lock_port("ident"), FakeBoard()
+
+    def broken(_):
+        raise RuntimeError("recorder failed")
+    try:
+        with pytest.raises(RuntimeError, match="recorder failed"):
+            with session_box(port, identity=broken, serial_factory=lambda: board, timeout=0.3, benches=NO_BENCHES):
+                pass
+        assert {r["op"] for r in board.written} == {"getInfo"} and not board.is_open
+        BoardLock(port).acquire("after a failed session setup", wait=0).release()
+    finally:
+        BoardLock(port).path.unlink(missing_ok=True)
+
+
+def test_session_box_releases_everything_at_the_end():
+    board = FakeBoard()
+    with session_box("/dev/cu.fake-switchbox", **session_kwargs(board)) as sb:
+        assert sb.ser is board
+    assert [r["op"] for r in board.written] == ["getInfo", "releaseAll"] and not board.is_open
+
+
+def events_board(**handlers):
+    page = lambda req: FakeBoard.ok(req, {"events": [], "head": 5, "next": 5, "more": False})
+    return FakeBoard({"getEvents": page, **handlers})
+
+
+def test_prepared_releases_contacts_when_its_own_setup_fails():
+    board = events_board(idleAll=lambda req: FakeBoard.error(req, "busy"))
+    sb, records = connect(board), []
+    with pytest.raises(SwitchBoxError, match="busy"):
+        with prepared(sb, lambda *a: records.append(a)):
+            pytest.fail("setup failed but the test ran")
+    assert [r["op"] for r in board.written[1:]] == ["releaseAll", "idleAll", "releaseAll"]
+    assert records == []                                          # no mark yet, so nothing to record
+
+
+def test_prepared_records_traffic_and_releases_after_the_test():
+    board = events_board()
+    sb, records = connect(board), []
+    with pytest.raises(AssertionError):
+        with prepared(sb, lambda *a: records.append(a)):
+            raise AssertionError("the test failed")
+    assert [r["op"] for r in board.written[1:]] == ["releaseAll", "idleAll", "getEvents", "releaseAll", "getEvents"]
+    assert records and records[0][0] == "switchbox" and records[0][1]["traffic"]

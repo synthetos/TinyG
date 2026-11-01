@@ -34,6 +34,7 @@ and takes the harness board lock for the switchbox's port.
 """
 import argparse
 import collections
+import contextlib
 import getpass
 import hashlib
 import json
@@ -78,6 +79,10 @@ class SwitchBoxTimeout(SwitchBoxError):
 
 class SwitchBoxRebooted(SwitchBoxError):
     pass
+
+
+class SwitchBoxSpecMismatch(SwitchBoxError):
+    """The box serves a different API than the vendored spec; no contact operation was sent."""
 
 
 def op(name):
@@ -156,18 +161,38 @@ def resolve_port(explicit=None, tinyg_port=None, benches=None):
     return sb.get("port") if isinstance(sb, dict) else None
 
 
-# WiFi credentials never go into traffic logs or run records: every "ssid"/"password" value is masked
-# except the switchbox's own access-point name.
-_SECRET = re.compile(r'"(ssid|password)":\s*"(?!tinyg-switchbox-)(?:[^"\\]|\\.)*"')
+# WiFi credentials never go into traffic logs or run records. Every password is masked. Every SSID is
+# masked too, except the switchbox's own access-point name, and only as an "ssid" value.
+AP_PREFIX = "tinyg-switchbox-"
+# A "ssid"/"password" member in text: a string value, also one cut off before its closing quote (then
+# everything to the end is masked), or a bare non-string value.
+_SECRET = re.compile(r'"(ssid|password)"\s*:\s*("(?:[^"\\]|\\.)*(?:"|$)|[^,}\]\s]+)', re.S)
+_AP_VALUE = re.compile(r'"' + re.escape(AP_PREFIX) + r'(?:[^"\\]|\\.)*"')
+
+
+def _keep(key, value):
+    """True only for the box's own access-point name as an SSID."""
+    if key != "ssid":
+        return False
+    if isinstance(value, str):
+        return value.startswith(AP_PREFIX)
+    return isinstance(value, re.Match) and _AP_VALUE.fullmatch(value.group(2)) is not None
 
 
 def redact_text(text):
-    return _SECRET.sub(lambda m: f'"{m.group(1)}":"***"', text)
+    """Masks credentials in a line of text. Redact whole lines; cut them short only afterwards."""
+    return _SECRET.sub(lambda m: m.group(0) if _keep(m.group(1), m) else f'"{m.group(1)}":"***"', text)
 
 
 def redact(obj):
     """A copy of a reply/result with WiFi SSIDs and passwords masked (for records)."""
-    return json.loads(redact_text(json.dumps(obj)))
+    if isinstance(obj, dict):
+        return {k: ("***" if k in ("ssid", "password") and not _keep(k, v) else redact(v)) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [redact(v) for v in obj]
+    if isinstance(obj, str):
+        return redact_text(obj)
+    return obj
 
 
 def decode_mask(mask, names):
@@ -210,6 +235,7 @@ class SwitchBox:
             self._lock = BoardLock(self.port).acquire(self.purpose, wait=self.lock_wait)
         try:
             ser = self.serial_factory()          # unopened, so DTR/RTS are set before the port opens
+            self.ser = ser                       # owned from here: disconnect() closes it whatever fails next
             ser.port, ser.baudrate = self.port, self.baud
             ser.timeout, ser.write_timeout = 0.05, 2.0
             ser.dtr = ser.rts = self.lines != "deasserted"      # set on the unopened port, applied by open()
@@ -217,7 +243,6 @@ class SwitchBox:
             if self.lines == "release-after-open":
                 ser.rts = False                  # RTS first: DTR alone only pulls GPIO0, never EN
                 ser.dtr = False
-            self.ser = ser
             opened = time.monotonic()
             self.boot_seen = False
             self.info_at_connect = info = self._first_info()
@@ -228,9 +253,16 @@ class SwitchBox:
                 raise SwitchBoxRebooted("rebooted", f"opening {self.port} reset the switchbox "
                                         f"(uptime {info['uptime_ms']} ms, boot line seen: {self.boot_seen})")
         except BaseException:
-            self.disconnect()
+            with contextlib.suppress(Exception):     # the original failure is the one to report
+                self.disconnect()
             raise
         return self
+
+    def check_spec(self):
+        """Raises SwitchBoxSpecMismatch unless the box's getInfo matches the vendored spec."""
+        mismatch = spec_mismatch(self.info_at_connect or {})
+        if mismatch:
+            raise SwitchBoxSpecMismatch("spec_mismatch", mismatch)
 
     def _first_info(self):
         """getInfo, retried for a few seconds: if opening did reset the board, it is still booting."""
@@ -243,14 +275,15 @@ class SwitchBox:
                     raise
 
     def disconnect(self):
-        if self.ser is not None:
-            try:
-                self.ser.close()
-            finally:
-                self.ser = None
-        if self._lock is not None:
-            self._lock.release()
-            self._lock = None
+        """Closes the port and releases the board lock; the lock is released even if closing fails."""
+        try:
+            if self.ser is not None:
+                ser, self.ser = self.ser, None
+                ser.close()
+        finally:
+            if self._lock is not None:
+                lock, self._lock = self._lock, None
+                lock.release()
 
     def __enter__(self):
         if self.ser is None:
@@ -262,8 +295,10 @@ class SwitchBox:
 
     # ---- framing ------------------------------------------------------------------------
 
-    def _log(self, direction, text):
-        self.traffic.append((time.monotonic(), direction, redact_text(text)))
+    def _log(self, direction, text, limit=2000):
+        """Records a line: redacted whole first, then shortened (cutting first could split a credential
+        from its closing quote)."""
+        self.traffic.append((time.monotonic(), direction, redact_text(text)[:limit]))
         self.traffic_count += 1
 
     def _readline(self, deadline):
@@ -293,7 +328,7 @@ class SwitchBox:
         if not isinstance(msg, dict):
             self.garbage.append(raw)
             self.garbage_count += 1
-            self._log("??", text[:200])
+            self._log("??", text, 200)
             return None
         return msg
 
@@ -303,10 +338,10 @@ class SwitchBox:
             if msg["event"] == "boot":
                 self.boot_seen = True
             self.received.append(msg)
-            self._log("ev", text)
+            self._log("ev", text, 400)
             return True
         self.stale.append(msg)
-        self._log("<<", text)
+        self._log("<<", text, 400)
         return False
 
     def call(self, op_name, timeout=None, **params):
@@ -330,9 +365,9 @@ class SwitchBox:
             if msg is None:
                 continue
             if msg.get("id") != rid:
-                self._dispatch(msg, raw.decode(errors="replace")[:400])
+                self._dispatch(msg, raw.decode(errors="replace"))
                 continue
-            self._log("<<", raw.decode(errors="replace")[:2000])
+            self._log("<<", raw.decode(errors="replace"))
             if msg.get("ok"):
                 return msg.get("result")
             err = msg.get("error") or {}
@@ -346,7 +381,7 @@ class SwitchBox:
             if raw is None:
                 return got
             msg = self._parse(raw)
-            if msg is not None and self._dispatch(msg, raw.decode(errors="replace")[:400]):
+            if msg is not None and self._dispatch(msg, raw.decode(errors="replace")):
                 got.append(msg)
 
     # ---- operations (one per spec operationId) ------------------------------------------
@@ -520,6 +555,52 @@ class SwitchBox:
         events = self.events(since=mark["seq"], limit=32, all=True)
         return {"traffic": [{"t": round(t - t0, 4), "dir": d, "line": s} for t, d, s in traffic],
                 "events": redact(events), "garbage_lines": self.garbage_count}
+
+
+# ---- pytest fixtures (conftest.py) -------------------------------------------------------------
+
+@contextlib.contextmanager
+def session_box(port, identity=None, **client_kwargs):
+    """A connected SwitchBox for a whole test session.
+
+    identity(dict) receives the box's identity for the run record, even when its spec does not match.
+    The spec is checked before any contact operation: a box serving a different API is never driven.
+    However setup ends, the port is closed and the lock released; contacts are released first if any
+    operation was allowed."""
+    sb = SwitchBox(port, **client_kwargs)
+    sb.connect()
+    usable = False
+    try:
+        if identity is not None:
+            identity(sb.identity())
+        sb.check_spec()
+        usable = True
+        yield sb
+    finally:
+        try:
+            if usable:
+                sb.release_all()
+        finally:
+            sb.disconnect()
+
+
+@contextlib.contextmanager
+def prepared(sb, record):
+    """One test's use of a session box: every contact released and every channel idle at the start,
+    everything released at the end (also when the setup itself fails), traffic and board events
+    recorded once the starting mark exists."""
+    mark = None
+    try:
+        sb.release_all()
+        sb.idle()
+        mark = sb.mark()
+        yield sb
+    finally:
+        try:
+            sb.release_all()
+        finally:
+            if mark is not None:
+                record("switchbox", sb.since(mark))
 
 
 # ---- CLI: python -m tinyg_hil.switchbox <command> --port P -------------------------------------
