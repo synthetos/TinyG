@@ -27,7 +27,7 @@ def _wait(tg, predicate, timeout=3):
     pytest.fail(f"machine status did not reach expected condition; last={value}")
 
 
-@pytest.mark.bug("E050", on=["d449"])
+@pytest.mark.bug("E050", on=[])
 @pytest.mark.parametrize("lockout_ms", [50, 250], ids=["production-50ms", "wide-250ms"])
 def test_release_during_lockout_rearms_limit(tg, keep, switches, ice, record, lockout_ms):
     record("validation_status", "timing-pending")

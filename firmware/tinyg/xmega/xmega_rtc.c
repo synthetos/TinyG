@@ -73,6 +73,7 @@ void rtc_init()
 ISR(RTC_COMP_vect)
 {
 	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
+    switch_rtc_callback();
 }
 
 /*
