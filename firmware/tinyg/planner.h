@@ -283,6 +283,7 @@ void mp_init_buffers(void);
 mpBuf_t * mp_get_write_buffer(void);
 void mp_commit_write_buffer(const uint8_t block_type);
 mpBuf_t * mp_get_run_buffer(void);
+mpBuf_t * mp_peek_run_buffer(void);
 uint8_t mp_free_run_buffer(void);
 
 mpBuf_t * mp_get_first_buffer(void);

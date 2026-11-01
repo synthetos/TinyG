@@ -161,7 +161,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 		float delta_velocity = pow(length, 0.66666666) * mm.cbrt_jerk;		// max velocity change for this move
 		float entry_velocity = 0;											// pre-set as if no previous block
-		if ((bf = mp_get_run_buffer()) != NULL) {
+		if ((bf = mp_peek_run_buffer()) != NULL) {			// look only: the exec owns its state (E181)
 			if (bf->replannable == true) {									// not optimally planned
 				entry_velocity = bf->entry_velocity + bf->delta_vmax;
 			} else {														// optimally planned
