@@ -566,3 +566,24 @@ def test_prepared_records_traffic_and_releases_after_the_test():
             raise AssertionError("the test failed")
     assert [r["op"] for r in board.written[1:]] == ["releaseAll", "idleAll", "getEvents", "releaseAll", "getEvents"]
     assert records and records[0][0] == "switchbox" and records[0][1]["traffic"]
+
+
+def test_a_quoted_value_that_does_not_close_is_masked_to_the_end():
+    """Once a credential opens with a quote, anything short of its closing quote masks the rest of the
+    line, including a dangling escape; it never falls back to masking one bare word."""
+    for line in ('{"password":"first second\\', '{"password": "first second\\"', '{"ssid":"first\\\\ second',
+                 '{"password":"first\\" second\\', '{"ssid":"tinyg-switchbox-AB second\\'):
+        out = redact_text(line)
+        assert "first" not in out and "second" not in out and "AB" not in out, (line, out)
+        assert out.endswith('"***"'), (line, out)
+    # a backslash inside a terminated value stays inside it; what follows is kept
+    assert redact_text('{"password":"a\\\\b c\\"d", "ok":1}') == '{"password":"***", "ok":1}'
+    assert redact_text('{"ssid":"tinyg-switchbox-A\\\\B", "x":2}') == '{"ssid":"tinyg-switchbox-A\\\\B", "x":2}'
+
+
+def test_dangling_escape_in_a_logged_line_leaves_nothing_behind():
+    line = b'not json {"password":"first second\\\n'
+    sb = connect(FakeBoard({"getState": lambda req: [line] + FakeBoard.ok(req, {})}))
+    sb.state()
+    logged = json.dumps(list(sb.traffic))
+    assert "first" not in logged and "second" not in logged, logged

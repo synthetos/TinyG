@@ -164,9 +164,10 @@ def resolve_port(explicit=None, tinyg_port=None, benches=None):
 # WiFi credentials never go into traffic logs or run records. Every password is masked. Every SSID is
 # masked too, except the switchbox's own access-point name, and only as an "ssid" value.
 AP_PREFIX = "tinyg-switchbox-"
-# A "ssid"/"password" member in text: a string value, also one cut off before its closing quote (then
-# everything to the end is masked), or a bare non-string value.
-_SECRET = re.compile(r'"(ssid|password)"\s*:\s*("(?:[^"\\]|\\.)*(?:"|$)|[^,}\]\s]+)', re.S)
+# A "ssid"/"password" member in text: a terminated string value; else, once the value opens with a
+# quote, everything to the end of the text (a cut-off value, a dangling escape: never a shorter
+# match); else a bare non-string value.
+_SECRET = re.compile(r'"(ssid|password)"\s*:\s*("(?:[^"\\]|\\.)*"|".*|[^"\s,}\]][^,}\]\s]*)', re.S)
 _AP_VALUE = re.compile(r'"' + re.escape(AP_PREFIX) + r'(?:[^"\\]|\\.)*"')
 
 
