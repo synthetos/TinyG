@@ -8,7 +8,7 @@ import pytest
 
 pytestmark = pytest.mark.dialect("d449")
 
-@pytest.mark.bug("E168", on=["d449"])
+@pytest.mark.bug("E168", on=[])
 def test_nonfinite_feed_is_number_format_error(tg):
     feed = tg.get("feed")
     try:
