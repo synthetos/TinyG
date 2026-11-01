@@ -197,3 +197,46 @@ def test_path_check_fails_off_path():
     pts = [(x * 0.5, 0.0) for x in range(21)] + [(10.0, y * 0.5) for y in range(1, 21)] + [(5.0, 0.2)]
     failures = gcodeplay.path_check(_status(pts), PATH, 0.1, 0.05, 10)["failures"]
     assert any("off the commanded path" in f for f in failures)
+
+
+@pytest.mark.parametrize("answer", ['{"r":{"stat":3}}', '{"r":{"stat":3},"f":[3,204,8]}', '{"r":{},"f":[3,0,8]}'])
+def test_completion_poll_needs_a_valid_successful_answer(answer):
+    def bad_poll(tr, data):
+        if data.startswith(b'{"stat"'):
+            tr.emit(answer)
+        else:
+            board()(tr, data)
+    with pytest.raises(sender.StreamProtocolError, match="stat poll") as e:
+        sender.stream(FakeTG(bad_poll), ["G1 X1 F600"], "count", timeout=5)
+    assert e.value.result.acked == 1 and e.value.result.completion != "idle"
+
+
+def test_bounds_hold_during_the_final_wait():
+    """Motion continues after the last answer: a status outside bounds then still sends ! and %."""
+    def runaway(tr, data):
+        if data.startswith(b'{"stat"'):
+            tr.emit('{"sr":{"posx":999,"posy":999,"stat":5}}')
+            tr.emit(json.dumps({"r": {"stat": 3}, "f": [3, 0, 8]}))
+        else:
+            board()(tr, data)
+    tg = FakeTG(runaway)
+    with pytest.raises(sender.StreamRunaway) as e:
+        sender.stream(tg, ["G1 X1 F600"], "count", timeout=5, bounds=((-2, 2), (-2, 2)))
+    writes = [d for d, _ in tg.transport.writes]
+    assert b"!" in writes and b"%" in writes
+    assert e.value.result.completion != "idle"
+
+
+def test_final_wait_status_keeps_metadata_and_callback():
+    def late(tr, data):
+        if data.startswith(b'{"stat"'):
+            tr.emit('{"sr":{"posx":1.0,"posy":0.5,"stat":5}}')
+            tr.emit(json.dumps({"r": {"stat": 3}, "f": [3, 0, 8]}))
+        else:
+            board()(tr, data)
+    seen = []
+    res = sender.stream(FakeTG(late), ["G1 X1 F600"], "count", timeout=5, bounds=((-2, 2), (-2, 2)),
+                        on_status=lambda t, sr: seen.append(dict(sr)))
+    assert res.ok
+    assert res.status and "_raw" in res.status[-1][1] and "_damaged" in res.status[-1][1]
+    assert seen and seen[-1]["posx"] == 1.0

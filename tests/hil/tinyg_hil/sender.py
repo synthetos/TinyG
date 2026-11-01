@@ -264,6 +264,29 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
         # driver's queue has room, so a write does not block and this loop keeps reading responses and
         # status reports and running the stall watchdog; a write that blocks anyway fails after the timeout.
         tr.ser.write_timeout = TTY_WRITE_TIMEOUT
+
+    def _report(ev):
+        """Status, queue and exception reports, the same for the whole stream including the final wait:
+        a status outside bounds stops the machine at once. Returns False for anything else."""
+        if ev.kind == "status" and isinstance(ev.body, dict):
+            sr.update(ev.body)
+            if bounds and _outside(sr, bounds):
+                tr.write(b"!", drain_timeout=None)
+                time.sleep(0.3)
+                tr.write(b"%", drain_timeout=None)
+                raise _with(res, StreamRunaway(f"{mode}: machine left the program's box at line {res.acked} of {res.lines} "
+                                    f"(last sent {todo[i - 1] if i else None!r}): status {sr}; feedhold and flush sent"))
+            res.status.append((ev.t, dict(sr, _raw=ev.raw, _damaged=bool(getattr(ev, "damaged", False)))))
+            if on_status:
+                on_status(ev.t, sr)
+        elif ev.kind == "queue" and isinstance(ev.data.get("qr"), (int, float)):
+            res.queue.append((ev.t, ev.data["qr"]))
+        elif ev.kind == "exception":
+            res.exceptions.append(ev.raw)
+        else:
+            return False
+        return True
+
     try:
         while res.acked < res.lines:
             now = time.monotonic()
@@ -311,22 +334,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             while ev is not None:
                 if ev.kind in ("response", "status", "queue"):
                     progress = ev.t
-                if ev.kind == "status" and isinstance(ev.body, dict):
-                    sr.update(ev.body)
-                    if bounds and _outside(sr, bounds):
-                        tr.write(b"!", drain_timeout=None)
-                        time.sleep(0.3)
-                        tr.write(b"%", drain_timeout=None)
-                        raise _with(res, StreamRunaway(f"{mode}: machine left the program's box at line {res.acked} of {res.lines} "
-                                            f"(last sent {todo[i - 1]!r}): status {sr}; feedhold and flush sent"))
-                    res.status.append((ev.t, dict(sr, _raw=ev.raw, _damaged=bool(getattr(ev, "damaged", False)))))
-                    if on_status:
-                        on_status(ev.t, sr)
-                elif ev.kind == "queue" and isinstance(ev.data.get("qr"), (int, float)):
-                    res.queue.append((ev.t, ev.data["qr"]))
-                elif ev.kind == "exception":
-                    res.exceptions.append(ev.raw)
-                elif ev.kind == "response":
+                if not _report(ev) and ev.kind == "response":
                     footer = _footer(ev)
                     if i <= res.acked:
                         raise _with(res, StreamProtocolError(f"{mode}: response with no line outstanding "
@@ -356,18 +364,19 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             ev = tr.next_event(0.05)
             if ev is None:
                 continue
-            if ev.kind == "status" and isinstance(ev.body, dict):
-                sr.update(ev.body)
-                res.status.append((ev.t, dict(sr)))
-            elif ev.kind == "queue" and isinstance(ev.data.get("qr"), (int, float)):
-                res.queue.append((ev.t, ev.data["qr"]))
-            elif ev.kind == "exception":
-                res.exceptions.append(ev.raw)
-            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in IDLE_STATS:
+            if _report(ev) or ev.kind != "response":
+                continue
+            # only stat polls are outstanding now: each answer needs a valid footer with status 0
+            footer = _footer(ev)
+            stat = ev.body.get("stat") if isinstance(ev.body, dict) else None
+            if footer is None or footer[0] != 0 or not isinstance(stat, int):
+                raise _with(res, StreamProtocolError(f"{mode}: stat poll after the last line got an invalid "
+                                                     f"or failed answer: {ev.raw[:120]}"))
+            if stat in IDLE_STATS:
                 res.completion = "idle"
                 break
-            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in END_STATS:
-                res.completion = END_STATS[ev.body["stat"]]
+            if stat in END_STATS:
+                res.completion = END_STATS[stat]
                 break                       # nothing more will run: don't wait it out
         res.finished = time.monotonic()
     finally:
