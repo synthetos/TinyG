@@ -12,6 +12,8 @@ PRELUDE = r'''
 #include <assert.h>
 #include <stddef.h>
 #define __AVR 1
+uint8_t SREG = 0x80;
+#define cli() (SREG &= (uint8_t)~128)
 #define MOTORS 4
 #define MOTOR_1 0
 #define MOTOR_2 1

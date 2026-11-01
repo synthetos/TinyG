@@ -544,9 +544,20 @@ stat_t st_motor_power_callback() 	// called by controller
                 continue;
             }
             st_run.energize_mask &= ~(1 << m);
-            // An explicit timeout must not cut torque while a move or feedhold is active.
-            if (!st_runtime_isbusy() && cm_get_motion_state() != MOTION_HOLD) {
+            // An explicit timeout must not cut torque while a move or feedhold is active. Decide and
+            // act with interrupts off, so a segment the loader starts meanwhile keeps its motor (E184).
+#ifdef __AVR
+            uint8_t saved_sreg = SREG;
+            cli();
+#endif
+            bool idle = !st_runtime_isbusy() && (cm_get_motion_state() != MOTION_HOLD);
+            if (idle) {
                 _deenergize_motor(m);
+            }
+#ifdef __AVR
+            SREG = saved_sreg;
+#endif
+            if (idle) {
                 sr_request_status_report(SR_REQUEST_TIMED);
                 continue;
             }
@@ -572,9 +583,22 @@ stat_t st_motor_power_callback() 	// called by controller
 		// run the countdown if you are in a countdown
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
 			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {
-				st_run.mot[m].power_state = MOTOR_IDLE;
-				_deenergize_motor(m);
-                sr_request_status_report(SR_REQUEST_TIMED);		// request a status report when motors shut down
+				// re-check with interrupts off: a segment loaded since restarts the timeout (E184)
+#ifdef __AVR
+				uint8_t saved_sreg = SREG;
+				cli();
+#endif
+				bool expired = (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN);
+				if (expired) {
+					st_run.mot[m].power_state = MOTOR_IDLE;
+					_deenergize_motor(m);
+				}
+#ifdef __AVR
+				SREG = saved_sreg;
+#endif
+				if (expired) {
+					sr_request_status_report(SR_REQUEST_TIMED);	// request a status report when motors shut down
+				}
 			}
 		}
 	}
