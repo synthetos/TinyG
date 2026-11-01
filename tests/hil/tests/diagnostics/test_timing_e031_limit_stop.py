@@ -18,7 +18,7 @@ import time
 
 import pytest
 
-from tinyg_hil import saleae, stopfit
+from tinyg_hil import benches, saleae, stopfit
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.ice, pytest.mark.motion, pytest.mark.dialect("d449")]
 
@@ -35,7 +35,7 @@ FIT_RMS_LIMIT_MM = 0.0005               # synthetic firmware-profile traces fit 
 
 
 def _bench(tg):
-    config = json.loads((Path(__file__).resolve().parents[2] / "config/benches.json").read_text())
+    config = benches.load()
     bench = config.get(tg.transport.port) or {}
     if not bench.get("saleae"):
         pytest.skip(f"no Saleae recorded for {tg.transport.port}")
