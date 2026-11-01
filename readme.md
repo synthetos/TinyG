@@ -1,4 +1,23 @@
-TINYG MASTER BRANCH
+# TinyG EDGE-NEXT: bleeding edge, expect bugs
+
+> **WARNING: this branch is experimental. It WILL have bugs.**
+> Do not run it on a production machine or on a job you cannot afford to lose.
+> For production use the `master` branch.
+
+**What this is.** `edge-next` is build **450.01**, the next step after `edge-0.97` (449.01). It brings well over a hundred fixes found by a code audit of edge-0.97: motion planning, feedhold, homing, probing, G-code parsing, serial input and flow control, and settings storage.
+
+**How it was tested.** Each fix has a test that failed on the old firmware and passes on the new one. The tests run on real TinyG v8 boards over USB, with logic-analyzer captures where timing matters. That makes it better tested than earlier edge builds, but it is still new code, and it has had far less real-world use than `master`. Some behaviour changed on purpose (for example, G-code lines that used to run with a silently wrong meaning are now rejected with an error, and lost serial input raises ALARM 13 instead of running).
+
+**Before you flash it:**
+* Save your settings first (`$$` in text mode, or your host's backup). EEPROM settings normally carry over, but keep a copy.
+* Keep the `master` (or `edge-0.97`) hex at hand, so you can flash back with the bootloader if something goes wrong.
+* Test with the spindle off and in the air before cutting.
+* Use line mode (`{rxm:1}`) or RTS/CTS flow control. XON/XOFF works, but it is the least robust choice.
+
+**Found a bug?** Please open an issue at https://github.com/synthetos/TinyG/issues. Include the build number (`{fb:n}`), your settings (`$$`), the G-code or commands that trigger it, and what you expected.
+
+---
+
 ![TinyG v7 Board](http://farm9.staticflickr.com/8186/8436183471_6b3708cd0d_c.jpg)
 
 TinyG is a 6 axis motion control system designed for high-performance on small to mid-sized machines. Some features:
@@ -22,6 +41,8 @@ See these links for more details.
 ### BRANCHES
 
 * MASTER is the current production code. This is not updated very frequently.
+
+* EDGE-NEXT (this branch) is bleeding-edge work toward the next release: build 450.01, edge-0.97 plus the audit fixes. Expect bugs; not for production.
 
 * EDGE branches are work-in-process for the next Master releases. Depending on the velocity of changes they will be somewhere between alpha and beta. An attempt is made to keep everything working and usable, but there are no guarantees for edge branches. Generally speaking, edge branches should not be used for production uses - use the master branch instead.
 
