@@ -53,8 +53,23 @@ typedef struct testHookSwitch {
 
 extern volatile test_hook_t test_hook;
 
+/*
+ * Planner hand-off (E180): the debugger sets replan_delay_us to hold mp_calculate_trapezoid() just
+ * after it has started rewriting a block, widening the moment the exec could start that block; the
+ * exec counts the blocks it starts and those whose head, body and tail do not add up to the move.
+ */
+typedef struct testHookPlan {
+	uint16_t replan_delay_us;
+	uint16_t starts;
+	uint16_t torn_starts;
+} test_plan_t;
+
+extern volatile test_plan_t test_plan;
+
 void testhooks_init(void);
 stat_t testhooks_callback(void);
+void testhooks_replan_delay(void);
+void testhooks_block_started(float length, float head, float body, float tail);
 
 #endif // TINYG_TEST_HOOKS
 #endif // TESTHOOKS_H_ONCE

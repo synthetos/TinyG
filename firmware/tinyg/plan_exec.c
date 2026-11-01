@@ -35,6 +35,7 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
+#include "testhooks.h"
 #ifdef __AVR
 #include <avr/interrupt.h>
 #endif
@@ -218,6 +219,9 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.entry_velocity = bf->entry_velocity;
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
+#ifdef TINYG_TEST_HOOKS
+		testhooks_block_started(bf->length, mr.head_length, mr.body_length, mr.tail_length);	// E180 test
+#endif
 
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move

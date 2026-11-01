@@ -7,10 +7,28 @@
 #include "encoder.h"
 #include "switch.h"
 #include "testhooks.h"
+#include <math.h>
+#include <util/delay.h>
 
 #ifdef TINYG_TEST_HOOKS
 
 volatile test_hook_t test_hook;
+volatile test_plan_t test_plan;
+
+void testhooks_replan_delay()
+{
+	for (uint16_t us = test_plan.replan_delay_us; us > 0; us--) {
+		_delay_us(1);
+	}
+}
+
+void testhooks_block_started(float length, float head, float body, float tail)
+{
+	test_plan.starts++;
+	if (fabs(head + body + tail - length) > 0.0001 * (1 + length)) {
+		test_plan.torn_starts++;
+	}
+}
 
 void testhooks_init()
 {

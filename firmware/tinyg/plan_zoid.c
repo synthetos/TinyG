@@ -31,6 +31,7 @@
 #include "planner.h"
 #include "report.h"
 #include "util.h"
+#include "testhooks.h"
 
 /*
  * mp_calculate_trapezoid() - calculate trapezoid parameters
@@ -183,6 +184,9 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	//	 H' and T' requested-fit cases where the body residual is less than MIN_BODY_LENGTH
 
 	bf->body_length = 0;
+#ifdef TINYG_TEST_HOOKS
+	testhooks_replan_delay();								// E180 test: hold the rewrite part way
+#endif
 	float minimum_length = mp_get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
 
