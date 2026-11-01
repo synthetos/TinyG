@@ -500,6 +500,31 @@ void mp_commit_write_buffer(const uint8_t block_type)
 #endif
 }
 
+/*
+ * mp_peek_run_buffer() - the block the exec runs or will run next, left as it is (E181)
+ *
+ *	mp_get_run_buffer() promotes a queued block to running, rewriting the flag byte the exec interrupt
+ *	also writes; from the main loop that could undo an exec start or revive a freed buffer. The main
+ *	loop only needs to look. The block may still be started or freed right after: callers read it as
+ *	an estimate only.
+ */
+mpBuf_t * mp_peek_run_buffer()
+{
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	mpBuf_t *bf = mb.r;
+	uint8_t state = bf->buffer_state;
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	if ((state == MP_BUFFER_QUEUED) || (state == MP_BUFFER_PENDING) || (state == MP_BUFFER_RUNNING)) {
+		return (bf);
+	}
+	return (NULL);
+}
+
 mpBuf_t * mp_get_run_buffer()
 {
 	// CASE: fresh buffer; becomes running if queued or pending
