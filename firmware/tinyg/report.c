@@ -45,6 +45,9 @@
 #include "persistence.h"
 #include "util.h"
 #include "xio.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 /**** Allocation ****/
 
@@ -733,25 +736,37 @@ stat_t qr_queue_report_callback() 		// called by controller dispatcher
 	if (qr.queue_report_requested == false) {
         return (STAT_NOOP);
     }
-	qr.queue_report_requested = false;
+
+	// Take the counts and restart them in one step: the exec and loader count removals from
+	// interrupts, and one landing while the report is written belongs to the next report (E183)
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	uint8_t available = qr.buffers_available;
+	uint16_t added = qr.buffers_added;
+	uint16_t removed = qr.buffers_removed;
+	qr_init_queue_report();
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
 
 	if (cs.comm_mode == TEXT_MODE) {
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			printf_P(PSTR("qr:%d\n"), qr.buffers_available);
+			printf_P(PSTR("qr:%d\n"), available);
 		} else  {
-			printf_P(PSTR("qr:%d, qi:%u, qo:%u\n"), qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
+			printf_P(PSTR("qr:%d, qi:%u, qo:%u\n"), available, (unsigned)added, (unsigned)removed);
 		}
 	} else {
         char line_msg[40];                      // {"qr":255,"qi":65535,"qo":65535}\n is 34 with its NUL
 		if (qr.queue_report_verbosity == QR_SINGLE) {
-			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d}\n"), qr.buffers_available);
+			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d}\n"), available);
 		} else {
 			snprintf_P(line_msg, sizeof(line_msg), PSTR("{\"qr\":%d,\"qi\":%u,\"qo\":%u}\n"),
-					   qr.buffers_available, (unsigned)qr.buffers_added, (unsigned)qr.buffers_removed);
+					   available, (unsigned)added, (unsigned)removed);
 		}
         fputs(json_relax(line_msg), stdout);
 	}
-	qr_init_queue_report();
 	return (STAT_OK);
 }
 
