@@ -199,7 +199,8 @@ def test_path_check_fails_off_path():
     assert any("off the commanded path" in f for f in failures)
 
 
-@pytest.mark.parametrize("answer", ['{"r":{"stat":3}}', '{"r":{"stat":3},"f":[3,204,8]}', '{"r":{},"f":[3,0,8]}'])
+@pytest.mark.parametrize("answer", ['{"r":{"stat":3}}', '{"r":{"stat":3},"f":[3,204,8]}', '{"r":{},"f":[3,0,8]}',
+                                    '{"r":{"stat":true},"f":[3,0,8]}'])
 def test_completion_poll_needs_a_valid_successful_answer(answer):
     def bad_poll(tr, data):
         if data.startswith(b'{"stat"'):

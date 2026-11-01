@@ -369,7 +369,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             # only stat polls are outstanding now: each answer needs a valid footer with status 0
             footer = _footer(ev)
             stat = ev.body.get("stat") if isinstance(ev.body, dict) else None
-            if footer is None or footer[0] != 0 or not isinstance(stat, int):
+            if footer is None or footer[0] != 0 or not isinstance(stat, int) or isinstance(stat, bool):
                 raise _with(res, StreamProtocolError(f"{mode}: stat poll after the last line got an invalid "
                                                      f"or failed answer: {ev.raw[:120]}"))
             if stat in IDLE_STATS:
