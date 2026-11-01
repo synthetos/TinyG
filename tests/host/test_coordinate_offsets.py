@@ -16,6 +16,8 @@ class CoordinateOffsets(unittest.TestCase):
         source = (FIRMWARE / 'canonical_machine.c').read_text()
         names = ['cm_get_active_coord_offset', 'cm_set_work_offsets', 'cm_get_work_position',
                  'cm_set_coord_offsets']
+        if 'static float _get_work_position_mm(' in source:
+            names.insert(2, '_get_work_position_mm')
         if 'static void _exec_g10_offset(' in source:
             names.append('_exec_g10_offset')
         definitions = []

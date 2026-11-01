@@ -9,11 +9,13 @@ import subprocess
 import tempfile
 import unittest
 
+from source_extract import region
+
 ROOT = Path(os.environ.get("TINYG_SOURCE", Path(__file__).resolve().parents[2]))
 
 
 def function(source, name):
-    match = re.search(r"^(?:stat_t|float) " + name + r"\([^;]*?\)\s*\{", source, re.M)
+    match = re.search(r"^(?:static )?(?:stat_t|float) " + name + r"\([^;]*?\)\s*\{", source, re.M)
     if not match:
         raise AssertionError(f"firmware does not implement {name}")
     depth = 1
@@ -47,14 +49,21 @@ class PositionQueries(unittest.TestCase):
 #define strcpy_P strcpy
 #define fprintf_P fprintf
 typedef int stat_t;
-typedef struct { int units_mode; float target[6]; } GCodeState_t;
-struct { GCodeState_t gm, *am; struct {float position[6], tool_offset[6];} gmx; } cm;
+typedef struct { int units_mode; float target[6], work_offset[6]; } GCodeState_t;
+#define MOTION_STOP 0
+#define CYCLE_OFF 0
+struct { int motion_state, cycle_state; GCodeState_t gm, *am; struct {float position[6], tool_offset[6];} gmx; } cm;
+struct { GCodeState_t gm; } mr;
 struct { int comm_mode; float fw_build, fw_version; } cs;
 #define MODEL (&cm.gm)
+#define RUNTIME (&mr.gm)
 #define ACTIVE_MODEL cm.am
 float offsets[6], runtime_pos[6];
 float cm_get_active_coord_offset(uint8_t axis) {return offsets[axis];}
 float mp_get_runtime_work_position(uint8_t axis) {return runtime_pos[axis];}
+static int cm_get_units_mode(const GCodeState_t *gcode_state) {return gcode_state->units_mode;}
+float mp_get_runtime_absolute_position(uint8_t axis) {return runtime_pos[axis];}
+float mp_get_runtime_work_offset(uint8_t axis) {(void)axis; return 0;}
 typedef struct {char token[6], group[4]; int depth, precision; float value_flt;} nvObj_t;
 nvObj_t objects[6]; int used, capacity=6;
 nvObj_t *nv_add_object(const char *token) {
@@ -66,8 +75,11 @@ nvObj_t *nv_add_object(const char *token) {
     return nv;
 }
 '''
-        code += '\n'.join(function(source, name) for name in
-                          ('cm_get_work_position', 'cm_get_position', 'cm_get_firmware'))
+        code += '\n'.join(function(source, name) for name in ('cm_get_work_offset', 'cm_get_absolute_position',
+                                                              '_get_work_position_mm', 'cm_get_work_position'))
+        code += '\n' + region(source, r"static GCodeState_t \*_position_model\(\)",
+                              r"static float _get_report_position\([^;{}]*\)(?=\s*\{)") + '\n'
+        code += '\n'.join(function(source, name) for name in ('cm_get_position', 'cm_get_firmware'))
         code += r'''
 int main(void) {
     cm.am=MODEL; cs.comm_mode=1; cs.fw_build=449.01f; cs.fw_version=.97f;
@@ -104,7 +116,7 @@ int main(void) {
             c = Path(tmp) / 'queries.c'
             c.write_text(code)
             exe = Path(tmp) / 'queries'
-            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-fsanitize=address,undefined',
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-Wno-unused-function', '-fsanitize=address,undefined',
                             str(c), '-o', str(exe)], check=True)
             result = subprocess.run([str(exe)], check=True, capture_output=True, text=True)
             self.assertEqual(result.stderr.splitlines()[0],

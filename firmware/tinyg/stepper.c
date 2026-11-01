@@ -34,6 +34,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "planner.h"
+#include "canonical_machine.h"
 #include "report.h"
 #include "hardware.h"
 #include "text_parser.h"
@@ -746,6 +747,7 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 			st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 			_request_load_move();
 		}
+		cm_position_changed();							// the runtime position moved (E166)
 	}
 }
 #endif // __AVR
@@ -767,6 +769,7 @@ namespace Motate {	// Define timer inside Motate namespace
 				st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER; // flip it back
 				_request_load_move();
 			}
+			cm_position_changed();						// the runtime position moved (E166)
 		}
 	}
 } // namespace Motate
@@ -1042,6 +1045,7 @@ static void _load_move()
 	// handle synchronous commands
 	} else if (st_pre.block_type == BLOCK_TYPE_COMMAND) {
 		mp_runtime_command(st_pre.bf);
+		cm_position_changed();							// offsets, origin or program end may have changed (E166)
 	}
 
 	// all other cases drop to here (e.g. Null moves after Mcodes skip to here)

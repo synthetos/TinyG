@@ -13,3 +13,13 @@ def function(source, signature):
             return source[match.start():token.end()]
     raise AssertionError(signature)
 
+
+
+def region(source, start, last_signature):
+    """The source from the first match of `start` through the end of the function `last_signature`,
+    for static state that lives between functions."""
+    begin = re.search(start, source)
+    assert begin, start
+    last = function(source[begin.start():], last_signature)
+    end = source.index(last, begin.start()) + len(last)
+    return source[begin.start():end]

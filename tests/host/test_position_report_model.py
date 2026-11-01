@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, region
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,6 +39,8 @@ struct { GCodeState_t gm; } mr;
 static float runtime_mm[AXES];
 float mp_get_runtime_absolute_position(uint8_t axis) { return runtime_mm[axis]; }
 float mp_get_runtime_work_position(uint8_t axis) { return runtime_mm[axis] - mr.gm.work_offset[axis]; }
+float mp_get_runtime_work_offset(uint8_t axis) { return mr.gm.work_offset[axis]; }
+static int cm_get_units_mode(const GCodeState_t *gcode_state) { return gcode_state->units_mode; }
 float cm_get_active_coord_offset(uint8_t axis) { return cm.gm.work_offset[axis]; }
 static int8_t _get_axis(int index) { return (int8_t)index; }
 '''
@@ -84,9 +86,10 @@ class PositionReportModel(unittest.TestCase):
         source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
         code = PRELUDE
         for signature in (r"float cm_get_work_offset\(", r"float cm_get_absolute_position\(",
-                          r"float cm_get_work_position\(", r"static GCodeState_t \*_position_model\(",
-                          r"stat_t cm_get_pos\(", r"stat_t cm_get_mpo\(", r"stat_t cm_get_ofs\("):
+                          r"static float _get_work_position_mm\(", r"float cm_get_work_position\("):
             code += function(source, signature + r"[^;{}]*\)(?=\s*\{)") + "\n"
+        code += region(source, r"static GCodeState_t \*_position_model\(\)",
+                       r"stat_t cm_get_ofs\([^;{}]*\)(?=\s*\{)") + "\n"
         code += EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-e090-") as tmp:
             c, exe = Path(tmp) / "pos.c", Path(tmp) / "pos"
