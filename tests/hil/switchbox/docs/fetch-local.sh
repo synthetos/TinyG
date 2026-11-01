@@ -1,7 +1,7 @@
 #!/bin/sh
 # Re-download the reference documents that are not redistributable (or carry no licence) into
 # docs/local/ (git-ignored), and check them against the SHA-256 recorded when they were first
-# fetched (2026-10-31). A mismatch means upstream changed the file; compare before trusting it.
+# fetched (2026-10-31, terminal-block files 2026-11-01). A mismatch means upstream changed the file; compare before trusting it.
 set -eu
 cd "$(dirname "$0")"
 mkdir -p local
@@ -16,6 +16,12 @@ get ESP8266_Specifications_English.pdf "http://www.adafruit.com/datasheets/ESP82
 get cp2104.pdf "http://www.adafruit.com/datasheets/cp2104.pdf"
 get esp8266ex_datasheet_en.pdf "https://www.espressif.com/sites/default/files/documentation/0a-esp8266ex_datasheet_en.pdf"
 get "Adafruit ESP8266 Feather rev G.brd" "https://raw.githubusercontent.com/adafruit/Adafruit-Feather-ESP8266-HUZZAH-PCB/master/Adafruit%20ESP8266%20Feather%20rev%20G.brd"
+get feather_fabprint.png "https://cdn-learn.adafruit.com/assets/assets/000/030/886/original/feather_fabprint.png"
+get feather_schem.png "https://cdn-learn.adafruit.com/assets/assets/000/030/887/original/feather_schem.png"
+get adafruit_products_2926_Terminal_Block_FeatherWing.jpg "https://cdn-learn.adafruit.com/assets/assets/000/142/492/original/adafruit_products_2926_Terminal_Block_FeatherWing.jpg"
+# the guide pages change over time: fetched for reference, not checked
+get terminal-block-featherwing-downloads.html "https://learn.adafruit.com/adafruit-terminal-block-prototyping-breakout-featherwing/downloads"
+get huzzah-esp8266-pinouts.html "https://learn.adafruit.com/adafruit-feather-huzzah-esp8266/pinouts"
 shasum -a 256 -c <<'EOF'
 0ca7a793a76d8252753f0b9d0fb6088244c4b7b65a7407940ae7996ca5ff3541  local/Huzzah_ESP8266_Pinout_v1.2.pdf
 34c79fb2bb9ede57371d43dd01814f345aed644d76cfe68ad2a13d1d7034d5b9  local/adafruit_products_schem.png
@@ -25,4 +31,7 @@ ebf62134af868fa2da7032937cd76898e7bf5a709fd50769ad25b4fa1b4b213c  local/adafruit
 3373ea163f3dbcecc4709a0a9a1d348913141814b3a565db35f58815f7680ff3  local/cp2104.pdf
 3a038e2fd3040ad06d95d41b16afc8292090339e9f8e728ce46a83db439cecf1  local/esp8266ex_datasheet_en.pdf
 c7f249dfa2b899d480b497107b002c45218093275dbc5b5e70952b957d8ad9f3  local/Adafruit ESP8266 Feather rev G.brd
+1a6ae5330c2674afa64fb6fdcfe534bc52d2396870f73e9d86c000ddb17c44fb  local/feather_fabprint.png
+7d1b1a261571e0a7e7f023014b2579d917374d0690164761fdad9972835bff67  local/feather_schem.png
+64a2ba4a2c510fc9476c0ac22e0a87f6d514c7d25fb2295bce883ea76880f190  local/adafruit_products_2926_Terminal_Block_FeatherWing.jpg
 EOF
