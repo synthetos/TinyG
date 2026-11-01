@@ -68,7 +68,7 @@ stat_t mp_exec_move(void) { return STAT_NOOP; }
 /* the interrupt, fired at the instrumented point; deferred while the main loop has interrupts off */
 static void (*isr)(void);
 static int deferred;
-void audit_window(void) {
+void irq_window(void) {
     if (isr == NULL) return;
     if (SREG & 0x80) { void (*f)(void) = isr; isr = NULL; f(); }
     else { deferred = 1; }
@@ -86,7 +86,7 @@ mpBuf_t *mp_get_run_buffer(void) {
     uint8_t saved = SREG;                               /* a fix may mask: honour it */
     mpBuf_t *p = mb.r;                                  /* lds r30/r31 mb.r */
     uint8_t bs = p->buffer_state, bt = p->block_type, bk = p->block_state;   /* ldd r25, Z+12 */
-    audit_window();
+    irq_window();
     if ((bs == MP_BUFFER_QUEUED) || (bs == MP_BUFFER_PENDING)) {
         p->buffer_state = MP_BUFFER_RUNNING; p->block_type = bt; p->block_state = bk;   /* std Z+12 */
         bs = MP_BUFFER_RUNNING;
@@ -162,10 +162,10 @@ class BufferCountAtomic(unittest.TestCase):
         common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         (d / 'check.c').write_text(PRELUDE + main)
-        (d / 'planner_audit.c').write_text(planner_source)
+        (d / 'planner_check.c').write_text(planner_source)
         objs = []
         for name, src, extra in [('check.c', d / 'check.c', []),
-                                 ('planner.c', d / 'planner_audit.c',
+                                 ('planner.c', d / 'planner_check.c',
                                   ['-include', 'tgmath.h', '-Dmp_get_run_buffer=real_mp_get_run_buffer']),
                                  ('plan_line.c', FIRMWARE / 'plan_line.c', ['-include', 'tgmath.h']),
                                  ('plan_zoid.c', FIRMWARE / 'plan_zoid.c', ['-include', 'tgmath.h']),
@@ -173,7 +173,7 @@ class BufferCountAtomic(unittest.TestCase):
             obj = d / (name + '.o')
             subprocess.run([_cc(), *common, *extra, '-c', str(src), '-o', str(obj)], check=True)
             objs.append(str(obj))
-        exe = d / 'audit'
+        exe = d / 'check'
         subprocess.run([_cc(), '-fsanitize=address,undefined', *objs, '-lm', '-o', str(exe)], check=True)
         return subprocess.run([str(exe)], capture_output=True, text=True)
 
@@ -183,17 +183,17 @@ class BufferCountAtomic(unittest.TestCase):
             # the main loop's lds / subi(+) / sts on mb.buffers_available, with the window in the middle
             for op in ('--', '++'):
                 pattern = r'(mp_(?:get|unget)_write_buffer\(\)[^{]*\{.*?)mb\.buffers_available' + re.escape(op) + ';'
-                repl = r'\1{ uint8_t _v = mb.buffers_available; audit_window(); mb.buffers_available = _v ' + \
+                repl = r'\1{ uint8_t _v = mb.buffers_available; irq_window(); mb.buffers_available = _v ' + \
                        ('- 1' if op == '--' else '+ 1') + '; }'
                 src = re.sub(pattern, repl, src, count=1, flags=re.S)
-            src = 'void audit_window(void);\n' + src
+            src = 'void irq_window(void);\n' + src
         return src
 
     def test_e182_buffer_count_update_lost(self):
         if not _cc():
             self.skipTest('host C compiler not installed')
         src = self._planner_source(True)
-        self.assertIn('audit_window(); mb.buffers_available = _v - 1', src)
+        self.assertIn('irq_window(); mb.buffers_available = _v - 1', src)
         with tempfile.TemporaryDirectory() as d:
             result = self._planner_exe(Path(d), E182_MAIN, src)
         self.assertEqual(result.returncode, 0, result.stderr)
