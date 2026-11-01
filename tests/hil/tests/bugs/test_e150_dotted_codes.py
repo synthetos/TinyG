@@ -28,4 +28,4 @@ def test_unimplemented_dotted_codes_are_rejected(tg):
             assert tg.send_gcode(code).status == 0, code
     finally:
         tg.send_gcode("M5")
-        tg.send_gcode("G54 G90 G90.1 G61")
+        tg.send_gcode("G54 G90 G91.1 G61")
