@@ -309,8 +309,16 @@ static char *_skip_quote(char *str)
 // Traps "" (null string) as null. Note that "  " is a valid string with spaces, not a null.
 static char _value_type(char *s)
 {
-	if       (*s == 'n')                    { return (TYPE_NULL); }
-    else if ((*s == 't') || (*s == 'f'))    { return (TYPE_BOOLEAN); }
+    if ((*s == 'n') || (*s == 't') || (*s == 'f')) {
+        const char *literal = (*s == 'n') ? "null" : ((*s == 't') ? "true" : "false");
+        uint8_t n = 1;
+        while (literal[n] && (tolower(s[n]) == literal[n])) { n++; }
+        if (literal[n]) { n = 1; } // documented single-letter spelling
+        char end = s[n];
+        if ((end != NUL) && (end != ',') && (end != '}') &&
+            !isspace((unsigned char)end) && (end != DEL)) { return (TYPE_TYPE_ERROR); }
+        return ((*s == 'n') ? TYPE_NULL : TYPE_BOOLEAN);
+    }
     else if ((*s == '-') || isdigit(*s))    { return (TYPE_INTEGER); }  // provisionally INT. Might be FLOAT
     else if  (*s == '{')                    { return (TYPE_NEW_LEVEL); }
     else if  (*s == '"') {

@@ -11,7 +11,7 @@ import pytest
 
 pytestmark = [pytest.mark.dialect("d449")]
 
-@pytest.mark.bug("E173", on=["d449"])
+@pytest.mark.bug("E173", on=[])
 def test_literal_tails_are_syntax_errors(tg):
     for line in ('{"ee":falsx}', '{"xvm":nonsense}'):
         assert tg.send_json(line).status == 111, line
