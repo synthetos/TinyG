@@ -62,11 +62,13 @@ def test_homing_hold_capture(tg,ice,switches,keep,record,request,speed):
                 time.sleep(.05)
             time.sleep(.15)
         finally:
-            if cap.capture_id is not None:
-                edges=cap.finish()  # saves the capture/edges and closes the tab, even on failure
-            if not completed:
-                tg.reset()
-                switches.unmount_all()
+            try:
+                if cap.capture_id is not None:
+                    edges=cap.finish()  # saves the capture/edges and closes the tab, even on failure
+            finally:
+                if not completed:
+                    tg.reset()
+                    switches.unmount_all()
         assert completed,'homing did not finish within 25 seconds; capture retained'
         # The capture has stopped. Reading the final logical state is now safe.
         state=ice.peek_many(['cm.cycle_state','cm.hold_state','cm.homed[0]','mr.position[0]'])
