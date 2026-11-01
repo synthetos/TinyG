@@ -166,7 +166,10 @@ class SwitchLockoutTests(unittest.TestCase):
         actual += "\n" + clock[start:clock.index("\n}", start) + 2]
         with tempfile.TemporaryDirectory(prefix="tinyg-switch-") as directory:
             path = pathlib.Path(directory)
-            (path / "check.c").write_text(PRELUDE + types + switch_types + "\nrtClock_t rtc;\n" + actual + EXERCISE)
+            clock_access = ("uint8_t SREG = 0x80;\nstatic void cli(void) { SREG &= (uint8_t)~0x80; }\n"
+                            "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }\n")   # E190
+            (path / "check.c").write_text(PRELUDE + types + switch_types + "\nrtClock_t rtc;\n" + clock_access +
+                                          actual + EXERCISE)
             subprocess.run([compiler, "-std=gnu99", "-O1", "-fsanitize=address,undefined",
                             str(path / "check.c"), "-o", str(path / "check")], check=True)
             result = subprocess.run([str(path / "check")], capture_output=True, text=True)

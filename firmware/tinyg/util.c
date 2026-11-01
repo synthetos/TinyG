@@ -34,6 +34,7 @@
 #include "util.h"
 
 #ifdef __AVR
+#include <avr/interrupt.h>
 #include "xmega/xmega_rtc.h"
 #endif
 
@@ -442,7 +443,11 @@ uint16_t compute_checksum(char const *string, const uint16_t length)
 #ifdef __AVR
 uint32_t SysTickTimer_getValue()
 {
-	return (rtc.sys_ticks);
+	uint8_t saved_sreg = SREG;						// four bytes the RTC interrupt rewrites (E190)
+	cli();
+	uint32_t ticks = rtc.sys_ticks;
+	SREG = saved_sreg;
+	return (ticks);
 }
 #endif // __AVR
 
