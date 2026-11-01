@@ -166,8 +166,8 @@ static void _usb_rx_lost(void)				// lost right after the last byte kept, at the
 	}
 	if (USBu.rx_buf_head == USBu.rx_buf_tail) {		// the reader took that byte (only a USART loss, E193):
 		USBu.rx_lost_open = true;						// the loss is where it reads now, so the stretch is
-		advance_buffer(USBu.rx_lost_last, RX_BUFFER_SIZE);	// open and ends at the next byte kept
-	}
+		advance_buffer(USBu.rx_lost_last, RX_BUFFER_SIZE);	// open and ends at the next byte kept, or the
+	}												// reader reports it if the ring is still empty
 }
 
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
