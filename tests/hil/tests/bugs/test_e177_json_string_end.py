@@ -11,6 +11,6 @@ import pytest
 
 pytestmark = [pytest.mark.dialect("d449")]
 
-@pytest.mark.bug("E177", on=["d449"])
+@pytest.mark.bug("E177", on=[])
 def test_text_after_string_quote_is_syntax_error(tg):
     assert tg.send_json('{"gc":"G21"b}').status == 111

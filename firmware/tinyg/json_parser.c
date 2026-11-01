@@ -332,6 +332,7 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
     jsonTokenizationState state = JTSM_START;       // state machine state
     uint8_t jtoken = 0;                             // parking place for JSON token
     uint8_t depth = 0;                              // nesting depth
+    bool string_closed = false;
 
     do {
         // STRING_VALUE state                       // must be first to avoid WS removal
@@ -344,7 +345,8 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
                 continue;                           // any other escape drops its backslash
             }
             if (*str == '"') {                      // a lone quote is the end quote
-                state = JTSM_VALUE;                 // use the VALUE state logic to exit
+                state = JTSM_VALUE;
+                string_closed = true;
             }
             *wr++ = *str;
             continue;
@@ -382,6 +384,7 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
                 str = _skip_whitespace(++str);      // advance to 1st char of value field
                 *str = tolower(*str);
                 valueType type = _value_type(str);  // what does 1st value character tell us?
+                string_closed = false;
                 if (type == TYPE_NEW_LEVEL) {
                     if (*(str+1) == ':') { break; } // trap missing key field
                     if (++depth > JSON_DEPTH_MAX) {
@@ -394,6 +397,8 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
                 else if (type == TYPE_NULL_STRING) {
                     jtoken = JTOK_FLAG | (depth << JTOK_DSHIFT) | TYPE_NULL;
                     *wr++ = 'n'; str++;             // write 'n(ull)' & advance past closing " char
+                    state = JTSM_VALUE;
+                    string_closed = true;
                     continue;
                 }
                 else if (type == TYPE_STRING) {
@@ -408,6 +413,7 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
 
         // VALUE state
         else if (state == JTSM_VALUE) {
+            if (string_closed && (*str != ',') && (*str != '}')) { break; }
             if (*str == ',') {                      // new key at same depth
                 *wr++ = jtoken;                     // record previous token
                 state = JTSM_KEY; jtoken = JTOK_FLAG | (depth << JTOK_DSHIFT) | JTOK_KEY;
