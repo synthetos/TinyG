@@ -30,7 +30,7 @@ def _command(tg, line):
             return "\n".join(lines)
 
 
-@pytest.mark.bug("E167", on=["d449"])
+@pytest.mark.bug("E167", on=[])
 def test_message_after_status_report_text(tg):
     try:
         _command(tg, "?")
@@ -41,7 +41,7 @@ def test_message_after_status_report_text(tg):
         tg.get("fb")
 
 
-@pytest.mark.bug("E167", on=["d449"])
+@pytest.mark.bug("E167", on=[])
 def test_each_message_once_text(tg):
     try:
         _command(tg, "$fb")
@@ -54,7 +54,7 @@ def test_each_message_once_text(tg):
         tg.get("fb")
 
 
-@pytest.mark.bug("E167", on=["d449"])
+@pytest.mark.bug("E167", on=[])
 def test_message_not_repeated_by_blank_line_or_crlf_text(tg, keep):
     """Character mode: a blank line is answered with a prompt (line mode drops it without a reply)."""
     keep("rxm")

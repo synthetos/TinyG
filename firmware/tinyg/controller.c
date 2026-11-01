@@ -364,6 +364,7 @@ static void _dispatch_kernel()
 
 	if (*cs.bufp == NUL) {									// blank line - just a CR or the 2nd termination in a CRLF
 		if (cs.comm_mode == TEXT_MODE) {
+			nv_reset_nv_list("");							// no message left over from the line before (E167)
 			text_response(STAT_OK, cs.saved_buf);
 		}
     }
@@ -385,6 +386,9 @@ static void _dispatch_kernel()
 		text_response(text_parser(cs.bufp), cs.saved_buf);
     }
 	else if (cs.comm_mode == TEXT_MODE) {					// anything else must be Gcode
+		// A fresh list, laid out as for JSON Gcode (the block first), so a (MSG ...) lands at
+		// NV_BODY+1 where text_response() prints it, whatever the previous line left behind (E167)
+		nv_reset_nv_list("gc");
 		text_response(gc_gcode_parser(cs.bufp), cs.saved_buf);
     }
 #endif
