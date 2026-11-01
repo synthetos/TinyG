@@ -30,7 +30,7 @@ markers = [
     "persists: writes EEPROM; the session restores settings afterwards",
     "destructive: flashing or $defa; skipped unless --allow-destructive",
     "ice: needs the Atmel-ICE on the PDI header; skipped unless --ice",
-    "switchbox: needs the ESP8266 switchbox (tests/hil/switchbox); skipped unless --switchbox",
+    "switchbox: needs the ESP8266 switchbox (synthetos/tinyg-switchbox); skipped unless --switchbox",
     "timing: timing-pending until independently confirmed by external capture",
     "diagnostic: investigation test that records observations; skipped unless --diagnostics",
     "streaming: streams whole G-code files with each flow-control mode; skipped unless --streaming",

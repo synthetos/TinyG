@@ -1,10 +1,16 @@
 {
  "openapi": "3.1.0",
+ "x-vendored-from": {
+  "repository": "synthetos/tinyg-switchbox",
+  "commit": "8bd933e7502f3591c7219cec2b095d14c3988686",
+  "path": "openapi.json",
+  "note": "Pinned copy of the switchbox API for tinyg_hil.switchbox. load_spec() drops this key, so the rest is byte-for-byte the switchbox's spec and its digest matches getInfo.spec_sha256 on a box running that commit. Update by copying openapi.json from the switchbox repository and setting commit here."
+ },
  "info": {
-  "title": "TinyG HIL switchbox",
+  "title": "tinyg-switchbox",
   "version": "1.0.0",
-  "summary": "Feather HUZZAH ESP8266 that opens and closes TinyG limit/homing switch inputs electrically.",
-  "description": "Each channel is one ESP8266 GPIO wired to one TinyG switch input (plus a common GND). It emulates an open-drain switch contact: `closed` sinks the line to GND, `open` leaves the pin high-Z so TinyG's pull-up raises it. The pin is never driven high.\n\nA channel's `type` (`no`/`nc`) maps the semantic actions onto the contact: NO: trip = closed, release = open; NC: trip = open, release = closed. Ops accept either the contact level (`state`) or the semantic action (`action`).\n\nOne executor serves three transports with the same operations: newline-delimited JSON over the USB serial port (`x-serial-protocol`), this REST API, and a WebSocket at `/ws` (`x-websocket`). A serial or WebSocket request is `{\"id\":N,\"op\":\"<operationId>\",...params}`.\n\nEvery state change and every command that changes something (or fails) becomes an event with a sequence number and a 64-bit microsecond timestamp; successful read-only queries (get*) are not logged, so polling cannot evict history."
+  "summary": "Feather HUZZAH ESP8266 that opens and closes a CNC controller's limit/homing switch inputs electrically (TinyG v8 profile included).",
+  "description": "Each channel is one ESP8266 GPIO wired to one switch input of a CNC controller such as a TinyG v8 (plus a common GND). It emulates an open-drain switch contact: `closed` sinks the line to GND, `open` leaves the pin high-Z so the controller's pull-up raises it. The pin is never driven high; inputs must be 3.3 V logic.\n\nA channel's `type` (`no`/`nc`) maps the semantic actions onto the contact: NO: trip = closed, release = open; NC: trip = open, release = closed. Ops accept either the contact level (`state`) or the semantic action (`action`).\n\nOne executor serves three transports with the same operations: newline-delimited JSON over the USB serial port (`x-serial-protocol`), this REST API, and a WebSocket at `/ws` (`x-websocket`). A serial or WebSocket request is `{\"id\":N,\"op\":\"<operationId>\",...params}`.\n\nEvery state change and every command that changes something (or fails) becomes an event with a sequence number and a 64-bit microsecond timestamp; successful read-only queries (get*) are not logged, so polling cannot evict history."
  },
  "servers": [
   {
@@ -570,7 +576,7 @@
    "get": {
     "operationId": "scanWifi",
     "summary": "Networks the board can see",
-    "description": "A blocking scan (about 2-4 s; up to 24 networks). Refused with busy while a station connection attempt or its failure scan is running. The ESP8266 sees 2.4 GHz networks only. Names are SSIDs broadcast nearby; tinyg_hil.switchbox masks them in traffic logs and run records.",
+    "description": "A blocking scan (about 2-4 s; up to 24 networks). Refused with busy while a station connection attempt or its failure scan is running. The ESP8266 sees 2.4 GHz networks only. Names are SSIDs broadcast nearby; clients should keep them out of logs.",
     "x-transports": [
      "serial",
      "http",
@@ -615,7 +621,7 @@
    "get": {
     "operationId": "getBoard",
     "summary": "The hardware this firmware was built for",
-    "description": "The carrier, Feather and target profiles the firmware was built with (tests/hil/switchbox/boards, chosen per PlatformIO env) and the terminal map derived from them: for every screw terminal its silkscreen label, Feather header position, MCU pin and capability, and which terminal to use when a GPIO reaches several. The live channel map is not part of it (getConfig). The web UI's Wiring view and tools/render_pinout.py draw from the same data. Streamed from flash; not available over the WebSocket.",
+    "description": "The carrier, Feather and target profiles the firmware was built with (boards/, chosen per PlatformIO env) and the terminal map derived from them: for every screw terminal its silkscreen label, Feather header position, MCU pin and capability, and which terminal to use when a GPIO reaches several. The live channel map is not part of it (getConfig). The web UI's Wiring view and tools/render_pinout.py draw from the same data. Streamed from flash; not available over the WebSocket.",
     "x-transports": [
      "serial",
      "http"

@@ -2,9 +2,8 @@
 import io
 import json
 import os
+import pathlib
 import re
-import shutil
-import subprocess
 import sys
 import time
 
@@ -24,10 +23,12 @@ from tinyg_hil.switchbox import (
     refuse_port,
     resolve_port,
     spec_digest,
+    spec_mismatch,
+    vendored_from,
 )
 from tinyg_hil.switchbox import main as switchbox_cli
 
-FIRMWARE = SPEC_PATH.parent / "firmware"
+HIL = pathlib.Path(__file__).resolve().parents[1]
 ROM_BANNER = b"\x00\xe0\x1c\x8c\xff ets Jan  8 2013,rst cause:2, boot mode:(3,6)\r\n\xf2\x8c\x00\n"
 
 
@@ -195,7 +196,7 @@ def test_tinyg_and_never_open_ports_are_refused():
 
 
 def test_example_bench_file_documents_the_switchbox_entries():
-    example = json.loads((SPEC_PATH.parent.parent / "config" / "benches.json").read_text())
+    example = json.loads((HIL / "config" / "benches.json").read_text())
     assert isinstance(example["never_open"], list) and "port" in example["switchbox"]
     assert all("switchbox" in v for k, v in example.items() if k.startswith("/dev/"))
 
@@ -404,49 +405,21 @@ def test_spec_refs_resolve():
     walk(spec)
 
 
-def test_spec_limits_match_the_firmware_core():
-    header = (FIRMWARE / "lib/sbcore/sbcore.h").read_text()
-
-    def const(name):
-        return int(re.search(rf"\b{name}\s*=\s*(\d+)", header).group(1))
-    limits = load_spec()["x-limits"]
-    assert limits["channels"] == const("MAX_CHANNELS")
-    assert limits["event_ring"] == const("EVENT_RING")
-    assert limits["events_page_max"] == const("EVENTS_PAGE_MAX")
-    assert limits["ttl_ms_max"] == const("TTL_MS_MAX")
-    assert limits["pulse_ms_max"] == const("PULSE_MS_MAX")
-    assert limits["pulse_us_max"] == const("PULSE_US_MAX")
-    assert limits["bounce_edges_max"] == const("BOUNCE_EDGES_MAX")
-    assert limits["bounce_interval_us"] == [const("BOUNCE_INTERVAL_US_MIN"), const("BOUNCE_INTERVAL_US_MAX")]
-    assert limits["inline_us"] == const("INLINE_US")
-
-
-def test_firmware_embeds_exactly_this_spec(tmp_path):
-    """Runs the build's embed step on a copy: the board serves this file, minified, with this digest,
-    and the board description and UI drawn from the profiles."""
-    sb = tmp_path / "switchbox"
-    fw = sb / "firmware"
-    (fw / "scripts").mkdir(parents=True)
-    (fw / "ui").mkdir()
-    (fw / "lib" / "sbcore").mkdir(parents=True)
-    shutil.copy(FIRMWARE / "scripts/embed_assets.py", fw / "scripts")
-    shutil.copy(FIRMWARE / "ui/index.html", fw / "ui")
-    shutil.copy(FIRMWARE / "lib/sbcore/sbcore.cpp", fw / "lib/sbcore")
-    shutil.copy(SPEC_PATH, sb / "openapi.json")
-    shutil.copytree(SPEC_PATH.parent / "boards", sb / "boards")
-    shutil.copytree(SPEC_PATH.parent / "tools", sb / "tools", ignore=shutil.ignore_patterns("__pycache__"))
-    subprocess.run([sys.executable, "-I", str(fw / "scripts/embed_assets.py")], check=True, capture_output=True)
-    header = (fw / "src/generated/assets.h").read_text()
+def test_vendored_spec_names_its_switchbox_commit():
+    """The pinned copy says where it came from; load_spec() returns exactly the switchbox's document."""
+    src = vendored_from()
+    assert src["repository"] == "synthetos/tinyg-switchbox" and re.fullmatch(r"[0-9a-f]{40}", src["commit"])
+    raw = json.loads(SPEC_PATH.read_text())
     spec = load_spec()
-    assert re.search(r'SB_SPEC_SHA256 "([0-9a-f]{64})"', header).group(1) == spec_digest(spec)
-    assert re.search(r'SB_API_VERSION "([^"]+)"', header).group(1) == spec["info"]["version"]
-    assert 'SB_BOARD_ID "terminal-block-featherwing/huzzah-esp8266"' in header
+    assert "x-vendored-from" in raw and "x-vendored-from" not in spec
+    assert {k: v for k, v in raw.items() if k != "x-vendored-from"} == spec
 
-    def blob(name):
-        return bytes(int(b, 16) for b in re.findall(r"0x([0-9a-f]{2})", header.split(f"{name}[]")[1].split("};")[0]))
-    data = blob("SPEC_JSON")
-    assert b"\n" not in data and json.loads(data) == spec       # one serial line, same document
-    board = json.loads(blob("BOARD_JSON"))
-    assert board["carrier"]["id"] == "terminal-block-featherwing" and len(board["terminals"]) == 32
-    ui = blob("UI_HTML").decode()
-    assert "<!--WIRING_" not in ui and ui.count('class="sbw"') == 3 and 'id="t-T16"' in ui
+
+def test_spec_mismatch_explains_which_side_to_update():
+    spec = load_spec()
+    ok = {"api_version": spec["info"]["version"], "spec_sha256": spec_digest(spec)}
+    assert spec_mismatch(ok) is None
+    other = spec_mismatch({"api_version": "9.9.9", "spec_sha256": "0" * 64})
+    assert "different API version" in other and "API 9.9.9" in other and vendored_from()["commit"][:12] in other
+    same_version = spec_mismatch({"api_version": spec["info"]["version"], "spec_sha256": "f" * 64})
+    assert "same API version" in same_version and "switchbox-openapi.json" in same_version

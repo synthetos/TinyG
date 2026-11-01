@@ -2,8 +2,10 @@
 
 Each switchbox channel is an ESP8266 GPIO wired to one TinyG switch input (plus a common GND). It
 emulates a switch contact: "closed" sinks the line to GND, "open" leaves it high-Z for TinyG's
-pull-up. Firmware, wiring and API: tests/hil/switchbox/README.md; the API is
-tests/hil/switchbox/openapi.json, the same file the board serves.
+pull-up. The box (firmware, wiring, API) lives in its own repository, synthetos/tinyg-switchbox.
+This client uses a pinned copy of its API, tinyg_hil/data/switchbox-openapi.json; the key
+"x-vendored-from" names the switchbox commit it came from, and spec_mismatch() tells a board that
+serves a different API version apart from one that matches.
 
     with SwitchBox("/dev/cu.usbserial-XXXX") as sb:
         sb.close("x", "min")              # trip X min (SoftSwitches semantics, see below)
@@ -46,8 +48,8 @@ import serial
 from . import benches as bench_file
 from .lock import BoardLock
 
-HERE = pathlib.Path(__file__).resolve().parent.parent
-SPEC_PATH = HERE / "switchbox" / "openapi.json"
+SPEC_PATH = pathlib.Path(__file__).resolve().parent / "data" / "switchbox-openapi.json"
+VENDOR_KEY = "x-vendored-from"
 LINE_MAX = 1024                 # the firmware's request line limit
 # How connect() handles the CP2104's DTR/RTS, which drive the ESP8266 auto-reset transistors
 # (RTS asserted alone pulls EN low = reset; DTR asserted alone pulls GPIO0 low). macOS asserts both
@@ -87,7 +89,30 @@ def op(name):
 
 
 def load_spec(path=SPEC_PATH):
-    return json.loads(pathlib.Path(path).read_text())
+    """The vendored switchbox spec, exactly as the box serves it (the provenance key removed)."""
+    spec = json.loads(pathlib.Path(path).read_text())
+    spec.pop(VENDOR_KEY, None)
+    return spec
+
+
+def vendored_from(path=SPEC_PATH):
+    """{"repository", "commit", "path", "note"}: where the vendored spec was copied from."""
+    return json.loads(pathlib.Path(path).read_text())[VENDOR_KEY]
+
+
+def spec_mismatch(info, path=SPEC_PATH):
+    """None if a board's getInfo matches the vendored spec, else a message saying which side to update."""
+    spec = load_spec(path)
+    want_v, want_d = spec["info"]["version"], spec_digest(spec)
+    got_v, got_d = info.get("api_version"), info.get("spec_sha256")
+    if got_d == want_d:
+        return None
+    src = vendored_from(path)
+    kind = "a different API version" if got_v != want_v else "a different spec with the same API version"
+    return (f"switchbox serves {kind}: API {got_v} (spec {str(got_d)[:12]}), but this client vendors API {want_v} "
+            f"(spec {want_d[:12]}) from {src['repository']}@{src['commit'][:12]}. Update "
+            f"tests/hil/tinyg_hil/data/switchbox-openapi.json from the switchbox repository, or flash the box "
+            f"from that commit.")
 
 
 def spec_digest(spec):

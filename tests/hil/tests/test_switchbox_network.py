@@ -15,7 +15,7 @@ import urllib.request
 
 import pytest
 
-from tinyg_hil.switchbox import load_spec, redact
+from tinyg_hil.switchbox import load_spec, redact, spec_mismatch
 
 pytestmark = pytest.mark.switchbox
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -160,9 +160,11 @@ def test_rest_errors_are_structured(host):
         assert (status, r["error"]["code"]) == (code, err), (path, status, r)
 
 
-def test_openapi_json_is_the_checkout_spec(host):
+def test_openapi_json_is_the_vendored_spec(host, switchbox):
     status, spec = http_json("GET", f"http://{host}/openapi.json")
-    assert status == 200 and spec == load_spec()
+    assert status == 200
+    if spec != load_spec():
+        pytest.fail(spec_mismatch(switchbox.info()) or "served spec differs from the vendored copy")
 
 
 def test_ui_page_is_self_contained(host):

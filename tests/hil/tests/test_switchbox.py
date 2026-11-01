@@ -6,13 +6,16 @@ board's own timestamps (micros64 at each edge): they prove the sequencing logic,
 timing-pending until a Saleae capture on the TinyG input confirms them.
 
     uv run pytest tests/test_switchbox.py --switchbox --switchbox-port /dev/cu.usbserial-XXXX \\
-        --runs-dir .analysis/hil-runs
+        --runs-dir <runs dir>
+
+The box's API is pinned in tinyg_hil/data/switchbox-openapi.json (synthetos/tinyg-switchbox); a box
+running another version fails the spec tests with a message saying which side to update.
 """
 import time
 
 import pytest
 
-from tinyg_hil.switchbox import SwitchBoxError, load_spec, redact, spec_digest
+from tinyg_hil.switchbox import SwitchBoxError, load_spec, redact, spec_mismatch
 
 pytestmark = pytest.mark.switchbox
 
@@ -35,13 +38,14 @@ def test_identity_and_no_reset_on_connect(switchbox, record):
     assert switchbox.reset_on_connect is False
     assert a["boot_id"] == b["boot_id"] == switchbox.info_at_connect["boot_id"]
     assert b["uptime_us"] - a["uptime_us"] >= 200000
-    spec = load_spec()
-    assert a["api_version"] == spec["info"]["version"]
-    assert a["spec_sha256"] == spec_digest(spec), "the board was built from a different openapi.json"
+    mismatch = spec_mismatch(a)
+    assert mismatch is None, mismatch
 
 
-def test_spec_over_serial_matches_the_checkout(switchbox):
-    assert switchbox.spec() == load_spec()
+def test_spec_over_serial_matches_the_vendored_copy(switchbox):
+    served = switchbox.spec()
+    if served != load_spec():
+        pytest.fail(spec_mismatch(switchbox.info()) or "served spec differs from the vendored copy")
 
 
 def test_driven_low_readback_on_every_channel(switchbox, record):
