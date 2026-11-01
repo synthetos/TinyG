@@ -1898,6 +1898,9 @@ void cm_end_hold()
         cm.program_paused = false;
         cm.end_hold_requested = false;
         mp_replan_held_block();                     // the held block resumes from zero velocity
+        if ((cm.machine_state != MACHINE_ALARM) && mp_has_runnable_buffer()) {
+            cm_cycle_start();                       // before the exec may run a block: a block that ends the
+        }                                           // cycle (a dwell emptying the queue) must find it started (E165)
 	    mp_exit_hold_state();
 
         // State machine cases:
@@ -1910,8 +1913,7 @@ void cm_end_hold()
 //            cm_coolant_off_immediate();
 		    cm_cycle_end();
 
-        } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM)
-		    cm_cycle_start();
+        } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM): cycle started above
 //            cm_spindle_resume(spindle.dwell_seconds);
 //            cm_coolant_resume();
             st_request_exec_move();

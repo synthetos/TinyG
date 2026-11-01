@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.dialect("d449")]
 ROUNDS = 25
 
 
-@pytest.mark.bug("E165", on=["d449"])
+@pytest.mark.bug("E165", on=[])
 def test_resume_after_program_stop_ends_the_cycle(tg, record):
     stuck_at = None
     try:
