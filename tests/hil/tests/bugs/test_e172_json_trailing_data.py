@@ -11,7 +11,7 @@ import pytest
 
 pytestmark = [pytest.mark.dialect("d449"), pytest.mark.persists]
 
-@pytest.mark.bug("E172", on=["d449"])
+@pytest.mark.bug("E172", on=[])
 def test_suffix_does_not_apply_setting(tg, keep):
     keep("xvm")
     before = tg.get("xvm")
