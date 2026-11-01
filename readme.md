@@ -6,7 +6,7 @@
 
 **What this is.** `edge-next` is build **450.01**, the next step after `edge-0.97` (449.01). It brings well over a hundred fixes found by a code audit of edge-0.97: motion planning, feedhold, homing, probing, G-code parsing, serial input and flow control, and settings storage.
 
-**How it was tested.** Each fix has a test that failed on the old firmware and passes on the new one. The tests run on real TinyG v8 boards over USB, with logic-analyzer captures where timing matters. That makes it better tested than earlier edge builds, but it is still new code, and it has had far less real-world use than `master`. Some behaviour changed on purpose (for example, G-code lines that used to run with a silently wrong meaning are now rejected with an error, and lost serial input raises ALARM 13 instead of running).
+**How it was tested.** Most fixes have a test that fails on the old firmware and passes on the new one, run on real TinyG v8 boards over USB; many also have a desktop test of the C code. Some fixes are checked only by desktop tests, a build, or review, and timing claims rely on logic-analyzer captures only where one was taken. That makes it better tested than earlier edge builds, but it is still new code, and it has had far less real-world use than `master`. Some behaviour changed on purpose (for example, G-code lines that used to run with a silently wrong meaning are now rejected with an error, and lost serial input raises ALARM 13 instead of running).
 
 **Before you flash it:**
 * Save your settings first (`$$` in text mode, or your host's backup). EEPROM settings normally carry over, but keep a copy.
