@@ -286,6 +286,7 @@ def _per_test(request):
     recover(board)
     board.send_gcode("M2", check=True)     # resets G92, coordinate system, plane, distance mode, M5, M9
     board.send_gcode("G21", check=True)    # M2 does not reset units
+    board.send_gcode("G91.1")              # ...nor the arc distance mode: IJK incremental, the default
     board.drain(quiet=0.05)
     recorder = request.config._tinyg_recorder
     if recorder:
