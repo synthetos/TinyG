@@ -152,9 +152,32 @@ ISR(USB_CTS_ISR_vect)
  *	- Low water mark about 50% full
  */
 
+// Remember where input was lost: the reader must not splice what follows onto this line (E162)
+static void _usb_rx_lost(void)				// lost right after the last byte kept, at the head
+{
+	if (!USBu.rx_lost) {
+		USBu.rx_lost = true;
+		USBu.rx_lost_first = USBu.rx_buf_head;
+	}
+	USBu.rx_lost_last = USBu.rx_buf_head;
+	if (USBu.rx_flush_marked && !USBu.rx_lost_after_mark) {	// lost after a '%': the flush must keep it
+		USBu.rx_lost_after_mark = true;
+		USBu.rx_lost_post_first = USBu.rx_buf_head;		// may equal the mark if nothing was kept since
+	}
+	if (USBu.rx_buf_head == USBu.rx_buf_tail) {		// the reader took that byte (only a USART loss, E193):
+		USBu.rx_lost_open = true;						// the loss is where it reads now, so the stretch is
+		advance_buffer(USBu.rx_lost_last, RX_BUFFER_SIZE);	// open and ends at the next byte kept
+	}
+}
+
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
+	uint8_t status = USBu.usart->STATUS;		// read before DATA: the error flags travel with the frame
 	char c = USBu.usart->DATA;					// can only read DATA once
+
+	if (status & USART_BUFOVF_bm) {				// the USART lost a frame before this one while this
+		_usb_rx_lost();							// interrupt could not run (E193)
+	}
 
 	// trap async commands - do not insert character into RX queue
 	if (c == CHAR_RESET) {	 					// trap Kill signal
@@ -218,16 +241,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
 			USBu.rx_buf_head = 1;
 		}
-		// Remember where input was lost: the reader must not splice what follows onto this line (E162)
-		if (!USBu.rx_lost) {
-			USBu.rx_lost = true;
-			USBu.rx_lost_first = USBu.rx_buf_head;
-		}
-		USBu.rx_lost_last = USBu.rx_buf_head;
-		if (USBu.rx_flush_marked && !USBu.rx_lost_after_mark) {	// lost after a '%': the flush must keep it
-			USBu.rx_lost_after_mark = true;
-			USBu.rx_lost_post_first = USBu.rx_buf_head;		// may equal the mark if nothing was kept since
-		}
+		_usb_rx_lost();
 	}
 }
 

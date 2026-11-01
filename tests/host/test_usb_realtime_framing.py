@@ -36,7 +36,8 @@ class RealtimeFraming(unittest.TestCase):
 #define RX_BUFFER_SIZE 512
 #define XOFF_RX_HI_WATER_MARK 400
 #define advance_buffer(i,size) ((i)=((i)+1)%(size))
-struct {unsigned char DATA; int CTRLA;} port;
+#define USART_BUFOVF_bm 8
+struct {unsigned char STATUS, DATA; int CTRLA;} port;
 struct {int len; bool flag_in_line, flag_xoff;} USB;
 struct {bool queue_flush_input;} cm;
 struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;
@@ -55,6 +56,7 @@ void controller_request_enquiry(void) {enquiries++;}
 int xio_get_rx_bufcount_usart(void *unused) {(void)unused; return USBu.rx_buf_count;}
 void xio_xoff_usart(void *unused) {(void)unused;}
 '''
+        code += function(source, r'static void _usb_rx_lost\(void\)')
         code += function(source, r'ISR\(USB_RX_ISR_vect\)')
         code += function(source, r'void xio_reset_usb_rx_buffers\(void\)')
         code += r'''

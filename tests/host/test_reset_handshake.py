@@ -21,7 +21,9 @@ typedef int stat_t;
 #define NV_HEAD 0
 #define JSON_SYNTAX_STRICT 1
 static struct {int json_syntax;} js;
-static struct {char DATA;} regs;
+#define USART_BUFOVF_bm 8
+static struct {uint8_t STATUS; char DATA;} regs;
+static void _usb_rx_lost(void) {assert(0);}      /* the USART reports no lost frames here (E193) */
 static struct {typeof(regs) *usart;} USBu={&regs};
 static int immediate,requested,masked,printed;
 static jmp_buf reset;
