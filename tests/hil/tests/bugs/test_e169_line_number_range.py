@@ -11,7 +11,7 @@ import pytest
 
 pytestmark = pytest.mark.dialect("d449")
 
-@pytest.mark.bug("E169", on=["d449"])
+@pytest.mark.bug("E169", on=[])
 def test_invalid_line_number(tg):
     for line in ("N-1", "N1.5", "N4294967296"):
         assert tg.send_gcode(line).status != 0, line

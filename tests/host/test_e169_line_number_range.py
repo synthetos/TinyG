@@ -23,3 +23,9 @@ class WordValidation(ParserCase):
         for data in (b"N0", b"N99999", b"N100000", b"N4294967040", b"N1G21"):
             with self.subTest(data=data):
                 self.assertEqual(self.row(data)[0], "0")
+
+    def test_wide_line_numbers_remain_exact(self):
+        for number in (16777217, 4294967041, 4294967295):
+            row = self.row(f"N{number}".encode())
+            self.assertEqual(row[0], "0")
+            self.assertIn(f"N=1,{number}", row)
