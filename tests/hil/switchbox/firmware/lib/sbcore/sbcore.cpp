@@ -21,7 +21,7 @@ namespace sb {
 
 static const char *const OP_NAMES[] = {
     "getInfo", "getState", "setChannel", "pulseChannel", "bounceChannel", "releaseAll", "idleAll",
-    "getConfig", "setConfig", "getEvents", "setWifi", "scanWifi", "getSpec", "subscribe", "invalid"};
+    "getConfig", "setConfig", "getEvents", "setWifi", "scanWifi", "getSpec", "getBoard", "subscribe", "invalid"};
 static const char *const ERR_NAMES[] = {
     "none", "bad_json", "bad_request", "unknown_op", "unknown_param", "missing_param", "bad_param",
     "conflicting_params", "unknown_channel", "no_change", "busy", "invalid_config", "line_too_long",
@@ -321,7 +321,8 @@ const char *Core::warning(uint8_t level, const Runtime &r) const {
     uint64_t age = hal::now_us() - r.since_us;
     if (r.closed && level) return "contact closed but the line reads high: something else drives it high, or the pin or wire is faulty";
     if (!r.closed && r.flaps + r.flaps_prev >= 4) return "open line toggles on its own: input floating (TinyG unpowered or wire disconnected)";
-    if (!r.closed && !level && age > 1000) return "open but the line reads low: a real switch or another device holds it low, a wiring fault, or TinyG is unpowered/disconnected";
+    // 5 ms: a released TinyG v8 line rises through 2.7 kΩ into 0.22 µF (tau ~0.6 ms) before it reads high
+    if (!r.closed && !level && age > 5000) return "open but the line reads low: a real switch or another device holds it low, a wiring fault, or TinyG is unpowered/disconnected";
     return nullptr;
 }
 
@@ -563,6 +564,7 @@ struct Params {
 void Core::line_too_long(Source src, Reply &r) {
     r.doc.clear();
     r.stream_spec = false;
+    r.stream_board = false;
     r.err = Err::line_too_long;
     JsonObject top = r.doc.to<JsonObject>();
     top["id"] = nullptr;
@@ -579,6 +581,7 @@ void Core::handle_line(Source src, const char *line, size_t len, Reply &r) {
     if (de) {
         r.doc.clear();
         r.stream_spec = false;
+        r.stream_board = false;
         r.err = Err::bad_json;
         JsonObject top = r.doc.to<JsonObject>();
         top["id"] = nullptr;
@@ -600,7 +603,8 @@ static bool mutating(Op op) {
     case Op::getConfig:
     case Op::getEvents:
     case Op::scanWifi:
-    case Op::getSpec: return false;
+    case Op::getSpec:
+    case Op::getBoard: return false;
     default: return true;
     }
 }
@@ -608,6 +612,7 @@ static bool mutating(Op op) {
 void Core::handle(Source src, JsonVariantConst req, Reply &r) {
     r.doc.clear();
     r.stream_spec = false;
+    r.stream_board = false;
     r.err = Err::none;
     msg_[0] = 0;
     JsonObject top = r.doc.to<JsonObject>();
@@ -659,12 +664,18 @@ void Core::handle(Source src, JsonVariantConst req, Reply &r) {
                 err = fail(Err::unsupported_transport, "the spec is too large for one WebSocket message; GET /openapi.json");
             r.stream_spec = err == Err::none;
             break;
+        case Op::getBoard:
+            if (src == Source::ws)
+                err = fail(Err::unsupported_transport, "the board description is too large for one WebSocket message; GET /api/board");
+            r.stream_board = err == Err::none;
+            break;
         default: err = fail(Err::unknown_op, "unknown op"); break;
         }
     }
     r.err = err;
     if (err != Err::none) {
         r.stream_spec = false;
+        r.stream_board = false;
         top.remove("result");
         top["ok"] = false;
         JsonObject e = top["error"].to<JsonObject>();

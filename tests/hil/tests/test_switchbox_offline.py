@@ -422,18 +422,31 @@ def test_spec_limits_match_the_firmware_core():
 
 
 def test_firmware_embeds_exactly_this_spec(tmp_path):
-    """Runs the build's embed step on a copy: the board serves this file, minified, with this digest."""
-    fw = tmp_path / "firmware"
+    """Runs the build's embed step on a copy: the board serves this file, minified, with this digest,
+    and the board description and UI drawn from the profiles."""
+    sb = tmp_path / "switchbox"
+    fw = sb / "firmware"
     (fw / "scripts").mkdir(parents=True)
     (fw / "ui").mkdir()
+    (fw / "lib" / "sbcore").mkdir(parents=True)
     shutil.copy(FIRMWARE / "scripts/embed_assets.py", fw / "scripts")
     shutil.copy(FIRMWARE / "ui/index.html", fw / "ui")
-    shutil.copy(SPEC_PATH, tmp_path / "openapi.json")
+    shutil.copy(FIRMWARE / "lib/sbcore/sbcore.cpp", fw / "lib/sbcore")
+    shutil.copy(SPEC_PATH, sb / "openapi.json")
+    shutil.copytree(SPEC_PATH.parent / "boards", sb / "boards")
+    shutil.copytree(SPEC_PATH.parent / "tools", sb / "tools", ignore=shutil.ignore_patterns("__pycache__"))
     subprocess.run([sys.executable, "-I", str(fw / "scripts/embed_assets.py")], check=True, capture_output=True)
     header = (fw / "src/generated/assets.h").read_text()
     spec = load_spec()
     assert re.search(r'SB_SPEC_SHA256 "([0-9a-f]{64})"', header).group(1) == spec_digest(spec)
     assert re.search(r'SB_API_VERSION "([^"]+)"', header).group(1) == spec["info"]["version"]
-    data = bytes(int(b, 16) for b in re.findall(r"0x([0-9a-f]{2})",
-                                                header.split("SPEC_JSON[]")[1].split("};")[0]))
+    assert 'SB_BOARD_ID "terminal-block-featherwing/huzzah-esp8266"' in header
+
+    def blob(name):
+        return bytes(int(b, 16) for b in re.findall(r"0x([0-9a-f]{2})", header.split(f"{name}[]")[1].split("};")[0]))
+    data = blob("SPEC_JSON")
     assert b"\n" not in data and json.loads(data) == spec       # one serial line, same document
+    board = json.loads(blob("BOARD_JSON"))
+    assert board["carrier"]["id"] == "terminal-block-featherwing" and len(board["terminals"]) == 32
+    ui = blob("UI_HTML").decode()
+    assert "<!--WIRING_" not in ui and ui.count('class="sbw"') == 3 and 'id="t-T16"' in ui

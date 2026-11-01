@@ -91,6 +91,35 @@ class SwitchboxCore(unittest.TestCase):
         self.assertEqual(names["wifi"], schemas["Info"]["properties"]["wifi"]["properties"]["state"]["enum"])
         self.assertEqual(names["event_ring"], SPEC["x-limits"]["event_ring"])
 
+    def test_feather_profile_agrees_with_the_firmware_pin_rules(self):
+        """boards/feather/*.json capabilities against gpio_forbidden()/gpio_caveat() in the core."""
+        rules = {g["gpio"]: g for g in self.run_script("@gpios", boot=False)[0]["gpios"]}
+        allowed = {g for g, r in rules.items() if not r["forbidden"]}
+        profiles = sorted((ROOT / "tests/hil/switchbox/boards/feather").glob("*.json"))
+        self.assertTrue(profiles)
+        for path in profiles:
+            prof = json.loads(path.read_text())
+            if prof.get("platformio_env") != "huzzah":        # rules below are the ESP8266 build's
+                continue
+            usable = set()
+            for pos, p in prof["positions"].items():
+                g = p["gpio"]
+                if g is None:
+                    continue
+                r = rules[g]
+                with self.subTest(profile=path.name, pos=pos, gpio=g):
+                    if p["capability"] == "switch":
+                        self.assertIsNone(r["forbidden"])
+                        self.assertIsNone(r["caveat"])
+                    elif p["capability"] == "bootstrap":
+                        self.assertIsNone(r["forbidden"])
+                        self.assertIsNotNone(r["caveat"])
+                    else:
+                        self.assertIsNotNone(r["forbidden"], f"{p['capability']} pin accepted by the firmware")
+                if p["capability"] in ("switch", "bootstrap"):
+                    usable.add(g)
+            self.assertEqual(usable, allowed, f"{path.name}: usable GPIOs differ from what setConfig accepts")
+
     # ---- boot, info, framing -------------------------------------------------------------
 
     def test_boot_releases_every_channel_and_logs_a_boot_event(self):
@@ -369,7 +398,7 @@ class SwitchboxCore(unittest.TestCase):
     def test_line_watch_and_warnings(self):
         def toggle(level):
             return [f"@ext 12 {level}", "@advance 30000", "@poll"]
-        out, ev = self.events("@ext 12 0", "@advance 2000", "@poll", {"id": 1, "op": "getState"},
+        out, ev = self.events("@ext 12 0", "@advance 6000", "@poll", {"id": 1, "op": "getState"},
                               *toggle(1), *toggle(0), *toggle(1), *toggle(0), *toggle(1),
                               {"id": 2, "op": "getState"},
                               *("@advance 600000", "@poll") * 4, *toggle(0), {"id": 3, "op": "getState"})
@@ -416,6 +445,9 @@ class SwitchboxCore(unittest.TestCase):
                               {"id": 5, "op": "subscribe"}, "@src http", {"id": 6, "op": "subscribe"},
                               {"id": 7, "op": "getInfo"})
         self.assertTrue(out[0]["stream_spec"])
+        board = self.run_script({"id": 1, "op": "getBoard"}, "@src ws", {"id": 2, "op": "getBoard"})
+        self.assertTrue(board[0]["stream_board"])
+        self.assertError(board[2], "unsupported_transport")
         self.assertEqual(out[1]["result"]["subscribed"], True)
         self.assertError(out[3], "unsupported_transport")
         self.assertError(out[4], "unsupported_transport")

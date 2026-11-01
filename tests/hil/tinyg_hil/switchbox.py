@@ -415,6 +415,11 @@ class SwitchBox:
     def spec(self):
         return self.call("getSpec", timeout=SPEC_TIMEOUT)
 
+    @op("getBoard")
+    def board(self):
+        """The carrier/Feather/target profiles the firmware was built for and the derived terminal map."""
+        return self.call("getBoard", timeout=SPEC_TIMEOUT)
+
     @op("subscribe")
     def subscribe(self, on=True):
         """Event lines on this serial connection from now on; read them with poll()."""

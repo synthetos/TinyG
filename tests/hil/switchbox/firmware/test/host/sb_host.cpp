@@ -13,6 +13,7 @@
 //   @scanfail <0|1>       make wifi_scan fail
 //   @wifi                 what save_wifi stored (password length only)
 //   @names                the core's op/error/source/kind/cause names
+//   @gpios                gpio_forbidden/gpio_caveat for GPIO -1..17
 //   @status               clock, armed timer, spins
 #include <assert.h>
 #include <stdio.h>
@@ -150,6 +151,7 @@ int main() {
         if (line[0] != '@') {
             sb::core().handle_line(src, line.data(), line.size(), reply);
             if (reply.stream_spec) reply.doc["stream_spec"] = true;
+            if (reply.stream_board) reply.doc["stream_board"] = true;
             print(reply.doc);
         } else if (line == "@boot") {
             sb::Config c;
@@ -204,6 +206,18 @@ int main() {
             print(out);
         } else if (line == "@names") {
             names(out);
+            print(out);
+        } else if (line == "@gpios") {
+            JsonArray arr = out["gpios"].to<JsonArray>();
+            for (long g = -1; g <= 17; g++) {
+                JsonObject o = arr.add<JsonObject>();
+                o["gpio"] = g;
+                const char *bad = sb::gpio_forbidden(g), *caveat = sb::gpio_caveat(g);
+                if (bad) o["forbidden"] = bad;
+                else o["forbidden"] = nullptr;
+                if (caveat) o["caveat"] = caveat;
+                else o["caveat"] = nullptr;
+            }
             print(out);
         } else if (line == "@status") {
             out["t_us"] = clock_us;

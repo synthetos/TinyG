@@ -46,6 +46,24 @@ section h2{font-size:13px;margin:0;padding:8px 12px;border-bottom:1px solid var(
 details summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13px}
 #cfg{padding:0 12px 12px}#cfg table{border-collapse:collapse}#cfg td{padding:3px 4px}
 #cfgmsg{font-size:12px;margin-top:6px}.bad{color:var(--bad)}.good{color:var(--ok)}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tabs button{padding:4px 12px}.tabs button.on{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+.wnote{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--ink);border-radius:8px;padding:8px 12px;font-size:13px}
+.wgrid{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.wgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){main{padding:10px}.wboard{padding:2px}}
+.wboard svg,.wside svg{width:100%;height:auto;display:block}
+.wboard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px}
+.wside{display:grid;gap:16px}
+.wcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.wcard.pad{padding:10px}
+#wtab{width:100%;border-collapse:collapse;font:12px var(--mono)}
+#wtab th{font:600 11px system-ui,sans-serif;color:var(--mute);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+#wtab td{padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+#wtab tr{cursor:pointer}#wtab tr.hl td{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+#wtab .closed{color:var(--trip);font-weight:700}#wtab .warnc{color:var(--warn)}
+.sbw .term{cursor:pointer}
+[hidden]{display:none!important}
 #toast{position:fixed;bottom:14px;right:14px;max-width:420px;background:var(--panel);border:1px solid var(--bad);color:var(--bad);border-radius:6px;padding:8px 12px;display:none}
 </style>
 </head>
@@ -54,8 +72,20 @@ details summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13px}
 <h1>TinyG switchbox</h1>
 <span id="conn" class="conn connecting"><i></i><span>connecting</span></span>
 <span id="info"></span>
+<nav class="tabs"><button data-view="channels" class="on">Channels</button><button data-view="wiring">Wiring</button></nav>
 </header>
 <main>
+<div id="view-wiring" hidden>
+<div class="wnote" id="wnote">Loading the board description…</div>
+<div class="wgrid" style="margin-top:16px">
+<div class="wboard"><!--WIRING_BOARD--></div>
+<div class="wside">
+<section class="wcard"><h2><span>Channels on the terminals</span><span class="meta">hover or tap to find</span></h2>
+<table id="wtab"><thead><tr><th>channel</th><th>terminal</th><th>ESP pin</th><th>TinyG</th><th>contact</th><th>line</th></tr></thead><tbody></tbody></table></section>
+<div class="wcard pad"><!--WIRING_TINYG--></div>
+<div class="wcard pad"><!--WIRING_LEGEND--></div>
+</div></div></div>
+<div id="view-channels">
 <div class="bar">
 <button id="relall" title="Open every contact: nothing driven (NC channels read tripped)">Release all (open)</button>
 <button id="idleall" title="Every switch untripped for its type: NO open, NC closed">Idle all (untripped)</button>
@@ -74,6 +104,7 @@ details summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13px}
 <div id="cfgmsg"></div></div>
 </details>
 </section>
+</div>
 </main>
 <div id="toast"></div>
 <script>
@@ -121,6 +152,7 @@ function renderInfo(){
 }
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
 function renderGrid(){
+  renderWiring();
   const g=$("#grid");g.textContent="";if(!state)return;
   for(const c of state.channels){
     const card=el("div","ch"+(c.tripped?" tripped":""));
@@ -169,7 +201,58 @@ function cfgRow(c){
   for(const x of [name,gpio,type,del]){const td=el("td");td.append(x);tr.append(td)}
   return tr;
 }
-function renderConfig(){const b=$("#cfgb");b.textContent="";if(config)for(const c of config.channels)b.append(cfgRow(c))}
+function renderConfig(){const b=$("#cfgb");b.textContent="";if(config)for(const c of config.channels)b.append(cfgRow(c));renderWiring()}
+let board=null,boardLoading=false,pinned=null;
+function view(v){
+  for(const b of document.querySelectorAll(".tabs button"))b.classList.toggle("on",b.dataset.view===v);
+  $("#view-channels").hidden=v!=="channels";$("#view-wiring").hidden=v!=="wiring";
+  try{localStorage.setItem("sb-view",v)}catch(e){}
+  if(v==="wiring"&&!board&&!boardLoading){boardLoading=true;
+    fetch("/api/board").then(r=>r.json()).then(b=>{board=b;renderWiring()}).catch(e=>toast("board: "+e.message)).finally(()=>boardLoading=false)}
+}
+function termFor(gpio){return board&&board.terminals.find(t=>t.gpio===gpio&&!t.same_as)}
+function termName(t){return `${t.id} ${t.silk||"["+t.feather_name+"]"}`}
+function renderWiring(){
+  if(!board||!config||$("#view-wiring").hidden)return;
+  const sep=board.render.sep,max=board.render.strip_chars,tgIn={};
+  for(const c of (board.target&&board.target.connectors)||[])for(const p of c.pins)if(p.input)tgIn[p.input]=`${c.id}-${p.pin}`;
+  const chBy={},st={};for(const c of config.channels)chBy[c.gpio]=c.name;for(const c of (state&&state.channels)||[])st[c.name]=c;
+  for(const g of document.querySelectorAll("#view-wiring .term[data-gpio]")){
+    if(g.classList.contains("alt"))continue;
+    const name=chBy[+g.dataset.gpio],txt=g.querySelector("text.lbl"),before=txt.dataset.sep==="before";
+    const chEl=g.querySelector("[data-role=ch]"),tgEl=g.querySelector("[data-role=tg]");
+    const fixed=[...txt.querySelectorAll("tspan")].filter(t=>!t.dataset.role).map(t=>t.textContent.trim()).filter(Boolean);
+    const tg=name?(tgIn[name.toLowerCase()]||""):"";
+    const used=fixed.join(sep).length+sep.length+(tg?sep.length+tg.length:0);
+    let shown=name||"free";if(shown.length>max-used)shown=shown.slice(0,Math.max(1,max-used-1))+"…";
+    const put=(el,v)=>{if(el)el.textContent=v?(before?sep+v:v+sep):""};
+    put(chEl,shown);put(tgEl,tg);if(chEl)chEl.setAttribute("class",name?"ch":"role");
+    const c=name&&st[name];
+    g.classList.toggle("assigned",!!name);g.classList.toggle("closed",!!c&&c.state==="closed");
+    g.classList.toggle("lv0",!!c&&c.level===0);g.classList.toggle("lv1",!!c&&c.level===1);g.classList.toggle("warn",!!c&&!!c.warning);
+  }
+  const gnd=board.terminals.filter(t=>t.capability==="gnd").map(t=>t.id).join(", ");
+  const sw=board.carrier.switch?` Keep the "${board.carrier.switch.label}" switch ON.`:"";
+  $("#wnote").textContent=`${board.carrier.name} with ${board.feather.name}. Common ground required: wire a GND terminal (${gnd}) to TinyG J7-1 or J8-1.${sw} Terminals are numbered from the 3v3 end of each edge; [brackets] mark positions with no printed label.`;
+  const tb=$("#wtab tbody");tb.textContent="";
+  for(const ch of config.channels){
+    const t=termFor(ch.gpio),c=st[ch.name]||{},tr=el("tr");tr.dataset.term=t?t.id:"";
+    const cells=[ch.name,t?termName(t):"not on this board",`GPIO${ch.gpio}`,tgIn[ch.name.toLowerCase()]||"",c.state||"",c.level===undefined?"":(c.level?"HIGH":"LOW")];
+    cells.forEach((v,i)=>{const td=el("td",i===4&&c.state==="closed"?"closed":"",v);if(i===5&&c.warning){td.className="warnc";td.title=c.warning;td.textContent+=" ⚠"}tr.append(td)});
+    tr.onmouseenter=()=>hl(tr.dataset.term);tr.onmouseleave=()=>hl(pinned);tr.onclick=()=>{pinned=pinned===tr.dataset.term?null:tr.dataset.term;hl(pinned)};
+    tb.append(tr);
+  }
+  hl(pinned);
+}
+function hl(id){
+  for(const g of document.querySelectorAll("#view-wiring .term"))g.classList.toggle("hl",!!id&&g.dataset.term===id);
+  for(const r of document.querySelectorAll("#wtab tbody tr"))r.classList.toggle("hl",!!id&&r.dataset.term===id);
+}
+for(const g of document.querySelectorAll("#view-wiring .term")){
+  g.addEventListener("mouseenter",()=>hl(g.dataset.term));g.addEventListener("mouseleave",()=>hl(pinned));
+  g.addEventListener("click",()=>{pinned=pinned===g.dataset.term?null:g.dataset.term;hl(pinned)});
+}
+for(const b of document.querySelectorAll(".tabs button"))b.onclick=()=>view(b.dataset.view);
 function saveConfig(params){
   const m=$("#cfgmsg");m.className="";m.textContent="saving…";
   call("setConfig",params).then(r=>{config=r;renderConfig();m.className="good";m.textContent=r.persisted?"saved and persisted":"applied, but NOT persisted (storage error)"})
@@ -184,6 +267,7 @@ $("#cfgdef").onclick=()=>saveConfig({defaults:true});
 setInterval(()=>{if(ws&&ws.readyState===1)call("getInfo").then(i=>{info=i;renderInfo()}).catch(()=>{})},5000);
 setInterval(()=>{if(ws&&ws.readyState===1)scheduleRefresh(0)},2000);
 connect();
+try{if(localStorage.getItem("sb-view")==="wiring")view("wiring")}catch(e){}
 </script>
 </body>
 </html>

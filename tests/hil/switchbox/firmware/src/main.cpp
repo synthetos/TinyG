@@ -127,14 +127,15 @@ const char *encryption_name(uint8_t e) {
     }
 }
 
-void write_spec(Print &out) {
+// Streams a PROGMEM document (spec, board description) in chunks.
+void write_progmem(Print &out, const char *data, size_t len) {
     char buf[256];
-    for (size_t off = 0; off < SPEC_JSON_LEN;) {
-        size_t n = SPEC_JSON_LEN - off < sizeof buf ? SPEC_JSON_LEN - off : sizeof buf;
-        memcpy_P(buf, SPEC_JSON + off, n);
+    for (size_t off = 0; off < len;) {
+        size_t n = len - off < sizeof buf ? len - off : sizeof buf;
+        memcpy_P(buf, data + off, n);
         out.write(reinterpret_cast<const uint8_t *>(buf), n);
         off += n;
-        yield();                            // ~1.5 s at 115200: keep WiFi and the watchdog fed
+        yield();                            // ~2.5 s for the spec at 115200: keep WiFi and the watchdog fed
     }
 }
 
@@ -226,6 +227,7 @@ void info(JsonObject out) {
     out["core_version"] = ESP.getCoreVersion();
     out["sdk_version"] = ESP.getSdkVersion();
     out["mdns"] = "tinyg-switchbox.local";
+    out["board"] = SB_BOARD_ID;
     out["ws_clients"] = ws.connectedClients();
     JsonObject w = out["wifi"].to<JsonObject>();
     w["state"] = wifi_name(wifi_state);
@@ -451,11 +453,12 @@ void wifi_loop() {
 // ---- serial -----------------------------------------------------------------------------------
 
 void serial_reply(sb::Reply &r) {
-    if (r.stream_spec) {
+    if (r.stream_spec || r.stream_board) {
         Serial.print(F("{\"id\":"));
         serializeJson(r.doc["id"], Serial);
         Serial.print(F(",\"ok\":true,\"result\":"));
-        write_spec(Serial);
+        if (r.stream_spec) write_progmem(Serial, SPEC_JSON, SPEC_JSON_LEN);
+        else write_progmem(Serial, BOARD_JSON, BOARD_JSON_LEN);
         Serial.print(F("}\n"));
         return;
     }
@@ -529,11 +532,16 @@ void http_json(int status, JsonVariantConst body) {
 }
 
 void send_spec() { server.send_P(200, "application/json", SPEC_JSON, SPEC_JSON_LEN); }
+void send_board() { server.send_P(200, "application/json", BOARD_JSON, BOARD_JSON_LEN); }
 void send_ui() { server.send_P(200, "text/html; charset=utf-8", UI_HTML, UI_HTML_LEN); }
 
 void http_reply(sb::Reply &r) {
     if (r.stream_spec) {
         send_spec();
+        return;
+    }
+    if (r.stream_board) {
+        send_board();
         return;
     }
     if (r.err == sb::Err::none) {
@@ -594,6 +602,7 @@ void http_setup() {
     server.on("/", HTTP_GET, send_ui);
     server.on("/openapi.json", HTTP_GET, send_spec);
     server.on("/api/info", HTTP_GET, [] { http_op("getInfo", false); });
+    server.on("/api/board", HTTP_GET, [] { http_op("getBoard", false); });
     server.on("/api/state", HTTP_GET, [] { http_op("getState", false); });
     server.on(UriBraces("/api/channels/{}/pulse"), HTTP_POST, [] { http_op("pulseChannel", true); });
     server.on(UriBraces("/api/channels/{}/bounce"), HTTP_POST, [] { http_op("bounceChannel", true); });

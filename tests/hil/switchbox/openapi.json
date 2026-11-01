@@ -611,6 +611,30 @@
     }
    }
   },
+  "/api/board": {
+   "get": {
+    "operationId": "getBoard",
+    "summary": "The hardware this firmware was built for",
+    "description": "The carrier, Feather and target profiles the firmware was built with (tests/hil/switchbox/boards, chosen per PlatformIO env) and the terminal map derived from them: for every screw terminal its silkscreen label, Feather header position, MCU pin and capability, and which terminal to use when a GPIO reaches several. The live channel map is not part of it (getConfig). The web UI's Wiring view and tools/render_pinout.py draw from the same data. Streamed from flash; not available over the WebSocket.",
+    "x-transports": [
+     "serial",
+     "http"
+    ],
+    "x-logged": "on error",
+    "responses": {
+     "200": {
+      "description": "The board description",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Board"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/openapi.json": {
    "get": {
     "operationId": "getSpec",
@@ -953,6 +977,10 @@
      },
      "ws_clients": {
       "type": "integer"
+     },
+     "board": {
+      "type": "string",
+      "description": "<carrier>/<feather> profiles the firmware was built for (getBoard)"
      },
      "wifi": {
       "type": "object",
@@ -1640,6 +1668,122 @@
      },
      "count": {
       "type": "integer"
+     }
+    }
+   },
+   "BoardTerminal": {
+    "type": "object",
+    "required": [
+     "id",
+     "edge",
+     "position",
+     "feather",
+     "capability"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "description": "T1-T16 along the SCL/SDA edge, B1-B16 along the RX/TX edge, numbered from the 3v3 end"
+     },
+     "edge": {
+      "type": "string"
+     },
+     "position": {
+      "type": "integer"
+     },
+     "silk": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "label printed on the board, null if none"
+     },
+     "feather": {
+      "type": "string",
+      "description": "Feather header position: L1-L16 (16-pin header, 1 at the TX end), S1-S12 (12-pin header, 1 = BAT)"
+     },
+     "feather_name": {
+      "type": "string"
+     },
+     "mcu": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "gpio": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "capability": {
+      "type": "string",
+      "enum": [
+       "switch",
+       "bootstrap",
+       "pulldown",
+       "reserved",
+       "analog",
+       "control",
+       "power",
+       "gnd",
+       "nc"
+      ]
+     },
+     "note": {
+      "type": "string"
+     },
+     "same_as": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "the terminal to use instead (same GPIO)"
+     },
+     "sources": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   },
+   "Board": {
+    "type": "object",
+    "required": [
+     "carrier",
+     "feather",
+     "terminals"
+    ],
+    "properties": {
+     "carrier": {
+      "type": "object",
+      "description": "boards/carrier/<id>.json"
+     },
+     "feather": {
+      "type": "object",
+      "description": "boards/feather/<id>.json"
+     },
+     "target": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "description": "boards/target/<id>.json"
+     },
+     "style": {
+      "type": "object",
+      "description": "boards/style.json"
+     },
+     "terminals": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/BoardTerminal"
+      }
+     },
+     "render": {
+      "type": "object"
      }
     }
    },

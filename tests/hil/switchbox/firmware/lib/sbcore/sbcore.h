@@ -55,7 +55,7 @@ enum class Type : uint8_t { no, nc };
 enum class Source : uint8_t { boot, serial, http, ws, ttl, poll, sys, COUNT };
 enum class Op : uint8_t {
     getInfo, getState, setChannel, pulseChannel, bounceChannel, releaseAll, idleAll,
-    getConfig, setConfig, getEvents, setWifi, scanWifi, getSpec, subscribe, invalid, COUNT
+    getConfig, setConfig, getEvents, setWifi, scanWifi, getSpec, getBoard, subscribe, invalid, COUNT
 };
 enum class Kind : uint8_t { boot, command, edge, line, config, wifi, COUNT };
 enum class Cause : uint8_t { set, pulse, bounce, ttl, release_all, idle_all, config, COUNT };
@@ -124,12 +124,13 @@ class EventRing {
     uint32_t next_ = 1;
 };
 
-// One request's reply. The platform serializes doc; for getSpec it streams the embedded spec
-// as the result instead.
+// One request's reply. The platform serializes doc; for getSpec / getBoard it streams the embedded
+// spec / board description as the result instead.
 struct Reply {
     JsonDocument doc;
     Err err = Err::none;
     bool stream_spec = false;
+    bool stream_board = false;
 };
 
 class Core {
