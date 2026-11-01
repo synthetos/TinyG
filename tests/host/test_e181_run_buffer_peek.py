@@ -76,7 +76,7 @@ stat_t mp_exec_move(void) { return STAT_NOOP; }
 /* the interrupt, fired at the instrumented point; deferred while the main loop has interrupts off */
 static void (*isr)(void);
 static int deferred;
-void audit_window(void) {
+void irq_window(void) {
     if (isr == NULL) return;
     if (SREG & 0x80) { void (*f)(void) = isr; isr = NULL; f(); }
     else { deferred = 1; }
@@ -94,7 +94,7 @@ mpBuf_t *mp_get_run_buffer(void) {
     uint8_t saved = SREG;                               /* a fix may mask: honour it */
     mpBuf_t *p = mb.r;                                  /* lds r30/r31 mb.r */
     uint8_t bs = p->buffer_state, bt = p->block_type, bk = p->block_state;   /* ldd r25, Z+12 */
-    audit_window();
+    irq_window();
     if ((bs == MP_BUFFER_QUEUED) || (bs == MP_BUFFER_PENDING)) {
         p->buffer_state = MP_BUFFER_RUNNING; p->block_type = bt; p->block_state = bk;   /* std Z+12 */
         bs = MP_BUFFER_RUNNING;
@@ -193,10 +193,10 @@ class RunBufferPeek(unittest.TestCase):
         common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         (d / 'check.c').write_text(PRELUDE + main)
-        (d / 'planner_audit.c').write_text(planner_source)
+        (d / 'planner_check.c').write_text(planner_source)
         objs = []
         for name, src, extra in [('check.c', d / 'check.c', []),
-                                 ('planner.c', d / 'planner_audit.c',
+                                 ('planner.c', d / 'planner_check.c',
                                   ['-include', 'tgmath.h', '-Dmp_get_run_buffer=real_mp_get_run_buffer']),
                                  ('plan_line.c', FIRMWARE / 'plan_line.c', ['-include', 'tgmath.h']),
                                  ('plan_zoid.c', FIRMWARE / 'plan_zoid.c', ['-include', 'tgmath.h']),
@@ -204,7 +204,7 @@ class RunBufferPeek(unittest.TestCase):
             obj = d / (name + '.o')
             subprocess.run([_cc(), *common, *extra, '-c', str(src), '-o', str(obj)], check=True)
             objs.append(str(obj))
-        exe = d / 'audit'
+        exe = d / 'check'
         subprocess.run([_cc(), '-fsanitize=address,undefined', *objs, '-lm', '-o', str(exe)], check=True)
         return subprocess.run([str(exe)], capture_output=True, text=True)
 
