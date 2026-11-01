@@ -6,11 +6,15 @@ the frame that follows the lost one (XMEGA A manual 21.7.2, 21.15.2). The USB RX
 (xio_usb.c) read DATA only, so "G1 X1.5" with the '.' lost came back as "G1 X15", XIO_OK. E162
 marks bytes the interrupt tosses on a full ring; a hardware loss must be marked the same way.
 
-The real RX interrupt, _gets_helper()/xio_gets_usart() (xio_usart.c) and xio_reset_usb_rx_buffers()
-run on the firmware's ring macro with the 250-byte ring. Each case raises BUFOVF with one frame:
-inside a line the reader has not reached, inside a line it has read up to the loss, and at the
-start of a line after it has read everything. The line with the loss must not come back XIO_OK,
-the next line must, and no loss state may be left over. Runs without BUFOVF are the controls.
+The real RX interrupt, _gets_helper()/xio_gets_usart() (xio_usart.c), xio_reset_usb_rx_buffers() and
+xio_drop_usb_rx_before_mark() run on the firmware's ring macro with the 250-byte ring. Each case
+raises BUFOVF with one frame: inside a line the reader has not reached, inside a line it has read
+up to the loss, and at the start of a line after it has read everything. The line with the loss
+must not come back XIO_OK, the next line must, and no loss state may be left over. The flag can
+come with a character the interrupt handles at once and never keeps (ENQ, '!', '%'): with nothing
+left to read the loss must still be reported on the next read, not when the host sends more.
+A loss before an honored '%' goes with the flush; a loss after it is kept. Runs without BUFOVF
+are the controls.
 """
 from pathlib import Path
 import os
@@ -51,6 +55,7 @@ def rx_code():
             code += fn("xio/xio_usb.c", name) + "\n"
     code += isr + "\n"
     code += fn("xio/xio_usb.c", "xio_reset_usb_rx_buffers") + "\n"
+    code += fn("xio/xio_usb.c", "xio_drop_usb_rx_before_mark") + "\n"
     return code + r'''
 #include <stdlib.h>
 static int overrun;
@@ -77,6 +82,16 @@ static int damaged_before(const char *want) {
         return damaged;
     }
     fprintf(stderr, "E193: '%s' never came back\n", want); exit(66);
+}
+static void flush_at_mark(void) {                       /* the controller's queue flush, interrupts masked */
+    assert(cm.queue_flush_input); cli(); xio_drop_usb_rx_before_mark(); SREG |= 0x80; cm.queue_flush_input = false;
+}
+static void reported_now(const char *where) {           /* nothing left to read: the next read reports the loss */
+    int status = rd();
+    if (overrun && status != XIO_LINE_DAMAGED) {
+        fprintf(stderr, "E193: %s: lost input with nothing left to read returns %d, not XIO_LINE_DAMAGED\n", where, status); exit(66);
+    }
+    if (!overrun) assert(status == XIO_EAGAIN);
 }
 static void caught_up(void) {
     assert(USBu.rx_buf_head == USBu.rx_buf_tail);
@@ -129,6 +144,53 @@ AT_LINE_START = r'''
     if (!overrun) assert(damaged_before("G1 X2") == 0);
 '''
 
+CONTROL_INSIDE_LINE_BEING_READ = r'''
+    send_text("G1 X1");
+    assert(rd() == XIO_EAGAIN);                                       /* the reader has taken "G1 X1" */
+    send_after_loss(CHAR_ENQUIRY);                                    /* "G1 X1.": the '.' lost, ENQ kept by no one */
+    reported_now("ENQ inside a line being read");
+    send_text("5\n");
+    send_text("G1 X2\n");
+    int damaged = damaged_before(overrun ? "G1 X2" : "G1 X15");
+    report("ENQ inside a line being read", damaged);
+    if (!overrun) assert(damaged_before("G1 X2") == 0);
+'''
+
+CONTROL_AT_LINE_START = r'''
+    send_text("G1 X1\n");
+    assert(damaged_before("G1 X1") == 0);                             /* read, and the ring is empty */
+    send_after_loss(CHAR_FEEDHOLD);                                   /* "G1 X2" lost its 'G' */
+    reported_now("'!' at the start of a line");
+    send_text("1 X2\n");
+    send_text("G1 X3\n");
+    int damaged = damaged_before(overrun ? "G1 X3" : "1 X2");
+    report("'!' at the start of a line", damaged);
+    if (!overrun) assert(damaged_before("G1 X3") == 0);
+'''
+
+LOSS_BEFORE_FLUSH = r'''
+    send_text("G1 X1\n");
+    assert(damaged_before("G1 X1") == 0);
+    send_after_loss(CHAR_QUEUE_FLUSH);                                /* lost before the '%': the flush drops it */
+    assert(rd() == XIO_EAGAIN);
+    flush_at_mark();
+    send_text("G1 X2\n");
+    assert(damaged_before("G1 X2") == 0);
+'''
+
+LOSS_AFTER_FLUSH = r'''
+    send_text("G1 X1\n");
+    assert(damaged_before("G1 X1") == 0);
+    send_byte(CHAR_QUEUE_FLUSH);
+    send_after_loss('1'); send_text(" X2\n");                        /* "G1 X2" after the '%' lost its 'G' */
+    send_text("G1 X3\n");
+    assert(rd() == XIO_EAGAIN);                                       /* stopped at the '%' */
+    flush_at_mark();
+    int damaged = damaged_before(overrun ? "G1 X3" : "1 X2");
+    report("after a '%'", damaged);
+    if (!overrun) assert(damaged_before("G1 X3") == 0);
+'''
+
 
 class UsartOverflow(unittest.TestCase):
     def _run(self, name, code):
@@ -153,6 +215,18 @@ class UsartOverflow(unittest.TestCase):
 
     def test_loss_at_the_start_of_a_line(self):
         self._run("start", case(AT_LINE_START))
+
+    def test_loss_carried_by_enq_inside_the_line_being_read(self):
+        self._run("enq", case(CONTROL_INSIDE_LINE_BEING_READ))
+
+    def test_loss_carried_by_feedhold_at_the_start_of_a_line(self):
+        self._run("hold", case(CONTROL_AT_LINE_START))
+
+    def test_loss_before_a_flush_goes_with_it(self):
+        self._run("before", case(LOSS_BEFORE_FLUSH))
+
+    def test_loss_after_a_flush_is_kept(self):
+        self._run("after", case(LOSS_AFTER_FLUSH))
 
 
 if __name__ == "__main__":
