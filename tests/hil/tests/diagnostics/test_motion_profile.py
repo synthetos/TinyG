@@ -21,7 +21,7 @@ LENGTHS=[.01,.02,.05,.1,.25,.5,1.,2.,5.,10.]
 @pytest.mark.parametrize('length',LENGTHS)
 def test_x_motion_profile(tg,record,request,length):
     holder=json.loads(Path(f'/tmp/tinyg-hil-{Path(tg.transport.port).name}.lock').read_text())
-    assert holder['pid']==os.getpid() and holder['owner']==os.environ.get('TINYG_OWNER')
+    assert holder['pid']==os.getpid() and holder['owner']==os.environ.get('TINYG_OWNER','unknown')   # as lock.py records it
     config=benches.bench(tg.transport.port)
     if not config.get('saleae'):
         pytest.skip(f'no Saleae recorded for {tg.transport.port}')
