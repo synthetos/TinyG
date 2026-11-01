@@ -17,7 +17,8 @@ Short answer: those are the only pins that can emulate a contact to a pulled-up 
 - **Feather silkscreen and module:** the pinout PDF v1.2 (`local/`). The module is an Ai-Thinker ESP8266MOD (ESP-12F footprint).
 - **TinyG side:**
   - Inputs: X/Y/Z/A min/max on ports A, D, E and F, bits 6/7, with the internal pull-up (`firmware/tinyg/switch.c`, `tests/hil/boards/tinyg-v8.json`). That is 8 inputs; the probe is one of them (`SW_MODE_PROBE`).
-  - The harness's board file also notes that the v8 inputs "have pull-ups the internal pull-down cannot overcome".
+  - The board adds a 2.7 kΩ pull-up to 3.3 V and 0.22 µF to GND on every switch line: `hardware/v8schematics/v8h`, sheet 1, R10-R17 and C43-C50. This is why the harness's board file notes that the v8 inputs "have pull-ups the internal pull-down cannot overcome".
+- **Breakout terminals:** which screw terminal of the Terminal Block FeatherWing each pin lands on is in [wiring.md](wiring.md) (generated from `../boards/`).
 
 ## Per pin (Feather HUZZAH ESP8266, Rev G)
 
@@ -42,6 +43,8 @@ Short answer: those are the only pins that can emulate a contact to a pulled-up 
 | RST (EXT_RSTB) | 1 | yes: `RST` (JP1.16) | 10 kΩ pull-up (R3), the Feather's only push button SW2, Q1 collector (RTS auto-reset) | — | **no**: not a GPIO | — |
 | (`EN` header pin) | — | yes: `EN` (JP3.2) | the 3.3 V regulator's enable (10 kΩ pull-up R1), not the ESP | — | **no**: it switches the Feather's 3.3 V off | — |
 
+**Unpowered TinyG and the boot straps:** with the TinyG switched off, its 2.7 kΩ pull-ups lead to a dead 3.3 V rail. That overpowers GPIO2's 10 kΩ pull-up and GPIO0's LED path, so both straps read low. A switchbox reset in that state boots into the UART bootloader (GPIO0 low) or not at all (GPIO2 low). Power the TinyG first, or leave the channels on GPIO0/GPIO2 unwired. This is derived from the schematics, not bench-tested.
+
 **Count:**
 - 11 digital GPIOs reach the headers: 0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16.
 - With the USB serial kept, 1 and 3 are taken, and GPIO15 cannot be used directly.
@@ -49,14 +52,14 @@ Short answer: those are the only pins that can emulate a contact to a pulled-up 
 
 ### Why GPIO15 cannot be wired straight to a TinyG input
 
-An "open" channel must leave the line to TinyG's pull-up. On GPIO15 the Feather's 4.7 kΩ pull-down (R7) stays connected, so the open line settles at a divider voltage:
+An "open" channel must leave the line to TinyG's pull-up. On GPIO15 the Feather's 4.7 kΩ pull-down (R7) stays connected, so the open line settles at a divider voltage.
 
-| TinyG pull-up | open line | TinyG reads | ESP at boot (VIL ≤ 0.25 × 3.3 V = 0.83 V) |
-|---|---|---|---|
-| xmega internal only (tens of kΩ, ~24 kΩ typical) | ≈ 0.5 V | low = **switch always closed** | boots |
-| internal plus a v8 board pull-up (e.g. 10 kΩ in parallel, ≈ 7 kΩ) | ≈ 1.3 V | undefined | **above VIL: the boot strap may read high and the ESP fails to boot from flash** |
+The TinyG v8 pull-up is 2.7 kΩ (v8h schematic, R10-R17) in parallel with the xmega's internal one:
+- the open line sits at about 3.3 V × 4.7 / (4.7 + 2.7) ≈ **2.1-2.2 V**;
+- TinyG does not get a clean high: it is in or just below the xmega's undefined band, so TinyG never sees a clean open contact;
+- the ESP's GPIO15 boot strap is far above its 0.83 V input-low limit, so the ESP may fail to boot from flash.
 
-Either way the channel can never present "open". This is the schematic-level reason it is refused (`gpio_forbidden`). The exact v8 pull-up value is not in this repository; both cases fail.
+The channel can never present "open". This is the schematic-level reason it is refused (`gpio_forbidden`).
 
 ### The breakout board
 

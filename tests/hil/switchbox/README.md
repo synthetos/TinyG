@@ -1,6 +1,6 @@
 # TinyG HIL switchbox
 
-An Adafruit Feather HUZZAH ESP8266 whose GPIOs are wired to a TinyG v8's limit/homing switch inputs, so tests can open and close "switches" electrically, the way a real switch does. The TinyG's own edge detection, ISR, lockout, limit and homing logic run exactly as with a physical switch. Nothing on the TinyG side changes: no test-hooks build and no Atmel-ICE are needed.
+An Adafruit Feather HUZZAH ESP8266, plugged into an Adafruit Terminal Block Breakout FeatherWing, whose screw terminals are wired to a TinyG v8's limit/homing switch inputs, so tests can open and close "switches" electrically, the way a real switch does. The TinyG's own edge detection, ISR, lockout, limit and homing logic run exactly as with a physical switch. Nothing on the TinyG side changes: no test-hooks build and no Atmel-ICE are needed.
 
 | path | what |
 |---|---|
@@ -9,12 +9,65 @@ An Adafruit Feather HUZZAH ESP8266 whose GPIOs are wired to a TinyG v8's limit/h
 | `firmware/lib/sbcore/` | the core: request validation, channel model, edge sequencer, event ring. Plain C++, compiled on the host by `tests/host/test_switchbox_core.py` |
 | `firmware/src/main.cpp` | ESP8266 layer: pins, timer, serial, WiFi, HTTP, WebSocket, LittleFS |
 | `firmware/ui/index.html` | the web UI served at `/` |
-| `docs/` | Adafruit schematic (Eagle, CC BY-SA), source list, re-fetch script for the non-redistributable datasheets, and [pins.md](docs/pins.md): which ESP8266 pins can be channels and why |
+| `boards/` | board profiles: the carrier (terminal-block FeatherWing), the Feather (HUZZAH ESP8266) and the target (TinyG v8), as data ([boards/README.md](boards/README.md)) |
+| `tools/render_pinout.py` | the wiring drawings, from the profiles: docs images and the web UI's Wiring view |
+| `docs/` | Adafruit design files (Eagle, Fritzing; CC BY-SA), source list, re-fetch script for the non-redistributable files, [pins.md](docs/pins.md) (which ESP8266 pins can be channels and why), the wiring guide and screenshots |
 | `../tinyg_hil/switchbox.py` | Python client `SwitchBox` and a CLI |
+
+## Wiring guide
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/wiring-dark.png">
+  <img src="docs/wiring.png" alt="Terminal Block Breakout FeatherWing with the Feather HUZZAH ESP8266: every screw terminal with its silkscreen label, ESP pin, default channel and TinyG terminal, colour-coded by capability, plus the TinyG J7/J8 pinout">
+</picture>
+
+Vector versions: [docs/wiring.svg](docs/wiring.svg) (follows the viewer's light/dark theme) and [docs/wiring-dark.svg](docs/wiring-dark.svg). The full per-terminal table, with sources, is in [docs/wiring.md](docs/wiring.md). Regenerate after a profile change with `python3 tools/render_pinout.py`; a test fails if the committed images are stale.
+
+**Reading the breakout:**
+- The breakout's screw terminals are labelled with **Feather pin names, not ESP8266 GPIO numbers**, and **15 of the 32 carry no label at all** (A0-A5, AREF, 13-5 and the one past TX).
+- Terminals are numbered from the 3v3 end of each edge (Micro-USB end of the Feather on the left):
+  - T1-T16 along the edge that reads `3v3 3v3 GND GND BAT Ena USB … SCL SDA`;
+  - B1-B16 along `Rst 3v3 … GND … SCK MOSI MISO RX TX`.
+- On the HUZZAH ESP8266, "13" is GPIO14, "9" is GPIO0 and "SDA" is GPIO4.
+- GPIO12/13/14 reach two terminals each. Use the labelled MISO/MOSI/SCK ones and leave 12/11/13 free.
+
+| channel | terminal | breakout label | Feather pin | ESP pin | TinyG terminal |
+|---|---|---|---|---|---|
+| `xmin` | T16 | SDA | SDA | GPIO4 | J7-3 Xmin |
+| `xmax` | T15 | SCL | SCL | GPIO5 | J7-4 Xmax |
+| `ymin` | B13 | MISO | MISO | GPIO12 | J7-5 Ymin |
+| `ymax` | B12 | MOSI | MOSI | GPIO13 | J7-6 Ymax |
+| `zmin` | B11 | SCK | SCK | GPIO14 | J8-3 Zmin |
+| `zmax` | T13 | (none) | 6 | GPIO16 | J8-4 Zmax |
+| `amin` | T12 | (none) | 9 | GPIO0 (boot-strap) | J8-5 Amin |
+| `amax` | T14 | (none) | 5 | GPIO2 (boot-strap) | J8-6 Amax |
+| **GND** | **T3, T4 or B4** | GND | GND | GND | **J7-1 / J8-1 (required)** |
+
+**Things that will bite:**
+- Keep the breakout's **"3v Enable" slide switch ON**. OFF grounds the Feather's EN pin and switches the board off.
+- Do not wire:
+  - **B16** (unlabelled, past TX): the HUZZAH's chip enable (CH_PD); grounding it powers the ESP down;
+  - **B1** (Rst);
+  - **T11** ("10" = GPIO15).
+- Leave the TinyG's 3.3v terminals (J7-2/J8-2) unconnected.
+
+**In the web UI:**
+- The **Wiring** tab draws the same breakout from the same profiles. Each terminal shows the live channel map, with the contact state, line level and wiring warnings overlaid.
+- Hovering or tapping a terminal or a row of the channel table highlights its counterpart, and the terminal's trace to the Feather pin.
+- `GET /api/board` (serial `getBoard`) returns the profiles and terminal map the firmware was built for.
+
+| desktop | phone (390 px) |
+|---|---|
+| <img src="docs/screenshots/wiring-view-desktop.png" alt="Wiring view at desktop width, zmin closed, amin highlighted" width="480"> | <img src="docs/screenshots/wiring-view-phone.png" alt="Wiring view at phone width" width="240"> |
+
+The screenshots were taken on the board with nothing wired:
+- xmin/xmax show the "open but line low" warning;
+- zmin was tripped with a ttl;
+- amin is highlighted.
 
 ## Electrical model
 
-TinyG v8 switch inputs are xmega pins at 3.3 V with the internal pull-up enabled and both-edge pin interrupts (`firmware/tinyg/switch.c`). A real switch shorts the input to GND; `$st` says whether TinyG reads it as normally open (0) or normally closed (1).
+TinyG v8 switch inputs are xmega pins at 3.3 V with both-edge pin interrupts and the internal pull-up enabled (`firmware/tinyg/switch.c`). On the board, each line also has a **2.7 kΩ pull-up to 3.3 V and 0.22 µF to GND** at the terminal (v8h schematic, R10-R17 and C43-C50; see Limits and timing). A real switch shorts the input to GND; `$st` says whether TinyG reads it as normally open (0) or normally closed (1).
 
 Each switchbox channel emulates an **open-drain contact** between one TinyG input and GND:
 
@@ -57,17 +110,17 @@ The lines are also polled every 10 ms. A change on an undriven line (or a driven
 
 Default mapping (configurable at runtime with `setConfig`, persisted in LittleFS):
 
-| channel | Feather pin | GPIO | TinyG input | notes |
-|---|---|---|---|---|
-| `xmin` | 4 | 4 | X min | |
-| `xmax` | 5 | 5 | X max | |
-| `ymin` | 12 | 12 | Y min | |
-| `ymax` | 13 | 13 | Y max | |
-| `zmin` | 14 | 14 | Z min | |
-| `zmax` | 16 | 16 | Z max | GPIO16 has no pin interrupt (irrelevant here). Do not bridge 16 to RST for deep sleep: closing `zmax` would then reset the ESP |
-| `amin` | 0 | 0 | A min | **boot-strap pin**, see below |
-| `amax` | 2 | 2 | A max | **boot-strap pin**, see below |
-| — | GND | — | GND | **required** |
+| channel | GPIO | Feather pin | breakout terminal | TinyG input | notes |
+|---|---|---|---|---|---|
+| `xmin` | 4 | SDA | T16 SDA | J7-3 X min | |
+| `xmax` | 5 | SCL | T15 SCL | J7-4 X max | |
+| `ymin` | 12 | MISO (also "12") | B13 MISO | J7-5 Y min | |
+| `ymax` | 13 | MOSI (also "11") | B12 MOSI | J7-6 Y max | |
+| `zmin` | 14 | SCK (also "13") | B11 SCK | J8-3 Z min | |
+| `zmax` | 16 | 6 | T13 (no label) | J8-4 Z max | GPIO16 has no pin interrupt (irrelevant here). Do not bridge 16 to RST for deep sleep: closing `zmax` would then reset the ESP |
+| `amin` | 0 | 9 | T12 (no label) | J8-5 A min | **boot-strap pin**, see below |
+| `amax` | 2 | 5 | T14 (no label) | J8-6 A max | **boot-strap pin**, see below |
+| — | GND | GND | T3, T4 or B4 | J7-1 / J8-1 | **required** |
 
 Channel names are free strings (1-15 of `A-Z a-z 0-9 _ - .`); tests use `<axis><min|max>`.
 
@@ -81,8 +134,7 @@ The TinyG v8 has exactly 8 switch inputs, so 8 channels cover it one-to-one.
 
 **Pins that are refused** (`setConfig` returns `invalid_config`):
 - **GPIO15** must be low when the ESP8266 boots, so the Feather pulls it down with 4.7 kΩ (R7). Wired to a TinyG input, that pull-down and TinyG's pull-up form a divider:
-  - TinyG would never see the contact open: about 0.5 V against the xmega's internal pull-up;
-  - with a stronger board pull-up the line can sit above the ESP's 0.83 V input-low limit at boot, and the ESP then fails to boot from flash.
+  - with the v8's 2.7 kΩ board pull-up the open line sits near 2.2 V. That is neither a clean high for TinyG nor a low for the ESP's boot strap (input-low limit 0.83 V), so TinyG never sees a clean open contact and the ESP may fail to boot from flash.
   - It works through an N-MOSFET (docs/pins.md, option 1).
 - GPIO1 and GPIO3 are the USB serial port: TX goes straight to the CP2104; RX is driven by the CP2104 through 1 kΩ.
 - GPIO6-11 are the ESP-12 module's SPI flash and have no pad on the Feather.
@@ -91,7 +143,7 @@ The TinyG v8 has exactly 8 switch inputs, so 8 channels cover it one-to-one.
 **GPIO0 and GPIO2 are usable with caveats.** They must be high when the ESP8266 boots:
 - GPIO2 has a 10 kΩ pull-up on the Feather;
 - GPIO0 has only the red LED with 4.7 kΩ to 3.3 V;
-- TinyG's pull-up keeps both high, and an open channel is high-Z, so normally they are fine.
+- a powered TinyG's 2.7 kΩ pull-up keeps both high, and an open channel is high-Z, so normally they are fine.
 
 But:
 - a closed contact, or a real switch closed on that input, while the ESP resets stops it booting (GPIO0 low = UART download mode);
@@ -100,7 +152,7 @@ But:
   - flashing the board does exactly that to enter the bootloader, and some serial tools do it on open/close;
   - TinyG then sees `amin` close;
   - do not flash the switchbox while TinyG is homing or running;
-- when TinyG is unpowered, GPIO0's LED path and GPIO2's 10 kΩ pull-up feed a small current from the Feather's 3.3 V into its input clamp.
+- **an unpowered TinyG holds them low.** Its 2.7 kΩ pull-ups then lead to a dead 3.3 V rail and overpower GPIO2's 10 kΩ pull-up and GPIO0's LED path (and both feed a little current into the TinyG). If the switchbox resets in that state, GPIO0 low puts it into the UART bootloader and GPIO2 low stops it booting. Power the TinyG first, or leave `amin`/`amax` unwired. This follows from the schematics and has not been tried on the bench.
 
 Hence the default map uses them last, for the A axis.
 
@@ -174,6 +226,7 @@ One executor, three transports, the same operations. The `op` names are the spec
 | `setWifi` | `PUT /api/wifi` | station credentials |
 | `scanWifi` | `GET /api/wifi/scan` | networks the board sees (blocks it ~2-4 s; refused while a connection attempt runs) |
 | `getSpec` | `GET /openapi.json` | the spec; over serial, one line, so the API is learnable without WiFi |
+| `getBoard` | `GET /api/board` | the board profiles the firmware was built for and the derived terminal map (Wiring guide) |
 | `subscribe` | (serial only) | event lines on the serial connection |
 
 **Serial** (115200 8N1): newline-delimited JSON.
@@ -204,6 +257,7 @@ One executor, three transports, the same operations. The `op` names are the spec
 - Pushes are throttled: at most 6 per client per 20 ms, only while the client's TCP buffer has room. A client more than 24 events behind skips ahead and gets `{"event":"dropped","count":N}` plus a fresh state.
 
 **Web UI** at `/` (no external resources, so it works on the isolated AP):
+- a Wiring tab: the breakout drawn from the board profiles with the live channel map and state (Wiring guide);
 - channel grid: contact, tripped/released, line level, warnings;
 - click a channel to toggle it, or use its Pulse button;
 - Release all / Idle all;
@@ -260,6 +314,13 @@ uv run pytest tests/test_switchbox.py --switchbox --switchbox-port /dev/cu.usbse
   - Longer gaps use the timer1 interrupt (0.2 µs ticks). Entry latency is a few µs; WiFi can delay it by tens of µs now and then. Bounce edges are scheduled on absolute times, so latency does not accumulate.
   - Every edge's actual timestamp is in the event log, so a test can check the widths it got.
   - These are the board's own timestamps. Any timing claim about what TinyG saw still needs a Saleae capture on the TinyG input (bench 2 has X min on ch0). Until then it is timing-pending.
+- **What the TinyG actually sees:** every v8 switch input has a 2.7 kΩ pull-up and 0.22 µF to GND (v8h schematic).
+  - When a contact opens, the line rises with τ ≈ 0.6 ms and reaches the input-high threshold about 0.7-0.8 ms later.
+  - When it closes, the ESP pin discharges the capacitor in a few µs.
+  - So a 20 µs pulse reaches the xmega as a low lasting roughly 0.7 ms, and bounce edges much under a millisecond apart merge into fewer edges.
+  - The board's µs timing is what it drives, not what the TinyG samples.
+  - The ESP's own readback is on the same node, so its "open but line low" warning waits 5 ms after a release.
+- **Inrush:** closing a contact dumps the 0.22 µF charge through the ESP pin, a short peak well above the 12 mA rating, just as a mechanical switch would. A 100 Ω series resistor per channel limits it to about 33 mA and still gives a solid low (≈ 0.12 V). This is a recommendation from the schematics, not bench-tested.
 - **Line watch:** polled every 10 ms; shorter external glitches are not seen.
 - **Event ring:** 128 events. `getEvents` returns at most 32 per page; `lost` says how many were overwritten.
 - **Ranges:** 8 channels; `ttl_ms` ≤ 1 h; pulses ≤ 60 s (`ms`) or ≤ 1 s (`us`); bounces ≤ 64 edges, 2 µs-100 ms apart.
@@ -281,6 +342,7 @@ The ESP8266 constrains it:
 |---|---|---|
 | `tests/host/test_switchbox_core.py` | `c++`, ArduinoJson (pinned; from `.pio/libdeps` or fetched by `pio`) | the core under ASan/UBSan with faked pins, clock and timer |
 | `tests/hil/tests/test_switchbox_offline.py` | nothing | client framing, reset check, ports, the spec ↔ client parity, the firmware's embedded spec |
+| `tests/hil/tests/test_switchbox_boards_offline.py` | nothing | board profiles (the carrier regenerates from the Eagle files, the Feather profile is complete and cited), terminal map, unsafe-pin flags, renderer determinism, docs up to date, every terminal drawn, no label collisions |
 | `tests/hil/tests/test_switchbox.py` | the Feather on USB, `--switchbox` | the real board: readback, ttl, pulses, bounce, config validation, errors, events |
 | `tests/hil/tests/test_switchbox_network.py` | the board in station mode, `--switchbox` | mDNS, REST (same executor as serial, structured errors), `/openapi.json`, the UI page, WebSocket snapshot/requests/live events |
 | `tests/hil/tests/diagnostics/test_switchbox_reset_on_open.py` | `--switchbox --diagnostics` | which DTR/RTS handling opens the port without resetting the board |
