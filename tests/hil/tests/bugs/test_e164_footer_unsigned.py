@@ -18,7 +18,7 @@ BLANK = 33000
 LINE = b"G4 P0.01\n"
 
 
-@pytest.mark.bug("E164", on=["d449"])
+@pytest.mark.bug("E164", on=[])
 def test_footer_count_above_32767(tg, keep, record):
     keep("rxm", "ex")
     for token, value in (("rxm", 0), ("ex", 2)):
