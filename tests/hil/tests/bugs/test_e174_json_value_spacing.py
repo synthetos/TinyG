@@ -11,7 +11,7 @@ import pytest
 
 pytestmark = [pytest.mark.dialect("d449"), pytest.mark.persists]
 
-@pytest.mark.bug("E174", on=["d449"])
+@pytest.mark.bug("E174", on=[])
 def test_separated_digits_do_not_set(tg, keep):
     keep("xvm")
     before = tg.get("xvm")

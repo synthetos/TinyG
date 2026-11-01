@@ -351,11 +351,14 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
         }
 
         // skip over white space for VALUE, START & KEY states
+        char *before_space = str;
         str = _skip_whitespace(str);
         if ((state != JTSM_START) && (depth == 0)) {
             if (*str == NUL) { status = STAT_OK; }
             break;
         }
+        if ((state == JTSM_VALUE) && (str != before_space) &&
+            (*str != ',') && (*str != '}')) { break; }
 
         // START state
         if (state == JTSM_START) {
