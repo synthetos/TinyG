@@ -72,7 +72,8 @@ def test_repeated_homing_completes_after_switch_holds(tg, keep, switches, ice, r
             assert not mount["closed"], "homing did not release the physical switch"
             assert mount["trip_at"] == pytest.approx(-0.5, abs=0.1)
             assert snapshot["physical_position"] == pytest.approx(-0.3, abs=0.1)
-            assert snapshot["cm.homing_state"] == 1 and snapshot["cm.homed[0]"] == 1
+            # E132: machine-level HOMED requires all configured homing axes; this test homes X only.
+            assert snapshot["cm.homed[0]"] == 1
             assert snapshot["cm.hold_state"] == 0, "homing left an unfinished feedhold"
             assert snapshot["mr.position[0]"] == pytest.approx(0, abs=0.005)
             assert positions and min(positions) > -2, "homing continued far beyond the switch"
