@@ -13,14 +13,20 @@ import time
 
 import pytest
 
+from tinyg_hil.driver import NoResponse
+
 pytestmark = [pytest.mark.timing, pytest.mark.ice, pytest.mark.dialect("d449"),
               pytest.mark.profile("switches-no")]
 
 
 def _wait(tg, predicate, timeout=3):
     deadline = time.monotonic() + timeout
+    value = None
     while time.monotonic() < deadline:
-        value = tg.stat()
+        try:
+            value = tg.stat()
+        except NoResponse:          # a query that arrived while the ICE held the CPU is lost: ask again
+            continue
         if predicate(value):
             return value
         time.sleep(0.02)
