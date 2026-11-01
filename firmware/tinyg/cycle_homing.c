@@ -202,6 +202,10 @@ stat_t cm_homing_callback(void)
 		_homing_finalize_exit(hm.axis);			// restore coordinate system, units, modes
 		return (STAT_OK);						// homing state stays HOMING_NOT_HOMED
 	}
+    // Stopped steppers do not imply that exec has finalized the held block.
+    if ((cm.hold_state != FEEDHOLD_OFF) && (cm.hold_state != FEEDHOLD_HOLD)) {
+        return (STAT_EAGAIN);
+    }
 	return (hm.func(hm.axis));                  // execute the current homing move
 }
 
