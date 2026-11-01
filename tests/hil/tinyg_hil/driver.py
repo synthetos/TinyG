@@ -40,6 +40,8 @@ class TinyG:
         if not self.transport.is_open:
             self.transport.open()
         self.transport.drain(quiet=0.3, limit=timeout)
+        if not self._responds():
+            self._wake()
         # One GET per line: 440 executes only the first pair of a multi-pair object.
         # The first JSON line also takes the board out of text mode if a $ command left it there.
         self.identity = {k: self.get(k) for k in ("fb", "fv", "hp", "hv", "id")}
@@ -47,6 +49,25 @@ class TinyG:
             self.identity.update({k: self.get_text(k) for k in ("fb", "fv", "hp", "hv")})
         self.dialect = dialects.for_build(self.identity["fb"])
         return self.identity
+
+    def _responds(self, timeout: float = 1.5) -> bool:
+        try:
+            self.send_line('{"fb":null}', timeout=timeout)
+            return True
+        except NoResponse:
+            return False
+
+    def _wake(self):
+        """A silent board: first release a transmitter paused by an XOFF from the host (a stuck
+        XON/XOFF stream leaves it waiting for XON forever), then reset it if it is still silent."""
+        self.transport.write(b"\x11\n")        # XON; harmless junk line when XON/XOFF is off
+        self.transport.drain(quiet=0.3, limit=2.0)
+        if self._responds():
+            return
+        self.reset()
+        self.transport.drain(quiet=0.3, limit=3.0)
+        if not self._responds(timeout=3.0):
+            raise NoResponse("board silent after XON and a reset")
 
     def close(self):
         self.transport.close()
