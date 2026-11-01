@@ -38,7 +38,7 @@ def _program():
     return ["G21 G90 G17"] + [f"G1 X{x:.4f} Y{y:.4f} F{FEED}" for x, y in pts] + [f"G1 X0 Y0 F{FEED}"]
 
 
-@pytest.mark.bug("E180", on=["d449"])
+@pytest.mark.bug("E180", on=[])
 def test_exec_never_starts_a_half_replanned_block(tg, ice, keep, record):
     if "test_plan" not in ice.symbols.sym:
         pytest.skip("requires a TEST_HOOKS=1 build with the planner hand-off hook")

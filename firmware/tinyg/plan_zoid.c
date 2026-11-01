@@ -152,7 +152,8 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	// B" case: Block is short, but fits into a single body segment
 
 	if (bf->naiive_move_time <= NOM_SEGMENT_TIME) {
-		bf->entry_velocity = bf->pv->exit_velocity;
+		// entry_velocity is the previous block's exit as the caller planned it; the previous buffer
+		// itself may already have been run and cleared by the exec (E180)
 		if (fp_NOT_ZERO(bf->entry_velocity)) {
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->exit_velocity = bf->entry_velocity;

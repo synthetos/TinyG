@@ -34,10 +34,16 @@
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 // aline planner routines / feedhold planning
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
+static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity);
+static float _exit_of_previous(const mpBuf_t *bp);
+#define EXIT_FROM_PREVIOUS (-1.0)					// exit velocity unknown here: ask the exec (E180)
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 
 /* Runtime-specific setters and getters
@@ -440,34 +446,109 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 	}
 
 	// forward planning pass - recomputes trapezoids in the list from the first block to the bf block.
+	// next_entry carries the exit velocity of the block before bp as the exec runs it (E180).
+	float next_entry = EXIT_FROM_PREVIOUS;
 	while ((bp = mp_get_next_buffer(bp)) != bf) {
+		float entry_velocity;
 		if ((bp->pv == bf) || (*mr_flag == true))  {
-			bp->entry_velocity = bp->entry_vmax;		// first block in the list
+			entry_velocity = bp->entry_vmax;			// first block in the list
 			*mr_flag = false;
 		} else {
-			bp->entry_velocity = bp->pv->exit_velocity;	// other blocks in the list
+			entry_velocity = (next_entry == EXIT_FROM_PREVIOUS) ? _exit_of_previous(bp) : next_entry;
 		}
-		bp->cruise_velocity = bp->cruise_vmax;
-		bp->exit_velocity = min4( bp->exit_vmax,
-								  bp->nx->entry_vmax,
-								  bp->nx->braking_velocity,
-								 (bp->entry_velocity + bp->delta_vmax) );
-
-		mp_calculate_trapezoid(bp);
-
-		// test for optimally planned trapezoids - only need to check various exit conditions
-		if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
-				(fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) ) ||
-			  ( (bp->pv->replannable == false) &&
-				(fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
-			bp->replannable = false;
+		next_entry = _plan_block(bp, entry_velocity, min4( bp->exit_vmax,
+														   bp->nx->entry_vmax,
+														   bp->nx->braking_velocity,
+														  (entry_velocity + bp->delta_vmax) ));
+		if (next_entry != EXIT_FROM_PREVIOUS) {
+			// test for optimally planned trapezoids - only need to check various exit conditions
+			if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
+					(fp_EQ(bp->exit_velocity, bp->nx->entry_vmax)) ) ||
+				  ( (bp->pv->replannable == false) &&
+					(fp_EQ(bp->exit_velocity, (bp->entry_velocity + bp->delta_vmax))) ) ) {
+				bp->replannable = false;
+			}
 		}
 	}
 	// finish up the last block move
-	bp->entry_velocity = bp->pv->exit_velocity;
-	bp->cruise_velocity = bp->cruise_vmax;
-	bp->exit_velocity = 0;
-	mp_calculate_trapezoid(bp);
+	_plan_block(bp, (next_entry == EXIT_FROM_PREVIOUS) ? _exit_of_previous(bp) : next_entry, 0);
+}
+
+/*
+ * Replanning against the exec (E180)
+ *
+ *	The exec interrupt can start the next block at any moment and copies its lengths and velocities;
+ *	a short block can also run and be freed (cleared to zero) within one interrupt. Replanning used
+ *	to rewrite blocks in place in several steps (mp_calculate_trapezoid() zeroes body_length first),
+ *	so a block caught part way ran as zero length or with lengths that did not add up: the move was
+ *	lost and every later block was built from the stale position.
+ *
+ *	_plan_block() computes the trapezoid on a copy and commits it with interrupts off, only if the
+ *	exec has neither started nor freed the block. It returns the exit velocity the next block must
+ *	enter at: the new plan's, or, if the exec took the block first, that of the plan it took (read
+ *	before computing; only this code writes plans). If the block was already freed when its turn
+ *	came, that exit is gone and it returns EXIT_FROM_PREVIOUS: _exit_of_previous() then asks the
+ *	exec, whose runtime still holds the exit velocity of the last block it ran.
+ */
+static bool _taken_by_exec(const mpBuf_t *bp)
+{
+	return ((bp->block_state == BLOCK_RUNNING) || (bp->buffer_state == MP_BUFFER_EMPTY));
+}
+
+static float _exit_of_previous(const mpBuf_t *bp)
+{
+	float exit_velocity;
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	exit_velocity = (bp->pv->buffer_state == MP_BUFFER_EMPTY) ? mr.exit_velocity : bp->pv->exit_velocity;
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	return (exit_velocity);
+}
+
+static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
+{
+	static mpBuf_t plan;							// main loop only; static keeps it off the stack
+	float taken_exit;
+	bool taken;
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	taken = _taken_by_exec(bp);
+	taken_exit = (bp->buffer_state == MP_BUFFER_EMPTY) ? EXIT_FROM_PREVIOUS : bp->exit_velocity;
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	if (taken) {
+		return (taken_exit);
+	}
+	plan = *bp;
+	plan.entry_velocity = entry_velocity;
+	plan.cruise_velocity = bp->cruise_vmax;
+	plan.exit_velocity = exit_velocity;
+	mp_calculate_trapezoid(&plan);
+#ifdef __AVR
+	saved_sreg = SREG;
+	cli();
+#endif
+	taken = _taken_by_exec(bp);
+	if (!taken) {
+		bp->entry_velocity = plan.entry_velocity;
+		bp->cruise_velocity = plan.cruise_velocity;
+		bp->exit_velocity = plan.exit_velocity;
+		bp->head_length = plan.head_length;
+		bp->body_length = plan.body_length;
+		bp->tail_length = plan.tail_length;
+		bp->naiive_move_time = plan.naiive_move_time;
+	}
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	return (taken ? taken_exit : plan.exit_velocity);
 }
 
 /*
