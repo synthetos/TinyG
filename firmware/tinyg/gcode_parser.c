@@ -246,6 +246,7 @@ static stat_t _get_next_gcode_word(char **pstr, char *letter, float *value, uint
 			break;
 		}
 	}
+	if (!isfinite(*value)) { return (STAT_BAD_NUMBER_FORMAT); }
 	// significant decimal digits as written (trailing zeros dropped): G92.10 has 1, G92.1005 has 4 (E150)
 	for (char *p = *pstr; p < end; p++) {
 		if (*p != '.') { continue; }
