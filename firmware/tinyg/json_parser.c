@@ -846,7 +846,7 @@ void json_print_response(uint8_t status)
 	char footer_string[NV_FOOTER_LEN];
 
     if (xio.rx_mode == RX_MODE_CHAR) {                  // character style footer?
-        sprintf(footer_string, "2,%d,%d", status, cs.linelen);
+        sprintf(footer_string, "2,%d,%u", status, (unsigned int)cs.linelen);	// unsigned: E164 counts can pass 32767
         cs.linelen = 0;									// reset linelen so it's only reported once
     } else {                                            // or line_mode style footer
         sprintf(footer_string, "3,%d,%d", status, xio_get_line_buffers_available());
