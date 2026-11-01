@@ -9,7 +9,7 @@ import pytest
 
 pytestmark = pytest.mark.dialect("d449")
 
-@pytest.mark.bug("E170", on=["d449"])
+@pytest.mark.bug("E170", on=[])
 def test_repeated_feed_word(tg):
     feed = tg.get("feed")
     try:

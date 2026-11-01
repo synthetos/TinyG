@@ -347,6 +347,8 @@ static stat_t _parse_gcode_block(char *buf)
 {
 	char *pstr = (char *)buf;		// persistent pointer into gcode block for parsing words
   	char letter;					// parsed letter, eg.g. G or X or Y
+	uint32_t words_seen = 0;
+	bool repeated_word = false;
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
 	uint8_t decimals = 0;			// significant decimal digits of the value as written (E150)
 	stat_t status = STAT_OK;
@@ -360,6 +362,11 @@ static stat_t _parse_gcode_block(char *buf)
 
 	// extract commands and parameters
 	while((status = _get_next_gcode_word(&pstr, &letter, &value, &decimals)) == STAT_OK) {
+        if (letter != 'G' && letter != 'M') {
+            uint32_t word = 1UL << (letter - 'A');
+            if (words_seen & word) { repeated_word = true; }
+            words_seen |= word;
+        }
 		switch(letter) {
 			case 'G':
 			if (!(value >= 0 && value <= 999)) {
@@ -557,6 +564,7 @@ static stat_t _parse_gcode_block(char *buf)
 		cm.gf.modals[MODAL_GROUP_G1] = true;
 	}
 	ritorno(_validate_gcode_block());
+	if (repeated_word) { return (STAT_GCODE_GENERIC_INPUT_ERROR); }
 	return (_execute_gcode_block());		// if successful execute the block
 }
 
