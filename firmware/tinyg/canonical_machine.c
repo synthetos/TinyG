@@ -127,6 +127,8 @@ static void _exec_program_stop(float *value, bool *flags);
 
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
+static uint8_t _report_units(void);
+static float _get_report_position(const uint8_t axis);
 
 /***********************************************************************************
  **** CODE *************************************************************************
@@ -148,6 +150,7 @@ void cm_set_motion_state(const cmMotionState motion_state)
         case (MOTION_RUN):  { ACTIVE_MODEL = RUNTIME; break; }
         case (MOTION_HOLD): { ACTIVE_MODEL = RUNTIME; break; }
     }
+    cm_position_changed();                      // a report may now read the other model (E166)
 }
 
 /*
@@ -328,6 +331,9 @@ float cm_get_active_coord_offset(const uint8_t axis)
 
 float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis)
 {
+	if (gcode_state == RUNTIME) {
+		return (mp_get_runtime_work_offset(axis));	// the exec rewrites it (E166)
+	}
 	return (gcode_state->work_offset[axis]);
 }
 
@@ -376,15 +382,18 @@ float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t ax
  * NOTE: Only MODEL and RUNTIME are supported (no PLANNER or bf's)
  */
 
+static float _get_work_position_mm(const GCodeState_t *gcode_state, const uint8_t axis)
+{
+	if (gcode_state == MODEL) {
+		return (cm.gmx.position[axis] - cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis]);
+	}
+	return (mp_get_runtime_work_position(axis));
+}
+
 float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis)
 {
-	float position;
+	float position = _get_work_position_mm(gcode_state, axis);
 
-	if (gcode_state == MODEL) {
-		position = cm.gmx.position[axis] - cm_get_active_coord_offset(axis) - cm.gmx.tool_offset[axis];
-	} else {
-		position = mp_get_runtime_work_position(axis);
-	}
     if (axis <= AXIS_Z) {
         if (gcode_state->units_mode == INCHES) {
             position /= MM_PER_INCH;
@@ -1250,12 +1259,17 @@ stat_t cm_cancel_motion_mode()
 /* M114/M115 report immediately; they do not wait for queued motion. */
 stat_t cm_get_position(void)
 {
-    const GCodeState_t *gcode_state = ACTIVE_MODEL;
+    float positions[AXES];
+    cm_position_snapshot_begin();                   // all six axes from one instant, read as pos is (E166)
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        positions[axis] = _get_report_position(axis);
+    }
+    cm_position_snapshot_end();
     char token[5];
     strcpy_P(token, PSTR("posx"));
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
         char letter = pgm_read_byte(PSTR("XYZABC") + axis);
-        float position = cm_get_work_position(gcode_state, axis);
+        float position = positions[axis];
         if (cs.comm_mode == TEXT_MODE) {
             fprintf_P(stderr, PSTR("%c:%.4f%c"), letter, position, (axis == AXES-1) ? '\n' : ' ');
         } else {
@@ -2393,7 +2407,7 @@ stat_t cm_get_mots(nvObj_t *nv) { return(_get_msg_helper(nv, msg_mots, cm_get_mo
 stat_t cm_get_hold(nvObj_t *nv) { return(_get_msg_helper(nv, msg_hold, cm_get_hold_state()));}
 stat_t cm_get_home(nvObj_t *nv) { return(_get_msg_helper(nv, msg_home, cm_get_homing_state()));}
 
-stat_t cm_get_unit(nvObj_t *nv) { return(_get_msg_helper(nv, msg_unit, cm_get_units_mode(ACTIVE_MODEL)));}
+stat_t cm_get_unit(nvObj_t *nv) { return(_get_msg_helper(nv, msg_unit, _report_units()));}
 stat_t cm_get_coor(nvObj_t *nv) { return(_get_msg_helper(nv, msg_coor, cm_get_coord_system(ACTIVE_MODEL)));}
 stat_t cm_get_momo(nvObj_t *nv) { return(_get_msg_helper(nv, msg_momo, cm_get_motion_mode(ACTIVE_MODEL)));}
 stat_t cm_get_plan(nvObj_t *nv) { return(_get_msg_helper(nv, msg_plan, cm_get_select_plane(ACTIVE_MODEL)));}
@@ -2464,14 +2478,85 @@ static GCodeState_t *_position_model()
 	return (ACTIVE_MODEL);
 }
 
-stat_t cm_get_pos(nvObj_t *nv)
+/*
+ * cm_position_snapshot_begin() / cm_position_snapshot_end() - one instant for a whole report (E166)
+ *
+ *	A report reads its positions one axis at a time. Between two reads, and during them, interrupts
+ *	change what it reads: the exec moves the runtime position and loads the next block's offsets and
+ *	units, the step loader runs queued offset changes and the program end, and a motion state change
+ *	switches the model a report reads. begin() copies, at one instant, the model's absolute and work
+ *	positions and offsets and the units the report is shown in; the getters return that copy until
+ *	end(). Calls nest: only the outermost pair copies, so a single read copies for itself unless a
+ *	report already has a copy.
+ *
+ *	The report is not copied with interrupts off as a whole. Each interrupt path that changes reported
+ *	state moves cm_position_epoch on (cm_set_motion_state(), the exec, the loader's queued commands),
+ *	and the copy is taken again if the epoch moved while it was being taken. (Each runtime read in
+ *	the copy still turns interrupts off for its two floats; see plan_line.c.) Those interrupts come at
+ *	most once per segment, so a second pass is rare and a third rarer still.
+ */
+volatile uint8_t cm_position_epoch;
+
+static struct {
+	uint8_t depth;
+	uint8_t units;							// the units the report is shown in (the active model's)
+	float position[AXES];					// absolute position of the model the report reads (mm)
+	float work_position[AXES];				// its work position (mm)
+	float work_offset[AXES];				// its work offsets
+} pos_snap;
+
+static void _copy_positions()
 {
 	const GCodeState_t *gcode_state = _position_model();
-	uint8_t axis = _get_axis(nv->index);
-	nv->value_flt = cm_get_work_position(gcode_state, axis);
-	if ((axis <= AXIS_Z) && (gcode_state->units_mode != ACTIVE_MODEL->units_mode)) {	// match the unit report
-		nv->value_flt = (ACTIVE_MODEL->units_mode == INCHES) ? nv->value_flt / MM_PER_INCH : nv->value_flt * MM_PER_INCH;
+	pos_snap.units = ACTIVE_MODEL->units_mode;
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		pos_snap.position[axis] = cm_get_absolute_position(gcode_state, axis);
+		pos_snap.work_position[axis] = _get_work_position_mm(gcode_state, axis);
+		pos_snap.work_offset[axis] = cm_get_work_offset(gcode_state, axis);
 	}
+}
+
+void cm_position_snapshot_begin()
+{
+	if (pos_snap.depth++ != 0) {
+		return;
+	}
+	uint8_t epoch;
+	do {
+		epoch = cm_position_epoch;
+		__asm__ __volatile__ ("" ::: "memory");	// copy after reading the epoch...
+		_copy_positions();
+		__asm__ __volatile__ ("" ::: "memory");	// ...and before checking it again
+	} while (epoch != cm_position_epoch);
+}
+
+void cm_position_snapshot_end()
+{
+	if (pos_snap.depth != 0) {
+		pos_snap.depth--;
+	}
+}
+
+static uint8_t _report_units()
+{
+	return ((pos_snap.depth != 0) ? pos_snap.units : cm_get_units_mode(ACTIVE_MODEL));
+}
+
+/* the work position in the units the unit report shows; call inside a snapshot */
+static float _get_report_position(const uint8_t axis)
+{
+	float position = pos_snap.work_position[axis];
+	if ((axis <= AXIS_Z) && (pos_snap.units == INCHES)) {
+		position /= MM_PER_INCH;
+	}
+	return (position);
+}
+
+stat_t cm_get_pos(nvObj_t *nv)
+{
+	cm_position_snapshot_begin();
+	nv->value_flt = _get_report_position(_get_axis(nv->index));
+	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2479,7 +2564,9 @@ stat_t cm_get_pos(nvObj_t *nv)
 
 stat_t cm_get_mpo(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_absolute_position(_position_model(), _get_axis(nv->index));
+	cm_position_snapshot_begin();
+	nv->value_flt = pos_snap.position[_get_axis(nv->index)];
+	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
@@ -2487,7 +2574,9 @@ stat_t cm_get_mpo(nvObj_t *nv)
 
 stat_t cm_get_ofs(nvObj_t *nv)
 {
-	nv->value_flt = cm_get_work_offset(_position_model(), _get_axis(nv->index));
+	cm_position_snapshot_begin();
+	nv->value_flt = pos_snap.work_offset[_get_axis(nv->index)];
+	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);

@@ -683,6 +683,10 @@ float cm_get_work_offset(const GCodeState_t *gcode_state, const uint8_t axis);
 void cm_set_work_offsets(void);
 float cm_get_absolute_position(const GCodeState_t *gcode_state, const uint8_t axis);
 float cm_get_work_position(const GCodeState_t *gcode_state, const uint8_t axis);
+void cm_position_snapshot_begin(void);
+void cm_position_snapshot_end(void);
+extern volatile uint8_t cm_position_epoch;
+#define cm_position_changed() (cm_position_epoch++)		// from every interrupt path that changes reported positions (E166)
 
 // Critical helpers
 void cm_update_model_position_from_runtime(void);

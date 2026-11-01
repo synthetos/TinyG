@@ -539,6 +539,7 @@ stat_t get_grp(nvObj_t *nv)
     uint8_t child_depth = nv->depth+1;
 	char group[GROUP_LEN+1];						// group string retrieved from cfgArray child
 	nv->valuetype = TYPE_PARENT;					// make first object the parent
+	cm_position_snapshot_begin();					// a position group reads every axis at one instant (E166)
 
     // scan the config_app table looking for tokens belonging to the parent group
 	for (index_t i=0; nv_index_is_single(i); i++) {
@@ -551,11 +552,13 @@ stat_t get_grp(nvObj_t *nv)
             do {                                    // undo the group expansion
                 nv_reset_nv(nv_tmp);
             } while (--nv_tmp >= nv_parent);
+            cm_position_snapshot_end();
             return (STAT_JSON_TOO_MANY_PAIRS);
         }
 		nv_populate_nv_by_index(nv, i);
         nv->depth = child_depth;
 	}
+	cm_position_snapshot_end();
 	return (STAT_OK);
 }
 

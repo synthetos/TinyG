@@ -297,6 +297,7 @@ void mp_zero_segment_velocity(void);
 float mp_get_runtime_velocity(void);
 float mp_get_runtime_absolute_position(uint8_t axis);
 float mp_get_runtime_work_position(uint8_t axis);
+float mp_get_runtime_work_offset(uint8_t axis);
 void mp_set_runtime_work_offset(float offset[]);
 float* mp_get_planner_position_vector(void);
 bool mp_get_runtime_busy(void);

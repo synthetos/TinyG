@@ -508,6 +508,7 @@ static stat_t _populate_unfiltered_status_report(char *key)
 	char tmp[TOKEN_LEN+1];
 	nvObj_t *nv = nv_reset_nv_list(key);
  	nv = nv_next(nv);	                // set *nv to the first empty pair past the SR parent
+	cm_position_snapshot_begin();		// every position in this report from one instant (E166)
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
@@ -518,9 +519,11 @@ static stat_t _populate_unfiltered_status_report(char *key)
 		strcpy(nv->token, tmp);			//...or here.
 
 		if ((nv = nv_next(nv)) == NULL) { // should never be NULL unless SR length exceeds available buffer array
+			cm_position_snapshot_end();
 			return (cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("_populate_unfiltered_status_report")));
         }
 	}
+	cm_position_snapshot_end();
 	return (STAT_OK);
 }
 
@@ -544,6 +547,7 @@ static bool _populate_filtered_status_report()
 	uint8_t has_data = false;
 	nvObj_t *nv = nv_reset_nv_list("sr");   // initialize nv_list as a status report
     nv = nv_next(nv);                       // set *nv to the first empty pair past the SR parent
+    cm_position_snapshot_begin();           // every position in this report from one instant (E166)
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { // normal list termination or error
@@ -582,10 +586,12 @@ static bool _populate_filtered_status_report()
 		strcpy(nv->token, tmp);		        //...or here.
 
 		if ((nv = nv_next(nv)) == NULL) {   // should never be NULL unless SR length exceeds available buffer array
+            cm_position_snapshot_end();
     		return (false);
 		}
 		has_data = true;
 	}
+    cm_position_snapshot_end();
 	return (has_data);
 }
 

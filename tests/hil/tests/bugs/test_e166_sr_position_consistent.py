@@ -45,7 +45,7 @@ def _distance(cells, p):
     return best
 
 
-@pytest.mark.bug("E166", on=["d449"])
+@pytest.mark.bug("E166", on=[])
 def test_status_report_positions_lie_on_the_path(tg, keep, record):
     keep("ej", "rxm", "ex", "qv", "sl", "xtn", "xtm", "ytn", "ytm", "ztn", "ztm")
     lines = gcodeplay.goose()

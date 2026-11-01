@@ -34,6 +34,9 @@
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
 
 // aline planner routines / feedhold planning
 static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
@@ -52,9 +55,31 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 
 void mp_zero_segment_velocity() { mr.segment_velocity = 0;}
 float mp_get_runtime_velocity(void) { return (mr.segment_velocity);}
-float mp_get_runtime_absolute_position(uint8_t axis) { return (mr.position[axis]);}
 void mp_set_runtime_work_offset(float offset[]) { copy_vector(mr.gm.work_offset, offset);}
-float mp_get_runtime_work_position(uint8_t axis) { return (mr.position[axis] - mr.gm.work_offset[axis]);}
+
+/*
+ * Runtime position reads (E166)
+ *
+ *	The exec interrupt rewrites mr.position and the runtime offsets every segment, and could change a
+ *	float halfway through reading it. Each read copies its operands with interrupts off and does any
+ *	arithmetic afterwards. A report takes one copy of every axis with cm_position_snapshot_begin().
+ */
+static void _get_runtime(uint8_t axis, float *position, float *offset)
+{
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	*position = mr.position[axis];
+	*offset = mr.gm.work_offset[axis];
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+}
+
+float mp_get_runtime_absolute_position(uint8_t axis) { float p, o; _get_runtime(axis, &p, &o); return (p);}
+float mp_get_runtime_work_offset(uint8_t axis) { float p, o; _get_runtime(axis, &p, &o); return (o);}
+float mp_get_runtime_work_position(uint8_t axis) { float p, o; _get_runtime(axis, &p, &o); return (p - o);}
 
 /*
  * mp_get_runtime_busy() - returns TRUE if motion control busy (i.e. robot is moving)
