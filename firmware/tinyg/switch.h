@@ -104,6 +104,7 @@ switches_t sw;
  * Function prototypes
  */
 void switch_init(void);
+void switch_rtc_callback(void);
 void reset_switches(void);
 swState read_switch (const uint8_t sw_num);
 uint8_t get_switch_mode(const uint8_t sw_num);

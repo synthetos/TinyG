@@ -235,6 +235,22 @@ static void _dispatch_switch(const uint8_t sw_num)
 	}
 }
 
+/* Reconcile edges lost during lockout from the low-level RTC interrupt. */
+void switch_rtc_callback(void)
+{
+    for (uint8_t i=0; i < NUM_SWITCHES; i++) {
+        // Serialize with medium-level switch ISRs without masking step interrupts.
+        uint8_t interrupt_levels = PMIC.CTRL;
+        PMIC.CTRL = interrupt_levels & ~PMIC_MEDLVLEN_bm;
+        __asm__ __volatile__("nop" ::: "memory"); // PMIC disable takes one cycle
+        if ((sw.s[i].mode != SW_MODE_DISABLED) && Timeout_isPast(&sw.s[i].timeout)) {
+            Timeout_clear(&sw.s[i].timeout);
+            _dispatch_switch(i);
+        }
+        PMIC.CTRL = interrupt_levels;
+    }
+}
+
 /*
  * read_switch() - read, store and return current state of switch
  */
