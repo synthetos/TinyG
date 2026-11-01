@@ -190,3 +190,30 @@ def coverage(samples, pts):
     gaps = [b - a for a, b in zip(proj, proj[1:])]
     return {"path_mm": round(total, 2), "samples": len(samples), "first_mm": round(proj[0], 2),
             "last_mm": round(proj[-1], 2), "max_gap_mm": round(max(gaps + [proj[0], total - proj[-1]]), 2)}
+
+
+def path_check(status, pts, sr_interval, tol, min_samples):
+    """Judge status reports [(t, sr dict)] against the commanded path pts.
+
+    Returns the samples, the worst-first distances [(distance, t, sr)], the coverage, the gap limit
+    (three report intervals at the peak reported speed, at least 2 mm) and a list of failures. Too few
+    reports, a report off the path, or a stretch of path with no report all fail; no reports at all is
+    a failure, never a pass by default."""
+    with_pos = [(t, st) for t, st in status if "posx" in st and "posy" in st]
+    samples = [(st["posx"], st["posy"]) for _, st in with_pos]
+    scored = sorted(((distance_to_path((st["posx"], st["posy"]), pts), t, st) for t, st in with_pos),
+                    key=lambda r: -r[0])
+    cover = coverage(samples, pts)
+    top_mm_s = max((st.get("vel", 0) for _, st in status), default=0) / 60.0
+    gap_limit = max(2.0, 3 * sr_interval * top_mm_s)
+    failures = []
+    if len(samples) < min_samples:
+        failures.append(f"only {len(samples)} status reports with a position (need {min_samples}): "
+                        "no evidence the path ran")
+    if scored and scored[0][0] > tol:
+        failures.append(f"a status report was {scored[0][0]:.3f} mm off the commanded path")
+    if "max_gap_mm" not in cover or cover["max_gap_mm"] > gap_limit:
+        failures.append(f"part of the path has no status report on it ({cover}, limit {gap_limit:.1f} mm): "
+                        "it did not run")
+    return {"samples": samples, "scored": scored, "worst": scored[0][0] if scored else None,
+            "coverage": cover, "gap_limit": gap_limit, "failures": failures}

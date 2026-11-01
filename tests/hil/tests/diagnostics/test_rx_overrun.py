@@ -26,14 +26,14 @@ def test_rx_overrun_damage(tg, keep, record, request):
     res, outcome = None, "completed"
     try:
         res = sender.stream(tg, lines, "blast", bounds=((-2, 22), (-2, 22)))
-    except (sender.StreamStalled, sender.StreamRunaway) as e:
+    except sender.StreamFailed as e:
         res, outcome = e.result, f"{type(e).__name__}: {str(e)[:200]}"
     finally:
         if tg.stat() == tg.dialect.stat("ALARM"):
             tg.clear_alarm()
         tg.send_gcode("G92.1")
     bad = sender.splices(res, lines)
-    record("rx_overrun", {"outcome": outcome, "lines": res.lines, "responses": len(res.footers),
+    record("rx_overrun", {"outcome": outcome, "completion": res.completion, "lines": res.lines, "responses": len(res.footers),
                           "errors": res.errors[:10], "exceptions": res.exceptions[:5],
                           "spliced": len(bad), "spliced_executed": sum(1 for b in bad if b["status"] == 0),
                           "examples": bad[:8]})

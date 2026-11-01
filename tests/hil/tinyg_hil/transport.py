@@ -69,8 +69,10 @@ class Transport:
             if drain_timeout is not None and not self._drained(drain_timeout):
                 raise HostOutputStalled(self._stall_text())
             if drain_timeout is not None:
-                self.ser.flush()                # tcdrain: the bytes have left; safe now that the queue drained
-                                                # (a stopped tty would have failed the check above, not hung here)
+                # tcdrain, so the bytes have left the host. It has no timeout of its own: the check above only
+                # makes a long wait unlikely (the driver queue was already empty), and the test timeout is
+                # the backstop if it ever blocks.
+                self.ser.flush()
             if self.wire_margin:
                 time.sleep(len(data) * 10 / self.baud + self.wire_margin)
 

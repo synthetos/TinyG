@@ -13,8 +13,11 @@ Modes (the board must already be configured for them; see MODES):
   rts    rxm=0, ex=2: the serial port enforces CTS in hardware (pyserial rtscts)
   count  rxm=0, ex=0: Grbl-style character counting - unacknowledged bytes stay under the RX buffer
 
-Every non-blank line gets exactly one {"r":...} response in JSON mode (ej=1); responses are matched to
-lines in order. Status reports are collected with their arrival time for path reconstruction.
+In JSON mode (ej=1) every non-blank line sent gets one {"r":...,"f":[...]} response; responses are
+matched to lines in order. A response with no line outstanding, or without a valid footer, fails the
+stream (StreamProtocolError): it must not be taken as credit. Status reports are collected with their
+arrival time for path reconstruction. After the last answer the stream waits for the machine to stop;
+StreamResult.completion says how that ended, and only "idle" is a finished program.
 """
 from dataclasses import dataclass, field
 import time
@@ -33,14 +36,30 @@ RX_COUNT_LIMIT = 200        # count mode: bytes in flight (RX ring is 250, leave
 CHUNK = 16                  # xon mode: write granularity, so an XOFF stops us within a few bytes
 XOFF, XON = 0x13, 0x11
 STALL = 5.0                 # s with lines outstanding and neither a response nor a status report: hung
+TTY_ROOM = 256              # rts/xon: bytes allowed in the host driver's output queue before a write
+TTY_WRITE_TIMEOUT = 1.0     # rts/xon: a write that still blocks (queue full anyway) fails after this
+IDLE_STATS = (1, 3, 4)      # READY, PROGRAM_STOP, PROGRAM_END: the program finished
+END_STATS = {2: "alarm", 12: "shutdown", 13: "panic"}   # nothing more will run
 
 
-class StreamStalled(AssertionError):
+class StreamFailed(AssertionError):
+    """A stream that did not run through; .result holds the partial StreamResult."""
+
+
+class StreamStalled(StreamFailed):
     pass
 
 
-class StreamRunaway(AssertionError):
+class StreamRunaway(StreamFailed):
     """A status report put the machine outside the program's bounding box: it was stopped at once."""
+
+
+class StreamProtocolError(StreamFailed):
+    """A response that cannot be matched to a sent line (none outstanding, or no valid footer)."""
+
+
+class StreamLineTooLong(ValueError):
+    """Count mode: a line longer than RX_COUNT_LIMIT can never be sent inside the byte budget."""
 
 
 # Firmware state worth reading over the Atmel-ICE when a stream hangs (one halt, consistent snapshot)
@@ -130,6 +149,13 @@ class StreamResult:
     max_inflight: int = 0
     xoff_count: int = 0
     min_free: int | None = None
+    completion: str = ""            # idle | alarm | shutdown | panic | timeout (after every line was answered)
+
+    @property
+    def ok(self):
+        """Every line answered with status 0, no exception report, and the machine stopped normally."""
+        return (self.acked == self.lines and not self.errors and not self.exceptions
+                and self.completion == "idle")
 
 
 def _with(res, exc):
@@ -187,13 +213,35 @@ def _payload(lines):
     return out
 
 
-def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
-    """Send `lines` with `mode`; return a StreamResult once every line is answered and motion stops.
+def _footer(ev):
+    """(status, count) from a response's footer, or None when it has no usable footer."""
+    f = ev.data.get("f") if isinstance(ev.data, dict) else None
+    if not isinstance(f, list) or len(f) < 3:
+        return None
+    if not all(isinstance(v, int) and not isinstance(v, bool) for v in f[:3]):
+        return None
+    return f[1], f[2]
 
+
+def _wire(text, i, mode):
+    if mode == "count-crlf":
+        return (text + "\r\n").encode() + (b"\r\n" if i % 7 == 6 else b"")
+    return (text + "\n").encode()
+
+
+def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
+    """Send `lines` with `mode`; return a StreamResult once every line is answered and the machine stops.
+
+    The result's completion records how the wait for the machine ended; res.ok is the whole verdict.
     bounds = ((xmin, xmax), (ymin, ymax)) in work coordinates: a status report outside them sends a
     feedhold and a queue flush immediately and raises StreamRunaway (a corrupted line must not run on)."""
     tr = tg.transport
     todo = _payload(lines)
+    if mode in ("count", "count-crlf"):
+        for k, text in enumerate(todo):
+            if len(_wire(text, k, mode)) > RX_COUNT_LIMIT:
+                raise StreamLineTooLong(f"{mode}: line {k} is {len(_wire(text, k, mode))} bytes, more than the "
+                                        f"{RX_COUNT_LIMIT}-byte budget: {text[:60]!r}")
     res = StreamResult(mode=mode, lines=len(todo))
     sr = {k: tg.get(k) for k in ("posx", "posy", "posz")}   # filtered reports carry only what changed: start known
     inflight = []                    # byte lengths (count mode) or 1s (line mode), oldest first
@@ -209,9 +257,13 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     saved_write_timeout = tr.ser.write_timeout
     if mode == "rts":
         tr.ser.rtscts = True
-        tr.ser.write_timeout = None     # CTS may hold writes back for as long as the board is full
     elif mode == "xon":
         saved_tty = _ixon_only(tr.ser)   # the tty now consumes the board's XON/XOFF; the reader no longer sees them
+    if mode in ("rts", "xon"):
+        # The board may hold host output back for as long as it is full. Lines are written only while the
+        # driver's queue has room, so a write does not block and this loop keeps reading responses and
+        # status reports and running the stall watchdog; a write that blocks anyway fails after the timeout.
+        tr.ser.write_timeout = TTY_WRITE_TIMEOUT
     try:
         while res.acked < res.lines:
             now = time.monotonic()
@@ -227,24 +279,23 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 flow_seen += 1
             # send as much as the scheme allows
             while i < res.lines:
-                data = (todo[i] + "\n").encode()
-                if mode == "count-crlf":
-                    data = (todo[i] + "\r\n").encode() + (b"\r\n" if i % 7 == 6 else b"")
+                data = _wire(todo[i], i, mode)
                 if mode == "line":
                     room = free - len(inflight)
                     if room <= RESERVE:
                         break
                 elif mode == "count":
-                    if inflight and sum(inflight) + len(data) > RX_COUNT_LIMIT:
+                    if sum(inflight) + len(data) > RX_COUNT_LIMIT:
                         break
                 elif mode == "count-crlf":
-                    if sent_bytes - reported and sent_bytes - reported + len(data) > RX_COUNT_LIMIT:
+                    if sent_bytes - reported + len(data) > RX_COUNT_LIMIT:
                         break
                 elif mode == "g2" and credit <= 0:
                     break
                 elif mode == "xon-app" and xoff:
                     break                   # the application honours XOFF, as terminal programs do
-                # rts/xon: the board may hold host output back for a long time; the stall watchdog covers them
+                elif mode in ("rts", "xon") and tr.ser.out_waiting + len(data) > TTY_ROOM:
+                    break                   # the board is holding output back: read and watch, write later
                 tr.write(data, drain_timeout=None if mode in ("rts", "xon") else 2.0)
                 inflight.append(len(data) if mode == "count" else 1)
                 credit -= 1
@@ -276,22 +327,28 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 elif ev.kind == "exception":
                     res.exceptions.append(ev.raw)
                 elif ev.kind == "response":
-                    f = ev.data.get("f", [0, 0, 0])
-                    res.footers.append((f[2] if len(f) > 2 else None, f[1]))
-                    if f[1] != 0:
-                        res.errors.append((res.acked, f[1], todo[res.acked] if res.acked < res.lines else ev.raw))
-                    if inflight:
-                        inflight.pop(0)
+                    footer = _footer(ev)
+                    if i <= res.acked:
+                        raise _with(res, StreamProtocolError(f"{mode}: response with no line outstanding "
+                                                             f"({res.acked} answered, {i} sent): {ev.raw[:120]}"))
+                    if footer is None:
+                        raise _with(res, StreamProtocolError(f"{mode}: response to line {res.acked} "
+                                                             f"({todo[res.acked]!r}) has no valid footer: {ev.raw[:120]}"))
+                    status, count = footer
+                    res.footers.append((count, status))
+                    if status != 0:
+                        res.errors.append((res.acked, status, todo[res.acked]))
+                    inflight.pop(0)
                     credit += 1
-                    if len(f) > 2 and isinstance(f[2], int):
-                        reported += f[2]
-                    if mode == "line" and len(f) > 2:
-                        free = f[2]
+                    reported += count
+                    if mode == "line":
+                        free = count
                         res.min_free = free if res.min_free is None else min(res.min_free, free)
                     res.acked += 1
                 ev = tr.next_event(0)
         # all answered: wait for motion to finish, polling stat and still collecting status reports
         asked = 0.0
+        res.completion = "timeout"          # unless the machine is seen to stop
         while time.monotonic() < deadline:
             if time.monotonic() - asked > 0.3:
                 tr.write(b'{"stat":null}\n')
@@ -304,10 +361,14 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 res.status.append((ev.t, dict(sr)))
             elif ev.kind == "queue" and isinstance(ev.data.get("qr"), (int, float)):
                 res.queue.append((ev.t, ev.data["qr"]))
-            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in (1, 3, 4):
+            elif ev.kind == "exception":
+                res.exceptions.append(ev.raw)
+            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in IDLE_STATS:
+                res.completion = "idle"
                 break
-            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in (2, 12, 13):
-                break                       # alarmed, shutdown or panicked: nothing more will run, don't wait it out
+            elif ev.kind == "response" and isinstance(ev.body, dict) and ev.body.get("stat") in END_STATS:
+                res.completion = END_STATS[ev.body["stat"]]
+                break                       # nothing more will run: don't wait it out
         res.finished = time.monotonic()
     finally:
         tr.ser.write_timeout = saved_write_timeout
