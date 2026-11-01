@@ -347,6 +347,7 @@ static stat_t _validate_gcode_block()
 static stat_t _parse_gcode_block(char *buf)
 {
 	char *pstr = (char *)buf;		// persistent pointer into gcode block for parsing words
+	char *word_start = pstr;
   	char letter;					// parsed letter, eg.g. G or X or Y
 	float value = 0;				// value parsed from letter (e.g. 2 for G2)
 	uint8_t decimals = 0;			// significant decimal digits of the value as written (E150)
@@ -544,10 +545,20 @@ static stat_t _parse_gcode_block(char *buf)
             case 'L': if (!(value >= 0) || (value > UINT8_MAX) || (value != trunc(value))) { status = STAT_L_WORD_IS_INVALID; break; }	// L258, L2.5 were L2 (E160)
                       SET_NON_MODAL (L_word, value);
 			case 'R': SET_NON_MODAL (arc_radius, value);
-			case 'N': SET_NON_MODAL (linenum,(uint32_t)value);
+            case 'N': {
+                uint32_t line = 0;
+                for (char *p = word_start + 1; p < pstr; p++) {
+                    if (!isdigit(*p)) { return (STAT_GCODE_GENERIC_INPUT_ERROR); }
+                    uint8_t digit = *p - '0';
+                    if (line > (UINT32_MAX - digit) / 10) { return (STAT_GCODE_GENERIC_INPUT_ERROR); }
+                    line = line * 10 + digit;
+                }
+                SET_NON_MODAL (linenum, line);
+            }
     	    default: return (STAT_GCODE_COMMAND_UNSUPPORTED);	// an error for this block, not an alarm (E042)
 		}
 		if(status != STAT_OK) break;
+		word_start = pstr;
 	}
 	if ((status != STAT_OK) && (status != STAT_COMPLETE)) {
         return (status);
