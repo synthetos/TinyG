@@ -13,7 +13,7 @@ import pytest
 
 pytestmark = [pytest.mark.dialect("d449")]
 
-@pytest.mark.bug("E176", on=["d449"])
+@pytest.mark.bug("E176", on=[])
 def test_message_tab_escape(tg):
     response = tg.send_json({"gc": "(msgA\tB)"})
     assert response.status == 0
