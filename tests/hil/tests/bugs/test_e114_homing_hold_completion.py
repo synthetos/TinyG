@@ -1,5 +1,9 @@
 """E114 integration coverage: repeated homing through mounted software switches.
 
+Timing-pending: ICE/test hooks establish logic outcomes, not real lockout windows,
+ISR latency or race timing. Scope/logic-analyzer confirmation on a normal build
+is still required; the deterministic host regression is the primary logic proof.
+
 Requires TEST_HOOKS=1, --ice and --allow-motion on the bare board. This test
 checks complete search/latch/backoff cycles, but does not force the narrow
 PENDING-to-HOLD interleaving: a stock pass is not evidence against E114.
@@ -9,11 +13,12 @@ import time
 
 import pytest
 
-pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.resets_board,
+pytestmark = [pytest.mark.timing, pytest.mark.ice, pytest.mark.motion, pytest.mark.resets_board,
               pytest.mark.dialect("d449"), pytest.mark.profile("switches-no")]
 
 
 def test_repeated_homing_completes_after_switch_holds(tg, keep, switches, ice, record):
+    record("validation_status", "timing-pending")
     if "test_hook" not in ice.symbols.sym:
         pytest.skip("requires TEST_HOOKS=1; halted pin writes do not exercise port edges")
     try:
