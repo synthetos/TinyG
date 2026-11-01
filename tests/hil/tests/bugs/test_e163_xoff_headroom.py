@@ -62,8 +62,8 @@ def _attempt(tg):
     bad = [f.status for f in footers if f and f.status != 0]
     xoffs = sum(1 for _, b in tr.flow[flow_mark:] if b == XOFF)
     return {"answered": len(footers), "bad_statuses": sorted(set(bad)), "bad": len(bad),
-            "alarms": alarms[:3], "xoff_sent": xoffs,
-            "clean": not alarms and not bad and len(footers) == LINES}
+            "alarms": alarms[:3], "alarm_statuses": [a.get("st") for a in alarms],
+            "xoff_sent": xoffs, "clean": not alarms and not bad and len(footers) == LINES}
 
 
 @pytest.mark.bug("E163", on=[])
@@ -80,9 +80,9 @@ def test_host_honouring_xoff_loses_nothing(tg, keep, record):
             assert result["xoff_sent"], "the board never sent XOFF: the check did not exercise flow control"
             if result["clean"]:
                 break
-            lost = [a for a in result["alarms"] if a.get("st") == 13]
-            other = [a for a in result["alarms"] if a.get("st") != 13]
-            assert lost and not other, f"an attempt failed other than by a lost-input alarm (status 13): {result}"
+            statuses = result.get("alarm_statuses", [a.get("st") for a in result["alarms"]])
+            assert statuses and all(st == 13 for st in statuses), \
+                f"an attempt failed other than by a lost-input alarm (status 13): {result}"
             tg.drain(quiet=0.3)
             if tg.stat() == tg.dialect.stat("ALARM"):
                 tg.clear_alarm()
