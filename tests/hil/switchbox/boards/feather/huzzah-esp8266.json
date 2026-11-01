@@ -1,0 +1,43 @@
+{
+ "kind": "feather",
+ "id": "huzzah-esp8266",
+ "name": "Adafruit Feather HUZZAH ESP8266",
+ "mcu": "ESP8266EX (Ai-Thinker ESP-12F module)",
+ "product": "https://www.adafruit.com/product/2821",
+ "platformio_env": "huzzah",
+ "sources": {
+  "sch": "docs/adafruit-pcb/Adafruit ESP8266 Feather rev G.sch (CC BY-SA 3.0): JP1 = 16-pin header (pin 1 at the TX end), JP3 = 12-pin header (pin 1 = BAT)",
+  "ds": "Espressif ESP8266EX datasheet v7.1, Table 2-1 and notes (docs/local, docs/README.md)",
+  "pins": "docs/pins.md"
+ },
+ "positions": {
+  "L1": {"mcu": "CH_PD", "gpio": null, "capability": "control", "note": "ESP chip enable, 10 kΩ pull-up (R2); grounding it powers the ESP8266 down. Other Feathers leave this pin NC.", "source": "sch net CH_PD = JP1.1, R2.G$3"},
+  "L2": {"mcu": "GPIO1 (U0TXD)", "gpio": 1, "capability": "reserved", "note": "USB serial TX, wired to the CP2104 RXD; must not be low at power-up", "source": "sch net TXD = JP1.2, IC1.RXD; ds note on U0TXD"},
+  "L3": {"mcu": "GPIO3 (U0RXD)", "gpio": 3, "capability": "reserved", "note": "USB serial RX, driven by the CP2104 TXD through 1 kΩ (R11)", "source": "sch net RXD = JP1.3, R11 - USB_RX - IC1.TXD"},
+  "L4": {"mcu": "GPIO12", "gpio": 12, "capability": "switch", "note": "same net as the 12-pin header's \"12\" (S5)", "source": "sch net GPIO12/MISO = JP1.4, JP3.5"},
+  "L5": {"mcu": "GPIO13", "gpio": 13, "capability": "switch", "note": "same net as the 12-pin header's \"11\" (S6)", "source": "sch net GPIO13/MOSI = JP1.5, JP3.6"},
+  "L6": {"mcu": "GPIO14", "gpio": 14, "capability": "switch", "note": "same net as the 12-pin header's \"13\" (S4)", "source": "sch net GPIO14/SCK = JP1.6, JP3.4"},
+  "L7": {"mcu": null, "gpio": null, "capability": "nc", "note": "A5 on other Feathers; not connected on the HUZZAH ESP8266", "source": "sch: no net on JP1.7"},
+  "L8": {"mcu": null, "gpio": null, "capability": "nc", "note": "A4 on other Feathers; not connected", "source": "sch: no net on JP1.8"},
+  "L9": {"mcu": null, "gpio": null, "capability": "nc", "note": "A3 on other Feathers; not connected", "source": "sch: no net on JP1.9"},
+  "L10": {"mcu": null, "gpio": null, "capability": "nc", "note": "A2 on other Feathers; not connected", "source": "sch: no net on JP1.10"},
+  "L11": {"mcu": null, "gpio": null, "capability": "nc", "note": "A1 on other Feathers; not connected", "source": "sch: no net on JP1.11"},
+  "L12": {"mcu": "ADC (TOUT)", "gpio": null, "capability": "analog", "note": "0-1.0 V analog input, no divider; not a digital pin", "source": "sch net ADC = JP1.12, X3.ADC; ds Table 2-1 pin 6 TOUT"},
+  "L13": {"mcu": "GND", "gpio": null, "capability": "gnd", "note": "ground", "source": "sch net GND = JP1.13"},
+  "L14": {"mcu": null, "gpio": null, "capability": "nc", "note": "AREF on other Feathers; not connected", "source": "sch: no net on JP1.14"},
+  "L15": {"mcu": "3V3", "gpio": null, "capability": "power", "note": "3.3 V regulator output", "source": "sch net 3.3V = JP1.15, U2.OUT"},
+  "L16": {"mcu": "RST", "gpio": null, "capability": "control", "note": "ESP reset (10 kΩ pull-up R3, reset button SW2, auto-reset Q1); grounding it resets the ESP8266", "source": "sch net RESET = JP1.16, R3, SW2, Q1.C"},
+  "S1": {"mcu": "VBAT", "gpio": null, "capability": "power", "note": "LiPo battery voltage", "source": "sch net VBAT = JP3.1"},
+  "S2": {"mcu": "EN", "gpio": null, "capability": "control", "note": "3.3 V regulator enable (10 kΩ pull-up R1); low turns the Feather off", "source": "sch net EN = JP3.2, U2.EN, R1"},
+  "S3": {"mcu": "VBUS", "gpio": null, "capability": "power", "note": "USB 5 V", "source": "sch net VBUS = JP3.3"},
+  "S4": {"mcu": "GPIO14", "gpio": 14, "capability": "switch", "note": "same net as SCK (L6)", "source": "sch net GPIO14/SCK = JP3.4, JP1.6"},
+  "S5": {"mcu": "GPIO12", "gpio": 12, "capability": "switch", "note": "same net as MISO (L4)", "source": "sch net GPIO12/MISO = JP3.5, JP1.4"},
+  "S6": {"mcu": "GPIO13", "gpio": 13, "capability": "switch", "note": "same net as MOSI (L5)", "source": "sch net GPIO13/MOSI = JP3.6, JP1.5"},
+  "S7": {"mcu": "GPIO15", "gpio": 15, "capability": "pulldown", "note": "boot strap (must be low at boot) with a 4.7 kΩ pull-down (R7): against TinyG's 2.7 kΩ pull-up the open line sits near 2.2 V, so it can never present an open contact and can stop the ESP booting", "source": "sch net GPIO15 = JP3.7, R7.G$1; ds strap note (MTDO); target tinyg-v8 input"},
+  "S8": {"mcu": "GPIO0", "gpio": 0, "capability": "bootstrap", "note": "boot strap (must be high at boot); red LED D3 via 4.7 kΩ; pulled low by the auto-reset transistor Q2 when DTR is asserted alone (flashing)", "source": "sch net GPIO0 = JP3.8, Q2.C, R7.G$2 - D3; ds strap note"},
+  "S9": {"mcu": "GPIO16", "gpio": 16, "capability": "switch", "note": "no pin interrupt (irrelevant here); not tied to RST", "source": "sch net GPIO16 = JP3.9 only; ds Table 2-1 pin 8 XPD_DCDC"},
+  "S10": {"mcu": "GPIO2", "gpio": 2, "capability": "bootstrap", "note": "boot strap (must be high at boot); 10 kΩ pull-up (R2); the ESP-12 module's blue LED", "source": "sch net GPIO2 = JP3.10, R2.G$2; ds strap note"},
+  "S11": {"mcu": "GPIO5", "gpio": 5, "capability": "switch", "note": "", "source": "sch net GPIO5/SCL = JP3.11"},
+  "S12": {"mcu": "GPIO4", "gpio": 4, "capability": "switch", "note": "", "source": "sch net GPIO4/SDA = JP3.12"}
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "kind": "target",
+ "id": "tinyg-v8",
+ "name": "Synthetos TinyG v8",
+ "sources": {
+  "schematic": "hardware/v8schematics/v8h/tinyGv8h - schematic page1.pdf (sheet 1, CPU section): J7 'XY switches', J8 'ZA switches', R10-R17, C43-C50",
+  "wiki": ".analysis/docs/tinyg-wiki/Homing-and-Limits-Description-and-Operation.md: 8 switch inputs on terminal blocks J7 and J8, with two ground and two 3.3 V terminals",
+  "firmware": "firmware/tinyg/switch.c (internal pull-up, both-edge interrupts); tests/hil/boards/tinyg-v8.json"
+ },
+ "input": {
+  "pull_up_ohms": 2700,
+  "pull_up_to": "3.3 V",
+  "capacitor_uF": 0.22,
+  "note": "Every switch line has a 2.7 kΩ pull-up to 3.3 V (R10-R17) and 0.22 µF to GND (C43-C50) at the terminal, plus the xmega's internal pull-up. A released line rises with τ ≈ 0.6 ms, so edges closer than about 1 ms are smoothed before the xmega sees them. An unpowered TinyG turns the pull-ups into a load towards its dead 3.3 V rail.",
+  "source": "v8h schematic sheet 1"
+ },
+ "connectors": [
+  {"id": "J7", "label": "XY switches", "pins": [
+   {"pin": 1, "label": "GND", "kind": "gnd"},
+   {"pin": 2, "label": "3.3v", "kind": "power"},
+   {"pin": 3, "label": "Xmin", "input": "xmin"},
+   {"pin": 4, "label": "Xmax", "input": "xmax"},
+   {"pin": 5, "label": "Ymin", "input": "ymin"},
+   {"pin": 6, "label": "Ymax", "input": "ymax"}]},
+  {"id": "J8", "label": "ZA switches", "pins": [
+   {"pin": 1, "label": "GND", "kind": "gnd"},
+   {"pin": 2, "label": "3.3v", "kind": "power"},
+   {"pin": 3, "label": "Zmin", "input": "zmin"},
+   {"pin": 4, "label": "Zmax", "input": "zmax"},
+   {"pin": 5, "label": "Amin", "input": "amin"},
+   {"pin": 6, "label": "Amax", "input": "amax"}]}
+ ]
+}

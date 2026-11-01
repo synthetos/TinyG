@@ -1,0 +1,15 @@
+{
+ "kind": "style",
+ "capabilities": {
+  "switch":    {"label": "switch output",                      "light": "#1a7f37", "dark": "#3fb950"},
+  "bootstrap": {"label": "switch output, boot-strap caveat",   "light": "#9a6700", "dark": "#d29922"},
+  "pulldown":  {"label": "GPIO15: 4.7 kΩ boot pull-down, not usable", "light": "#cf222e", "dark": "#ff7b72"},
+  "reserved":  {"label": "USB serial, reserved",               "light": "#0969da", "dark": "#58a6ff"},
+  "analog":    {"label": "analog input only",                  "light": "#1b7c83", "dark": "#39c5cf"},
+  "control":   {"label": "reset / enable, do not wire",        "light": "#8250df", "dark": "#bc8cff"},
+  "power":     {"label": "power",                              "light": "#bc4c00", "dark": "#ffa657"},
+  "gnd":       {"label": "GND (common ground)",                "light": "#1f2328", "dark": "#e6edf3"},
+  "nc":        {"label": "not connected on this Feather",      "light": "#8c959f", "dark": "#6e7681"}
+ },
+ "order": ["switch", "bootstrap", "pulldown", "reserved", "analog", "control", "power", "gnd", "nc"]
+}
