@@ -410,7 +410,14 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 		w->nx = nx;								// restore pointers
 		w->pv = pv;
 		w->buffer_state = MP_BUFFER_LOADING;
+#ifdef __AVR
+		uint8_t saved_sreg = SREG;					// the exec and loader free buffers from interrupts (E182)
+		cli();
+#endif
 		mb.buffers_available--;
+#ifdef __AVR
+		SREG = saved_sreg;
+#endif
 		mb.w = w->nx;
 		return (w);
 	}
@@ -422,7 +429,14 @@ void mp_unget_write_buffer()
 {
     if (mb.w->buffer_state != MP_BUFFER_EMPTY) {  // safety. Can't unget an empty buffer
         mb.w->buffer_state = MP_BUFFER_EMPTY;
+#ifdef __AVR
+        uint8_t saved_sreg = SREG;                  // see mp_get_write_buffer() (E182)
+        cli();
+#endif
         mb.buffers_available++;
+#ifdef __AVR
+        SREG = saved_sreg;
+#endif
     }
 }
 
