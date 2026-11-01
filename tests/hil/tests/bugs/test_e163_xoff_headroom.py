@@ -14,8 +14,8 @@ XOFF.
 XON/XOFF over USB serial stays best-effort: the adapter can hold the XOFF for its 16 ms latency timer,
 longer than the 175 bytes of headroom take at 115200, and a 250-byte ring leaves no more room. So a
 clean stream is required in one of ATTEMPTS tries (the old 80% mark lost 140 of 150 lines every time;
-the 30% mark loses input in about 1 in 9 tries), and any attempt that loses input must raise the
-lost-input alarm (E162), never run damaged lines. Hosts should use line mode or RTS/CTS.
+the 30% mark loses input in about 1 in 9 tries). An attempt may fail only by the lost-input alarm
+(status 13, E162); a short or failed attempt without it, or any other exception, fails the test. Hosts should use line mode or RTS/CTS.
 """
 import time
 
@@ -80,8 +80,9 @@ def test_host_honouring_xoff_loses_nothing(tg, keep, record):
             assert result["xoff_sent"], "the board never sent XOFF: the check did not exercise flow control"
             if result["clean"]:
                 break
-            assert result["alarms"] or len(result["bad_statuses"]) == 0, \
-                f"lines failed without a lost-input alarm: {result}"
+            lost = [a for a in result["alarms"] if a.get("st") == 13]
+            other = [a for a in result["alarms"] if a.get("st") != 13]
+            assert lost and not other, f"an attempt failed other than by a lost-input alarm (status 13): {result}"
             tg.drain(quiet=0.3)
             if tg.stat() == tg.dialect.stat("ALARM"):
                 tg.clear_alarm()
