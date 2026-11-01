@@ -36,8 +36,12 @@ enum {FLUSH_OFF, FLUSH_REQUESTED};
 #define AXIS_X 0
 static struct {int cycle_state, hold_state, queue_flush_state;} cm;
 static struct {int block_state;} mr;
-static struct {stat_t (*func)(int8_t); int8_t axis;} hm;
+static struct {stat_t (*func)(int8_t); int8_t axis; float saved_jerk;} hm;
 static bool moving, planner_live;
+static int cm_is_alarmed(void) {return STAT_OK;}
+static void cm_set_axis_jerk(int8_t axis,float jerk) {}
+static stat_t _homing_finalize_exit(int8_t axis) {return STAT_OK;}
+static void _take_input_flush_request(void) {}
 static unsigned dispatched, flushed, reports, positions, ended;
 static bool st_runtime_isbusy(void) {return moving;}
 static void mp_flush_planner(void) {planner_live=false;flushed++;}
