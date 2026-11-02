@@ -108,7 +108,7 @@ stat_t nv_set(nvObj_t *nv)
         return(STAT_INTERNAL_RANGE_ERROR);
     }
 	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
-	if ((set != set_grp) && (set != set_nul) && (set != rt_set_hb) && (set != rt_set_qt)) {
+	if ((set != set_grp) && (set != set_nul) && (set != rt_set_grp) && (set != rt_set_hb) && (set != rt_set_qt)) {
 		rt_qt_invalidate();					// a setting or action write, before it takes effect; a group
 	}										// counts through its children, and rt operations never
 	stat_t status = set(nv);
@@ -123,7 +123,11 @@ stat_t nv_get(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	return (((fptrCmd)GET_TABLE_WORD(get))(nv));
+	fptrCmd get = (fptrCmd)GET_TABLE_WORD(get);
+	if (cfg_get_is_action(get)) {
+		rt_qt_invalidate();					// a GET that acts, before it takes effect
+	}
+	return (get(nv));
 }
 
 void nv_print(nvObj_t *nv)

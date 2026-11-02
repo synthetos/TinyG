@@ -39,6 +39,7 @@
 // Feedhold remains immediate even mid-line; it does not change the framing state.
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
+static volatile uint8_t usb_activity;			// a byte came in or went out since xio_usb_is_quiet() last looked
 
 // Framing heuristic (E195): a line in progress that has had no byte for about a second is taken to be
 // left by a host that went away, and a '{' after it (how a host opens a session) starts a fresh line.
@@ -81,6 +82,7 @@ static int _putc_usb_raw(const char c)
 	while (next_tx_buf_head == USBu.tx_buf_tail)
 		sleep_mode(); 									// sleep until there is space in the buffer
 	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
+	usb_activity = true;
 	USBu.tx_buf[next_tx_buf_head] = c;					// write char to buffer, then publish it: the RX
 	USBu.tx_buf_head = next_tx_buf_head;				// ISR (XON) or CTS ISR may re-enable TX at any time
 
@@ -192,6 +194,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	uint8_t status = USBu.usart->STATUS;		// read before DATA: the error flags travel with the frame
 	char c = USBu.usart->DATA;					// can only read DATA once
+	usb_activity = true;						// any byte, realtime characters too (rt heartbeat)
 
 	if (status & USART_BUFOVF_bm) {				// the USART lost a frame before this one while this
 		_usb_rx_lost();							// interrupt could not run (E193)
@@ -276,18 +279,21 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
  * xio_usb_is_quiet() - nothing unread or half-read coming in, nothing waiting to go out (rt heartbeat)
  * xio_usb_try_send_line() - send a whole line only if it can go at once (rt heartbeat)
  *
- *	The main loop is the only producer of TX output. An empty ring has room for any short line, so
- *	_putc_usb_raw() never waits; with output queued, or TX paused by XOFF or CTS, the line is skipped.
+ *	The main loop is the only producer of TX output. An empty ring has room for a line of up to
+ *	XIO_TRY_SEND_MAX bytes even with every LF sent as LF CR, so _putc_usb_raw() never waits; a longer
+ *	line, output already queued, or TX paused by XOFF or CTS, and the line is skipped.
  */
 uint8_t xio_usb_is_quiet(void)
 {
-	return ((USBu.rx_buf_head == USBu.rx_buf_tail) && !(USB.flag_in_line && USB.len) &&
+	bool active = usb_activity;
+	usb_activity = false;						// one byte: a later byte sets it again
+	return (!active && (USBu.rx_buf_head == USBu.rx_buf_tail) && !(USB.flag_in_line && USB.len) &&
 			(USBu.tx_buf_head == USBu.tx_buf_tail));
 }
 
 uint8_t xio_usb_try_send_line(const char *line)
 {
-	if ((USBu.tx_buf_head != USBu.tx_buf_tail) || (USBu.fc_state_tx == FC_IN_XOFF) ||
+	if ((strlen(line) > XIO_TRY_SEND_MAX) || (USBu.tx_buf_head != USBu.tx_buf_tail) || (USBu.fc_state_tx == FC_IN_XOFF) ||
 		((xio.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm))) {
 		return (false);
 	}

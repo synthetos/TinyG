@@ -61,7 +61,7 @@ typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool fla
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
 struct {int enable_flow_control, buf_state;} xio;
 struct {bool queue_flush_input;} cm;
-xioUsart_t USBu; xioDev_t USB; volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks;
+xioUsart_t USBu; xioDev_t USB; volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks; static volatile uint8_t usb_activity;
 #define RX_STALE_LINE_TICKS 103
 #define RX_STALE_LINE_MARK 0x1A
 

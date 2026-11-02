@@ -49,8 +49,10 @@ static struct { bool allowed; } rt;
 #define RT_ENVELOPE_PURE 1
 #define RT_ENVELOPE_BAD 2
 static void rt_qt_invalidate(void) {}
+#define cfg_get_is_action(get) ((void)(get), false)
 static stat_t rt_set_hb(nvObj_t *n) { (void)n; return STAT_OK; }
 static stat_t rt_set_qt(nvObj_t *n) { (void)n; return STAT_OK; }
+static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 stat_t set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 nvObj_t *nv_reset_nv_list(char *parent) {
     /* AVR address zero reads as the empty parent; desktop NULL is not readable. */

@@ -5,8 +5,10 @@ JSON only, RAM only, off after every reset:
   {"rt":{"hb":1}}             heartbeat every 1-60 s while idle: {"hb":{"stat":..,"hold":..,"up":..,"qt":..}}
   {"rt":{"qt":"<32 hex>"}}    quiescence token, accepted only while nothing is moving, held or queued; cleared at
                               reset and by any state-changing input (G-code, settings writes, clear, flush, job kill,
-                              motion start); reads, ENQ, '!' and '~' leave it.
-No text ($rthb) or flat ({"rthb":..}) access, no mixing rt with other keys, and a token write stands alone.
+                              motion start, and GETs that act such as {clear:null} or {me:null}); reads, ENQ,
+                              '!' and '~' leave it.
+No text ($rthb) or flat ({"rthb":..}) access, no mixing rt with other keys, no key twice, and a token write
+stands alone; a refused leaf changes nothing.
 A heartbeat is not a response: it never carries r or f and does not disturb a line-mode sender.
 """
 import json
@@ -107,6 +109,10 @@ def test_quiescence_token(tg, keep):
     tg.send_json({"clear": None})                       # an action, though it looks like a read
     assert rt(tg, {"qt": None}).body["rt"]["qt"] is None
 
+    assert rt(tg, {"qt": TOKEN2}).status == 0
+    tg.send_json({"me": None})                          # energizes the motors: an action too
+    assert rt(tg, {"qt": None}).body["rt"]["qt"] is None
+
 
 @pytest.mark.motion
 def test_token_refused_while_moving(tg):
@@ -132,6 +138,8 @@ def test_token_refused_while_moving(tg):
     ('{"rt":{"qt":"0123"}}', "token too short"),
     ('{"rt":{"qt":"0123456789abcdef0123456789abcdeg"}}', "token not hex"),
     ('{"rt":{"zz":1}}', "unknown leaf"),
+    ('{"rt":{"hb":1,"hb":61}}', "a leaf given twice"),
+    ('{"rt":{"hb":2},"rt":{"hb":3}}', "rt given twice"),
 ])
 def test_rt_rejects(tg, hb_off, line, why):
     resp = tg.send_line(line)

@@ -220,6 +220,7 @@ void xio_drop_usb_rx_before_mark(void);
 void xio_usb_rtc_callback(void);
 uint8_t xio_usb_is_quiet(void);
 uint8_t xio_usb_try_send_line(const char *line);
+#define XIO_TRY_SEND_MAX ((TX_BUFFER_SIZE - 2) / 2)	// bytes: fits an empty TX ring with LF CR expansion
 #define RX_STALE_LINE_MARK 0x1A				// RX ring only: the line before it is stale, drop it (E195)
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);

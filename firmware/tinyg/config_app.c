@@ -727,7 +727,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","pwr",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// motor power enagled group
 	{ "","jog",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// job ID group
-	{ "","rt", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// runtime session group
+	{ "","rt", _n0, 0, tx_print_nul, get_grp, rt_set_grp,(uint32_t *)&cs.null,0 },	// runtime session group
 
 	{ "","uda", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// user data group
 	{ "","udb", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// user data group
@@ -788,6 +788,15 @@ const cfgItem_t cfgArray[] PROGMEM = {
 index_t	nv_index_max() { return ( NV_INDEX_MAX );}
 bool nv_index_is_single(index_t index) { return ((index <= NV_INDEX_END_SINGLES) ? true : false);}
 bool nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GROUPS) ? true : false);}
+
+// GETs that act, as their SETs do ({md:null} disables the motors, {clear:null} clears an alarm): like writes,
+// they end the runtime quiescence token. Rows whose get and set are one function must be listed here or be
+// plain reads (help, the reserved hold settings); test_runtime_rt checks the table.
+bool cfg_get_is_action(fptrCmd get)
+{
+	return ((get == st_set_me) || (get == st_set_md) || (get == cm_alrm) || (get == cm_pnic) ||
+			(get == cm_shutd) || (get == cm_clr) || (get == cm_dam));
+}
 //bool nv_index_is_group(index_t index) { return (((index >= NV_INDEX_START_GROUPS) && (index < NV_INDEX_START_UBER_GROUPS)) ? true : false);}
 
 

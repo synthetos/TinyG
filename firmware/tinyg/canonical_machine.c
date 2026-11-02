@@ -700,7 +700,6 @@ stat_t cm_pnic(nvObj_t *nv)               // invoke panic from command
 
 stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from command line
 {
-    rt_qt_invalidate();                     // an action even as a GET ({clear:null})
     cm_clear();
     return (STAT_OK);
 }

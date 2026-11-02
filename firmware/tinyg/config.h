@@ -369,6 +369,7 @@ index_t nv_get_index(const char *group, const char *token);
 index_t	nv_index_max(void);                 // (see config_app.c)
 bool nv_index_is_single(index_t index);     // (see config_app.c)
 bool nv_index_lt_groups(index_t index);     // (see config_app.c)
+bool cfg_get_is_action(fptrCmd get);        // (see config_app.c)
 bool nv_group_is_prefixed(char *group);
 bool nv_group_is_typesafe(char *group);
 

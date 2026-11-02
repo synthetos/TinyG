@@ -22,6 +22,7 @@
 
 typedef struct rtSingleton {
 	bool allowed;							// the line being executed is a pure {"rt":...} envelope
+	bool check_only;						// rt_set_grp's first pass: setters validate without applying
 	uint8_t hb;								// heartbeat interval in seconds, 0 = off
 	uint32_t hb_quiet_since;				// SysTick time the board last went quiet (or last beat)
 	volatile uint8_t qt_valid;				// cleared from interrupts too (flush, job kill)
@@ -38,5 +39,6 @@ stat_t rt_set_hb(nvObj_t *nv);
 stat_t rt_get_qt(nvObj_t *nv);
 stat_t rt_set_qt(nvObj_t *nv);
 stat_t rt_get_up(nvObj_t *nv);
+stat_t rt_set_grp(nvObj_t *nv);
 
 #endif // End of include guard: RUNTIME_H_ONCE

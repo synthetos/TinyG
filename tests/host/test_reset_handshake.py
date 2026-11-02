@@ -45,7 +45,7 @@ class ResetHandshake(unittest.TestCase):
         rpt=(ROOT/'firmware/tinyg/report.c').read_text()
         dispatch=function(usb,r'ISR\(USB_RX_ISR_vect\)[^\n]*\n')
         dispatch=dispatch[:dispatch.index('\n\tif (c == CHAR_FEEDHOLD)')]+ '\n}'
-        code=PRELUDE+dispatch
+        code=PRELUDE+"static volatile unsigned char usb_activity;\n"+dispatch
         code+=function(hw,r'void hw_hard_reset\(void\)[^\n]*\n')
         code+=function(rpt,r'void _startup_helper\(stat_t status, const char \*msg\)\s*\n')
         code+=r'''

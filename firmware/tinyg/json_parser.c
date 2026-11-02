@@ -160,14 +160,16 @@ static void _scan_tid(const char *p)
  * _scan_rt() - classify a runtime {"rt":...} envelope before anything executes
  *
  *	The rt family stands alone: rt with any other top-level key except tid is refused, and so is a token
- *	write with any other rt operation. Lexical, like _scan_tid(): strings are skipped and depth tracked.
+ *	write with any other rt operation, or any key given twice. Lexical, like _scan_tid(): strings are
+ *	skipped and depth tracked.
  *	A flat key such as rthb is not rt; its getters and setters refuse it because rt.allowed stays false.
  */
 static uint8_t _scan_rt(const char *p)
 {
 	uint8_t depth = 0, others = 0, rt_keys = 0;
 	uint8_t objects = 0;							// bit n: the container at depth n+1 is an object
-	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false;
+	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false, twice = false;
+	uint8_t leaves = 0;								// rt leaves seen: bit 0 hb, 1 qt, 2 up, 3 anything else
 	while (*p != NUL) {
 		char c = *p;
 		if ((c == '"') && !expect_key) {			// skip a string value
@@ -209,11 +211,16 @@ static uint8_t _scan_rt(const char *p)
 			if (quoted && (*p == '"')) { p++; }
 			expect_key = false;
 			if (depth == 1) {
-				if ((n == 2) && (key[0] == 'r') && (key[1] == 't')) { has_rt = true; rt_value = true; }
+				if ((n == 2) && (key[0] == 'r') && (key[1] == 't')) { twice |= has_rt; has_rt = true; rt_value = true; }
 				else if (!((n == 3) && (key[0] == 't') && (key[1] == 'i') && (key[2] == 'd'))) { others++; }
 			} else if (in_rt && (depth == 2)) {
 				rt_keys++;
-				if ((n == 2) && (key[0] == 'q') && (key[1] == 't')) { has_qt = true; }
+				uint8_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
+							   ((n == 2) && (key[0] == 'q') && (key[1] == 't')) ? 2 :
+							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 : 0;
+				twice |= (leaf & leaves) != 0;
+				leaves |= leaf;
+				has_qt = has_qt || (leaf == 2);
 			}
 			continue;
 		}
@@ -221,7 +228,7 @@ static uint8_t _scan_rt(const char *p)
 		p++;
 	}
 	if (!has_rt) { return (RT_ENVELOPE_NONE); }
-	if (others || (has_qt && (rt_keys > 1))) { return (RT_ENVELOPE_BAD); }
+	if (others || twice || (has_qt && (rt_keys > 1))) { return (RT_ENVELOPE_BAD); }
 	return (RT_ENVELOPE_PURE);
 }
 

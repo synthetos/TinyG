@@ -1,15 +1,20 @@
 """Runtime session family "rt" (runtime.c, json_parser.c _scan_rt, xio_usb.c): real code, stubbed machine.
 
-- _scan_rt(): rt alone (with or without tid) is pure; rt with any other top-level key, or a token write with
-  another rt operation, is refused; a flat rthb or a string that merely contains "rt" is not rt.
-- rt getters/setters refuse anything but a pure envelope; hb is whole seconds 0-60; qt is exactly 32 hex
+- _scan_rt(): rt alone (with or without tid) is pure; rt with any other top-level key, a token write with
+  another rt operation, or any key given twice is refused; a flat rthb or a string that merely contains "rt" is not rt.
+- the token's quiescence check and commit are one critical section: a job kill arriving between them is
+  delivered afterwards and invalidates it;
+- rt getters/setters refuse anything but a pure envelope, and in rt_set_grp's checking pass validate without
+  applying; hb is whole seconds 0-60; qt is exactly 32 hex
   digits and is accepted only at quiescence (no motion, hold, flush, queued block, prepared segment, busy
   stepper or pending data line); a read returns null once invalidated.
 - rt_heartbeat_callback(): no beat when off, in text mode, with USB traffic or with the machine busy; the
   first beat a full interval after the last activity, then one per interval; any busy pass restarts the
   interval; a skipped beat is not made up; the SysTick wrap is handled; the frame carries stat, hold, up
   and qt (quoted) or null.
-- xio_usb_try_send_line(): sends a whole line only with the TX ring empty and TX not paused by XOFF or CTS.
+- xio_usb_try_send_line(): sends a whole line only with the TX ring empty, TX not paused by XOFF or CTS, and the
+  line no longer than XIO_TRY_SEND_MAX; xio_usb_is_quiet() also sees traffic handled between two looks.
+- every config row whose GET is its SET's function is classified: an action (ends quiescence) or a plain read.
 """
 from pathlib import Path
 import os
@@ -72,7 +77,13 @@ static int sends;
 static uint8_t mp_get_planner_buffers_available(void) { return planner_free; }
 static uint8_t st_runtime_isbusy(void) { return stepper_busy; }
 static uint8_t xio_usb_is_quiet(void) { return usb_quiet; }
-static uint8_t xio_rx_data_pending(void) { return data_pending; }
+static int kill_inject, kill_pending;
+static void job_kill(void);
+static uint8_t xio_rx_data_pending(void) {
+    if (kill_inject) { kill_inject = 0; if (SREG & 0x80) job_kill(); else kill_pending = 1; }   /* an interrupt here */
+    return data_pending;
+}
+static void deliver(void) { if (kill_pending && (SREG & 0x80)) { kill_pending = 0; job_kill(); } }
 static uint32_t SysTickTimer_getValue(void) { return ticks; }
 static int cm_get_combined_state(void) { return cm.machine_state; }
 static uint8_t xio_usb_try_send_line(const char *line) { sends++; strcpy(sent, line); return sent_ok; }
@@ -99,6 +110,7 @@ def runtime_code():
 
 
 MAIN = r'''
+static void job_kill(void) { rt.qt_valid = false; cm.job_kill_requested = true; }        /* cm_request_job_kill's effects */
 static void idle(void) {
     memset(&cm, 0, sizeof(cm)); cm.machine_state = MACHINE_READY; st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;
     planner_free = PLANNER_BUFFER_POOL_SIZE; stepper_busy = 0; usb_quiet = 1; data_pending = 0; cs.comm_mode = JSON_MODE;
@@ -118,6 +130,8 @@ int main(void) {
         {"{\"rthb\":1}", RT_ENVELOPE_NONE}, {"{\"gc\":\"G0 (rt)\"}", RT_ENVELOPE_NONE}, {"{\"msg\":\"{\\\"rt\\\":1}\"}", RT_ENVELOPE_NONE},
         {"{\"x\":{\"rt\":1}}", RT_ENVELOPE_NONE}, {"{\"sr\":{\"posx\":true,\"rt\":1}}", RT_ENVELOPE_NONE},
         {"{\"rt\":{\"hb\":[1,2],\"qt\":\"a\"}}", RT_ENVELOPE_BAD}, {"{\"rt\":{\"hb\":1,\"up\":null}}", RT_ENVELOPE_PURE},
+        {"{\"rt\":{\"hb\":1,\"hb\":61}}", RT_ENVELOPE_BAD}, {"{\"rt\":{\"up\":null,\"up\":null}}", RT_ENVELOPE_BAD},
+        {"{\"rt\":null,\"rt\":{\"hb\":1}}", RT_ENVELOPE_BAD}, {"{rt:{hb:1,HB:2}}", RT_ENVELOPE_BAD},
     };
     for (unsigned i = 0; i < sizeof(env) / sizeof(env[0]); i++) {
         int got = _scan_rt(env[i].s);
@@ -136,6 +150,10 @@ int main(void) {
     { nvObj_t nv = { .valuetype = TYPE_STRING, .str = "5" }; assert(rt_set_hb(&nv) == STAT_INPUT_VALUE_RANGE_ERROR); }
     assert(set_int(rt_set_hb, 60) == STAT_OK && rt.hb == 60);
     assert(set_int(rt_set_hb, 0) == STAT_OK && rt.hb == 0);
+    rt.check_only = true;                                                       /* rt_set_grp's checking pass */
+    assert(set_int(rt_set_hb, 7) == STAT_OK && rt.hb == 0);
+    assert(set_int(rt_set_hb, 61) == STAT_INPUT_VALUE_RANGE_ERROR);
+    rt.check_only = false;
 
     /* token validation and quiescence */
     const char *bad[] = { "", "0123", TOKEN "0", "0123456789abcdef0123456789abcdeg", "0123456789abcdef 123456789abcdef" };
@@ -152,6 +170,11 @@ int main(void) {
     }
     idle(); cm.end_hold_requested = true; assert(set_str(rt_set_qt, TOKEN) == STAT_COMMAND_NOT_ACCEPTED);
     idle(); cm.job_kill_requested = true; assert(set_str(rt_set_qt, TOKEN) == STAT_COMMAND_NOT_ACCEPTED);
+    idle(); rt.check_only = true; assert(set_str(rt_set_qt, TOKEN) == STAT_OK && !rt.qt_valid); rt.check_only = false;
+    /* a job kill arriving while the token is checked and committed is held off until after the commit, and then
+       invalidates it: masked when rt_set_qt looks at the pending data lines, it is delivered on SREG restore */
+    idle(); kill_inject = 1; assert(set_str(rt_set_qt, TOKEN) == STAT_OK); deliver();
+    assert(!rt.qt_valid && cm.job_kill_requested);
     idle(); usb_quiet = 0; assert(set_str(rt_set_qt, TOKEN) == STAT_OK && rt.qt_valid);   /* newer input does not block it */
     { nvObj_t nv = {0}; assert(rt_get_qt(&nv) == STAT_OK && nv.valuetype == TYPE_STRING && !strcmp(nv.str, TOKEN)); }
     rt_qt_invalidate();
@@ -197,11 +220,12 @@ SEND = r'''
 #define FC_IN_XOFF 1
 #define FLOW_CONTROL_RTS 2
 #define USB_CTS_bm 0x10
+#define XIO_TRY_SEND_MAX ((TX_BUFFER_SIZE - 2) / 2)
 typedef uint8_t buffer_t;
 struct { uint8_t IN; } port;
 struct { buffer_t tx_buf_head, tx_buf_tail; uint8_t fc_state_tx; typeof(port) *port; } USBu = { 1, 1, 0, &port };
 struct { int enable_flow_control; } xio;
-static char out[256]; static int n;
+static char out[512]; static int n;
 static int _putc_usb_raw(const char c) { out[n++] = c; return 0; }
 '''
 
@@ -227,10 +251,44 @@ int main(void) {
     USBu.fc_state_tx = FC_IN_XOFF; assert(!xio_usb_try_send_line("x\n") && n == 0); USBu.fc_state_tx = 0;
     xio.enable_flow_control = FLOW_CONTROL_RTS; port.IN = USB_CTS_bm; assert(!xio_usb_try_send_line("x\n") && n == 0);
     port.IN = 0; assert(xio_usb_try_send_line("x\n") && n == 2);
+    char longline[XIO_TRY_SEND_MAX + 2]; memset(longline, 'a', sizeof(longline) - 1); longline[sizeof(longline) - 1] = 0;
+    n = 0; assert(!xio_usb_try_send_line(longline) && n == 0);                    /* longer than an empty ring can take */
+    longline[XIO_TRY_SEND_MAX] = 0; assert(xio_usb_try_send_line(longline) && n == XIO_TRY_SEND_MAX);
     return 0;
 }
 '''
         self.build_run(code, "send")
+
+
+    def test_acting_gets_are_classified(self):
+        """Every row whose GET is its SET's function either ends quiescence (cfg_get_is_action) or is a plain read."""
+        table = src("config_app.c")
+        rows = re.findall(r'\{\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,[^,]*,[^,]*,\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*,', table)
+        same = {(t, g) for _, t, _, g, s in rows if g == s}
+        listed = set(re.findall(r"get == (\w+)", function(table, r"bool cfg_get_is_action\(fptrCmd get\)")))
+        plain_reads = {"help_config", "_reserved_hold_setting"}
+        for token, get in sorted(same):
+            self.assertTrue(get in listed or get in plain_reads, f"{token}: GET {get} acts like its SET; classify it")
+        self.assertTrue({"st_set_md", "st_set_me", "cm_clr", "cm_alrm", "cm_pnic", "cm_shutd"} <= listed)
+        get = function(src("config.c"), r"stat_t nv_get\(nvObj_t \*nv\)")
+        self.assertRegex(get, r"cfg_get_is_action\(get\)\)\s*\{\s*rt_qt_invalidate\(\);")
+
+    def test_usb_quiet_sees_finished_traffic(self):
+        code = SEND.replace("struct { buffer_t tx_buf_head, tx_buf_tail; uint8_t fc_state_tx; typeof(port) *port; } USBu = { 1, 1, 0, &port };",
+                            "struct { buffer_t tx_buf_head, tx_buf_tail, rx_buf_head, rx_buf_tail; uint8_t fc_state_tx; typeof(port) *port; } USBu = { 1, 1, 1, 1, 0, &port };\n"
+                            "struct { uint8_t flag_in_line, len; } USB;\nstatic volatile uint8_t usb_activity;")
+        code += function(src("xio/xio_usb.c"), r"uint8_t xio_usb_is_quiet\(void\)") + r'''
+int main(void) {
+    assert(xio_usb_is_quiet());
+    usb_activity = 1; assert(!xio_usb_is_quiet()); assert(xio_usb_is_quiet());   /* a byte handled between looks */
+    USB.flag_in_line = 1; USB.len = 0; assert(xio_usb_is_quiet());               /* an empty line header is quiet */
+    USB.len = 3; assert(!xio_usb_is_quiet()); USB.flag_in_line = 0;
+    USBu.rx_buf_head = 5; assert(!xio_usb_is_quiet()); USBu.rx_buf_head = 1;
+    USBu.tx_buf_head = 5; assert(!xio_usb_is_quiet());
+    return 0;
+}
+'''
+        self.build_run(code, "quiet")
 
 
 if __name__ == "__main__":

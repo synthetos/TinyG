@@ -53,9 +53,10 @@ static bool _machine_quiet(void)
 /*
  * rt_heartbeat_callback() - send {"hb":{...}} after hb seconds of quiet (controller loop)
  *
- *	Quiet: the machine as above, JSON mode, and the USB link idle both ways (no unread or partial input,
- *	nothing waiting to go out). Any activity restarts the interval. A beat that cannot go out whole at once
- *	is skipped, and skipped beats are never made up.
+ *	Quiet: the machine as above, JSON mode, and the USB link idle both ways: no byte in or out since the
+ *	last pass (realtime characters included), no unread or partial input, nothing waiting to go out. Any
+ *	activity restarts the interval. A beat that cannot go out whole at once is skipped, and skipped beats
+ *	are never made up.
  */
 stat_t rt_heartbeat_callback(void)
 {
@@ -108,6 +109,7 @@ stat_t rt_set_hb(nvObj_t *nv)
 	if ((nv->valuetype != TYPE_INTEGER) || (nv->value_int > RT_HB_MAX)) {	// whole seconds only (typesafe marshalling)
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
+	if (rt.check_only) { return (STAT_OK); }
 	rt.hb = (uint8_t)nv->value_int;
 	rt.hb_quiet_since = SysTickTimer_getValue();
 	nv->valuetype = TYPE_INTEGER;
@@ -153,18 +155,24 @@ stat_t rt_set_qt(nvObj_t *nv)
 	if ((nv->valuetype != TYPE_STRING) || !_is_token(nv->str)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	// Only at quiescence: otherwise a token could be installed over a held or queued job that '~' then runs.
 	// Data lines the controller has not run yet (line mode serves control lines first) count as queued.
-	if (!_machine_quiet() || xio_rx_data_pending()) { return (STAT_COMMAND_NOT_ACCEPTED); }
+	// Check and commit in one critical section, so an interrupt that invalidates (a job kill, a flush)
+	// cannot fall between them and be overwritten.
 #ifdef __AVR
 	uint8_t saved_sreg = SREG;
 	cli();
 #endif
-	memcpy(rt.qt, nv->str, RT_QT_LEN);
-	rt.qt[RT_QT_LEN] = NUL;
-	rt.qt_valid = true;
+	stat_t status = STAT_OK;
+	if (!_machine_quiet() || xio_rx_data_pending()) {
+		status = STAT_COMMAND_NOT_ACCEPTED;
+	} else if (!rt.check_only) {
+		memcpy(rt.qt, nv->str, RT_QT_LEN);
+		rt.qt[RT_QT_LEN] = NUL;
+		rt.qt_valid = true;
+	}
 #ifdef __AVR
 	SREG = saved_sreg;
 #endif
-	return (STAT_OK);
+	return (status);
 }
 
 stat_t rt_get_up(nvObj_t *nv)
@@ -172,5 +180,32 @@ stat_t rt_get_up(nvObj_t *nv)
 	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
 	nv->value_int = SysTickTimer_getValue() / RT_TICKS_PER_SECOND;	// wraps with the tick counter (~48 days)
 	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+/*
+ * rt_set_grp() - {"rt":{...}}: check every leaf, then apply them; the first refusal is the reply
+ *
+ *	The ordinary group setter ignores its children's status. Here a refused leaf changes nothing, and
+ *	null leaves are reads.
+ */
+stat_t rt_set_grp(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	for (uint8_t pass = 0; pass < 2; pass++) {
+		rt.check_only = (pass == 0);
+		nvObj_t *child = nv;
+		for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
+			if (((child = nv_next(child)) == NULL) || (child->valuetype == TYPE_EMPTY) || (child->depth <= nv->depth)) {
+				break;
+			}
+			stat_t status = (child->valuetype == TYPE_NULL) ? ((pass == 0) ? STAT_OK : nv_get(child)) : nv_set(child);
+			if (status != STAT_OK) {
+				rt.check_only = false;
+				return (status);
+			}
+		}
+	}
+	rt.check_only = false;
 	return (STAT_OK);
 }
