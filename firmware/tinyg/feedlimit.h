@@ -1,14 +1,16 @@
 /*
  * feedlimit.h - feed-limit advisor, step 1: why the running move's planned speed is below its F
  *
- *	The planner tags each block with the constraints that shaped its plan (FL_* bits): the axis cap at
- *	creation, the corner and exact-stop limits of its entry, and from each (re)plan the trapezoid that
- *	was chosen. The tags are published with the plan in the same protected store (E180). When the exec
- *	starts a block it stages the block's tags, planned cruise and F; the step loader makes them current
- *	when that block's first segment loads, so the report describes the move stepping now, not the one
- *	being prepared. Read through the rt family ({rt:{flm:null}} and friends, runtime.c).
- *	A tag means the constraint took part in planning the block, not that it limits every instant of it.
- *	See .analysis/feed-advisor-design.md.
+ *	mp_aline() tags each block, once, with the constraints known when it is created (FL_STATIC_TAGS): the
+ *	axis cap, a corner limit on its entry (only while the move before it is still queued; E196) and G61
+ *	exact stop. The tags never change on replanning. When the exec starts a block it stages the tags with
+ *	the plan it took (cruise, F, cruise_vmax, naiive_move_time) in the slot that is not current; the step
+ *	loader makes that slot current when the block's first segment loads, so the report describes the move
+ *	stepping now, not the one being prepared. The profile tags (FL_PROFILE_TAGS) are derived from the
+ *	staged plan when a report reads it. Read through the rt family ({rt:{flm:null}} and friends, runtime.c).
+ *	A tag means the constraint took part in planning the block, not that it limits every instant of it;
+ *	an absent tag is not proof the constraint was absent (no corner tag when the previous block had
+ *	already been freed). See .analysis/feed-advisor-design.md.
  */
 #ifndef FEEDLIMIT_H_ONCE
 #define FEEDLIMIT_H_ONCE
@@ -46,7 +48,7 @@ typedef struct flBlock {
 	float cruise;					// planned cruise velocity, mm/min
 	float feed;						// the block's F, mm/min (requested path speed)
 	float cruise_vmax;				// cruise asked for after axis caps, mm/min
-	float naiive_move_time;			// move time at cruise, minutes
+	float naiive_move_time;			// length over the average of the requested entry and exit (plan_zoid.c), minutes
 } flBlock_t;
 
 // true if an axis takes part in a move: its unit-vector component is not +0 or -0 (no float compare)
