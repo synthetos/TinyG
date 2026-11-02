@@ -35,7 +35,7 @@ def _replies(tg):
     return [e for e in tg.drain(quiet=0.5, limit=4.0) if e.kind in ("response", "exception")]
 
 
-@pytest.mark.bug("E195", on=["d440", "d449"])
+@pytest.mark.bug("E195", on=["d440"])
 @pytest.mark.parametrize("leftover", ["G0 X0.5 (rough", "G0 X0.5 ;rough"], ids=["paren", "semicolon"])
 def test_stale_comment_line_does_not_run_on_connect(tg, record, leftover):
     tg.guard.check_gcode(leftover, allow="leftover line on an unloaded bench")

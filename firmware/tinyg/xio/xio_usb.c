@@ -40,6 +40,18 @@
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
 
+// A line in progress that has had no byte for this long was left by a host that went away. A '{' that
+// follows it is a new host opening its session: the stale start is dropped instead of running (E195).
+#define RX_STALE_LINE_TICKS 100					// RTC ticks (10 ms each)
+static volatile uint8_t rx_quiet_ticks;			// RTC ticks since the last byte for the ring, saturating
+
+void xio_usb_rtc_callback(void)
+{
+	if (rx_quiet_ticks < UINT8_MAX) {
+		rx_quiet_ticks++;
+	}
+}
+
 /*
  * xio_putc_usb()
  * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
@@ -198,6 +210,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
 			USBu.rx_flush_marked = true;
 			USBu.rx_lost_after_mark = false;		// losses so far came before the '%' (E162)
+			USBu.rx_stale_marked = false;			// a stale line before the '%' goes with the flush (E195)
 		}
 		return;
 	}
@@ -221,6 +234,9 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 	}
 
+    bool stale = (c == '{') && rx_in_line && (rx_quiet_ticks >= RX_STALE_LINE_TICKS);	// E195
+    rx_quiet_ticks = 0;
+
     // Keep reset, enquiry and flow control independent of line framing.
     if (c == '\r' || c == '\n') {
         rx_in_line = false;
@@ -233,6 +249,10 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
 		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
 		USBu.rx_buf_count++;
+		if (stale) {							// the reader drops the line before this '{' (E195)
+			USBu.rx_stale_mark = USBu.rx_buf_head;
+			USBu.rx_stale_marked = true;
+		}
 		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
 			xio_xoff_usart(&USBu);
 		}
@@ -274,6 +294,7 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
 	USBu.rx_gap_report = false;
+	USBu.rx_stale_marked = false;
 }
 
 /*

@@ -43,11 +43,13 @@ enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
 struct {uint8_t CTRLA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
-                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
+                uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report,rx_stale_mark,rx_stale_marked; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
 struct {int enable_flow_control, buf_state;} xio;
-xioUsart_t USBu; xioDev_t USB; volatile bool rx_in_line;
+xioUsart_t USBu; xioDev_t USB; volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks;
+#define RX_STALE_LINE_TICKS 100
+
 uint8_t SREG = 0x80;
 static int inject;                                   /* an RX interrupt armed to fire at the next cli() */
 static void isr_mark_and_post(void);

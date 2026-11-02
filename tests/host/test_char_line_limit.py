@@ -22,7 +22,7 @@ class CharLineLimit(unittest.TestCase):
 #define min(a,b) ((a)<(b)?(a):(b))
 #define advance_buffer(i,n) ((i)=((i)+1)%(n))
 enum {XIO_OK=0,XIO_EAGAIN,XIO_BUFFER_EMPTY,XIO_BUFFER_FULL,XIO_EOL,XIO_SIG_EOL,XIO_SIG_OK,XIO_LINE_DAMAGED};
-typedef struct {uint8_t rx_buf_head,rx_buf_tail;unsigned rx_buf_count;uint8_t rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;char rx_buf[64];} xioUsart_t;
+typedef struct {uint8_t rx_buf_head,rx_buf_tail;unsigned rx_buf_count;uint8_t rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report,rx_stale_mark,rx_stale_marked;char rx_buf[64];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
 void flow(xioDev_t *d){(void)d;}

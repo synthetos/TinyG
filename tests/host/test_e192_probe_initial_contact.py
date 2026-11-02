@@ -62,7 +62,7 @@ def switch_code(probe=False):
 
 def probe_case():
     code = switch_code(probe=True)
-    code += "\n" + function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)")
+    code += "\n" + "static void xio_usb_rtc_callback(void) {}   /* E195: the USB quiet-time tick */\n" + function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)")
     code += SWITCH_EXERCISE[:SWITCH_EXERCISE.index("int main(void)")]
     code += r'''
 typedef int stat_t;

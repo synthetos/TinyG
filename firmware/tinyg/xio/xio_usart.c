@@ -263,7 +263,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
-    bool lost_open_now = false, lost_close_now = false, lost_inside = false, lost_here = false;
+    bool lost_open_now = false, lost_close_now = false, lost_inside = false, lost_here = false, stale = false;
 
     if (dx->rx_gap_report) {                    // whole lines were lost after the last good one: report it
         dx->rx_gap_report = false;              // now, not when the host sends again (E162)
@@ -284,6 +284,10 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
         dx->rx_buf_count--;
         c = dx->rx_buf[dx->rx_buf_tail];		// get char from RX Q
+        if (dx->rx_stale_marked && (dx->rx_buf_tail == dx->rx_stale_mark)) {
+            dx->rx_stale_marked = false;        // a new host's '{' after a stale line (E195)
+            stale = true;
+        }
         // Bytes were lost after the marked positions (E162): note them with the dequeue, under the same cli
         if (dx->rx_lost && !dx->rx_lost_open && (dx->rx_buf_tail == dx->rx_lost_first)) {
             dx->rx_lost_open = true;
@@ -340,6 +344,9 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         return (XIO_LINE_DAMAGED);
     }
     bool damaged = dx->rx_line_damaged;         // at a line end: a gap after it damages the next line
+    if (stale) {                                // drop what a host that went away left of its line: the
+        d->len = 0;                             // '{' starts the new host's line (E195)
+    }
 
     if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
         if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't

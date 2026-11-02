@@ -23,6 +23,7 @@
 #include "../tinyg.h"
 #include "../config.h"
 #include "../switch.h"
+#include "../xio.h"								// xio_usb_rtc_callback() (E195)
 #include "xmega_rtc.h"
 #include "../util.h"
 
@@ -79,6 +80,7 @@ ISR(RTC_COMP_vect)
 	rtc.sys_ticks = ticks;
 	SREG = saved_sreg;
     switch_rtc_callback();
+    xio_usb_rtc_callback();
 }
 
 /*
