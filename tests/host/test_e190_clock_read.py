@@ -63,7 +63,8 @@ def split_stores(code):
 
 def main_case():
     pre = MOTOR_PRELUDE.replace("uint32_t SysTickTimer_getValue(void) {return tick;}", "")
-    code = pre + INTERRUPTS + r'''
+    # the motor prelude may already define SREG and cli()
+    code = pre + ("" if "uint8_t SREG" in pre else INTERRUPTS) + r'''
 #include <stdio.h>
 #define ISR(n) void n(void)
 struct {uint32_t rtc_ticks,sys_ticks;} rtc;

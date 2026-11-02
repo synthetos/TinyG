@@ -48,6 +48,7 @@ def switch_code(probe=False):
     if probe:
         pre = pre.replace("static void cm_request_feedhold(void) {holds++;}", "void cm_request_feedhold(void);")
     code = pre + types + "\nrtClock_t rtc;\n"
+    code += "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }   /* switch.c reads the clock through it (E190) */\n"
     code += "\n".join(fn("xmega/xmega_rtc.c", n) for n in ("Timeout_isSet", "Timeout_isPast", "Timeout_set", "Timeout_clear"))
     raw = fn("switch.c", "_read_raw_switch")
     if probe:
