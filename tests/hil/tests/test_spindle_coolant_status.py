@@ -3,10 +3,10 @@
 g2core (wiki: edge-branch changelog, "Spindle Changes"/"Coolant Changes") reports spindle enable {spe:n},
 direction {spd:n} (0 = CW, 1 = CCW), speed {sps:n}, and flood/mist coolant {cof:n} / {com:n}, all usable in
 status reports. edge-next reports the same names, read-only, so a host written for g2core reads TinyG the
-same way. They show the state the machine is in now: M3/M4/M5, S and M7/M8/M9 are queued with the moves
-and take effect when the planner reaches them, so a command behind a move is not reported until it runs.
-sps is the speed in use, after the p1csl..p1csh (CW) or p1wsl..p1wsh (CCW) clamp. TinyG has no spindle
-speed sensor: sps is the commanded speed, not a measurement.
+same way. They report the outputs as driven now: M3/M4/M5, S, M7/M8/M9 and M2/M30 are queued with the
+moves and take effect when the planner reaches them, so a command behind a move is not reported until it
+runs. spd is the direction last driven (kept while off); sps is the speed in use, after the p1csl..p1csh
+(CW) or p1wsl..p1wsh (CCW) clamp, and 0 while off. TinyG has no spindle speed sensor: sps is commanded.
 """
 import pytest
 
@@ -57,7 +57,7 @@ def test_spindle_and_coolant_state(tg, outputs_off):
     tg.send_gcode("M5 M9", check=True, allow="off")
     tg.wait_idle()
     st = state(tg)
-    assert (st["spe"], st["cof"], st["com"]) == (0, 0, 0), st
+    assert (st["spe"], st["spd"], st["sps"], st["cof"], st["com"]) == (0, 1, 0, 0, 0), st   # direction kept, speed 0
 
 
 def test_state_follows_execution_not_the_queue(tg, outputs_off):
@@ -74,6 +74,25 @@ def test_state_follows_execution_not_the_queue(tg, outputs_off):
         assert tg.get("spe") == 1
     finally:
         tg.send_gcode("M5", allow="off")
+        tg.send_gcode("G0 X0", allow="return to start")
+        tg.wait_idle()
+
+
+def test_program_end_behind_a_move(tg, outputs_off):
+    """M30 turns the outputs off when it runs, after the move before it, not when it is parsed."""
+    tg.send_gcode("G90", check=True)
+    tg.send_gcode("G0 X0", check=True, allow="known start")
+    tg.send_gcode("M3 S5000 M8", check=True, allow="spindle and flood on")
+    tg.wait_idle()
+    try:
+        tg.send_gcode("G1 X4 F240", check=True, allow="1 s move")
+        tg.send_gcode("M30", check=True, allow="program end behind the move")
+        st = state(tg)
+        assert (st["spe"], st["cof"]) == (1, 1), f"outputs reported off before the program end ran: {st}"
+        tg.wait_idle()
+        st = state(tg)
+        assert (st["spe"], st["sps"], st["cof"], st["com"]) == (0, 0, 0, 0), st
+    finally:
         tg.send_gcode("G0 X0", allow="return to start")
         tg.wait_idle()
 

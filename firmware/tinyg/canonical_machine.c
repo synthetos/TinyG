@@ -1557,9 +1557,17 @@ stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
 	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
 	return (STAT_OK);
 }
+// Coolant outputs as last driven, for the g2core-named cof and com readouts: the model runs ahead of the
+// outputs (M2/M30 turns it off when parsed), so the readouts follow the executors instead.
+static volatile uint8_t coolant_out_mist, coolant_out_flood;
+
+stat_t coolant_get_cof(nvObj_t *nv) { nv->value_int = coolant_out_flood; nv->valuetype = TYPE_INTEGER; return (STAT_OK); }
+stat_t coolant_get_com(nvObj_t *nv) { nv->value_int = coolant_out_mist; nv->valuetype = TYPE_INTEGER; return (STAT_OK); }
+
 static void _exec_mist_coolant_control(float *value, bool *flags)
 {
 	cm.gm.mist_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
+	coolant_out_mist = cm.gm.mist_coolant;
 
 #ifdef __AVR
 	if (cm.gm.mist_coolant == true) {
@@ -1608,6 +1616,7 @@ void cm_coolant_off_immediate()
 static void _exec_flood_coolant_control(float *value, bool *flags)
 {
 	cm.gm.flood_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
+	coolant_out_flood = cm.gm.flood_coolant;
 
 #ifdef __AVR
 	if (cm.gm.flood_coolant == true) {

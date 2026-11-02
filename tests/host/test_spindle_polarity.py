@@ -25,6 +25,10 @@ class SpindlePolarity(unittest.TestCase):
             match = re.search(signature + r"\{", source)
             self.assertIsNotNone(match, name)
             definitions.append(function(source[match.start():], signature))
+        if "} spindle_out;" in source:                                  # outputs as driven, for the readouts
+            record = re.search(r"(?m)^static void _record_speed\(float speed\)\s*", source)
+            definitions.insert(1, source[source.index("static struct {"):source.index("} spindle_out;") + 14] + "\n" +
+                               function(source[record.start():], r"static void _record_speed\(float speed\)\s*"))
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
@@ -52,7 +56,7 @@ class SpindlePolarity(unittest.TestCase):
 typedef int stat_t;
 typedef struct { uint32_t value_int; uint8_t *target; } nvObj_t;
 struct { uint8_t enable_polarity, direction_polarity; } spindle_cfg;
-struct { int machine_state; struct { int spindle_mode; } gm; } cm;
+struct { int machine_state; struct { int spindle_mode; float spindle_speed; } gm; } cm;
 struct { int buffer_state; } st_pre;
 uint8_t SREG;
 static bool queued, running, spindle_configured;

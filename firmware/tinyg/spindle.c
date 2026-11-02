@@ -85,11 +85,25 @@ stat_t spindle_set_polarity(nvObj_t *nv)
  * spindle_reset()
  */
 /*
- * Spindle and coolant state readouts, named as in g2core: spe (enabled), spd (direction, 0 CW, 1 CCW),
- * sps (speed in use: the S after the p1csl..p1csh or p1wsl..p1wsh clamp; commanded, not measured),
- * cof and com (flood and mist coolant). They read the model as the queued M3/M4/M5, S and M7/M8/M9
- * commands leave it when they execute, so they show the outputs as they are now.
+ * Spindle state readouts, named as in g2core: spe (enabled), spd (direction last driven, 0 CW, 1 CCW;
+ * kept while the spindle is off), sps (speed in use: the S after the p1csl..p1csh or p1wsl..p1wsh clamp,
+ * 0 while off; commanded, not measured). They report the outputs as last driven by the executors below,
+ * not the model, which runs ahead of the outputs (M2/M30 turns the model off when it is parsed).
  */
+static struct {
+	volatile uint8_t mode;						// SPINDLE_OFF, SPINDLE_CW or SPINDLE_CCW, as driven
+	volatile uint8_t ccw;						// direction last driven
+	float speed;								// speed in use; written from the loader interrupt too
+} spindle_out;
+
+static void _record_speed(float speed)
+{
+	uint8_t saved_sreg = SREG;					// four bytes: written whole
+	cli();
+	spindle_out.speed = speed;
+	SREG = saved_sreg;
+}
+
 static stat_t _get_state(nvObj_t *nv, uint8_t value)
 {
 	nv->value_int = value;
@@ -97,14 +111,16 @@ static stat_t _get_state(nvObj_t *nv, uint8_t value)
 	return (STAT_OK);
 }
 
-stat_t spindle_get_spe(nvObj_t *nv) { return (_get_state(nv, (cm.gm.spindle_mode == SPINDLE_CW) || (cm.gm.spindle_mode == SPINDLE_CCW))); }
-stat_t spindle_get_spd(nvObj_t *nv) { return (_get_state(nv, cm.gm.spindle_mode == SPINDLE_CCW)); }
-stat_t coolant_get_cof(nvObj_t *nv) { return (_get_state(nv, cm.gm.flood_coolant)); }
-stat_t coolant_get_com(nvObj_t *nv) { return (_get_state(nv, cm.gm.mist_coolant)); }
+stat_t spindle_get_spe(nvObj_t *nv) { return (_get_state(nv, spindle_out.mode != SPINDLE_OFF)); }
+stat_t spindle_get_spd(nvObj_t *nv) { return (_get_state(nv, spindle_out.ccw)); }
 
 stat_t spindle_get_sps(nvObj_t *nv)
 {
-	nv->value_flt = cm.gm.spindle_speed;
+	uint8_t saved_sreg = SREG;					// four bytes: read whole
+	cli();
+	float speed = spindle_out.speed;
+	SREG = saved_sreg;
+	nv->value_flt = speed;
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
@@ -198,6 +214,11 @@ static void _exec_spindle_control(float *value, bool *flags)
 
 	// PWM spindle control
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(spindle_mode) );
+	spindle_out.mode = spindle_mode;			// the outputs as now driven (readouts)
+	if (spindle_mode != SPINDLE_OFF) {
+		spindle_out.ccw = (spindle_mode == SPINDLE_CCW);
+	}
+	_record_speed((spindle_mode != SPINDLE_OFF) ? cm.gm.spindle_speed : 0);
 }
 
 /*
@@ -224,4 +245,5 @@ static void _exec_spindle_speed(float *value, bool *flags)
 {
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running
+	_record_speed(((cm.gm.spindle_mode == SPINDLE_CW) || (cm.gm.spindle_mode == SPINDLE_CCW)) ? cm.gm.spindle_speed : 0);
 }
