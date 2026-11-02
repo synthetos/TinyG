@@ -36,8 +36,8 @@ def test_shutdown_leaves_no_exit_velocity(tg, ice, record):
     finally:
         tg.send_json({"clear": None})                        # {clear} leaves SHUTDOWN (E045)
         if tg.stat() == tg.dialect.stat("SHUTDOWN"):
-            tg.reset()
-            return
-        tg.send_gcode("G90", check=True)
-        tg.send_gcode(f"G53 G1 X{x0:.3f} F1500", check=True, allow="return to start")
-        tg.wait_idle(timeout=20)
+            tg.reset()                                       # positions are not kept: no return move
+        else:
+            tg.send_gcode("G90", check=True)
+            tg.send_gcode(f"G53 G1 X{x0:.3f} F1500", check=True, allow="return to start")
+            tg.wait_idle(timeout=20)
