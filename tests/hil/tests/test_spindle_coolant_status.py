@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.dialect("d449"), pytest.mark.motion]
 
 
 def state(tg):
-    return {k: tg.get(k) for k in ("spe", "spd", "sps", "cof", "com")}
+    return {k: tg.get(k) for k in ("spe", "spc", "spd", "sps", "cof", "com")}
 
 
 def clamp(tg, s, ccw=False):
@@ -38,13 +38,13 @@ def test_spindle_and_coolant_state(tg, outputs_off):
     tg.send_gcode("M3 S5000", check=True, allow="spindle CW")
     tg.wait_idle()
     st = state(tg)
-    assert (st["spe"], st["spd"]) == (1, 0), st
+    assert (st["spe"], st["spc"], st["spd"]) == (1, 1, 0), st
     assert st["sps"] == pytest.approx(clamp(tg, 5000), abs=0.5), st
 
     tg.send_gcode("M4 S7000", check=True, allow="spindle CCW")
     tg.wait_idle()
     st = state(tg)
-    assert (st["spe"], st["spd"]) == (1, 1), st
+    assert (st["spe"], st["spc"], st["spd"]) == (1, 2, 1), st
     assert st["sps"] == pytest.approx(clamp(tg, 7000, ccw=True), abs=0.5), st
 
     tg.send_gcode("M8", check=True, allow="flood")
@@ -98,7 +98,7 @@ def test_program_end_behind_a_move(tg, outputs_off):
 
 
 def test_readouts_are_read_only(tg):
-    for key in ("spe", "spd", "sps", "cof", "com"):
+    for key in ("spe", "spc", "spd", "sps", "cof", "com"):
         before = tg.get(key)
         resp = tg.send_line('{"%s":1}' % key)
         assert resp.status != 0, f"{key} accepted a write: {resp.raw}"

@@ -85,7 +85,8 @@ stat_t spindle_set_polarity(nvObj_t *nv)
  * spindle_reset()
  */
 /*
- * Spindle state readouts, named as in g2core: spe (enabled), spd (direction last driven, 0 CW, 1 CCW;
+ * Spindle state readouts, named as in g2core: spe (enabled), spc (control: 0 off, 1 CW, 2 CCW),
+ * spd (direction last driven, 0 CW, 1 CCW;
  * kept while the spindle is off), sps (speed in use: the S after the p1csl..p1csh or p1wsl..p1wsh clamp,
  * 0 while off; commanded, not measured). They report the outputs as last driven by the executors below,
  * not the model, which runs ahead of the outputs (M2/M30 turns the model off when it is parsed).
@@ -113,6 +114,7 @@ static stat_t _get_state(nvObj_t *nv, uint8_t value)
 
 stat_t spindle_get_spe(nvObj_t *nv) { return (_get_state(nv, spindle_out.mode != SPINDLE_OFF)); }
 stat_t spindle_get_spd(nvObj_t *nv) { return (_get_state(nv, spindle_out.ccw)); }
+stat_t spindle_get_spc(nvObj_t *nv) { return (_get_state(nv, spindle_out.mode)); }
 
 stat_t spindle_get_sps(nvObj_t *nv)
 {

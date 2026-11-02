@@ -686,6 +686,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	// Spindle and coolant state readouts, named as in g2core: read-only, never initialized or persisted
 	{ "","spe",_i0, 0, tx_print_int, spindle_get_spe, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","spd",_i0, 0, tx_print_int, spindle_get_spd, set_nul, (uint32_t *)&cs.null, 0},
+	{ "","spc",_i0, 0, tx_print_int, spindle_get_spc, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","sps",_f0, 0, tx_print_flt, spindle_get_sps, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","cof",_i0, 0, tx_print_int, coolant_get_cof, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","com",_i0, 0, tx_print_int, coolant_get_com, set_nul, (uint32_t *)&cs.null, 0},

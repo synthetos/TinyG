@@ -2,6 +2,8 @@
 
 The full 246-character selector deliberately includes unsupported g2core fields. Only
 boolean selections inside sr may ignore missing fields; unknown commands still fail.
+The six capability probes (spe, spd, spc, sps, com, cof) are g2core's spindle and coolant readouts:
+edge-next answers them with values, 440.21 with null (status 100, unrecognized).
 """
 import time
 
@@ -55,8 +57,12 @@ def test_cncjs_connect_sequence(tg, keep):
     assert not exceptions
     for line, response, _ in results[5:11]:
         key = line[1:line.index(":")]
-        assert response is not None and response.data["r"].get(key, "missing") is None, (line, response)
-        assert response.data["f"][1] == 100  # unsupported capability, not successful execution
+        assert response is not None, line
+        if tg.dialect.name == "d449":           # g2core-named readouts, supported
+            assert response.data["f"][1] == 0 and isinstance(response.data["r"].get(key), (int, float)), (line, response.raw)
+        else:
+            assert response.data["r"].get(key, "missing") is None, (line, response)
+            assert response.data["f"][1] == 100  # unsupported capability, not successful execution
     _, sr_resp, _ = results[CONNECT.index(SR_LINE)]
     assert sr_resp is not None and sr_resp.data["f"][1] == 0, sr_resp and sr_resp.raw
     _, final, _ = results[-1]

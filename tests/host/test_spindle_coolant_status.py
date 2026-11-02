@@ -74,7 +74,7 @@ def code(split_read=False):
     c += sp[sp.index("static struct {"):sp.index("} spindle_out;") + len("} spindle_out;")] + "\n"
     for name in ("_record_speed", "_get_state", "_exec_spindle_control", "_exec_spindle_speed", "spindle_reset"):
         c += fn("spindle.c", name) + "\n"
-    for line in re.findall(r"^stat_t spindle_get_sp[ed]\(nvObj_t \*nv\) \{[^\n]*\}$", sp, re.M):
+    for line in re.findall(r"^stat_t spindle_get_sp[edc]\(nvObj_t \*nv\) \{[^\n]*\}$", sp, re.M):
         c += line + "\n"
     sps = fn("spindle.c", "spindle_get_sps")
     if split_read:                                                    # the AVR loads the float a byte at a time
@@ -104,13 +104,13 @@ int main(void) {
     exec(_exec_spindle_speed, 5000);                    /* S while off: kept, not in use */
     assert(i(spindle_get_spe) == 0 && sps() == 0);
     exec(_exec_spindle_control, SPINDLE_CW);           /* M3 */
-    assert(i(spindle_get_spe) == 1 && i(spindle_get_spd) == 0 && sps() == 5000);
+    assert(i(spindle_get_spe) == 1 && i(spindle_get_spc) == 1 && i(spindle_get_spd) == 0 && sps() == 5000);
     exec(_exec_spindle_speed, 30000);                   /* S while running, clamped */
     assert(sps() == 24000);
     exec(_exec_spindle_control, SPINDLE_CCW);          /* M4 */
-    assert(i(spindle_get_spe) == 1 && i(spindle_get_spd) == 1);
+    assert(i(spindle_get_spe) == 1 && i(spindle_get_spc) == 2 && i(spindle_get_spd) == 1);
     exec(_exec_spindle_control, SPINDLE_OFF);          /* M5: the direction last driven stays */
-    assert(i(spindle_get_spe) == 0 && i(spindle_get_spd) == 1 && sps() == 0);
+    assert(i(spindle_get_spe) == 0 && i(spindle_get_spc) == 0 && i(spindle_get_spd) == 1 && sps() == 0);
 
     exec(_exec_flood_coolant_control, 1); exec(_exec_mist_coolant_control, 1);   /* M8, M7 */
     assert(i(coolant_get_cof) == 1 && i(coolant_get_com) == 1);
@@ -164,7 +164,7 @@ class SpindleCoolantStatus(unittest.TestCase):
 
     def test_rows_read_only_and_not_persisted(self):
         table = src("config_app.c")
-        for key, getter in (("spe", "spindle_get_spe"), ("spd", "spindle_get_spd"), ("sps", "spindle_get_sps"),
+        for key, getter in (("spe", "spindle_get_spe"), ("spc", "spindle_get_spc"), ("spd", "spindle_get_spd"), ("sps", "spindle_get_sps"),
                             ("cof", "coolant_get_cof"), ("com", "coolant_get_com")):
             row = re.search(r'\{\s*""\s*,\s*"' + key + r'"\s*,\s*(_\w+)\s*,[^,]*,[^,]*,\s*(\w+)\s*,\s*(\w+)\s*,', table)
             self.assertIsNotNone(row, key)
