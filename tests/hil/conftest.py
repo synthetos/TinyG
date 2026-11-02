@@ -165,7 +165,7 @@ def recover(board):
         stat, qr = board.stat(), board.get("qr")
     except Exception:  # noqa: BLE001 - silent board: only a reset helps
         stat, qr = None, None
-    if stat is None or stat in (board.dialect.stat("SHUTDOWN"), board.dialect.stat("PANIC")) \
+    if stat is None or stat in board.dialect.stats("SHUTDOWN", "PANIC") \
             or qr != board.planner_buffers:
         board.reset()       # stale queue (E069), unrecoverable state, or no answer
     if board.stat() == board.dialect.stat("ALARM"):
