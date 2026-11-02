@@ -182,8 +182,6 @@ typedef struct xioUSART {
 	uint8_t rx_lost_open;					// reader is between the two marks
 	uint8_t rx_line_damaged;				// the line being read lost bytes: it must not run
 	uint8_t rx_gap_report;					// lost input after a good line end: the next read reports it
-	volatile buffer_t rx_stale_mark;		// a '{' that came after the line in progress went quiet (E195)
-	volatile uint8_t rx_stale_marked;		// set by the RX ISR, cleared when the reader reaches the mark
 
 	volatile buffer_t tx_buf_tail;			// TX buffer read index  (written by ISR)
 	volatile buffer_t tx_buf_head;			// TX buffer write index
@@ -220,6 +218,7 @@ buffer_t xio_get_usb_rx_free(void);
 void xio_reset_usb_rx_buffers(void);
 void xio_drop_usb_rx_before_mark(void);
 void xio_usb_rtc_callback(void);
+#define RX_STALE_LINE_MARK 0x1A				// RX ring only: the line before it is stale, drop it (E195)
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);

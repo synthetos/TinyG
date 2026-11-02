@@ -30,6 +30,7 @@ class ReceiveModeSwitch(unittest.TestCase):
             definitions.append(function(text[match.start():],signature))
         code=r'''
 #include <stdint.h>
+#define RX_STALE_LINE_MARK 0x1A
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -73,7 +74,7 @@ struct { char rx_pool[RX_BUFFER_POOL_SIZE]; } bufpool;
 struct { uint8_t rx_mode,buf_state,primary_src; uint16_t buf_size; char *bufp; } xio;
 static uint8_t active_rx_mode;
 struct { int comm_mode; } cs;
-typedef struct { unsigned rx_buf_head,rx_buf_tail,rx_buf_count,rx_flush_mark; bool rx_flush_marked; unsigned rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report,rx_stale_mark,rx_stale_marked; char rx_buf[RX_BUFFER_SIZE]; } xioUsart_t;
+typedef struct { unsigned rx_buf_head,rx_buf_tail,rx_buf_count,rx_flush_mark; bool rx_flush_marked; unsigned rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report; char rx_buf[RX_BUFFER_SIZE]; } xioUsart_t;
 typedef struct dev { xioUsart_t *x; bool flag_in_line,flag_echo; int size,signal; uint8_t len;
  char *buf; void (*x_flow)(struct dev*); int (*x_putc)(char,FILE*); } xioDev_t;
 xioUsart_t ring;
@@ -145,6 +146,17 @@ int main(void) {
         input("{rxm:1}\n{fv:null}\n"); expect("{rxm:1}"); xio.rx_mode=1; expect("{fv:null}");
         assert(!read_flags(DEV_IS_BOTH));
     }
+    // E195: the RX interrupt's stale-line mark drops the line in progress in line mode too: a partial
+    // line already FILLING its pool buffer, a marked line behind a complete one, and pool wrap and reuse.
+    setup(RX_MODE_LINE); input("G0 X0.5 (rough"); assert(!read_flags(DEV_IS_BOTH));
+    assert(ds[0].flag_in_line && ds[0].len==14);
+    input("\x1a{sr:null}\n"); expect("{sr:null}"); assert(!read_flags(DEV_IS_BOTH));
+    setup(RX_MODE_LINE); input("G4 P0\nG0 X1 ;a\x1a{sr:null}\n"); expect("{sr:null}"); expect("G4 P0");   /* control lines first */
+    for(int i=0;i<300;i++) {
+        input("{fv:null}\nG0 X1 (b"); expect("{fv:null}"); assert(!read_flags(DEV_IS_BOTH));
+        input("\x1a{fb:null}\n"); expect("{fb:null}");
+    }
+    assert(!read_flags(DEV_IS_BOTH));
 }
 '''
         with tempfile.TemporaryDirectory() as d:

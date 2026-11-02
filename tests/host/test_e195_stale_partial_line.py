@@ -6,7 +6,8 @@ been quiet for longer than RX_STALE_LINE_TICKS RTC ticks starts a fresh line ins
 
 The real RX interrupt, _gets_helper()/xio_gets_usart() (xio_usart.c), xio_reset_usb_rx_buffers(),
 xio_drop_usb_rx_before_mark() and the RTC tick callback run on the firmware's ring macro with the 250-byte
-ring. Cases: the leftover still unread in the ring; the leftover already taken by the reader; the quiet gap
+ring. Cases: the leftover still unread in the ring; two stale lines before the reader gets to either; a
+byte that arrives inside the RTC callback's count; a mark byte sent by the host; the leftover already taken by the reader; the quiet gap
 spent with the leftover and a later line both unread. Controls, which must keep the old behaviour: no gap;
 a gap before something other than '{'; a gap with no line in progress; a '{' inside a line after a short
 pause; and a flush or buffer reset between the gap's mark and the reader.
@@ -19,18 +20,35 @@ import unittest
 
 from test_e193_usart_overflow import fn, rx_code, src
 
-TICKS = 100     # RX_STALE_LINE_TICKS: 10 ms RTC ticks
+TICKS = 103     # RX_STALE_LINE_TICKS: RTC ticks of 9.77 ms
+
+
+# An RX byte that arrives during the RTC callback: it runs at once if interrupts are enabled there,
+# otherwise when the callback restores SREG (tick() delivers it).
+WINDOW = r'''
+static int inject, pending;
+static void rx_byte(char c) { uart.DATA = c; USB_RX_ISR_vect(); }
+static void rx_window(void) {
+    if (!inject) return;
+    inject = 0;
+    if (SREG & 0x80) { rx_byte(' '); } else { pending = 1; }
+}
+'''
 
 
 def code():
     c = rx_code()
     usb = src("xio/xio_usb.c")
     if "xio_usb_rtc_callback" in usb:
-        c = c.replace("#include <stdlib.h>", fn("xio/xio_usb.c", "xio_usb_rtc_callback") + "\n#include <stdlib.h>", 1)
+        cb = fn("xio/xio_usb.c", "xio_usb_rtc_callback")
+        assert cb.count("rx_quiet_ticks++;") == 1
+        cb = cb.replace("rx_quiet_ticks++;", "{ uint8_t loaded = rx_quiet_ticks; rx_window(); rx_quiet_ticks = loaded + 1; }")
+        c = c.replace("#include <stdlib.h>", WINDOW + cb + "\n#include <stdlib.h>", 1)
     else:                                                     # before the fix: nothing counts the quiet time
-        c = c.replace("#include <stdlib.h>", "static void xio_usb_rtc_callback(void) {}\n#include <stdlib.h>", 1)
+        c = c.replace("#include <stdlib.h>", WINDOW + "static void xio_usb_rtc_callback(void) {}\n#include <stdlib.h>", 1)
     return c + r'''
-static void quiet(int ticks) { while (ticks--) xio_usb_rtc_callback(); }
+static void tick(void) { xio_usb_rtc_callback(); if (pending && (SREG & 0x80)) { pending = 0; rx_byte(' '); } }
+static void quiet(int ticks) { while (ticks--) tick(); }
 static void want(const char *where, const char *expect) {
     int status = rd();
     if (status != XIO_OK || strcmp(line, expect)) {
@@ -62,6 +80,25 @@ int main(void) {
     send_text("G4 P0\n"); send_text("G0 X1 (a"); quiet(@T@ + 5); send_text("{sr:null}\n");
     control("line before the leftover", "G4 P0");
     want("after a complete line", "{sr:null}");
+    caught_up();
+
+    /* two stale lines before the reader gets to either: both boundaries hold */
+    send_text("G0 X0.5 (rough"); quiet(@T@ + 1); send_text("{sr:null}\n");
+    send_text("G0 X1 (rough"); quiet(@T@ + 1); send_text("{sr:null}\n");
+    want("first of two stale lines", "{sr:null}");
+    want("second of two stale lines", "{sr:null}");
+    caught_up();
+
+    /* a byte that arrives while the RTC callback counts restarts the quiet time: no false stale '{' */
+    send_text("{\"x\":"); quiet(@T@ - 1);
+    inject = 1; tick();
+    send_text("{\"vm\":100}}\n");
+    want("byte during the RTC count", "{\"x\": {\"vm\":100}}");
+    caught_up();
+
+    /* the mark is the ring's own: one the host sends is dropped, not taken as a boundary */
+    send_text("G4 P0\x1a\n");
+    want("host's own mark byte", "G4 P0");
     caught_up();
 
     /* controls: the old behaviour */

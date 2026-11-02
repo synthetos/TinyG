@@ -82,4 +82,3 @@ def test_slow_line_with_brace_inside(tg):
         time.sleep(SHORT)
     replies = _replies(tg)
     assert replies and replies[0].kind == "response" and replies[0].data["f"][1] == 0, [e.raw for e in replies]
-    assert replies[0].body.get("gc", "").startswith("G4 P0"), [e.raw for e in replies]

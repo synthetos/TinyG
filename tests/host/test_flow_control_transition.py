@@ -36,13 +36,14 @@ static uint8_t SREG;
 static void cli(void) {SREG=0;}
 static struct {uint8_t enable_flow_control;} xio;
 static volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks;
-#define RX_STALE_LINE_TICKS 100
+#define RX_STALE_LINE_TICKS 103
+#define RX_STALE_LINE_MARK 0x1A
 
 static struct {uint8_t flag_xoff;} USB;
 #define USART_BUFOVF_bm 8
 typedef struct {uint8_t CTRLA,STATUS,DATA;} usart_t;
 typedef struct {uint8_t OUTCLR,OUTSET;} port_t;
-typedef struct {uint8_t fc_state_rx,fc_state_tx,fc_char_rx;usart_t *usart;port_t *port;uint8_t rx_buf_head,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report,rx_stale_mark,rx_stale_marked;} xioUsart_t;
+typedef struct {uint8_t fc_state_rx,fc_state_tx,fc_char_rx;usart_t *usart;port_t *port;uint8_t rx_buf_head,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;} xioUsart_t;
 struct {bool queue_flush_input;} cm;
 static usart_t uart;
 static port_t port;

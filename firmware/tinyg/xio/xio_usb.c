@@ -40,16 +40,22 @@
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
 
-// A line in progress that has had no byte for this long was left by a host that went away. A '{' that
-// follows it is a new host opening its session: the stale start is dropped instead of running (E195).
-#define RX_STALE_LINE_TICKS 100					// RTC ticks (10 ms each)
+// Framing heuristic (E195): a line in progress that has had no byte for about a second is taken to be
+// left by a host that went away, and a '{' after it (how a host opens a session) starts a fresh line.
+// The RX interrupt puts RX_STALE_LINE_MARK in the ring ahead of that '{', so every such boundary
+// travels with the bytes, and the reader drops the stale start when it gets there. Any host pause of
+// that length just before a '{' inside a line has the same effect.
+#define RX_STALE_LINE_TICKS 103					// RTC ticks (9.77 ms each): just over a second
 static volatile uint8_t rx_quiet_ticks;			// RTC ticks since the last byte for the ring, saturating
 
-void xio_usb_rtc_callback(void)
+void xio_usb_rtc_callback(void)					// RTC interrupt (lo)
 {
+	uint8_t saved_sreg = SREG;					// the RX interrupt (med) zeroes the count: keep the increment whole
+	cli();
 	if (rx_quiet_ticks < UINT8_MAX) {
 		rx_quiet_ticks++;
 	}
+	SREG = saved_sreg;
 }
 
 /*
@@ -210,7 +216,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 			USBu.rx_flush_mark = USBu.rx_buf_head;	// the flush drops up to here, not what follows (E146)
 			USBu.rx_flush_marked = true;
 			USBu.rx_lost_after_mark = false;		// losses so far came before the '%' (E162)
-			USBu.rx_stale_marked = false;			// a stale line before the '%' goes with the flush (E195)
 		}
 		return;
 	}
@@ -234,6 +239,9 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 	}
 
+    if (c == RX_STALE_LINE_MARK) {				// reserved for the ring (E195): a host's own is dropped
+        return;
+    }
     bool stale = (c == '{') && rx_in_line && (rx_quiet_ticks >= RX_STALE_LINE_TICKS);	// E195
     rx_quiet_ticks = 0;
 
@@ -244,24 +252,23 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
         rx_in_line = true;
     }
 
-	// normal character path
-	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
-	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
-		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
-		USBu.rx_buf_count++;
-		if (stale) {							// the reader drops the line before this '{' (E195)
-			USBu.rx_stale_mark = USBu.rx_buf_head;
-			USBu.rx_stale_marked = true;
+	// normal character path; a stale line's mark goes in ahead of the '{' (E195)
+	for (uint8_t n = (stale ? 2 : 1); n > 0; n--) {
+		char k = ((n == 2) ? RX_STALE_LINE_MARK : c);
+		advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
+		if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
+			USBu.rx_buf[USBu.rx_buf_head] = k;		// write char unless full
+			USBu.rx_buf_count++;
+			if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+				xio_xoff_usart(&USBu);
+			}
+		} else { 										// buffer-full - toss the incoming character
+			if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
+				USBu.rx_buf_count = RX_BUFFER_SIZE-1;	// reset count for good measure
+				USBu.rx_buf_head = 1;
+			}
+			_usb_rx_lost();
 		}
-		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
-			xio_xoff_usart(&USBu);
-		}
-	} else { 											// buffer-full - toss the incoming character
-		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
-			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
-			USBu.rx_buf_head = 1;
-		}
-		_usb_rx_lost();
 	}
 }
 
@@ -294,7 +301,6 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
 	USBu.rx_gap_report = false;
-	USBu.rx_stale_marked = false;
 }
 
 /*

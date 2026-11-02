@@ -263,7 +263,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
-    bool lost_open_now = false, lost_close_now = false, lost_inside = false, lost_here = false, stale = false;
+    bool lost_open_now = false, lost_close_now = false, lost_inside = false, lost_here = false;
 
     if (dx->rx_gap_report) {                    // whole lines were lost after the last good one: report it
         dx->rx_gap_report = false;              // now, not when the host sends again (E162)
@@ -284,10 +284,6 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         advance_buffer(dx->rx_buf_tail, RX_BUFFER_SIZE);
         dx->rx_buf_count--;
         c = dx->rx_buf[dx->rx_buf_tail];		// get char from RX Q
-        if (dx->rx_stale_marked && (dx->rx_buf_tail == dx->rx_stale_mark)) {
-            dx->rx_stale_marked = false;        // a new host's '{' after a stale line (E195)
-            stale = true;
-        }
         // Bytes were lost after the marked positions (E162): note them with the dequeue, under the same cli
         if (dx->rx_lost && !dx->rx_lost_open && (dx->rx_buf_tail == dx->rx_lost_first)) {
             dx->rx_lost_open = true;
@@ -327,7 +323,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     }
     d->x_flow(d);								// run flow control
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-    if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
+    if (d->flag_echo && (c != RX_STALE_LINE_MARK)) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
     // A line that lost bytes must not run, and lost input is reported where the reader meets it (E162).
     // c is the last byte kept before a loss at a gap; inside the stretch a loss may precede c.
@@ -344,8 +340,9 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         return (XIO_LINE_DAMAGED);
     }
     bool damaged = dx->rx_line_damaged;         // at a line end: a gap after it damages the next line
-    if (stale) {                                // drop what a host that went away left of its line: the
-        d->len = 0;                             // '{' starts the new host's line (E195)
+    if (c == RX_STALE_LINE_MARK) {              // the RX interrupt took the line so far as stale: drop it,
+        d->len = 0;                             // the '{' after the mark starts a fresh line (E195)
+        return (XIO_EAGAIN);
     }
 
     if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
