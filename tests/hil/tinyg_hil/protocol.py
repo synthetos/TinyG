@@ -11,7 +11,8 @@ _BARE_KEY = re.compile(r'([{,])\s*([A-Za-z_][A-Za-z0-9_]*)\s*:')
 
 @dataclass
 class Event:
-    kind: str           # response, banner, status, queue, rx, exception, ack, prompt, text, heartbeat, malformed
+    kind: str           # response, banner, status, queue, rx, exception, ack, prompt, text, heartbeat, feedlimit,
+                        # feedsummary, malformed
     t: float            # host monotonic time the line completed
     raw: str
     data: Any = None    # parsed JSON object (None for text)
@@ -80,8 +81,10 @@ def parse_line(raw: str, t: float) -> Event:
         if "sr" in data:
             sr = data["sr"]
             return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data, damaged)
-        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack"), ("prb", "probe"), ("hb", "heartbeat")):
-            if key in data:                     # prb: edge's top-level probe report since E101; hb: idle heartbeat
+        for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack"), ("prb", "probe"), ("hb", "heartbeat"),
+                          ("fl", "feedlimit"), ("fs", "feedsummary")):
+            if key in data:                     # prb: edge's top-level probe report since E101; hb: idle heartbeat;
+                                                # fl, fs: feed-limit cause change and summary ({"rt":{"fi":n}})
                 return Event(kind, t, raw, data, damaged)
         return Event("malformed", t, raw, data, damaged)
     if PROMPT.match(raw):

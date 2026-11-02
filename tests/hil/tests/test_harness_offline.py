@@ -33,6 +33,13 @@ def test_parse_heartbeat():
     assert ev.kind == "heartbeat" and ev.data["hb"]["up"] == 12
 
 
+def test_parse_feed_limit_lines():
+    ev = protocol.parse_line('{"fl":{"k":1,"m":2,"p":61,"n":20}}', 0.0)
+    assert ev.kind == "feedlimit" and ev.data["fl"]["n"] == 20
+    ev = protocol.parse_line('{"fs":{"v":1,"e":1,"q":3,"c":[0,1,2,3,4,5],"ct":10,"cd":1.500}}', 0.0)
+    assert ev.kind == "feedsummary" and ev.data["fs"]["c"][5] == 5
+
+
 def test_parse_banners():
     assert protocol.parse_line(BANNER_440, 0.0).kind == "banner"
     ev = protocol.parse_line('{sr:{fv:0.970,fb:449.01,msg:"SYSTEM READY"}}', 0.0)   # relaxed syntax
