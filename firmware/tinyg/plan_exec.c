@@ -30,6 +30,7 @@
 #include "config.h"
 #include "controller.h"
 #include "planner.h"
+#include "feedlimit.h"
 #include "kinematics.h"
 #include "stepper.h"
 #include "encoder.h"
@@ -219,6 +220,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.entry_velocity = bf->entry_velocity;
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
+
+		fl_stage_block(bf);			// the loader makes it current with the block's first segment (feedlimit.h)
 #ifdef TINYG_TEST_HOOKS
 		testhooks_block_started(bf->length, mr.head_length, mr.body_length, mr.tail_length);	// E180 test
 #endif

@@ -10,6 +10,7 @@
 #include "runtime.h"
 #include "util.h"
 #include "xio.h"
+#include "feedlimit.h"
 
 #include <stdio.h>
 #ifdef __AVR
@@ -207,5 +208,86 @@ stat_t rt_set_grp(nvObj_t *nv)
 		}
 	}
 	rt.check_only = false;
+	return (STAT_OK);
+}
+
+/*
+ * Feed-limit report of the move stepping now (feedlimit.h): flk kind (0 none, 1 feed, 2 rapid), flm the
+ * constraint tags of its plan, flp its planned cruise as a percent of its F (G94 linear XYZ feed moves,
+ * else null), flf its F in mm/min (G94 feed moves, else null). Nothing runs while stopped or held.
+ * One snapshot per line, with the motion and hold state, so every leaf of a reply describes one move.
+ */
+static flBlock_t fl_snap;
+
+static void _fl_current(flBlock_t *b)
+{
+	if (!rt.fl_taken) {
+#ifdef __AVR
+		uint8_t saved_sreg = SREG;					// the loader sets fl_cur and the exec fills the other
+		cli();										// slot from their interrupts
+#endif
+		uint8_t cur = fl_cur;
+		if (cur < 2) {
+			memcpy(&fl_snap, &fl_slot[cur], sizeof(flBlock_t));
+		}
+		bool running = (cur < 2) && (cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF);
+#ifdef __AVR
+		SREG = saved_sreg;
+#endif
+		if (!running) {
+			fl_snap.kind = FL_KIND_NONE;
+		} else {									// profile tags from the plan, once per line
+			fl_snap.tags |= fl_profile_tags(fl_snap.naiive_move_time, fl_snap.cruise, fl_snap.cruise_vmax);
+		}
+		rt.fl_taken = true;
+	}
+	*b = fl_snap;
+}
+
+stat_t rt_get_flk(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	flBlock_t b;
+	_fl_current(&b);
+	nv->value_int = b.kind;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t rt_get_flm(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	flBlock_t b;
+	_fl_current(&b);
+	nv->value_int = (b.kind == FL_KIND_NONE) ? 0 : b.tags;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t rt_get_flp(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	flBlock_t b;
+	_fl_current(&b);
+	if ((b.kind != FL_KIND_FEED) || !b.pct_ok || !(b.feed > 0)) {
+		nv->valuetype = TYPE_NULL;
+		return (STAT_OK);
+	}
+	nv->value_int = (uint32_t)((100 * b.cruise / b.feed) + 0.5);	// not clamped: above 100 shows as is
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t rt_get_flf(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	flBlock_t b;
+	_fl_current(&b);
+	if ((b.kind != FL_KIND_FEED) || !b.feed_ok) {
+		nv->valuetype = TYPE_NULL;
+		return (STAT_OK);
+	}
+	nv->value_flt = b.feed;
+	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }

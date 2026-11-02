@@ -412,6 +412,7 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks;					// DDA or dwell ticks for the move
 	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
 	stPrepMotor_t mot[MOTORS];			// prep time motor structs
+	uint8_t fl_load;					// what this load does to the feed-limit report (FL_LOAD_*); last, so no other member moves
 	uint16_t magic_end;
 } stPrepSingleton_t;
 

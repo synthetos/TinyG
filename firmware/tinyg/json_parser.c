@@ -169,7 +169,7 @@ static uint8_t _scan_rt(const char *p)
 	uint8_t depth = 0, others = 0, rt_keys = 0;
 	uint8_t objects = 0;							// bit n: the container at depth n+1 is an object
 	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false, twice = false;
-	uint8_t leaves = 0;								// rt leaves seen: bit 0 hb, 1 qt, 2 up, 3 anything else
+	uint8_t leaves = 0;								// rt leaves seen: hb qt up flk flm flp flf (one bit each)
 	while (*p != NUL) {
 		char c = *p;
 		if ((c == '"') && !expect_key) {			// skip a string value
@@ -217,7 +217,9 @@ static uint8_t _scan_rt(const char *p)
 				rt_keys++;
 				uint8_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
 							   ((n == 2) && (key[0] == 'q') && (key[1] == 't')) ? 2 :
-							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 : 0;
+							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 :
+							   ((n == 3) && (key[0] == 'f') && (key[1] == 'l')) ?
+									((key[2] == 'k') ? 8 : (key[2] == 'm') ? 16 : (key[2] == 'p') ? 32 : (key[2] == 'f') ? 64 : 0) : 0;
 				twice |= (leaf & leaves) != 0;
 				leaves |= leaf;
 				has_qt = has_qt || (leaf == 2);
@@ -238,6 +240,7 @@ void json_parser(char *str)
 	_scan_tid(str);									// before the tokenizer edits the string
 	uint8_t envelope = _scan_rt(str);
 	rt.allowed = (envelope == RT_ENVELOPE_PURE);
+	rt.fl_taken = false;							// one feed-limit snapshot per line
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
 	stat_t status = (envelope == RT_ENVELOPE_BAD) ? STAT_COMMAND_NOT_ACCEPTED : _json_parser_kernal(&nv, str);
 	rt.allowed = false;

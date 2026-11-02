@@ -30,7 +30,7 @@ def region(source, start, last_signature):
 RUNTIME_STUBS = r'''
 #ifndef RUNTIME_STUBS
 #define RUNTIME_STUBS
-static struct { bool allowed; } rt __attribute__((unused));
+static struct { bool allowed, fl_taken; } rt __attribute__((unused));
 static inline __attribute__((unused)) void rt_qt_invalidate(void) {}
 static inline __attribute__((unused)) void rt_init(void) {}
 #endif

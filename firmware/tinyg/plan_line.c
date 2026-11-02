@@ -31,6 +31,7 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "feedlimit.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
@@ -39,7 +40,7 @@
 #endif
 
 // aline planner routines / feedhold planning
-static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
+static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
 static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity);
 static float _exit_of_previous(const mpBuf_t *bp);
@@ -157,7 +158,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//	(2) Previous block is optimally planned. Vi = previous block's exit_velocity
 	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
-	_calc_move_times(gm_in, axis_length, axis_square);						// set move time and minimum time in the state
+	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square);	// set move time and minimum time in the state
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 		float delta_velocity = pow(length, 0.66666666) * mm.cbrt_jerk;		// max velocity change for this move
 		float entry_velocity = 0;											// pre-set as if no previous block
@@ -266,9 +267,11 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->cbrt_jerk = mm.cbrt_jerk;
 
 	// finish up the current block variables
+	uint8_t fl_tags = FL_EXACT_STOP | (axis_capped ? FL_AXIS_CAP : 0);	// feed-limit tags (feedlimit.h)
 	if (cm_get_path_control(MODEL) != PATH_EXACT_STOP) { 	// exact stop cases already zeroed
 		bf->replannable = true;
 		exact_stop = 8675309;								// an arbitrarily large floating point number
+		fl_tags &= ~FL_EXACT_STOP;
 	}
 	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
@@ -277,10 +280,18 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	// (or nothing was queued): use the runtime's copy of the direction instead. With nothing queued the
 	// runtime starts no other block, so mr.unit holds the last block's direction and stays put.
 	__asm__ __volatile__ ("" ::: "memory");				// read the state only after the direction
+	bool after_move = false;							// a queued move before this one: a corner can limit it
 	if (bf->pv->buffer_state == MP_BUFFER_EMPTY) {
 		junction_velocity = _get_junction_vmax(mr.unit, bf->unit);
+	} else {
+		after_move = (bf->pv->block_type == BLOCK_TYPE_ALINE);
 	}
-	bf->entry_vmax = min3(bf->cruise_vmax, junction_velocity, exact_stop);
+	// min3(cruise_vmax, junction_velocity, exact_stop), its first compare kept as the corner tag
+	bool corner = (junction_velocity < bf->cruise_vmax);
+	bf->entry_vmax = corner ? junction_velocity : bf->cruise_vmax;
+	if (exact_stop < bf->entry_vmax) { bf->entry_vmax = exact_stop; }
+	if (corner && after_move) { fl_tags |= FL_JUNCTION; }	// none when the previous block is gone (advisory)
+	bf->fl_tags = fl_tags;
 	bf->delta_vmax = mp_get_target_velocity(0, bf->length, bf);
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
@@ -357,8 +368,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
  *		any time required for acceleration or deceleration.
  */
 
-static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[])
-										// gms = Gcode model state
+static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[])
+										// gms = Gcode model state; true if an axis's rate set the time
 {
 	float inv_time=0;				// inverse time if doing a feed in G93 mode
 	float xyz_time=0;				// coordinated move linear part at requested feed rate
@@ -393,7 +404,12 @@ static void _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 			gms->minimum_time = min(gms->minimum_time, tmp_time);
 		}
 	}
-	gms->move_time = max4(inv_time, max_time, xyz_time, abc_time);
+	// max4(inv_time, max_time, xyz_time, abc_time) with the axis compare kept: the feed-limit axis-cap
+	// tag (a feed move slower than its F because of an axis's rate; ties are not a cap)
+	float requested_time = max3(inv_time, xyz_time, abc_time);
+	bool axis_capped = (max_time > requested_time);
+	gms->move_time = axis_capped ? max_time : requested_time;
+	return ((gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) && axis_capped);
 }
 
 /* _plan_block_list() - plans the entire block list

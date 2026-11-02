@@ -683,6 +683,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "rt","rthb",_i0, 0, tx_print_nul, rt_get_hb, rt_set_hb, (uint32_t *)&cs.null, 0},
 	{ "rt","rtqt",_s0, 0, tx_print_nul, rt_get_qt, rt_set_qt, (uint32_t *)&cs.null, 0},
 	{ "rt","rtup",_i0, 0, tx_print_nul, rt_get_up, set_nul,   (uint32_t *)&cs.null, 0},
+	{ "rt","rtflk",_i0, 0, tx_print_nul, rt_get_flk, set_nul, (uint32_t *)&cs.null, 0},	// feed-limit report (feedlimit.h)
+	{ "rt","rtflm",_i0, 0, tx_print_nul, rt_get_flm, set_nul, (uint32_t *)&cs.null, 0},
+	{ "rt","rtflp",_i0, 0, tx_print_nul, rt_get_flp, set_nul, (uint32_t *)&cs.null, 0},
+	{ "rt","rtflf",_f0, 0, tx_print_nul, rt_get_flf, set_nul, (uint32_t *)&cs.null, 0},
 	// Spindle and coolant state readouts, named as in g2core: read-only, never initialized or persisted
 	{ "","spe",_i0, 0, tx_print_int, spindle_get_spe, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","spd",_i0, 0, tx_print_int, spindle_get_spd, set_nul, (uint32_t *)&cs.null, 0},

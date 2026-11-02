@@ -25,13 +25,15 @@ class InverseTime(unittest.TestCase):
 #include "config.h"
 #include "canonical_machine.h"
 #include "util.h"
+#include "feedlimit.h"
 cmSingleton_t cm;
 stat_t status_code;
 void cm_set_model_linenum(uint32_t n) {}
 #define EXEC_FUNC(f,v) if(cm.gf.v) {status=f(cm.gn.v);}
 '''
         code+=function((FW/'util.c').read_text(),r'float max4\(')+'\n'
-        for src,sig in [(line,r'static void _calc_move_times\([^;]*?\)\s*(?://[^\n]*)?\s*(?=\{)'),(machine,r'void cm_finalize_move\('),(machine,r'stat_t cm_set_feed_rate\('),(machine,r'stat_t cm_set_feed_rate_mode\(')]:code+=function(src,sig)+'\n'
+        code+=function((FW/'util.c').read_text(),r'float max3\(')+'\n'
+        for src,sig in [(line,r'static (?:void|bool) _calc_move_times\([^;]*?\)\s*(?://[^\n]*)?\s*(?=\{)'),(machine,r'void cm_finalize_move\('),(machine,r'stat_t cm_set_feed_rate\('),(machine,r'stat_t cm_set_feed_rate_mode\(')]:code+=function(src,sig)+'\n'
         code+='static stat_t begin_block(void) {\n'+prefix+'return status;}\n'
         code+='static bool requested_axes[AXES]={true};\nstatic stat_t check_feed(void) {\nconst bool *flags=requested_axes;\n'+feed_guard+'return STAT_OK;}\n'
         code+=r'''

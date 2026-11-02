@@ -44,7 +44,7 @@ index_t nv_index_max(void) { return sizeof(names)/sizeof(*names); }
 bool nv_index_is_single(index_t i) { return i<nv_index_max(); }
 static nvObj_t *real_reset_nv_list(char *parent);
 /* runtime.h: the rt family is exercised in test_runtime_rt.py */
-static struct { bool allowed; } rt;
+static struct { bool allowed, fl_taken; } rt;
 #define RT_ENVELOPE_NONE 0
 #define RT_ENVELOPE_PURE 1
 #define RT_ENVELOPE_BAD 2
