@@ -877,7 +877,8 @@ uint8_t st_fl_record_pending(void)
  * _fl_retire() - credit the finished segment's accounting record to fl_pend (feedlimit.h)
  *
  *	Called from _load_move() after its busy check, so the running segment has played out; consumed once.
- *	Integer adds only (the main loop does the wide arithmetic); at most 8 x 32-bit adds.
+ *	Integer adds only (the main loop does the wide arithmetic); at most 8 x 32-bit adds. A wrap of the
+ *	pending totals (the main loop held up for ~23.8 h of cutting) is flagged, and the window reported invalid.
  */
 static void _fl_retire(void)
 {
@@ -885,8 +886,11 @@ static void _fl_retire(void)
 	st_run.fl_rec = 0;
 	if (!fl_on) { return; }								// turned off: records still in flight are dropped
 	uint32_t ticks = st_run.fl_ticks;
-	fl_pend.ticks[FL_CAUSES] += ticks;
-	fl_pend.um += st_run.fl_um;
+	uint32_t total = fl_pend.ticks[FL_CAUSES] + ticks;	// each cause total is at most this one, so one test
+	uint32_t um = fl_pend.um + st_run.fl_um;			// for ticks and one for distance cover every counter
+	if ((total < ticks) || (um < st_run.fl_um)) { fl_pend.wrapped = true; }
+	fl_pend.ticks[FL_CAUSES] = total;
+	fl_pend.um = um;
 	for (uint8_t k = 0; k < FL_CAUSES; k++) {
 		if (rec & (1 << k)) { fl_pend.ticks[k] += ticks; }
 	}

@@ -306,8 +306,9 @@ stat_t rt_get_flf(nvObj_t *nv)
 #define FL_POLL_TICKS	20						// ~20 ms between looks for a changed state
 #define FL_RETRY_TICKS	10						// ~10 ms before a frame that did not fit is tried again
 #define FL_TICKS_PER_MS	50						// DDA ticks per ms (FREQUENCY_DDA 50 kHz)
-#define FL_FOLD_TICKS	(RT_TICKS_PER_SECOND / 4)	// pending credits are folded every ~250 ms, link or not, so the
-												// loader's 32-bit pending ticks (~23.8 h) are never approached
+#define FL_FOLD_TICKS	(RT_TICKS_PER_SECOND / 4)	// pending credits are folded every ~250 ms, link or not; if the
+												// main loop is held up long enough for them to wrap (~23.8 h of
+												// cutting) the loader flags it and summaries carry "x":1
 
 static struct flAccounting {
 	uint8_t fi;									// summary interval, seconds; 0 = off
@@ -321,6 +322,7 @@ static struct flAccounting {
 	bool cycle;									// a cycle was running at the last look
 	bool fs_auto;								// a periodic or final summary is due (fi 0 cancels it)
 	bool fs_ask;								// a summary was asked for ({rt:{fs:null}}; survives fi 0)
+	bool invalid;								// a pending total wrapped: these totals are short (fs "x":1)
 	bool fl_known;								// last_k and last_m are the state last sent
 	uint8_t last_k, last_m;
 } fla;
@@ -337,6 +339,7 @@ static void _fl_fold(void)						// take the loader's pending credits into the to
 #ifdef __AVR
 	SREG = saved_sreg;
 #endif
+	if (p.wrapped) { fla.invalid = true; }
 	for (uint8_t k = 0; k <= FL_CAUSES; k++) {	// whole parts and remainders apart: no 32-bit sum can overflow
 		fla.ms[k] += p.ticks[k] / FL_TICKS_PER_MS;
 		fla.rem[k] += p.ticks[k] % FL_TICKS_PER_MS;
@@ -354,11 +357,11 @@ static bool _fl_send_fs(void)					// fold, format and send a summary; false if t
 	_fl_fold();
 	char frame[FL_FS_LEN];
 	snprintf_P(frame, sizeof(frame),
-			   PSTR("{\"fs\":{\"v\":1,\"e\":%u,\"q\":%lu,\"c\":[%lu,%lu,%lu,%lu,%lu,%lu],\"ct\":%lu,\"cd\":%lu.%03u}}\n"),
+			   PSTR("{\"fs\":{\"v\":1,\"e\":%u,\"q\":%lu,\"c\":[%lu,%lu,%lu,%lu,%lu,%lu],\"ct\":%lu,\"cd\":%lu.%03u%s}}\n"),
 			   (unsigned)fla.epoch, (unsigned long)(fla.q + 1),
 			   (unsigned long)fla.ms[0], (unsigned long)fla.ms[1], (unsigned long)fla.ms[2],
 			   (unsigned long)fla.ms[3], (unsigned long)fla.ms[4], (unsigned long)fla.ms[5],
-			   (unsigned long)fla.ms[FL_CAUSES], (unsigned long)fla.mm, (unsigned)fla.um);
+			   (unsigned long)fla.ms[FL_CAUSES], (unsigned long)fla.mm, (unsigned)fla.um, fla.invalid ? ",\"x\":1" : "");
 	if (!xio_usb_try_send_frame(frame)) { return (false); }
 	fla.q++;
 	return (true);
@@ -509,9 +512,12 @@ stat_t rt_set_fi(nvObj_t *nv)
 #endif
 	if ((status == STAT_OK) && !rt.check_only) {
 		uint16_t epoch = fla.epoch + 1;
+		uint32_t now = SysTickTimer_getValue();
 		memset(&fla, 0, sizeof(fla));
 		fla.epoch = epoch;
 		fla.fi = fi;
+		// deadlines from now, not 0: the signed comparisons would read 0 as future in half the tick range
+		fla.next_fs = fla.next_try = fla.next_fl = fla.next_fold = now;
 	}
 	return (status);
 }

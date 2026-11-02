@@ -75,6 +75,7 @@ extern volatile uint8_t fl_cur;		// current slot, or FL_CUR_NONE; set by the ste
 typedef struct flPending {
 	uint32_t ticks[FL_CAUSES + 1];	// DDA ticks: [0..5] below F with that cause, [FL_CAUSES] all eligible
 	uint32_t um;					// commanded length of all eligible segments, micrometres
+	uint8_t wrapped;				// a pending total wrapped (the main loop could not fold in time)
 } flPending_t;
 
 extern volatile uint8_t fl_on;		// crediting enabled (main loop sets it; exec and loader read it)

@@ -16,6 +16,9 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
   link takes it; fi 0 cancels a queued automatic summary but not one asked for; pending credits fold every
   ~250 ms whether or not the link is free, with carries that cannot overflow; fl lines follow changes at
   most 4 a second, coalesced to the latest state, and report the change to no move.
+- Long uptime: a window opened when the tick counter is past half its range, or about to wrap, still folds
+  and reports (deadlines start from now). A pending total that wraps while the main loop is held up is
+  flagged by the loader, and every later summary of that window carries "x":1.
 - Frame sender: the room check is exact (each LF counted twice, TX_BUFFER_SIZE - 2 bytes); busy, XOFF or
   CTS refuse it whole.
 """
@@ -192,7 +195,12 @@ int main(void) {
     st_pre.fl_rec = FL_REC_ELIGIBLE | 0x3F; st_pre.dda_ticks = 100; load_aline(); load_entry();
     for (int k = 0; k <= FL_CAUSES; k++) assert(fl_pend.ticks[k] == ((k == 1) ? 350 : (k == FL_CAUSES) ? 350 : 100));
     st_pre.fl_rec = FL_REC_ELIGIBLE; load_aline(); fl_on = 0; load_entry();       /* off: dropped */
-    assert(fl_pend.ticks[FL_CAUSES] == 350 && st_run.fl_rec == 0);
+    assert(fl_pend.ticks[FL_CAUSES] == 350 && st_run.fl_rec == 0); fl_on = 1;
+    assert(!fl_pend.wrapped);                                           /* a wrap of the pending totals is flagged */
+    fl_pend.ticks[FL_CAUSES] = 4294967295u - 100; st_pre.fl_rec = FL_REC_ELIGIBLE; st_pre.dda_ticks = 200;
+    load_aline(); load_entry(); assert(fl_pend.wrapped);
+    memset((void *)&fl_pend, 0, sizeof(fl_pend)); fl_pend.um = 4294967295u - 10; st_pre.fl_um = 20;
+    load_aline(); load_entry(); assert(fl_pend.wrapped);
     return 0;
 }
 '''
@@ -203,7 +211,7 @@ int main(void) {
 static stat_t set_fi(uint32_t v, uint32_t *echo) {
     nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER; nv.value_int = v; stat_t s = rt_set_fi(&nv); if (echo) *echo = nv.value_int; return s;
 }
-static void tick(uint32_t to) { while (systick < to) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
+static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
 int main(void) {
     rt.allowed = true; uint32_t echo;
     assert(set_fi(200, &echo) == STAT_OK && echo == 60 && fla.fi == 60 && fl_on && fla.epoch == 1);
@@ -276,10 +284,25 @@ int main(void) {
     assert(fla.ms[FL_CAUSES] == 85899346 && fla.rem[FL_CAUSES] == 44 && fla.mm == 4294968 && fla.um == 294);
     tx_ready = 1;
 
+    /* a window opened late in the tick range, or across its wrap, starts its deadlines from now */
+    uint32_t starts[] = { 0x90000000u, 0xFFFFFF00u };
+    for (int i = 0; i < 2; i++) {
+        systick = starts[i]; nframes = 0;
+        assert(set_fi(0, NULL) == STAT_OK && set_fi(1, NULL) == STAT_OK);
+        cm.motion_state = MOTION_RUN; fl_slot[0].tags = FL_AXIS_CAP; fl_cur = 0; fl_pend.ticks[FL_CAUSES] = 12500;
+        tick(systick + 300);
+        assert(count("\"fl\"") == 1 && fl_pend.ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 250);
+    }
+    cm.motion_state = MOTION_STOP; fl_cur = FL_CUR_NONE;
+
+    /* a wrapped pending total marks the window: every later summary says "x":1 */
+    fl_pend.wrapped = 1; _fl_fold(); assert(fla.invalid && _fl_send_fs() && strstr(last(), ",\"x\":1}}"));
+    printf("%s", last());
+
     /* largest summary */
     fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
     fla.mm = 4294967295u; fla.um = 999; tx_ready = 1; assert(_fl_send_fs());
-    assert(strlen(last()) + 1 <= 248); printf("%s", last());
+    assert(strlen(last()) + 1 <= 248 && strlen(last()) < 160); printf("%s", last());
     return 0;
 }
 '''
@@ -287,7 +310,8 @@ int main(void) {
         frames = [json.loads(l) for l in out.splitlines()]                 # every frame printed is valid JSON
         self.assertEqual(frames[0]["fs"]["cd"], 1.001)
         self.assertEqual(frames[1]["fl"], {"k": 1, "m": 1, "p": 67, "n": 12})
-        self.assertEqual(frames[2]["fs"]["e"], 65535)
+        self.assertEqual(frames[2]["fs"]["x"], 1)
+        self.assertEqual(frames[3]["fs"]["e"], 65535)
 
     def test_frame_sender(self):
         code = r'''
