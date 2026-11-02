@@ -272,6 +272,14 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	}
 	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
+	// The exec frees a block once its last segment is prepared, possibly while still moving, and clears its
+	// direction (E196). If the previous buffer is empty now, it was freed before or during the read above
+	// (or nothing was queued): use the runtime's copy of the direction instead. With nothing queued the
+	// runtime starts no other block, so mr.unit holds the last block's direction and stays put.
+	__asm__ __volatile__ ("" ::: "memory");				// read the state only after the direction
+	if (bf->pv->buffer_state == MP_BUFFER_EMPTY) {
+		junction_velocity = _get_junction_vmax(mr.unit, bf->unit);
+	}
 	bf->entry_vmax = min3(bf->cruise_vmax, junction_velocity, exact_stop);
 	bf->delta_vmax = mp_get_target_velocity(0, bf->length, bf);
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
