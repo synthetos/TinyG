@@ -3,7 +3,8 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
 
 - Records (exec): eligible only for a G94 linear XYZ feed segment prepared outside a feedhold; below F
   (1% or 2 mm/min short of F) it carries every cause bit of its block, or "other" when the block has none;
-  the length carries its sub-micrometre remainder, so many segments sum without drift.
+  the length goes to Q16 micrometres and carries its fraction, so many segments sum without drift; the
+  exec's block classification (a shortcut when the block is not axis-capped) equals fl_profile_tags().
 - Retire (loader): a finished segment's record is credited once; a second load call adds nothing; with
   accounting off a record is dropped; all six cause bits add the segment's ticks to all six counters.
 - Totals (main loop): the fold flips the loader to the other pending bank (the only masked step) and takes
@@ -102,7 +103,7 @@ def feedlimit_code():
     code += fc[fc.index("flBlock_t fl_slot[2];"):fc.index(last) + len(last)] + "\n"
     code += function(fc, r"uint8_t fl_profile_tags\(float naiive_move_time, float cruise, float cruise_vmax\)") + "\n"
     code += function(fc, r"void fl_stage_block\(const mpBuf_t \*bf\)") + "\n"
-    code += function(fc, r"void fl_segment\(float velocity, float segment_time\)") + "\n"
+    code += function(fc, r"void fl_segment\(float velocity, float length\)") + "\n"
     return code
 
 
@@ -166,7 +167,7 @@ static mpBuf_t blk(float feed, float cruise, float vmax, uint8_t tags) {
     b.cruise_velocity = cruise; b.cruise_vmax = vmax; b.naiive_move_time = 0.01f; b.unit[AXIS_X] = 1; b.fl_tags = tags;
     return b;
 }
-static uint8_t seg(float v) { fl_segment(v, 0.005f / 60); return st_pre.fl_rec; }
+static uint8_t seg(float v) { fl_segment(v, v * 0.005f / 60); return st_pre.fl_rec; }
 int main(void) {
     fl_on = 1;
     mpBuf_t b = blk(600, 600, 600, 0); fl_stage_block(&b);              /* reaches F: no tags */
@@ -186,9 +187,19 @@ int main(void) {
     cm.hold_state = FEEDHOLD_SYNC; assert(seg(300) == 0); cm.hold_state = FEEDHOLD_OFF;   /* deceleration into a hold */
     b.gm.linenum = 77; fl_stage_block(&b); assert(fl_slot[fl_stage].line == 77);
 
-    fl_um_frac = 0; uint64_t sum = 0;                                   /* 33.333... um per segment */
-    for (int i = 0; i < 3000; i++) { fl_segment(333.3333f, 0.0001f); sum += st_pre.fl_um; }
+    fl_um_q16 = 0; uint64_t sum = 0;                                    /* 33.333... um per segment */
+    for (int i = 0; i < 3000; i++) { fl_segment(333.3333f, 0.03333333f); sum += st_pre.fl_um; }
     assert(sum >= 99998 && sum <= 100001);
+    fl_segment(600, 100.0f); assert(st_pre.fl_um == 100000);            /* past the Q16 range: no carry, still right */
+
+    /* the exec's classification matches fl_profile_tags() whether or not the block is axis-capped */
+    float feeds[] = { 1, 150, 200, 600, 2400 }, frac[] = { 0.5f, 0.98f, 0.99f, 0.995f, 1.0f }, caps[] = { 1.0f, 0.7f };
+    for (int i = 0; i < 5; i++) for (int j = 0; j < 5; j++) for (int c = 0; c < 2; c++) for (int nm = 0; nm < 2; nm++) {
+        float vmax = feeds[i] * caps[c];
+        mpBuf_t x = blk(feeds[i], vmax * frac[j], vmax, 0); x.naiive_move_time = nm ? 0.00005f : 0.01f;
+        fl_stage_block(&x);
+        assert(fl_slot[fl_stage].all_tags == fl_profile_tags(x.naiive_move_time, x.cruise_velocity, x.cruise_vmax));
+    }
 
     memset((void *)&fl_pend, 0, sizeof(fl_pend));
     st_pre.fl_rec = FL_REC_ELIGIBLE | FL_JUNCTION; st_pre.fl_um = 50; st_pre.dda_ticks = 250;
@@ -232,9 +243,9 @@ int main(void) {
       rt.check_only = true; assert(set_fi(1, NULL) == STAT_OK); rt.check_only = false;
       quiet = false; assert(set_fi(1, NULL) == STAT_COMMAND_NOT_ACCEPTED); quiet = true;
       assert(fla.epoch == epoch && fla.ms[FL_CAUSES] == ms + 5 && fla.um == 50 && fla.invalid && !fl_on); }
-    fl_pend[fl_bank].ticks[FL_CAUSES] = 9; fl_um_frac = 0.5f;
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 9; fl_um_q16 = 1234;
     assert(set_fi(1, NULL) == STAT_OK && fla.epoch == 2 && fla.ms[FL_CAUSES] == 0 && fl_on);         /* a new window */
-    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fl_um_frac == 0);
+    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fl_um_q16 == 0);
     { nvObj_t nv = {0}; nv.valuetype = TYPE_FLOAT; assert(rt_set_fi(&nv) == STAT_INPUT_VALUE_RANGE_ERROR); }
     rt.allowed = false; { nvObj_t nv = {0}; assert(rt_get_fi(&nv) == STAT_UNRECOGNIZED_NAME); } rt.allowed = true;
 
@@ -375,7 +386,7 @@ int main(void) {
         self.assertIn("st_run.fl_rec = 0;", reset)
         self.assertLess(reset.index("st_run.fl_rec = 0;"), reset.index("SREG = saved_sreg;"))
         seg = function(src("plan_exec.c"), r"static stat_t _exec_aline_segment\(\)")
-        self.assertRegex(seg, r"if \(fl_on\) \{ fl_segment\(mr\.segment_velocity, mr\.segment_time\); \} else \{ st_pre\.fl_rec = 0; \}\s*ritorno\(st_prep_line")
+        self.assertRegex(seg, r"if \(fl_on\) \{ fl_segment\(mr\.segment_velocity, segment_length\); \} else \{ st_pre\.fl_rec = 0; \}\s*ritorno\(st_prep_line")
         self.assertIn("(set != rt_set_fi)", function(src("config.c"), r"stat_t nv_set\(nvObj_t \*nv\)"))
         self.assertIn('{ "rt","rtfi"', src("config_app.c"))
         self.assertIn('{ "rt","rtfs"', src("config_app.c"))

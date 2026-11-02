@@ -83,11 +83,11 @@ typedef struct flPending {
 extern volatile uint8_t fl_on;		// crediting enabled (main loop sets it; exec and loader read it)
 extern volatile flPending_t fl_pend[2];	// loader adds into fl_pend[fl_bank]; the main loop takes the other
 extern volatile uint8_t fl_bank;
-extern float fl_um_frac;			// exec: sub-micrometre remainder carried to the next segment
+extern uint16_t fl_um_q16;			// exec: sub-micrometre remainder (1/65536 um) carried to the next segment
 extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
 
 void fl_stage_block(const struct mpBuffer *bf);
-void fl_segment(float velocity, float segment_time);
+void fl_segment(float velocity, float length);
 uint8_t fl_profile_tags(float naiive_move_time, float cruise, float cruise_vmax);
 
 #endif // End of include guard: FEEDLIMIT_H_ONCE

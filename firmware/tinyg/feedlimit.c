@@ -16,7 +16,7 @@ volatile uint8_t fl_cur = FL_CUR_NONE;
 volatile uint8_t fl_on;
 volatile flPending_t fl_pend[2];
 volatile uint8_t fl_bank;
-float fl_um_frac;
+uint16_t fl_um_q16;
 volatile uint8_t fl_activity;
 
 static uint8_t fl_blk_ok;			// exec: the running block's segments are eligible (G94 linear XYZ feed)
@@ -49,11 +49,18 @@ void fl_stage_block(const mpBuf_t *bf)
 	if (fl_on) {									// accounting: classify the block once, for all its segments
 		fl_activity = true;							// a final summary is due once this has run
 		fl_blk_ok = s->pct_ok;
-		s->all_tags = s->tags | fl_profile_tags(s->naiive_move_time, s->cruise, s->cruise_vmax);
-		fl_blk_mask = (s->all_tags != 0) ? s->all_tags : FL_REC_OTHER;
 		float reached = s->feed * 0.01;				// the same 1% (or 2 mm/min) as fl_profile_tags()
 		if (reached < 2) { reached = 2; }
 		fl_blk_below = s->feed - reached;
+		uint8_t profile;
+		if (s->cruise_vmax == s->feed) {			// not axis-capped: fl_profile_tags() with this threshold
+			profile = (s->naiive_move_time <= NOM_SEGMENT_TIME) ? FL_MIN_SEGMENT :
+					  ((s->cruise < fl_blk_below) ? FL_SHORT : 0);
+		} else {
+			profile = fl_profile_tags(s->naiive_move_time, s->cruise, s->cruise_vmax);
+		}
+		s->all_tags = s->tags | profile;
+		fl_blk_mask = (s->all_tags != 0) ? s->all_tags : FL_REC_OTHER;
 	}
 }
 
@@ -62,18 +69,23 @@ void fl_stage_block(const mpBuf_t *bf)
  *
  *	A segment prepared while a feedhold is active (its deceleration) is not eligible; segments prepared
  *	before the hold keep their records. Below F: every cause bit of the block; the time counts under each.
- *	The length is velocity x time (a commanded-path estimate), with the sub-micrometre part carried.
+ *	The length is the exec's velocity x time (a commanded-path estimate). It goes to Q16 micrometres with one
+ *	multiply; the fraction is carried as an integer, so many segments sum without drift.
  */
-void fl_segment(float velocity, float segment_time)
+void fl_segment(float velocity, float length)
 {
 	uint8_t rec = 0;
 	if (fl_blk_ok && (cm.hold_state == FEEDHOLD_OFF)) {
 		rec = FL_REC_ELIGIBLE;
 		if (velocity < fl_blk_below) { rec |= fl_blk_mask; }
-		float um = velocity * segment_time * 1000 + fl_um_frac;
-		uint32_t whole = (uint32_t)um;
-		fl_um_frac = um - whole;
-		st_pre.fl_um = whole;
+		float q16 = length * (1000.0f * 65536.0f);
+		if (q16 < 4.0e9f) {							// up to ~61 mm in one segment (a 5-10 ms segment is far less)
+			uint32_t um = (uint32_t)q16 + fl_um_q16;
+			st_pre.fl_um = um >> 16;
+			fl_um_q16 = (uint16_t)um;
+		} else {
+			st_pre.fl_um = (uint32_t)(length * 1000);
+		}
 	}
 	st_pre.fl_rec = rec;
 }

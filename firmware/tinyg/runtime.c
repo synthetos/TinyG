@@ -525,7 +525,7 @@ stat_t rt_set_fi(nvObj_t *nv)
 	if (!_machine_quiet() || xio_rx_data_pending()) {
 		status = STAT_COMMAND_NOT_ACCEPTED;
 	} else if (!rt.check_only) {
-		fl_um_frac = 0;
+		fl_um_q16 = 0;
 		fl_activity = false;
 		fl_on = true;
 	}
