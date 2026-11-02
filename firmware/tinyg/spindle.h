@@ -41,6 +41,10 @@ extern spindleConfig_t spindle_cfg;
 void spindle_config_init(void);
 void spindle_init_outputs(void);
 stat_t spindle_set_polarity(nvObj_t *nv);
+stat_t spindle_get_spe(nvObj_t *nv);
+stat_t spindle_get_spd(nvObj_t *nv);
+stat_t spindle_get_spc(nvObj_t *nv);
+stat_t spindle_get_sps(nvObj_t *nv);
 void spindle_init();
 void spindle_reset();
 stat_t cm_set_spindle_speed(float speed);			// S parameter

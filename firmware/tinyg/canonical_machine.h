@@ -707,6 +707,8 @@ stat_t cm_alrm(nvObj_t *nv);                                    // trigger alarm
 stat_t cm_shutd(nvObj_t *nv);                                   // trigger shutdown from command input
 stat_t cm_pnic(nvObj_t *nv);                                    // trigger panic from command input
 stat_t cm_clr(nvObj_t *nv);                                     // clear alarm and shutdown from command input
+stat_t coolant_get_cof(nvObj_t *nv);                            // flood coolant output as driven (readout)
+stat_t coolant_get_com(nvObj_t *nv);                            // mist coolant output as driven (readout)
 void cm_clear(void);                                            // raw clear command
 stat_t cm_is_alarmed(void);                                     // return non-zero status if alarm, shutdown or panic
 void cm_halt_all(void);                                         // halt motion, spindle and coolant

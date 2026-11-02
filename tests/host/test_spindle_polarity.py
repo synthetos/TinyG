@@ -25,6 +25,10 @@ class SpindlePolarity(unittest.TestCase):
             match = re.search(signature + r"\{", source)
             self.assertIsNotNone(match, name)
             definitions.append(function(source[match.start():], signature))
+        if "} spindle_out;" in source:                                  # outputs as driven, for the readouts
+            record = re.search(r"(?m)^static void _record_speed\(float speed\)\s*", source)
+            definitions.insert(1, source[source.index("static struct {"):source.index("} spindle_out;") + 14] + "\n" +
+                               function(source[record.start():], r"static void _record_speed\(float speed\)\s*"))
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
@@ -52,7 +56,7 @@ class SpindlePolarity(unittest.TestCase):
 typedef int stat_t;
 typedef struct { uint32_t value_int; uint8_t *target; } nvObj_t;
 struct { uint8_t enable_polarity, direction_polarity; } spindle_cfg;
-struct { int machine_state; struct { int spindle_mode; } gm; } cm;
+struct { int machine_state; struct { int spindle_mode; float spindle_speed; } gm; } cm;
 struct { int buffer_state; } st_pre;
 uint8_t SREG;
 static bool queued, running, spindle_configured;
@@ -155,9 +159,10 @@ int main(void) {
         self.assertEqual(new[end+11], ("sys", "os"))                                # E020, session only
         self.assertEqual(new[end+12:end+16], [("pwr", f"pwr{m}") for m in range(1, 5)])   # E108, read-only
         self.assertEqual(new[end+16:end+19], [("rt", "rthb"), ("rt", "rtqt"), ("rt", "rtup")])   # runtime session, RAM only
+        self.assertEqual(new[end+19:end+25], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
         groups = list(old[end:])
         groups.insert(groups.index(("", "jid")) + 1, ("", "rt"))                    # runtime session group
-        self.assertEqual(new[end+19:], groups)
+        self.assertEqual(new[end+25:], groups)
 
 
 if __name__ == "__main__":
