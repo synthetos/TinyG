@@ -168,6 +168,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
 
 	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
+	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
 
 } mpBuf_t;
 

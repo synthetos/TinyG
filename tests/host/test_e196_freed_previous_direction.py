@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 
 # where the free happens: before the direction is read, and just after the junction calculation
 BEFORE = "junction_velocity = _get_junction_vmax(bf->pv->unit"
-AFTER = "bf->entry_vmax = min3("
+AFTER = "bool corner = ("                                  # the limits are written out with the feed-limit tags
 
 
 class FreedPreviousDirection(unittest.TestCase):

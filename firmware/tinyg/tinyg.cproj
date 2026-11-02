@@ -234,6 +234,12 @@
     <Compile Include="gcode_parser.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="feedlimit.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="feedlimit.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="gpio.c">
       <SubType>compile</SubType>
     </Compile>

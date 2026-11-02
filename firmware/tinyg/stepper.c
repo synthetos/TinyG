@@ -34,6 +34,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "planner.h"
+#include "feedlimit.h"
 #include "canonical_machine.h"
 #include "report.h"
 #include "hardware.h"
@@ -875,6 +876,10 @@ static void _load_move()
 //		}
 		return;
 	}
+	if (st_pre.fl_load != FL_LOAD_SAME) {						// the feed-limit report follows the load (feedlimit.h)
+		fl_cur = st_pre.fl_load - 1;
+		st_pre.fl_load = FL_LOAD_SAME;
+	}
 	// handle aline loads first (most common case)
 	if (st_pre.block_type == BLOCK_TYPE_ALINE) {
 
@@ -1179,6 +1184,10 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 		st_pre.mot[motor].substep_increment = round(fabs(travel_steps[motor] * DDA_SUBSTEPS));
 	}
 	st_pre.block_type = BLOCK_TYPE_ALINE;
+	if (fl_staged != FL_LOAD_SAME) {					// the staged block starts with this segment (the
+		st_pre.fl_load = fl_staged;						// loader clears it back to FL_LOAD_SAME)
+		fl_staged = FL_LOAD_SAME;
+	}
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 	return (STAT_OK);
 }
@@ -1200,6 +1209,7 @@ void st_prep_null()
 void st_prep_command(void *bf)
 {
 	st_pre.block_type = BLOCK_TYPE_COMMAND;
+	st_pre.fl_load = FL_LOAD_NONE;
 	st_pre.bf = (mpBuf_t *)bf;
 	st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER;	// signal that prep buffer is ready
 }
@@ -1211,6 +1221,7 @@ void st_prep_command(void *bf)
 void st_prep_dwell(float microseconds)
 {
 	st_pre.block_type = BLOCK_TYPE_DWELL;
+	st_pre.fl_load = FL_LOAD_NONE;
 	st_pre.dda_period = _f_to_period(FREQUENCY_DWELL);
 	st_pre.dda_ticks = (uint32_t)((microseconds/1000000) * FREQUENCY_DWELL);
 	if (st_pre.dda_ticks == 0) { st_pre.dda_ticks = 1; }
