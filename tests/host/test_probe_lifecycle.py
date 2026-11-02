@@ -57,6 +57,8 @@ uint8_t cm_get_units_mode(const GCodeState_t *g) { (void)g; return MILLIMETERS; 
 stat_t cm_set_distance_mode(const uint8_t mode) { cm.gm.distance_mode=mode; return STAT_OK; }
 int8_t find_probe_switch(void) { return 0; }
 swState read_switch(const uint8_t s) { return SW_INACTIVE; }
+static unsigned feedholds;
+void cm_request_feedhold(void) { feedholds++; }   /* E192: a contact after the initial sample holds the move */
 stat_t cm_spindle_control(uint8_t mode) { queued=true; return STAT_OK; }
 stat_t cm_straight_feed(const float *target, const bool *flags) {
     feeds++;
@@ -114,7 +116,7 @@ int main(void) {
     assert(cm_probe_callback()==STAT_EAGAIN && cm.cycle_state==CYCLE_OFF);
     queued=false; cm.hold_state=FEEDHOLD_OFF;
     init_probe();
-    assert(cm_probe_callback()==STAT_EAGAIN && feeds==1);
+    assert(cm_probe_callback()==STAT_EAGAIN && feeds==1 && feedholds==0); // inactive probe: no hold
     assert(cm_probe_callback()==STAT_EAGAIN && finishes==0); // not yet loaded
     queued=false; stepping=true;
     assert(cm_probe_callback()==STAT_EAGAIN && finishes==0);

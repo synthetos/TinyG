@@ -238,6 +238,11 @@ static stat_t _probing_start()
         if (status != STAT_OK) {
             return (_probing_error_exit(status));
         }
+        // a contact the switch interrupt saw after that sample found no motion to hold: hold the
+        // move just queued (E192)
+        if (sw.s[pb.probe_switch].state != SW_INACTIVE) {
+            cm_request_feedhold();
+        }
     }
 	return (_set_pb_func(_probing_finish));
 }

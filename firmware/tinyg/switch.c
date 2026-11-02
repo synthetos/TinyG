@@ -260,8 +260,18 @@ swState read_switch(const uint8_t sw_num)
     if (sw.s[sw_num].mode == SW_MODE_DISABLED) {
         return (SW_DISABLED);
     }
+    // sample and store together: a switch interrupt in between would record an edge that this
+    // older sample then overwrites (E192)
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
     sw.s[sw_num].state = _read_raw_switch(sw_num);    // read pin
-    return (sw.s[sw_num].state);
+    swState state = sw.s[sw_num].state;
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return (state);
 }
 
 /*
