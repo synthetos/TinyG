@@ -24,6 +24,7 @@
 #include "../config.h"
 #include "../switch.h"
 #include "xmega_rtc.h"
+#include "../util.h"
 
 rtClock_t rtc;		// allocate clock control struct
 
@@ -72,7 +73,11 @@ void rtc_init()
 
 ISR(RTC_COMP_vect)
 {
-	rtc.sys_ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
+	uint32_t ticks = ++rtc.rtc_ticks*10;		// advance both tick counters as appropriate
+	uint8_t saved_sreg = SREG;				// store all four bytes before a switch interrupt can read them (E190)
+	cli();
+	rtc.sys_ticks = ticks;
+	SREG = saved_sreg;
     switch_rtc_callback();
 }
 
@@ -88,11 +93,11 @@ bool Timeout_isPast(Timeout_t *this) {
     if (!Timeout_isSet(this)) {
         return (false);
     }
-    return ((rtc.sys_ticks - this->_start) > this->_delay);
+    return ((SysTickTimer_getValue() - this->_start) > this->_delay);
 }
 
 void Timeout_set(Timeout_t *this, uint32_t delay) {
-    this->_start = rtc.sys_ticks;
+    this->_start = SysTickTimer_getValue();
     this->_delay = delay;
 }
 
