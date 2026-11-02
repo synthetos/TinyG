@@ -28,6 +28,11 @@ def test_parse_footer_rev3():
     assert (f.rev, f.status, f.count, f.checksum_ok) == (3, 0, 11, None)
 
 
+def test_parse_heartbeat():
+    ev = protocol.parse_line('{"hb":{"stat":1,"hold":0,"up":12,"qt":null}}', 0.0)
+    assert ev.kind == "heartbeat" and ev.data["hb"]["up"] == 12
+
+
 def test_parse_banners():
     assert protocol.parse_line(BANNER_440, 0.0).kind == "banner"
     ev = protocol.parse_line('{sr:{fv:0.970,fb:449.01,msg:"SYSTEM READY"}}', 0.0)   # relaxed syntax

@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, RUNTIME_STUBS
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -80,7 +80,7 @@ void val(char *s,int depth,int type){while(*s)*wr++=*s++;*wr++=JTOK_FLAG|(depth<
         code+=function(source,r'static char \*_next_token\(')
         code+=function(source,r'static stat_t _marshall_nv_pair\([^;{}]*\)(?=\s*\{)')
         code+=function(source,r'static bool _motion_sync_envelope\([^;{}]*\)(?=\s*\{)')
-        code+=function(source,r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
+        code+=RUNTIME_STUBS+function(source,r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
         code+=r'''
 int parse(void){nvObj_t *p=list;return _json_parser_kernal(&p,input);}
 int main(void){

@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, RUNTIME_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -68,7 +68,7 @@ bool prep_float(nvObj_t *n){(void)n;return true;}
 void json_relax(char *s){(void)s;}
 '''
         code += function(source, r'static bool _motion_sync_envelope\([^;{}]*\)(?=\s*\{)')
-        code += function(source, r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
+        code += RUNTIME_STUBS + function(source, r'static stat_t _json_parser_kernal\([^;{}]*\)(?=\s*\{)')
         code += function(source, r'static char \*_serialize_string\([^;{}]*\)(?=\s*\{)')
         code += function(source, r'int16_t json_serialize\([^;{}]*\)(?=\s*\{)')
         code += r'''

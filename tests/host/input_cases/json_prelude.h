@@ -43,6 +43,17 @@ static int table_precision(index_t i) { (void)i;return 3; }
 index_t nv_index_max(void) { return sizeof(names)/sizeof(*names); }
 bool nv_index_is_single(index_t i) { return i<nv_index_max(); }
 static nvObj_t *real_reset_nv_list(char *parent);
+/* runtime.h: the rt family is exercised in test_runtime_rt.py */
+static struct { bool allowed; } rt;
+#define RT_ENVELOPE_NONE 0
+#define RT_ENVELOPE_PURE 1
+#define RT_ENVELOPE_BAD 2
+static void rt_qt_invalidate(void) {}
+#define cfg_get_is_action(get) ((void)(get), false)
+static stat_t rt_set_hb(nvObj_t *n) { (void)n; return STAT_OK; }
+static stat_t rt_set_qt(nvObj_t *n) { (void)n; return STAT_OK; }
+static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
+stat_t set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 nvObj_t *nv_reset_nv_list(char *parent) {
     /* AVR address zero reads as the empty parent; desktop NULL is not readable. */
     return real_reset_nv_list(parent ? parent : "");

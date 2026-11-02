@@ -46,6 +46,7 @@
 #include "help.h"
 #include "util.h"
 #include "xio.h"
+#include "runtime.h"
 
 #ifdef __ARM
 #include "Reset.h"
@@ -183,6 +184,7 @@ static void _controller_HSM()
 	DISPATCH(sr_status_report_callback());		// conditionally send status report
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
+	DISPATCH(rt_heartbeat_callback());			// idle heartbeat, when enabled ({"rt":{"hb":n}})
 
 	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines

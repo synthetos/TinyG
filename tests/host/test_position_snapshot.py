@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function, region
+from source_extract import function, region, RUNTIME_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE = ROOT / "firmware/tinyg"
@@ -197,7 +197,7 @@ class PositionSnapshot(unittest.TestCase):
         if not cc:
             self.skipTest("host C compiler not installed")
         cmc = (FIRMWARE / "canonical_machine.c").read_text()
-        code = PRELUDE
+        code = PRELUDE + RUNTIME_STUBS
         for signature in (r"void cm_set_motion_state\(", r"float cm_get_work_offset\(",
                           r"float cm_get_absolute_position\(", r"static float _get_work_position_mm\(",
                           r"float cm_get_work_position\("):

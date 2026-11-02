@@ -87,7 +87,7 @@ static int exercise(char *s,unsigned n) {
             code += extract(config,name,'config.c')
         for name in ['str_asciify','str_unescape','str2float','str2long']:
             code += extract(util,name,'util.c')
-        for name in ['_is_key_char','_scan_tid','_skip_whitespace','_skip_quote','_value_type','_tokenize_json_string','_next_token','_marshall_nv_pair','_motion_sync_envelope','_json_parser_kernal','json_parser']:
+        for name in ['_is_key_char','_scan_tid','_scan_rt','_skip_whitespace','_skip_quote','_value_type','_tokenize_json_string','_next_token','_marshall_nv_pair','_motion_sync_envelope','_json_parser_kernal','json_parser']:
             code += extract(source,name,'json_parser.c')
         code += r'''
 #line 1 "input_fixture.c"

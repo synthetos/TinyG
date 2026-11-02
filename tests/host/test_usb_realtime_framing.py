@@ -42,7 +42,7 @@ struct {int len; bool flag_in_line, flag_xoff;} USB;
 struct {bool queue_flush_input;} cm;
 struct {typeof(port) *usart; int rx_buf_head,rx_buf_tail,rx_buf_count,fc_state_tx,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;
         char rx_buf[RX_BUFFER_SIZE];} USBu={.usart=&port,.rx_buf_head=1,.rx_buf_tail=1};
-volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks;
+volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks; static volatile uint8_t usb_activity;
 #define RX_STALE_LINE_TICKS 103
 #define RX_STALE_LINE_MARK 0x1A
 

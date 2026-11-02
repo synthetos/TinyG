@@ -33,6 +33,7 @@
 #include "report.h"
 #include "util.h"
 #include "xio.h"                    // for char definitions
+#include "runtime.h"
 
 // Notes
 //  replace static sprintf's in serialize w/strcat_P
@@ -155,12 +156,91 @@ static void _scan_tid(const char *p)
 	}
 }
 
+/*
+ * _scan_rt() - classify a runtime {"rt":...} envelope before anything executes
+ *
+ *	The rt family stands alone: rt with any other top-level key except tid is refused, and so is a token
+ *	write with any other rt operation, or any key given twice. Lexical, like _scan_tid(): strings are
+ *	skipped and depth tracked.
+ *	A flat key such as rthb is not rt; its getters and setters refuse it because rt.allowed stays false.
+ */
+static uint8_t _scan_rt(const char *p)
+{
+	uint8_t depth = 0, others = 0, rt_keys = 0;
+	uint8_t objects = 0;							// bit n: the container at depth n+1 is an object
+	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false, twice = false;
+	uint8_t leaves = 0;								// rt leaves seen: bit 0 hb, 1 qt, 2 up, 3 anything else
+	while (*p != NUL) {
+		char c = *p;
+		if ((c == '"') && !expect_key) {			// skip a string value
+			for (p++; (*p != NUL) && (*p != '"'); p++) {
+				if ((*p == '\\') && (p[1] != NUL)) { p++; }
+			}
+			if (*p != NUL) { p++; }
+			continue;
+		}
+		if ((c == '{') || (c == '[')) {
+			if (depth < 8) { objects = (c == '{') ? (objects | (1 << depth)) : (objects & ~(1 << depth)); }
+			depth++;
+			in_rt = in_rt || (rt_value && (depth == 2) && (c == '{'));
+			rt_value = false;
+			expect_key = (c == '{');
+			p++;
+			continue;
+		}
+		if ((c == '}') || (c == ']')) {
+			if (depth) { depth--; }
+			if (depth < 2) { in_rt = false; }
+			p++;
+			continue;
+		}
+		if (c == ',') {
+			expect_key = (depth > 0) && (depth <= 8) && (objects & (1 << (depth - 1)));
+			p++;
+			continue;
+		}
+		if (expect_key && (c != ' ') && (c != '\t')) {
+			bool quoted = (c == '"');
+			char key[4] = "";
+			uint8_t n = 0;
+			if (quoted) { p++; }
+			while ((*p != NUL) && (quoted ? (*p != '"') : _is_key_char(*p))) {
+				if (n < 3) { key[n] = (*p >= 'A' && *p <= 'Z') ? (*p + ('a' - 'A')) : *p; }
+				n++; p++;
+			}
+			if (quoted && (*p == '"')) { p++; }
+			expect_key = false;
+			if (depth == 1) {
+				if ((n == 2) && (key[0] == 'r') && (key[1] == 't')) { twice |= has_rt; has_rt = true; rt_value = true; }
+				else if (!((n == 3) && (key[0] == 't') && (key[1] == 'i') && (key[2] == 'd'))) { others++; }
+			} else if (in_rt && (depth == 2)) {
+				rt_keys++;
+				uint8_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
+							   ((n == 2) && (key[0] == 'q') && (key[1] == 't')) ? 2 :
+							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 : 0;
+				twice |= (leaf & leaves) != 0;
+				leaves |= leaf;
+				has_qt = has_qt || (leaf == 2);
+			}
+			continue;
+		}
+		if ((c != ' ') && (c != '\t') && (c != ':')) { rt_value = false; }	// a scalar value, not an object
+		p++;
+	}
+	if (!has_rt) { return (RT_ENVELOPE_NONE); }
+	if (others || twice || (has_qt && (rt_keys > 1))) { return (RT_ENVELOPE_BAD); }
+	return (RT_ENVELOPE_PURE);
+}
+
 void json_parser(char *str)
 {
     js.motion_sync_allowed = true;
 	_scan_tid(str);									// before the tokenizer edits the string
+	uint8_t envelope = _scan_rt(str);
+	rt.allowed = (envelope == RT_ENVELOPE_PURE);
     nvObj_t *nv = nv_reset_nv_list(NUL);		    // get a fresh nvObj list
-	stat_t status = _json_parser_kernal(&nv, str);
+	stat_t status = (envelope == RT_ENVELOPE_BAD) ? STAT_COMMAND_NOT_ACCEPTED : _json_parser_kernal(&nv, str);
+	rt.allowed = false;
 //    if (display) {
         json_print_response(status);
 //    }
@@ -238,6 +318,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
                 return (STAT_NESTED_TXT_CONTAINER);
             } else if (*(*p_nv)->str == '{') {              // it's JSON passed in as a string
                 (*p_nv)->valuetype = TYPE_EMPTY;            // recursive syntax errors must not echo an opaque txt value
+                rt.allowed = false;                         // no runtime family inside a txt container
                 ritorno(_json_parser_kernal(p_nv, (*p_nv)->str)); // recursive parse; its status goes in the footer
             } else {
                 ritorno(controller_dispatch_txt_container((*p_nv), (*p_nv)->str)); // status goes in the footer
