@@ -14,7 +14,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.dialect("d449"),
-              pytest.mark.bug("E197", on=["d449"])]
+              pytest.mark.bug("E197", on=[])]
 
 MACHINE_SHUTDOWN = 7
 

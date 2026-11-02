@@ -140,6 +140,7 @@ void mp_halt_runtime()
 {
     stepper_reset();                // stop the steppers and dwells
     planner_reset();                // reset the planner queues
+    mr.exit_velocity = 0;           // stopped: the next move's entry comes from here (E197)
 }
 
 /*
