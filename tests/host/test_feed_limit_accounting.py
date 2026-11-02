@@ -10,7 +10,9 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
   the old one; ticks fold into ms with the remainder kept between folds, um into mm the same way;
   q counts summaries actually sent; a summary at maximum values is valid JSON and fits the TX ring.
 - fi: clamps to 60 and echoes it; off to on opens a new window (epoch + 1, totals zeroed) only at
-  quiescence with no pending input; a new interval keeps the totals; 0 stops crediting and keeps them.
+  quiescence with no pending input; a rejected enable (quiescence lost between the check pass and the
+  applying pass) leaves the old window with its unfolded credits and invalid flag; a new interval keeps the
+  totals; 0 stops crediting and keeps them.
 - Callback: the first summary comes fi s after a cycle starts; the final one follows the exec's activity
   latch, not a sampled cycle edge (a job that starts and ends between two looks is not missed), waits until
   the runtime has drained (not busy, nothing prepared, the last record retired) and is retried until the
@@ -223,6 +225,13 @@ int main(void) {
     quiet = false; assert(set_fi(3, NULL) == STAT_COMMAND_NOT_ACCEPTED && fla.fi == 0 && !fl_on); quiet = true;
     rx_pending = true; assert(set_fi(3, NULL) == STAT_COMMAND_NOT_ACCEPTED); rx_pending = false;
     rt.check_only = true; assert(set_fi(3, NULL) == STAT_OK && fla.fi == 0 && !fl_on); rt.check_only = false;
+    /* a rejected enable leaves the old window, its unfolded credits included (the check pass succeeds, quiescence
+       is lost before the applying pass) */
+    { uint16_t epoch = fla.epoch; uint32_t ms = fla.ms[FL_CAUSES];
+      fl_pend[fl_bank].ticks[FL_CAUSES] = 250; fl_pend[fl_bank].um = 50; fl_pend[fl_bank].wrapped = 1;
+      rt.check_only = true; assert(set_fi(1, NULL) == STAT_OK); rt.check_only = false;
+      quiet = false; assert(set_fi(1, NULL) == STAT_COMMAND_NOT_ACCEPTED); quiet = true;
+      assert(fla.epoch == epoch && fla.ms[FL_CAUSES] == ms + 5 && fla.um == 50 && fla.invalid && !fl_on); }
     fl_pend[fl_bank].ticks[FL_CAUSES] = 9; fl_um_frac = 0.5f;
     assert(set_fi(1, NULL) == STAT_OK && fla.epoch == 2 && fla.ms[FL_CAUSES] == 0 && fl_on);         /* a new window */
     assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fl_um_frac == 0);

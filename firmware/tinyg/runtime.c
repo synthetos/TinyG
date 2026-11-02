@@ -514,9 +514,9 @@ stat_t rt_set_fi(nvObj_t *nv)
 		}
 		return (STAT_OK);
 	}
-	if (!rt.check_only) {						// off, so the loader is not writing them: clear outside the
-		memset((void *)&fl_pend, 0, sizeof(fl_pend));	// masked section
-	}
+	if (!rt.check_only) {						// off, so the loader is not crediting: one fold empties both
+		_fl_fold();								// banks into the old window's totals, which a rejected
+	}											// enable leaves intact
 #ifdef __AVR
 	uint8_t saved_sreg = SREG;
 	cli();
