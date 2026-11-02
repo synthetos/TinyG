@@ -191,7 +191,7 @@ char *str_asciify(char *str)
 	char *start_str = str;
 
     do {
-        if ((*str == 0xE2) && (*(str+1) == 0x80)) {     // replace so-called "smart" quotes everywhere
+        if ((*str == 0xE2) && (*(str+1) == 0x80) && (*(str+2) != 0)) {     // replace so-called "smart" quotes everywhere
             str += 2;
             if ((*str == 0x9C) || (*str == 0x9D)) {
                 *wr++ = '\"';
