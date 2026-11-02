@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/tinyg-edge-next-2026.png" alt="TinyG edge-next, 2026 update: a stepper motor face with a jerk-limited S-curve, and the words TINYG EDGE-NEXT" width="720"></p>
+
 # TinyG EDGE-NEXT: bleeding edge, expect bugs
 
 > **WARNING: this branch is experimental. It WILL have bugs.**
