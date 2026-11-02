@@ -14,7 +14,7 @@ bare key, or {"sr":null}):
     so the leftover runs as it stands, whatever the new host sends.
 
 Each case starts idle at a known X, writes the leftover without a line end, waits as a reconnect
-would, sends the connect line, and records every reply and whether X moved. The table is the record;
+would (0.5 s, and 1.5 s, past E195's stale-line time), sends the connect line, and records every reply and whether X moved. The table is the record;
 the test fails only when the board ends a case outside the expected states (alarm, shutdown, panic).
 """
 import time
@@ -30,12 +30,13 @@ LEFTOVERS = {
     "semicolon-comment": "G0 X0.5 ;rough",
 }
 CONNECTS = {"bare": "{sr:null}", "quoted": '{"sr":null}'}
-GAP = 0.5           # s between the old host's last byte and the new host's first
+GAPS = {"short": 0.5, "long": 1.5}   # s between the old host's last byte and the new host's first (E195 acts above 1 s)
 
 
+@pytest.mark.parametrize("gap", list(GAPS), ids=list(GAPS))
 @pytest.mark.parametrize("connect", list(CONNECTS), ids=list(CONNECTS))
 @pytest.mark.parametrize("leftover", list(LEFTOVERS), ids=list(LEFTOVERS))
-def test_leftover_line_then_connect(tg, record, leftover, connect):
+def test_leftover_line_then_connect(tg, record, leftover, connect, gap):
     left, first = LEFTOVERS[leftover], CONNECTS[connect]
     tg.guard.check_gcode(left, allow="leftover line on an unloaded bench")
     tg.send_gcode("G90", check=True)
@@ -45,17 +46,17 @@ def test_leftover_line_then_connect(tg, record, leftover, connect):
     tg.drain(quiet=0.1)
     try:
         tg.transport.write(left.encode())
-        time.sleep(GAP)
+        time.sleep(GAPS[gap])
         tg.transport.write(first.encode() + b"\n")
         events = tg.drain(quiet=0.5, limit=4.0)
         tg.wait_idle()
         end = tg.get("posx")
         moved = abs(end - start) > 0.01
         replies = [e.raw for e in events if e.kind in ("response", "exception")]
-        record("case", {"build": tg.identity["fb"], "leftover": left, "connect": first, "moved": moved,
+        record("case", {"build": tg.identity["fb"], "leftover": left, "connect": first, "gap": GAPS[gap], "moved": moved,
                         "posx": [start, end], "replies": replies,
                         "statuses": [e.data["f"][1] for e in events if e.kind == "response"]})
-        print(f"{tg.identity['fb']} {leftover:18} {connect:6} moved={moved} replies={replies}")
+        print(f"{tg.identity['fb']} {leftover:18} {connect:6} {gap:5} moved={moved} replies={replies}")
         assert tg.stat() not in tg.dialect.stats("ALARM", "SHUTDOWN", "PANIC")
     finally:
         tg.send_gcode("G0 X0", allow="return to start")
