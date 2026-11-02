@@ -329,16 +329,18 @@ static struct flAccounting {
 
 static void _fl_fold(void)						// take the loader's pending credits into the totals
 {
-	flPending_t p;
 #ifdef __AVR
 	uint8_t saved_sreg = SREG;
 	cli();
 #endif
-	memcpy(&p, (const void *)&fl_pend, sizeof(p));
-	memset((void *)&fl_pend, 0, sizeof(fl_pend));
+	uint8_t bank = fl_bank;						// the loader moves to the other bank; this one is ours
+	fl_bank = bank ^ 1;
 #ifdef __AVR
 	SREG = saved_sreg;
 #endif
+	flPending_t p;
+	memcpy(&p, (const void *)&fl_pend[bank], sizeof(p));
+	memset((void *)&fl_pend[bank], 0, sizeof(p));
 	if (p.wrapped) { fla.invalid = true; }
 	for (uint8_t k = 0; k <= FL_CAUSES; k++) {	// whole parts and remainders apart: no 32-bit sum can overflow
 		fla.ms[k] += p.ticks[k] / FL_TICKS_PER_MS;
@@ -388,23 +390,39 @@ static bool _fl_finished(void)
 	return (finished);
 }
 
-static void _fl_event(uint32_t now)				// one fl line when the executing move's kind or tags change
+/*
+ * _fl_event() - one fl line when the executing move's kind or tags change
+ *
+ *	The look takes two bytes of the current slot (kind and the exec's all_tags) with interrupts masked; only
+ *	on a change are the percent and line inputs taken, again together with kind and tags, so the line
+ *	describes one move.
+ */
+static bool _fl_look(uint8_t *k, uint8_t *m, flBlock_t *b)	// b: also take the line's inputs (on a change)
 {
-	flBlock_t b;
 #ifdef __AVR
 	uint8_t saved_sreg = SREG;
 	cli();
 #endif
 	uint8_t cur = fl_cur;
-	if (cur < 2) {
-		memcpy(&b, &fl_slot[cur], sizeof(flBlock_t));
-	}
 	bool running = (cur < 2) && (cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF);
+	*k = running ? fl_slot[cur].kind : FL_KIND_NONE;
+	*m = running ? fl_slot[cur].all_tags : 0;
+	if (running && (b != NULL)) {
+		b->pct_ok = fl_slot[cur].pct_ok;
+		b->cruise = fl_slot[cur].cruise;
+		b->feed = fl_slot[cur].feed;
+		b->line = fl_slot[cur].line;
+	}
 #ifdef __AVR
 	SREG = saved_sreg;
 #endif
-	uint8_t k = running ? b.kind : FL_KIND_NONE;
-	uint8_t m = running ? (b.tags | fl_profile_tags(b.naiive_move_time, b.cruise, b.cruise_vmax)) : 0;
+	return (running);
+}
+
+static void _fl_event(uint32_t now)
+{
+	uint8_t k, m;
+	_fl_look(&k, &m, NULL);
 	if (fla.fl_known && (k == fla.last_k) && (m == fla.last_m)) {
 		fla.next_fl = now + FL_POLL_TICKS;
 		return;
@@ -413,6 +431,8 @@ static void _fl_event(uint32_t now)				// one fl line when the executing move's 
 		fla.next_fl = now + FL_RETRY_TICKS;
 		return;
 	}
+	flBlock_t b;
+	bool running = _fl_look(&k, &m, &b);
 	char p[12] = "null", n[12] = "null";
 	if (running && (k == FL_KIND_FEED) && b.pct_ok && (b.feed > 0)) {
 		snprintf_P(p, sizeof(p), PSTR("%lu"), (unsigned long)((100 * b.cruise / b.feed) + 0.5));
@@ -494,6 +514,9 @@ stat_t rt_set_fi(nvObj_t *nv)
 		}
 		return (STAT_OK);
 	}
+	if (!rt.check_only) {						// off, so the loader is not writing them: clear outside the
+		memset((void *)&fl_pend, 0, sizeof(fl_pend));	// masked section
+	}
 #ifdef __AVR
 	uint8_t saved_sreg = SREG;
 	cli();
@@ -502,7 +525,6 @@ stat_t rt_set_fi(nvObj_t *nv)
 	if (!_machine_quiet() || xio_rx_data_pending()) {
 		status = STAT_COMMAND_NOT_ACCEPTED;
 	} else if (!rt.check_only) {
-		memset((void *)&fl_pend, 0, sizeof(fl_pend));
 		fl_um_frac = 0;
 		fl_activity = false;
 		fl_on = true;

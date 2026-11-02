@@ -14,7 +14,8 @@ uint8_t fl_stage;
 volatile uint8_t fl_staged;
 volatile uint8_t fl_cur = FL_CUR_NONE;
 volatile uint8_t fl_on;
-volatile flPending_t fl_pend;
+volatile flPending_t fl_pend[2];
+volatile uint8_t fl_bank;
 float fl_um_frac;
 volatile uint8_t fl_activity;
 
@@ -48,8 +49,8 @@ void fl_stage_block(const mpBuf_t *bf)
 	if (fl_on) {									// accounting: classify the block once, for all its segments
 		fl_activity = true;							// a final summary is due once this has run
 		fl_blk_ok = s->pct_ok;
-		fl_blk_mask = s->tags | fl_profile_tags(s->naiive_move_time, s->cruise, s->cruise_vmax);
-		if (fl_blk_mask == 0) { fl_blk_mask = FL_REC_OTHER; }
+		s->all_tags = s->tags | fl_profile_tags(s->naiive_move_time, s->cruise, s->cruise_vmax);
+		fl_blk_mask = (s->all_tags != 0) ? s->all_tags : FL_REC_OTHER;
 		float reached = s->feed * 0.01;				// the same 1% (or 2 mm/min) as fl_profile_tags()
 		if (reached < 2) { reached = 2; }
 		fl_blk_below = s->feed - reached;

@@ -50,6 +50,7 @@ typedef struct flBlock {
 	float cruise_vmax;				// cruise asked for after axis caps, mm/min
 	float naiive_move_time;			// length over the average of the requested entry and exit (plan_zoid.c), minutes
 	uint32_t line;					// the block's line number (runtime: what is executing)
+	uint8_t all_tags;				// static and profile tags, set by the exec while accounting is on (fl events)
 } flBlock_t;
 
 // true if an axis takes part in a move: its unit-vector component is not +0 or -0 (no float compare)
@@ -67,7 +68,8 @@ extern volatile uint8_t fl_cur;		// current slot, or FL_CUR_NONE; set by the ste
 
 // Accounting (step 2), only while a host has it on ({rt:{fi:N}}, runtime.c). Each prepared ALINE segment
 // carries a record (st_pre.fl_rec/fl_um); the loader installs it when the segment loads and retires it when
-// the segment has finished, adding into fl_pend; the main loop folds fl_pend into its totals.
+// the segment has finished, adding into fl_pend[fl_bank]. The main loop flips fl_bank with interrupts masked
+// (a few cycles), then reads and clears the other bank with them enabled: the loader only writes fl_bank.
 #define FL_CAUSES		6			// fs "c" order: axis cap, corner, exact stop, short, single segment, other
 #define FL_REC_OTHER	0x20		// record: below F with no tag (ramps, end of path, downstream braking)
 #define FL_REC_ELIGIBLE	0x80		// record: a G94 linear XYZ feed segment prepared outside a hold
@@ -79,7 +81,8 @@ typedef struct flPending {
 } flPending_t;
 
 extern volatile uint8_t fl_on;		// crediting enabled (main loop sets it; exec and loader read it)
-extern volatile flPending_t fl_pend;// loader adds, main loop takes with interrupts masked
+extern volatile flPending_t fl_pend[2];	// loader adds into fl_pend[fl_bank]; the main loop takes the other
+extern volatile uint8_t fl_bank;
 extern float fl_um_frac;			// exec: sub-micrometre remainder carried to the next segment
 extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
 

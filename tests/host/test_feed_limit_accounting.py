@@ -6,7 +6,8 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
   the length carries its sub-micrometre remainder, so many segments sum without drift.
 - Retire (loader): a finished segment's record is credited once; a second load call adds nothing; with
   accounting off a record is dropped; all six cause bits add the segment's ticks to all six counters.
-- Totals (main loop): ticks fold into ms with the remainder kept between folds, um into mm the same way;
+- Totals (main loop): the fold flips the loader to the other pending bank (the only masked step) and takes
+  the old one; ticks fold into ms with the remainder kept between folds, um into mm the same way;
   q counts summaries actually sent; a summary at maximum values is valid JSON and fits the TX ring.
 - fi: clamps to 60 and echoes it; off to on opens a new window (epoch + 1, totals zeroed) only at
   quiescence with no pending input; a new interval keeps the totals; 0 stops crediting and keeps them.
@@ -116,7 +117,8 @@ def runtime_code():
     rtc = src("runtime.c")
     code = rtc[rtc.index("#define FL_FS_LEN"):rtc.index("} fla;") + len("} fla;")] + "\n"
     for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
-                r"static bool _fl_finished\(void\)", r"static void _fl_event\(uint32_t now\)",
+                r"static bool _fl_finished\(void\)", r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
+                r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",
                 r"stat_t rt_set_fi\(nvObj_t \*nv\)", r"stat_t rt_get_fs\(nvObj_t \*nv\)"):
         code += function(rtc, sig) + "\n"
@@ -171,7 +173,7 @@ int main(void) {
     b = blk(600, 400, 400, FL_AXIS_CAP); fl_stage_block(&b);
     assert(seg(400) == (FL_REC_ELIGIBLE | FL_AXIS_CAP));
     b = blk(1200, 300, 1200, FL_JUNCTION); fl_stage_block(&b);          /* a corner, too short to reach F */
-    assert(seg(300) == (FL_REC_ELIGIBLE | FL_JUNCTION | FL_SHORT));
+    assert(seg(300) == (FL_REC_ELIGIBLE | FL_JUNCTION | FL_SHORT) && fl_slot[fl_stage].all_tags == (FL_JUNCTION | FL_SHORT));
     b = blk(600, 600, 600, 0); b.gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE; fl_stage_block(&b);
     assert(seg(100) == 0);                                              /* G0 */
     b = blk(0.5f, 100, 100, 0); b.gm.feed_rate_mode = INVERSE_TIME_MODE; fl_stage_block(&b);
@@ -190,17 +192,17 @@ int main(void) {
     st_pre.fl_rec = FL_REC_ELIGIBLE | FL_JUNCTION; st_pre.fl_um = 50; st_pre.dda_ticks = 250;
     load_aline(); assert(st_run.fl_rec && st_run.fl_ticks == 250);
     load_entry(); load_entry();                                         /* a second LOAD call adds nothing */
-    assert(fl_pend.ticks[FL_CAUSES] == 250 && fl_pend.ticks[1] == 250 && fl_pend.ticks[0] == 0 && fl_pend.um == 50);
-    st_pre.fl_rec = 0; load_aline(); load_entry(); assert(fl_pend.ticks[FL_CAUSES] == 250);   /* no record: nothing */
+    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 250 && fl_pend[fl_bank].ticks[1] == 250 && fl_pend[fl_bank].ticks[0] == 0 && fl_pend[fl_bank].um == 50);
+    st_pre.fl_rec = 0; load_aline(); load_entry(); assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 250);   /* no record: nothing */
     st_pre.fl_rec = FL_REC_ELIGIBLE | 0x3F; st_pre.dda_ticks = 100; load_aline(); load_entry();
-    for (int k = 0; k <= FL_CAUSES; k++) assert(fl_pend.ticks[k] == ((k == 1) ? 350 : (k == FL_CAUSES) ? 350 : 100));
+    for (int k = 0; k <= FL_CAUSES; k++) assert(fl_pend[fl_bank].ticks[k] == ((k == 1) ? 350 : (k == FL_CAUSES) ? 350 : 100));
     st_pre.fl_rec = FL_REC_ELIGIBLE; load_aline(); fl_on = 0; load_entry();       /* off: dropped */
-    assert(fl_pend.ticks[FL_CAUSES] == 350 && st_run.fl_rec == 0); fl_on = 1;
-    assert(!fl_pend.wrapped);                                           /* a wrap of the pending totals is flagged */
-    fl_pend.ticks[FL_CAUSES] = 4294967295u - 100; st_pre.fl_rec = FL_REC_ELIGIBLE; st_pre.dda_ticks = 200;
-    load_aline(); load_entry(); assert(fl_pend.wrapped);
-    memset((void *)&fl_pend, 0, sizeof(fl_pend)); fl_pend.um = 4294967295u - 10; st_pre.fl_um = 20;
-    load_aline(); load_entry(); assert(fl_pend.wrapped);
+    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 350 && st_run.fl_rec == 0); fl_on = 1;
+    assert(!fl_pend[fl_bank].wrapped);                                           /* a wrap of the pending totals is flagged */
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 4294967295u - 100; st_pre.fl_rec = FL_REC_ELIGIBLE; st_pre.dda_ticks = 200;
+    load_aline(); load_entry(); assert(fl_pend[fl_bank].wrapped);
+    memset((void *)&fl_pend, 0, sizeof(fl_pend)); fl_pend[fl_bank].um = 4294967295u - 10; st_pre.fl_um = 20;
+    load_aline(); load_entry(); assert(fl_pend[fl_bank].wrapped);
     return 0;
 }
 '''
@@ -221,19 +223,22 @@ int main(void) {
     quiet = false; assert(set_fi(3, NULL) == STAT_COMMAND_NOT_ACCEPTED && fla.fi == 0 && !fl_on); quiet = true;
     rx_pending = true; assert(set_fi(3, NULL) == STAT_COMMAND_NOT_ACCEPTED); rx_pending = false;
     rt.check_only = true; assert(set_fi(3, NULL) == STAT_OK && fla.fi == 0 && !fl_on); rt.check_only = false;
-    fl_pend.ticks[FL_CAUSES] = 9; fl_um_frac = 0.5f;
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 9; fl_um_frac = 0.5f;
     assert(set_fi(1, NULL) == STAT_OK && fla.epoch == 2 && fla.ms[FL_CAUSES] == 0 && fl_on);         /* a new window */
-    assert(fl_pend.ticks[FL_CAUSES] == 0 && fl_um_frac == 0);
+    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fl_um_frac == 0);
     { nvObj_t nv = {0}; nv.valuetype = TYPE_FLOAT; assert(rt_set_fi(&nv) == STAT_INPUT_VALUE_RANGE_ERROR); }
     rt.allowed = false; { nvObj_t nv = {0}; assert(rt_get_fi(&nv) == STAT_UNRECOGNIZED_NAME); } rt.allowed = true;
 
-    fl_pend.ticks[FL_CAUSES] = 49; fl_pend.ticks[1] = 50; fl_pend.um = 999;          /* fold with remainders */
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 49; fl_pend[fl_bank].ticks[1] = 50; fl_pend[fl_bank].um = 999;          /* fold with remainders */
+    { uint8_t was = fl_bank; _fl_fold(); assert(fl_bank != was && fl_pend[was].ticks[FL_CAUSES] == 0);   /* banks flip */
+      fla.ms[FL_CAUSES] = 0; fla.ms[1] = 0; fla.rem[FL_CAUSES] = 0; fla.rem[1] = 0; fla.mm = 0; fla.um = 0;
+      fl_pend[fl_bank].ticks[FL_CAUSES] = 49; fl_pend[fl_bank].ticks[1] = 50; fl_pend[fl_bank].um = 999; }
     assert(_fl_send_fs() && fla.q == 1);
     assert(strstr(last(), "\"q\":1,") && strstr(last(), "\"c\":[0,1,0,0,0,0]") && strstr(last(), "\"ct\":0,") && strstr(last(), "\"cd\":0.999}"));
-    fl_pend.ticks[FL_CAUSES] = 1; fl_pend.um = 2;
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 1; fl_pend[fl_bank].um = 2;
     assert(_fl_send_fs() && strstr(last(), "\"ct\":1,") && strstr(last(), "\"cd\":1.001}") && fla.q == 2);
-    tx_ready = 0; fl_pend.ticks[FL_CAUSES] = 5000; assert(!_fl_send_fs() && fla.q == 2 && fl_pend.ticks[FL_CAUSES] == 5000); tx_ready = 1;
-    fl_pend.ticks[FL_CAUSES] = 0;
+    tx_ready = 0; fl_pend[fl_bank].ticks[FL_CAUSES] = 5000; assert(!_fl_send_fs() && fla.q == 2 && fl_pend[fl_bank].ticks[FL_CAUSES] == 5000); tx_ready = 1;
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 0;
     printf("%s", last());
 
     /* periodic and final summaries */
@@ -250,12 +255,12 @@ int main(void) {
 
     /* fl events: rate limit, coalescing, no move */
     nframes = 0; cm.motion_state = MOTION_RUN; cm.hold_state = FEEDHOLD_OFF;
-    fl_slot[0] = (flBlock_t){ FL_AXIS_CAP, FL_KIND_FEED, 1, 1, 400, 600, 400, 0.01f, 12 }; fl_cur = 0;
+    fl_slot[0] = (flBlock_t){ FL_AXIS_CAP, FL_KIND_FEED, 1, 1, 400, 600, 400, 0.01f, 12, FL_AXIS_CAP }; fl_cur = 0;
     while (!count("\"fl\"")) tick(systick + 1);                       /* after the last event's rate limit */
     assert(count("\"fl\"") == 1 && strstr(last(), "{\"fl\":{\"k\":1,\"m\":1,\"p\":67,\"n\":12}}"));
     uint32_t t0 = systick;
-    fl_slot[0].tags = FL_JUNCTION; fl_slot[0].line = 13; tick(t0 + 100);
-    fl_slot[0].tags = FL_EXACT_STOP; fl_slot[0].line = 14; tick(t0 + 200); assert(count("\"fl\"") == 1);
+    fl_slot[0].all_tags = FL_JUNCTION; fl_slot[0].line = 13; tick(t0 + 100);
+    fl_slot[0].all_tags = FL_EXACT_STOP; fl_slot[0].line = 14; tick(t0 + 200); assert(count("\"fl\"") == 1);
     tick(t0 + 300); assert(count("\"fl\"") == 2 && strstr(last(), "\"m\":4,") && strstr(last(), "\"n\":14}"));   /* latest only */
     tick(t0 + 2000); assert(count("\"fl\"") == 2);                      /* unchanged: nothing more */
     tx_ready = 0; fl_cur = FL_CUR_NONE; tick(t0 + 2400); assert(count("\"fl\"") == 2);
@@ -264,8 +269,8 @@ int main(void) {
 
     /* a job that starts and ends between two looks still gets its final summary */
     nframes = 0; fl_cur = FL_CUR_NONE; cm.motion_state = MOTION_STOP; tick(systick + 300);
-    fl_activity = 1; fl_pend.ticks[FL_CAUSES] = 250; fl_pend.um = 5000;             /* never seen running */
-    tick(systick + 50); assert(count("\"fs\"") == 1 && strstr(last(), "\"cd\":") && fl_pend.ticks[FL_CAUSES] == 0);
+    fl_activity = 1; fl_pend[fl_bank].ticks[FL_CAUSES] = 250; fl_pend[fl_bank].um = 5000;             /* never seen running */
+    tick(systick + 50); assert(count("\"fs\"") == 1 && strstr(last(), "\"cd\":") && fl_pend[fl_bank].ticks[FL_CAUSES] == 0);
 
     /* fi 0 cancels a queued automatic summary; an asked-for one survives */
     nframes = 0; cm.cycle_state = CYCLE_MACHINING; tick(systick + 2); tx_ready = 0;
@@ -278,9 +283,9 @@ int main(void) {
     assert(set_fi(1, NULL) == STAT_OK);                                 /* a new window for the rest */
 
     /* pending credits fold every ~250 ms even while the link is paused; carries cannot overflow */
-    tx_ready = 0; fl_pend.ticks[FL_CAUSES] = 1000; tick(systick + 300); assert(fl_pend.ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 20);
+    tx_ready = 0; fl_pend[fl_bank].ticks[FL_CAUSES] = 1000; tick(systick + 300); assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 20);
     fla.rem[FL_CAUSES] = 49; fla.ms[FL_CAUSES] = 0; fla.um = 999; fla.mm = 0;
-    fl_pend.ticks[FL_CAUSES] = 4294967295u; fl_pend.um = 4294967295u; _fl_fold();
+    fl_pend[fl_bank].ticks[FL_CAUSES] = 4294967295u; fl_pend[fl_bank].um = 4294967295u; _fl_fold();
     assert(fla.ms[FL_CAUSES] == 85899346 && fla.rem[FL_CAUSES] == 44 && fla.mm == 4294968 && fla.um == 294);
     tx_ready = 1;
 
@@ -289,14 +294,14 @@ int main(void) {
     for (int i = 0; i < 2; i++) {
         systick = starts[i]; nframes = 0;
         assert(set_fi(0, NULL) == STAT_OK && set_fi(1, NULL) == STAT_OK);
-        cm.motion_state = MOTION_RUN; fl_slot[0].tags = FL_AXIS_CAP; fl_cur = 0; fl_pend.ticks[FL_CAUSES] = 12500;
+        cm.motion_state = MOTION_RUN; fl_slot[0].all_tags = FL_AXIS_CAP; fl_cur = 0; fl_pend[fl_bank].ticks[FL_CAUSES] = 12500;
         tick(systick + 300);
-        assert(count("\"fl\"") == 1 && fl_pend.ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 250);
+        assert(count("\"fl\"") == 1 && fl_pend[fl_bank].ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 250);
     }
     cm.motion_state = MOTION_STOP; fl_cur = FL_CUR_NONE;
 
     /* a wrapped pending total marks the window: every later summary says "x":1 */
-    fl_pend.wrapped = 1; _fl_fold(); assert(fla.invalid && _fl_send_fs() && strstr(last(), ",\"x\":1}}"));
+    fl_pend[fl_bank].wrapped = 1; _fl_fold(); assert(fla.invalid && _fl_send_fs() && strstr(last(), ",\"x\":1}}"));
     printf("%s", last());
 
     /* largest summary */
