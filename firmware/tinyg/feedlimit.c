@@ -16,6 +16,7 @@ volatile uint8_t fl_cur = FL_CUR_NONE;
 volatile uint8_t fl_on;
 volatile flPending_t fl_pend;
 float fl_um_frac;
+volatile uint8_t fl_activity;
 
 static uint8_t fl_blk_ok;			// exec: the running block's segments are eligible (G94 linear XYZ feed)
 static uint8_t fl_blk_mask;			// exec: its cause bits (static and profile tags, or FL_REC_OTHER)
@@ -45,6 +46,7 @@ void fl_stage_block(const mpBuf_t *bf)
 	s->line = bf->gm.linenum;
 	fl_staged = FL_LOAD_SLOT0 + fl_stage;
 	if (fl_on) {									// accounting: classify the block once, for all its segments
+		fl_activity = true;							// a final summary is due once this has run
 		fl_blk_ok = s->pct_ok;
 		fl_blk_mask = s->tags | fl_profile_tags(s->naiive_move_time, s->cruise, s->cruise_vmax);
 		if (fl_blk_mask == 0) { fl_blk_mask = FL_REC_OTHER; }

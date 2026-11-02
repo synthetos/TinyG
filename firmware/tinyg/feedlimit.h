@@ -80,6 +80,7 @@ typedef struct flPending {
 extern volatile uint8_t fl_on;		// crediting enabled (main loop sets it; exec and loader read it)
 extern volatile flPending_t fl_pend;// loader adds, main loop takes with interrupts masked
 extern float fl_um_frac;			// exec: sub-micrometre remainder carried to the next segment
+extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
 
 void fl_stage_block(const struct mpBuffer *bf);
 void fl_segment(float velocity, float segment_time);

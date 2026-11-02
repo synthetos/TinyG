@@ -10,10 +10,12 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
   q counts summaries actually sent; a summary at maximum values is valid JSON and fits the TX ring.
 - fi: clamps to 60 and echoes it; off to on opens a new window (epoch + 1, totals zeroed) only at
   quiescence with no pending input; a new interval keeps the totals; 0 stops crediting and keeps them.
-- Callback: the first summary comes fi s after a cycle starts; after the cycle ends the final one waits
-  until the runtime has drained (not busy, nothing prepared, the last record retired), and is retried until
-  the link takes it; fl lines follow changes at most 4 a second, coalesced to the latest state, and report
-  the change to no move.
+- Callback: the first summary comes fi s after a cycle starts; the final one follows the exec's activity
+  latch, not a sampled cycle edge (a job that starts and ends between two looks is not missed), waits until
+  the runtime has drained (not busy, nothing prepared, the last record retired) and is retried until the
+  link takes it; fi 0 cancels a queued automatic summary but not one asked for; pending credits fold every
+  ~250 ms whether or not the link is free, with carries that cannot overflow; fl lines follow changes at
+  most 4 a second, coalesced to the latest state, and report the change to no move.
 - Frame sender: the room check is exact (each LF counted twice, TX_BUFFER_SIZE - 2 bytes); busy, XOFF or
   CTS refuse it whole.
 """
@@ -110,8 +112,8 @@ def loader_code():
 def runtime_code():
     rtc = src("runtime.c")
     code = rtc[rtc.index("#define FL_FS_LEN"):rtc.index("} fla;") + len("} fla;")] + "\n"
-    for sig in (r"static void _fl_fold\(void\)", r"static void _fl_request_fs\(void\)", r"static bool _fl_send_fs\(void\)",
-                r"static bool _fl_drained\(void\)", r"static void _fl_event\(uint32_t now\)",
+    for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
+                r"static bool _fl_finished\(void\)", r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",
                 r"stat_t rt_set_fi\(nvObj_t \*nv\)", r"stat_t rt_get_fs\(nvObj_t \*nv\)"):
         code += function(rtc, sig) + "\n"
@@ -227,13 +229,13 @@ int main(void) {
     printf("%s", last());
 
     /* periodic and final summaries */
-    nframes = 0; systick = 100; cm.cycle_state = CYCLE_MACHINING; tick(101);       /* a cycle starts */
+    nframes = 0; systick = 100; cm.cycle_state = CYCLE_MACHINING; fl_activity = 1; tick(101);   /* a cycle starts */
     tick(100 + 1024); assert(count("\"fs\"") == 0);
     tick(100 + 1025); assert(count("\"fs\"") == 1);
     cm.cycle_state = CYCLE_OFF; busy = true; tick(3000); assert(count("\"fs\"") == 1);              /* still stepping */
     busy = false; st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER; tick(3100); assert(count("\"fs\"") == 1);
     st_pre.buffer_state = 0; rec_pending = true; tick(3200); assert(count("\"fs\"") == 1);
-    rec_pending = false; tx_ready = 0; tick(3300); assert(count("\"fs\"") == 1);    /* drained, link busy: retained */
+    rec_pending = false; tx_ready = 0; tick(3300); assert(count("\"fs\"") == 1 && !fl_activity);   /* drained, link busy: retained */
     tx_ready = 1; tick(3320); assert(count("\"fs\"") == 2); tick(6000); assert(count("\"fs\"") == 2);
     { nvObj_t nv = {0}; assert(rt_get_fs(&nv) == STAT_OK && nv.value_int == fla.q + 1); tick(6020);
       assert(count("\"fs\"") == 3 && fla.q == nv.value_int); }
@@ -251,6 +253,28 @@ int main(void) {
     tx_ready = 0; fl_cur = FL_CUR_NONE; tick(t0 + 2400); assert(count("\"fl\"") == 2);
     tx_ready = 1; tick(t0 + 2420); assert(count("\"fl\"") == 3 && strstr(last(), "{\"fl\":{\"k\":0,\"m\":0,\"p\":null,\"n\":null}}"));
     printf("%s", frames[0]);
+
+    /* a job that starts and ends between two looks still gets its final summary */
+    nframes = 0; fl_cur = FL_CUR_NONE; cm.motion_state = MOTION_STOP; tick(systick + 300);
+    fl_activity = 1; fl_pend.ticks[FL_CAUSES] = 250; fl_pend.um = 5000;             /* never seen running */
+    tick(systick + 50); assert(count("\"fs\"") == 1 && strstr(last(), "\"cd\":") && fl_pend.ticks[FL_CAUSES] == 0);
+
+    /* fi 0 cancels a queued automatic summary; an asked-for one survives */
+    nframes = 0; cm.cycle_state = CYCLE_MACHINING; tick(systick + 2); tx_ready = 0;
+    tick(systick + 1100); assert(fla.fs_auto);                          /* periodic due, link busy */
+    assert(set_fi(0, NULL) == STAT_OK && !fla.fs_auto); tx_ready = 1; tick(systick + 100);
+    assert(count("\"fs\"") == 0);
+    { nvObj_t nv = {0}; tx_ready = 0; assert(rt_get_fs(&nv) == STAT_OK); assert(set_fi(0, NULL) == STAT_OK);
+      tx_ready = 1; tick(systick + 20); assert(count("\"fs\"") == 1); }
+    cm.cycle_state = CYCLE_OFF;
+    assert(set_fi(1, NULL) == STAT_OK);                                 /* a new window for the rest */
+
+    /* pending credits fold every ~250 ms even while the link is paused; carries cannot overflow */
+    tx_ready = 0; fl_pend.ticks[FL_CAUSES] = 1000; tick(systick + 300); assert(fl_pend.ticks[FL_CAUSES] == 0 && fla.ms[FL_CAUSES] == 20);
+    fla.rem[FL_CAUSES] = 49; fla.ms[FL_CAUSES] = 0; fla.um = 999; fla.mm = 0;
+    fl_pend.ticks[FL_CAUSES] = 4294967295u; fl_pend.um = 4294967295u; _fl_fold();
+    assert(fla.ms[FL_CAUSES] == 85899346 && fla.rem[FL_CAUSES] == 44 && fla.mm == 4294968 && fla.um == 294);
+    tx_ready = 1;
 
     /* largest summary */
     fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
