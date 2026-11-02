@@ -891,8 +891,9 @@ static void _fl_retire(void)
 	if ((total < ticks) || (um < st_run.fl_um)) { fl_pend.wrapped = true; }
 	fl_pend.ticks[FL_CAUSES] = total;
 	fl_pend.um = um;
-	for (uint8_t k = 0; k < FL_CAUSES; k++) {
-		if (rec & (1 << k)) { fl_pend.ticks[k] += ticks; }
+	rec &= ((1 << FL_CAUSES) - 1);						// cause bits only; at F there are none
+	for (uint8_t k = 0; rec != 0; k++, rec >>= 1) {
+		if (rec & 1) { fl_pend.ticks[k] += ticks; }
 	}
 }
 
