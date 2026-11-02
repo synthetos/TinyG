@@ -345,11 +345,17 @@ static stat_t _tokenize_json_string(char *str, uint16_t size, uint8_t pairs)
         // STRING_VALUE state                       // must be first to avoid WS removal
         if (state == JTSM_STRING_VALUE) {
             if (*str == NUL) { break; }             // exit with error
-            if (*str == '\\') {                     // unescape \" and \\ here, so the end quote is found (E082)
-                if ((*(str+1) == '"') || (*(str+1) == '\\')) {
-                    *wr++ = *(++str);               // a quote written here is part of the value
+            if (*str == '\\') {
+                switch (*(++str)) {
+                    case '"': case '\\': case '/': *wr++ = *str; break;
+                    case 'b': *wr++ = '\b'; break;
+                    case 'f': *wr++ = '\f'; break;
+                    case 'n': *wr++ = '\n'; break;
+                    case 'r': *wr++ = '\r'; break;
+                    case 't': *wr++ = '\t'; break;
+                    default: return (STAT_JSON_SYNTAX_ERROR);
                 }
-                continue;                           // any other escape drops its backslash
+                continue;
             }
             if (*str == '"') {                      // a lone quote is the end quote
                 state = JTSM_VALUE;                 // use the VALUE state logic to exit
