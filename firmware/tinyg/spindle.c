@@ -84,6 +84,31 @@ stat_t spindle_set_polarity(nvObj_t *nv)
  * spindle_init()
  * spindle_reset()
  */
+/*
+ * Spindle and coolant state readouts, named as in g2core: spe (enabled), spd (direction, 0 CW, 1 CCW),
+ * sps (speed in use: the S after the p1csl..p1csh or p1wsl..p1wsh clamp; commanded, not measured),
+ * cof and com (flood and mist coolant). They read the model as the queued M3/M4/M5, S and M7/M8/M9
+ * commands leave it when they execute, so they show the outputs as they are now.
+ */
+static stat_t _get_state(nvObj_t *nv, uint8_t value)
+{
+	nv->value_int = value;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t spindle_get_spe(nvObj_t *nv) { return (_get_state(nv, (cm.gm.spindle_mode == SPINDLE_CW) || (cm.gm.spindle_mode == SPINDLE_CCW))); }
+stat_t spindle_get_spd(nvObj_t *nv) { return (_get_state(nv, cm.gm.spindle_mode == SPINDLE_CCW)); }
+stat_t coolant_get_cof(nvObj_t *nv) { return (_get_state(nv, cm.gm.flood_coolant)); }
+stat_t coolant_get_com(nvObj_t *nv) { return (_get_state(nv, cm.gm.mist_coolant)); }
+
+stat_t spindle_get_sps(nvObj_t *nv)
+{
+	nv->value_flt = cm.gm.spindle_speed;
+	nv->valuetype = TYPE_FLOAT;
+	return (STAT_OK);
+}
+
 void spindle_init()
 {
 	if( pwm.c[PWM_1].frequency < 0 )
