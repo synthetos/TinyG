@@ -40,6 +40,24 @@
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
 
+// Framing heuristic (E195): a line in progress that has had no byte for about a second is taken to be
+// left by a host that went away, and a '{' after it (how a host opens a session) starts a fresh line.
+// The RX interrupt puts RX_STALE_LINE_MARK in the ring ahead of that '{', so every such boundary
+// travels with the bytes, and the reader drops the stale start when it gets there. Any host pause of
+// that length just before a '{' inside a line has the same effect.
+#define RX_STALE_LINE_TICKS 103					// RTC ticks (9.77 ms each): just over a second
+static volatile uint8_t rx_quiet_ticks;			// RTC ticks since the last byte for the ring, saturating
+
+void xio_usb_rtc_callback(void)					// RTC interrupt (lo)
+{
+	uint8_t saved_sreg = SREG;					// the RX interrupt (med) zeroes the count: keep the increment whole
+	cli();
+	if (rx_quiet_ticks < UINT8_MAX) {
+		rx_quiet_ticks++;
+	}
+	SREG = saved_sreg;
+}
+
 /*
  * xio_putc_usb()
  * USB_TX_ISR - USB transmitter interrupt (TX) used by xio_usb_putc()
@@ -221,6 +239,12 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 	}
 
+    if (c == RX_STALE_LINE_MARK) {				// reserved for the ring (E195): a host's own is dropped
+        return;
+    }
+    bool stale = (c == '{') && rx_in_line && (rx_quiet_ticks >= RX_STALE_LINE_TICKS);	// E195
+    rx_quiet_ticks = 0;
+
     // Keep reset, enquiry and flow control independent of line framing.
     if (c == '\r' || c == '\n') {
         rx_in_line = false;
@@ -228,20 +252,23 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
         rx_in_line = true;
     }
 
-	// normal character path
-	advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
-	if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
-		USBu.rx_buf[USBu.rx_buf_head] = c;		// write char unless full
-		USBu.rx_buf_count++;
-		if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
-			xio_xoff_usart(&USBu);
+	// normal character path; a stale line's mark goes in ahead of the '{' (E195)
+	for (uint8_t n = (stale ? 2 : 1); n > 0; n--) {
+		char k = ((n == 2) ? RX_STALE_LINE_MARK : c);
+		advance_buffer(USBu.rx_buf_head, RX_BUFFER_SIZE);
+		if (USBu.rx_buf_head != USBu.rx_buf_tail) {	// buffer is not full
+			USBu.rx_buf[USBu.rx_buf_head] = k;		// write char unless full
+			USBu.rx_buf_count++;
+			if ((USB.flag_xoff) && (xio_get_rx_bufcount_usart(&USBu) > XOFF_RX_HI_WATER_MARK)) {
+				xio_xoff_usart(&USBu);
+			}
+		} else { 										// buffer-full - toss the incoming character
+			if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
+				USBu.rx_buf_count = RX_BUFFER_SIZE-1;	// reset count for good measure
+				USBu.rx_buf_head = 1;
+			}
+			_usb_rx_lost();
 		}
-	} else { 											// buffer-full - toss the incoming character
-		if ((++USBu.rx_buf_head) > RX_BUFFER_SIZE-1) {	// reset the head
-			USBu.rx_buf_count = RX_BUFFER_SIZE-1;		// reset count for good measure
-			USBu.rx_buf_head = 1;
-		}
-		_usb_rx_lost();
 	}
 }
 

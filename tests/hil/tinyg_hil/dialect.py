@@ -40,6 +40,10 @@ class Dialect:
     def stat(self, name: str) -> int:
         return self.stat_names.index(name)
 
+    def stats(self, *names: str) -> set[int]:
+        """Codes of the named states this dialect has (440 has no INTERLOCK or PANIC)."""
+        return {self.stat_names.index(n) for n in names if n in self.stat_names}
+
     def hold(self, name: str) -> int:
         return self.hold_names.index(name)
 

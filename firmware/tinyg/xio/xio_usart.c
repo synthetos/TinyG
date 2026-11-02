@@ -323,7 +323,7 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
     }
     d->x_flow(d);								// run flow control
 //    c = (dx->rx_buf[dx->rx_buf_tail] & 0x007F);	// get char from RX Q & mask MSB
-    if (d->flag_echo) { d->x_putc(c, stdout); } // conditional echo regardless of character
+    if (d->flag_echo && (c != RX_STALE_LINE_MARK)) { d->x_putc(c, stdout); } // conditional echo regardless of character
 
     // A line that lost bytes must not run, and lost input is reported where the reader meets it (E162).
     // c is the last byte kept before a loss at a gap; inside the stretch a loss may precede c.
@@ -340,6 +340,10 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         return (XIO_LINE_DAMAGED);
     }
     bool damaged = dx->rx_line_damaged;         // at a line end: a gap after it damages the next line
+    if (c == RX_STALE_LINE_MARK) {              // the RX interrupt took the line so far as stale: drop it,
+        d->len = 0;                             // the '{' after the mark starts a fresh line (E195)
+        return (XIO_EAGAIN);
+    }
 
     if (d->len >= d->size) {                    // handle buffer overruns: drain to the end of the line
         if ((c != CR) && (c != LF)) {           // discard the rest of an overlong line, so it can't

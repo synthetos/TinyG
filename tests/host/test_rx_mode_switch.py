@@ -30,6 +30,7 @@ class ReceiveModeSwitch(unittest.TestCase):
             definitions.append(function(text[match.start():],signature))
         code=r'''
 #include <stdint.h>
+#define RX_STALE_LINE_MARK 0x1A
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -145,6 +146,17 @@ int main(void) {
         input("{rxm:1}\n{fv:null}\n"); expect("{rxm:1}"); xio.rx_mode=1; expect("{fv:null}");
         assert(!read_flags(DEV_IS_BOTH));
     }
+    // E195: the RX interrupt's stale-line mark drops the line in progress in line mode too: a partial
+    // line already FILLING its pool buffer, a marked line behind a complete one, and pool wrap and reuse.
+    setup(RX_MODE_LINE); input("G0 X0.5 (rough"); assert(!read_flags(DEV_IS_BOTH));
+    assert(ds[0].flag_in_line && ds[0].len==14);
+    input("\x1a{sr:null}\n"); expect("{sr:null}"); assert(!read_flags(DEV_IS_BOTH));
+    setup(RX_MODE_LINE); input("G4 P0\nG0 X1 ;a\x1a{sr:null}\n"); expect("{sr:null}"); expect("G4 P0");   /* control lines first */
+    for(int i=0;i<300;i++) {
+        input("{fv:null}\nG0 X1 (b"); expect("{fv:null}"); assert(!read_flags(DEV_IS_BOTH));
+        input("\x1a{fb:null}\n"); expect("{fb:null}");
+    }
+    assert(!read_flags(DEV_IS_BOTH));
 }
 '''
         with tempfile.TemporaryDirectory() as d:

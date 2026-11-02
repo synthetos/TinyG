@@ -217,6 +217,8 @@ buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_usb_rx_free(void);
 void xio_reset_usb_rx_buffers(void);
 void xio_drop_usb_rx_before_mark(void);
+void xio_usb_rtc_callback(void);
+#define RX_STALE_LINE_MARK 0x1A				// RX ring only: the line before it is stale, drop it (E195)
 
 void xio_queue_RX_char_usart(const uint8_t dev, const char c);
 void xio_queue_RX_string_usart(const uint8_t dev, const char *buf);

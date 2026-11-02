@@ -63,7 +63,8 @@ def split_stores(code):
 
 def main_case():
     pre = MOTOR_PRELUDE.replace("uint32_t SysTickTimer_getValue(void) {return tick;}", "")
-    code = pre + INTERRUPTS + r'''
+    # the motor prelude may already define SREG and cli()
+    code = pre + ("" if "uint8_t SREG" in pre else INTERRUPTS) + r'''
 #include <stdio.h>
 #define ISR(n) void n(void)
 struct {uint32_t rtc_ticks,sys_ticks;} rtc;
@@ -82,7 +83,7 @@ static uint32_t split_load(void) {
     return value;
 }
 '''
-    code += function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)")
+    code += "static void xio_usb_rtc_callback(void) {}   /* E195: the USB quiet-time tick */\n" + function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)")
     code += split_loads(fn("util.c", "SysTickTimer_getValue"))
     for n in ("_deenergize_motor", "_energize_motor", "st_motor_power_callback"):
         code += fn("stepper.c", n)
@@ -126,7 +127,7 @@ static void split_store(uint32_t value) {
     p[2] = value >> 16; p[3] = value >> 24;
 }
 '''
-    code += split_stores(function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)"))
+    code += "static void xio_usb_rtc_callback(void) {}   /* E195: the USB quiet-time tick */\n" + split_stores(function(src("xmega/xmega_rtc.c"), r"ISR\(RTC_COMP_vect\)"))
     code += SWITCH_EXERCISE[:SWITCH_EXERCISE.index("int main(void)")]
     return code + r'''
 int main(int argc, char **argv) {

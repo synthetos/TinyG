@@ -12,6 +12,7 @@ class CharLineLimit(unittest.TestCase):
         code=r'''
 #include <assert.h>
 #include <stdint.h>
+#define RX_STALE_LINE_MARK 0x1A
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

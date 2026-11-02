@@ -163,6 +163,7 @@ class SwitchLockoutTests(unittest.TestCase):
         if "void switch_rtc_callback(" in source:
             actual += "\n" + function(source, "switch_rtc_callback")
         start = clock.index("ISR(RTC_COMP_vect)")
+        actual += "\nstatic void xio_usb_rtc_callback(void) {}   /* E195: the USB quiet-time tick */"
         actual += "\n" + clock[start:clock.index("\n}", start) + 2]
         with tempfile.TemporaryDirectory(prefix="tinyg-switch-") as directory:
             path = pathlib.Path(directory)
