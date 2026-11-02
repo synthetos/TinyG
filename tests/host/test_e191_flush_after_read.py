@@ -16,7 +16,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, RUNTIME_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 FW = Path(os.environ.get("TINYG_FIRMWARE", ROOT / "firmware/tinyg"))
@@ -48,7 +48,7 @@ static int inject,dispatched;
 void cm_request_planner_flush(void);
 '''
     code += fn("canonical_machine.c", "cm_request_planner_flush")
-    code += fn("canonical_machine.c", "cm_request_queue_flush")
+    code += RUNTIME_STUBS + fn("canonical_machine.c", "cm_request_queue_flush")
     code += r'''
 static char *readline(devflags_t *flags,uint16_t *size) {
     (void)flags;*size=7;

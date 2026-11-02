@@ -32,6 +32,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
+#include "runtime.h"
 #include "testhooks.h"
 //#include "coolant.h"
 #include "switch.h"     // #include "gpio.h"
@@ -154,6 +155,7 @@ static void _application_init_startup(void)
 {
     // start the application
 	controller_init(STD_IN, STD_OUT, STD_ERR);  // FIRST:  depends on xio_init()
+    rt_init();                                  // runtime session state: off and empty after every reset
     adc_init();                                // PB3 raw ADC, before config queries or interrupts
 	config_init();					            // SECOND: read config records from eeprom
     stepper_init_complete();                    // runtime geometry guards apply from here

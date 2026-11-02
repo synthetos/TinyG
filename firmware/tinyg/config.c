@@ -41,6 +41,7 @@
 #include "help.h"
 #include "util.h"
 #include "xio.h"
+#include "runtime.h"
 
 static void _set_defa(nvObj_t *nv);
 static index_t config_load_failure; // first rejected row + 1; zero means no pending report
@@ -106,7 +107,11 @@ stat_t nv_set(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	stat_t status = ((fptrCmd)GET_TABLE_WORD(set))(nv);
+	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
+	if ((set != set_grp) && (set != set_nul) && (set != rt_set_hb) && (set != rt_set_qt)) {
+		rt_qt_invalidate();					// a setting or action write, before it takes effect; a group
+	}										// counts through its children, and rt operations never
+	stat_t status = set(nv);
 	if ((status == STAT_OK) && nv_index_is_single(nv->index)) {
 		nv->precision = (int8_t)GET_TABLE_WORD(precision);	// SET echoes use the row's display precision, as GETs do (E076)
 	}

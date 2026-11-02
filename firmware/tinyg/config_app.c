@@ -35,6 +35,7 @@
 #include "text_parser.h"
 #include "settings.h"
 #include "spindle.h"
+#include "runtime.h"
 #include "adc_report.h"
 #include "stack_report.h"
 #include "planner.h"
@@ -676,6 +677,12 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #if (MOTORS >= 6)
 	{ "pwr","pwr6",_i0, 0, st_print_pwr, st_get_pwr, set_nul, (uint32_t *)&cs.null, 0},
 #endif
+	// Runtime session family (heartbeat, quiescence token): RAM only, off at every reset, never initialized
+	// or persisted. Reachable only through a pure {"rt":...} envelope (runtime.c); appended after every
+	// persisted row so no EEPROM index moves.
+	{ "rt","rthb",_i0, 0, tx_print_nul, rt_get_hb, rt_set_hb, (uint32_t *)&cs.null, 0},
+	{ "rt","rtqt",_s0, 0, tx_print_nul, rt_get_qt, rt_set_qt, (uint32_t *)&cs.null, 0},
+	{ "rt","rtup",_i0, 0, tx_print_nul, rt_get_up, set_nul,   (uint32_t *)&cs.null, 0},
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
@@ -720,6 +727,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","pwr",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// motor power enagled group
 	{ "","jog",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// axis jogging state group
 	{ "","jid",_n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// job ID group
+	{ "","rt", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// runtime session group
 
 	{ "","uda", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// user data group
 	{ "","udb", _n0, 0, tx_print_nul, get_grp, set_grp,(uint32_t *)&cs.null,0 },	// user data group
@@ -748,7 +756,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 /***** Make sure these defines line up with any changes in the above table *****/
 
 #define NV_COUNT_UBER_GROUPS 	4 		// count of uber-groups, above
-#define STANDARD_GROUPS 		34		// count of standard groups, excluding diagnostic parameter groups
+#define STANDARD_GROUPS 		35		// count of standard groups, excluding diagnostic parameter groups
 
 #if (MOTORS >= 5)
 #define MOTOR_GROUP_5			1

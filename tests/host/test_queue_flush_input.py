@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, RUNTIME_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -104,7 +104,7 @@ class QueueFlushInput(unittest.TestCase):
         if not cc:
             self.skipTest("host C compiler not installed")
         source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
-        code = PRELUDE
+        code = PRELUDE + RUNTIME_STUBS
         for signature in (r"static void _take_input_flush_request\(\)", r"static void _service_input_flush\(\)",
                           r"void cm_request_queue_flush\(\)", r"void cm_request_planner_flush\(\)",
                           r"void cm_queue_flush\(\)", r"static void _run_requested_queue_flush\(\)",

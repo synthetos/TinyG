@@ -331,6 +331,7 @@ uint8_t xio_test_assertions(void);
 uint8_t xio_isbusy(void);
 
 char *readline(devflags_t *flags, uint16_t *size);
+uint8_t xio_rx_data_pending(void);
 uint8_t xio_prepare_pgm_source(void);
 void xio_reset_readline_linemode(void);
 void xio_flush_input(void);

@@ -318,6 +318,12 @@
     <Compile Include="report.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="runtime.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="runtime.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="settings.h">
       <SubType>compile</SubType>
     </Compile>

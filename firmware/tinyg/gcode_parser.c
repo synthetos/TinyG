@@ -24,6 +24,7 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "spindle.h"
+#include "runtime.h"
 #include "util.h"
 #include "xio.h"			// for char definitions
 
@@ -62,6 +63,7 @@ stat_t gc_gcode_parser(char *block)
 	char *msg = &none;					// gcode message or NUL string
 	uint8_t block_delete_flag;
 
+	rt_qt_invalidate();						// any G-code admitted for execution, before its side effects
 	_normalize_gcode_block(str, &com, &msg, &block_delete_flag);
 
 	// queue a "(MSG" response

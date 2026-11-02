@@ -97,6 +97,7 @@
 #include "stepper.h"
 #include "encoder.h"
 #include "spindle.h"
+#include "runtime.h"
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
@@ -143,6 +144,9 @@ static float _get_report_position(const uint8_t axis);
  */
 void cm_set_motion_state(const cmMotionState motion_state)
 {
+    if (motion_state == MOTION_RUN) {
+        rt_qt_invalidate();                     // backstop: motion starting (or resuming) ends quiescence
+    }
     cm.motion_state = motion_state;
 
     switch (motion_state) {
@@ -696,6 +700,7 @@ stat_t cm_pnic(nvObj_t *nv)               // invoke panic from command
 
 stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from command line
 {
+    rt_qt_invalidate();                     // an action even as a GET ({clear:null})
     cm_clear();
     return (STAT_OK);
 }
@@ -1769,6 +1774,7 @@ void cm_message(char *message)
  */
 void cm_request_job_kill(void)
 {
+    rt_qt_invalidate();
     cm.job_kill_requested = true;
 }
 
@@ -1791,6 +1797,7 @@ void cm_request_queue_flush()
 {
     cm_request_planner_flush();
     if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
+        rt_qt_invalidate();
         cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
     }
 }

@@ -1,7 +1,7 @@
 """Motor setters must load at boot despite startup's queued offset command."""
 from pathlib import Path
 import subprocess,tempfile,unittest
-from source_extract import function
+from source_extract import function, RUNTIME_STUBS
 ROOT=Path(__file__).resolve().parents[2]
 class StepperBootGeometry(unittest.TestCase):
  def test_boot_load_and_runtime_guard(self):
@@ -69,7 +69,7 @@ void PMIC_EnableMediumLevel(void){}
 void PMIC_EnableLowLevel(void){}
 void sei(void){assert(configured==1);SREG|=128;}
 '''
-  code+=function(main,r'static void _application_init_startup\([^;{}]*\)(?=\s*\{)')+'\n'
+  code+=RUNTIME_STUBS+function(main,r'static void _application_init_startup\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=r'''
 int main(void){
  // canonical_machine_init already calls reset before _application_init_startup.

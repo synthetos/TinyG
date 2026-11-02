@@ -472,6 +472,25 @@ void xio_flush_input()
 }
 
 /*
+ * xio_rx_data_pending() - a data line was read but has not run yet (rt quiescence token)
+ *
+ *	Line mode holds several lines and serves control lines first, so an older data line can still be
+ *	waiting while a control line runs. Character mode retains one data line while the planner is full.
+ */
+uint8_t xio_rx_data_pending(void)
+{
+    if (active_rx_mode == RX_MODE_CHAR) {
+        return (xio.buf_state == BUFFER_FULL);
+    }
+    for (uint8_t i=0; i<RX_HEADERS; i++) {
+        if ((bm.buf[i].state == BUFFER_FULL) && (bm.buf[i].flags & DEV_IS_DATA)) {
+            return (true);
+        }
+    }
+    return (false);
+}
+
+/*
  * xio_get_line_buffers_available()
  */
 
