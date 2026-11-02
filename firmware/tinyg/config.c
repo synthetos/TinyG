@@ -108,7 +108,8 @@ stat_t nv_set(nvObj_t *nv)
         return(STAT_INTERNAL_RANGE_ERROR);
     }
 	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
-	if ((set != set_grp) && (set != set_nul) && (set != rt_set_grp) && (set != rt_set_hb) && (set != rt_set_qt)) {
+	if ((set != set_grp) && (set != set_nul) && (set != rt_set_grp) && (set != rt_set_hb) && (set != rt_set_qt) &&
+		(set != rt_set_fi)) {
 		rt_qt_invalidate();					// a setting or action write, before it takes effect; a group
 	}										// counts through its children, and rt operations never
 	stat_t status = set(nv);

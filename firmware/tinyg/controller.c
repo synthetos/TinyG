@@ -185,6 +185,7 @@ static void _controller_HSM()
 	DISPATCH(qr_queue_report_callback());		// conditionally send queue report
 	DISPATCH(rx_report_callback());             // conditionally send rx report
 	DISPATCH(rt_heartbeat_callback());			// idle heartbeat, when enabled ({"rt":{"hb":n}})
+	DISPATCH(rt_feedlimit_callback());			// feed-limit fs and fl lines, when enabled ({"rt":{"fi":n}})
 
 	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines

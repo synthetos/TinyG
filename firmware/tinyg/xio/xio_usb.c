@@ -307,6 +307,33 @@ uint8_t xio_usb_try_send_line(const char *line)
 }
 
 /*
+ * xio_usb_try_send_frame() - as xio_usb_try_send_line(), for a longer line: it goes out whole now or not at
+ *	all. The room check is exact: every byte, with each LF counted twice (LF CR), must fit the empty TX
+ *	ring (TX_BUFFER_SIZE - 2 bytes), so _putc_usb_raw() never waits; XOFF or CTS arriving meanwhile only
+ *	pauses draining.
+ */
+uint8_t xio_usb_tx_ready(void)					// TX ring empty and output not paused by XOFF or CTS
+{
+	return ((USBu.tx_buf_head == USBu.tx_buf_tail) && (USBu.fc_state_tx != FC_IN_XOFF) &&
+			!((xio.enable_flow_control == FLOW_CONTROL_RTS) && (USBu.port->IN & USB_CTS_bm)));
+}
+
+uint8_t xio_usb_try_send_frame(const char *line)
+{
+	uint16_t need = 0;
+	for (const char *c = line; *c != NUL; c++) {
+		need += (*c == '\n') ? 2 : 1;
+	}
+	if ((need > (TX_BUFFER_SIZE - 2)) || !xio_usb_tx_ready()) {
+		return (false);
+	}
+	for (; *line != NUL; line++) {
+		_putc_usb_raw(*line);
+	}
+	return (true);
+}
+
+/*
  * xio_get_usb_rx_free() - returns free space in the USB RX buffer
  *
  *	Remember: The queues fill from top to bottom, w/0 being the wrap location

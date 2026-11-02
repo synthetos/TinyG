@@ -718,8 +718,9 @@ static stat_t _exec_aline_segment()
 		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	// Call the stepper prep function
+	// Call the stepper prep function, with this segment's feed-limit accounting record (feedlimit.h)
 
+	if (fl_on) { fl_segment(mr.segment_velocity, mr.segment_time); } else { st_pre.fl_rec = 0; }
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments

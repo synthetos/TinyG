@@ -52,6 +52,7 @@ static void rt_qt_invalidate(void) {}
 #define cfg_get_is_action(get) ((void)(get), false)
 static stat_t rt_set_hb(nvObj_t *n) { (void)n; return STAT_OK; }
 static stat_t rt_set_qt(nvObj_t *n) { (void)n; return STAT_OK; }
+static stat_t rt_set_fi(nvObj_t *n) { (void)n; return STAT_OK; }
 static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 stat_t set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 nvObj_t *nv_reset_nv_list(char *parent) {

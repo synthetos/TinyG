@@ -291,3 +291,233 @@ stat_t rt_get_flf(nvObj_t *nv)
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
+
+/*
+ * Feed-limit push (step 2): {rt:{fi:N}} turns accounting on and opens a window; while a cycle runs the board
+ * sends {"fs":{...}} every N seconds and one final fs once the runtime has drained after the cycle, and
+ * {"fl":{...}} when the executing move's kind or tags change (at most 4 a second). Like the heartbeat these
+ * are not responses: no r, no footer. The loader credits finished segments into fl_pend (feedlimit.h); the
+ * totals here are folded only when a summary goes out, and a summary is formatted only when the TX ring is
+ * empty, so a busy link costs a flag test. See .analysis/feed-advisor-design.md.
+ */
+#define FL_FS_LEN		160
+#define FL_EVENT_TICKS	(RT_TICKS_PER_SECOND / 4)	// at least this long between two fl events
+#define FL_POLL_TICKS	20						// ~20 ms between looks for a changed state
+#define FL_RETRY_TICKS	10						// ~10 ms before a frame that did not fit is tried again
+#define FL_TICKS_PER_MS	50						// DDA ticks per ms (FREQUENCY_DDA 50 kHz)
+
+static struct flAccounting {
+	uint8_t fi;									// summary interval, seconds; 0 = off
+	uint16_t epoch;								// windows opened since reset (fs "e")
+	uint32_t q;									// summaries sent in this window (fs "q")
+	uint32_t ms[FL_CAUSES + 1];					// totals, ms: [0..5] causes, [FL_CAUSES] cutting
+	uint8_t rem[FL_CAUSES + 1];					// DDA ticks not yet a whole ms
+	uint32_t mm;								// cutting distance: whole mm
+	uint16_t um;								// and micrometres
+	uint32_t next_fs, next_try, next_fl;		// SysTick times
+	bool cycle;									// a cycle was running at the last look
+	bool final_due;								// the cycle ended: final summary once the runtime drains
+	bool fs_pending;							// a summary is due: sent with the totals current then
+	bool fl_known;								// last_k and last_m are the state last sent
+	uint8_t last_k, last_m;
+} fla;
+
+static void _fl_fold(void)						// take the loader's pending credits into the totals
+{
+	flPending_t p;
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	memcpy(&p, (const void *)&fl_pend, sizeof(p));
+	memset((void *)&fl_pend, 0, sizeof(fl_pend));
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	for (uint8_t k = 0; k <= FL_CAUSES; k++) {
+		uint32_t ticks = fla.rem[k] + p.ticks[k];
+		fla.ms[k] += ticks / FL_TICKS_PER_MS;
+		fla.rem[k] = ticks % FL_TICKS_PER_MS;
+	}
+	uint32_t um = fla.um + p.um;
+	fla.mm += um / 1000;
+	fla.um = um % 1000;
+}
+
+static void _fl_request_fs(void)
+{
+	fla.fs_pending = true;
+	fla.next_try = SysTickTimer_getValue();
+}
+
+static bool _fl_send_fs(void)					// fold, format and send a summary; false if the link was busy
+{
+	if (!xio_usb_tx_ready()) { return (false); }
+	_fl_fold();
+	char frame[FL_FS_LEN];
+	snprintf_P(frame, sizeof(frame),
+			   PSTR("{\"fs\":{\"v\":1,\"e\":%u,\"q\":%lu,\"c\":[%lu,%lu,%lu,%lu,%lu,%lu],\"ct\":%lu,\"cd\":%lu.%03u}}\n"),
+			   (unsigned)fla.epoch, (unsigned long)(fla.q + 1),
+			   (unsigned long)fla.ms[0], (unsigned long)fla.ms[1], (unsigned long)fla.ms[2],
+			   (unsigned long)fla.ms[3], (unsigned long)fla.ms[4], (unsigned long)fla.ms[5],
+			   (unsigned long)fla.ms[FL_CAUSES], (unsigned long)fla.mm, (unsigned)fla.um);
+	if (!xio_usb_try_send_frame(frame)) { return (false); }
+	fla.q++;
+	return (true);
+}
+
+static bool _fl_drained(void)					// the last segment has played out and been credited
+{
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	bool drained = !st_runtime_isbusy() && (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) &&
+				   !st_fl_record_pending();
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	return (drained);
+}
+
+static void _fl_event(uint32_t now)				// one fl line when the executing move's kind or tags change
+{
+	flBlock_t b;
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	uint8_t cur = fl_cur;
+	if (cur < 2) {
+		memcpy(&b, &fl_slot[cur], sizeof(flBlock_t));
+	}
+	bool running = (cur < 2) && (cm.motion_state == MOTION_RUN) && (cm.hold_state == FEEDHOLD_OFF);
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	uint8_t k = running ? b.kind : FL_KIND_NONE;
+	uint8_t m = running ? (b.tags | fl_profile_tags(b.naiive_move_time, b.cruise, b.cruise_vmax)) : 0;
+	if (fla.fl_known && (k == fla.last_k) && (m == fla.last_m)) {
+		fla.next_fl = now + FL_POLL_TICKS;
+		return;
+	}
+	if (!xio_usb_tx_ready()) {					// tried again with the state current then (coalesced)
+		fla.next_fl = now + FL_RETRY_TICKS;
+		return;
+	}
+	char p[12] = "null", n[12] = "null";
+	if (running && (k == FL_KIND_FEED) && b.pct_ok && (b.feed > 0)) {
+		snprintf_P(p, sizeof(p), PSTR("%lu"), (unsigned long)((100 * b.cruise / b.feed) + 0.5));
+	}
+	if (running) {
+		snprintf_P(n, sizeof(n), PSTR("%lu"), (unsigned long)b.line);
+	}
+	char frame[64];
+	snprintf_P(frame, sizeof(frame), PSTR("{\"fl\":{\"k\":%u,\"m\":%u,\"p\":%s,\"n\":%s}}\n"), (unsigned)k, (unsigned)m, p, n);
+	if (xio_usb_try_send_frame(frame)) {
+		fla.last_k = k;
+		fla.last_m = m;
+		fla.fl_known = true;
+		fla.next_fl = now + FL_EVENT_TICKS;
+	} else {
+		fla.next_fl = now + FL_RETRY_TICKS;		// tried again with the state current then (coalesced)
+	}
+}
+
+stat_t rt_feedlimit_callback(void)
+{
+	if ((fla.fi == 0) && !fla.fs_pending) { return (STAT_OK); }
+	uint32_t now = SysTickTimer_getValue();
+	if (fla.fi != 0) {
+		bool cycle = (cm.cycle_state != CYCLE_OFF);
+		if (cycle && !fla.cycle) {				// a cycle starts: first summary fi seconds in
+			fla.next_fs = now + (uint32_t)fla.fi * RT_TICKS_PER_SECOND;
+		}
+		if (!cycle && fla.cycle) { fla.final_due = true; }
+		fla.cycle = cycle;
+		if (cycle && ((int32_t)(now - fla.next_fs) >= 0)) {
+			_fl_request_fs();
+			fla.next_fs = now + (uint32_t)fla.fi * RT_TICKS_PER_SECOND;
+		}
+		if (fla.final_due && !cycle && _fl_drained()) {
+			fla.final_due = false;
+			_fl_request_fs();
+		}
+		if ((int32_t)(now - fla.next_fl) >= 0) { _fl_event(now); }
+	}
+	if (fla.fs_pending && ((int32_t)(now - fla.next_try) >= 0)) {
+		if (_fl_send_fs()) {
+			fla.fs_pending = false;
+		} else {
+			fla.next_try = now + FL_RETRY_TICKS;
+		}
+	}
+	return (STAT_OK);
+}
+
+stat_t rt_get_fi(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	nv->value_int = fla.fi;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+/*
+ * rt_set_fi() - 0 stops crediting (the totals stay for {rt:{fs:null}}); 1..60 sets the summary interval
+ *	(longer is clamped and the echo shows the interval applied). Off to on opens a new window with zeroed
+ *	totals, and is accepted only at quiescence, checked and committed in one critical section as for qt.
+ */
+stat_t rt_set_fi(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	if (nv->valuetype != TYPE_INTEGER) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+	uint8_t fi = (nv->value_int > RT_FI_MAX) ? RT_FI_MAX : (uint8_t)nv->value_int;
+	nv->value_int = fi;
+	if ((fi == 0) || (fla.fi != 0)) {			// off, or only a new interval
+		if (!rt.check_only) {
+			if (fi == 0) { fl_on = false; fla.final_due = false; }
+			fla.fi = fi;
+		}
+		return (STAT_OK);
+	}
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	stat_t status = STAT_OK;
+	if (!_machine_quiet() || xio_rx_data_pending()) {
+		status = STAT_COMMAND_NOT_ACCEPTED;
+	} else if (!rt.check_only) {
+		memset((void *)&fl_pend, 0, sizeof(fl_pend));
+		fl_um_frac = 0;
+		fl_on = true;
+	}
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	if ((status == STAT_OK) && !rt.check_only) {
+		uint16_t epoch = fla.epoch + 1;
+		memset(&fla, 0, sizeof(fla));
+		fla.epoch = epoch;
+		fla.fi = fi;
+	}
+	return (status);
+}
+
+/*
+ * rt_get_fs() - push the window's totals as an fs line (after this reply); the value is the q it will carry.
+ *	Null before any window was opened. {rt:null} reads it too, and so pushes a summary.
+ */
+stat_t rt_get_fs(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	if (fla.epoch == 0) {
+		nv->valuetype = TYPE_NULL;
+		return (STAT_OK);
+	}
+	_fl_request_fs();
+	nv->value_int = fla.q + 1;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
