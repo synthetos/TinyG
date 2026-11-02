@@ -292,6 +292,9 @@ static stat_t _dispatch_command()
 	uint16_t size = 0;
 	cs.bufp = readline(&flags, &size);
 	_count_line(size);
+	if (cm.queue_flush_input || cm.queue_flush_input_due) {
+		return (STAT_OK);						// a '%' accepted while this line was read: it came before it (E191)
+	}
     if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
         _reject_damaged_line();
         return (STAT_OK);
@@ -313,6 +316,9 @@ static stat_t _dispatch_control()
 	uint16_t size = 0;
 	cs.bufp = readline(&flags, &size);
 	_count_line(size);
+	if (cm.queue_flush_input || cm.queue_flush_input_due) {
+		return (STAT_OK);						// a '%' accepted while this line was read: it came before it (E191)
+	}
 	if (cs.bufp == (char *)_FDEV_ERR) {     // the line lost input (E162)
 		_reject_damaged_line();
 		return (STAT_OK);
