@@ -52,7 +52,8 @@ enum {XIO_OK=0,XIO_EAGAIN,XIO_BUFFER_EMPTY,XIO_BUFFER_FULL,XIO_EOL,XIO_SIG_EOL,X
 enum {FC_IN_XON, FC_IN_XOFF};
 enum {FLOW_CONTROL_OFF, FLOW_CONTROL_XON, FLOW_CONTROL_RTS};
 typedef uint8_t buffer_t;
-struct {uint8_t CTRLA; char DATA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
+#define USART_BUFOVF_bm 8
+struct {uint8_t CTRLA, STATUS; char DATA;} uart; struct {uint8_t OUTSET, OUTCLR;} port;
 typedef struct {uint8_t fc_char_rx, fc_state_rx, fc_state_tx; buffer_t rx_buf_tail,rx_buf_head,rx_buf_count,rx_flush_mark;
                 uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;
                 typeof(uart) *usart; typeof(port) *port; char rx_buf[RX_BUFFER_SIZE];} xioUsart_t;
@@ -258,7 +259,7 @@ class RxOverrunDamagedLine(unittest.TestCase):
         for source, signature in ((usart, r"buffer_t xio_get_rx_bufcount_usart\("), (usart, r"void xio_xon_usart\("),
                                   (usart, r"void xio_xoff_usart\("), (usart, r"void xio_fc_usart\("),
                                   (usart, r"static int _gets_helper\("), (usart, r"int xio_gets_usart\("),
-                                  (usb, r"ISR\(USB_RX_ISR_vect\)"), (usb, r"void xio_reset_usb_rx_buffers\("),
+                                  (usb, r"static void _usb_rx_lost\("), (usb, r"ISR\(USB_RX_ISR_vect\)"), (usb, r"void xio_reset_usb_rx_buffers\("),
                                   (usb, r"void xio_drop_usb_rx_before_mark\(")):
             if signature.startswith("ISR"):
                 code += function(source, signature) + "\n"

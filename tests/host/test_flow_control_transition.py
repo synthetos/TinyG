@@ -37,13 +37,15 @@ static void cli(void) {SREG=0;}
 static struct {uint8_t enable_flow_control;} xio;
 static volatile bool rx_in_line;
 static struct {uint8_t flag_xoff;} USB;
-typedef struct {uint8_t CTRLA,DATA;} usart_t;
+#define USART_BUFOVF_bm 8
+typedef struct {uint8_t CTRLA,STATUS,DATA;} usart_t;
 typedef struct {uint8_t OUTCLR,OUTSET;} port_t;
 typedef struct {uint8_t fc_state_rx,fc_state_tx,fc_char_rx;usart_t *usart;port_t *port;uint8_t rx_buf_head,rx_flush_mark,rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report;} xioUsart_t;
 struct {bool queue_flush_input;} cm;
 static usart_t uart;
 static port_t port;
 static xioUsart_t USBu;
+static void _usb_rx_lost(void) {assert(0);}      /* the USART reports no lost frames here (E193) */
 static unsigned count,normal;
 static unsigned xio_get_rx_bufcount_usart(xioUsart_t *d) {(void)d;return count;}
 static int xio_ctrl(int dev,uint32_t flags) {assert(dev==0);USB.flag_xoff=flags==XIO_XOFF;return 0;}

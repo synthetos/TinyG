@@ -263,7 +263,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx)
 static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
 {
     char c = NUL;
-    bool lost_open_now = false, lost_close_now = false, lost_inside = false;
+    bool lost_open_now = false, lost_close_now = false, lost_inside = false, lost_here = false;
 
     if (dx->rx_gap_report) {                    // whole lines were lost after the last good one: report it
         dx->rx_gap_report = false;              // now, not when the host sends again (E162)
@@ -299,10 +299,25 @@ static int _gets_helper(xioDev_t *d, xioUsart_t *dx)
         }
     } else if (empty) {
         dx->rx_buf_count = 0;					// reset count for good measure
+        if (dx->rx_lost_open && !at_mark) {     // the USART lost input after all that was read: the loss
+            dx->rx_lost_open = false;           // is here, and nothing that follows it may close it (E193)
+            dx->rx_lost = false;
+            lost_here = true;
+        }
     }
 #ifdef __AVR
     SREG = saved_sreg;
 #endif
+    if (lost_here) {                            // report it now, not when the host sends more; the rest of
+        bool reported = dx->rx_line_damaged;    // this line, or the next line, comes back damaged as well
+        dx->rx_line_damaged = true;
+        if (!reported) {
+            d->buf[0] = NUL;                    // terminated, as for a gap
+            d->flag_in_line = false;
+            d->len = 0;
+            return (XIO_LINE_DAMAGED);
+        }
+    }
     if (at_mark || empty) {
         return(XIO_BUFFER_EMPTY);				// stop: nothing to read, or at a pending '%' (later bytes outlive the flush)
     }
