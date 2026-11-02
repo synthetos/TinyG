@@ -883,8 +883,9 @@ void nv_populate_nv_by_index(nvObj_t *nv, index_t index)
 	    strcpy_P(nv->group, cfgArray[nv->index].group);     // NB: group string is always NUL terminated
         strcpy(nv->token, &nv->token[strlen(nv->group)]);   // strip group from the token
     }
-    // read the getter from program memory; run it to get the value into nv->value_int or nv->value_flt
-	((fptrCmd)GET_TABLE_WORD(get))(nv);		                // populate the value
+    // run the getter to get the value into nv->value_int or nv->value_flt; through nv_get() so a GET that
+    // acts (an md or me in a status report or group) ends runtime quiescence as a direct GET does
+	(void)nv_get(nv);
 }
 
 /*

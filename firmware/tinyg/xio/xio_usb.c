@@ -285,8 +285,11 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
  */
 uint8_t xio_usb_is_quiet(void)
 {
+	uint8_t saved_sreg = SREG;					// take and clear as one: a byte between them must not be lost
+	cli();
 	bool active = usb_activity;
-	usb_activity = false;						// one byte: a later byte sets it again
+	usb_activity = false;
+	SREG = saved_sreg;
 	return (!active && (USBu.rx_buf_head == USBu.rx_buf_tail) && !(USB.flag_in_line && USB.len) &&
 			(USBu.tx_buf_head == USBu.tx_buf_tail));
 }

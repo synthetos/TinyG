@@ -14,7 +14,9 @@
   and qt (quoted) or null.
 - xio_usb_try_send_line(): sends a whole line only with the TX ring empty, TX not paused by XOFF or CTS, and the
   line no longer than XIO_TRY_SEND_MAX; xio_usb_is_quiet() also sees traffic handled between two looks.
-- every config row whose GET is its SET's function is classified: an action (ends quiescence) or a plain read.
+- every config row whose GET is its SET's function is classified: an action (ends quiescence) or a plain read;
+  status reports and groups populate through nv_get(), so an acting GET there ends quiescence too; the
+  activity flag is taken and cleared as one, so a byte between the two is not lost.
 """
 from pathlib import Path
 import os
@@ -220,6 +222,8 @@ SEND = r'''
 #define FC_IN_XOFF 1
 #define FLOW_CONTROL_RTS 2
 #define USB_CTS_bm 0x10
+uint8_t SREG = 0x80;
+static void cli(void) { SREG &= ~0x80; }
 #define XIO_TRY_SEND_MAX ((TX_BUFFER_SIZE - 2) / 2)
 typedef uint8_t buffer_t;
 struct { uint8_t IN; } port;
@@ -289,6 +293,77 @@ int main(void) {
 }
 '''
         self.build_run(code, "quiet")
+
+
+    def test_report_population_ends_quiescence_on_acting_get(self):
+        """Status reports and groups fill values through nv_populate_nv_by_index(): an acting GET there (md in a
+        report) must end quiescence exactly as a direct GET does."""
+        cfg = src("config.c")
+        code = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#define strcpy_P strcpy
+#define NUL 0
+typedef uint8_t stat_t;
+typedef int16_t index_t;
+enum { TYPE_NULL = 0, TYPE_INTEGER = 2, TYPE_FLOAT = 4 };
+#define F_NOSTRIP 0x40
+#define STAT_OK 0
+#define STAT_INTERNAL_RANGE_ERROR 9
+typedef struct nvObject { index_t index; uint8_t valuetype; int8_t precision; char group[4]; char token[8]; char *str; uint32_t value_int; } nvObj_t;
+typedef uint8_t (*fptrCmd)(nvObj_t *nv);
+typedef struct { char group[4]; char token[8]; uint8_t flags; int8_t precision; fptrCmd get; } cfgItem_t;
+static int disabled, qt_valid = 1;
+static stat_t st_set_md(nvObj_t *nv) { (void)nv; disabled = 4; return STAT_OK; }
+static stat_t get_ui8(nvObj_t *nv) { nv->value_int = 7; return STAT_OK; }
+static const cfgItem_t cfgArray[] = { { "", "md", F_NOSTRIP, 0, st_set_md }, { "", "stat", F_NOSTRIP, 0, get_ui8 } };
+#define GET_TABLE_WORD(a) cfgArray[nv->index].a
+static index_t nv_index_max(void) { return 2; }
+static uint8_t cfg_is_type(index_t i) { (void)i; return TYPE_INTEGER; }
+static bool cfg_has_flag(index_t i, uint8_t m) { return (cfgArray[i].flags & m) != 0; }
+static bool cfg_get_is_action(fptrCmd get) { return get == st_set_md; }
+static void rt_qt_invalidate(void) { qt_valid = 0; }
+''' + function(cfg, r"stat_t nv_get\(nvObj_t \*nv\)") + "\n" + function(cfg, r"void nv_populate_nv_by_index\(nvObj_t \*nv, index_t index\)") + r'''
+int main(void) {
+    nvObj_t nv = {0};
+    nv_populate_nv_by_index(&nv, 1); assert(nv.value_int == 7 && qt_valid);      /* a plain read keeps the token */
+    nv_populate_nv_by_index(&nv, 0); assert(disabled == 4 && !qt_valid);          /* md in a report ends it */
+    return 0;
+}
+'''
+        self.build_run(code, "populate")
+        self.assertEqual(len(re.findall(r"GET_TABLE_WORD\(get\)", cfg)), 1, "every getter call goes through nv_get()")
+
+    def test_activity_take_is_atomic(self):
+        """A byte whose interrupt arrives between reading and clearing the activity flag is not lost."""
+        quiet = function(src("xio/xio_usb.c"), r"uint8_t xio_usb_is_quiet\(void\)")
+        assert quiet.count("usb_activity = false;") == 1
+        quiet = quiet.replace("usb_activity = false;", "rx_window(); usb_activity = false;")
+        code = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+typedef uint8_t buffer_t;
+uint8_t SREG = 0x80;
+static void cli(void) { SREG &= ~0x80; }
+struct { buffer_t tx_buf_head, tx_buf_tail, rx_buf_head, rx_buf_tail; } USBu = { 1, 1, 1, 1 };
+struct { uint8_t flag_in_line, len; } USB;
+static volatile uint8_t usb_activity;
+static int inject, pending;
+static void rx_isr(void) { usb_activity = true; }                 /* the RX interrupt's store, e.g. for an ENQ */
+static void rx_window(void) { if (inject) { inject = 0; if (SREG & 0x80) rx_isr(); else pending = 1; } }
+''' + quiet + r'''
+int main(void) {
+    assert(xio_usb_is_quiet());
+    inject = 1; (void)xio_usb_is_quiet();
+    if (pending && (SREG & 0x80)) { pending = 0; rx_isr(); }       /* a masked interrupt runs on SREG restore */
+    assert(!xio_usb_is_quiet());                                   /* the byte was seen, not cleared away */
+    return 0;
+}
+'''
+        self.build_run(code, "atomic")
 
 
 if __name__ == "__main__":
