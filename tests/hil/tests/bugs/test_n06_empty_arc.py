@@ -6,7 +6,7 @@ approximation a sub-resolution circle must complete, not leave RUN with no work.
 import pytest
 
 pytestmark=[pytest.mark.motion, pytest.mark.resets_board, pytest.mark.persists,
-            pytest.mark.dialect("d449"), pytest.mark.bug("N06", on=["d449"])]
+            pytest.mark.dialect("d449"), pytest.mark.bug("N06", on=[])]
 
 def test_subresolution_circle_finishes(tg, keep):
     keep("ct")
