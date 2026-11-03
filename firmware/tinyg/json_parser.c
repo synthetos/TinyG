@@ -169,7 +169,7 @@ static uint8_t _scan_rt(const char *p)
 	uint8_t depth = 0, others = 0, rt_keys = 0;
 	uint8_t objects = 0;							// bit n: the container at depth n+1 is an object
 	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false, twice = false;
-	uint8_t leaves = 0;								// rt leaves seen: hb qt up flk flm flp flf (one bit each)
+	uint16_t leaves = 0;							// rt leaves seen: hb qt up flk flm flp flf fi fs (one bit each)
 	while (*p != NUL) {
 		char c = *p;
 		if ((c == '"') && !expect_key) {			// skip a string value
@@ -215,9 +215,11 @@ static uint8_t _scan_rt(const char *p)
 				else if (!((n == 3) && (key[0] == 't') && (key[1] == 'i') && (key[2] == 'd'))) { others++; }
 			} else if (in_rt && (depth == 2)) {
 				rt_keys++;
-				uint8_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
+				uint16_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
 							   ((n == 2) && (key[0] == 'q') && (key[1] == 't')) ? 2 :
 							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 :
+							   ((n == 2) && (key[0] == 'f') && (key[1] == 'i')) ? 128 :
+							   ((n == 2) && (key[0] == 'f') && (key[1] == 's')) ? 256 :
 							   ((n == 3) && (key[0] == 'f') && (key[1] == 'l')) ?
 									((key[2] == 'k') ? 8 : (key[2] == 'm') ? 16 : (key[2] == 'p') ? 32 : (key[2] == 'f') ? 64 : 0) : 0;
 				twice |= (leaf & leaves) != 0;

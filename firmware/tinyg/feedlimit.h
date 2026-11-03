@@ -49,6 +49,8 @@ typedef struct flBlock {
 	float feed;						// the block's F, mm/min (requested path speed)
 	float cruise_vmax;				// cruise asked for after axis caps, mm/min
 	float naiive_move_time;			// length over the average of the requested entry and exit (plan_zoid.c), minutes
+	uint32_t line;					// the block's line number (runtime: what is executing)
+	uint8_t all_tags;				// static and profile tags, set by the exec while accounting is on (fl events)
 } flBlock_t;
 
 // true if an axis takes part in a move: its unit-vector component is not +0 or -0 (no float compare)
@@ -64,7 +66,28 @@ extern uint8_t fl_stage;			// exec only: the slot it filled last
 extern volatile uint8_t fl_staged;	// FL_LOAD_SLOTn for the next prepared segment, or FL_LOAD_SAME
 extern volatile uint8_t fl_cur;		// current slot, or FL_CUR_NONE; set by the step loader (HI interrupt)
 
+// Accounting (step 2), only while a host has it on ({rt:{fi:N}}, runtime.c). Each prepared ALINE segment
+// carries a record (st_pre.fl_rec/fl_um); the loader installs it when the segment loads and retires it when
+// the segment has finished, adding into fl_pend[fl_bank]. The main loop flips fl_bank with interrupts masked
+// (a few cycles), then reads and clears the other bank with them enabled: the loader only writes fl_bank.
+#define FL_CAUSES		6			// fs "c" order: axis cap, corner, exact stop, short, single segment, other
+#define FL_REC_OTHER	0x20		// record: below F with no tag (ramps, end of path, downstream braking)
+#define FL_REC_ELIGIBLE	0x80		// record: a G94 linear XYZ feed segment prepared outside a hold
+
+typedef struct flPending {
+	uint32_t ticks[FL_CAUSES + 1];	// DDA ticks: [0..5] below F with that cause, [FL_CAUSES] all eligible
+	uint32_t um;					// commanded length of all eligible segments, micrometres
+	uint8_t wrapped;				// a pending total wrapped (the main loop could not fold in time)
+} flPending_t;
+
+extern volatile uint8_t fl_on;		// crediting enabled (main loop sets it; exec and loader read it)
+extern volatile flPending_t fl_pend[2];	// loader adds into fl_pend[fl_bank]; the main loop takes the other
+extern volatile uint8_t fl_bank;
+extern uint16_t fl_um_q16;			// exec: sub-micrometre remainder (1/65536 um) carried to the next segment
+extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
+
 void fl_stage_block(const struct mpBuffer *bf);
+void fl_segment(float velocity, float length);
 uint8_t fl_profile_tags(float naiive_move_time, float cruise, float cruise_vmax);
 
 #endif // End of include guard: FEEDLIMIT_H_ONCE

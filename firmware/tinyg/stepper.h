@@ -377,6 +377,9 @@ typedef struct stRunSingleton {			// Stepper static values and axis parameters
     uint32_t energize_start;            // explicit me timeout, main-loop owned
     uint32_t energize_duration;         // milliseconds; subtraction handles tick rollover
     uint8_t energize_mask;              // motors still covered by the explicit timeout
+	uint8_t fl_rec;						// feed-limit record of the running segment, retired when it finishes
+	uint32_t fl_um;
+	uint32_t fl_ticks;					// its DDA ticks (the downcount itself runs down)
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -413,6 +416,8 @@ typedef struct stPrepSingleton {
 	uint32_t dda_ticks_X_substeps;		// DDA ticks scaled by substep factor
 	stPrepMotor_t mot[MOTORS];			// prep time motor structs
 	uint8_t fl_load;					// what this load does to the feed-limit report (FL_LOAD_*); last, so no other member moves
+	uint8_t fl_rec;						// feed-limit accounting record of this segment (FL_REC_*, cause bits), 0 = none
+	uint32_t fl_um;						// and its commanded length, micrometres
 	uint16_t magic_end;
 } stPrepSingleton_t;
 
@@ -428,6 +433,7 @@ void stepper_init_assertions(void);
 stat_t stepper_test_assertions(void);
 
 uint8_t st_runtime_isbusy(void);
+uint8_t st_fl_record_pending(void);
 bool st_aline_in_flight(void);
 void st_cycle_start(void);
 void st_cycle_end(void);

@@ -292,6 +292,8 @@ void stepper_reset()
 
     st_pre.block_type = BLOCK_TYPE_NULL;               // discard any prepared move after a halt
     st_pre.dda_ticks = 0;
+    st_pre.fl_rec = 0;                                 // an aborted segment is not credited (feedlimit.h)
+    st_run.fl_rec = 0;
     st_run.dda_ticks_downcount = 0;                     // signal the runtime is not busy
     st_pre.buffer_state = PREP_BUFFER_OWNED_BY_EXEC;    // set to EXEC or it won't restart
 
@@ -863,12 +865,48 @@ namespace Motate {	// Define timer inside Motate namespace
  */
 /****** WARNING - THIS CODE IS SPECIFIC TO AVR. SEE G2 FOR ARM CODE ******/
 
+/*
+ * st_fl_record_pending() - the running segment's feed-limit record is not yet retired (call with interrupts masked)
+ */
+uint8_t st_fl_record_pending(void)
+{
+	return (st_run.fl_rec != 0);
+}
+
+/*
+ * _fl_retire() - credit the finished segment's accounting record to fl_pend (feedlimit.h)
+ *
+ *	Called from _load_move() after its busy check, so the running segment has played out; consumed once.
+ *	Integer adds only, into fl_pend[fl_bank] (the main loop does the wide arithmetic); at most 8 x 32-bit adds. A wrap of the
+ *	pending totals (the main loop held up for ~23.8 h of cutting) is flagged, and the window reported invalid.
+ */
+static void _fl_retire(void)
+{
+	uint8_t rec = st_run.fl_rec;
+	st_run.fl_rec = 0;
+	if (!fl_on) { return; }								// turned off: records still in flight are dropped
+	volatile flPending_t *p = &fl_pend[fl_bank];		// the bank the main loop is not reading
+	uint32_t ticks = st_run.fl_ticks;
+	uint32_t total = p->ticks[FL_CAUSES] + ticks;		// each cause total is at most this one, so one test
+	uint32_t um = p->um + st_run.fl_um;					// for ticks and one for distance cover every counter
+	if ((total < ticks) || (um < st_run.fl_um)) { p->wrapped = true; }
+	p->ticks[FL_CAUSES] = total;
+	p->um = um;
+	rec &= ((1 << FL_CAUSES) - 1);						// cause bits only; at F there are none
+	for (uint8_t k = 0; rec != 0; k++, rec >>= 1) {
+		if (rec & 1) { p->ticks[k] += ticks; }
+	}
+}
+
 static void _load_move()
 {
 	// Be aware that dda_ticks_downcount must equal zero for the loader to run.
 	// So the initial load must also have this set to zero as part of initialization
 	if (st_runtime_isbusy()) {
 		return;													// exit if the runtime is busy
+	}
+	if (st_run.fl_rec) {										// the segment that just finished (feedlimit.h)
+		_fl_retire();
 	}
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
@@ -887,6 +925,10 @@ static void _load_move()
 
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		st_run.dda_ticks_X_substeps = st_pre.dda_ticks_X_substeps;
+		if ((st_run.fl_rec = st_pre.fl_rec)) {					// install its accounting record (feedlimit.h)
+			st_run.fl_um = st_pre.fl_um;
+			st_run.fl_ticks = st_pre.dda_ticks;
+		}
 
 		//**** MOTOR_1 LOAD ****
 

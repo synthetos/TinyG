@@ -13,6 +13,7 @@
 #define RUNTIME_H_ONCE
 
 #define RT_HB_MAX 60						// longest heartbeat interval, seconds
+#define RT_FI_MAX 60						// longest feed-limit summary interval, seconds (longer is clamped)
 #define RT_QT_LEN 32						// quiescence token: exactly this many hex digits
 #define RT_TICKS_PER_SECOND 1024UL			// SysTickTimer counts 10 per 9.77 ms RTC tick
 
@@ -45,5 +46,9 @@ stat_t rt_get_flk(nvObj_t *nv);
 stat_t rt_get_flm(nvObj_t *nv);
 stat_t rt_get_flp(nvObj_t *nv);
 stat_t rt_get_flf(nvObj_t *nv);
+stat_t rt_get_fi(nvObj_t *nv);
+stat_t rt_set_fi(nvObj_t *nv);
+stat_t rt_get_fs(nvObj_t *nv);
+stat_t rt_feedlimit_callback(void);
 
 #endif // End of include guard: RUNTIME_H_ONCE

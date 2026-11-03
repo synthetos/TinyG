@@ -691,11 +691,13 @@ static stat_t _exec_aline_segment()
 	// Otherwise if not at a section waypoint compute target from segment time and velocity
 	// Don't do waypoint correction if you are going into a hold.
 
+	float segment_length;
 	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		copy_vector(mr.gm.target, mr.waypoint[mr.section]);
+		segment_length = fl_on ? (mr.segment_velocity * mr.segment_time) : 0;	// feed-limit accounting only
 	} else {
-		float segment_length = mr.segment_velocity * mr.segment_time;
+		segment_length = mr.segment_velocity * mr.segment_time;
 		for (i=0; i<AXES; i++) {
 			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
 		}
@@ -718,8 +720,9 @@ static stat_t _exec_aline_segment()
 		travel_steps[i] = mr.target_steps[i] - mr.position_steps[i];
 	}
 
-	// Call the stepper prep function
+	// Call the stepper prep function, with this segment's feed-limit accounting record (feedlimit.h)
 
+	if (fl_on) { fl_segment(mr.segment_velocity, segment_length); } else { st_pre.fl_rec = 0; }
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
