@@ -8,7 +8,7 @@ Use send_line deliberately: send_gcode adds a 50 ms pause which hides the defect
 import pytest
 
 pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),
-            pytest.mark.bug("N01",on=["d449"])]
+            pytest.mark.bug("N01",on=[])]
 
 @pytest.mark.parametrize("rxm", [0,1])
 def test_idle_g10_needs_only_its_response(tg, keep, rxm):

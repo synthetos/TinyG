@@ -436,36 +436,40 @@ void cm_finalize_move() {
 void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.gm.target); }
 
 /*
- * cm_deferred_write_callback() - write any changed G10 values back to persistence
+ * _persist_coord_offsets() - main-loop write-back, before an idle G10 response or after motion
+ * cm_deferred_write_callback() - service offsets left pending during motion
  *
- *	Only runs if there is G10 data to write, there is no movement, and the serial queues are quiescent
- *	This could be made tighter by issuing an XOFF or ~CTS beforehand and releasing it afterwards.
+ * The callback waits for empty serial rings. That check does not reserve the wire:
+ * a host streaming data during a deferred write still needs persistence-aware flow control.
  */
+
+static void _persist_coord_offsets()
+{
+	cm.deferred_write_flag = false;
+	nvObj_t nv;
+	for (uint8_t i=1; i<=COORDS; i++) {
+		for (uint8_t j=0; j<AXES; j++) {
+			nv.token[0] = 'g';						// g54x .. g59c, built without sprintf: older
+			nv.token[1] = '5';						// avr-gcc can't prove a %u/%d fits the token
+			nv.token[2] = (char)('3' + i);			// i is 1..6 (G54..G59)
+			nv.token[3] = ("xyzabc")[j];
+			nv.token[4] = NUL;
+			nv.index = nv_get_index((const char *)"", nv.token);
+			nv.value_flt = cm.offset[i][j];
+			nv_persist(&nv);				// Note: only writes values that have changed
+		}
+	}
+}
 
 stat_t cm_deferred_write_callback()
 {
-	if ((cm.cycle_state == CYCLE_OFF) && (cm.deferred_write_flag == true)) {
+    if ((cm.cycle_state == CYCLE_OFF) && cm.deferred_write_flag && !st_aline_in_flight()) {
 #ifdef __AVR
-		if (xio_isbusy()) {
-            return (STAT_OK);		// don't write back if serial RX is not empty
-        }
+        if (xio_isbusy()) { return (STAT_OK); }
 #endif
-		cm.deferred_write_flag = false;
-		nvObj_t nv;
-		for (uint8_t i=1; i<=COORDS; i++) {
-			for (uint8_t j=0; j<AXES; j++) {
-				nv.token[0] = 'g';						// g54x .. g59c, built without sprintf: older
-				nv.token[1] = '5';						// avr-gcc can't prove a %u/%d fits the token
-				nv.token[2] = (char)('3' + i);			// i is 1..6 (G54..G59)
-				nv.token[3] = ("xyzabc")[j];
-				nv.token[4] = NUL;
-				nv.index = nv_get_index((const char *)"", nv.token);
-				nv.value_flt = cm.offset[i][j];
-				nv_persist(&nv);				// Note: only writes values that have changed
-			}
-		}
-	}
-	return (STAT_OK);
+        _persist_coord_offsets();
+    }
+    return (STAT_OK);
 }
 
 /*
@@ -1011,6 +1015,12 @@ stat_t cm_set_coord_offsets(const float coord_system,
             changed = true;
             cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
+    }
+    // An idle stop-and-wait host may send the next line as soon as our response
+    // arrives. Finish EEPROM writes before returning to the parser, not after
+    // that response. During motion, retain the existing deferred write-back.
+    if (changed && (cm.cycle_state == CYCLE_OFF) && !st_aline_in_flight()) {
+        _persist_coord_offsets();
     }
     if (changed && (selected == cm.gm.coord_system)) {
         cm_set_work_offsets();
