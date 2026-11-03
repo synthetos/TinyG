@@ -275,8 +275,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 	// Axis parameters
 	{ "x","xam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_X].axis_mode,		X_AXIS_MODE },
-	{ "x","xvm",_fipc, 0, cm_print_vm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_X].velocity_max,	X_VELOCITY_MAX },
-	{ "x","xfr",_fipc, 0, cm_print_fr, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_X].feedrate_max,	X_FEEDRATE_MAX },
+	{ "x","xvm",_fipc, 0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_X].velocity_max,	X_VELOCITY_MAX },
+	{ "x","xfr",_fipc, 0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_X].feedrate_max,	X_FEEDRATE_MAX },
 	{ "x","xtn",_fipc, 3, cm_print_tn, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_X].travel_min,		X_TRAVEL_MIN },
 	{ "x","xtm",_fipc, 3, cm_print_tm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_X].travel_max,		X_TRAVEL_MAX },
 	{ "x","xjm",_fipc, 0, cm_print_jm, get_flt,   cm_set_xjm,(uint32_t *)&cm.a[AXIS_X].jerk_max,		X_JERK_MAX },
@@ -290,8 +290,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "x","xzb",_fipc, 3, cm_print_zb, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_X].zero_backoff,	X_ZERO_BACKOFF },
 
 	{ "y","yam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_Y].axis_mode,		Y_AXIS_MODE },
-	{ "y","yvm",_fipc, 0, cm_print_vm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Y].velocity_max,	Y_VELOCITY_MAX },
-	{ "y","yfr",_fipc, 0, cm_print_fr, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Y].feedrate_max,	Y_FEEDRATE_MAX },
+	{ "y","yvm",_fipc, 0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_Y].velocity_max,	Y_VELOCITY_MAX },
+	{ "y","yfr",_fipc, 0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_Y].feedrate_max,	Y_FEEDRATE_MAX },
 	{ "y","ytn",_fipc, 3, cm_print_tn, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Y].travel_min,		Y_TRAVEL_MIN },
 	{ "y","ytm",_fipc, 3, cm_print_tm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Y].travel_max,		Y_TRAVEL_MAX },
 	{ "y","yjm",_fipc, 0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_Y].jerk_max,		Y_JERK_MAX },
@@ -305,8 +305,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "y","yzb",_fipc, 3, cm_print_zb, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Y].zero_backoff,	Y_ZERO_BACKOFF },
 
 	{ "z","zam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_Z].axis_mode,		Z_AXIS_MODE },
-	{ "z","zvm",_fipc, 0, cm_print_vm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Z].velocity_max,	Z_VELOCITY_MAX },
-	{ "z","zfr",_fipc, 0, cm_print_fr, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Z].feedrate_max,	Z_FEEDRATE_MAX },
+	{ "z","zvm",_fipc, 0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_Z].velocity_max,	Z_VELOCITY_MAX },
+	{ "z","zfr",_fipc, 0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_Z].feedrate_max,	Z_FEEDRATE_MAX },
 	{ "z","ztn",_fipc, 3, cm_print_tn, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Z].travel_min,		Z_TRAVEL_MIN },
 	{ "z","ztm",_fipc, 3, cm_print_tm, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Z].travel_max,		Z_TRAVEL_MAX },
 	{ "z","zjm",_fipc, 0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_Z].jerk_max,		Z_JERK_MAX },
@@ -320,8 +320,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "z","zzb",_fipc, 3, cm_print_zb, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_Z].zero_backoff,	Z_ZERO_BACKOFF },
 
 	{ "a","aam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_A].axis_mode,		A_AXIS_MODE },
-	{ "a","avm",_fip,  0, cm_print_vm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].velocity_max,	A_VELOCITY_MAX },
-	{ "a","afr",_fip,  0, cm_print_fr, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].feedrate_max,	A_FEEDRATE_MAX },
+	{ "a","avm",_fip,  0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_A].velocity_max,	A_VELOCITY_MAX },
+	{ "a","afr",_fip,  0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_A].feedrate_max,	A_FEEDRATE_MAX },
 	{ "a","atn",_fip,  3, cm_print_tn, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].travel_min,		A_TRAVEL_MIN },
 	{ "a","atm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].travel_max,		A_TRAVEL_MAX },
 	{ "a","ajm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_A].jerk_max,		A_JERK_MAX },
@@ -336,8 +336,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","azb",_fip,  3, cm_print_zb, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].zero_backoff,	A_ZERO_BACKOFF },
 
 	{ "b","bam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_B].axis_mode,		B_AXIS_MODE },
-	{ "b","bvm",_fip,  0, cm_print_vm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].velocity_max,	B_VELOCITY_MAX },
-	{ "b","bfr",_fip,  0, cm_print_fr, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].feedrate_max,	B_FEEDRATE_MAX },
+	{ "b","bvm",_fip,  0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_B].velocity_max,	B_VELOCITY_MAX },
+	{ "b","bfr",_fip,  0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_B].feedrate_max,	B_FEEDRATE_MAX },
 	{ "b","btn",_fip,  3, cm_print_tn, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].travel_min,		B_TRAVEL_MIN },
 	{ "b","btm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].travel_max,		B_TRAVEL_MAX },
 	{ "b","bjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
@@ -355,8 +355,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 
 	{ "c","cam",_iip,  0, cm_print_am, cm_get_am, cm_set_am, (uint32_t *)&cm.a[AXIS_C].axis_mode,		C_AXIS_MODE },
-	{ "c","cvm",_fip,  0, cm_print_vm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].velocity_max,	C_VELOCITY_MAX },
-	{ "c","cfr",_fip,  0, cm_print_fr, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].feedrate_max,	C_FEEDRATE_MAX },
+	{ "c","cvm",_fip,  0, cm_print_vm, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_C].velocity_max,	C_VELOCITY_MAX },
+	{ "c","cfr",_fip,  0, cm_print_fr, get_flt,   cm_set_axis_rate,   (uint32_t *)&cm.a[AXIS_C].feedrate_max,	C_FEEDRATE_MAX },
 	{ "c","ctn",_fip,  3, cm_print_tn, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].travel_min,		C_TRAVEL_MIN },
 	{ "c","ctm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
