@@ -3,7 +3,7 @@ its _load_move wiring, runtime.c fi/fs and rt_feedlimit_callback, xio_usb.c xio_
 
 - Records (exec): eligible only for a G94 linear XYZ feed segment prepared outside a feedhold; below F
   (1% or 2 mm/min short of F) it carries every cause bit of its block, or "other" when the block has none;
-  the length goes to Q16 micrometres and carries its fraction, so many segments sum without drift; the
+  the length goes to Q16 micrometres and carries its fraction (3000 segments sum to within 1 um); the
   exec's block classification (a shortcut when the block is not axis-capped) equals fl_profile_tags().
 - Retire (loader): a finished segment's record is credited once; a second load call adds nothing; with
   accounting off a record is dropped; all six cause bits add the segment's ticks to all six counters.

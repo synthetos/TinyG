@@ -70,7 +70,8 @@ void fl_stage_block(const mpBuf_t *bf)
  *	A segment prepared while a feedhold is active (its deceleration) is not eligible; segments prepared
  *	before the hold keep their records. Below F: every cause bit of the block; the time counts under each.
  *	The length is the exec's velocity x time (a commanded-path estimate). It goes to Q16 micrometres with one
- *	multiply; the fraction is carried as an integer, so many segments sum without drift.
+ *	multiply and the fraction is carried as an integer: each segment loses under 1/65536 um to truncation (plus
+ *	float rounding), and a segment over ~61 mm loses its sub-micrometre part. cd stays an estimate.
  */
 void fl_segment(float velocity, float length)
 {
