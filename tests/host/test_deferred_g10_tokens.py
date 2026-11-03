@@ -34,6 +34,7 @@ static char seen[64][TOKEN_LEN+1]; static float values[64]; static int count;
 static index_t nv_get_index(const char *group, const char *token) {
     (void)group; assert(strlen(token) == 4); strcpy(seen[count], token); return count;
 }
+static bool st_aline_in_flight(void) { return false; }
 static void nv_persist(nvObj_t *nv) { assert(nv->index == count); values[count++] = nv->value_flt; }
 '''
 
@@ -64,7 +65,7 @@ class DeferredG10Tokens(unittest.TestCase):
         if not cc:
             self.skipTest("host C compiler not installed")
         source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
-        code = PRELUDE + function(source, r"stat_t cm_deferred_write_callback\(\)") + "\n" + EXERCISE
+        code = PRELUDE + function(source, r"static void _persist_coord_offsets\(\)") + function(source, r"stat_t cm_deferred_write_callback\(\)") + "\n" + EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-g10-") as tmp:
             c, exe = Path(tmp) / "g10.c", Path(tmp) / "g10"
             c.write_text(code)

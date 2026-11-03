@@ -173,9 +173,9 @@ uint8_t xio_test_assertions()
 
 uint8_t xio_isbusy()
 {
-	if (xio_get_rx_bufcount_usart(&USBu) != 0) return (false);
-	if (xio_get_tx_bufcount_usart(&USBu) != 0) return (false);
-	return (true);
+	if (xio_get_rx_bufcount_usart(&USBu) != 0) return (true);
+	if (xio_get_tx_bufcount_usart(&USBu) != 0) return (true);
+	return (false);
 }
 
 /*

@@ -37,6 +37,8 @@ class CoordinateOffsets(unittest.TestCase):
 cmSingleton_t cm;
 bool FLAGS_NONE[AXES];
 static void _exec_g10_offset(float *, bool *);
+static void _persist_coord_offsets(void) { assert(0); }
+bool st_aline_in_flight(void) { return false; }
 static float runtime_offset[AXES];
 static GCodeState_t runtime;
 static struct { void(*fn)(float[],bool[]); float value[AXES]; bool flags[AXES]; } queued[8];
@@ -54,6 +56,7 @@ float mp_get_runtime_work_position(const uint8_t axis) { return cm.gmx.position[
 static void setup(int units, int origin) {
     memset(&cm,0,sizeof(cm)); memset(&runtime,0,sizeof(runtime)); count=0;
     memset(queued,0,sizeof(queued)); memset(runtime_offset,0,sizeof(runtime_offset));
+    cm.cycle_state=CYCLE_MACHINING; // these tests exercise queued updates during motion
     cm.gm.coord_system=G55; cm.gm.units_mode=units; runtime.units_mode=units;
     cm.gf.L_word=true; cm.gf.parameter=true; cm.gmx.origin_offset_enable=origin;
     for(int a=0;a<AXES;a++) {
