@@ -21,6 +21,10 @@
  * treated as if it were part of the motion planner.
  */
 
+#ifdef __AVR
+#include <avr/interrupt.h>
+#endif
+
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"
@@ -92,13 +96,27 @@ stat_t cm_arc_callback()
 	arc.gm.target[arc.plane_axis_1] = arc.center_1 + cos(arc.theta) * arc.radius;
 	arc.gm.target[arc.linear_axis] += arc.segment_linear_travel;
 
-	mp_aline(&arc.gm);								// run the line
+    cm_cycle_start();
+    stat_t status = mp_aline(&arc.gm);
+    if (cm_is_alarmed() != STAT_OK) { return (status); }
+    // As for G0/G1, the previous block may finish while this segment is planned.
+#ifdef __AVR
+    uint8_t sreg = SREG;
+    cli();
+#endif
+    bool runnable = mp_has_runnable_buffer();
+    if (runnable) { cm_cycle_start(); }
+#ifdef __AVR
+    SREG = sreg;
+#endif
 	copy_vector(arc.position, arc.gm.target);		// update arc current position
 
 	if (--arc.segment_count > 0) {
         return (STAT_EAGAIN);
     }
 	arc.run_state = BLOCK_IDLE;
+    // Every chord may have been too short to queue. No executor will end that cycle.
+    if (!runnable) { cm_cycle_end(); }
 	return (STAT_OK);
 }
 
