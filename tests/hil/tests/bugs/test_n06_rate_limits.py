@@ -7,7 +7,7 @@ before storing/persisting them. No motion is needed to expose the defect.
 import pytest
 
 pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449"),
-              pytest.mark.bug("N06", on=["d449"])]
+              pytest.mark.bug("N06", on=[])]
 
 @pytest.mark.parametrize("token", [a+s for a in "xyzabc" for s in ("vm", "fr")])
 @pytest.mark.parametrize("value", [0, -1])

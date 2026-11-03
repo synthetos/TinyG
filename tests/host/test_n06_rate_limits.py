@@ -46,9 +46,15 @@ static int _get_axis_type(int index) { return index / 2 >= 3; }
         code += function(app, r'stat_t set_flu\(nvObj_t \*nv\)')
         if 'stat_t cm_set_axis_rate(' in cm:
             code += function(cm, r'stat_t cm_set_axis_rate\(nvObj_t \*nv\)')
+        code += '\n#define JERK_MULTIPLIER 1000000.f\n#define STAT_P_WORD_IS_NEGATIVE 153\nstatic int queued_dwells;\nstat_t mp_dwell(float s) { queued_dwells++; return 0; }\nstatic int _get_axis(int i) { return i/2; }\nvoid cm_set_axis_jerk(int a,float j) { stored=j; }\n'
+        code += function(cm, r'stat_t cm_dwell\(const float seconds\)')
+        code += function(cm, r'stat_t cm_set_xjm\(nvObj_t \*nv\)')
         code += '\nstatic stat_t (*setters[])(nvObj_t*) = {' + ','.join(rows) + '};\n'
         code += r'''
 int main(void) {
+    assert(cm_dwell(-1)==STAT_P_WORD_IS_NEGATIVE && queued_dwells==0);
+    stored=123; nvObj_t jerk={.value_flt=0};
+    assert(cm_set_xjm(&jerk)==STAT_INPUT_LESS_THAN_MIN_VALUE && stored==123);
     float bad[] = {0,-0.0f,-1,NAN,INFINITY,-INFINITY};
     for(int axis=0;axis<12;axis++) for(units=0;units<2;units++) {
         for(int b=0;b<6;b++) {
