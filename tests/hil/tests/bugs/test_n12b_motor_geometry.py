@@ -4,7 +4,7 @@ TinyG Configuration wiki 0.97, Motor Settings: sa/tr/mi define steps/unit.
 The test does not move with the invalid geometry; rejection is the contract.
 """
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N12b",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N12b",on=[])]
 def test_tiny_step_angle_refused(tg,keep):
     keep("1sa","1tr","1mi")
     tg.send_gcode("G21",check=True)

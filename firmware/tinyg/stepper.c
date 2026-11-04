@@ -40,6 +40,7 @@
 #include "hardware.h"
 #include "text_parser.h"
 #include "util.h"
+#include "settings.h"
 
 /**** Allocate structures ****/
 
@@ -198,8 +199,35 @@ Stepper<kSocket6_StepPinNumber,
  *	TC_Start(TC_BLOCK_DDA, TC_CHANNEL_DDA);
  */
 
+// Seed a complete geometry before config_init applies EEPROM fields one at a time.
+// Every candidate SET can then be checked without dividing through unloaded zeros.
+static void _init_motor_geometry(void)
+{
+    st_cfg.mot[MOTOR_1].step_angle = M1_STEP_ANGLE;
+    st_cfg.mot[MOTOR_1].travel_rev = M1_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_1].microsteps = M1_MICROSTEPS;
+    st_cfg.mot[MOTOR_2].step_angle = M2_STEP_ANGLE;
+    st_cfg.mot[MOTOR_2].travel_rev = M2_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_2].microsteps = M2_MICROSTEPS;
+    st_cfg.mot[MOTOR_3].step_angle = M3_STEP_ANGLE;
+    st_cfg.mot[MOTOR_3].travel_rev = M3_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_3].microsteps = M3_MICROSTEPS;
+    st_cfg.mot[MOTOR_4].step_angle = M4_STEP_ANGLE;
+    st_cfg.mot[MOTOR_4].travel_rev = M4_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_4].microsteps = M4_MICROSTEPS;
+#ifdef __ARM
+    st_cfg.mot[MOTOR_5].step_angle = M5_STEP_ANGLE;
+    st_cfg.mot[MOTOR_5].travel_rev = M5_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_5].microsteps = M5_MICROSTEPS;
+    st_cfg.mot[MOTOR_6].step_angle = M6_STEP_ANGLE;
+    st_cfg.mot[MOTOR_6].travel_rev = M6_TRAVEL_PER_REV;
+    st_cfg.mot[MOTOR_6].microsteps = M6_MICROSTEPS;
+#endif
+}
+
 void stepper_init()
 {
+    _init_motor_geometry();
 	memset(&st_run, 0, sizeof(st_run));			// clear all values, pointers and status
 	stepper_init_assertions();
 
@@ -1392,11 +1420,23 @@ static int8_t _get_motor(const nvObj_t *nv)
  * This function will need to be rethought if microstep morphing is implemented
  */
 
+// Reject geometry that is nonfinite or cannot run even at the smallest usable
+// G94 feed (EPSILON units/min). Actual move rates are limited separately.
+static bool _motor_geometry_valid(float angle, float travel, uint32_t microsteps)
+{
+    float product = travel * angle;
+    float steps = (360.0f * microsteps) / product;
+    float units = product / (360.0f * microsteps);
+    return isfinite(steps) && (steps > 0) &&
+        (steps <= (0.9f * FREQUENCY_DDA * 60.0f / EPSILON)) &&
+        isfinite(units) && (units > 0);
+}
+
 static void _set_motor_steps_per_unit(nvObj_t *nv)
 {
 	uint8_t m = _get_motor(nv);
-	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
-    st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
+	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360.0f * st_cfg.mot[m].microsteps); // unused
+    st_cfg.mot[m].steps_per_unit = (360.0f * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
 	stepper_reset();
     st_refresh_move_time();
 }
@@ -1418,6 +1458,10 @@ stat_t st_set_sa(nvObj_t *nv)			// motor step angle
 		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
 	}
 
+    uint8_t m = _get_motor(nv);
+    if (!_motor_geometry_valid(nv->value_flt, st_cfg.mot[m].travel_rev, st_cfg.mot[m].microsteps)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	set_flt(nv);
 	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
@@ -1432,6 +1476,10 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
 	}
 
+    uint8_t m = _get_motor(nv);
+    if (!_motor_geometry_valid(st_cfg.mot[m].step_angle, _to_millimeters(nv->value_flt), st_cfg.mot[m].microsteps)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	set_flu(nv);
 	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
@@ -1447,6 +1495,10 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
 	if (mi == 0) {						// no steps at all (E158)
 		return (STAT_INPUT_LESS_THAN_MIN_VALUE);
 	}
+    uint8_t m = _get_motor(nv);
+    if (!_motor_geometry_valid(st_cfg.mot[m].step_angle, st_cfg.mot[m].travel_rev, mi)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
 		nv_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
 	}
