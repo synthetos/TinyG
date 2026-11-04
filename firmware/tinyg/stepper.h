@@ -365,7 +365,8 @@ typedef struct stRunMotor {				// one per controlled motor
 	uint32_t substep_increment;			// total steps in axis times substeps factor
 	int32_t substep_accumulator;		// DDA phase angle accumulator
 	motorPowerState power_state;        // state machine for managing motor power
-	uint32_t power_systick;				// sys_tick for next motor power state transition
+	uint32_t power_systick;                // countdown start tick (main loop)
+    uint32_t power_duration;               // captured timeout; elapsed subtraction permits tick wrap
 	float power_level_dynamic;			// power level for this segment of idle (ARM only)
 } stRunMotor_t;
 

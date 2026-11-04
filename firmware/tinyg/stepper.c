@@ -569,8 +569,8 @@ stat_t st_motor_power_callback() 	// called by controller
 		// start a countdown if MOTOR_POWERED_IN_CYCLE or MOTOR_POWERED_ONLY_WHEN_MOVING
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_START) {
 			st_run.mot[m].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-			st_run.mot[m].power_systick = SysTickTimer_getValue() +
-										  (uint32_t)(st_cfg.motor_power_timeout * 1000);
+			st_run.mot[m].power_systick = SysTickTimer_getValue();
+            st_run.mot[m].power_duration = (uint32_t)(st_cfg.motor_power_timeout * 1000);
 		}
 
 		// do not process countdown if in a feedhold
@@ -585,7 +585,8 @@ stat_t st_motor_power_callback() 	// called by controller
 
 		// run the countdown if you are in a countdown
 		if (st_run.mot[m].power_state == MOTOR_POWER_TIMEOUT_COUNTDOWN) {
-			if (SysTickTimer_getValue() > st_run.mot[m].power_systick ) {
+			if ((uint32_t)(SysTickTimer_getValue() - st_run.mot[m].power_systick) >=
+                st_run.mot[m].power_duration) {
 				// re-check with interrupts off: a segment loaded since restarts the timeout (E184)
 #ifdef __AVR
 				uint8_t saved_sreg = SREG;
