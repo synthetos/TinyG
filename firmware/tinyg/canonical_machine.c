@@ -2823,6 +2823,20 @@ stat_t cm_set_ct(nvObj_t *nv)
     return (set_flu(nv));
 }
 
+stat_t cm_set_jd(nvObj_t *nv)
+{
+    float value = nv->value_flt;
+    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+        value *= MM_PER_INCH;
+    }
+    if (!isfinite(value) || value > MAX_JUNCTION_DEVIATION) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    if (value < 0.00001f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
+    nv->value_flt = value;
+    return (set_flt(nv));
+}
+
 stat_t cm_set_xjm(nvObj_t *nv)
 {
 	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// a zero jerk breaks the planner (E158)

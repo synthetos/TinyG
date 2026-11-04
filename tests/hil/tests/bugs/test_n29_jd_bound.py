@@ -1,6 +1,6 @@
 """N29: bound junction deviations before squaring them. TinyG configuration wiki xJD and JA define the controlling corner circle. Accept 0.00001 through 1000000 canonical units, keep ordinary junction results unchanged, and prevent an extreme acceleration product from returning infinity."""
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N29",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N29",on=[])]
 def test_junction_deviation_upper_bound(tg,keep):
     keep("xjd","yjd","zjd","ajd","bjd","cjd")
     tg.send_gcode("G21",check=True)

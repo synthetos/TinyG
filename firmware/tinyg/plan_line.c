@@ -26,6 +26,7 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <float.h>
 #include "tinyg.h"
 #include "config.h"
 #include "controller.h"
@@ -768,6 +769,11 @@ static float _get_junction_vmax(const float a_unit[], const float b_unit[])
 	float delta = (sqrt(a_delta) + sqrt(b_delta))/2;
 	float sintheta_over2 = sqrt((1 - costheta)/2);
 	float radius = delta * sintheta_over2 / (1-sintheta_over2);
-	float velocity = sqrt(radius * cm.junction_acceleration);
+	float velocity_squared = radius * cm.junction_acceleration;
+    if (!(velocity_squared >= 0)) { return (0); } // invalid geometry must not open a corner
+    // Very large positive acceleration can overflow even with a bounded JD.
+    // Saturate the product; the separate cruise limit still applies.
+    if (!isfinite(velocity_squared)) { velocity_squared = FLT_MAX; }
+    float velocity = sqrt(velocity_squared);
 	return (velocity);
 }
