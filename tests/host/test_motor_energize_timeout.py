@@ -44,7 +44,7 @@ struct {uint8_t OUT;} ports[MOTORS];
 #define PORT_MOTOR_4_VPORT ports[3]
 struct {float motor_power_timeout; struct {int power_mode;} mot[MOTORS];} st_cfg;
 struct {uint32_t energize_start,energize_duration; uint8_t energize_mask;
- struct {int power_state;uint32_t power_systick;} mot[MOTORS];} st_run;
+ struct {int power_state;uint32_t power_systick,power_duration;} mot[MOTORS];} st_run;
 static uint32_t tick; static int motion; static bool busy;
 uint32_t SysTickTimer_getValue(void) {return tick;}
 int cm_get_motion_state(void) {return motion;}

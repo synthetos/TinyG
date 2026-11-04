@@ -94,7 +94,8 @@ int main(int argc, char **argv) {
     for (unsigned m = 0; m < MOTORS; m++) { st_cfg.mot[m].power_mode = MOTOR_ALWAYS_POWERED; }
     st_cfg.mot[0].power_mode = MOTOR_POWERED_ONLY_WHEN_MOVING;
     st_run.mot[0].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-    st_run.mot[0].power_systick = 65600;
+    st_run.mot[0].power_systick = 65500;
+    st_run.mot[0].power_duration = 100;
     st_motor_power_callback();
     if (pending) { pending = 0; RTC_COMP_vect(); }     /* a masked tick is delivered afterwards */
     assert(rtc.sys_ticks < 65600);

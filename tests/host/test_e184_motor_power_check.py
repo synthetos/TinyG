@@ -45,7 +45,7 @@ VPORT_t vp[4];
 #define PORT_MOTOR_3_VPORT vp[2]
 #define PORT_MOTOR_4_VPORT vp[3]
 struct { struct { cmMotorPowerMode power_mode; } mot[MOTORS]; float motor_power_timeout; } st_cfg;
-struct { struct { motorPowerState power_state; uint32_t power_systick; } mot[MOTORS];
+struct { struct { motorPowerState power_state; uint32_t power_systick,power_duration; } mot[MOTORS];
          uint32_t energize_start, energize_duration; uint8_t energize_mask; uint32_t dda_ticks_downcount; } st_run;
 uint8_t st_runtime_isbusy(void) { return st_run.dda_ticks_downcount != 0; }
 static int motion_state = MOTION_STOP;
@@ -72,7 +72,8 @@ int main(void) {
     /* motor 1 stopped long ago: countdown running and expired */
     PORT_MOTOR_1_VPORT.OUT &= ~MOTOR_ENABLE_BIT_bm;
     st_run.mot[MOTOR_1].power_state = MOTOR_POWER_TIMEOUT_COUNTDOWN;
-    st_run.mot[MOTOR_1].power_systick = now - 1;
+    st_run.mot[MOTOR_1].power_systick = now - 501;
+    st_run.mot[MOTOR_1].power_duration = 500;
     load_on_next_tick = 1;                       /* the next move's first segment loads right then */
     st_motor_power_callback();
     assert((PORT_MOTOR_1_VPORT.OUT & MOTOR_ENABLE_BIT_bm) == 0);   /* stock: disabled while stepping */
