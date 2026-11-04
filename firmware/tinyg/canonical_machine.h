@@ -693,7 +693,7 @@ extern volatile uint8_t cm_position_epoch;
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
 stat_t cm_deferred_write_callback(void);
-void cm_set_model_target(const float target[], const bool flags[]);
+stat_t cm_set_model_target(const float target[], const bool flags[]);
 stat_t cm_test_soft_limits(float target[]);
 
 /*--- Canonical machining functions (loosely) defined by NIST [organized by NIST Gcode doc] ---*/
@@ -868,6 +868,7 @@ stat_t cm_get_am(nvObj_t *nv);			// get axis mode
 stat_t cm_set_am(nvObj_t *nv);			// set axis mode
 stat_t cm_set_axis_rate(nvObj_t *nv);
 stat_t cm_set_ja(nvObj_t *nv); // positive finite junction acceleration
+stat_t cm_set_radius(nvObj_t *nv);        // positive finite radius in internal units
 stat_t cm_set_xjm(nvObj_t *nv);			// set jerk max with 1,000,000 correction
 stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 

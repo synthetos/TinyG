@@ -4,7 +4,7 @@ TinyG Configuration wiki (0.97), Radius mode: linear travel maps to degrees
 through the radius; zero radius cannot describe that conversion.
 """
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N12a",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N12a",on=[])]
 def test_radius_write_refuses_invalid_values(tg,keep):
     keep("aam","ara")
     tg.send_gcode("G21",check=True)
