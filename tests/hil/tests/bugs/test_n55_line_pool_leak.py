@@ -46,7 +46,7 @@ def _overtake(tg,control):
     return tg.get('rx')
 
 
-@pytest.mark.bug('N55')
+@pytest.mark.bug('N55',on=[])
 @pytest.mark.parametrize('control',[
     '{"stat":null}', '{"sr":null}',
     '{"rt":{"up":null,"hb":null,"fi":null}}',
@@ -62,7 +62,7 @@ def test_priority_line_returns_its_credit(tg,keep,record,control):
         tg.reset()
 
 
-@pytest.mark.bug('N55')
+@pytest.mark.bug('N55',on=[])
 def test_repeated_overtakes_leave_credit_for_next_stream(tg,keep,record):
     _setup(tg,keep)
     try:
