@@ -2795,6 +2795,15 @@ stat_t cm_set_radius(nvObj_t *nv)
     return (set_flu(nv));
 }
 
+// Chordal tolerance is a positive, finite distance in canonical millimeters.
+stat_t cm_set_ct(nvObj_t *nv)
+{
+    float value = nv->value_flt;
+    if (cm_get_units_mode(MODEL) == INCHES) { value *= MM_PER_INCH; }
+    if (!(value > 0) || !isfinite(value)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    return (set_flu(nv));
+}
+
 stat_t cm_set_xjm(nvObj_t *nv)
 {
 	if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {	// a zero jerk breaks the planner (E158)

@@ -308,6 +308,9 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 
 static stat_t _compute_arc(const bool radius_f)
 {
+    if (!(cm.chordal_tolerance > 0) || !isfinite(cm.chordal_tolerance)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
     // Compute IJK offsets and starting radius
     if (radius_f) {                         // indicates a radius arc
         _compute_arc_offsets_from_radius();
