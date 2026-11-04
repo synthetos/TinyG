@@ -18,6 +18,7 @@ PRELUDE = r'''
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+static void st_refresh_move_time(void) {}
 #include <stdio.h>
 #include <string.h>
 #define STAT_OK 0

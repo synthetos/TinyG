@@ -27,6 +27,7 @@ class InverseTime(unittest.TestCase):
 #include "util.h"
 #include "feedlimit.h"
 cmSingleton_t cm;
+float st_get_move_time(const float axis_length[]) { return 0; }
 stat_t status_code;
 void cm_set_model_linenum(uint32_t n) {}
 #define EXEC_FUNC(f,v) if(cm.gf.v) {status=f(cm.gn.v);}

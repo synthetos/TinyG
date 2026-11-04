@@ -449,6 +449,8 @@ void st_request_exec_move(void);
 void st_prep_null(void);
 void st_prep_command(void *bf);		// use a void pointer since we don't know about mpBuf_t yet)
 void st_prep_dwell(float microseconds);
+void st_refresh_move_time(void); // refresh after geometry, map or axis-mode changes
+float st_get_move_time(const float axis_length[]); // minimum time at the motor pulse-rate limit
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time);
 
 stat_t st_set_sa(nvObj_t *nv);

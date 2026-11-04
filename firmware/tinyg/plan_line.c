@@ -404,6 +404,8 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 			gms->minimum_time = min(gms->minimum_time, tmp_time);
 		}
 	}
+    float motor_time = st_get_move_time(axis_length);
+    if (motor_time > max_time) { max_time = motor_time; }
 	// max4(inv_time, max_time, xyz_time, abc_time) with the axis compare kept: the feed-limit axis-cap
 	// tag (a feed move slower than its F because of an axis's rate; ties are not a cap)
 	float requested_time = max3(inv_time, xyz_time, abc_time);

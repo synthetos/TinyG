@@ -45,6 +45,7 @@ CHECK = r'''
 
 cmSingleton_t cm;
 stPrepSingleton_t st_pre;
+float st_get_move_time(const float axis_length[]) { return 0; }
 rtClock_t rtc;
 controller_t cs;
 uint8_t SREG;

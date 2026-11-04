@@ -55,6 +55,7 @@ static uint32_t storage[512];
 #define GET_TABLE_WORD(field) (cfgArray[nv->index].field)
 struct {uint32_t dda_ticks_downcount;} st_run;
 struct {int buffer_state;} st_pre;
+static void st_refresh_move_time(void) {}
 struct {float motor_power_timeout;struct {float step_angle,travel_rev,steps_per_unit,units_per_step;uint32_t microsteps;} mot[4];} st_cfg;
 struct {int cycle_state;struct {int spindle_mode;} gm;struct {float jerk_max,recip_jerk;} a[6];} cm;
 struct {bool configured;uint8_t probe_type;} sw;
