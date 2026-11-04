@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bug Hunt High Scores</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#000; --fg:#e8e8e8; --c1:#ff2e88; --c2:#ffe14d; --c3:#3df5ff; --c4:#6dff6d; --dim:#7a7a9a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:'Press Start 2P', monospace; font-size:12px;
+         line-height:1.6; min-height:100vh; overflow-x:hidden; }
+  body::after { content:""; position:fixed; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0 1px, transparent 1px 3px); }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { text-align:center; font-size:clamp(18px,4vw,34px); color:var(--c2); margin:10px 0 4px;
+       text-shadow:0 0 8px var(--c1), 3px 3px 0 var(--c1); letter-spacing:2px; }
+  .sub { text-align:center; color:var(--c3); font-size:10px; margin-bottom:18px; }
+  .insert { text-align:center; color:var(--c4); animation:blink 1s steps(2) infinite; font-size:11px; margin:6px 0 18px; }
+  @keyframes blink { 50% { opacity:0; } }
+  .stats { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:18px; }
+  .stat { border:2px solid var(--c3); padding:8px 12px; color:var(--c3); font-size:10px; }
+  .stat b { color:var(--c2); }
+  table { width:100%; border-collapse:collapse; }
+  th { color:var(--c1); font-weight:normal; text-align:left; padding:8px 6px; border-bottom:2px dashed var(--c1); font-size:10px; }
+  td { padding:10px 6px; vertical-align:top; border-bottom:1px dotted #222; }
+  td.rank { color:var(--c2); width:52px; }
+  td.score { color:var(--c4); width:110px; }
+  td.ini { color:var(--c3); width:150px; font-size:10px; }
+  tr.critical td.score { color:var(--c1); text-shadow:0 0 6px var(--c1); }
+  tr.high td.score { color:var(--c2); }
+  .title { color:var(--fg); }
+  .meta { color:var(--dim); font-size:9px; margin-top:6px; word-break:break-word; }
+  .tag { display:inline-block; padding:2px 6px; margin-right:6px; font-size:8px; border:1px solid; }
+  .tag.new { color:var(--c1); border-color:var(--c1); }
+  .tag.old { color:var(--c3); border-color:var(--c3); }
+  .tag.unk { color:var(--dim); border-color:var(--dim); }
+  tr.fresh td { animation:flash .4s steps(2) 8; }
+  tr.resolved td { opacity:.45; }
+  tr.resolved td.score { text-shadow:none; color:var(--dim) !important; }
+  @keyframes flash { 50% { background:#2a0018; } }
+  #banner { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-size:clamp(16px,4vw,32px);
+            color:var(--c2); text-shadow:0 0 12px var(--c1), 4px 4px 0 var(--c1); display:none; text-align:center;
+            animation:blink .3s steps(2) infinite; z-index:10; }
+  .empty { text-align:center; color:var(--c4); padding:40px 0; }
+  .conn { position:fixed; bottom:8px; right:12px; font-size:8px; color:var(--dim); }
+  @media (max-width:640px) { td.ini, th.ini { display:none; } td.score { width:80px; } body { font-size:10px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BUG HUNT</h1>
+  <div class="sub">TINYG EDGE-NEXT &middot; OVERNIGHT STRESS RUN</div>
+  <div class="insert">&#9654; BENCHES ARE PLAYING &#9664;</div>
+  <div class="stats" id="stats"></div>
+  <table>
+    <thead><tr><th>RANK</th><th>SCORE</th><th class="ini">NAME</th><th>BUG</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">NO HIGH SCORES YET... THE CODE IS WINNING</div>
+</div>
+<div id="banner">NEW HIGH SCORE!</div>
+<div class="conn" id="conn">CONNECTING</div>
+<script>
+let known = new Set(), first = true;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function tag(e) {
+  if (e.edge_proper === "new in edge-next") return '<span class="tag new">NEW IN EDGE-NEXT</span>';
+  if (e.edge_proper && e.edge_proper.startsWith("also")) return '<span class="tag old">ALSO IN EDGE-0.97</span>';
+  if (e.edge_proper && e.edge_proper.includes("inconclusive")) return '<span class="tag unk">EDGE-0.97 INCONCLUSIVE</span>';
+  return '<span class="tag unk">EDGE-0.97 UNTESTED</span>';
+}
+function render(d) {
+  const rows = document.getElementById("rows"), fresh = [];
+  rows.innerHTML = d.entries.map((e, i) => {
+    const k = e.id + "|" + e.title;
+    const isNew = !first && !known.has(k);
+    if (isNew) fresh.push(e);
+    known.add(k);
+    return `<tr class="${esc(e.severity)}${e.resolved ? " resolved" : ""}${isNew ? " fresh" : ""}"><td class="rank">${String(i + 1).padStart(2, "0")}</td>
+      <td class="score">${String(e.score).padStart(6, "0")}</td><td class="ini">${esc(e.initials || "???")}</td>
+      <td><div class="title">${tag(e)}${esc(e.title)}</div>
+      ${e.detail ? `<div class="meta" style="color:#c9c9e0">WHAT HAPPENED: ${esc(e.detail)}</div>` : ""}<div class="meta">${esc(e.severity).toUpperCase()} &middot; ${esc(e.status)}${e.first_seen ? " &middot; FIRST SEEN " + esc(e.first_seen) : ""}${e.when ? " &middot; RUN " + esc(e.when) : ""}<br>REPRO: ${esc(e.repro)}</div></td></tr>`;
+  }).join("");
+  document.getElementById("empty").style.display = d.entries.length ? "none" : "block";
+  const s = d.stats || {};
+  document.getElementById("stats").innerHTML = ["b1", "b2"].map(b => s[b] ?
+    `<div class="stat">${b === "b1" ? "BENCH 1" : "BENCH 2"} &middot; RUNS <b>${s[b].runs}</b> &middot; FAILS <b>${s[b].failed}</b></div>` : "").join("") +
+    `<div class="stat">UPDATED <b>${esc(d.time)}</b></div>`;
+  if (fresh.length) {
+    const b = document.getElementById("banner");
+    b.innerHTML = (fresh.some(e => e.severity === "critical") ? "NEW HIGH SCORE!" : "NEW SCORE!") + "<br><br>" + esc(fresh[0].initials || "");
+    b.style.display = "block"; setTimeout(() => b.style.display = "none", 3500);
+  }
+  first = false;
+}
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  const c = document.getElementById("conn");
+  ws.onopen = () => c.textContent = "LIVE";
+  ws.onmessage = m => render(JSON.parse(m.data));
+  ws.onclose = () => { c.textContent = "RECONNECTING"; setTimeout(connect, 2000); };
+}
+connect();
+</script>
+</body>
+</html>

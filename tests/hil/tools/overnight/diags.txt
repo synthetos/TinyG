@@ -1,0 +1,10 @@
+# Bench 1 diagnostics, one per line; re-read every time one is picked.
+test_homing_repeat
+test_mounted_switch_trip
+test_gcode_probe
+test_stack_highwater
+test_coords_soak
+test_soft_limits_soak
+test_interrupt_soak
+test_interrupt_soak
+test_hang_probe
