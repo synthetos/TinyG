@@ -9,6 +9,7 @@ class StepperBootGeometry(unittest.TestCase):
   main=(ROOT/'firmware/tinyg/main.c').read_text()
   code=r'''
 #include <stdint.h>
+static void st_refresh_move_time(void) {}
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
