@@ -684,6 +684,14 @@ stat_t sr_set_se(nvObj_t *nv)
     if (!_valid_status_report_index(nv->value_int)) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
+    if (nv->value_int == (uint32_t)NO_MATCH) {
+        // Only status rows accept the signed unused marker. Keep the full
+        // signed value for the response and persistence after the narrow store.
+        nv->value_int = UINT16_MAX;
+        stat_t status = set_u16(nv);
+        nv->value_int = (uint32_t)NO_MATCH;
+        return (status);
+    }
     return (set_u16(nv));
 }
 
