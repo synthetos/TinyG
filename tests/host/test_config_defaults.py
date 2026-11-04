@@ -25,7 +25,7 @@ class ConfigDefaults(unittest.TestCase):
         macros = subprocess.check_output(args + ['-dM', '-E', str(FW/'config_app.c')], text=True)
         needed = ['AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
                   'TINYG_HARDWARE_VERSION','MOTOR_TIMEOUT_SECONDS_MIN','MOTOR_TIMEOUT_SECONDS_MAX',
-                  'FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','SW_MODE_MAX_VALUE',
+                  'MAX_ROTARY_RADIUS','FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','SW_MODE_MAX_VALUE',
                   'STAT_OK','STAT_PARAMETER_IS_READ_ONLY','STAT_INPUT_VALUE_RANGE_ERROR','STAT_INPUT_EXCEEDS_MAX_VALUE','STAT_INPUT_LESS_THAN_MIN_VALUE','STAT_COMMAND_NOT_ACCEPTED','HW_VERSION_TINYGV8','SW_MODE_PROBE','XIO_DEV_USB','XIO_CRLF','XIO_NOCRLF','XIO_ECHO','XIO_NOECHO','XIO_XOFF','XIO_NOXOFF']
         needed += [f'M{m}_{field}' for m in range(1,7) for field in ('STEP_ANGLE','TRAVEL_PER_REV','MICROSTEPS')]
         defines = '\n'.join(line for line in macros.splitlines() if line.split()[1] in needed)
