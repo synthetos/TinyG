@@ -1,0 +1,23 @@
+# One setting combination per line for bench 2's file soaks (blank line = the bench's own settings). Read at the
+# start of each pass; restored after every stream.
+
+1mi=8,2mi=8,3mi=8
+1sa=0.9,2sa=0.9,3sa=0.9
+1mi=2,2mi=4,3mi=1
+1tr=5,2tr=2.5,3tr=1
+3ma=3,aam=1
+3ma=3,aam=3,ara=10
+1mi=8,2mi=8,3ma=3,aam=1,1sa=0.9
+2ma=0
+2ma=0,2po=1
+1po=1,3po=1
+xjm=5,yjm=5,zjm=5
+xjm=5000,yjm=5000
+xjd=0.001,yjd=0.001
+ja=200000
+xvm=300,yvm=300,xfr=300,yfr=300
+ct=0.001
+ct=0.1
+sv=2,si=100
+qv=2
+1mi=8,2ma=0,2mi=8,2po=1

@@ -5,7 +5,7 @@ import math
 import time
 
 from . import dialect as dialects
-from .protocol import Event, Footer, Response
+from .protocol import Event, Footer, Response, loads
 from .safety import Guard
 from .transport import Transport
 
@@ -33,6 +33,8 @@ class TinyG:
         self.guard = guard or Guard()
         self.identity: dict = {}
         self.dialect: dialects.Dialect | None = None
+        self._next_tid = 1
+        self._json_verbosity = 3
 
     # ---- connection -------------------------------------------------------------------
 
@@ -44,15 +46,30 @@ class TinyG:
             self._wake()
         # One GET per line: 440 executes only the first pair of a multi-pair object.
         # The first JSON line also takes the board out of text mode if a $ command left it there.
-        self.identity = {k: self.get(k) for k in ("fb", "fv", "hp", "hv", "id")}
+        self.identity = {k: self._bootstrap_query(k, timeout).body.get(k)
+                         for k in ("fb", "fv", "hp", "hv", "id")}
         if self.identity["fb"] is None:     # jv too low for JSON GETs to echo values
+            self._json_verbosity = 1
             self.identity.update({k: self.get_text(k) for k in ("fb", "fv", "hp", "hv")})
         self.dialect = dialects.for_build(self.identity["fb"])
         return self.identity
 
+    def _untagged_query(self, line: str, keys: tuple[str, ...], timeout: float,
+                        *, allow_empty: bool = False) -> Response:
+        seen = []
+        while (ev := self.transport.next_event(0)) is not None:
+            seen.append(ev)
+        self.transport.write(line.encode() + b"\n")
+        return self._wait_response(line, timeout, keys=keys, allow_empty=allow_empty, seen=seen)
+
+    def _bootstrap_query(self, token: str, timeout: float) -> Response:
+        # Startup/ALARM and older firmware must be reachable without a metadata
+        # SET. Prefer a matching key; a footer-only OK supports low verbosity.
+        return self._untagged_query(encode({token: None}), (token,), timeout, allow_empty=True)
+
     def _responds(self, timeout: float = 1.5) -> bool:
         try:
-            self.send_line('{"fb":null}', timeout=timeout)
+            self._bootstrap_query("fb", timeout)
             return True
         except NoResponse:
             return False
@@ -74,27 +91,148 @@ class TinyG:
 
     # ---- requests ---------------------------------------------------------------------
 
-    def _wait_response(self, sent: str, timeout: float) -> Response:
+    @staticmethod
+    def _request_object(line: str, *, strict: bool = False) -> dict | None:
+        try:
+            obj = json.loads(line) if strict else loads(line)
+        except ValueError:
+            return None
+        return obj if isinstance(obj, dict) else None
+
+    @classmethod
+    def _untagged_keys(cls, line: str) -> tuple[str, ...] | None:
+        pairs = cls._request_pairs(line)
+        keys = tuple(key for key, _ in pairs if key != "tid")
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            return keys or None  # relaxed/malformed requests must retain their wire bytes
+        if not isinstance(obj, dict):
+            return None
+        # Metadata is a numeric SET, and group setters consume later pairs as
+        # group children. Neither reads nor groups may gain a metadata SET.
+        if any(k.lower() == "rt" for k in obj):
+            return ("rt",)
+        if any(k.lower() == "gc" for k in obj):
+            return ("gc",)
+        if any(isinstance(v, (dict, list)) for v in obj.values()) or all(v is None for v in obj.values()):
+            return keys
+        return None
+
+    @staticmethod
+    def _request_pairs(line: str) -> list[tuple[str, str]]:
+        """Read top-level keys/metadata without rewriting TinyG's relaxed syntax."""
+        if not line.lstrip().startswith("{"):
+            return []
+        start = line.index("{") + 1
+        depth, quoted, escaped, parts = 1, False, False, []
+        for i in range(start, len(line)):
+            c = line[i]
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif c == "\\":
+                    escaped = True
+                elif c == '"':
+                    quoted = False
+            elif c == '"':
+                quoted = True
+            elif c in "{[":
+                depth += 1
+            elif c in "}]":
+                depth -= 1
+                if depth == 0:
+                    parts.append(line[start:i])
+                    break
+            elif c == "," and depth == 1:
+                parts.append(line[start:i])
+                start = i + 1
+        else:
+            parts.append(line[start:])
+        pairs = []
+        for part in parts:
+            match = re.fullmatch(r'\s*(?:"([^"\\]+)"|([\w]+))\s*:\s*(.*?)\s*', part, re.DOTALL)
+            if match:
+                pairs.append(((match[1] or match[2]).lower(), match[3]))
+        return pairs
+
+    def _wait_response(self, sent: str, timeout: float, *, tid: int | None = None,
+                       correlate: bool = True, seen: list | None = None,
+                       keys: tuple[str, ...] | None = None, allow_empty: bool = False) -> Response:
         start = time.monotonic()
-        seen = []
+        seen = [] if seen is None else seen
+        obj = self._request_object(sent, strict=True) or {}
+        gc_message = keys == ("gc",) and any(k.lower() == "gc" and isinstance(v, str)
+                                             for k, v in obj.items())
         while True:
-            ev = self.transport.next_event(start + timeout - time.monotonic())
+            remaining = start + timeout - time.monotonic()
+            ev = self.transport.next_event(remaining) if remaining > 0 else None
             if ev is None:
                 tail = "\n  ".join(e.raw for e in seen[-10:])
                 raise NoResponse(f"no response to {sent!r} within {timeout}s; saw:\n  {tail}")
             if ev.kind == "response":
-                return Response(sent, ev, Footer.from_event(ev), seen, time.monotonic() - start)
+                tagged = ev.data.get("tid")
+                keyed = keys is not None and isinstance(ev.body, dict) and all(k in ev.body for k in keys)
+                footer = Footer.from_event(ev)
+                # At ordinary verbosity gc itself is hidden, but (MSG ...) output is returned.
+                if gc_message and isinstance(ev.body, dict) and "msg" in ev.body and footer is not None:
+                    keyed = True
+                empty_ok = allow_empty and not ev.body and footer is not None and footer.status == 0
+                # Parse/transport rejection may precede both command echo and tid scanning.
+                error_ok = tagged is None and not ev.body and footer is not None and footer.status != 0
+                # Syntax errors echo the original malformed bytes under err, not the request key.
+                echoed_error = (tagged is None and footer is not None and footer.status != 0 and
+                                isinstance(ev.body, dict) and ev.body.get("err") == sent)
+                matched_tid = tid is not None and tagged == tid
+                matched_plain = tid is None and tagged is None and (keys is None or keyed or empty_ok)
+                if not correlate or error_ok or echoed_error or matched_tid or matched_plain:
+                    return Response(sent, ev, footer, seen, time.monotonic() - start)
             seen.append(ev)
 
-    def send_line(self, line: str, *, timeout: float = 2.0, check: bool = False) -> Response:
-        """Send one line (no guard) and wait for its JSON response."""
-        self.transport.write(line.encode() + b"\n")
-        resp = self._wait_response(line, timeout)
+    def send_line(self, line: str, *, timeout: float = 2.0, check: bool = False,
+                  correlate: bool = True) -> Response:
+        """Tag flat strict JSON writes; preserve groups, relaxed syntax and caller tids.
+
+        correlate=False preserves exact wire bytes for protocol tests (including
+        explicit/invalid tids). It retains first-response matching.
+        """
+        wire, tid, seen = line, None, []
+        # json.loads must consume the entire object before any metadata is considered.
+        strict_obj = self._request_object(line, strict=True) if correlate else None
+        keys = self._untagged_keys(line) if correlate else None
+        while (ev := self.transport.next_event(0)) is not None:
+            seen.append(ev)
+        pairs = self._request_pairs(line) if correlate else []
+        caller_tid = next((value for key, value in pairs if key == "tid"), None)
+        if caller_tid is not None:
+            if re.fullmatch(r"[0-9]+", caller_tid) and int(caller_tid) <= 0xFFFFFFFF:
+                tid = int(caller_tid)
+        elif correlate and keys is None and strict_obj is not None:
+            tid = self._next_tid
+            self._next_tid = tid % 0xFFFFFFFF + 1
+            _, tail = line.split("{", 1)
+            # The firmware alarm-gates numeric pairs as SETs. Put metadata
+            # after the command so clear executes before that guard. _scan_tid
+            # finds it anywhere, including after a command that returns an error.
+            if line.rstrip().endswith("}"):
+                end = line.rfind("}")
+                comma = "," if tail[:tail.rfind("}")].strip() else ""
+                wire = line[:end] + comma + '"tid":' + str(tid) + line[end:]
+        self.transport.write(wire.encode() + b"\n")
+        resp = self._wait_response(line, timeout, tid=tid, correlate=correlate, seen=seen, keys=keys,
+                                   allow_empty=keys is not None and (self._json_verbosity < 3 or
+                                               (keys == ("gc",) and self._json_verbosity < 5)))
+        if resp.status == 0:
+            obj = self._request_object(line) or {}
+            for group in (obj, obj.get("sys", {})):
+                value = group.get("jv") if isinstance(group, dict) else None
+                if isinstance(value, int) and 0 <= value <= 5:
+                    self._json_verbosity = value
         if check and resp.status != 0:
             raise StatusError(resp, self.status_name(resp.status))
         return resp
 
-    # Persisting a setting writes EEPROM with every interrupt disabled, and serial input that arrives
+    # Persisting a setting masks serial interrupts, and serial input that arrives
     # meanwhile is lost; the wiki asks hosts to wait for each config response and pause >= 30 ms
     # (TinyG-Command-Line.md, TinyG-Configuration-for-Firmware-Version-0.94-and-Earlier.md).
     persist_pause = 0.05
@@ -105,12 +243,13 @@ class TinyG:
             return any(v is not None and (not isinstance(v, dict) or TinyG._is_set(v)) for v in obj.values())
         return isinstance(obj, str) and re.search(r':\s*(?!null\b)[^\s{]', obj) is not None
 
-    def send_json(self, obj, *, timeout: float = 2.0, check: bool = False, allow: str | None = None) -> Response:
+    def send_json(self, obj, *, timeout: float = 2.0, check: bool = False, allow: str | None = None,
+                  correlate: bool = True) -> Response:
         setting = self._is_set(obj)
         if not isinstance(obj, str):
             self.guard.check_json(obj, allow)
             obj = encode(obj)
-        resp = self.send_line(obj, timeout=timeout, check=check)
+        resp = self.send_line(obj, timeout=timeout, check=check, correlate=correlate)
         if setting:
             time.sleep(self.persist_pause)          # let the EEPROM write finish before the next line
         return resp
@@ -147,6 +286,9 @@ class TinyG:
                 break
         if "=" in line:                             # a text-mode SET ($xvm=...) persists too
             time.sleep(self.persist_pause)
+        verbosity = re.fullmatch(r"\s*\$jv\s*=\s*([0-5])\s*", line, re.IGNORECASE)
+        if verbosity:
+            self._json_verbosity = int(verbosity[1])
         self.get("fb")
         return lines
 
@@ -219,10 +361,10 @@ class TinyG:
         self.send_json({"clear": None})
 
     def reset(self, timeout: float = 12.0) -> Event:
-        """^X reset; returns the startup banner."""
+        """^X reset; wait through initialization/loading for SYSTEM READY."""
         self.drain(quiet=0.05)
         self.send_raw(ETX_RESET)
-        banner = self.wait_for(lambda e: e.kind == "banner", timeout)
+        banner = self.wait_for(lambda e: e.kind == "banner" and e.body.get("msg") == "SYSTEM READY", timeout)
         self.drain(quiet=0.3)
         return banner
 

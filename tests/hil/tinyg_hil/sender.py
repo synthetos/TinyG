@@ -35,7 +35,11 @@ RESERVE = 2                 # line mode: slots kept free for control commands
 RX_COUNT_LIMIT = 200        # count mode: bytes in flight (RX ring is 250, leave headroom)
 CHUNK = 16                  # xon mode: write granularity, so an XOFF stops us within a few bytes
 XOFF, XON = 0x13, 0x11
-STALL = 5.0                 # s with lines outstanding and neither a response nor a status report: hung
+STALL = 5.0                 # s with lines outstanding and neither a response nor a status report: suspect
+STALL_PROBE = 20.0          # line/g2 modes: a {stat} probe must answer within this, else hung (it can wait behind
+                            # a full line pool: reserved headers do not reserve pool bytes)
+PROBE_TID = 990001          # the probe's transaction id; its answer is matched by the echo, never by its body
+STALL_HARD = 900.0          # s without a line acknowledged although the board answers probes (one block can run minutes)
 TTY_ROOM = 256              # rts/xon: bytes allowed in the host driver's output queue before a write
 TTY_WRITE_TIMEOUT = 1.0     # rts/xon: a write that still blocks (queue full anyway) fails after this
 IDLE_STATS = (1, 3, 4)      # READY, PROGRAM_STOP, PROGRAM_END: the program finished
@@ -67,7 +71,13 @@ class StreamLineTooLong(ValueError):
 STALL_SYMBOLS = ["rtc.sys_ticks", "xio.buf_state", "cm.queue_flush_input", "cm.queue_flush_input_due", "us[0].rx_buf_head", "us[0].rx_buf_tail", "us[0].rx_buf_count", "us[0].fc_state_rx", "us[0].fc_state_tx",
                  "ds[0].flag_in_line", "ds[0].len", "ds[0].flag_xoff", "xio.rx_mode", "xio.enable_flow_control",
                  "mb.buffers_available", "cm.machine_state", "cm.cycle_state", "cm.motion_state", "cm.hold_state",
-                 "cm.queue_flush_state", "cs.controller_state"]
+                 "cm.queue_flush_state", "cs.controller_state",
+                 # N02: where a silent board is and what its reporting and runtime look like (unknown names are skipped)
+                 "sr.status_report_verbosity", "sr.status_report_interval", "sr.status_report_request",
+                 "sr.status_report_systick", "us[0].tx_buf_head", "us[0].tx_buf_tail", "us[0].fc_char_rx",
+                 "mr.gm.linenum", "mr.segment_count", "mr.segment_time", "mr.segment_velocity", "mr.block_state",
+                 "mr.section", "arc.run_state", "arc.segment_count", "arc.segment_theta", "arc.gm.feed_rate",
+                 "st_pre.buffer_state", "st_pre.block_type", "st_run.dda_ticks_downcount", "cs.saved_buf"]
 
 
 def _ixon_only(ser):
@@ -114,6 +124,9 @@ def stall_snapshot(ice):
     """Halt once and read STALL_SYMBOLS plus the bytes waiting in the USB RX ring; unknown names are skipped."""
     names = [n for n in STALL_SYMBOLS if _resolvable(ice, n)]
     snap = ice.peek_many(names)
+    for k, v in list(snap.items()):              # byte arrays (cs.saved_buf) as text: the run record is JSON
+        if isinstance(v, (bytes, bytearray)):
+            snap[k] = bytes(v).split(b"\0", 1)[0].decode("latin-1", "replace")
     try:
         head, tail = snap.get("us[0].rx_buf_head"), snap.get("us[0].rx_buf_tail")
         ring = ice.peek("us[0].rx_buf") if _resolvable(ice, "us[0].rx_buf") else None
@@ -150,6 +163,7 @@ class StreamResult:
     xoff_count: int = 0
     min_free: int | None = None
     completion: str = ""            # idle | alarm | shutdown | panic | timeout (after every line was answered)
+    stall_probes: list = field(default_factory=list)  # (t, stat) answers to {stat} probes sent during quiet spells
 
     @property
     def ok(self):
@@ -253,6 +267,8 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     res.started = time.monotonic()
     deadline = res.started + timeout
     progress = res.started           # last response or status report
+    last_ack = res.started           # last line acknowledged
+    probe_at = None                  # a {stat} probe is outstanding since then (line/g2 modes)
     i = 0
     saved_write_timeout = tr.ser.write_timeout
     if mode == "rts":
@@ -293,8 +309,21 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             if now > deadline:
                 raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
             if now - progress > STALL:
-                raise _with(res, StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
-                                    f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}"))
+                # Quiet is not proof of a hang: a dwell or a slow move with a full planner answers nothing and
+                # reports nothing. Where the protocol keeps slots for control commands (line, g2), ask the
+                # board directly; it is hung only if the probe goes unanswered, or nothing is acknowledged
+                # for STALL_HARD although it answers.
+                if mode in ("line", "g2") and probe_at is None:
+                    tr.write(('{"stat":null,"tid":%d}\n' % PROBE_TID).encode(), drain_timeout=2.0)
+                    probe_at = now
+                elif probe_at is None or now - probe_at > STALL_PROBE:
+                    raise _with(res, StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
+                                        f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}"
+                                        + ("" if probe_at is None else f"; a {{stat}} probe went unanswered for {STALL_PROBE:.0f} s")))
+            if now - last_ack > STALL_HARD:
+                raise _with(res, StreamStalled(f"{mode}: no line acknowledged for {STALL_HARD:.0f} s at line {res.acked} of "
+                                    f"{res.lines} ({todo[res.acked]!r}) although the board answers {{stat}} probes "
+                                    f"({len(res.stall_probes)} answered, last {res.stall_probes[-1:]}); last status {sr}"))
             # flow bytes from the board (the reader thread strips them from the line stream)
             while flow_seen < len(tr.flow):
                 xoff = tr.flow[flow_seen][1] == XOFF
@@ -336,6 +365,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     progress = ev.t
                 if not _report(ev) and ev.kind == "response":
                     footer = _footer(ev)
+                    body = ev.body if isinstance(ev.body, dict) else {}
+                    if probe_at is not None and ('"tid":%d' % PROBE_TID) in ev.raw:   # the probe's answer, by its tid echo
+                        res.stall_probes.append((ev.t, body["stat"]))
+                        probe_at = None
+                        ev = tr.next_event(0)
+                        continue
                     if i <= res.acked:
                         raise _with(res, StreamProtocolError(f"{mode}: response with no line outstanding "
                                                              f"({res.acked} answered, {i} sent): {ev.raw[:120]}"))
@@ -347,6 +382,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     if status != 0:
                         res.errors.append((res.acked, status, todo[res.acked]))
                     inflight.pop(0)
+                    last_ack = ev.t
                     credit += 1
                     reported += count
                     if mode == "line":

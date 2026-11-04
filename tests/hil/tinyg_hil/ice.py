@@ -196,6 +196,13 @@ class Ice:
         self.protocol.attach(do_break=False)
         return self
 
+    def reset(self):
+        """Hardware reset through the debugger: the core is held in reset, then released to run from the
+        reset vector (bootloader, then the application). Nothing in flash or EEPROM is touched. This is
+        the way out of a main loop that no longer services ^X."""
+        self.protocol.reset()
+        self.protocol.run()
+
     def close(self):
         for step in (self.protocol.run, self.protocol.detach, self.target.deactivate_physical, self.transport.disconnect):
             try:
@@ -434,7 +441,7 @@ def main(argv=None):
     import json
     from .lock import BoardLock
     p = argparse.ArgumentParser(prog="tinyg_hil.ice", description="Atmel-ICE peek/poke on the TinyG")
-    p.add_argument("command", choices=["peek", "poke", "watch", "where", "eeprom"])
+    p.add_argument("command", choices=["peek", "poke", "watch", "where", "eeprom", "reset"])
     p.add_argument("args", nargs="*", help="peek: EXPR...; poke: EXPR VALUE; watch: EXPR...; eeprom: [OUTFILE]")
     p.add_argument("--port", default=os.environ.get("TINYG_PORT"), required=not os.environ.get("TINYG_PORT"),
                    help="serial port whose board lock to take (default: $TINYG_PORT)")
@@ -455,6 +462,9 @@ def main(argv=None):
                 print(json.dumps({a.args[0]: ice.peek(a.args[0])}, default=lambda b: b.hex(" ")))
             elif a.command == "where":
                 print(ice.where())
+            elif a.command == "reset":
+                ice.reset()
+                print("reset")
             elif a.command == "eeprom":
                 data = ice.eeprom_read()
                 if a.args:

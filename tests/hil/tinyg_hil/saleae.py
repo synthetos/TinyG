@@ -10,7 +10,9 @@ import csv
 import itertools
 import json
 import pathlib
+import subprocess
 import tempfile
+import time
 import urllib.request
 
 URL = "http://127.0.0.1:10530/mcp"
@@ -32,6 +34,11 @@ def call(tool, url=URL, timeout=600, **arguments):
 
 
 _KEPT = pathlib.Path(tempfile.gettempdir()) / "tinyg-hil-saleae-kept-capture"
+# The capture in progress. A test killed mid-capture leaves it recording, and Logic 2 then refuses every new
+# capture ("Cannot switch sessions while recording") and has no call to list captures; this file is how the
+# next capture finds and stops it.
+_ACTIVE = pathlib.Path(tempfile.gettempdir()) / "tinyg-hil-saleae-active-capture"
+_LOGIC = "Saleae Logic.app/Contents/MacOS/Logic"
 
 
 def _close(url, capture_id):
@@ -45,6 +52,39 @@ def _close_kept(url):
     if _KEPT.exists():
         _close(url, int(_KEPT.read_text().strip()))
         _KEPT.unlink()
+
+
+def _stop_leftover(url):
+    if _ACTIVE.exists():
+        capture_id = int(_ACTIVE.read_text().strip())
+        try:
+            call("stop_capture", url, captureId=capture_id)
+        except Exception:  # noqa: BLE001 - already stopped or finished
+            pass
+        _close(url, capture_id)
+        _ACTIVE.unlink()
+
+
+def _restart_logic(url):
+    """Last resort for a recording no capture ID reaches: quit and relaunch Logic 2 (macOS), wait for the device."""
+    subprocess.run(["osascript", "-e", 'quit app "Saleae Logic"'], capture_output=True, timeout=30)
+    for _ in range(30):
+        if subprocess.run(["pgrep", "-f", _LOGIC], capture_output=True).returncode:
+            break
+        time.sleep(1)
+    else:
+        subprocess.run(["pkill", "-f", _LOGIC])
+        time.sleep(3)
+    subprocess.run(["open", "-a", "Saleae Logic"], check=True)
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        try:
+            if devices(url):
+                return
+        except Exception:  # noqa: BLE001 - server not up yet
+            pass
+        time.sleep(1)
+    raise RuntimeError("saleae: Logic 2 did not come back after a restart")
 
 
 def devices(url=URL):
@@ -69,10 +109,19 @@ class Capture:
         config = {"logicChannels": {"digitalChannels": self.channels}, "digitalSampleRate": self.rate}
         if self.volts is not None:          # only Logic Pro models have a configurable threshold
             config["digitalThresholdVolts"] = self.volts
-        r = call("start_capture", self.url, deviceId=self.device_id, logicDeviceConfiguration=config,
-                 captureConfiguration=({"manualCaptureMode": {}} if self.seconds is None else
-                                       {"timedCaptureMode": {"durationSeconds": self.seconds}}))
+        _stop_leftover(self.url)
+        args = dict(deviceId=self.device_id, logicDeviceConfiguration=config,
+                    captureConfiguration=({"manualCaptureMode": {}} if self.seconds is None else
+                                          {"timedCaptureMode": {"durationSeconds": self.seconds}}))
+        try:
+            r = call("start_capture", self.url, **args)
+        except RuntimeError as e:
+            if "while recording" not in str(e):
+                raise
+            _restart_logic(self.url)
+            r = call("start_capture", self.url, **args)
         self.capture_id = r["captureId"]
+        _ACTIVE.write_text(str(self.capture_id))
         return self
 
     def finish(self):
@@ -93,6 +142,7 @@ class Capture:
                         {"sample_rate": self.rate, "channels": self.channels, "initial": self.initial,
                          "transitions": self._edges}) + "\n")
             finally:
+                _ACTIVE.unlink(missing_ok=True)
                 if self.keep_open:          # left on screen for a person; closed by the next capture
                     _KEPT.write_text(str(self.capture_id))
                 else:
@@ -108,6 +158,7 @@ class Capture:
             except Exception:  # noqa: BLE001 - cleanup must not mask the original error
                 pass
             _close(self.url, self.capture_id)
+            _ACTIVE.unlink(missing_ok=True)
 
     def edges(self):
         return self.finish()

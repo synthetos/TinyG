@@ -17,19 +17,19 @@ def _tid(resp):
 
 @pytest.mark.bug("E049", on=[])
 def test_tid_echoed_on_error(tg):
-    resp = tg.send_json('{"gc":"M200","tid":17}')
+    resp = tg.send_json('{"gc":"M200","tid":17}', correlate=False)
     assert resp.status == tg.dialect.status("MCODE_COMMAND_UNSUPPORTED")
     assert _tid(resp) == 17
 
 
 @pytest.mark.bug("E049", on=[])
 def test_tid_exact_above_float_precision(tg):
-    assert _tid(tg.send_json('{"fb":null,"tid":16777217}', check=True)) == 16777217
+    assert _tid(tg.send_json('{"fb":null,"tid":16777217}', check=True, correlate=False)) == 16777217
 
 
 @pytest.mark.bug("E049", on=[])
 def test_tid_at_top_level(tg):
-    assert tg.send_json('{"fb":null,"tid":33}', check=True).event.data.get("tid") == 33
+    assert tg.send_json('{"fb":null,"tid":33}', check=True, correlate=False).event.data.get("tid") == 33
 
 
 @pytest.mark.persists
@@ -38,7 +38,7 @@ def test_tid_at_top_level(tg):
 def test_tid_echoed_at_low_jv(tg, keep, jv):
     keep("jv")
     tg.set("jv", jv)
-    assert _tid(tg.send_json('{"fb":null,"tid":5}', check=True)) == 5
+    assert _tid(tg.send_json('{"fb":null,"tid":5}', check=True, correlate=False)) == 5
 
 
 @pytest.mark.parametrize("line,expect", [
@@ -50,11 +50,11 @@ def test_tid_echoed_at_low_jv(tg, keep, jv):
     ('{"fb":null,"tid":4294967296}', None),        # does not fit a uint32
 ])
 def test_tid_scan_cases(tg, line, expect):
-    resp = tg.send_json(line)
+    resp = tg.send_json(line, correlate=False)
     assert resp.event.data.get("tid") == expect, resp.raw
 
 
 def test_tid_does_not_leak_to_the_next_line(tg):
-    tg.send_json('{"fb":null,"tid":77}', check=True)
+    tg.send_json('{"fb":null,"tid":77}', check=True, correlate=False)
     resp = tg.send_gcode("G90", check=True)        # a plain G-code line answered in JSON mode
     assert "tid" not in resp.event.data, resp.raw
