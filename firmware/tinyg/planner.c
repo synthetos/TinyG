@@ -428,17 +428,20 @@ mpBuf_t * mp_get_write_buffer() 				// get & clear a buffer
 
 void mp_unget_write_buffer()
 {
-    if (mb.w->buffer_state != MP_BUFFER_EMPTY) {  // safety. Can't unget an empty buffer
-        mb.w->buffer_state = MP_BUFFER_EMPTY;
+    // Reservation advances w. The exec cannot take an uncommitted LOADING
+    // slot, so clear its payload without holding interrupts off.
+    mpBuf_t *bf = mb.w->pv;
+    if (bf->buffer_state != MP_BUFFER_LOADING) { return; }
+    mp_clear_buffer(bf);
 #ifdef __AVR
-        uint8_t saved_sreg = SREG;                  // see mp_get_write_buffer() (E182)
-        cli();
+    uint8_t saved_sreg = SREG;
+    cli();
 #endif
-        mb.buffers_available++;
+    mb.w = bf;
+    mb.buffers_available++;
 #ifdef __AVR
-        SREG = saved_sreg;
+    SREG = saved_sreg;
 #endif
-    }
 }
 
 /*** WARNING: The routine calling mp_commit_write_buffer() must not use the write buffer
