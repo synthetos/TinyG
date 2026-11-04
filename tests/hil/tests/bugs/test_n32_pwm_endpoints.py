@@ -6,7 +6,7 @@ state; a scope is needed to verify the electrical waveform and transition glitch
 import time
 import pytest
 pytestmark=[pytest.mark.ice,pytest.mark.motion,pytest.mark.persists,
-            pytest.mark.dialect('d449'),pytest.mark.bug('N32',on=['d449'])]
+            pytest.mark.dialect('d449'),pytest.mark.bug('N32',on=[])]
 TCD1=0x0940
 CTRLB,PER,CCB=TCD1+1,TCD1+0x26,TCD1+0x2a
 PORTD_OUT=0x0664
@@ -29,7 +29,7 @@ def test_zero_and_full_duty(tg,ice,keep,record):
         command('M5')
         off=sample();record('zero',off)
         assert off['ccb']==0 and not(off['ctrlb']&0x20) and not(off['out']&0x20)
-        original=ice.read(PER,2)
+        with ice.halted():original=ice.read(PER,2)
         with ice.halted():ice.write(PER,b'\xff\xff')
         command('M3 S10000')
         full=sample();record('full',full)

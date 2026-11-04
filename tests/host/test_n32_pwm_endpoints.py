@@ -4,21 +4,7 @@ import subprocess, tempfile, unittest
 from source_extract import function
 import test_pwm_speed_range as fixture
 ROOT=Path(__file__).resolve().parents[2]
-EXTRA=r'''
-#define PWMS 1
-#define STAT_NO_SUCH_DEVICE 4
-#define TC0_CCBEN_bm 0x20
-#define PWM1_CTRLB 0x23
-#define PWM2_CTRLB 3
-#define SPINDLE_PWM 2
-static unsigned char SREG=0x80;
-static void cli(void){SREG=0;}
-static int pin;
-static void gpio_set_bit_off(int bit){assert(bit==SPINDLE_PWM);pin=0;}
-static void gpio_set_bit_on(int bit){assert(bit==SPINDLE_PWM);pin=1;}
-'''
-# Keep the older speed-range regression usable before and after the firmware fix.
-PRE=fixture.PRELUDE.replace('uint16_t PER, CCB;', 'uint16_t PER, CCB; uint8_t CTRLB;')+EXTRA
+PRE=fixture.PRELUDE
 class PwmEndpoints(unittest.TestCase):
  def test_endpoints_and_resume(self):
   code=PRE+function((ROOT/'firmware/tinyg/pwm.c').read_text(),r'stat_t pwm_set_duty\([^;{}]*\)(?=\s*\{)')+r'''

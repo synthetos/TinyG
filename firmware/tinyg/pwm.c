@@ -191,14 +191,29 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
 
 stat_t pwm_set_duty(uint8_t chan, float duty)
 {
+	if (chan >= PWMS) { return (STAT_NO_SUCH_DEVICE);}
 	if (!(duty >= 0.0)) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}	// also refuses NaN (E149)
 	if (duty > 1.0) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
 
 	#ifdef __AVR
-//  Ffrq = Fper/(2N(CCA+1))
-//  Fpwm = Fper/((N(PER+1))
-	float period_scalar = pwm.p[chan].timer->PER;
-	pwm.p[chan].timer->CCB = (uint16_t)(period_scalar * duty) + 1;
+	uint8_t saved_sreg = SREG;
+	cli();
+	PWM_TIMER_t *timer = pwm.p[chan].timer;
+	if (duty == 0.0 || duty == 1.0) {
+		// Endpoints bypass the timer: no one-count pulse or 65536 wrap.
+		// PWM2 has no routed output; preserve that hardware configuration.
+		if (chan == PWM_1) {
+			if (duty == 0.0) gpio_set_bit_off(SPINDLE_PWM);
+			else gpio_set_bit_on(SPINDLE_PWM);
+		}
+		timer->CTRLB &= ~TC0_CCBEN_bm;
+		timer->CCB = (duty == 0.0) ? 0 : timer->PER;
+	} else {
+		uint32_t compare = (uint32_t)((float)timer->PER * duty) + 1;
+		timer->CCB = (compare > UINT16_MAX) ? UINT16_MAX : (uint16_t)compare;
+		timer->CTRLB |= ((chan == PWM_1) ? PWM1_CTRLB : PWM2_CTRLB) & TC0_CCBEN_bm;
+	}
+	SREG = saved_sreg;
 	#endif // __AVR
 
 	#ifdef __ARM
