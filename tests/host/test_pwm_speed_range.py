@@ -28,12 +28,26 @@ typedef int stat_t;
 #define STAT_INPUT_LESS_THAN_MIN_VALUE 1
 #define STAT_INPUT_EXCEEDS_MAX_VALUE 2
 #define STAT_INPUT_VALUE_RANGE_ERROR 3
-typedef struct { uint16_t PER, CCB; } timer_t_;
+typedef struct { uint16_t PER, CCB; uint8_t CTRLB; } timer_t_;
 static timer_t_ timer = { 40000, 0 };
 struct { struct { float cw_speed_lo, cw_speed_hi, cw_phase_lo, cw_phase_hi,
                          ccw_speed_lo, ccw_speed_hi, ccw_phase_lo, ccw_phase_hi, phase_off; } c[1];
          struct { timer_t_ *timer; } p[1]; } pwm;
 struct { struct { float spindle_speed; } gm; } cm;
+#define PWM_TIMER_t timer_t_
+
+#define PWMS 1
+#define STAT_NO_SUCH_DEVICE 4
+#define TC0_CCBEN_bm 0x20
+#define PWM1_CTRLB 0x23
+#define PWM2_CTRLB 3
+#define SPINDLE_PWM 2
+static unsigned char SREG=0x80;
+static void cli(void){SREG=0;}
+static int pin;
+static void gpio_set_bit_off(int bit){assert(bit==SPINDLE_PWM);pin=0;}
+static void gpio_set_bit_on(int bit){assert(bit==SPINDLE_PWM);pin=1;}
+
 '''
 
 EXERCISE = r'''
