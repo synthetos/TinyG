@@ -38,6 +38,7 @@ class ArcGuard(unittest.TestCase):
 #include "util.h"
 void cm_cycle_start(void) { cm.cycle_state=CYCLE_MACHINING; cm.machine_state=MACHINE_CYCLE; }
 stat_t cm_alarm_P(stat_t s,const char *msg) { cm.machine_state=MACHINE_ALARM; return s; }
+void cm_request_feedhold(void) {}
 arc_t arc;
 '''
         source=(FW/'plan_arc.c').read_text()

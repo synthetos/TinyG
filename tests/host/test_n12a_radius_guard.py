@@ -17,6 +17,7 @@ class RadiusGuard(unittest.TestCase):
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"
+#include "util.h"
 cmSingleton_t cm;
 #define copy_vector(a,b) memcpy(a,b,sizeof(float)*AXES)
 #define _to_millimeters(x) (x)

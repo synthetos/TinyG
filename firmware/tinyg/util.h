@@ -57,6 +57,55 @@ extern bool FLAGS_ALL[];     // canned flag vector for convenience
 
 /****** Global Scope Variables and Functions ******/
 
+// IEEE binary32 predicates: no soft-float arithmetic, signed zero is valid.
+static inline uint32_t fp_bits(float value)
+{
+    union { float f; uint32_t u; } bits = { .f = value };
+    return bits.u;
+}
+static inline bool fp_finite(float value)
+{
+    return (fp_bits(value) & 0x7fffffffUL) < 0x7f800000UL;
+}
+static inline bool fp_positive_finite(float value)
+{
+    return (fp_bits(value) - 1UL) < 0x7f7fffffUL;
+}
+static inline bool fp_nonnegative_finite(float value)
+{
+    uint32_t bits = fp_bits(value);
+    return bits <= 0x7f7fffffUL || bits == 0x80000000UL;
+}
+static inline bool fp_bounded(float value, float bound)
+{
+    return (fp_bits(value) & 0x7fffffffUL) <= fp_bits(bound);
+}
+
+// On the byte-wide controller most normal values can be classified from the
+// high byte alone. The fallback handles exponent boundaries and signed zero.
+static inline bool fp_nonnegative_finite_at(const float *value)
+{
+#ifdef __AVR
+    if (((const uint8_t *)value)[3] < 0x7f) { return true; }
+#endif
+    return fp_nonnegative_finite(*value);
+}
+static inline bool fp_positive_finite_at(const float *value)
+{
+#ifdef __AVR
+    uint8_t high = ((const uint8_t *)value)[3];
+    if (high != 0 && high < 0x7f) { return true; }
+#endif
+    return fp_positive_finite(*value);
+}
+static inline bool fp_bounded_at(const float *value, float bound)
+{
+#ifdef __AVR
+    if ((((const uint8_t *)value)[3] & 0x7f) < (fp_bits(bound) >> 24)) { return true; }
+#endif
+    return fp_bounded(*value, bound);
+}
+
 //*** vector utilities ***
 
 extern float vector[AXES]; // vector of axes for passing to subroutines

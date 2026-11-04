@@ -41,10 +41,12 @@
 
 // aline planner routines / feedhold planning
 static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
-static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
+static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
+static void _reset_replannable_list(void);
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity);
 static float _exit_of_previous(const mpBuf_t *bp);
-#define EXIT_FROM_PREVIOUS (-1.0)					// exit velocity unknown here: ask the exec (E180)
+#define EXIT_FROM_PREVIOUS (-1.0) // exit unknown here: ask the exec
+#define INVALID_PLAN (-2.0)
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
 
 /* Runtime-specific setters and getters
@@ -139,6 +141,12 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	float length_square = 0;
 
 	for (uint8_t axis=0; axis<AXES; axis++) {
+        // Arc, jog and homing callers also enter here. Check both endpoints,
+        // including positions established without an ordinary planned move.
+        if (!fp_bounded_at(&gm_in->target[axis], MAX_GEOMETRY_COORDINATE) ||
+            !fp_bounded_at(&mm.position[axis], MAX_GEOMETRY_COORDINATE)) {
+            return (STAT_INPUT_VALUE_RANGE_ERROR);
+        }
 		axis_length[axis] = gm_in->target[axis] - mm.position[axis];
 		axis_square[axis] = square(axis_length[axis]);
 		length_square += axis_square[axis];
@@ -159,9 +167,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
 	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square);	// set move time and minimum time in the state
-    // Validate the derived time before taking a buffer or changing any queued plan.
-    // 178000 minutes stays below half UINT32_MAX nominal segments, with rounding headroom.
-    if (!(gm_in->move_time > 0) || !isfinite(gm_in->move_time) ||
+    // Retain the finite-time check and the segment-count duration limit.
+    if (!fp_positive_finite_at(&gm_in->move_time) ||
         (gm_in->move_time > 178000.0f)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 		float delta_velocity = pow(length, 0.66666666) * mm.cbrt_jerk;		// max velocity change for this move
@@ -300,8 +307,32 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	bf->exit_vmax = min3(bf->cruise_vmax, (bf->entry_vmax + bf->delta_vmax), exact_stop);
 	bf->braking_velocity = bf->delta_vmax;
 
+    if (!fp_positive_finite_at(&bf->jerk) ||
+        !fp_positive_finite_at(&bf->recip_jerk) ||
+        !fp_positive_finite_at(&bf->cbrt_jerk) ||
+        !fp_positive_finite_at(&bf->cruise_vmax) ||
+        !fp_finite(bf->entry_vmax) || !fp_finite(bf->exit_vmax) || !fp_finite(bf->delta_vmax)) {
+        mp_unget_write_buffer();
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+
 	// Note: these next lines must remain in exact order. Position must update before committing the buffer.
-	_plan_block_list(bf, &mr_flag);				// replan block list
+    if (_plan_block_list(bf, &mr_flag) != STAT_OK) {
+        // The exec may already have taken an earlier replan toward this block.
+        // Request a normal deceleration as well as restoring the queued plans.
+        cm_request_feedhold();
+        mp_unget_write_buffer();
+        // Earlier blocks may have been replanned toward the refused endpoint. Restore
+        // a zero-exit last block before returning; the exec still sees complete plans.
+        if (bf->pv->block_type == BLOCK_TYPE_ALINE) {
+            _reset_replannable_list();
+            mr_flag = false;
+            if (_plan_block_list(bf->pv, &mr_flag) != STAT_OK) {
+                cm_request_feedhold();
+            }
+        }
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	copy_vector(mm.position, bf->gm.target);	// set the planner position
 	mp_commit_write_buffer(BLOCK_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
@@ -486,8 +517,9 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
  *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
  *		mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
-static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
+static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
+    if (bf == NULL) { return (STAT_OK); }
 	mpBuf_t *bp = bf;
 
 	// Backward planning pass. Find first block and update the braking velocities.
@@ -512,6 +544,7 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 														   bp->nx->entry_vmax,
 														   bp->nx->braking_velocity,
 														  (entry_velocity + bp->delta_vmax) ));
+		if (fp_bits(next_entry) == fp_bits(INVALID_PLAN)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 		if (next_entry != EXIT_FROM_PREVIOUS) {
 			// test for optimally planned trapezoids - only need to check various exit conditions
 			if  ( ( (fp_EQ(bp->exit_velocity, bp->exit_vmax)) ||
@@ -523,7 +556,8 @@ static void _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 		}
 	}
 	// finish up the last block move
-	_plan_block(bp, (next_entry == EXIT_FROM_PREVIOUS) ? _exit_of_previous(bp) : next_entry, 0);
+    next_entry = _plan_block(bp, (next_entry == EXIT_FROM_PREVIOUS) ? _exit_of_previous(bp) : next_entry, 0);
+    return (fp_bits(next_entry) == fp_bits(INVALID_PLAN) ? STAT_INPUT_VALUE_RANGE_ERROR : STAT_OK);
 }
 
 /*
@@ -583,6 +617,16 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 	plan.cruise_velocity = bp->cruise_vmax;
 	plan.exit_velocity = exit_velocity;
 	mp_calculate_trapezoid(&plan);
+    // naiive_move_time may be infinite for an entry and exit both at rest;
+    // only the lengths and velocities below are executed.
+    if (!fp_nonnegative_finite_at(&plan.entry_velocity) ||
+        !fp_nonnegative_finite_at(&plan.cruise_velocity) ||
+        !fp_nonnegative_finite_at(&plan.exit_velocity) ||
+        !fp_nonnegative_finite_at(&plan.head_length) ||
+        !fp_nonnegative_finite_at(&plan.body_length) ||
+        !fp_nonnegative_finite_at(&plan.tail_length)) {
+        return (INVALID_PLAN);
+    }
 #ifdef __AVR
 	saved_sreg = SREG;
 	cli();
@@ -608,7 +652,7 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
  */
 static void _reset_replannable_list()
 {
-	mpBuf_t *bf = mp_get_first_buffer();
+	mpBuf_t *bf = mp_peek_run_buffer();
 	if (bf == NULL) { return; }
 	mpBuf_t *bp = bf;
 	do {
@@ -624,16 +668,16 @@ static void _reset_replannable_list()
  *	are still those of the original move, so resuming would overshoot. Call from the main loop
  *	before the hold is released.
  */
-void mp_replan_held_block()
+stat_t mp_replan_held_block()
 {
 	mpBuf_t *bf = mp_get_run_buffer();
-	if ((bf == NULL) || (bf->block_type != BLOCK_TYPE_ALINE)) { return; }
+	if ((bf == NULL) || (bf->block_type != BLOCK_TYPE_ALINE)) { return (STAT_OK); }
 
 	bf->entry_vmax = 0;
 	bf->delta_vmax = mp_get_target_velocity(0, bf->length, bf);
 	_reset_replannable_list();
 	uint8_t mr_flag = true;                         // first block enters at its entry_vmax (zero)
-	_plan_block_list(mp_get_last_buffer(), &mr_flag);
+	return (_plan_block_list(mp_get_last_buffer(), &mr_flag));
 }
 
 /*

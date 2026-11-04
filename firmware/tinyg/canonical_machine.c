@@ -525,6 +525,7 @@ stat_t cm_set_model_target(const float target[], const bool flags[])
 				cm.gm.target[axis] += _to_millimeters(target[axis]);	// a distance: the offset is already in the position
 			}
 		}
+        if (!fp_bounded_at(&cm.gm.target[axis], MAX_GEOMETRY_COORDINATE)) { goto invalid_target; }
 	}
 	// FYI: The ABC loop below relies on the XYZ loop having been run first
 	for (axis=AXIS_A; axis<=AXIS_C; axis++) {
@@ -542,8 +543,12 @@ stat_t cm_set_model_target(const float target[], const bool flags[])
 		} else {
 			cm.gm.target[axis] += tmp;
 		}
+        if (!fp_bounded_at(&cm.gm.target[axis], MAX_GEOMETRY_COORDINATE)) { goto invalid_target; }
 	}
     return (STAT_OK);
+invalid_target:
+    copy_vector(cm.gm.target, cm.gmx.position);
+    return (STAT_INPUT_VALUE_RANGE_ERROR);
 }
 
 /*
@@ -994,6 +999,19 @@ stat_t cm_set_arc_distance_mode(const uint8_t mode)
  *  Both L2 and L20 forms are supported
  */
 
+stat_t cm_set_coord_value(nvObj_t *nv)
+{
+    float value = nv->value_flt;
+    if (cfg_has_flag(nv->index, F_CONVERT) && cm_get_units_mode(MODEL) == INCHES) {
+        value *= MM_PER_INCH;
+    }
+    if (!isfinite(value) || fabs(value) > MAX_GEOMETRY_COORDINATE) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    nv->value_flt = value;
+    return (set_flt(nv));
+}
+
 stat_t cm_set_coord_offsets(const float coord_system,
                             const uint8_t L_word,
                             const float offset[], const bool flag[])
@@ -1013,18 +1031,27 @@ stat_t cm_set_coord_offsets(const float coord_system,
         return (STAT_L_WORD_IS_INVALID);
     }
     cm_set_work_offsets();
+    float values[AXES];
     bool changed = false;
     for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
         if (flag[axis]) {
             float value = (axis < AXIS_A) ? _to_millimeters(offset[axis]) : offset[axis];
             if (L_word == 2) {
-                cm.offset[selected][axis] = value;
+                values[axis] = value;
             } else {
                 // Isolate signed tool compensation using the same convention as the DRO.
                 float tool = cm.gm.work_offset[axis] - cm_get_active_coord_offset(axis);
                 float origin = cm.gmx.origin_offset_enable ? cm.gmx.origin_offset[axis] : 0;
-                cm.offset[selected][axis] = cm.gmx.position[axis] - value - origin - tool;
+                values[axis] = cm.gmx.position[axis] - value - origin - tool;
             }
+            if (!isfinite(values[axis]) || fabs(values[axis]) > MAX_GEOMETRY_COORDINATE) {
+                return (STAT_INPUT_VALUE_RANGE_ERROR);
+            }
+        }
+    }
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+        if (flag[axis]) {
+            cm.offset[selected][axis] = values[axis];
             changed = true;
             cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
@@ -1268,6 +1295,10 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 
     status = _queue_line();                     // plan the move inside a machining cycle
+    if (status != STAT_OK) {
+        copy_vector(cm.gm.target, cm.gmx.position);
+        return (status);
+    }
     cm_finalize_move();
 	return (status);
 }
@@ -1481,6 +1512,10 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
     status = _queue_line();                     // plan the move inside a machining cycle
+    if (status != STAT_OK) {
+        copy_vector(cm.gm.target, cm.gmx.position);
+        return (status);
+    }
 	cm_finalize_move();
 	return (status);
 }
@@ -2001,7 +2036,11 @@ void cm_end_hold()
 	if (cm.hold_state == FEEDHOLD_HOLD) {
         cm.program_paused = false;
         cm.end_hold_requested = false;
-        mp_replan_held_block();                     // the held block resumes from zero velocity
+        stat_t status = mp_replan_held_block();       // keep the hold if its new plan is invalid
+        if (status != STAT_OK) {
+            rpt_exception_P(status, PSTR("held move geometry"));
+            return;
+        }
         if ((cm.machine_state != MACHINE_ALARM) && mp_has_runnable_buffer()) {
             cm_cycle_start();                       // before the exec may run a block: a block that ends the
         }                                           // cycle (a dwell emptying the queue) must find it started (E165)

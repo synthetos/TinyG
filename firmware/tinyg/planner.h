@@ -293,7 +293,7 @@ uint8_t mp_free_run_buffer(void);
 mpBuf_t * mp_get_first_buffer(void);
 mpBuf_t * mp_get_last_buffer(void);
 
-//void mp_unget_write_buffer(void);
+void mp_unget_write_buffer(void);
 void mp_clear_buffer(mpBuf_t *bf);
 void mp_copy_buffer(mpBuf_t *bf, const mpBuf_t *bp);
 
@@ -310,7 +310,7 @@ bool mp_runtime_is_idle(void);
 
 stat_t mp_aline(GCodeState_t *gm_in);
 stat_t mp_plan_hold_callback(void);
-void mp_replan_held_block(void);
+stat_t mp_replan_held_block(void);
 
 stat_t mp_end_hold(void);
 //stat_t mp_feed_rate_override(uint8_t flag, float parameter);
