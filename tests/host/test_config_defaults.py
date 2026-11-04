@@ -79,8 +79,7 @@ int xio_ctrl(int dev,uint32_t flags){return 0;}
 #endif
 enum {XON=0x11, XOFF=0x13};
 #ifndef ritorno
-static int status_code;
-#define ritorno(a) if((status_code=(a)) != STAT_OK) { return(status_code); }
+#define ritorno(a) do { int status_code=(a); if(status_code != STAT_OK) return status_code; } while(0)
 #endif
 #define USB_RTS_bm 0x10
 #define CTRLA_RXON_TXON 0
