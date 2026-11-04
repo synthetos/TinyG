@@ -817,6 +817,7 @@ static void _free_processed_buffer()
             b->used_base = b->used_base->nx;
         }
         b->fragments--;
+        b->free_headers++;                       // this header is reusable again, so return its credit
     }
 }
 
