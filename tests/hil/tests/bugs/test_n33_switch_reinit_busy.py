@@ -15,11 +15,16 @@ def test_setting_preserves_deferred_limit(tg,ice,switches,keep,record,token):
     keep('xsn','st','ysx','rxm')
     tg.set('rxm',1,allow='N33 control traffic during motion')
     tg.set('st',0,allow='N33 normally open test inputs')
-    tg.set('xsn',0,allow='N33 prepare active initial state without a limit edge')
+    tg.set('xsn',1,allow='N33 prime input in homing-only mode before the hook drives it')
     switches.close('x','min')
-    tg.set('xsn',2,allow='N33 enable X-min limit')
     try:
-        assert ice.peek('sw.s[0].state')==1
+        deadline=time.monotonic()+2
+        while ice.peek('sw.s[0].state')!=1 and time.monotonic()<deadline:time.sleep(.02)
+        assert ice.peek('sw.s[0].state')==1,'hook closure was not captured'
+        # Changing input configuration after driving a hook releases its pin.
+        # Promote only the logical mode through ICE, preserving the real edge.
+        ice.poke('sw.s[0].mode',2)
+        time.sleep(.1)
         tg.send_gcode('G21 G90 G28.3 X0',check=True,allow='N33 seed bounded move')
         tg.send_gcode('G1 X4 F60',check=True,allow='N33 4 mm move')
         time.sleep(.1)
