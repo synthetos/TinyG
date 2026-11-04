@@ -113,6 +113,12 @@ void rpt_print_loading_configs_message(void);
 void rpt_print_system_ready_message(void);
 
 void sr_init_status_report_P(const char *sr_csv_P);
+extern bool sr_load_repaired;                 // main-loop startup repair notification
+void sr_report_load_repair_pending(void);
+static inline void sr_report_load_repair(void)
+{
+    if (sr_load_repaired) { sr_report_load_repair_pending(); }
+}
 //stat_t sr_set_status_report(nvObj_t *nv);
 stat_t sr_request_status_report(uint8_t request_type);
 stat_t sr_status_report_callback(void);

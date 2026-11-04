@@ -51,6 +51,8 @@
 
 /**** Allocation ****/
 
+static bool sr_populating;                    // stop recursive getters before resetting the NV list
+bool sr_load_repaired;                        // consumed by the main loop after startup
 srSingleton_t sr;
 qrSingleton_t qr;
 rxSingleton_t rx;
@@ -219,7 +221,7 @@ static stat_t _set_srs(nvObj_t *nv);
 
 static bool _valid_status_report_index(uint32_t index)
 {
-    return ((index == (uint32_t)NO_MATCH) || (index < (uint32_t)nv_index_max()));
+    return ((index == (uint32_t)NO_MATCH) || ((index < (uint32_t)nv_index_max()) && cfg_is_reportable((index_t)index)));
 }
 
 static void _persist_status_report_list()
@@ -257,21 +259,29 @@ void sr_init_status_report_P(const char *sr_csv_P)
     sr.stat_index = nv_get_index("", "stat");               // set index of stat element
     sr.status_report_request = SR_OFF;                      // clear any current requests
 
-    // SR CSV list is NULL, load SR from NVram
+    // An empty CSV loads the saved list. Drop unsafe entries before any getter runs.
     if (*sr_csv == NUL) {
-        for (i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        uint8_t kept = 0;
+        bool repaired = false;
+        for (i=0; i<NV_STATUS_REPORT_LEN; i++, nv.index++) {
             if ((read_persistent_value(&nv) != STAT_OK) ||
                 !_valid_status_report_index(nv.value_int)) {
-                break;
+                repaired = true;
+                continue;
             }
-            sr.status_report_list[i] = nv.value_int;        // load into the active SR list
-            sr.value_flt[i] = 8675309;                      // pre-load SR values with an unlikely number
-            nv.index++;                                     // increment SR NVM index
+            if (nv.value_int != (uint32_t)NO_MATCH) {
+                sr.status_report_list[kept++] = nv.value_int;
+            }
         }
-        if (i == NV_STATUS_REPORT_LEN) { return; }
-        // Repair invalid persisted indexes before any report can dereference them.
-        strcpy_P(sr_csv, SR_DEFAULTS);
-        nv.index = nv_get_index("", "se00");
+        for (i=kept; i<NV_STATUS_REPORT_LEN; i++) {
+            sr.status_report_list[i] = NO_MATCH;
+        }
+        for (i=0; i<NV_STATUS_REPORT_LEN; i++) { sr.value_flt[i] = 8675309; }
+        if (repaired) {
+            _persist_status_report_list(); // startup is idle; unchanged EEPROM values are not written
+            sr_load_repaired = true; // print only after startup enables interrupts
+        }
+        return;
     }
     { // load the CSV list and persist it to NVram
         char *rd = strtok(sr_csv, ",");                     // initialize strtok & get pointer for token parsing
@@ -292,12 +302,27 @@ void sr_init_status_report_P(const char *sr_csv_P)
     }
 }
 
+// Called from the controller loop after startup, even when automatic reports are disabled.
+void __attribute__((noinline)) sr_report_load_repair_pending(void)
+{
+    sr_load_repaired = false;
+    rpt_exception_P(STAT_BAD_STATUS_REPORT_SETTING, PSTR("Invalid saved status report entries removed"));
+}
+
 /*
  * _set_sr() - legancy SR setter. Called as (sr:{...}}
  */
 
 static stat_t _set_sr(nvObj_t *nv)
 {
+    // Validate the whole selection before changing any slot or writing EEPROM.
+    nvObj_t *check = nv;
+    for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
+        check = nv_next(check);
+        if ((check == NULL) || (check->valuetype == TYPE_EMPTY)) { break; }
+        if ((check->valuetype == TYPE_BOOLEAN) && check->value_int &&
+            !cfg_is_reportable(check->index)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    }
     for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
         if (((nv = nv_next(nv)) == NULL) || (nv->valuetype == TYPE_EMPTY)) {
             sr.status_report_list[i] = NO_MATCH;
@@ -382,6 +407,7 @@ static stat_t _set_srs(nvObj_t *nv)
         }
 
         if (nv->value_int) {                            // add an item from the working list
+            if (!cfg_is_reportable(nv->index)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
             int8_t slot = NO_MATCH;                     // index of first available slot
             bool unique = true;                         // flag if item was not found (passed uniqueness)
             for (j=0; j<SR_WORKING_LIST_LEN; j++) {
@@ -508,6 +534,8 @@ stat_t sr_run_text_status_report()
  */
 static stat_t _populate_unfiltered_status_report(char *key)
 {
+    if (sr_populating) { return (STAT_BAD_STATUS_REPORT_SETTING); }
+    sr_populating = true;
 	char tmp[TOKEN_LEN+1];
 	nvObj_t *nv = nv_reset_nv_list(key);
  	nv = nv_next(nv);	                // set *nv to the first empty pair past the SR parent
@@ -515,6 +543,11 @@ static stat_t _populate_unfiltered_status_report(char *key)
 
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { break;}
+        if (!_valid_status_report_index((uint32_t)nv->index)) {
+            cm_position_snapshot_end();
+            sr_populating = false;
+            return (STAT_BAD_STATUS_REPORT_SETTING);
+        }
 		nv_populate_nv_by_index(nv, nv->index);
 
 		strcpy(tmp, nv->group);			// flatten out groups - WARNING - you cannot use strncpy here...
@@ -523,10 +556,12 @@ static stat_t _populate_unfiltered_status_report(char *key)
 
 		if ((nv = nv_next(nv)) == NULL) { // should never be NULL unless SR length exceeds available buffer array
 			cm_position_snapshot_end();
+            sr_populating = false;
 			return (cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("_populate_unfiltered_status_report")));
         }
 	}
 	cm_position_snapshot_end();
+    sr_populating = false;
 	return (STAT_OK);
 }
 
@@ -546,6 +581,8 @@ static stat_t _populate_unfiltered_status_report(char *key)
 
 static bool _populate_filtered_status_report()
 {
+    if (sr_populating) { return (false); }
+    sr_populating = true;
 	char tmp[TOKEN_LEN+1];
 	uint8_t has_data = false;
 	nvObj_t *nv = nv_reset_nv_list("sr");   // initialize nv_list as a status report
@@ -555,6 +592,11 @@ static bool _populate_filtered_status_report()
 	for (uint8_t i=0; i<NV_STATUS_REPORT_LEN; i++) {
 		if ((nv->index = sr.status_report_list[i]) == NO_MATCH) { // normal list termination or error
             break;
+        }
+        if (!_valid_status_report_index((uint32_t)nv->index)) {
+            cm_position_snapshot_end();
+            sr_populating = false;
+            return (false);
         }
 		nv_populate_nv_by_index(nv, nv->index);     // get the current value and other NV parameters
 
@@ -590,11 +632,13 @@ static bool _populate_filtered_status_report()
 
 		if ((nv = nv_next(nv)) == NULL) {   // should never be NULL unless SR length exceeds available buffer array
             cm_position_snapshot_end();
+            sr_populating = false;
     		return (false);
 		}
 		has_data = true;
 	}
     cm_position_snapshot_end();
+    sr_populating = false;
 	return (has_data);
 }
 

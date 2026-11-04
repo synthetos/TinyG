@@ -5,7 +5,7 @@ reports lets the stock rejection test fail without deliberately recursing.
 """
 import pytest
 from tinyg_hil.snapshot import set_status_report
-pytestmark=[pytest.mark.dialect("d449"),pytest.mark.persists,pytest.mark.bug("N16",on=["d449"])]
+pytestmark=[pytest.mark.dialect("d449"),pytest.mark.persists,pytest.mark.bug("N16",on=[])]
 @pytest.mark.parametrize("token",["sr","srs","qr","rx","sys","help","defa","boot","test"])
 def test_report_selector_refuses_commands(tg,keep,token):
     keys=list(tg.get("sr"))
