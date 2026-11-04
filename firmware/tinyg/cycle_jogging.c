@@ -127,6 +127,14 @@ stat_t cm_jogging_callback(void)
 {
 	if (cm.cycle_state != CYCLE_JOG) { return (STAT_NOOP); } 		// exit if not in a jogging cycle
 	if (cm_get_runtime_busy() == true) { return (STAT_EAGAIN); }	// sync to planner move ends
+    if (cm_is_alarmed() != STAT_OK) {
+        // The last step can finish before the exec finalizes a held block.
+        if ((cm.hold_state != FEEDHOLD_OFF) && (cm.hold_state != FEEDHOLD_HOLD)) {
+            return (STAT_EAGAIN);
+        }
+        cm.cycle_state = CYCLE_OFF; // cleanup's cm_cycle_end must not overwrite the alarm
+        return (_jogging_finalize_exit(jog.axis));
+    }
 	return (jog.func(jog.axis));									// execute the current homing move
 }
 
