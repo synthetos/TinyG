@@ -594,11 +594,11 @@ stat_t set_grp(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv_next(nv)) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;
-		else if (nv->valuetype == TYPE_NULL)		// NULL means GET the value
-			nv_get(nv);
-		else {
-			nv_set(nv);
-			nv_persist(nv);
+		else if (nv->valuetype == TYPE_NULL) { // NULL means GET the value
+			ritorno(nv_get(nv));
+		} else {
+			ritorno(nv_set(nv));
+			ritorno(nv_persist(nv));
 		}
 	}
 	return (STAT_OK);
