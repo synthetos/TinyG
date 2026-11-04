@@ -128,12 +128,14 @@ static stat_t _text_parser_kernal(char *str, nvObj_t *nv)
 
 	// parse fields into the nv struct
 	if ((rd = strpbrk(str, separators)) == NULL) {	// no value part
+        if (strlen(str) > TOKEN_LEN) { return (STAT_UNRECOGNIZED_NAME); }
 		strncpy(nv->token, str, TOKEN_LEN);
 	    nv->valuetype = TYPE_NULL;
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it
     	    return (STAT_UNRECOGNIZED_NAME);
 	    }
 	} else {
+        if ((rd - str) > TOKEN_LEN) { return (STAT_UNRECOGNIZED_NAME); }
 	    *rd = NUL;									// terminate at end of name
 	    strncpy(nv->token, str, TOKEN_LEN);         // write to token
 	    if ((nv->index = nv_get_index((const char *)"", nv->token)) == NO_MATCH) { // get index or fail it

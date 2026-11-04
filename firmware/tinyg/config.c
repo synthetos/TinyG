@@ -651,6 +651,11 @@ bool nv_group_is_typesafe(char *group)
  */
 index_t nv_get_index(const char *group, const char *token)
 {
+    // A full mnemonic must fit and match; never truncate a name into an action.
+    size_t group_len = strlen(group), token_len = strlen(token);
+    if ((group_len > GROUP_LEN) || (token_len > TOKEN_LEN) ||
+        (group_len + token_len > TOKEN_LEN)) { return (NO_MATCH); }
+
 	char c;
 	char str[TOKEN_LEN + GROUP_LEN+1];	// should actually never be more than TOKEN_LEN+1
 	strncpy(str, group, GROUP_LEN+1);
@@ -669,7 +674,7 @@ index_t nv_get_index(const char *group, const char *token)
 		if (c != str[3]) continue;													// 4th character mismatch
 		if ((c = GET_TOKEN_BYTE(token[4])) == NUL) { if (str[4] == NUL) return(i);}	// four character match
 		if (c != str[4]) continue;													// 5th character mismatch
-		return (i);																	// five character match
+		if (str[5] == NUL) { return (i); } // exact five-character match
 	}
 	return (NO_MATCH);
 }
