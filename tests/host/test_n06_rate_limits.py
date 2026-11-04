@@ -25,6 +25,8 @@ class RateLimits(unittest.TestCase):
 #include <math.h>
 #include <float.h>
 #include <stdint.h>
+#define PSTR(s) (s)
+static void nv_add_message_P(const char *s) { (void)s; }
 #define STAT_OK 0
 #define STAT_INPUT_LESS_THAN_MIN_VALUE 108
 #define STAT_INPUT_VALUE_RANGE_ERROR 110

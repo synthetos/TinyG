@@ -99,6 +99,9 @@ typedef enum {
 #define MIN_ARC_SEGMENT_USEC    ((float)10000)		// minimum arc segment time
 
 #define NOM_SEGMENT_TIME        (NOM_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
+// G93 duration limit: leave a factor of two below uint32 segment capacity for
+// acceleration sections, and stay below the single-precision 2^31 boundary.
+#define MAX_INVERSE_TIME_MINUTES (2147483520.0f * NOM_SEGMENT_TIME)
 #define MIN_SEGMENT_TIME        (MIN_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_ARC_SEGMENT_TIME    (MIN_ARC_SEGMENT_USEC / MICROSECONDS_PER_MINUTE)
 #define MIN_TIME_MOVE           MIN_SEGMENT_TIME 	// minimum time a move can be is one segment

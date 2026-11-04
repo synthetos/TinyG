@@ -24,6 +24,7 @@ class InverseTime(unittest.TestCase):
 #include "tinyg.h"
 #include "config.h"
 #include "canonical_machine.h"
+#include "planner.h"
 #include "util.h"
 #include "feedlimit.h"
 cmSingleton_t cm;

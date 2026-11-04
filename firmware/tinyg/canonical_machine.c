@@ -1394,6 +1394,7 @@ stat_t cm_set_feed_rate(const float feed_rate)
         if (!(feed_rate > 0) || !isfinite(feed_rate)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
         float inverse_time = 1 / feed_rate;
         if (!isfinite(inverse_time)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        if (inverse_time > MAX_INVERSE_TIME_MINUTES) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
         cm.gm.feed_rate = inverse_time;	// minutes, active for this block only
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
@@ -1445,6 +1446,11 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
 stat_t cm_dwell(const float seconds)
 {
 	if (seconds < 0) { return (STAT_P_WORD_IS_NEGATIVE); }
+    // _exec_dwell converts seconds to uint32 microseconds before passing the timer prep.
+    if (!isfinite(seconds) || (seconds > 4294.0f)) {
+        nv_add_message_P(PSTR("dwell maximum 4294 seconds"));
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	mp_dwell(seconds);
 	return (STAT_OK);
 }
