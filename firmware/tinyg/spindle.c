@@ -246,6 +246,9 @@ void cm_exec_spindle_speed(float speed)
 static void _exec_spindle_speed(float *value, bool *flags)
 {
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
-	pwm_set_duty(PWM_1, cm_get_spindle_pwm(cm.gm.spindle_mode) ); // update spindle speed if we're running
-	_record_speed(((cm.gm.spindle_mode == SPINDLE_CW) || (cm.gm.spindle_mode == SPINDLE_CCW)) ? cm.gm.spindle_speed : 0);
+	// M30 may already have reset the model while this earlier S was queued.
+	// The output mode belongs to the command's place in the runtime queue.
+	uint8_t mode = spindle_out.mode;
+	pwm_set_duty(PWM_1, cm_get_spindle_pwm(mode));
+	_record_speed(((mode == SPINDLE_CW) || (mode == SPINDLE_CCW)) ? cm.gm.spindle_speed : 0);
 }
