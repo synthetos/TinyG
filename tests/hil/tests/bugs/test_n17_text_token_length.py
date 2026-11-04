@@ -9,7 +9,7 @@ import pytest
 pytestmark = pytest.mark.dialect("d449")
 
 
-@pytest.mark.bug("N17", on=["d449"])
+@pytest.mark.bug("N17", on=[])
 def test_text_name_suffix_rejected(tg, record):
     lines = tg.send_text("$clearanything")
     record("text_prompt", lines)
