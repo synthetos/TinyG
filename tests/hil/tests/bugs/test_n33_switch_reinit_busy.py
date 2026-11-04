@@ -7,7 +7,7 @@ import time
 import pytest
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.timing,pytest.mark.persists,
             pytest.mark.resets_board,pytest.mark.profile('switches-no'),
-            pytest.mark.dialect('d449'),pytest.mark.bug('N33',on=['d449'])]
+            pytest.mark.dialect('d449'),pytest.mark.bug('N33',on=[])]
 
 @pytest.mark.parametrize('token',['st','ysx'])
 def test_setting_preserves_deferred_limit(tg,ice,switches,keep,record,token):
