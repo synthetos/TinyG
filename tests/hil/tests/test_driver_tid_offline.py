@@ -112,7 +112,7 @@ def test_reset_waits_for_system_ready_not_loading_banner():
     tg = driver(answer=lambda data: banners() if data == b'\x18' else [])
     tg.transport.drain = lambda *args, **kwargs: []
     assert tg.reset().body["msg"] == "SYSTEM READY"
-    assert tg.transport.writes == [b'\x18']
+    assert tg.transport.writes == [b'\x18', b'{"fb":null}\n']      # the reset ends by switching the board to JSON
 
 
 def test_wake_retries_plain_fb_after_xon_and_ready_reset():
