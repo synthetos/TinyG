@@ -338,6 +338,11 @@ static stat_t _homing_axis_latch(int8_t axis)				// latch to switch open
 
 static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero position
 {
+    // Latch must find the release edge before any zero backoff or coordinate reset.
+    // Re-sample the pin: a cached level alone is not proof that the switch released.
+    if (read_switch(hm.homing_switch) != SW_INACTIVE) {
+        return (_homing_abort(axis)); // restore jerk and report HOMING_CYCLE_FAILED
+    }
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
 	return (_set_homing_func(_homing_axis_set_zero));
 }
