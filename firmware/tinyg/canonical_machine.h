@@ -869,6 +869,7 @@ stat_t cm_set_am(nvObj_t *nv);			// set axis mode
 stat_t cm_set_axis_rate(nvObj_t *nv);
 stat_t cm_set_ja(nvObj_t *nv); // positive finite junction acceleration
 stat_t cm_set_radius(nvObj_t *nv);        // positive finite radius in internal units
+stat_t cm_set_ct(nvObj_t *nv);
 stat_t cm_set_xjm(nvObj_t *nv);			// set jerk max with 1,000,000 correction
 stat_t cm_set_xjh(nvObj_t *nv);			// set jerk homing with 1,000,000 correction
 
