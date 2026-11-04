@@ -810,6 +810,19 @@ bool cfg_get_is_action(fptrCmd get)
 	return ((get == st_set_me) || (get == st_set_md) || (get == cm_alrm) || (get == cm_pnic) ||
 			(get == cm_shutd) || (get == cm_clr) || (get == cm_dam));
 }
+// Status reports contain scalar values, not commands, groups, or report printers.
+bool cfg_is_reportable(index_t index)
+{
+    if ((index < 0) || (index >= nv_index_max()) || !nv_index_is_single(index)) { return false; }
+    valueType type = cfg_is_type(index);
+    if ((type != TYPE_FLOAT) && (type != TYPE_INTEGER) && (type != TYPE_SIGNED) &&
+        (type != TYPE_BOOLEAN) && (type != TYPE_DATA)) { return false; }
+    fptrCmd get = (fptrCmd)pgm_read_word(&cfgArray[index].get);
+    return !cfg_get_is_action(get) && (get != sr_get) && (get != srs_get) &&
+        (get != help_test) && (get != help_defa) && (get != help_boot) &&
+        (get != get_nul) && (get != rt_get_fs);
+}
+
 //bool nv_index_is_group(index_t index) { return (((index >= NV_INDEX_START_GROUPS) && (index < NV_INDEX_START_UBER_GROUPS)) ? true : false);}
 
 

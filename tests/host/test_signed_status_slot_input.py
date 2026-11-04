@@ -48,6 +48,7 @@ class SignedStatusSlots(unittest.TestCase):
 #define JTOK_PARENT 4
 #define JTOK_TMASK 3
 typedef int stat_t;
+typedef int index_t;
 typedef int valueType;
 enum {TYPE_SKIP=-2,TYPE_EMPTY=-1,TYPE_NULL,TYPE_BOOLEAN,TYPE_INTEGER,TYPE_STRING,
 TYPE_FLOAT,TYPE_SIGNED,TYPE_DATA,TYPE_TXTCON,TYPE_ARRAY,TYPE_PARENT};
@@ -64,6 +65,7 @@ int cfg_is_type(int i){(void)i;return row_type;}
 char *str_unescape(char *s){return s;}
 int nv_copy_string(nvObj_t *n,char *s){n->str=s;return 0;}
 int nv_index_max(void){return 300;}
+bool cfg_is_reportable(int i){return i>=0&&i<300;}
 int set_u16(nvObj_t *n){(void)n;writes++;return 0;}
 '''
         for source, pattern in [(util,r'stat_t str2float\('),(util,r'stat_t str2long\('),
