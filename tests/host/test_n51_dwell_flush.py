@@ -39,6 +39,13 @@ bool st_aline_in_flight(void) {return TIMER_DDA.CTRLA ||
         code+=function(source,sig+r'(?=\s*\{)')
     code+=r'''
 int main(void) {
+ // Direct homing housekeeping is not a request to abort an unheld dwell.
+ cm.hold_state=FEEDHOLD_OFF;cm.queue_flush_state=FLUSH_OFF;
+ TIMER_DWELL.CTRLA=1;st_run.dda_ticks_downcount=5000;
+ st_pre.block_type=BLOCK_TYPE_NULL;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;
+ cm_queue_flush();
+ assert(TIMER_DWELL.CTRLA==1 && st_run.dda_ticks_downcount==5000);
+ assert(planner_flushes==0 && input_flushes==0 && SREG==128);
  // A lone dwell has freed all planner buffers but still owns its timer.
  cm.hold_state=FEEDHOLD_HOLD;TIMER_DWELL.CTRLA=1;TIMER_DWELL.CNT=7;
  st_run.dda_ticks_downcount=30000;st_pre.block_type=BLOCK_TYPE_NULL;
