@@ -71,6 +71,7 @@ void cm_queue_flush(void) { cm.queue_flush_state=FLUSH_OFF; flushes++; }
             (stepper, r'bool st_aline_in_flight\(\)'),
             (stepper, r'uint8_t st_runtime_isbusy\(\)'),
             ((firmware / "plan_line.c").read_text(), r'bool mp_runtime_is_idle\(\)'),
+            (machine, r'static bool _enter_alarm\(void\)(?=\s*\{)'),
             (machine, r'stat_t cm_alarm\(const stat_t status, const char \*msg\)'),
             (machine, r'static void _take_input_flush_request\(\)(?=\s*\{)'),
             (machine, r'static void _service_input_flush\(\)(?=\s*\{)'),
