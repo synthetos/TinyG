@@ -5,7 +5,7 @@ A negative value takes sqrt of a negative number and removes the corner limit.
 No motion is needed: SET status and the retained value expose the error.
 """
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N09",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N09",on=[])]
 def test_invalid_ja_keeps_previous_value(tg,keep):
     keep("ja")
     tg.send_gcode("G21",check=True)

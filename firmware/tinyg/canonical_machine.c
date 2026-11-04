@@ -2686,7 +2686,6 @@ stat_t cm_set_jerk(const float target[], const bool flags[])
     return (STAT_OK);
 }
 
-/* Axis rate limits must remain positive after conversion to canonical units. */
 stat_t cm_set_axis_rate(nvObj_t *nv)
 {
     if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {
@@ -2700,6 +2699,18 @@ stat_t cm_set_axis_rate(nvObj_t *nv)
         return (set_flu(nv));
     }
     return (set_flt(nv));
+}
+
+stat_t cm_set_ja(nvObj_t *nv)
+{
+    if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {
+        return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+    }
+    float value = _to_millimeters(nv->value_flt);
+    if (!(value > 0) || !isfinite(value)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (set_flu(nv));
 }
 
 stat_t cm_set_xjm(nvObj_t *nv)

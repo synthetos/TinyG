@@ -456,7 +456,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "jid","jidd",_d0, 0, tx_print_nul, get_data, set_data, (uint32_t *)&cs.job_id[3], 0},
 
 	// System parameters
-	{ "sys","ja",  _fipnc,0, cm_print_ja,  get_flt,   set_flu,    (uint32_t *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
+	{ "sys","ja",  _fipnc,0, cm_print_ja,  get_flt,   cm_set_ja,    (uint32_t *)&cm.junction_acceleration,   JUNCTION_ACCELERATION },
 	{ "sys","ct",  _fipnc,4, cm_print_ct,  get_flt,   set_flu,    (uint32_t *)&cm.chordal_tolerance,	   CHORDAL_TOLERANCE },
 	{ "sys","sl",  _iipn, 0, cm_print_sl,  get_ui8,   set_ui8,    (uint32_t *)&cm.soft_limit_enable,	   SOFT_LIMIT_ENABLE },
 	{ "sys","st",  _iipn, 0, sw_print_st,  get_ui8,   sw_set_st,  (uint32_t *)&sw.switch_type,			   SWITCH_TYPE },
