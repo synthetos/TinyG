@@ -72,9 +72,13 @@ int main(void){
  // High density can run slowly: no dimensionally incorrect 50000 steps/unit cap.
  nv.value_int=8;assert(st_set_mi(&nv)==STAT_OK);
  assert(fabsf(st_cfg.mot[0].steps_per_unit-160000)<1);
- // Numerator uses float multiplication, not a wrapped 32-bit integer product.
+ // Unsupported microsteps are refused before changing scaling or pins.
  seed();nv.target=&st_cfg.mot[0].microsteps;nv.value_int=20000000;
- assert(st_set_mi(&nv)==STAT_OK);
+ before=st_cfg.mot[0];r=resets;p=pin_writes;
+ assert(st_set_mi(&nv)==STAT_INPUT_VALUE_RANGE_ERROR);unchanged(before,r,p);
+ // The internal geometry calculation still uses float multiplication rather
+ // than wrapping a 32-bit integer product, even for an out-of-range old value.
+ st_cfg.mot[0].microsteps=20000000;_set_motor_steps_per_unit(&nv);
  assert(fabsf(st_cfg.mot[0].steps_per_unit-100000000)<16);
 '''
   if '_init_motor_geometry(' in source:

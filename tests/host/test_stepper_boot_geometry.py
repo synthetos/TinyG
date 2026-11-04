@@ -22,6 +22,7 @@ static void st_refresh_move_time(void) {}
 #define _to_millimeters(a) (a)
 #define STAT_COMMAND_NOT_ACCEPTED 106
 #define STAT_INPUT_LESS_THAN_MIN_VALUE 108
+#define STAT_INPUT_VALUE_RANGE_ERROR 110
 #define PREP_BUFFER_OWNED_BY_LOADER 1
 #define STD_IN 0
 #define STD_OUT 1
