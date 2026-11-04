@@ -614,6 +614,7 @@ typedef struct cmSingleton {			    // struct to manage cm globals and cycles
     bool deferred_write_flag;               // G10 data has changed (e.g. offsets) - flag to persist them
     volatile bool program_paused;          // explicit M0/M1/M60 requires cycle start
     volatile bool job_kill_requested;      // ^d trapped by the RX ISR: alarm with STAT_KILL_JOB (E096)
+    bool job_kill_report_pending;         // blocked TX applied the stop; report from the dispatcher
     uint8_t optional_stop_enabled;          // session M1 switch, default off after board reset
     bool end_hold_requested;                // request restart after feedhold
     uint8_t limit_requested;                // set non-zero to request limit switch processing (value is input number)
@@ -792,6 +793,7 @@ void cm_request_end_hold(void);
 void cm_request_queue_flush(void);
 void cm_request_planner_flush(void);
 void cm_request_end_queue_flush(void);
+void cm_tx_blocked_callback(void);        // stop actions only, no reporting or input flush
 stat_t cm_feedhold_sequencing_callback(void);					// process feedhold, cycle start and queue flush requests
 
 bool cm_has_hold(void);

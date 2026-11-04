@@ -74,31 +74,33 @@ void xio_usb_rtc_callback(void)					// RTC interrupt (lo)
  *	an interrupt.
  */
 
+static int _putc_usb_raw(const char c);
+
+// Keep wait servicing out of the ordinary writer's register-save path.
+static int __attribute__((noinline)) _putc_usb_wait(const char c)
+{
+    buffer_t next = USBu.tx_buf_head - 1;
+    if (next == 0) { next = TX_BUFFER_SIZE - 1; }
+    while (next == USBu.tx_buf_tail) {
+        cm_tx_blocked_callback();
+        sleep_mode();
+    }
+    return _putc_usb_raw(c);
+}
+
 static int _putc_usb_raw(const char c)
 {
-	buffer_t next_tx_buf_head = USBu.tx_buf_head-1;		// set next head while leaving current one alone
-	if (next_tx_buf_head == 0)
-		next_tx_buf_head = TX_BUFFER_SIZE-1; 			// detect wrap and adjust; -1 avoids off-by-one
-	while (next_tx_buf_head == USBu.tx_buf_tail)
-		sleep_mode(); 									// sleep until there is space in the buffer
-	USBu.usart->CTRLA = CTRLA_RXON_TXOFF;				// disable TX interrupt (mutex region)
-	usb_activity = true;
-	USBu.tx_buf[next_tx_buf_head] = c;					// write char to buffer, then publish it: the RX
-	USBu.tx_buf_head = next_tx_buf_head;				// ISR (XON) or CTS ISR may re-enable TX at any time
-
-	// expand <LF> to <LF><CR> if $ec is set
-	if ((c == '\n') && (USB.flag_crlf)) {
-		USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send the queued <CR>
-		buffer_t next_tx_buf_head = USBu.tx_buf_head-1;
-		if (next_tx_buf_head == 0) next_tx_buf_head = TX_BUFFER_SIZE-1;
-		while (next_tx_buf_head == USBu.tx_buf_tail) sleep_mode();
-		USBu.usart->CTRLA = CTRLA_RXON_TXOFF;			// MUTEX region
-		USBu.tx_buf[next_tx_buf_head] = CR;
-		USBu.tx_buf_head = next_tx_buf_head;
-	}
-	// finish up
-	USBu.usart->CTRLA = CTRLA_RXON_TXON;			// force interrupt to send char(s) - doesn't work if you just |= it
-	return (XIO_OK);
+    buffer_t next = USBu.tx_buf_head - 1;
+    if (next == 0) { next = TX_BUFFER_SIZE - 1; }
+    if (next == USBu.tx_buf_tail) { return _putc_usb_wait(c); }
+    USBu.usart->CTRLA = CTRLA_RXON_TXOFF;
+    usb_activity = true;
+    USBu.tx_buf[next] = c;
+    USBu.tx_buf_head = next;
+    USBu.usart->CTRLA = CTRLA_RXON_TXON;
+    // A tail call writes the expansion through the same space and stop checks.
+    if ((c == '\n') && USB.flag_crlf) { return _putc_usb_raw(CR); }
+    return XIO_OK;
 }
 
 int xio_putc_usb(const char c, FILE *stream)

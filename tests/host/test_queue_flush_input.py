@@ -30,11 +30,12 @@ enum { FLUSH_OFF, FLUSH_REQUESTED };
 #define AXES 6
 #define STAT_OK 0
 typedef int stat_t;
-struct { int hold_state, queue_flush_state; bool end_hold_requested; volatile bool queue_flush_input, queue_flush_input_due, job_kill_requested; } cm;
+struct { int hold_state, queue_flush_state; bool end_hold_requested, job_kill_report_pending; volatile bool queue_flush_input, queue_flush_input_due, job_kill_requested; } cm;
 #define STAT_KILL_JOB 207
 #define PSTR(s) (s)
 static int kill_alarms;
 static int cm_alarm_P(int status, const char *msg) { (void)msg; kill_alarms += (status == STAT_KILL_JOB); return status; }
+static void rpt_exception(int s,const char*m){cm_alarm_P(s,m);}
 uint8_t SREG = 0x80;
 static int input_flushes, planner_flushes, input_before_planner;
 static int inject, in_direct_flush;                          /* 1: '%' during the planner flush, 2: '%' in cm_end_hold */
