@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from tinyg_hil.sender import stream
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,
-            pytest.mark.dialect('d449'),pytest.mark.bug('N39',on=['d449'])]
+            pytest.mark.dialect('d449'),pytest.mark.bug('N39',on=[])]
 
 def test_dense_excerpt_step_endpoint(tg,ice,keep,record):
     tokens=[axis+suffix for axis in 'xyz' for suffix in ['vm','fr','jm']]
