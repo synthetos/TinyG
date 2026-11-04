@@ -2757,11 +2757,18 @@ stat_t cm_set_jerk(const float target[], const bool flags[])
     return (STAT_OK);
 }
 
+/* Axis rate limits must remain positive after conversion to canonical units. */
 stat_t cm_set_axis_rate(nvObj_t *nv)
 {
     if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {
         return (STAT_INPUT_LESS_THAN_MIN_VALUE);
     }
+    float canonical = nv->value_flt;
+    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+        canonical *= MM_PER_INCH;
+    }
+    // A rate below the numeric zero tolerance cannot describe a usable feed.
+    if (canonical < 0.00001f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
     if (_get_axis_type(nv->index) == 0) {
         if ((cm_get_units_mode(MODEL) == INCHES) &&
             !isfinite(nv->value_flt * MM_PER_INCH)) {

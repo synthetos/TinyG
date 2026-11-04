@@ -159,6 +159,10 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
 	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square);	// set move time and minimum time in the state
+    // Validate the derived time before taking a buffer or changing any queued plan.
+    // 178000 minutes stays below half UINT32_MAX nominal segments, with rounding headroom.
+    if (!(gm_in->move_time > 0) || !isfinite(gm_in->move_time) ||
+        (gm_in->move_time > 178000.0f)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	if (gm_in->move_time < MIN_BLOCK_TIME) {
 		float delta_velocity = pow(length, 0.66666666) * mm.cbrt_jerk;		// max velocity change for this move
 		float entry_velocity = 0;											// pre-set as if no previous block
