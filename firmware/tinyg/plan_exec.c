@@ -60,6 +60,13 @@ stat_t mp_exec_move()
     // A program stop also blocks queued dwells and output commands.
     if (cm.program_paused) { return (STAT_NOOP); }
     if (mp_startup_is_pending()) { return (STAT_NOOP); }
+    if (cm.hold_state == FEEDHOLD_HOLD) { return (STAT_NOOP); }
+    // Do not stage the next line while a dwell owns the runtime. A null load
+    // keeps the existing dwell-completion wakeup without changing either ISR.
+    if (st_runtime_isbusy() && !st_aline_in_flight()) {
+        st_prep_null();
+        return (STAT_OK);
+    }
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) {			// NULL means nothing's running

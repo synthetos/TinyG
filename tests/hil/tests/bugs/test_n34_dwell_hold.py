@@ -51,7 +51,7 @@ def _cleanup(tg):
     tg.send_json({'fb': None})  # reset can restore persisted text mode
 
 
-@pytest.mark.bug('N34', on=['d449'])
+@pytest.mark.bug('N34', on=[])
 @pytest.mark.parametrize('prefix,dwell', [([],4), (['G0 X2'],3)], ids=['opening','between-moves'])
 def test_dwell_hold_blocks_following_move(tg, keep, ice, record, prefix, dwell):
     _setup(tg, keep)
@@ -72,7 +72,7 @@ def test_dwell_hold_blocks_following_move(tg, keep, ice, record, prefix, dwell):
         _cleanup(tg)
 
 
-@pytest.mark.bug('N34', on=['d449'])
+@pytest.mark.bug('N34', on=[])
 @pytest.mark.parametrize('control', [b'~',b'%'], ids=['resume','flush'])
 def test_lone_dwell_hold_ends_cleanly(tg, keep, ice, record, control):
     _setup(tg, keep)

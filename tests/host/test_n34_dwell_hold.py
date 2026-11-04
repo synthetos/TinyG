@@ -86,7 +86,6 @@ int main(void){
 #include <stdbool.h>
 #include <stddef.h>
 typedef int stat_t;
-#define __AVR 1
 #define STAT_OK 0
 #define STAT_NOOP 1
 #define STAT_INTERNAL_ERROR 99
