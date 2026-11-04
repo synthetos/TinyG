@@ -37,6 +37,8 @@ class ConfigDefaults(unittest.TestCase):
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#define MAX_GEOMETRY_COORDINATE 1e18f
+#define F_CONVERT 128
 #define __AVR 1
 #define PSTR(s) (s)
 #define MM_PER_INCH 25.4
@@ -54,6 +56,7 @@ typedef stat_t (*setter_t)(nvObj_t *);
 typedef struct {char token[6];uint8_t flags,precision;setter_t set;void *target;float default_value;} row_t;
 static row_t cfgArray[512];
 static uint32_t storage[512];
+static bool cfg_has_flag(index_t i,uint8_t f){return (cfgArray[i].flags & f)!=0;}
 #define GET_TABLE_WORD(field) (cfgArray[nv->index].field)
 struct {uint32_t dda_ticks_downcount;} st_run;
 struct {int buffer_state;} st_pre;
@@ -103,7 +106,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],
             'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex','set_gco','set_ma'],
             'stepper.c': ['_init_motor_geometry','_motor_geometry_valid','st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
-            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius','cm_set_ct'],
+            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius','cm_set_ct','cm_set_coord_value'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
             'spindle.c': ['spindle_set_polarity'],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}

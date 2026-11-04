@@ -71,6 +71,13 @@ static void setup(int units, int origin) {
 static void close_to(float a,float b) { assert(fabs(a-b)<.0001); }
 int main(void) {
     float value[AXES]={0}; bool flags[AXES]={0};
+    setup(MILLIMETERS,0);
+    value[0]=123;value[1]=1e30f;flags[0]=flags[1]=true;
+    float before0=cm.offset[G55][0],before1=cm.offset[G55][1];
+    assert(cm_set_coord_offsets(G55,2,value,flags)==STAT_INPUT_VALUE_RANGE_ERROR);
+    assert(cm.offset[G55][0]==before0 && cm.offset[G55][1]==before1 && !cm.deferred_write_flag);
+    memset(value,0,sizeof(value));memset(flags,0,sizeof(flags));
+
     for(int units=0;units<2;units++) for(int origin=0;origin<2;origin++)
     for(int axis=0;axis<AXES;axis++) for(int inactive=0;inactive<2;inactive++) {
         setup(units,origin); memset(flags,0,sizeof(flags)); flags[axis]=true;

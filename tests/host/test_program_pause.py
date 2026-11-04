@@ -59,7 +59,7 @@ struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_st
         bool program_paused, end_hold_requested, queue_flush_input, queue_flush_input_due; uint8_t optional_stop_enabled;} cm;
 static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
-static int fetched, ran, wakeups, finalized, queued_commands;
+static int fetched, ran, wakeups, finalized, queued_commands, replan_error, reports;
 static bool queued, idle=true;
 typedef struct mpBuf {int block_type; stat_t (*bf_func)(struct mpBuf *);} mpBuf_t;
 mpBuf_t block;
@@ -67,8 +67,9 @@ mpBuf_t *mp_get_run_buffer(void) {fetched++; return queued ? &block : NULL;}
 bool mp_has_runnable_buffer(void) {return queued;}
 bool mp_runtime_is_idle(void) {return idle;}
 void st_prep_null(void) {}
-void mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD);}
+stat_t mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD); return replan_error;}
 void st_request_exec_move(void) {wakeups++;}
+stat_t rpt_exception_P(stat_t s,const char*m){reports++;return s;}
 void cm_set_motion_state(int state) {cm.motion_state=state;}
 stat_t cm_panic_P(int status,const char *msg) {(void)msg;return status;}
 void sr_request_status_report(int state) {(void)state;}
@@ -127,7 +128,11 @@ int main(void) {
         assert(fetched==previous_fetched && ran==previous_ran && finalized==previous_finalized);
         assert(cm.machine_state==MACHINE_PROGRAM_STOP);
         cm_request_end_hold(); assert(cm.end_hold_requested);
+        replan_error=110; int previous_wakeups=wakeups;
         cm_end_hold();
+        assert(cm.hold_state==FEEDHOLD_HOLD && wakeups==previous_wakeups && reports==type);
+        replan_error=0;
+        cm_request_end_hold(); cm_end_hold();
         assert(!cm.program_paused && !cm.end_hold_requested && cm.hold_state==FEEDHOLD_OFF);
         assert(mp_exec_move()==STAT_OK && ran==previous_ran+1);
     }
