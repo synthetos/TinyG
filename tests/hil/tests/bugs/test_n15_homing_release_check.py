@@ -7,7 +7,7 @@ no electrical timing claim is made. Failure status is HOMING_CYCLE_FAILED (240).
 import time
 import pytest
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,pytest.mark.resets_board,
- pytest.mark.dialect("d449"),pytest.mark.profile("switches-no"),pytest.mark.bug("N15",on=["d449"])]
+ pytest.mark.dialect("d449"),pytest.mark.profile("switches-no"),pytest.mark.bug("N15",on=[])]
 def test_latch_must_release_switch(tg,keep,switches,ice,record):
     if "test_hook" not in ice.symbols.sym:
         pytest.skip("requires TEST_HOOKS=1 switch injection")
