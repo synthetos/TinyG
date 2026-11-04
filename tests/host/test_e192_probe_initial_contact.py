@@ -68,6 +68,18 @@ def probe_case():
 typedef int stat_t;
 #define STAT_OK 0
 static bool mp_hold_startup(void) {return false;}
+#define CYCLE_MACHINING 99
+#define FEEDHOLD_HOLD 6
+#define PREP_BUFFER_OWNED_BY_LOADER 0
+#define BLOCK_TYPE_DWELL 3
+#define CONTROLLER_READY 0
+static struct {int buffer_state,block_type;} st_pre;
+static struct {int controller_state;} cs;
+static bool st_runtime_isbusy(void) {return cm.motion_state==MOTION_RUN;}
+static bool st_aline_in_flight(void) {return cm.motion_state==MOTION_RUN;}
+static int cm_is_alarmed(void) {return 0;}
+static void cm_cycle_start(void) {assert(0);} // no dwell is modeled in this probe fixture
+
 '''
     code += fn("canonical_machine.c", "cm_request_feedhold")
     code += r'''

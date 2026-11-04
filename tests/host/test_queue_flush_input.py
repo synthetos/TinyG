@@ -44,6 +44,7 @@ void cm_request_planner_flush(void);
 static void isr_percent(void) { cm_request_queue_flush(); }
 static void cli(void) { SREG &= ~0x80; }
 bool mp_runtime_is_idle(void) { return true; }
+void st_prep_null(void) {}
 void mp_flush_planner(void) { planner_flushes++; input_before_planner = input_flushes; if (inject == 1) { inject = 0; isr_percent(); } }
 float mp_get_runtime_absolute_position(int axis) { (void)axis; return 0; }
 void cm_set_position(int axis, float position) { (void)axis; (void)position; }
