@@ -811,12 +811,13 @@ stat_t cm_alarm_P(const stat_t status, const char *msg_P)
     return(cm_alarm(status, msg_buf));
 }
 
-stat_t cm_alarm(const stat_t status, const char *msg)
+// Apply the stop without reporting: also safe while a response is waiting for TX space.
+static bool _enter_alarm(void)
 {
     if ((cm.machine_state == MACHINE_ALARM) ||
         (cm.machine_state == MACHINE_PANIC) ||
         (cm.machine_state == MACHINE_SHUTDOWN)) {
-        return (STAT_OK);                       // don't alarm if already in an alarm state
+        return (false);                         // already inhibited
     }
 	cm.machine_state = MACHINE_ALARM;
 
@@ -854,7 +855,13 @@ stat_t cm_alarm(const stat_t status, const char *msg)
 //	cm_spindle_optional_pause(spindle.pause_on_hold);
 //	cm_coolant_optional_pause(coolant.pause_on_hold);
 
-	rpt_exception(status, msg);	                // send alarm message
+    return (true);
+}
+
+stat_t cm_alarm(const stat_t status, const char *msg)
+{
+    if (!_enter_alarm()) { return (STAT_OK); }
+    rpt_exception(status, msg);
     return (status);
 }
 
@@ -1884,11 +1891,28 @@ static void _run_requested_queue_flush()
     }
 }
 
+// A blocked writer may be using the parser's input and report buffers. Only start
+// the stop here; never flush input, resume, format a report or re-enter the dispatcher.
+void cm_tx_blocked_callback(void)
+{
+    if (cm.job_kill_requested && _enter_alarm()) {
+        cm.job_kill_report_pending = true;
+    }
+    if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
+        cm_start_hold();
+    }
+}
+
 stat_t cm_feedhold_sequencing_callback()
 {
     if (cm.job_kill_requested) {
         cm.job_kill_requested = false;
-        cm_alarm_P(STAT_KILL_JOB, PSTR("job kill"));  // requests the hold and flush handled below
+        if (cm.job_kill_report_pending) {
+            cm.job_kill_report_pending = false;
+            rpt_exception(STAT_KILL_JOB, "job kill"); // stop already applied by the blocked writer
+        } else {
+            cm_alarm_P(STAT_KILL_JOB, PSTR("job kill"));
+        }
     }
 	if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
 		cm_start_hold();                            // feed won't run unless the machine is moving

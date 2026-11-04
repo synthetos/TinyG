@@ -6,7 +6,7 @@ measured stop latency remains a separate instrument gate.
 import time
 import pytest
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,
- pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N11",on=["d449"])]
+ pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N11",on=[])]
 XOFF,XON=b"\x13",b"\x11"
 
 def test_n11_hold_ignored_while_tx_blocked(tg, keep, record, ice):
