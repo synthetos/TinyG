@@ -8,7 +8,7 @@ import time
 import pytest
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,
             pytest.mark.resets_board,pytest.mark.dialect("d449"),
-            pytest.mark.bug("N10",on=["d449"])]
+            pytest.mark.bug("N10",on=[])]
 def test_wrap_keeps_running_motor_energized(tg,keep,ice,record):
     if tg.get("1ma")!=0:
         pytest.skip("motor 1 must drive X for this power-state check")
