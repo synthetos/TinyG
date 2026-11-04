@@ -1150,6 +1150,62 @@ static void _load_move()
  *		    dda_ticks_X_substeps = (int32_t)((microseconds/1000000) * f_dda * dda_substeps);
  */
 
+// Cartesian motor pulse capacity, in minutes. Leave 10% for tick rounding,
+// waypoint snapping and the bounded following-error correction in st_prep_line.
+// This is a planner limit: requested F and the move endpoint are unchanged.
+// Aggregate duplicate motor mappings once, when configuration changes. The
+// planner reads only the largest minutes/unit factor for each axis.
+static float motor_time_per_unit[AXES];
+static uint8_t motor_time_axes[AXES], motor_time_groups;
+
+void st_refresh_move_time(void)
+{
+    float by_axis[AXES] = {0};
+    for (uint8_t m = 0; m < MOTORS; m++) {
+        uint8_t axis = st_cfg.mot[m].motor_map;
+        if (axis >= AXES || cm.a[axis].axis_mode == AXIS_INHIBITED) { continue; }
+        float time = st_cfg.mot[m].steps_per_unit * (1.0f / (60.0f * FREQUENCY_DDA * 0.9f));
+        if (time > by_axis[axis]) { by_axis[axis] = time; }
+    }
+    // Equal motor geometry needs one multiply for the largest participating
+    // distance. Different factors remain separate; no axis limit is relaxed.
+    motor_time_groups = 0;
+    for (uint8_t axis = 0; axis < AXES; axis++) {
+        if (by_axis[axis] == 0) { continue; }
+        uint8_t g = 0;
+        while (g < motor_time_groups && motor_time_per_unit[g] != by_axis[axis]) { g++; }
+        if (g == motor_time_groups) {
+            motor_time_groups++;
+            motor_time_per_unit[g] = by_axis[axis];
+            motor_time_axes[g] = 0;
+        }
+        motor_time_axes[g] |= 1 << axis;
+    }
+}
+
+float st_get_move_time(const float axis_length[])
+{
+    union { float f; uint32_t u; } longest = { .u = 0 }, distance, value;
+    for (uint8_t g = 0; g < motor_time_groups; g++) {
+        distance.u = 0;
+        uint8_t axes = motor_time_axes[g];
+        #define MAX_DISTANCE(axis) do { \
+            if (axes & (1 << (axis))) { \
+                value.f = axis_length[axis]; \
+                value.u &= 0x7fffffffUL; \
+                if (value.u > distance.u) { distance.u = value.u; } \
+            } \
+        } while (0)
+        MAX_DISTANCE(0); MAX_DISTANCE(1); MAX_DISTANCE(2);
+        MAX_DISTANCE(3); MAX_DISTANCE(4); MAX_DISTANCE(5);
+        #undef MAX_DISTANCE
+        if (!distance.u) { continue; }
+        value.f = distance.f * motor_time_per_unit[g];
+        if (value.u > longest.u) { longest.u = value.u; }
+    }
+    return longest.f;
+}
+
 stat_t st_prep_line(float travel_steps[], float following_error[], float segment_time)
 {
 	// trap conditions that would prevent queueing the line
@@ -1171,6 +1227,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 	st_pre.dda_ticks_X_substeps = st_pre.dda_ticks * DDA_SUBSTEPS;
 
 	// setup motor parameters
+    union { float f; uint32_t u; } tick_limit = { .f = (float)st_pre.dda_ticks };
 
 	float correction_steps;
 	for (uint8_t motor=0; motor<MOTORS; motor++) {	// I want to remind myself that this is motors, not axes
@@ -1219,6 +1276,14 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 			travel_steps[motor] -= correction_steps;
 		}
 #endif
+        // Never publish a segment that needs more than one step per DDA tick.
+        // This also catches non-finite derived steps before integer conversion.
+        union { float f; uint32_t u; } demand = { .f = travel_steps[motor] };
+        uint8_t high = (demand.u >> 24) & 0x7f;
+        uint8_t limit_high = tick_limit.u >> 24;
+        if (high > limit_high || (high == limit_high && (demand.u & 0x7fffffffUL) > tick_limit.u)) {
+            return (cm_panic_P(STAT_INTERNAL_ERROR, PSTR("step rate exceeds DDA")));
+        }
 		// Compute substeb increment. The accumulator must be *exactly* the incoming
 		// fractional steps times the substep multiplier or positional drift will occur.
 		// Rounding is performed to eliminate a negative bias in the uint32 conversion
@@ -1333,6 +1398,7 @@ static void _set_motor_steps_per_unit(nvObj_t *nv)
 	st_cfg.mot[m].units_per_step = (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle) / (360 * st_cfg.mot[m].microsteps); // unused
     st_cfg.mot[m].steps_per_unit = (360 * st_cfg.mot[m].microsteps) / (st_cfg.mot[m].travel_rev * st_cfg.mot[m].step_angle);
 	stepper_reset();
+    st_refresh_move_time();
 }
 
 /* PER-MOTOR FUNCTIONS

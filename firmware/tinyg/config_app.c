@@ -1075,7 +1075,9 @@ static stat_t set_ma(nvObj_t *nv)
 	if (nv->value_int >= AXES) {
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
-	return (set_ui8(nv));
+	stat_t status = set_ui8(nv);
+    if (status == STAT_OK) { st_refresh_move_time(); }
+    return status;
 }
 
 stat_t set_baud_callback(void)

@@ -2659,6 +2659,7 @@ stat_t cm_set_am(nvObj_t *nv)		// axis mode
         }
 	}
 	set_ui8(nv);
+    st_refresh_move_time();
 	return(STAT_OK);
 }
 

@@ -6,7 +6,7 @@ must be limited while preserving the requested endpoint and pulse count.
 """
 import pytest
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,
- pytest.mark.dialect("d449"),pytest.mark.bug("N12",on=["d449"])]
+ pytest.mark.dialect("d449"),pytest.mark.bug("N12",on=[])]
 
 def test_n12_step_rate_overrun(tg, keep, record, ice):
     """A geometry asking for far more than the 50 kHz step tick can give at F30: steps the firmware counts vs commanded."""
