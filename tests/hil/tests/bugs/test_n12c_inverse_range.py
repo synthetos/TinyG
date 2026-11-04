@@ -4,7 +4,7 @@ NIST RS274NGC v3 3.5.19 defines G93 duration as 1/F minutes. The implementation
 must report a range error before scheduling an unrepresentable duration.
 """
 import pytest
-pytestmark=[pytest.mark.motion,pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N12c",on=["d449"])]
+pytestmark=[pytest.mark.motion,pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N12c",on=[])]
 def test_inverse_feed_duration_refused(tg):
     tg.send_gcode("G21 G91 G93",check=True)
     try:

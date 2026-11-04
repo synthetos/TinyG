@@ -1394,6 +1394,7 @@ stat_t cm_set_feed_rate(const float feed_rate)
         if (!(feed_rate > 0) || !isfinite(feed_rate)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
         float inverse_time = 1 / feed_rate;
         if (!isfinite(inverse_time)) { return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED); }
+        if (inverse_time > MAX_INVERSE_TIME_MINUTES) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
         cm.gm.feed_rate = inverse_time;	// minutes, active for this block only
 	} else {
 		cm.gm.feed_rate = _to_millimeters(feed_rate);
