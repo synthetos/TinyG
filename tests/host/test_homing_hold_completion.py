@@ -45,6 +45,7 @@ static void _take_input_flush_request(void) {}
 static unsigned dispatched, flushed, reports, positions, ended;
 static bool st_runtime_isbusy(void) {return moving;}
 static void st_prep_null(void) {}
+void st_cancel_dwell(void) {}
 static void mp_flush_planner(void) {planner_live=false;flushed++;}
 static float mp_get_runtime_absolute_position(uint8_t axis) {return axis+0.25f;}
 static void cm_set_position(uint8_t axis,float value) {assert(value==axis+0.25f);positions++;}

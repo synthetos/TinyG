@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2] / 'firmware/tinyg'
 
 
 def test_flush_cancels_dwell_before_waiting_for_runtime():
-    code = PRELUDE.replace('bool mp_runtime_is_idle(void) { return true; }',
+    code = PRELUDE.replace('void st_cancel_dwell(void) {}', '').replace('bool mp_runtime_is_idle(void) { return true; }',
                            'bool mp_runtime_is_idle(void) { return st_run.dda_ticks_downcount == 0; }')
     code = code.replace('void st_prep_null(void) {}', '''void st_prep_null(void) {
         assert(!(SREG & 128)); st_pre.block_type=BLOCK_TYPE_NULL;
@@ -48,6 +48,10 @@ int main(void) {
  assert(!TIMER_DWELL.CNT && TIMER_DWELL.INTFLAGS==TC0_OVFIF_bm);
  assert(planner_flushes==1 && input_flushes==1 && cm.queue_flush_state==FLUSH_OFF);
  assert(cm.hold_state==FEEDHOLD_OFF && SREG==128);
+ // A future prepared line cannot make a running dwell uncancellable.
+ TIMER_DWELL.CTRLA=1;st_run.dda_ticks_downcount=123;
+ st_pre.block_type=BLOCK_TYPE_ALINE;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_LOADER;
+ st_cancel_dwell();assert(!st_run.dda_ticks_downcount && st_pre.block_type==BLOCK_TYPE_NULL);
  // Alarm-only flush cancels too, while retaining input for alarm rejection.
  cm.hold_state=FEEDHOLD_HOLD;TIMER_DWELL.CTRLA=1;st_run.dda_ticks_downcount=10000;
  cm_request_planner_flush();_run_requested_queue_flush();

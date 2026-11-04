@@ -69,6 +69,7 @@ bool mp_runtime_is_idle(void) {return idle;}
 bool st_runtime_isbusy(void) {return !idle;}
 bool st_aline_in_flight(void) {return !idle;}
 void st_prep_null(void) {}
+void st_cancel_dwell(void) {}
 stat_t mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD); return replan_error;}
 void st_request_exec_move(void) {wakeups++;}
 stat_t rpt_exception_P(stat_t s,const char*m){reports++;return s;}

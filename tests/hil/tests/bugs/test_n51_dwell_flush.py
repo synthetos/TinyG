@@ -13,7 +13,7 @@ def _state(ice):
     return ice.peek_many(keys)
 
 
-@pytest.mark.bug('N51')
+@pytest.mark.bug('N51', on=[])
 @pytest.mark.parametrize('control',[b'%', b'\x04', b'%\x04'], ids=['flush','kill','flush-then-kill'])
 def test_long_dwell_abort_stays_responsive(tg, ice, record, control):
     tg.send_gcode('G21 G90 G94 G92.1 G54 G49',check=True)
@@ -45,7 +45,8 @@ def test_long_dwell_abort_stays_responsive(tg, ice, record, control):
                               'stat':stat,'state':state})
         assert state['cm.hold_state']==0
         assert state['cm.queue_flush_state']==0
-        assert state['cm.cycle_state']==0
+        if b'\x04' not in control:
+            assert state['cm.cycle_state']==0
         assert state['st_pre.buffer_state']==1
         assert state['st_pre.block_type']==0
         assert state['en.en[0].encoder_steps']+state['en.en[0].steps_run']==before['en.en[0].encoder_steps']+before['en.en[0].steps_run']

@@ -1949,6 +1949,7 @@ static void _service_input_flush()
 
 static void _run_requested_queue_flush()
 {
+    st_cancel_dwell();                             // discarding a job also discards its remaining dwell
     if (!mp_runtime_is_idle() ||
         ((cm.hold_state != FEEDHOLD_OFF) && (cm.hold_state != FEEDHOLD_REQUESTED) &&
          (cm.hold_state != FEEDHOLD_HOLD))) {
@@ -2113,12 +2114,13 @@ void cm_queue_flush()
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    st_cancel_dwell();                             // direct flush callers also discard dwells
     bool idle = mp_runtime_is_idle();
     if (idle) { st_prep_null(); }                  // a prepared dwell must not load after the flush
 #ifdef __AVR
     SREG = saved_sreg;
 #endif
-    if (idle) {                                   // running dwell timers must finish first
+    if (idle) {                                   // moving segments still finish through feedhold
         mp_flush_planner();
 
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) { // set all positions
