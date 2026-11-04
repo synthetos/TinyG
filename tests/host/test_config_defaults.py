@@ -23,7 +23,7 @@ class ConfigDefaults(unittest.TestCase):
         self.assertGreater(len(rows), 300)
         enums = '\n'.join(re.findall(r'typedef enum\s*(?:\w+\s*)?\{[^{}]*\}\s*\w+\s*;', pre))
         macros = subprocess.check_output(args + ['-dM', '-E', str(FW/'config_app.c')], text=True)
-        needed = ['AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
+        needed = ['F_CPU','AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
                   'TINYG_HARDWARE_VERSION','MOTOR_TIMEOUT_SECONDS_MIN','MOTOR_TIMEOUT_SECONDS_MAX',
                   'FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','SW_MODE_MAX_VALUE',
                   'STAT_OK','STAT_PARAMETER_IS_READ_ONLY','STAT_INPUT_VALUE_RANGE_ERROR','STAT_INPUT_EXCEEDS_MAX_VALUE','STAT_INPUT_LESS_THAN_MIN_VALUE','STAT_COMMAND_NOT_ACCEPTED','HW_VERSION_TINYGV8','SW_MODE_PROBE','XIO_DEV_USB','XIO_CRLF','XIO_NOCRLF','XIO_ECHO','XIO_NOECHO','XIO_XOFF','XIO_NOXOFF']
@@ -110,6 +110,10 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
             'spindle.c': ['spindle_set_polarity'],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}
+        pwm_source = (FW/'pwm.c').read_text()
+        code += '\n'+'\n'.join(line for line in pwm_source.splitlines()
+                                  if re.match(r'#define PWM_(MAX|MIN)_FREQ\b',line))+'\n'
+        selections['pwm.c'] = ['_pwm_frequency','pwm_set_frq']
         extracted = []
         for file, names in selections.items():
             source = (FW/file).read_text()
