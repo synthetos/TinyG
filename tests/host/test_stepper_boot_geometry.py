@@ -16,6 +16,10 @@ static void st_refresh_move_time(void) {}
 #include <math.h>
 #define __AVR 1
 #define STAT_OK 0
+#define STAT_INPUT_VALUE_RANGE_ERROR 110
+#define FREQUENCY_DDA 50000
+#define EPSILON 0.00001f
+#define _to_millimeters(a) (a)
 #define STAT_COMMAND_NOT_ACCEPTED 106
 #define STAT_INPUT_LESS_THAN_MIN_VALUE 108
 #define PREP_BUFFER_OWNED_BY_LOADER 1
@@ -40,7 +44,9 @@ stat_t set_u32(nvObj_t *nv){*(uint32_t *)nv->target=nv->value_int;return 0;}
 void nv_add_message_P(const char *s){assert(0);}
 void _set_hw_microsteps(int m,int value){assert(m>=0&&m<4&&value==8);computed++;}
 '''
-  for name in ('st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi'):
+  for m in range(1,7):
+   code+=f'#define MOTOR_{m} {m-1}\n#define M{m}_STEP_ANGLE 1.8f\n#define M{m}_TRAVEL_PER_REV 1.25f\n#define M{m}_MICROSTEPS 8\n'
+  for name in ('_init_motor_geometry','_motor_geometry_valid','st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi'):
    code+=function(source,r'(?:static )?(?:bool|int8_t|uint8_t|void|stat_t) '+name+r'\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   if 'void stepper_init_complete(' in source:
    code+=function(source,r'void stepper_init_complete\([^;{}]*\)(?=\s*\{)')+'\n'
@@ -74,7 +80,7 @@ void sei(void){assert(configured==1);SREG|=128;}
   code+=r'''
 int main(void){
  // canonical_machine_init already calls reset before _application_init_startup.
- canonical_machine_reset();_application_init_startup();
+ _init_motor_geometry();canonical_machine_reset();_application_init_startup();
  for(int m=0;m<4;m++){
   assert(st_cfg.mot[m].step_angle==.9f && st_cfg.mot[m].travel_rev==5 && st_cfg.mot[m].microsteps==8);
   assert(fabs(st_cfg.mot[m].steps_per_unit-640)<.001);

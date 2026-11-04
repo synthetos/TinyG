@@ -25,8 +25,9 @@ class ConfigDefaults(unittest.TestCase):
         macros = subprocess.check_output(args + ['-dM', '-E', str(FW/'config_app.c')], text=True)
         needed = ['AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
                   'TINYG_HARDWARE_VERSION','MOTOR_TIMEOUT_SECONDS_MIN','MOTOR_TIMEOUT_SECONDS_MAX',
-                  'JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','SW_MODE_MAX_VALUE',
+                  'FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','SW_MODE_MAX_VALUE',
                   'STAT_OK','STAT_PARAMETER_IS_READ_ONLY','STAT_INPUT_VALUE_RANGE_ERROR','STAT_INPUT_EXCEEDS_MAX_VALUE','STAT_INPUT_LESS_THAN_MIN_VALUE','STAT_COMMAND_NOT_ACCEPTED','HW_VERSION_TINYGV8','SW_MODE_PROBE','XIO_DEV_USB','XIO_CRLF','XIO_NOCRLF','XIO_ECHO','XIO_NOECHO','XIO_XOFF','XIO_NOXOFF']
+        needed += [f'M{m}_{field}' for m in range(1,7) for field in ('STEP_ANGLE','TRAVEL_PER_REV','MICROSTEPS')]
         defines = '\n'.join(line for line in macros.splitlines() if line.split()[1] in needed)
         code = r'''
 #include <stdint.h>
@@ -41,6 +42,7 @@ class ConfigDefaults(unittest.TestCase):
 #define MM_PER_INCH 25.4
 #define AXES 6
 #define MODEL 0
+#define _to_millimeters(a) (a)
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 #define cli() (SREG &= ~128)
@@ -100,7 +102,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
         selections = {
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],
             'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex','set_gco','set_ma'],
-            'stepper.c': ['st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
+            'stepper.c': ['_init_motor_geometry','_motor_geometry_valid','st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
             'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
             'spindle.c': ['spindle_set_polarity'],
@@ -128,7 +130,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
                 code += f'if ((cfgArray[{i}].flags & 0xf)!=TYPE_FLOAT){{nv.value_int=(uint32_t)nv.value_flt;nv.valuetype=TYPE_INTEGER;}}else nv.valuetype=TYPE_FLOAT;\n'
                 code += f'stat_t status=cfgArray[{i}].set(&nv);if(status){{fprintf(stderr,"default rejected: %s status=%u\\n",nv.token,status);failures++;}}count++;\n'
             code += '}\n'
-        code = code.replace('int main(void){', 'int main(void){int count=0,failures=0;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;' )
+        code = code.replace('int main(void){', 'int main(void){int count=0,failures=0;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;_init_motor_geometry();' )
         code += 'assert(count>100);printf("Checked %d initialized defaults; %d rejected\\n",count,failures);return failures?1:0;}\n'
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory);(path/'check.c').write_text(code)
