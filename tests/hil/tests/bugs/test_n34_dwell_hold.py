@@ -81,7 +81,7 @@ def test_lone_dwell_hold_ends_cleanly(tg, keep, ice, record, control):
         time.sleep(1.0)
         _hold(tg)
         if control==b'%':
-            tg.send_raw(control)  # flush waits for the active dwell timer
+            tg.send_raw(control)  # flush discards the remaining dwell
         time.sleep(2.6)
         if control==b'~':
             assert tg.stat()==tg.dialect.stat('HOLD')

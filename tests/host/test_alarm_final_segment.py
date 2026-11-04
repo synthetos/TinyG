@@ -65,6 +65,7 @@ void spindle_reset(void) { spindle_off++; }
 void cm_coolant_off_immediate(void) { coolant_off++; }
 void rpt_exception(int status, const char *msg) { (void)status; (void)msg; reports++; }
 void xio_flush_input(void) { input_flushes++; }
+void st_cancel_dwell(void) {}
 void cm_queue_flush(void) { cm.queue_flush_state=FLUSH_OFF; flushes++; }
 '''
         for source, signature in (

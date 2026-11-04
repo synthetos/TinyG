@@ -51,6 +51,7 @@ uint8_t SREG=128;
 #define FEEDHOLD_OFF 0
 #define FEEDHOLD_HOLD 6
 #define FLUSH_OFF 0
+#define FLUSH_REQUESTED 1
 #define SR_REQUEST_ASAP 1
 #define BLOCK_TYPE_ALINE 1
 #define PSTR(x) (x)
@@ -69,6 +70,7 @@ bool mp_runtime_is_idle(void) {return idle;}
 bool st_runtime_isbusy(void) {return !idle;}
 bool st_aline_in_flight(void) {return !idle;}
 void st_prep_null(void) {}
+void st_cancel_dwell(void) {}
 stat_t mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD); return replan_error;}
 void st_request_exec_move(void) {wakeups++;}
 stat_t rpt_exception_P(stat_t s,const char*m){reports++;return s;}

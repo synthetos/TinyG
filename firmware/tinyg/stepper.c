@@ -387,6 +387,30 @@ bool st_aline_in_flight()
 	return ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) && (st_pre.block_type == BLOCK_TYPE_ALINE));
 }
 
+/* A flush discards the rest of a dwell, rather than waiting for its timer.
+ * Never stop a stepping line here: the normal feedhold must finish it.
+ * Clear a pending overflow as well as the clock before publishing an idle runtime.
+ */
+void st_cancel_dwell(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+    if ((TIMER_DDA.CTRLA == STEP_TIMER_DISABLE) &&
+        ((TIMER_DWELL.CTRLA != STEP_TIMER_DISABLE) ||
+         ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) &&
+          (st_pre.block_type == BLOCK_TYPE_DWELL)))) {
+        TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;
+        TIMER_DWELL.CNT = 0;
+        TIMER_DWELL.INTFLAGS = TC0_OVFIF_bm;
+        st_run.dda_ticks_downcount = 0;
+        st_pre.dda_ticks = 0;
+        st_prep_null();
+    }
+    SREG = saved_sreg;
+#endif
+}
+
 uint8_t st_runtime_isbusy()
 {
 	if (st_run.dda_ticks_downcount == 0) {

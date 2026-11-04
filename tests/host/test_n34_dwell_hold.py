@@ -124,9 +124,11 @@ int main(void){
             subprocess.run([str(p/'check')],check=True)
 
 
-    def test_flush_drops_prepared_dwell_only_after_runtime_drains(self):
+    def test_flush_waits_for_moving_runtime_and_drops_prep(self):
         from test_queue_flush_input import PRELUDE
         from source_extract import RUNTIME_STUBS
+        # This busy stub models a stepping line, which must still drain;
+        # actual dwell cancellation is exercised by test_n51_dwell_flush.
         code=PRELUDE.replace('bool mp_runtime_is_idle(void) { return true; }',
                             'static bool busy; bool mp_runtime_is_idle(void) { return !busy; }')
         code=code.replace('void st_prep_null(void) {}',
