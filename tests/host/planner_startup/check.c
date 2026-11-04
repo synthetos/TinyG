@@ -30,6 +30,7 @@ void st_prep_null(void) {}
 uint8_t cm_get_path_control(const GCodeState_t *gcode_state) { return (harness_path_control); }
 void cm_set_motion_state(const cmMotionState motion_state) { cm.motion_state = motion_state; }
 void cm_cycle_end(void) {}
+stat_t sr_request_status_report(uint8_t kind) { return STAT_OK; }
 void cm_abort_arc(void) {}
 stat_t cm_panic_P(const stat_t status, const char *msg_P)
 {
@@ -48,6 +49,7 @@ stat_t rpt_exception(stat_t status, const char *msg)
 void qr_request_queue_report(int8_t buffers) {}
 
 uint8_t st_runtime_isbusy(void) { return runtime_busy; }
+bool st_aline_in_flight(void) { return runtime_busy; }
 void st_request_exec_move(void) { pending_exec=true; }
 void st_prep_command(void *bf) {}
 void st_prep_dwell(float microseconds) {}

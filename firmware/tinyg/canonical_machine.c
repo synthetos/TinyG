@@ -1816,11 +1816,36 @@ void cm_request_job_kill(void)
 }
 
 void cm_request_feedhold(void) {
-    if (mp_hold_startup()) { return; }
-    // honor request if not already in a feedhold and you are moving
-    if ((cm.hold_state == FEEDHOLD_OFF) && (cm.motion_state != MOTION_STOP)) {
-        cm.hold_state = FEEDHOLD_REQUESTED;
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool held = mp_hold_startup();
+    if (!held && (cm.hold_state == FEEDHOLD_OFF)) {
+        bool stopped = !st_aline_in_flight();
+        bool dwell = stopped && (st_runtime_isbusy() ||
+            ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) &&
+             (st_pre.block_type == BLOCK_TYPE_DWELL)));
+        if (dwell || (stopped && (cm.motion_state == MOTION_STOP) &&
+                      (cm.cycle_state == CYCLE_MACHINING))) {
+            // A lone dwell can have freed its last planner buffer before its timer ends.
+            if (dwell && !cm_is_alarmed()) { cm_cycle_start(); }
+            cm_set_motion_state(MOTION_HOLD);
+            cm.hold_state = FEEDHOLD_HOLD; // no moving segment needs deceleration
+            held = true;
+        } else if (cm.motion_state != MOTION_STOP) {
+            cm.hold_state = FEEDHOLD_REQUESTED;
+        }
     }
+    if (held) {
+        cs.controller_state = CONTROLLER_READY;
+        cm.hold_fast = false;
+        cm.hold_fast_request = false;
+        sr_request_status_report(SR_REQUEST_ASAP);
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 void cm_request_end_hold(void)
@@ -2045,7 +2070,16 @@ bool cm_has_hold()
 
 void cm_queue_flush()
 {
-    if (mp_runtime_is_idle()) {                     // can't flush planner during movement
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool idle = mp_runtime_is_idle();
+    if (idle) { st_prep_null(); }                  // a prepared dwell must not load after the flush
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (idle) {                                   // running dwell timers must finish first
         mp_flush_planner();
 
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) { // set all positions

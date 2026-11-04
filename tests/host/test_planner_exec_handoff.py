@@ -58,6 +58,7 @@ void kn_inverse_kinematics(const float travel[], float steps[]) {}
 stat_t rpt_exception(stat_t status, const char *msg) { return (status); }
 stat_t rpt_exception_P(stat_t status, const char *msg) { return (status); }
 void qr_request_queue_report(int8_t buffers) {}
+bool st_aline_in_flight(void) { return true; }
 uint8_t st_runtime_isbusy(void) { return true; }       /* the exec is busy: blocks stay queued */
 void st_request_exec_move(void) {}
 void st_prep_null(void) {}
