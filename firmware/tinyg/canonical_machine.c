@@ -2114,7 +2114,10 @@ void cm_queue_flush()
     uint8_t saved_sreg = SREG;
     cli();
 #endif
-    st_cancel_dwell();                             // direct flush callers also discard dwells
+    // Homing calls this directly as housekeeping, not as a request to abort a dwell.
+    if ((cm.hold_state == FEEDHOLD_HOLD) || (cm.queue_flush_state == FLUSH_REQUESTED)) {
+        st_cancel_dwell();
+    }
     bool idle = mp_runtime_is_idle();
     if (idle) { st_prep_null(); }                  // a prepared dwell must not load after the flush
 #ifdef __AVR

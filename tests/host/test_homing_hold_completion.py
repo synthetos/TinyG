@@ -85,6 +85,12 @@ int main(void) {
     assert(dispatched==1&&flushed==1&&reports==1&&positions==AXES&&ended==1);
     assert(cm.hold_state==FEEDHOLD_OFF);
 
+    /* A lone preceding dwell can have freed its planner slot. Homing entry has
+       set CYCLE_HOMING, so the actual runtime-busy check still delays the phase. */
+    reset();moving=true;planner_live=false;
+    assert(cm_homing_callback()==STAT_EAGAIN);
+    assert(dispatched==0&&flushed==0&&reports==0);
+
     unsigned cases=0;
     for(int cycle=CYCLE_OFF;cycle<=CYCLE_MACHINING;cycle++)
     for(int hold=FEEDHOLD_OFF;hold<=FEEDHOLD_HOLD;hold++)

@@ -51,6 +51,7 @@ uint8_t SREG=128;
 #define FEEDHOLD_OFF 0
 #define FEEDHOLD_HOLD 6
 #define FLUSH_OFF 0
+#define FLUSH_REQUESTED 1
 #define SR_REQUEST_ASAP 1
 #define BLOCK_TYPE_ALINE 1
 #define PSTR(x) (x)
