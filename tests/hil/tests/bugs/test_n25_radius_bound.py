@@ -1,6 +1,6 @@
 """N25: rotary radius must keep the linear-to-degree scale finite and nonzero. TinyG configuration wiki aRA/Radius mode: a circumference maps to 360 degrees. Limit radius to 1000000 mm (1 km); even one mm then exceeds the planner numeric-zero tolerance in degrees. Validate after inch conversion and before storage."""
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N25",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N25",on=[])]
 def test_radius_upper_bound(tg,keep):
     keep("ara","bra","cra")
     tg.send_gcode("G21",check=True)

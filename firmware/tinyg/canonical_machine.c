@@ -2802,8 +2802,15 @@ stat_t cm_set_radius(nvObj_t *nv)
     if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {
         return (STAT_INPUT_LESS_THAN_MIN_VALUE);
     }
-    float value = _to_millimeters(nv->value_flt);
-    if (!(value > 0) || !isfinite(value)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    float value = nv->value_flt;
+    if (cm_get_units_mode(MODEL) == INCHES) { value *= MM_PER_INCH; }
+    if (!isfinite(value) || !(value > 0) || value > MAX_ROTARY_RADIUS) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    float degrees_per_unit = 360.0f / (2.0f * (float)M_PI * value);
+    if (!isfinite(degrees_per_unit) || !(degrees_per_unit > 0)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
     return (set_flu(nv));
 }
 
