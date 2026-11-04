@@ -1446,6 +1446,11 @@ stat_t cm_set_path_control(GCodeState_t *gcode_state, const uint8_t mode)
 stat_t cm_dwell(const float seconds)
 {
 	if (seconds < 0) { return (STAT_P_WORD_IS_NEGATIVE); }
+    // _exec_dwell converts seconds to uint32 microseconds before passing the timer prep.
+    if (!isfinite(seconds) || (seconds > 4294.0f)) {
+        nv_add_message_P(PSTR("dwell maximum 4294 seconds"));
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
 	mp_dwell(seconds);
 	return (STAT_OK);
 }

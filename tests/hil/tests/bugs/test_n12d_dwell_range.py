@@ -4,7 +4,7 @@ NIST RS274NGC v3 3.5.4: P is seconds. TinyG's uint32 microsecond path accepts
 at most 4294 seconds; the response must state that implementation limit.
 """
 import pytest
-pytestmark=[pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N12d",on=["d449"])]
+pytestmark=[pytest.mark.resets_board,pytest.mark.dialect("d449"),pytest.mark.bug("N12d",on=[])]
 def test_long_dwell_is_refused(tg):
     try:
         r=tg.send_line("G4 P4295")
