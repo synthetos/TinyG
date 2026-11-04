@@ -1,11 +1,12 @@
 """N30: S queued before M30 uses the driven mode, despite M30's early model reset."""
 import unittest
-from test_spindle_coolant_status import SpindleCoolantStatus, code
+import test_spindle_coolant_status as fixture
 
-class QueuedSpeed(SpindleCoolantStatus):
+class QueuedSpeed(unittest.TestCase):
+    build_run=fixture.SpindleCoolantStatus.build_run
     # Reuse the source-extracted output callback fixture, not its test cases.
     def test_s_uses_output_mode_after_model_reset(self):
-        c=code().replace('static float cm_get_spindle_pwm(uint8_t mode) {',
+        c=fixture.code().replace('static float cm_get_spindle_pwm(uint8_t mode) {',
                          'static uint8_t pwm_mode;\nstatic float cm_get_spindle_pwm(uint8_t mode) { pwm_mode=mode;')
         c+=r'''
 static void loader_s_update(void) {}

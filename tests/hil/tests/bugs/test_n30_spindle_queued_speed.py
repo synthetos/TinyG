@@ -6,7 +6,7 @@ spc is the public getter of spindle_out.mode; sps reports the clamped output spe
 import time
 import pytest
 pytestmark=[pytest.mark.dialect('d449'),pytest.mark.motion,pytest.mark.persists,
-            pytest.mark.bug('N30',on=['d449'])]
+            pytest.mark.bug('N30',on=[])]
 
 def test_queued_speed_before_m30_uses_driven_mode(tg,keep):
     keep('p1csl','p1csh')
@@ -25,8 +25,10 @@ def test_queued_speed_before_m30_uses_driven_mode(tg,keep):
             if speed==1000:time.sleep(.02)
         assert tg.get('spc')==1,'M30 must still be behind the second dwell'
         assert speed==pytest.approx(5000),'S used the reset model instead of the driven spindle mode'
-        tg.wait_idle(timeout=6)
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline and tg.get('spc')!=0:time.sleep(.05)
         assert tg.get('spc')==0 and tg.get('sps')==0
     finally:
         tg.send_gcode('M5',check=True,allow='N30 turn spindle off')
-        tg.wait_idle(timeout=6)
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline and tg.get('spc')!=0:time.sleep(.05)
