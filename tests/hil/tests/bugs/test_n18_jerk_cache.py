@@ -1,6 +1,6 @@
 """N18: positive canonical jerk must be at least one million units/minute cubed. TinyG wiki TinyG-Configuration-for-Firmware-Version-0.97, xJM/xJH: inputs below one million use million-unit notation. The lower bound matches M201.3; boot-zero cache must always initialize (plan_line.c)."""
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N18",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N18",on=[])]
 def test_small_jerk_refused(tg,keep):
     keep("xjm","xjh")
     tg.send_gcode("G21",check=True)

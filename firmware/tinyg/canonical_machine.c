@@ -2769,6 +2769,13 @@ stat_t cm_set_xjm(nvObj_t *nv)
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
+    // At least one million canonical units/min^3, also the M201.3 minimum.
+    // This keeps supported jerks well above the planner cache's 1000-unit tolerance.
+    float canonical = nv->value_flt;
+    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+        canonical *= MM_PER_INCH;
+    }
+    if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
 	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {
@@ -2786,6 +2793,13 @@ stat_t cm_set_xjh(nvObj_t *nv)
 	if (nv->value_flt > JERK_MULTIPLIER) {
         nv->value_flt /= JERK_MULTIPLIER;
     }
+    // At least one million canonical units/min^3, also the M201.3 minimum.
+    // This keeps supported jerks well above the planner cache's 1000-unit tolerance.
+    float canonical = nv->value_flt;
+    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+        canonical *= MM_PER_INCH;
+    }
+    if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
 	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {

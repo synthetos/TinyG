@@ -258,7 +258,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	// set up and pre-compute the jerk terms needed for this round of planning
 	bf->jerk = cm.a[bf->jerk_axis].jerk_max * JERK_MULTIPLIER / fabs(bf->unit[bf->jerk_axis]);	// scale the jerk
 
-	if (fabs(bf->jerk - mm.jerk) > JERK_MATCH_PRECISION) {	// specialized comparison for tolerance of delta
+	if (!(mm.jerk > 0) || (fabs(bf->jerk - mm.jerk) > JERK_MATCH_PRECISION)) {	// specialized comparison for tolerance of delta
 		mm.jerk = bf->jerk;									// used before this point next time around
 		mm.recip_jerk = 1/bf->jerk;							// compute cached jerk terms used by planning
 		mm.cbrt_jerk = cbrt(bf->jerk);
