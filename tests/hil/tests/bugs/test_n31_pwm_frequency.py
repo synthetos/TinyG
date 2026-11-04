@@ -6,7 +6,7 @@ The serial test checks SET; the host guard test covers the timer register path.
 """
 import pytest
 pytestmark=[pytest.mark.dialect('d449'),pytest.mark.persists,
-            pytest.mark.bug('N31',on=['d449'])]
+            pytest.mark.bug('N31',on=[])]
 
 @pytest.mark.parametrize('frequency',[0,7,7.5,61,122,244,488,125001])
 def test_unrepresentable_frequency_is_not_stored(tg,keep,frequency):

@@ -138,42 +138,52 @@ ISR(PWM2_ISR_vect)
  *	Doesn't turn time on until duty cycle is set
  */
 
+/* Share the exact divider/period calculation between SET, EEPROM loading and
+ * register programming. Do not convert a float to uint16_t until it is bounded.
+ * Preserve the existing divider choices; reject their narrow overflow gaps. */
+static stat_t _pwm_frequency(float freq, uint16_t *period, uint8_t *divider)
+{
+    if (!isfinite(freq)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_EXCEEDS_MAX_VALUE); }
+    if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
+    float prescale = F_CPU/65536/freq;
+    *divider = (prescale <= 1) ? 1 : (prescale <= 2) ? 2 :
+               (prescale <= 4) ? 4 : (prescale <= 8) ? 8 : 64;
+    float value = F_CPU / (float)*divider / freq;
+    if (!(value >= 1 && value <= UINT16_MAX)) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    *period = (uint16_t)value;
+    return (STAT_OK);
+}
+
+stat_t pwm_set_frq(nvObj_t *nv)
+{
+    uint16_t period;
+    uint8_t divider;
+    stat_t status = _pwm_frequency(nv->value_flt, &period, &divider);
+    if (status != STAT_OK) { return (status); }
+    return (set_flt(nv)); // frequency remains applied at spindle init, as before
+}
+
 stat_t pwm_set_freq(uint8_t chan, float freq)
 {
-	if (chan > PWMS) { return (STAT_NO_SUCH_DEVICE);}
-	if (freq > PWM_MAX_FREQ) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-	if (freq < PWM_MIN_FREQ) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}
-
+    if (chan >= PWMS) { return (STAT_NO_SUCH_DEVICE); }
+    uint16_t period;
+    uint8_t divider;
+    stat_t status = _pwm_frequency(freq, &period, &divider);
+    if (status != STAT_OK) { return (status); }
 #ifdef __AVR
-	// set the period and the prescaler
-	float prescale = F_CPU/65536/freq;	// optimal non-integer prescaler value
-	if (prescale <= 1) {
-		pwm.p[chan].timer->PER = F_CPU/freq;
-		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV1_gc;
-	} else if (prescale <= 2) {
-		pwm.p[chan].timer->PER = F_CPU/2/freq;
-		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV2_gc;
-	} else if (prescale <= 4) {
-		pwm.p[chan].timer->PER = F_CPU/4/freq;
-		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV4_gc;
-	} else if (prescale <= 8) {
-		pwm.p[chan].timer->PER = F_CPU/8/freq;
-		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV8_gc;
-	} else {
-		pwm.p[chan].timer->PER = F_CPU/64/freq;
-		pwm.p[chan].timer->CTRLA = TC_CLKSEL_DIV64_gc;
-	}
-#endif // __AVR
-
+    pwm.p[chan].timer->PER = period;
+    pwm.p[chan].timer->CTRLA = (divider == 1) ? TC_CLKSEL_DIV1_gc :
+        (divider == 2) ? TC_CLKSEL_DIV2_gc : (divider == 4) ? TC_CLKSEL_DIV4_gc :
+        (divider == 8) ? TC_CLKSEL_DIV8_gc : TC_CLKSEL_DIV64_gc;
+#endif
 #ifdef __ARM
-	if (chan == PWM_1) {
-		spindle_pwm_pin.setFrequency(freq);
-	} else if (chan == PWM_2) {
-		secondary_pwm_pin.setFrequency(freq);
-	}
-#endif // __ARM
-
-	return (STAT_OK);
+    if (chan == PWM_1) { spindle_pwm_pin.setFrequency(freq); }
+    else if (chan == PWM_2) { secondary_pwm_pin.setFrequency(freq); }
+#endif
+    return (STAT_OK);
 }
 
 /*

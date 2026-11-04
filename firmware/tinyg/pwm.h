@@ -58,6 +58,7 @@ extern pwmSingleton_t pwm;
 /*** function prototypes ***/
 
 void pwm_init(void);
+stat_t pwm_set_frq(nvObj_t *nv);
 stat_t pwm_set_freq(uint8_t channel, float freq);
 stat_t pwm_set_duty(uint8_t channel, float duty);
 

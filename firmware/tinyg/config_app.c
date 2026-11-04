@@ -373,7 +373,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 #endif
 
 	// PWM settings
-	{ "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, set_flt,(uint32_t *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
+	{ "p1","p1frq",_fip, 0, pwm_print_p1frq, get_flt, pwm_set_frq,(uint32_t *)&pwm.c[PWM_1].frequency,		P1_PWM_FREQUENCY },
 	{ "p1","p1csl",_fip, 0, pwm_print_p1csl, get_flt, set_flt,(uint32_t *)&pwm.c[PWM_1].cw_speed_lo,	P1_CW_SPEED_LO },
 	{ "p1","p1csh",_fip, 0, pwm_print_p1csh, get_flt, set_flt,(uint32_t *)&pwm.c[PWM_1].cw_speed_hi,	P1_CW_SPEED_HI },
 	{ "p1","p1cpl",_fip, 3, pwm_print_p1cpl, get_flt, set_flt,(uint32_t *)&pwm.c[PWM_1].cw_phase_lo,	P1_CW_PHASE_LO },
