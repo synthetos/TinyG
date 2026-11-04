@@ -120,6 +120,10 @@ void switch_init(void)
 
 void reset_switches()
 {
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli(); // Serialize cached state and timeout reset with switch/RTC interrupts.
+#endif
     for (uint8_t i=0; i < NUM_SWITCHES; i++) {
         if (sw.s[i].mode == SW_MODE_DISABLED) {
             sw.s[i].state = SW_DISABLED;
@@ -137,6 +141,9 @@ void reset_switches()
         sw.s[i].lockout_ms = SW_LOCKOUT_MS;
         Timeout_clear(&sw.s[i].timeout);            // clear lockout timer
 	}
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
 }
 
 /*
@@ -340,21 +347,34 @@ stat_t sw_set_prbp(nvObj_t *nv)
     return (status);
 }
 
-stat_t sw_set_st(nvObj_t *nv)			// switch type (global)
+stat_t sw_set_st(nvObj_t *nv)
 {
-	ritorno(set_01(nv));
-	switch_init();
-	return (STAT_OK);
+    if (nv->value_int > 1) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    uint8_t saved_sreg = SREG;
+    cli();
+    stat_t status = STAT_COMMAND_NOT_ACCEPTED;
+    if (!sw.configured || ((cm.cycle_state == CYCLE_OFF) && !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+        (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER))) {
+        status = set_01(nv);
+        if (status == STAT_OK) switch_init();
+    }
+    SREG = saved_sreg;
+    return (status);
 }
 
-stat_t sw_set_sw(nvObj_t *nv)			// switch setting
+stat_t sw_set_sw(nvObj_t *nv)
 {
-	if (nv->value_int > SW_MODE_MAX_VALUE) {
-        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    if (nv->value_int > SW_MODE_MAX_VALUE) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    uint8_t saved_sreg = SREG;
+    cli();
+    stat_t status = STAT_COMMAND_NOT_ACCEPTED;
+    if (!sw.configured || ((cm.cycle_state == CYCLE_OFF) && !mp_has_runnable_buffer() && mp_runtime_is_idle() &&
+        (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER))) {
+        status = set_ui8(nv);
+        if (status == STAT_OK) switch_init();
     }
-	set_ui8(nv);
-	switch_init();
-	return (STAT_OK);
+    SREG = saved_sreg;
+    return (status);
 }
 
 /***********************************************************************************

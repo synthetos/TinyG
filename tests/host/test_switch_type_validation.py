@@ -20,6 +20,16 @@ class SwitchTypeValidation(unittest.TestCase):
 typedef int stat_t;
 typedef struct {uint32_t value_int;} nvObj_t;
 uint8_t switch_type;unsigned init_calls;
+#define STAT_COMMAND_NOT_ACCEPTED 106
+#define CYCLE_OFF 0
+#define PREP_BUFFER_OWNED_BY_LOADER 0
+uint8_t SREG=128;
+#define cli() (SREG=0)
+struct {int cycle_state;} cm;
+struct {int buffer_state;} st_pre={1};
+struct {int configured;} sw={1};
+int mp_has_runnable_buffer(void){return 0;}
+int mp_runtime_is_idle(void){return 1;}
 #define GET_TABLE_WORD(field) (&switch_type)
 void switch_init(void){init_calls++;}
 '''
