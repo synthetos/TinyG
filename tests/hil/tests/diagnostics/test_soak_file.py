@@ -16,6 +16,7 @@ recorded for review but do not fail the test: ugly files are expected to have re
 import bisect
 import os
 import random
+import re
 import threading
 import time
 
@@ -101,6 +102,9 @@ def test_soak_file(tg, keep, record, request):
     chan = {v: int(k) for k, v in (bench.get("saleae_channels") or {}).items()}
     use_saleae = bool(bench.get("saleae")) and len(lines) <= CAPTURE_MAX_LINES and all(
         f"M{m} step" in chan for m in (1, 2, 3))
+    if re.search(r"(^|[^A-Za-z])A-?[0-9.]", raw, re.M) and tg.get("aam") == 3 and float(tg.get("ara")) < 1.0:
+        pytest.skip(f"the board's A axis is in radius mode with ara {tg.get('ara')}: A words would mean thousands "
+                    "of degrees per unit (N48); set aam=1 or a sane ara before soaking A files")
     seed = int(os.environ.get("SOAK_HOLD_SEED", "0")) or random.randrange(1, 1 << 30)
     info = {"file": FILE, "mode": MODE, "lines": len(lines), "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),

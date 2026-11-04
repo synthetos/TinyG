@@ -34,6 +34,7 @@ class TinyG:
         self.identity: dict = {}
         self.dialect: dialects.Dialect | None = None
         self._next_tid = 1
+        self.reset_answered = False
         self._json_verbosity = 3
 
     # ---- connection -------------------------------------------------------------------
@@ -81,9 +82,8 @@ class TinyG:
         self.transport.drain(quiet=0.3, limit=2.0)
         if self._responds():
             return
-        self.reset()
-        self.transport.drain(quiet=0.3, limit=3.0)
-        if not self._responds(timeout=3.0):
+        self.reset()                            # ends with the bootstrap query that switches the board to JSON
+        if not self.reset_answered:
             raise NoResponse("board silent after XON and a reset")
 
     def close(self):
@@ -366,6 +366,10 @@ class TinyG:
         self.send_raw(ETX_RESET)
         banner = self.wait_for(lambda e: e.kind == "banner" and e.body.get("msg") == "SYSTEM READY", timeout)
         self.drain(quiet=0.3)
+        # The board boots in its persisted comm mode; a leading '{' switches it to JSON. One untagged bootstrap
+        # query does that and proves it answers, so a G-code line right after a reset is matched as JSON, not
+        # met by a text prompt (N12c's cleanup in the chain 15 gate, 2026-11-04).
+        self.reset_answered = self._responds(timeout=3.0)   # _wake raises on silence; other callers carry on
         return banner
 
     # ---- helpers ----------------------------------------------------------------------
