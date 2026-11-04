@@ -92,6 +92,7 @@ static struct {uint8_t fc_char_rx, fc_state_rx, fc_state_tx; fc_port_t *port; fc
 static uint16_t xio_get_rx_bufcount_usart(void *d){(void)d;return 0;}
 static void xio_xoff_usart(void *d){(void)d;}
 int cm_get_units_mode(int model){return MILLIMETERS;}
+#define _to_millimeters(a) (a) /* defaults are loaded in millimeters */
 static uint8_t _get_axis(index_t index){const char *p=strchr("xyzabc",cfgArray[index].token[0]);assert(p);return p-"xyzabc";}
 static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
 '''
@@ -99,7 +100,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],
             'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex','set_gco','set_ma'],
             'stepper.c': ['st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
-            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh'],
+            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
             'spindle.c': ['spindle_set_polarity'],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}
