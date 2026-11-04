@@ -16,7 +16,7 @@ class InverseTime(unittest.TestCase):
         prefix=parser[parser.index('stat_t status = STAT_OK;',parser.index('static stat_t _execute_gcode_block()\n{')):]
         prefix=prefix[:prefix.index('EXEC_FUNC(cm_feed_rate_override_factor')]
         feed_guard=function(machine,r'stat_t cm_straight_feed\(')
-        feed_guard=feed_guard[feed_guard.index('{')+1:feed_guard.index('cm_set_model_target')]
+        feed_guard=feed_guard[feed_guard.index('{')+1:feed_guard.index('cm_set_model_target')].rsplit('\n',1)[0]
         code=r'''
 #include <assert.h>
 #include <math.h>
