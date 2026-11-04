@@ -233,7 +233,7 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
     }
 
 	// set values in the Gcode model state & copy it (linenum was already captured)
-	cm_set_model_target(target, target_f);
+	ritorno(cm_set_model_target(target, target_f));
 
     // in radius mode it's an error for start == end
     if (radius_f) {

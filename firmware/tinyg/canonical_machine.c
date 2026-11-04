@@ -501,10 +501,11 @@ static float _calc_ABC(const uint8_t axis, const float target[])
 	if ((cm.a[axis].axis_mode == AXIS_STANDARD) || (cm.a[axis].axis_mode == AXIS_INHIBITED)) {
 		return(target[axis]);	// no mm conversion - it's in degrees
 	}
+    if (!(cm.a[axis].radius > 0) || !isfinite(cm.a[axis].radius)) { return NAN; }
 	return(_to_millimeters(target[axis]) * 360 / (2 * M_PI * cm.a[axis].radius));
 }
 
-void cm_set_model_target(const float target[], const bool flags[])
+stat_t cm_set_model_target(const float target[], const bool flags[])
 {
     copy_vector(cm.gm.target, cm.gmx.position); // start from the last accepted endpoint
 	uint8_t axis;
@@ -531,6 +532,10 @@ void cm_set_model_target(const float target[], const bool flags[])
 			continue;		// skip axis if not flagged for update or its disabled
 		} else {
 			tmp = _calc_ABC(axis, target);
+            if (!isfinite(tmp)) {
+                copy_vector(cm.gm.target, cm.gmx.position);
+                return (STAT_INPUT_VALUE_RANGE_ERROR);
+            }
 		}
 		if (cm.gm.distance_mode == ABSOLUTE_MODE) {
 			cm.gm.target[axis] = tmp + cm_get_active_coord_offset(axis); // sacidu93's fix to Issue #22
@@ -538,6 +543,7 @@ void cm_set_model_target(const float target[], const bool flags[])
 			cm.gm.target[axis] += tmp;
 		}
 	}
+    return (STAT_OK);
 }
 
 /*
@@ -1250,7 +1256,7 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
             }
         }
     } else {
-        cm_set_model_target(target, flags);
+        ritorno(cm_set_model_target(target, flags));
     }
 
 	// test soft limits
@@ -1459,7 +1465,7 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
 	if ((cm.gm.feed_rate_mode == INVERSE_TIME_MODE) ? (cm.gm.feed_rate <= 0) : fp_ZERO(cm.gm.feed_rate)) {
 		return (STAT_GCODE_FEEDRATE_NOT_SPECIFIED);
 	}
-	cm_set_model_target(target, flags);
+	ritorno(cm_set_model_target(target, flags));
 
 	// test soft limits
 	stat_t status = cm_test_soft_limits(cm.gm.target);
@@ -2735,6 +2741,17 @@ stat_t cm_set_ja(nvObj_t *nv)
     if (!(value > 0) || !isfinite(value)) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
+    return (set_flu(nv));
+}
+
+// Radius is a divisor when linear travel is converted to rotary degrees.
+stat_t cm_set_radius(nvObj_t *nv)
+{
+    if (!(nv->value_flt > 0) || !isfinite(nv->value_flt)) {
+        return (STAT_INPUT_LESS_THAN_MIN_VALUE);
+    }
+    float value = _to_millimeters(nv->value_flt);
+    if (!(value > 0) || !isfinite(value)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
     return (set_flu(nv));
 }
 

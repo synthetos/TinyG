@@ -327,7 +327,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "a","ajm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_A].jerk_max,		A_JERK_MAX },
 	{ "a","ajh",_fip,  0, cm_print_jh, get_flt,	  cm_set_xjh,(uint32_t *)&cm.a[AXIS_A].jerk_homing, 	A_JERK_HOMING },
 	{ "a","ajd",_fip,  4, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].junction_dev,	A_JUNCTION_DEVIATION },
-	{ "a","ara",_fipc, 3, cm_print_ra, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_A].radius,			A_RADIUS},
+	{ "a","ara",_fipc, 3, cm_print_ra, get_flt,   cm_set_radius,   (uint32_t *)&cm.a[AXIS_A].radius,			A_RADIUS},
 	{ "a","asn",_iip,  0, cm_print_sn, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[6].mode,					A_SWITCH_MODE_MIN },
 	{ "a","asx",_iip,  0, cm_print_sx, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[7].mode,					A_SWITCH_MODE_MAX },
 	{ "a","asv",_fip,  0, cm_print_sv, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_A].search_velocity,A_SEARCH_VELOCITY },
@@ -342,7 +342,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "b","btm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].travel_max,		B_TRAVEL_MAX },
 	{ "b","bjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_B].jerk_max,		B_JERK_MAX },
 	{ "b","bjd",_fip,  4, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].junction_dev,	B_JUNCTION_DEVIATION },
-	{ "b","bra",_fipc, 3, cm_print_ra, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_B].radius,			B_RADIUS },
+	{ "b","bra",_fipc, 3, cm_print_ra, get_flt,   cm_set_radius,   (uint32_t *)&cm.a[AXIS_B].radius,			B_RADIUS },
 
 #ifdef __ARM	// B axis extended parameters
 	{ "b","asn",_iip,  0, cm_print_sn, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_B][SW_MIN].mode,	B_SWITCH_MODE_MIN },
@@ -361,7 +361,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "c","ctm",_fip,  3, cm_print_tm, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].travel_max,		C_TRAVEL_MAX },
 	{ "c","cjm",_fip,  0, cm_print_jm, get_flt,	  cm_set_xjm,(uint32_t *)&cm.a[AXIS_C].jerk_max,		C_JERK_MAX },
 	{ "c","cjd",_fip,  4, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].junction_dev,	C_JUNCTION_DEVIATION },
-	{ "c","cra",_fipc, 3, cm_print_ra, get_flt,   set_flu,   (uint32_t *)&cm.a[AXIS_C].radius,			C_RADIUS },
+	{ "c","cra",_fipc, 3, cm_print_ra, get_flt,   cm_set_radius,   (uint32_t *)&cm.a[AXIS_C].radius,			C_RADIUS },
 #ifdef __ARM	// C axis extended parameters
 	{ "c","csn",_iip,  0, cm_print_sn, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_C][SW_MIN].mode,	C_SWITCH_MODE_MIN },
 	{ "c","csx",_iip,  0, cm_print_sx, get_ui8,   sw_set_sw, (uint32_t *)&sw.s[AXIS_C][SW_MAX].mode,	C_SWITCH_MODE_MAX },
