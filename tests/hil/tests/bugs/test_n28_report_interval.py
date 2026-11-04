@@ -1,6 +1,6 @@
 """N28: status reports wait for elapsed time across the 32-bit tick wrap. TinyG configuration wiki SI/SV: si is the automatic-report interval; sv=0 disables reports. Intervals are bounded below half the tick range; ASAP and timed requests retain first-request-wins behaviour."""
 import pytest
-pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N28",on=["d449"])]
+pytestmark=[pytest.mark.persists,pytest.mark.dialect("d449"),pytest.mark.bug("N28",on=[])]
 def test_status_interval_upper_bound(tg,keep):
     keep("si")
     tg.send_json({"si":250},check=True)
