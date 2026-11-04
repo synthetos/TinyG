@@ -839,13 +839,14 @@ bool cfg_is_reportable(index_t index)
 
 stat_t set_flu(nvObj_t *nv)
 {
-	if (cm_get_units_mode(MODEL) == INCHES) {		    // if in inches...
-		nv->value_flt *= MM_PER_INCH;					// convert to canonical millimeter units
-	}
-	*((float *)GET_TABLE_WORD(target)) = nv->value_flt;	// write value as millimeters or degrees
-	nv->precision = GET_TABLE_WORD(precision);
-	nv->valuetype = TYPE_FLOAT;
-	return(STAT_OK);
+    float value = nv->value_flt;
+    if (cm_get_units_mode(MODEL) == INCHES) { value *= MM_PER_INCH; }
+    if (!isfinite(value)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+    nv->value_flt = value;
+    *((float *)GET_TABLE_WORD(target)) = value;
+    nv->precision = GET_TABLE_WORD(precision);
+    nv->valuetype = TYPE_FLOAT;
+    return (STAT_OK);
 }
 
 /*
