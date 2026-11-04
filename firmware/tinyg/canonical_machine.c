@@ -2792,6 +2792,8 @@ stat_t cm_set_xjm(nvObj_t *nv)
         canonical *= MM_PER_INCH;
     }
     if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
+    // Reject overflow in the expanded canonical jerk before storage.
+    if (!isfinite(canonical * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {
@@ -2816,6 +2818,8 @@ stat_t cm_set_xjh(nvObj_t *nv)
         canonical *= MM_PER_INCH;
     }
     if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
+    // Reject overflow in the expanded canonical jerk before storage.
+    if (!isfinite(canonical * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {
