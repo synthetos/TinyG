@@ -69,6 +69,8 @@ def json_chain(fw):
     tokens = "static const char *firmware_tokens[] = {" + ",".join(
         json.dumps(token) for token in sorted(fields)) + "};"
     code = pre.replace("@FIRMWARE_TOKENS@", tokens)
+    # N60's in-cycle refusal (config.c _refused_in_cycle): replays apply settings before streaming, so never refuse
+    code += "\nstatic bool _refused_in_cycle(nvObj_t *nv) { (void)nv; return false; }\n"
     code += extract(fw, "config.c", "nv_reset_nv_list").replace(
         "nv_reset_nv_list(", "real_reset_nv_list(", 1)
     for name in ("nv_reset_nv", "nv_next", "nv_prev", "nv_next_empty", "set_nul",

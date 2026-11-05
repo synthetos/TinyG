@@ -44,6 +44,8 @@ stat_t sr_request_status_report(uint8_t x){return STAT_OK;}
 bool st_aline_in_flight(void){return false;}
 void st_prep_command(void *b){mp_runtime_command((mpBuf_t*)b);}
 void st_prep_dwell(float t){}
+void st_prep_null(void){}
+void st_cancel_dwell(void){}            /* N51: flush/job kill discard a dwell; replays never flush */
 void st_request_exec_move(void){}
 uint8_t st_runtime_isbusy(void){return false;}
 void stepper_reset(void){}
