@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import unittest
 from source_extract import function
+from config_fallback_source import fallback_source, REFUSING_SETTER
 ROOT=Path(__file__).resolve().parents[2]
 FW=ROOT/'firmware/tinyg'
 
@@ -70,7 +71,6 @@ struct {int cycle_state;} cm;
 #define COUNT (sizeof(cfgArray)/sizeof(*cfgArray))
 value_t eeprom[COUNT],model[COUNT];unsigned writes[COUNT],sets[COUNT];
 static nvObj_t object;
-static index_t config_load_failure;
 static unsigned sr_loads;
 static void _set_defa(nvObj_t *nv);
 stat_t nv_persist(nvObj_t *nv);
@@ -98,7 +98,8 @@ stat_t write_persistent_value(nvObj_t *nv){
 '''
     code+=function(pre,r'(?:_Bool|bool) nv_index_is_single\([^;{}]*\)(?=\s*\{)')+'\n'
     code+='\n'.join(line for line in config.splitlines() if line.startswith('#define CONFIG_NVM_LAYOUT'))+'\n'
-    for name in ('_record_config_load_failure','_load_config_default','_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
+    code+=REFUSING_SETTER+fallback_source(config,('_report_list_add','_load_config_default','_load_config_fallback'))  # N61
+    for name in ('_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
      code+=function(config,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
     code+=function(config,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
     code+=function(config,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'

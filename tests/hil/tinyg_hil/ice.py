@@ -414,9 +414,16 @@ class Ice:
                         return addr + i, addr + i - start
         return end, end - start
 
+    EEPROM_CHUNK = 128      # bytes per debugger read: one 2048-byte EEPROM read hung bench 2's Atmel-ICE twice
+                            # (2026-11-04); pyedbglib sends a read as a single request and the probe never answered
+
     def eeprom_read(self, addr=0, n=2048):
         from pyedbglib.protocols.avr8protocol import Avr8Protocol
-        return self.read(addr, n, Avr8Protocol.AVR8_MEMTYPE_EEPROM)
+        out = bytearray()
+        with self.halted():
+            for a in range(addr, addr + n, self.EEPROM_CHUNK):
+                out += self.read(a, min(self.EEPROM_CHUNK, addr + n - a), Avr8Protocol.AVR8_MEMTYPE_EEPROM)
+        return bytes(out)
 
 
 

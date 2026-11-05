@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess, tempfile, unittest
 from source_extract import function
+from config_fallback_source import fallback_source, REFUSING_SETTER
 ROOT=Path(__file__).resolve().parents[2]
 class NvmMigration(unittest.TestCase):
  def test_append_only_upgrade_preserves_old_values(self):
@@ -20,12 +21,15 @@ class NvmMigration(unittest.TestCase):
 #define STAT_OK 0
 #define STAT_COMMAND_NOT_ACCEPTED 106
 #define STAT_CONFIG_ASSERTION_FAILURE 90
+#define STAT_SETTINGS_RESTORED_TO_DEFAULTS 118
+#include <stdio.h>
 #define STAT_INTERNAL_RANGE_ERROR 21
 #define F_INITIALIZE 1
 #define F_PERSIST 2
 #define TOKEN_LEN 5
 #define NUL 0
 #define NO_MATCH -1
+#define sprintf_P(buf, ...) snprintf(buf, 32, __VA_ARGS__)
 #define PSTR(s) (s)
 #define SR_DEFAULTS "defaults"
 #define strcpy_P strcpy
@@ -56,7 +60,6 @@ struct {char token[6];int type,flags;float default_value;} cfgArray[]={
 static value_t eeprom[COUNT], model[COUNT];
 static unsigned writes[COUNT], loaded_sr, defaulted_sr, boundary_lookups;
 static nvObj_t object;
-static index_t config_load_failure;
 static bool reject_old, reject_new, tx;
 static unsigned reports;
 static char reported[6];
@@ -88,10 +91,12 @@ stat_t nv_set(nvObj_t *nv) {
  if(reject_new && nv->index==5)return 106;
  model[nv->index].u=nv->value_int;return 0;
 }
-void rpt_exception(int status,const char *token){assert(tx && status==STAT_CONFIG_ASSERTION_FAILURE);reports++;strcpy(reported,token);}
+static int reported_status;
+void rpt_exception(int status,const char *token){assert(tx);reported_status=status;reports++;strcpy(reported,token);}
 '''
   code+='\n'.join(x for x in source.splitlines() if x.startswith('#define CONFIG_NVM_LAYOUT'))+'\n'
-  for name in ('_record_config_load_failure','_load_config_default','config_report_load_failure','_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
+  code+=REFUSING_SETTER+fallback_source(source)  # N61
+  for name in ('_nvm_layout_is_current','_nvm_layout_is_legacy','_write_nvm_layout_marker'):
    if name+'(' in source:
     code+=function(source,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
@@ -100,7 +105,7 @@ void rpt_exception(int status,const char *token){assert(tx && status==STAT_CONFI
   code+=r'''
 void prepare(float marker) {
  memset(writes,0,sizeof(writes));memset(model,0,sizeof(model));
- loaded_sr=defaulted_sr=boundary_lookups=reports=0;config_load_failure=0;reject_old=reject_new=tx=false;
+ loaded_sr=defaulted_sr=boundary_lookups=reports=0;config_restored.count=0;config_restored.last=NO_MATCH;config_failed.count=0;config_failed.last=NO_MATCH;reject_old=reject_new=tx=false;
  for(int i=0;i<COUNT;i++)eeprom[i].u=0xdeadbeef;
  eeprom[0].f=marker;eeprom[1].f=.9f;eeprom[2].f=12.5f;eeprom[3].u=0;eeprom[4].u=123;
 }
@@ -126,7 +131,7 @@ int main(void) {
   prepare(markers[i]);reject_old=true;config_init();
   assert(model[1].f==1.8f && eeprom[1].f==.9f && writes[1]==0);
   assert(reports==0);tx=true;config_report_load_failure();
-  assert(reports==1 && !strcmp(reported,"1sa"));config_report_load_failure();assert(reports==1);
+  assert(reports==1 && reported_status==118 && !strcmp(reported,"1sa"));config_report_load_failure();assert(reports==1);  /* restored */
  }
  // A rejected new default leaves its EEPROM slot untouched and migration retryable.
  for(int i=0;i<2;i++){
@@ -134,7 +139,7 @@ int main(void) {
   assert(writes[5]==0 && eeprom[5].u==0xdeadbeef);
   assert(eeprom[0].f==legacy[i] && writes[0]==0 && model[1].f==.9f);
   assert(reports==0);tx=true;config_report_load_failure();
-  assert(reports==1 && !strcmp(reported,"spep"));
+  assert(reports==1 && reported_status==STAT_CONFIG_ASSERTION_FAILURE && !strcmp(reported,"spep"));  /* N61: refused default: not restored */
   reject_new=false;config_init();
   assert(eeprom[0].f==10002 && writes[0]==1 && model[5].u==1);
  }
