@@ -18,6 +18,17 @@ pytestmark = [pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board, p
               pytest.mark.timeout(240), pytest.mark.bug("N61", on=[])]
 
 RESTORED = 118
+PAGE = 32           # ATxmega192A3 EEPROM page
+
+
+def _write_eeprom_word(ice, addr, data4):
+    """Change 4 EEPROM bytes the way pymcuprog writes EEPROM: read their whole page, patch it, and write the page with
+    the auto-erasing (atomic) memory type. A plain EEPROM write in a debug session does not take (read back 0)."""
+    from pyedbglib.protocols.avr8protocol import Avr8Protocol
+    base = addr - addr % PAGE
+    page = bytearray(ice.eeprom_read(base, PAGE))
+    page[addr - base:addr - base + 4] = data4
+    ice.write(base, bytes(page), Avr8Protocol.AVR8_MEMTYPE_EEPROM_ATOMIC)
 
 
 def _eeprom_slot(tg, ice, token, a, b):
@@ -32,15 +43,18 @@ def _eeprom_slot(tg, ice, token, a, b):
 
 
 def test_invalid_saved_setting_restores_default_and_reports(tg, keep, ice, record):
-    from pyedbglib.protocols.avr8protocol import Avr8Protocol
     keep("1mi")
     original = tg.get("1mi")
     other = 4 if original != 4 else 2
     addr = _eeprom_slot(tg, ice, "1mi", other, original)
-    saved = ice.eeprom_read(addr, 4)
+    backup = ice.eeprom_read()                                 # the whole EEPROM, to prove it is put back
+    saved = backup[addr:addr + 4]
     try:
-        ice.write(addr, (3).to_bytes(4, "little"), Avr8Protocol.AVR8_MEMTYPE_EEPROM)   # not a supported microstep
-        assert ice.eeprom_read(addr, 4) == (3).to_bytes(4, "little")
+        _write_eeprom_word(ice, addr, (3).to_bytes(4, "little"))  # not a supported microstep
+        after_write = ice.eeprom_read()
+        assert after_write[addr:addr + 4] == (3).to_bytes(4, "little"), "the EEPROM write did not take"
+        assert after_write[:addr] + after_write[addr + 4:] == backup[:addr] + backup[addr + 4:], \
+            "the EEPROM write changed other bytes"
         mark = len(tg.transport.history)
         tg.reset()
         time.sleep(0.5)
@@ -56,5 +70,7 @@ def test_invalid_saved_setting_restores_default_and_reports(tg, keep, ice, recor
         assert len(mine) == 1 and "1mi" in mine[0].data["er"].get("msg", ""), \
             f"expected one status {RESTORED} report naming 1mi: {[e.raw for e in reports]}"
     finally:
-        ice.write(addr, saved, Avr8Protocol.AVR8_MEMTYPE_EEPROM)
+        _write_eeprom_word(ice, addr, saved)
+        restored = ice.eeprom_read()
         tg.reset()
+        assert restored == backup, "EEPROM not put back exactly: restore the settings snapshot"
