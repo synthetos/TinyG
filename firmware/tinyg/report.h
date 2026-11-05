@@ -57,15 +57,18 @@ typedef enum {								    // planner queue enable and verbosity
 	QR_TRIPLE									// queue depth reported for buffers, buffers added, buffered removed
 } qrVerbosity;
 
+#define STATUS_REPORT_MAX_MS 2147483647UL // less than half the 32-bit tick range
+
 typedef struct srSingleton {
 
 	/*** config values (PUBLIC) ***/
-	srVerbosity status_report_verbosity;
-	uint32_t status_report_interval;					// in milliseconds
+	volatile srVerbosity status_report_verbosity;
+	volatile uint32_t status_report_interval;					// in milliseconds
 
 	/*** runtime values (PRIVATE) ***/
-	srVerbosity status_report_request;                  // flag that SR has been requested, and what type
-	uint32_t status_report_systick;						// SysTick value for next status report
+	volatile srVerbosity status_report_request;                  // flag that SR has been requested, and what type
+	volatile uint32_t status_report_systick; // request start, not an absolute deadline
+	volatile uint32_t status_report_delay;   // interval captured with the request
 	index_t stat_index;									// table index value for stat - determined during initialization
 	index_t status_report_list[NV_STATUS_REPORT_LEN];	// status report elements to report
     union {
