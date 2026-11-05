@@ -205,6 +205,11 @@ def _stream(tg, lines, request, record):
         if request.config.getoption("--ice"):
             record("stall_snapshot", sender.stall_snapshot(request.getfixturevalue("ice")))
         raise
+    except TimeoutError:
+        # the job is still running (a slow laser file, N75): stop it, or every restore after this is refused
+        # with status 117 because a job is running (N60) and the board is left on the test's settings
+        tg.reset()
+        raise
 
 
 def _settle(tg, timeout):
