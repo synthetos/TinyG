@@ -24,7 +24,7 @@ import pytest
 from tinyg_hil import sender
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.timeout(1800),
-              pytest.mark.bug("N70", on=["d449"])]
+              pytest.mark.bug("N70", on=[])]
 
 FILE = str(Path(__file__).resolve().parents[2] / "corpus" / "n70" / "rotary-plus-linear-tiny-steps.nc")
 REPEATS = int(os.environ.get("N70_REPEATS", "3"))
