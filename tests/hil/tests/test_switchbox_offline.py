@@ -39,13 +39,15 @@ ROM_BANNER = b"\x00\xe0\x1c\x8c\xff ets Jan  8 2013,rst cause:2, boot mode:(3,6)
 class FakeBoard:
     """Unopened-serial stand-in. Records how it was set up; answers each request line via handlers."""
 
-    def __init__(self, handlers=None, uptime_ms=600000, on_open=b"", trickle=False):
+    def __init__(self, handlers=None, uptime_ms=600000, on_open=b"", trickle=False, held=b"", boot_id="cafe0001"):
         self.log = []                   # ("set", attr, value) and ("open",), in order
         self.written = []               # request objects
         self.out = bytearray()
         self.is_open = False
         self.trickle = trickle          # read() hands out one byte at a time
         self.on_open = on_open
+        self.held = held                # already in the host's buffer when the port opens (an earlier connection's)
+        self.boot_id = boot_id
         self.uptime_ms = uptime_ms
         self.handlers = {"getInfo": lambda req: self.ok(req, self.info()),
                          "releaseAll": lambda req: self.ok(req, {"changed": 0}),
@@ -58,7 +60,7 @@ class FakeBoard:
         object.__setattr__(self, name, value)
 
     def info(self):
-        return {"fw_version": "0.1.0", "api_version": "1.0.0", "uptime_ms": self.uptime_ms, "boot_id": "cafe0001",
+        return {"fw_version": "0.1.0", "api_version": "1.0.0", "uptime_ms": self.uptime_ms, "boot_id": self.boot_id,
                 "events": {"head": 1, "oldest": 1, "capacity": 128}, "spec_sha256": spec_digest(load_spec())}
 
     @staticmethod
@@ -72,7 +74,14 @@ class FakeBoard:
     def open(self):
         self.log.append(("open",))
         self.is_open = True
-        self.out += self.on_open
+        self.out += self.held + self.on_open
+        self._held_left = len(self.held)
+
+    def reset_input_buffer(self):
+        """Drops what the port held at open; on_open bytes model a board talking after the open, so they stay."""
+        self.log.append(("flush",))
+        del self.out[:getattr(self, "_held_left", 0)]
+        self._held_left = 0
 
     def close(self):
         self.is_open = False
@@ -587,3 +596,30 @@ def test_dangling_escape_in_a_logged_line_leaves_nothing_behind():
     sb.state()
     logged = json.dumps(list(sb.traffic))
     assert "first" not in logged and "second" not in logged, logged
+
+
+def test_bytes_held_from_an_earlier_connection_are_discarded():
+    stale = json.dumps({"id": 1, "ok": True, "result": {"stale": True}}).encode() + b"\n"
+    board = FakeBoard(held=stale * 3)
+    sb = connect(board)
+    assert ("flush",) in board.log and board.log.index(("flush",)) > board.log.index(("open",))
+    assert sb.info_at_connect["boot_id"] == "cafe0001" and not sb.stale
+
+
+def test_request_ids_start_at_a_random_number_per_connection():
+    a, b = connect(FakeBoard()), connect(FakeBoard())
+    first_a, first_b = a.last_id, b.last_id
+    assert first_a > 1 and first_b > 1 and first_a != first_b
+    a.call("releaseAll")
+    assert a.last_id == first_a + 1
+
+
+def test_reboot_is_detected_by_boot_id_even_when_uptime_keeps_counting():
+    board = FakeBoard()
+    sb = connect(board)
+    assert sb.rebooted_since_connect() is False
+    board.boot_id = "beef0002"                         # ESP32-S2: a software reset keeps uptime_ms counting
+    assert sb.rebooted_since_connect() is True
+    sb.disconnect()
+    sb.connect()
+    assert sb.rebooted_between_connections is True and sb.reset_on_connect is False

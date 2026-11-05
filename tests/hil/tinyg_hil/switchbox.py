@@ -25,7 +25,9 @@ every channel. Channels are named "<axis><min|max>"; methods take (axis, end) or
 Serial: newline-delimited JSON at 115200. The CP2104's DTR/RTS lines drive the ESP8266's
 auto-reset transistors. connect() sets both asserted before opening (macOS asserts them on open, so
 open() changes nothing), then drops RTS before DTR, so RTS is never asserted alone; it checks with
-getInfo (uptime, boot line) that opening did not reset the board (see LINE_STRATEGIES). Lines that are not JSON objects
+getInfo (uptime, boot line) that opening did not reset the board (see LINE_STRATEGIES). It discards whatever the port
+already held when it opened: a reply the board queued for the previous connection would otherwise be read as the
+answer to this one. Request ids start at a random number on every connection for the same reason. Lines that are not JSON objects
 (the ROM prints a banner at 74880 baud after a reset) are skipped and kept in .garbage.
 
 The port is never guessed. connect() refuses TinyG bench ports and the ports listed under
@@ -40,6 +42,7 @@ import hashlib
 import json
 import os
 import pathlib
+import random
 import re
 import sys
 import time
@@ -201,6 +204,11 @@ def decode_mask(mask, names):
     return {n: int(c) for n, c in zip(names, mask)}
 
 
+def _first_id():
+    """A random first request id: positive and well inside the box's 32-bit request ids."""
+    return random.SystemRandom().randrange(1 << 16, 1 << 30)
+
+
 class SwitchBox:
     def __init__(self, port, baud=115200, timeout=2.0, lock=True, lock_wait=0.0, purpose="switchbox",
                  serial_factory=serial.Serial, allow_reset=False, benches=None, lines="release-after-open"):
@@ -215,7 +223,7 @@ class SwitchBox:
         self.ser = None
         self._lock = None
         self._rx = bytearray()
-        self._next_id = 1
+        self._next_id = _first_id()
         self.last_id = None
         self.traffic = collections.deque(maxlen=5000)    # (monotonic, direction, text)
         self.traffic_count = 0
@@ -225,6 +233,8 @@ class SwitchBox:
         self.received = collections.deque(maxlen=2000)   # event lines (after subscribe, and boot lines)
         self.boot_seen = False
         self.reset_on_connect = None
+        self.rebooted_between_connections = None
+        self.boot_id = None
         self.info_at_connect = None
         self.last_events_page = None
 
@@ -244,11 +254,19 @@ class SwitchBox:
             if self.lines == "release-after-open":
                 ser.rts = False                  # RTS first: DTR alone only pulls GPIO0, never EN
                 ser.dtr = False
+            ser.reset_input_buffer()             # bytes from before this open belong to an earlier connection
+            self._rx.clear()
+            self._next_id = _first_id()
             opened = time.monotonic()
             self.boot_seen = False
             self.info_at_connect = info = self._first_info()
             elapsed_ms = (time.monotonic() - opened) * 1000
-            # An uptime shorter than the time since the port opened means it booted after we opened it.
+            previous, self.boot_id = self.boot_id, info.get("boot_id")
+            self.rebooted_between_connections = (previous is not None and self.boot_id is not None
+                                                 and self.boot_id != previous)
+            # An uptime shorter than the time since the port opened means it booted after we opened it. This holds
+            # on the ESP8266, whose reset-on-open is the case it guards; on the ESP32-S2 uptime survives a software
+            # reset, so rebooted_since_connect() and rebooted_between_connections compare boot_id instead.
             self.reset_on_connect = self.boot_seen or info["uptime_ms"] < elapsed_ms + 300
             if self.reset_on_connect and not self.allow_reset:
                 raise SwitchBoxRebooted("rebooted", f"opening {self.port} reset the switchbox "
@@ -258,6 +276,11 @@ class SwitchBox:
                 self.disconnect()
             raise
         return self
+
+    def rebooted_since_connect(self):
+        """True if the box restarted since connect(): its getInfo boot_id changed (uptime alone can miss it)."""
+        info = self.call("getInfo")
+        return self.boot_id is not None and info.get("boot_id") != self.boot_id
 
     def check_spec(self):
         """Raises SwitchBoxSpecMismatch unless the box's getInfo matches the vendored spec."""
