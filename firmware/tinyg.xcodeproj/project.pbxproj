@@ -164,7 +164,6 @@
 		204C3011183D4B970058D2F2 /* test_099.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_099.h; sourceTree = "<group>"; };
 		204C3012183D4B970058D2F2 /* text_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = text_parser.c; sourceTree = "<group>"; };
 		204C3013183D4B970058D2F2 /* text_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = text_parser.h; sourceTree = "<group>"; };
-		204C3014183D4B970058D2F2 /* tinyg.aps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = tinyg.aps; sourceTree = "<group>"; };
 		204C3015183D4B970058D2F2 /* tinyg.atsln */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = tinyg.atsln; sourceTree = "<group>"; };
 		204C3016183D4B970058D2F2 /* tinyg.cproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = tinyg.cproj; sourceTree = "<group>"; };
 		204C3017183D4B970058D2F2 /* tinyg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tinyg.h; sourceTree = "<group>"; };
@@ -260,7 +259,6 @@
 				204C2FFF183D4B970058D2F2 /* tests */,
 				204C3012183D4B970058D2F2 /* text_parser.c */,
 				204C3013183D4B970058D2F2 /* text_parser.h */,
-				204C3014183D4B970058D2F2 /* tinyg.aps */,
 				204C3015183D4B970058D2F2 /* tinyg.atsln */,
 				204C3016183D4B970058D2F2 /* tinyg.cproj */,
 				204C3017183D4B970058D2F2 /* tinyg.h */,
@@ -417,7 +415,7 @@
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
-			buildWorkingDirectory = "$(PROJECT_DIR)/tinyg/default";
+			buildWorkingDirectory = "$(PROJECT_DIR)/tinyg";
 			dependencies = (
 			);
 			name = "tinyg-firmware";
