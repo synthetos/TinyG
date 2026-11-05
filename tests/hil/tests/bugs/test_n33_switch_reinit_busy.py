@@ -47,7 +47,7 @@ def test_setting_preserves_deferred_limit(tg,ice,switches,keep,record,token):
         while state!=tg.dialect.stat('ALARM') and time.monotonic()<deadline:
             time.sleep(.05);state=tg.stat()
         assert state==tg.dialect.stat('ALARM'),'deferred limit was swallowed'
-        assert reply.status==106,'busy setting was accepted'
+        assert reply.status==117,'busy setting was not refused in the cycle'  # N60: refused before it applies (was 106 from the setter)
     finally:
         switches.open('x','min')
         tg.reset()

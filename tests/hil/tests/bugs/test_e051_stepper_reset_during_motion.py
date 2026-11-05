@@ -36,7 +36,7 @@ def test_motor_setting_during_motion_does_not_hang(tg, keep):
         tg.send_gcode("G91 G1 X5 F100", check=True, allow="5 mm move (3 s)")
         time.sleep(1.0)
         response = tg.send_json({"1tr": tr})       # geometry cannot change during queued motion
-        assert response.status == tg.dialect.status("COMMAND_NOT_ACCEPTED")
+        assert response.status == 117               # N60: a persisted setting is refused in a cycle
         tg.wait_idle(timeout=15)                  # buggy: the runtime never goes idle
         hung = False
         x1 = tg.get("mpox")
