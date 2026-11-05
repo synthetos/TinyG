@@ -863,7 +863,8 @@ bool prep_float(nvObj_t *nv)
 	if (isnan((double)nv->value_flt) || isinf((double)nv->value_flt)) { // illegal float values
         return (false);
     }
-    if (cfg_has_flag(nv->index, F_CONVERT)) {       // unit conversion required?
+    // unit conversion required? Not for a rotary motor's travel per revolution: that is degrees (N71)
+    if (cfg_has_flag(nv->index, F_CONVERT) && !(((fptrCmd)GET_TABLE_WORD(set) == st_set_tr) && st_motor_is_rotary(nv))) {
 		if (cm_get_units_mode(MODEL) == INCHES) {
 			nv->value_flt *= INCHES_PER_MM;
 		}

@@ -12,7 +12,7 @@ No motion: motor 4 is mapped to A (degrees), $4tr is set in G20 and read back in
 import pytest
 
 pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.timeout(120),
-              pytest.mark.bug("N71", on=["d449"])]
+              pytest.mark.bug("N71", on=[])]
 
 
 def test_rotary_motor_tr_is_not_unit_converted(tg, keep, record):
