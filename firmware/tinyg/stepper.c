@@ -1440,6 +1440,17 @@ static int8_t _get_motor(const nvObj_t *nv)
 }
 
 /*
+ * st_motor_is_rotary() - the motor of a motor row ($Ntr...) drives A, B or C
+ *
+ *	Its travel per revolution is then in degrees, so G20 must not convert it (N71).
+ */
+bool st_motor_is_rotary(const nvObj_t *nv)
+{
+    int8_t m = _get_motor(nv);
+    return ((m >= 0) && (m < MOTORS) && (st_cfg.mot[m].motor_map >= AXIS_A) && (st_cfg.mot[m].motor_map <= AXIS_C));
+}
+
+/*
  * _set_motor_steps_per_unit() - what it says
  * This function will need to be rethought if microstep morphing is implemented
  */
@@ -1501,10 +1512,12 @@ stat_t st_set_tr(nvObj_t *nv)			// motor travel per revolution
 	}
 
     uint8_t m = _get_motor(nv);
-    if (!_motor_geometry_valid(st_cfg.mot[m].step_angle, _to_millimeters(nv->value_flt), st_cfg.mot[m].microsteps)) {
+    bool rotary = st_motor_is_rotary(nv);           // degrees per revolution: no inch conversion (N71)
+    float tr = rotary ? nv->value_flt : _to_millimeters(nv->value_flt);
+    if (!_motor_geometry_valid(st_cfg.mot[m].step_angle, tr, st_cfg.mot[m].microsteps)) {
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
-	set_flu(nv);
+	if (rotary) { set_flt(nv); } else { set_flu(nv); }
 	_set_motor_steps_per_unit(nv);
 	return(STAT_OK);
 }
@@ -1697,7 +1710,7 @@ static void _print_motor_pwr(nvObj_t *nv, const char *format)
 
 void st_print_ma(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0ma);}
 void st_print_sa(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0sa, DEGREE_INDEX);}
-void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, cm_get_units_mode(MODEL));}
+void st_print_tr(nvObj_t *nv) { _print_motor_flt_units(nv, fmt_0tr, st_motor_is_rotary(nv) ? DEGREES : cm_get_units_mode(MODEL));}
 void st_print_mi(nvObj_t *nv) { _print_motor_u32(nv, fmt_0mi);}
 void st_print_po(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0po);}
 void st_print_pm(nvObj_t *nv) { _print_motor_ui8(nv, fmt_0pm);}

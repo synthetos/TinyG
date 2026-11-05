@@ -456,6 +456,7 @@ stat_t st_prep_line(float travel_steps[], float following_error[], float segment
 
 stat_t st_set_sa(nvObj_t *nv);
 stat_t st_set_tr(nvObj_t *nv);
+bool st_motor_is_rotary(const nvObj_t *nv);	// motor row of a motor that drives A, B or C (N71)
 stat_t st_set_mi(nvObj_t *nv);
 stat_t st_set_pm(nvObj_t *nv);
 stat_t st_set_pl(nvObj_t *nv);
