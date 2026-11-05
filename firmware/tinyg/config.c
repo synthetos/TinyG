@@ -437,12 +437,14 @@ stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
 
 stat_t set_ui8(nvObj_t *nv)
 {
+    if (nv->value_int > UINT8_MAX) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	*((uint8_t *)GET_TABLE_WORD(target)) = (uint8_t )nv->value_int;
 	return(STAT_OK);
 }
 
 stat_t set_u16(nvObj_t *nv)
 {
+    if (nv->value_int > UINT16_MAX) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	*((uint16_t *)GET_TABLE_WORD(target)) = (uint16_t )nv->value_int;
 	return(STAT_OK);
 }
