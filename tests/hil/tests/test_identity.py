@@ -8,7 +8,8 @@ def test_identity(tg):
     assert ident["hp"] == 1
     assert ident["hv"] >= 6
     assert isinstance(ident["id"], str) and ident["id"]
-    assert ident["fb"] == pytest.approx(tg.dialect.table["fb"], abs=1) or ident["fb"] < 445
+    # d449 covers every edge build from 449.01 (edge-0.97) on, edge-next 450.xx included; master builds are below 445
+    assert ident["fb"] < 445 or tg.dialect.table["fb"] - 1 <= ident["fb"] < tg.dialect.table["fb"] + 10
 
 
 def test_footer(tg):
