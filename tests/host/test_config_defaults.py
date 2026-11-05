@@ -25,7 +25,7 @@ class ConfigDefaults(unittest.TestCase):
         macros = subprocess.check_output(args + ['-dM', '-E', str(FW/'config_app.c')], text=True)
         needed = ['F_CPU','AXIS_MODE_MAX_LINEAR','AXIS_MODE_MAX_ROTARY','TINYG_HARDWARE_VERSION_MAX',
                   'TINYG_HARDWARE_VERSION','MOTOR_TIMEOUT_SECONDS_MIN','MOTOR_TIMEOUT_SECONDS_MAX',
-                  'MAX_ROTARY_RADIUS','FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','STATUS_REPORT_MAX_MS','SW_MODE_MAX_VALUE',
+                  'MAX_JUNCTION_DEVIATION','MAX_ROTARY_RADIUS','FREQUENCY_DDA','EPSILON','JERK_MULTIPLIER','STATUS_REPORT_MIN_MS','STATUS_REPORT_MAX_MS','SW_MODE_MAX_VALUE',
                   'STAT_OK','STAT_PARAMETER_IS_READ_ONLY','STAT_INPUT_VALUE_RANGE_ERROR','STAT_INPUT_EXCEEDS_MAX_VALUE','STAT_INPUT_LESS_THAN_MIN_VALUE','STAT_COMMAND_NOT_ACCEPTED','HW_VERSION_TINYGV8','SW_MODE_PROBE','XIO_DEV_USB','XIO_CRLF','XIO_NOCRLF','XIO_ECHO','XIO_NOECHO','XIO_XOFF','XIO_NOXOFF']
         needed += [f'M{m}_{field}' for m in range(1,7) for field in ('STEP_ANGLE','TRAVEL_PER_REV','MICROSTEPS')]
         defines = '\n'.join(line for line in macros.splitlines() if line.split()[1] in needed)
@@ -105,7 +105,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],
             'config_app.c': ['set_flu','_set_comm_helper','set_ec','set_ee','set_ex','set_gco','set_ma'],
             'stepper.c': ['_init_motor_geometry','_motor_geometry_valid','st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
-            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius','cm_set_ct','cm_set_coord_value'],
+            'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius','cm_set_ct','cm_set_coord_value','cm_set_jd'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
             'spindle.c': ['spindle_set_polarity'],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}
