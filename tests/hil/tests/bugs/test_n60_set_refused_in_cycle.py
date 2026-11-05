@@ -53,8 +53,10 @@ def test_set_in_cycle_is_refused_before_it_applies(tg, keep, record):
 
     _start_move(tg)
     tg.send_raw(b"!")
-    tg.wait_for(lambda e: e.kind == "status" and e.data.get("sr", {}).get("stat") == tg.dialect.stat("HOLD"),
-                timeout=10)
+    end = time.monotonic() + 10                 # poll: a bench's status report list may not carry stat
+    while tg.stat() != tg.dialect.stat("HOLD"):
+        assert time.monotonic() < end, "the feedhold did not reach HOLD"
+        time.sleep(0.1)
     r = tg.send_json({"xvm": new_vm}, allow="N60: SET in feedhold")
     rows["hold"] = {"status": r.status, "stat": tg.stat(), "xvm": tg.get("xvm")}
     tg.send_raw(b"~")
