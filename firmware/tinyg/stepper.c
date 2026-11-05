@@ -1524,9 +1524,9 @@ stat_t st_set_mi(nvObj_t *nv)			// motor microsteps
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	if ((mi != 1) && (mi != 2) && (mi != 4) && (mi != 8)) {
-		nv_add_message_P(PSTR("*** WARNING *** Setting non-standard microstep value"));
+		return (STAT_INPUT_VALUE_RANGE_ERROR); // only the modes selected by the driver pins
 	}
-	set_u32(nv);						// set it anyway, even if it's unsupported. It could also be > 255
+	set_u32(nv); // validated before storage, scaling or the uint8_t hardware call
 	_set_motor_steps_per_unit(nv);
 	_set_hw_microsteps(_get_motor(nv), nv->value_int);
 	return (STAT_OK);
