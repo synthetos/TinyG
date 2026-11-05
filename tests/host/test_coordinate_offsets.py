@@ -39,6 +39,7 @@ bool FLAGS_NONE[AXES];
 static void _exec_g10_offset(float *, bool *);
 static void _persist_coord_offsets(void) { assert(0); }
 bool st_aline_in_flight(void) { return false; }
+bool cm_persistence_busy(void) { return cm.cycle_state != CYCLE_OFF; }   /* N68: busy while a cycle runs */
 static float runtime_offset[AXES];
 static GCodeState_t runtime;
 static struct { void(*fn)(float[],bool[]); float value[AXES]; bool flags[AXES]; } queued[8];
@@ -141,8 +142,7 @@ int main(void) {
             (tmp/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n')
             c=tmp/'offsets.c'; c.write_text(code)
             exe=tmp/'offsets'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined',
-                            '-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined',
                             '-I'+str(tmp),'-I'+str(FIRMWARE),str(c),'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 
