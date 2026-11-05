@@ -868,6 +868,7 @@ stat_t cm_run_joga(nvObj_t *nv);		// start jogging cycle for a
 
 stat_t cm_get_am(nvObj_t *nv);			// get axis mode
 stat_t cm_set_am(nvObj_t *nv);			// set axis mode
+#define MAX_ROTARY_RADIUS 1000000.0f // mm: 1 mm still converts to more than EPSILON degrees
 stat_t cm_set_axis_rate(nvObj_t *nv);
 stat_t cm_set_ja(nvObj_t *nv); // positive finite junction acceleration
 stat_t cm_set_radius(nvObj_t *nv);        // positive finite radius in internal units

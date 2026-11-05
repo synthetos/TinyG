@@ -71,6 +71,9 @@ typedef struct {float value_flt;int precision,valuetype;} nvObj_t;
 struct {struct {int units_mode;} gm;float radius;} cm;
 int cm_get_units_mode(int which) {return cm.gm.units_mode;}
 '''
+        header=(ROOT/'canonical_machine.h').read_text()
+        for line in header.splitlines():
+            if line.startswith('#define MAX_ROTARY_RADIUS '): code+=line+'\n'
         code+=function(table,r'stat_t set_flu\(nvObj_t \*nv\)')
         if setter!='set_flu': code+=function((ROOT/'canonical_machine.c').read_text(),r'stat_t '+setter+r'\(nvObj_t \*nv\)')
         code+=r'''
