@@ -87,7 +87,7 @@ stat_t read_persistent_value(nvObj_t *nv)
 #ifdef __AVR
 stat_t write_persistent_value(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF) {
+	if (config_is_loaded() && cm_persistence_busy()) {	// writes mask the serial and segment interrupts (N68)
         return(rpt_exception_P(STAT_COMMAND_NOT_ACCEPTED, PSTR("Can't save when moving")));
     }
 	nvm.tmp_value = nv->value_int;
