@@ -15,7 +15,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board, pytest.mark.dialect("d449"),
-              pytest.mark.timeout(240), pytest.mark.bug("N61", on=["d449"])]
+              pytest.mark.timeout(240), pytest.mark.bug("N61", on=[])]
 
 RESTORED = 118
 

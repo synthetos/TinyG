@@ -45,13 +45,59 @@
 #include "runtime.h"
 
 static void _set_defa(nvObj_t *nv);
-static index_t config_load_failure; // first rejected row + 1; zero means no pending report
+/*
+ * Settings that could not be loaded at boot run on their defaults, and the host is told once TX starts (N61).
+ *	A stored value the setter refuses is replaced by its default in RAM. The EEPROM value is kept: a refusal can come
+ *	from the firmware rather than the value (a draft of N60 refused every setting at boot), and the user's saved
+ *	settings must survive that. A default that nv_set() refuses is applied by calling the row's own setter, past
+ *	nv_set()'s gates, so its side effects (steps per unit, driver pins, echo flags, jerk caches) happen as usual.
+ *	A setter that refuses its own default is a firmware defect (test_config_defaults checks every default against
+ *	its setter): that setting is left as it was and reported separately as not restored, never as restored.
+ */
+#define CONFIG_REPORT_NAMES 8               // settings named in a report; any more are counted
 
-static void _record_config_load_failure(nvObj_t *nv)
+typedef struct cfgReportList {
+    index_t index[CONFIG_REPORT_NAMES];
+    index_t count;                          // settings in the list, named or not
+    index_t last;                           // the last one added, to add each once
+} cfgReportList_t;
+
+static cfgReportList_t config_restored = { .last = NO_MATCH };  // running on their defaults
+static cfgReportList_t config_failed = { .last = NO_MATCH };    // default refused by its own setter
+
+static void _report_list_add(cfgReportList_t *list, index_t index)
 {
-    if (config_load_failure == 0) {
-        config_load_failure = nv->index + 1;
+    if (index == list->last) {
+        return;
     }
+    list->last = index;
+    if (list->count < CONFIG_REPORT_NAMES) {
+        list->index[list->count] = index;
+    }
+    list->count++;
+}
+
+static void _report_list_send(cfgReportList_t *list, stat_t status)
+{
+    if (list->count == 0) {
+        return;
+    }
+    char msg[(TOKEN_LEN + 1) * CONFIG_REPORT_NAMES + 16];
+    char *wr = msg;
+    index_t named = (list->count < CONFIG_REPORT_NAMES) ? list->count : CONFIG_REPORT_NAMES;
+    for (index_t i = 0; i < named; i++) {
+        if (i) { *wr++ = ','; }
+        strncpy_P(wr, cfgArray[list->index[i]].token, TOKEN_LEN);
+        wr[TOKEN_LEN] = NUL;
+        wr += strlen(wr);
+    }
+    *wr = NUL;
+    if (list->count > named) {
+        sprintf_P(wr, PSTR(" (+%u more)"), (unsigned)(list->count - named));
+    }
+    list->count = 0;
+    list->last = NO_MATCH;
+    rpt_exception(status, msg);             // printed whatever the JSON verbosity
 }
 
 static stat_t _load_config_default(nvObj_t *nv)
@@ -65,21 +111,26 @@ static stat_t _load_config_default(nvObj_t *nv)
     }
     stat_t status = nv_set(nv);
     if (status != STAT_OK) {
-        _record_config_load_failure(nv);
+        status = ((fptrCmd)GET_TABLE_WORD(set))(nv);        // the row's own setter, past nv_set()'s gates
+        if (status != STAT_OK) {
+            _report_list_add(&config_failed, nv->index);   // left as it was: never reported as restored
+        }
     }
     return (status);
 }
 
+// a stored value the setter refused: run on the default and report it
+static void _load_config_fallback(nvObj_t *nv)
+{
+    if (_load_config_default(nv) == STAT_OK) {
+        _report_list_add(&config_restored, nv->index);
+    }
+}
+
 void config_report_load_failure(void)
 {
-    if (config_load_failure == 0) {
-        return;
-    }
-    char token[TOKEN_LEN+1];
-    strncpy_P(token, cfgArray[config_load_failure-1].token, TOKEN_LEN);
-    token[TOKEN_LEN] = NUL;
-    config_load_failure = 0;
-    rpt_exception(STAT_CONFIG_ASSERTION_FAILURE, token);
+    _report_list_send(&config_restored, STAT_SETTINGS_RESTORED_TO_DEFAULTS);
+    _report_list_send(&config_failed, STAT_CONFIG_ASSERTION_FAILURE);
 }
 
 /***********************************************************************************
@@ -269,8 +320,7 @@ void config_init()
                     read_persistent_value(nv);
                     nv->valuetype = (cfg_is_type(nv->index) == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INTEGER;
                     if (nv_set(nv) != STAT_OK) {
-                        _record_config_load_failure(nv);
-                        _load_config_default(nv);
+                        _load_config_fallback(nv);
                     }
                 }
 			}

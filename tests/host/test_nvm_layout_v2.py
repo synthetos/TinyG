@@ -2,6 +2,7 @@
 from pathlib import Path
 import re, subprocess, tempfile, unittest
 from source_extract import function
+from config_fallback_source import fallback_source, REFUSING_SETTER
 ROOT=Path(__file__).resolve().parents[2]
 class NvmLayoutV2(unittest.TestCase):
  def test_marker_compatibility(self):
@@ -66,7 +67,7 @@ int main(void) {
 #define GET_TABLE_FLOAT(f) cfgArray[nv->index].f
 typedef int stat_t;
 typedef int index_t;
-static index_t config_load_failure;
+#define NO_MATCH -1
 typedef struct {int index,valuetype; char token[6]; union {float value_flt;uint32_t value_int;};} nvObj_t;
 struct {int cycle_state;} cm;
 struct {char token[6];int type;float default_value;} cfgArray[]={
@@ -86,8 +87,7 @@ stat_t write_persistent_value(nvObj_t *nv) {records[nv->index]=nv->value_int;ret
 void _write_nvm_layout_marker(nvObj_t *nv) {nv->index=0;nv->value_flt=10002;write_persistent_value(nv);}
 '''
   code+='stat_t nv_set(nvObj_t *nv) {assert(nv->index==0);return STAT_PARAMETER_IS_READ_ONLY; }\n'
-  for name in ('_record_config_load_failure','_load_config_default'):
-   code+=function(source,r'static (?:void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
+  code+=REFUSING_SETTER+fallback_source(source,('_report_list_add','_load_config_default'))+'void n61_keep(void){(void)&config_restored;}\n'  # N61
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(app,r'static stat_t _reserved_hold_setting\([^;{}]*\)(?=\s*\{)')+'\n'

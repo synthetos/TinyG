@@ -209,7 +209,7 @@ char *get_status_message(stat_t status);
 #define STAT_VALUE_TYPE_ERROR 116               // JSON value does not agree with variable type
 
 #define	STAT_SETTING_REFUSED_IN_CYCLE 117	// a persisted setting written while a cycle runs (N60)
-#define	STAT_ERROR_118 118
+#define	STAT_SETTINGS_RESTORED_TO_DEFAULTS 118	// stored settings that would not load run on their defaults (N61)
 #define	STAT_ERROR_119 119
 
 #define	STAT_ERROR_120 120
@@ -507,7 +507,7 @@ static const char stat_114[] PROGMEM = "JSON txt fields cannot be nested";
 static const char stat_115[] PROGMEM = "JSON maximum nesting depth exceeded";
 static const char stat_116[] PROGMEM = "JSON value does not agree with variable type";
 static const char stat_117[] PROGMEM = "Setting refused: stop the job first";
-static const char stat_118[] PROGMEM = "118";
+static const char stat_118[] PROGMEM = "Settings restored to defaults";
 static const char stat_119[] PROGMEM = "119";
 
 static const char stat_120[] PROGMEM = "120";
