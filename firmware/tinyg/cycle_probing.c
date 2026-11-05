@@ -283,7 +283,7 @@ static stat_t _probing_finish()
 	for( uint8_t axis=0; axis<AXES; axis++ ) {
 		// if we got here because of a feed hold we need to keep the model position correct
 		cm_set_position(axis, mp_get_runtime_absolute_position(axis));
-		cm.probe_results[axis] = cm_get_work_position(ACTIVE_MODEL, axis); // store the probe results
+		cm.probe_results[axis] = cm_get_absolute_position(ACTIVE_MODEL, axis); // machine position in mm, as g2core (E028)
 	}
 	_probe_report();
 	return (_set_pb_func(_probing_finalize_exit));
