@@ -15,7 +15,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.timeout(120),
-              pytest.mark.bug("E028", on=["d449"])]
+              pytest.mark.bug("E028", on=[])]
 
 
 def _body(ev):
