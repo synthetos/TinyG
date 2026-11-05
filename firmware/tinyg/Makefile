@@ -57,6 +57,8 @@ LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
 
 all: $(BUILDDIR)/tinyg.hex size
 
+build: all                 # Xcode's legacy target passes $(ACTION): build or clean
+
 $(BUILDDIR)/tinyg.elf: $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
@@ -89,4 +91,4 @@ clean:
 
 -include $(OBJS:.o=.d)
 
-.PHONY: all size lint flash clean
+.PHONY: all build size lint flash clean
