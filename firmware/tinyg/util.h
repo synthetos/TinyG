@@ -149,6 +149,28 @@ uint32_t SysTickTimer_getValue(void);
 #define M_SQRT3 (1.73205080756888)
 #endif
 
+// // Fraction part
+// const float c_atof_frac_(char *&p_, float v_, float m_) {
+//    return ((*p_ >= '0') && (*p_ <= '9')) ? (v_ = ((v_) + ((*p_) - '0') * m_), c_atof_frac_(++p_, v_, m_ / 10.0)) : v_;
+// }
+
+// // Integer part
+// const float c_atof_int_float_(char *&p_, float v_) {
+//    return (*p_ == '.')
+//    ? (float)(v_) + c_atof_frac_(++p_, 0, 1.0 / 10.0)
+//    : (((*p_ >= '0') && (*p_ <= '9')) ? ((v_ = ((*p_) - '0') + (v_ * 10)), c_atof_int_float_(++p_, v_)) : v_);
+// }
+
+// const float c_atof_int_int_(char *&p_, float v_) {
+//    return (*p_ == '.')
+//    ? (float)(v_) + c_atof_frac_(++p_, 0, 1.0 / 10.0)
+//    : (((*p_ >= '0') && (*p_ <= '9')) ? ((v_ = ((*p_) - '0') + (v_ * 10)), c_atof_int_float_(++p_, v_)) : v_);
+// }
+
+
+// // Start portion
+// constexpr float c_atof(char *&p_) { return (*p_ == '-') ? (c_atof_int_int(++p_, 0) * -1.0) : ( (*p_ == '+') ? c_atof_int_int(++p_, 0) : (c_atof_int_int(p_, 0))); }
+
 #ifdef __cplusplus
 }
 #endif

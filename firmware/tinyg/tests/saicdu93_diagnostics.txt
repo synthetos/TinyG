@@ -8,21 +8,21 @@ uint8_t cfg_config_parser(char *str)
 //######################### START diagnostic ##############################
 	if (str[0] == '?') { // special handling for status report
 		switch(str[1]) {
-			case 'x':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_work_position(X)); break;
+			case 'x':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_display_position(X)); break;
 			case 'X':fprintf_P(stderr,PSTR("[x=%1.3f]\n"), cm_get_runtime_machine_position(X));break;
-			case 'y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_work_position(Y));break;
+			case 'y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_display_position(Y));break;
 			case 'Y':fprintf_P(stderr,PSTR("[y=%1.3f]\n"), cm_get_runtime_machine_position(Y));break;
-			case 'z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_work_position(Z));break;
+			case 'z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_display_position(Z));break;
 			case 'Z':fprintf_P(stderr,PSTR("[z=%1.3f]\n"), cm_get_runtime_machine_position(Z));break;
-			case 'a':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_work_position(A));break;
+			case 'a':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_display_position(A));break;
 			case 'A':fprintf_P(stderr,PSTR("[a=%1.3f]\n"), cm_get_runtime_machine_position(A));break;
 			case 'd':{ 
 
-				fprintf_P(stderr,PSTR("Programmed X=[%1.3f] "),cm_get_runtime_work_position(X));
+				fprintf_P(stderr,PSTR("Programmed X=[%1.3f] "),cm_get_runtime_display_position(X));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/cfg.m[X].steps_per_unit); 
-				fprintf_P(stderr,PSTR("Programmed Y=[%1.3f] "),cm_get_runtime_work_position(Y));
+				fprintf_P(stderr,PSTR("Programmed Y=[%1.3f] "),cm_get_runtime_display_position(Y));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/cfg.m[Y].steps_per_unit); 
-			    fprintf_P(stderr,PSTR("Programmed Z=[%1.3f] "),cm_get_runtime_work_position(Z));
+			    fprintf_P(stderr,PSTR("Programmed Z=[%1.3f] "),cm_get_runtime_display_position(Z));
 				fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/cfg.m[Z].steps_per_unit); 
 	     	   break;
 	        }
@@ -61,18 +61,18 @@ static void _prompt_without_message()
 
 /*
 //##################### BEGIN DIAGNOSTIC #######################
-	fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_work_position(X));
+	fprintf_P(stderr,PSTR("Programmed X =[%1.3f] "),cm_get_runtime_display_position(X));
 // 100 is step/mm=( 360*micro_step/(step angle * travel_per_revolution)) 360*1/(0.72*5)=100
 	float x_factor = (360 * cfg.m[X].microsteps / (cfg.m[X].step_angle * cfg.m[X].travel_rev));
 	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/x_factor); 
 //	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),x_cnt/100); 
 
-	fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_work_position(Y));
+	fprintf_P(stderr,PSTR("Programmed Y =[%1.3f] "),cm_get_runtime_display_position(Y));
 	float y_factor = (360 * cfg.m[Y].microsteps / (cfg.m[Y].step_angle * cfg.m[Y].travel_rev));
 	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/y_factor); 
 //	fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),y_cnt/100); 
 
-    fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_work_position(Z));
+    fprintf_P(stderr,PSTR("Programmed Z =[%1.3f] "),cm_get_runtime_display_position(Z));
 	float z_factor = (360 * cfg.m[Z].microsteps / (cfg.m[Z].step_angle * cfg.m[Z].travel_rev));
     fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/z_factor); 
 //    fprintf_P(stderr,PSTR("Real=[%1.3f] mm\n"),z_cnt/100); 

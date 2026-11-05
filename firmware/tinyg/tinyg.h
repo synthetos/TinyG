@@ -45,7 +45,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD
-#define TINYG_FIRMWARE_BUILD        440.21	// M114, M115, M400
+#define TINYG_FIRMWARE_BUILD        440.22	// M114, M115, M400
 
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					// firmware major version
