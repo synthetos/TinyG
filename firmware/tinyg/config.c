@@ -165,6 +165,8 @@ nvList_t nvl;
  */
 static bool config_loaded;                  // set when config_init() has loaded every setting (N60)
 
+bool config_is_loaded(void) { return (config_loaded); }
+
 static bool _refused_in_cycle(nvObj_t *nv)
 {
 	if (!config_loaded ||
@@ -339,7 +341,7 @@ void config_init()
 
 static void _set_defa(nvObj_t *nv)
 {
-	if (cm.cycle_state != CYCLE_OFF) {
+	if (config_loaded && cm_persistence_busy()) {	// a lone dwell starts no cycle (N68)
     	rpt_exception_P(STAT_COMMAND_NOT_ACCEPTED, PSTR("Cannot reset to defaults when moving"));
         return;
 	}

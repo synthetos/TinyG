@@ -443,9 +443,22 @@ void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.g
  * a host streaming data during a deferred write still needs persistence-aware flow control.
  */
 
+/*
+ * cm_persistence_busy() - an EEPROM write must wait (N68)
+ *
+ *	Each persisted value masks the medium and low interrupt levels while it is written (AVR1008 workaround), so
+ *	serial input and segment preparation stall. A lone G4 dwell starts no cycle but keeps the runtime busy.
+ *	Queued commands that have not started do not count: G10 queues its own offset update, and back-to-back idle
+ *	G10s must still be written before their response (N01).
+ */
+bool cm_persistence_busy()
+{
+	return ((cm.cycle_state != CYCLE_OFF) || !mp_runtime_is_idle());
+}
+
 static void _persist_coord_offsets()
 {
-	cm.deferred_write_flag = false;
+	bool saved = true;
 	nvObj_t nv;
 	for (uint8_t i=1; i<=COORDS; i++) {
 		for (uint8_t j=0; j<AXES; j++) {
@@ -456,14 +469,17 @@ static void _persist_coord_offsets()
 			nv.token[4] = NUL;
 			nv.index = nv_get_index((const char *)"", nv.token);
 			nv.value_flt = cm.offset[i][j];
-			nv_persist(&nv);				// Note: only writes values that have changed
+			if (nv_persist(&nv) != STAT_OK) {	// Note: only writes values that have changed
+				saved = false;
+			}
 		}
 	}
+	cm.deferred_write_flag = !saved;		// pending until every offset is saved
 }
 
 stat_t cm_deferred_write_callback()
 {
-    if ((cm.cycle_state == CYCLE_OFF) && cm.deferred_write_flag && !st_aline_in_flight()) {
+    if (cm.deferred_write_flag && !cm_persistence_busy() && !st_aline_in_flight()) {
 #ifdef __AVR
         if (xio_isbusy()) { return (STAT_OK); }
 #endif
@@ -1059,7 +1075,7 @@ stat_t cm_set_coord_offsets(const float coord_system,
     // An idle stop-and-wait host may send the next line as soon as our response
     // arrives. Finish EEPROM writes before returning to the parser, not after
     // that response. During motion, retain the existing deferred write-back.
-    if (changed && (cm.cycle_state == CYCLE_OFF) && !st_aline_in_flight()) {
+    if (changed && !cm_persistence_busy() && !st_aline_in_flight()) {	// not during a dwell either (N68)
         _persist_coord_offsets();
     }
     if (changed && (selected == cm.gm.coord_system)) {

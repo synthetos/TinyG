@@ -38,7 +38,7 @@ def _dwell_then_g10(tg):
     return started
 
 
-@pytest.mark.bug("N68", on=["d449"])
+@pytest.mark.bug("N68", on=[])
 def test_g10_during_dwell_not_written_until_idle(tg, keep, record):
     keep("g55x")
     _dwell_then_g10(tg)

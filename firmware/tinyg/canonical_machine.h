@@ -693,6 +693,7 @@ extern volatile uint8_t cm_position_epoch;
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
 stat_t cm_deferred_write_callback(void);
+bool cm_persistence_busy(void);                  // no EEPROM write now: a cycle, motion or a dwell runs (N68)
 #define MAX_GEOMETRY_COORDINATE 1.0e18f // six squared differences of two endpoints stay finite
 stat_t cm_set_coord_value(nvObj_t *nv);
 stat_t cm_set_model_target(const float target[], const bool flags[]);
