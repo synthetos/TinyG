@@ -17,7 +17,12 @@ def _state(ice):
 @pytest.mark.parametrize('control',[b'%', b'\x04', b'%\x04'], ids=['flush','kill','flush-then-kill'])
 def test_long_dwell_abort_stays_responsive(tg, ice, record, control):
     tg.send_gcode('G21 G90 G94 G92.1 G54 G49',check=True)
+    # Seed the origin: an earlier test can leave motor 1's step counter a step from the runtime position (DDA phase
+    # residual), and the flush below rightly resyncs it, which is not a step. G28.3 rewrites the counter to agree.
+    tg.send_gcode('G28.3 X0 Y0 Z0 A0',check=True,allow='seed the origin so the step counter agrees with the runtime')
+    tg.wait_idle()                  # G28.3 is queued: its reply comes before the counter is rewritten
     before=_state(ice)
+    assert before['en.en[0].encoder_steps']+before['en.en[0].steps_run']==0, before
     try:
         tg.send_json({'gc':'G4 P30'},check=True,allow='stationary bounded dwell abort regression')
         time.sleep(1.0)
