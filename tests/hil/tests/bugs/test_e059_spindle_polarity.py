@@ -41,7 +41,7 @@ def test_polarity_cannot_change_during_queued_work(tg):
     try:
         tg.send_gcode("G4 P2", check=True)
         response = tg.send_json({"spdp": before})
-        assert response.status == tg.dialect.status("COMMAND_NOT_ACCEPTED")
+        assert response.status == 117               # N60: the dwell is a cycle; refused before the setter runs
         assert tg.get("spdp") == before
     finally:
         tg.wait_idle(timeout=5)
@@ -87,7 +87,7 @@ def test_polarity_output_latches(tg, ice, keep, enable_polarity, direction_polar
             assert bool(ice.read(0x604, 1)[0] & 0x20) == bool(enable_polarity)
             assert bool(ice.read(0x6A4, 1)[0] & 0x20) == bool(direction_high)
             response = tg.send_json({"spdp": direction_polarity})
-            assert response.status == tg.dialect.status("COMMAND_NOT_ACCEPTED")
+            assert response.status in (tg.dialect.status("COMMAND_NOT_ACCEPTED"), 117)  # 117 if M3 still holds the cycle (N60)
         command("M5", 0)
         assert bool(ice.read(0x604, 1)[0] & 0x20) == (not enable_polarity)
     finally:

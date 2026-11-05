@@ -55,6 +55,13 @@ static stat_t rt_set_qt(nvObj_t *n) { (void)n; return STAT_OK; }
 static stat_t rt_set_fi(nvObj_t *n) { (void)n; return STAT_OK; }
 static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
 stat_t set_grp(nvObj_t *n) { (void)n; return STAT_OK; }
+/* N60: input cases run idle (no cycle, no queued work), so the in-cycle refusal never fires here; see test_n60_*. */
+bool mp_has_runnable_buffer(void) { return false; }
+bool mp_runtime_is_idle(void) { return true; }
+static bool config_loaded = true;
+bool cfg_has_flag(index_t i, uint8_t mask) { (void)i; (void)mask; return false; }
+static stat_t sr_set(nvObj_t *n) { (void)n; return STAT_OK; }
+static stat_t srs_set(nvObj_t *n) { (void)n; return STAT_OK; }
 nvObj_t *nv_reset_nv_list(char *parent) {
     /* AVR address zero reads as the empty parent; desktop NULL is not readable. */
     return real_reset_nv_list(parent ? parent : "");

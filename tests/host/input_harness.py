@@ -83,7 +83,7 @@ static int exercise(char *s,unsigned n) {
         code = pre + extract((FW / 'canonical_machine.c').read_text(), 'cm_is_alarmed', 'canonical_machine.c')
         config = (FW / 'config.c').read_text()
         code += extract(config,'nv_reset_nv_list','config.c').replace('nv_reset_nv_list(', 'real_reset_nv_list(', 1)
-        for name in ['nv_reset_nv','nv_next','nv_prev','nv_next_empty','set_nul','nv_set','nv_get','nv_copy_string']:
+        for name in ['nv_reset_nv','nv_next','nv_prev','nv_next_empty','set_nul','_refused_in_cycle','nv_set','nv_get','nv_copy_string']:
             code += extract(config,name,'config.c')
         for name in ['str_asciify','str_unescape','str2float','str2long']:
             code += extract(util,name,'util.c')

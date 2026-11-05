@@ -33,6 +33,7 @@
 #include "report.h"
 #include "controller.h"
 #include "canonical_machine.h"
+#include "planner.h"
 #include "json_parser.h"
 #include "text_parser.h"
 #include "persistence.h"
@@ -102,11 +103,35 @@ nvList_t nvl;
  *
  *	!!!! NOTE: nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
  */
+/*
+ * _refused_in_cycle() - a persisted setting written while a cycle runs (moving, homing, probing, jogging or in
+ *	feedhold) or while queued work is pending or running (a lone G4 dwell does not start a cycle) is refused before
+ *	it applies (N60). The busy test is the one the switch setters use. Never before config_init() has finished:
+ *	it loads every setting through nv_set() after canonical_machine_init() has queued commands (and has already set
+ *	MACHINE_READY), and refusing them left a board on zeroed settings (jv=0: silent). Applying it and failing only the EEPROM write left the board on a
+ *	value that reverted at the next reset. The status report list counts as a setting: it is saved slot by slot.
+ *	Actions, rt leaves and GETs are not affected; G10 offsets keep their own deferred write-back.
+ */
+static bool config_loaded;                  // set when config_init() has loaded every setting (N60)
+
+static bool _refused_in_cycle(nvObj_t *nv)
+{
+	if (!config_loaded ||
+	    ((cm.cycle_state == CYCLE_OFF) && !mp_has_runnable_buffer() && mp_runtime_is_idle())) {
+		return (false);
+	}
+	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
+	return (cfg_has_flag(nv->index, F_PERSIST) || (set == sr_set) || (set == srs_set));
+}
+
 stat_t nv_set(nvObj_t *nv)
 {
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
+	if (_refused_in_cycle(nv)) {
+		return (STAT_SETTING_REFUSED_IN_CYCLE);	// nothing changes; the job continues (N60)
+	}
 	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
 	if ((set != set_grp) && (set != set_nul) && (set != rt_set_grp) && (set != rt_set_hb) && (set != rt_set_qt) &&
 		(set != rt_set_fi)) {
@@ -254,6 +279,7 @@ void config_init()
         if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
 #endif
+	config_loaded = true;                       // from here a SET while work runs is refused (N60)
 }
 
 /*
@@ -591,6 +617,14 @@ stat_t set_grp(nvObj_t *nv)
 	if (cs.comm_mode == TEXT_MODE) {
         return (STAT_UNRECOGNIZED_NAME);
     }
+	nvObj_t *child = nv;                        // refuse the whole group before any child applies (N60)
+	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
+		if ((child = nv_next(child)) == NULL) break;
+		if (child->valuetype == TYPE_EMPTY) break;
+		if ((child->valuetype != TYPE_NULL) && (child->index < nv_index_max()) && _refused_in_cycle(child)) {
+			return (STAT_SETTING_REFUSED_IN_CYCLE);
+		}
+	}
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((nv = nv_next(nv)) == NULL) break;
 		if (nv->valuetype == TYPE_EMPTY) break;

@@ -73,6 +73,7 @@ void rpt_exception(int status,const char *s){assert(tx);assert(status==STAT_CONF
 stat_t cm_panic_P(int status,const char *s){panics++;return status;}
 static void _set_defa(nvObj_t *nv);
 void config_init_assertions(void);
+static bool config_loaded;  /* config.c (N60): set at the end of config_init() */
 '''
         if 'static index_t config_load_failure;' in source:
             code += 'static index_t config_load_failure;\n'

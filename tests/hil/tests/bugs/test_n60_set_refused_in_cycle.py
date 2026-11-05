@@ -15,7 +15,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.timeout(300),
-              pytest.mark.bug("N60", on=["d449"])]
+              pytest.mark.bug("N60", on=[])]
 
 REFUSED = 117
 MOVE = "G91 G1 X20 F100"          # 12 s at F100: every SET below lands mid-move

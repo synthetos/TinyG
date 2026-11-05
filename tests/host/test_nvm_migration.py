@@ -64,6 +64,7 @@ static void _set_defa(nvObj_t *nv);
 stat_t nv_persist(nvObj_t *nv);
 nvObj_t *nv_reset_nv_list(char c) {memset(&object,0,sizeof(object));return &object;}
 void config_init_assertions(void) {}
+static bool config_loaded;  /* config.c (N60): set at the end of config_init() */
 void cm_set_units_mode(int m) {assert(m==MILLIMETERS);}
 void rpt_print_loading_configs_message(void) {}
 void rpt_print_initializing_message(void) {}
