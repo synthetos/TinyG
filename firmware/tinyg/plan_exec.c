@@ -554,10 +554,16 @@ static stat_t _exec_aline_head()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		_init_forward_diffs(mr.entry_velocity, mr.cruise_velocity);
 		mr.segment_count = (uint32_t)mr.segments;
-		if (mr.segment_time < MIN_SEGMENT_TIME)
-            return(STAT_MINIMUM_TIME_MOVE);                         // exit without advancing position
+		// Preserve this section: returning an error here frees the whole block.
+		if (mr.segment_time < MIN_SEGMENT_TIME) {
+            mr.segment_time = MIN_SEGMENT_TIME;
+            mr.segments = mr.segment_count = 1;
+            mr.segment_velocity = mr.head_length / mr.segment_time;
+            mr.forward_diff_5 = 0;
+        }
+		if (mr.segments == 1) mr.forward_diff_5 = 0; // midpoint velocity is already the section average
 		mr.section = SECTION_HEAD;
-		mr.section_state = SECTION_1st_HALF;						// Note: Set to SECTION_1st_HALF for one segment
+		mr.section_state = (mr.segments == 1) ? SECTION_2nd_HALF : SECTION_1st_HALF; // One segment must snap to its section waypoint.
 	}
 	// For forward differencing we should have one segment in SECTION_1st_HALF
 	// However, if it returns from that as STAT_OK, then there was only one segment in this section.
@@ -606,8 +612,13 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
-		if (mr.segment_time < MIN_SEGMENT_TIME)
-            return(STAT_MINIMUM_TIME_MOVE);                 // exit without advancing position
+		// Preserve this section: returning an error here frees the whole block.
+		if (mr.segment_time < MIN_SEGMENT_TIME) {
+            mr.segment_time = MIN_SEGMENT_TIME;
+            mr.segments = mr.segment_count = 1;
+            mr.segment_velocity = mr.body_length / mr.segment_time;
+            mr.forward_diff_5 = 0;
+        }
 		mr.section = SECTION_BODY;
 		mr.section_state = SECTION_2nd_HALF;				// uses PERIOD_2 so last segment detection works
 	}
@@ -636,10 +647,16 @@ static stat_t _exec_aline_tail()
 		mr.segment_time = mr.gm.move_time / mr.segments;			// time to advance for each segment
 		_init_forward_diffs(mr.cruise_velocity, mr.exit_velocity);
 		mr.segment_count = (uint32_t)mr.segments;
-		if (mr.segment_time < MIN_SEGMENT_TIME)
-            return(STAT_MINIMUM_TIME_MOVE);                         // exit without advancing position
+		// Preserve this section: returning an error here frees the whole block.
+		if (mr.segment_time < MIN_SEGMENT_TIME) {
+            mr.segment_time = MIN_SEGMENT_TIME;
+            mr.segments = mr.segment_count = 1;
+            mr.segment_velocity = mr.tail_length / mr.segment_time;
+            mr.forward_diff_5 = 0;
+        }
+		if (mr.segments == 1) mr.forward_diff_5 = 0;
 		mr.section = SECTION_TAIL;
-		mr.section_state = SECTION_1st_HALF;
+		mr.section_state = (mr.segments == 1) ? SECTION_2nd_HALF : SECTION_1st_HALF;
 	}
 	if (mr.section_state == SECTION_1st_HALF) {						// FIRST HALF - convex part (period 4)
 		if (_exec_aline_segment() == STAT_OK) {
