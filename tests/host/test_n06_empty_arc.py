@@ -63,7 +63,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'arc.c'; c.write_text(pre); exe=Path(d)/'arc'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-D_POSIX_C_SOURCE=200809L','-include','tgmath.h','-I'+str(FIX),'-I'+str(FW),str(c),
                             *[str(FW/f) for f in ['planner.c','plan_line.c','plan_zoid.c','util.c']],'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

@@ -101,7 +101,7 @@ class MotorEnergizeTimeout(unittest.TestCase):
             code+=function(s,r'(?:static )?(?:void|stat_t) '+name+r'\([^;{}]*\)(?=\s*(?://[^\n]*\n\s*)?\{)')+'\n'
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'motor.c';exe=Path(d)/'motor';c.write_text(code+EXERCISE)
-            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(c),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 
 if __name__=='__main__': unittest.main()

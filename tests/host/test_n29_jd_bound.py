@@ -18,7 +18,7 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){for(units=0;units<2;units++)for(int a=0;a<6;a++){\n float bad[]={1e30f,-1,0,1e-38f,NAN,INFINITY};\n for(int k=0;k<6;k++){stored=123;nvObj_t n={.index=a,.value_flt=bad[k]};assert(jd_set(&n)!=0&&stored==123);}\n nvObj_t n={.index=a,.value_flt=.05f};assert(jd_set(&n)==0&&stored>0&&isfinite(stored*stored));\n}units=MILLIMETERS;nvObj_t n={.value_flt=1000000};assert(jd_set(&n)==0);\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
 class JunctionMath(unittest.TestCase):
@@ -45,5 +45,5 @@ int main(void){float a[6]={1,0},b[6]={0,1};
 '''
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'check.c';p.write_text(code);exe=p.with_suffix('')
-   subprocess.run(['cc','-std=gnu99','-O1','-fsanitize=address,undefined',str(p),'-lm','-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=gnu99','-O1','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-lm','-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

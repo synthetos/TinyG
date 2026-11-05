@@ -142,7 +142,7 @@ class JsonSerializeBounds(unittest.TestCase):
             c, exe = pathlib.Path(tmp) / "bounds.c", pathlib.Path(tmp) / "bounds"
             c.write_text(code)
             subprocess.run([cc, "-std=c99", "-Wall", "-Wno-format", "-Wno-deprecated-declarations",
-                            "-Wno-unused-function", "-fsanitize=address,undefined", str(c), "-o", str(exe)],
+                            "-Wno-unused-function", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)],
                            check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

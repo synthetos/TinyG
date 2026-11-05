@@ -207,7 +207,7 @@ class PlannerExecHandoff(unittest.TestCase):
         cc = shutil.which('cc')
         if not cc:
             self.skipTest('host C compiler not installed')
-        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
+        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
@@ -221,7 +221,7 @@ class PlannerExecHandoff(unittest.TestCase):
                 subprocess.run([cc, *common, *extra, '-c', str(src), '-o', str(obj)], check=True)
                 objs.append(str(obj))
             exe = d / 'handoff'
-            subprocess.run([cc, '-fsanitize=address,undefined', *objs, '-lm', '-o', str(exe)], check=True)
+            subprocess.run([cc, '-fsanitize=address,undefined','-fstrict-flex-arrays=3', *objs, '-lm', '-o', str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -239,7 +239,7 @@ class PlannerExecHandoff(unittest.TestCase):
         self.assertEqual(line.count(marker), 1)
         line = 'struct mpBuffer; void hook_after_plan(struct mpBuffer *bp);\n' + \
             line.replace(marker, marker + ' hook_after_plan(bp);')
-        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
+        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
@@ -257,7 +257,7 @@ class PlannerExecHandoff(unittest.TestCase):
                                capture_output=True)
                 objs.append(str(obj))
             exe = d / 'finish'
-            subprocess.run([cc, '-fsanitize=address,undefined', *objs, '-lm', '-o', str(exe)], check=True)
+            subprocess.run([cc, '-fsanitize=address,undefined','-fstrict-flex-arrays=3', *objs, '-lm', '-o', str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

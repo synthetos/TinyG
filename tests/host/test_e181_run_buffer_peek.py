@@ -191,7 +191,7 @@ def _cc():
 
 class RunBufferPeek(unittest.TestCase):
     def _planner_exe(self, d, main, planner_source):
-        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
+        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         (d / 'check.c').write_text(PRELUDE + main)
         (d / 'planner_check.c').write_text(planner_source)
@@ -206,7 +206,7 @@ class RunBufferPeek(unittest.TestCase):
             subprocess.run([_cc(), *common, *extra, '-c', str(src), '-o', str(obj)], check=True)
             objs.append(str(obj))
         exe = d / 'check'
-        subprocess.run([_cc(), '-fsanitize=address,undefined', *objs, '-lm', '-o', str(exe)], check=True)
+        subprocess.run([_cc(), '-fsanitize=address,undefined','-fstrict-flex-arrays=3', *objs, '-lm', '-o', str(exe)], check=True)
         return subprocess.run([str(exe)], capture_output=True, text=True)
 
     def _planner_source(self):

@@ -99,7 +99,7 @@ class MotorPowerCheck(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             c, exe = Path(d) / 'power.c', Path(d) / 'power'
             c.write_text(code)
-            subprocess.run([_cc(), '-std=gnu99', '-Wall', '-Wno-unused-function', '-fsanitize=address,undefined',
+            subprocess.run([_cc(), '-std=gnu99', '-Wall', '-Wno-unused-function', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

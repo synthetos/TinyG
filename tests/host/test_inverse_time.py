@@ -93,6 +93,6 @@ int main(void) {
         with tempfile.TemporaryDirectory() as td:
             p=Path(td);(p/'avr').mkdir();(p/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n')
             (p/'check.c').write_text(code)
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined','-I'+str(p),'-I'+str(FW),str(p/'check.c'),'-o',str(p/'check')],check=True)
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3','-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined','-I'+str(p),'-I'+str(FW),str(p/'check.c'),'-o',str(p/'check')],check=True)
             result=subprocess.run([str(p/'check')],capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)

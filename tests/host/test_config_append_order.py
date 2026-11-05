@@ -52,6 +52,6 @@ class ConfigAppendOrder(unittest.TestCase):
                 code+='if((cfgArray[i].flags&0x30)==0x30 && !nv_index_is_single(i)){fprintf(stderr,"boot load excludes persisted row: %s\\n",cfgArray[i].token);failures++;}\n}\nreturn failures?1:0;}\n'
                 with tempfile.TemporaryDirectory() as tmp:
                     p=Path(tmp)/'table.c';exe=Path(tmp)/'table';p.write_text(code)
-                    subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+                    subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
                     result=subprocess.run([str(exe)],capture_output=True,text=True)
                     self.assertEqual(result.returncode,0,result.stderr)

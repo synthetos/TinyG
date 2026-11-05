@@ -125,7 +125,7 @@ int main(void) {
             c = Path(tmp) / 'sync.c'
             c.write_text(code)
             exe = Path(tmp) / 'sync'
-            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-fsanitize=address,undefined',
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)
             subprocess.run([str(exe)], check=True)
 

@@ -91,7 +91,7 @@ class CncjsStatusSetup(unittest.TestCase):
         code+='\nstatic int parse(void){nvObj_t *p=list;char *s=input;char g[4]="";return _marshall_nv_pair(&p,&s,g,0,true'+args+');}\n'+EXERCISE
         with tempfile.TemporaryDirectory() as d:
             path=Path(d);(path/'check.c').write_text(code)
-            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(path/'check.c'),'-o',str(path/'check')],check=True)
+            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(path/'check.c'),'-o',str(path/'check')],check=True)
             subprocess.run([str(path/'check')],check=True)
 
     def test_receive_limit_fits_connect_request_without_wrapping(self):

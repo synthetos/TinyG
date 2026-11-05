@@ -17,7 +17,7 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){for(int a=0;a<6;a++)for(units=0;units<2;units++){\n stored=123;nvObj_t n={.index=a,.value_flt=1e-38f};assert(cm_set_axis_rate(&n)==108&&stored==123);\n n.value_flt=.00001f;assert(cm_set_axis_rate(&n)==0&&stored>0);\n}}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
 class PlannerDuration(unittest.TestCase):

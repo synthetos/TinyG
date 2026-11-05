@@ -209,7 +209,7 @@ class PositionSnapshot(unittest.TestCase):
             c, exe = Path(tmp) / "snap.c", Path(tmp) / "snap"
             c.write_text(code)
             subprocess.run([cc, "-std=gnu99", "-Wall", "-Werror", "-Wno-unused-function",
-                            "-fsanitize=address,undefined", str(c), "-o", str(exe), "-lm"], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe), "-lm"], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

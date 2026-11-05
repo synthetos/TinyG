@@ -91,7 +91,7 @@ int main(void){
 '''
   with tempfile.TemporaryDirectory() as tmp:
    p=Path(tmp)/'wait.c';p.write_text(code)
-   subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined',str(p),'-o',str(p.with_suffix(''))],check=True)
+   subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(p.with_suffix(''))],check=True)
    out=subprocess.run([str(p.with_suffix(''))],capture_output=True,text=True)
    self.assertEqual(out.returncode,0,out.stderr)
 if __name__=='__main__':unittest.main()

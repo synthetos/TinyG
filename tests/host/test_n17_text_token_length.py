@@ -39,5 +39,5 @@ int main(void){
 '''
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'text.c';p.write_text(code);exe=p.with_suffix('')
-   subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
    q=subprocess.run([str(exe)],capture_output=True,text=True);self.assertEqual(q.returncode,0,q.stderr)

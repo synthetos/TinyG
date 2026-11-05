@@ -135,7 +135,7 @@ class FreedPreviousDirection(unittest.TestCase):
         cc = shutil.which('cc')
         if not cc:
             self.skipTest('host C compiler not installed')
-        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined',
+        common = ['-std=gnu99', '-O1', '-g', '-funsigned-char', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                   '-D_POSIX_C_SOURCE=200809L', '-DHAS_STARTUP', '-I' + str(FIXTURE), '-I' + str(FIRMWARE)]
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)

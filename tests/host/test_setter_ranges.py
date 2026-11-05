@@ -89,7 +89,7 @@ class SetterRanges(unittest.TestCase):
             c, exe = Path(tmp) / "set.c", Path(tmp) / "set"
             c.write_text(code)
             subprocess.run([cc, "-std=c99", "-Wall", "-Wno-unused-function", "-Wno-deprecated-declarations",
-                            "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

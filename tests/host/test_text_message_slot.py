@@ -131,7 +131,7 @@ class TextMessageSlot(unittest.TestCase):
                 "#define PROGMEM\n#define PSTR(s) (s)\n#define printf_P printf\n#define strcmp_P strcmp\n")
             c, exe = tmp / "msg.c", tmp / "msg"
             c.write_text(code)
-            subprocess.run([cc, "-std=gnu99", "-O1", "-fsanitize=address,undefined", "-D__TEXT_MODE",
+            subprocess.run([cc, "-std=gnu99", "-O1", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", "-D__TEXT_MODE",
                             "-D_POSIX_C_SOURCE=200809L", "-Wno-macro-redefined", "-I" + str(tmp),
                             "-I" + str(FIRMWARE), str(c), "-lm", "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)

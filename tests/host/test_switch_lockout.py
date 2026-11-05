@@ -171,7 +171,7 @@ class SwitchLockoutTests(unittest.TestCase):
                             "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }\n")   # E190
             (path / "check.c").write_text(PRELUDE + types + switch_types + "\nrtClock_t rtc;\n" + clock_access +
                                           actual + EXERCISE)
-            subprocess.run([compiler, "-std=gnu99", "-O1", "-fsanitize=address,undefined",
+            subprocess.run([compiler, "-std=gnu99", "-O1", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(path / "check.c"), "-o", str(path / "check")], check=True)
             result = subprocess.run([str(path / "check")], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

@@ -94,5 +94,5 @@ int main(void) {
 '''.replace('SETTER',setter)
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'check.c';p.write_text(code);exe=Path(d)/'check'
-            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

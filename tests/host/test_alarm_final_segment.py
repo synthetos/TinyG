@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         path.write_text(code)
         cls.exe = path.with_suffix("")
         subprocess.run(["cc", "-std=c99", "-Wall", "-Werror",
-                        "-fsanitize=address,undefined", str(path), "-o", str(cls.exe)], check=True)
+                        "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(path), "-o", str(cls.exe)], check=True)
 
     @classmethod
     def tearDownClass(cls):

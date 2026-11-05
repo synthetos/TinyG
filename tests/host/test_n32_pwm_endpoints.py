@@ -27,7 +27,7 @@ int main(void){
 '''
   with tempfile.TemporaryDirectory() as d:
    src=Path(d)/'duty.c';src.write_text(code);exe=src.with_suffix('')
-   subprocess.run(['cc','-std=c99','-fsanitize=address,undefined,float-cast-overflow',str(src),'-o',str(exe),'-lm'],check=True)
+   subprocess.run(['cc','-std=c99','-fsanitize=address,undefined,float-cast-overflow','-fstrict-flex-arrays=3',str(src),'-o',str(exe),'-lm'],check=True)
    p=subprocess.run([str(exe)],capture_output=True,text=True)
    self.assertEqual(p.returncode,0,p.stderr)
 if __name__=='__main__':unittest.main()

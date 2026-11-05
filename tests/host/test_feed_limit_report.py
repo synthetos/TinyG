@@ -95,7 +95,7 @@ class FeedLimitReport(unittest.TestCase):
             c, exe = Path(tmp) / (name + ".c"), Path(tmp) / name
             c.write_text(code)
             subprocess.run(["cc", "-std=gnu99", "-O1", "-Wall", "-Werror", "-Wno-unused-function",
-                            "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             r = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
 

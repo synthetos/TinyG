@@ -41,7 +41,7 @@ int main(int argc,char **argv){
             good[text]=int(Decimal(text))
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'number.c';exe=Path(tmp)/'number';p.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             lines=subprocess.check_output([str(exe),*good,*bad],text=True).splitlines()
         for text,line in zip([*good,*bad],lines):
             status,value=map(int,line.split())

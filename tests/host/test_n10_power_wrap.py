@@ -37,5 +37,5 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'power.c';exe=Path(d)/'power';p.write_text(code)
-            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

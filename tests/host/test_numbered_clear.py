@@ -37,6 +37,6 @@ class NumberedClear(unittest.TestCase):
         code=PRELUDE+function(source,r'static void _parse_clear\(const char \*str\)\s*\n')+EXERCISE
         with tempfile.TemporaryDirectory() as tmp:
             src=pathlib.Path(tmp)/'clear.c';exe=pathlib.Path(tmp)/'clear';src.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(src),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 if __name__=='__main__': unittest.main()

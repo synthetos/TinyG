@@ -154,7 +154,7 @@ class ClockRead(unittest.TestCase):
             c, exe = Path(d) / (name + ".c"), Path(d) / name
             c.write_text(code)
             subprocess.run([cc, "-std=gnu99", "-O1", "-g", "-Wall", "-Wno-unused-function", "-Wno-unused-variable",
-                            "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             control = subprocess.run([str(exe), "control"], capture_output=True, text=True)
             self.assertEqual(control.returncode, 0, control.stderr)
             result = subprocess.run([str(exe)], capture_output=True, text=True)

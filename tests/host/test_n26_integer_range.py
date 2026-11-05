@@ -15,5 +15,5 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){nvObj_t n={0};uint8_t *b=(uint8_t*)&stored;uint16_t *w=(uint16_t*)&stored;\n uint32_t bad[]={256,65536,2147483648UL,UINT32_MAX};\n for(int i=0;i<4;i++){*b=1;n.value_int=bad[i];assert(set_ui8(&n)==110&&*b==1);}\n n.value_int=255;assert(set_ui8(&n)==0&&*b==255);\n for(int i=1;i<4;i++){*w=123;n.value_int=bad[i];assert(set_u16(&n)==110&&*w==123);}\n n.value_int=65535;assert(set_u16(&n)==0&&*w==65535);\n *b=1;n.value_int=2;assert(sl_set(&n)==110&&*b==1);\n n.value_int=0;assert(sl_set(&n)==0&&*b==0);n.value_int=1;assert(sl_set(&n)==0&&*b==1);\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

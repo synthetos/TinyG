@@ -165,7 +165,7 @@ int main(void) {
             (tmp/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n')
             (tmp/'avr/interrupt.h').write_text('#include <stdint.h>\nextern volatile uint8_t SREG;\n#define cli() (SREG &= (uint8_t)~128)\n')
             c=tmp/'probe.c'; c.write_text(code); exe=tmp/'probe'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined','-I'+str(tmp),
                             '-I'+str(FIRMWARE),str(c),'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

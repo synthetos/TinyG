@@ -47,7 +47,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             src=pathlib.Path(tmp)/'escape.c';exe=pathlib.Path(tmp)/'escape';src.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Wno-unused-parameter','-fsanitize=address,undefined',str(src),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Wno-unused-parameter','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             result=subprocess.run([str(exe)],capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             expected=['','say "hi" \\ path']+[chr(c) for c in range(1,128)]+[''.join(chr(c) for c in range(1,128))]

@@ -70,7 +70,7 @@ class DeferredG10Tokens(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-g10-") as tmp:
             c, exe = Path(tmp) / "g10.c", Path(tmp) / "g10"
             c.write_text(code)
-            subprocess.run([cc, "-std=gnu99", "-Wall", "-Werror", "-fsanitize=address,undefined",str(c), "-o", str(exe)], check=True)
+            subprocess.run([cc, "-std=gnu99", "-Wall", "-Werror", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

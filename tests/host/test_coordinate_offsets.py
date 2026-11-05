@@ -142,7 +142,8 @@ int main(void) {
             (tmp/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n')
             c=tmp/'offsets.c'; c.write_text(code)
             exe=tmp/'offsets'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
+                            '-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined',
                             '-I'+str(tmp),'-I'+str(FIRMWARE),str(c),'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 

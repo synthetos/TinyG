@@ -64,7 +64,7 @@ class TxtJsonEscape(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-e137-") as tmp:
             c, exe = Path(tmp) / "esc.c", Path(tmp) / "esc"
             c.write_text(code)
-            subprocess.run([cc, "-std=c99", "-Wall", "-Wno-unused-function", "-fsanitize=address,undefined",
+            subprocess.run([cc, "-std=c99", "-Wall", "-Wno-unused-function", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(c), "-o", str(exe)], check=True)
             raw = subprocess.run([str(exe)], capture_output=True, text=True, check=True).stdout
         direct, report = raw.split("|")

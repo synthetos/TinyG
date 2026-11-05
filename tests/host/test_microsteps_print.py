@@ -52,7 +52,7 @@ int main(void) {
         with tempfile.TemporaryDirectory(prefix="tinyg-e111-") as tmp:
             c, exe = Path(tmp) / "mi.c", Path(tmp) / "mi"
             c.write_text(code)
-            subprocess.run([cc, "-std=c99", "-Wall", "-Werror", "-Wno-deprecated-declarations", "-fsanitize=address,undefined", str(c), "-o", str(exe)],
+            subprocess.run([cc, "-std=c99", "-Wall", "-Werror", "-Wno-deprecated-declarations", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)],
                            check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

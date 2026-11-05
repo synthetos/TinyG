@@ -161,7 +161,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'check.c';c.write_text(code);out=Path(d)/'check'
-            subprocess.run(['cc','-std=c99','-g','-fsanitize=address,undefined',str(c),'-o',str(out)],check=True)
+            subprocess.run(['cc','-std=c99','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(out)],check=True)
             subprocess.run([str(out)],check=True)
 
 
