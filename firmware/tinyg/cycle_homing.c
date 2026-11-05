@@ -308,7 +308,7 @@ static stat_t _homing_axis_clear(int8_t axis)				// first clear move
 {
 	if (sw.s[hm.homing_switch].state == SW_ACTIVE) {
 		_homing_axis_move(axis, hm.latch_backoff, hm.search_velocity);
-	} else if (sw.s[hm.limit_switch].state == SW_ACTIVE) {
+	} else if ((hm.limit_switch >= 0) && (sw.s[hm.limit_switch].state == SW_ACTIVE)) {	// -1: no limit switch (N73)
 		_homing_axis_move(axis, -hm.latch_backoff, hm.search_velocity);
 	}
 	return (_set_homing_func(_homing_axis_search));
