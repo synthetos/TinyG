@@ -10,7 +10,7 @@ import pytest
 from tinyg_hil import sender
 
 pytestmark=[pytest.mark.motion,pytest.mark.ice,pytest.mark.persists,pytest.mark.resets_board,
-            pytest.mark.dialect('d449'),pytest.mark.bug('N66'),pytest.mark.timeout(240)]
+            pytest.mark.dialect('d449'),pytest.mark.bug('N66',on=[]),pytest.mark.timeout(240)]
 
 
 class Holds(threading.Thread):

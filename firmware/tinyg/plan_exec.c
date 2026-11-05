@@ -243,6 +243,12 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 			mr.waypoint[SECTION_BODY][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length);
 			mr.waypoint[SECTION_TAIL][axis] = mr.position[axis] + mr.unit[axis] * (mr.head_length + mr.body_length + mr.tail_length);
 		}
+
+        // The final section must end on the planner's target. Reconstructing it
+        // from rounded lengths and the previous runtime point accumulates drift.
+        uint8_t last_section = !fp_ZERO(mr.tail_length) ? SECTION_TAIL :
+                               !fp_ZERO(mr.body_length) ? SECTION_BODY : SECTION_HEAD;
+        copy_vector(mr.waypoint[last_section], mr.target);
 	}
 
     // Feedhold Processing - We need to handle the following cases (listed in rough sequence order):
