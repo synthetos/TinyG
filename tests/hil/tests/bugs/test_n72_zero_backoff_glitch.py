@@ -19,7 +19,7 @@ from tinyg_hil import benches
 SwitchBox = pytest.importorskip("tinyg_hil.switchbox", reason="needs the switchbox client").SwitchBox
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.timeout(300),
-              pytest.mark.bug("N72", on=["d449"])]
+              pytest.mark.bug("N72", on=[])]
 
 SETTINGS = {"ysn": 1, "ysx": 0, "ytn": 0, "ytm": 30, "ysv": 150, "ylv": 60, "ylb": 2, "yzb": 5}
 # A in radius mode: the zero backoff is a linear distance the move converts to degrees (2 mm at ara 10 = 11.46 deg)

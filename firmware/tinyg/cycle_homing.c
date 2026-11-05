@@ -35,6 +35,8 @@
 #include "switch.h"
 #include "report.h"
 
+#define HOMING_ZERO_BACKOFF_TOLERANCE 0.01f	// mm, or degrees on rotary axes: the zero backoff reached its target (N72)
+
 /**** Homing singleton structure ****/
 
 struct hmHomingSingleton {			// persistent homing runtime variables
@@ -58,6 +60,7 @@ struct hmHomingSingleton {			// persistent homing runtime variables
 	float latch_velocity;			// latch speed as positive number
 	float latch_backoff;			// max distance to back off switch during latch phase
 	float zero_backoff;				// distance to back off switch before setting zero
+	float zero_target;				// machine position where the zero backoff ends (N72)
 	float max_clear_backoff;		// maximum distance of switch clearing backoffs before erring out
 
 	// state saved from gcode model
@@ -344,11 +347,18 @@ static stat_t _homing_axis_zero_backoff(int8_t axis)		// backoff to zero positio
         return (_homing_abort(axis)); // restore jerk and report HOMING_CYCLE_FAILED
     }
 	_homing_axis_move(axis, hm.zero_backoff, hm.search_velocity);
+	hm.zero_target = cm.gm.target[axis];					// machine units: degrees for a radius-mode rotary
 	return (_set_homing_func(_homing_axis_set_zero));
 }
 
 static stat_t _homing_axis_set_zero(int8_t axis)			// set zero and finish up
 {
+	// Any switch edge during homing stops the current move. The zero backoff is set only if it reached its
+	// target: a bounce or glitch that stopped it early would otherwise set the zero short (N72).
+	if (fabs(cm_get_absolute_position(RUNTIME, axis) - hm.zero_target) > HOMING_ZERO_BACKOFF_TOLERANCE) {
+		cm_queue_flush();									// drop the held rest of the backoff and end the hold
+		return (_homing_abort(axis));						// restore jerk and report HOMING_CYCLE_FAILED
+	}
 	if (hm.set_coordinates != false) {
 		cm_set_position(axis, 0);
 		cm.homed[axis] = true;
