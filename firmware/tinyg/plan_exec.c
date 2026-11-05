@@ -313,7 +313,14 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         bool fast = cm.hold_fast;
         if ((cm.hold_state == FEEDHOLD_SYNC) || rebuild_fast ||
             ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) && (mr.block_state == BLOCK_INITIALIZING))) {
-            if ((mr.section == SECTION_TAIL) && !fast) {   // already decelerating (a fast stop rebuilds the tail)
+            // A planned tail to zero can be far longer than the distance needed to stop from its own start
+            // speed: a short block entered slowly is planned tail-only over its whole length, and keeping that
+            // tail crawls for minutes or hours in HOLD (N70). Rebuild it as a real stop when the planned tail is
+            // more than twice that stopping distance; the remainder stays queued for the resume. The test is on
+            // the plan, not on the speed reached so far: near the end of a normal stop that speed is about zero.
+            bool crawl = ((mr.section == SECTION_TAIL) && !fast && fp_ZERO(mr.exit_velocity) &&
+                          (mr.tail_length > (2 * mp_get_target_length(mr.cruise_velocity, 0, bf) + EPSILON)));
+            if ((mr.section == SECTION_TAIL) && !fast && !crawl) {   // already decelerating (a fast stop rebuilds the tail)
                 if (fp_ZERO(mr.exit_velocity)) {
                     cm.hold_state = FEEDHOLD_DECEL_TO_ZERO;
                 } else {
@@ -324,6 +331,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                 if (mr.section == SECTION_HEAD) {
                     mr.entry_velocity += mr.forward_diff_5; // compute velocity for next segment (this new one)
                 }
+                if (mr.entry_velocity < 0) { mr.entry_velocity = 0; }    // a stopped axis stops at once (N70)
                 mr.cruise_velocity = mr.entry_velocity;
                 mr.section = SECTION_TAIL;
                 mr.section_state = SECTION_NEW;
