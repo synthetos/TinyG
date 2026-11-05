@@ -36,7 +36,7 @@ def build(root,out):
  driver=driver.replace('static void room(void)','static unsigned batch=28;\nstatic void room(void)').replace('mb.buffers_available < PLANNER_BUFFER_HEADROOM','mb.buffers_available < PLANNER_BUFFER_POOL_SIZE-batch+1')
  driver=driver.replace('    setup();','    if(argc>1)batch=atoi(argv[1]);\n    setup();')
  driver=driver.replace('    free(line);','    host_run_active();\n    extern void host_report(void);host_report();\n    free(line);')
- driver=driver.replace('void stepper_reset(void){}','void stepper_reset(void){}\nvoid st_prep_null(void){}')
+ if 'void st_prep_null(void)' not in driver: driver=driver.replace('void stepper_reset(void){}','void stepper_reset(void){}\nvoid st_prep_null(void){}')
  (out/'driver.c').write_text(driver)
  code='''#include "tinyg.h"
 #include "config.h"
