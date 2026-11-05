@@ -12,18 +12,21 @@ PRE=r'''
 #include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
+#define HOMING_ZERO_BACKOFF_TOLERANCE 0.01f
 typedef int stat_t;
 enum {STAT_OK,STAT_EAGAIN,SW_INACTIVE,SW_ACTIVE,SW_DISABLED,RUNTIME,SR_REQUEST_TIMED};
 #define STAT_HOMING_CYCLE_FAILED 240
-struct {bool homed[6];} cm;
-struct {stat_t (*func)(int8_t);int8_t homing_switch;float zero_backoff,search_velocity,saved_jerk;bool set_coordinates;} hm;
+struct {bool homed[6];struct {float target[6];} gm;} cm;
+struct {stat_t (*func)(int8_t);int8_t homing_switch;float zero_backoff,zero_target,search_velocity,saved_jerk;bool set_coordinates;} hm;
 static int raw,reads,moves,zeroed,error;static float jerk;
 static int read_switch(int n){assert(n==0);reads++;return raw;}
-static stat_t _homing_axis_move(int8_t a,float d,float v){moves++;return STAT_EAGAIN;}
+static stat_t _homing_axis_move(int8_t a,float d,float v){moves++;cm.gm.target[a]=1+d;return STAT_EAGAIN;}
 static stat_t _set_homing_func(stat_t (*f)(int8_t)){hm.func=f;return STAT_EAGAIN;}
 static stat_t _homing_axis_start(int8_t a){return STAT_OK;}
 static void cm_set_position(int8_t a,float v){zeroed++;}
 static float cm_get_absolute_position(int a,int8_t b){return 1;}
+static void cm_queue_flush(void){}
 static void cm_set_axis_jerk(int8_t a,float j){jerk=j;}
 static void sr_request_status_report(int n){}
 static stat_t _homing_error_exit(int8_t a,stat_t s){error=s;return s;}
