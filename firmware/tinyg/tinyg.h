@@ -49,7 +49,7 @@
 /****** REVISIONS ******/
 
 #ifndef TINYG_FIRMWARE_BUILD				// make FW_BUILD=x.y overrides it (HIL test of a build change)
-#define TINYG_FIRMWARE_BUILD        450.02	// edge-next: second build after 450.01
+#define TINYG_FIRMWARE_BUILD        450.03	// edge-next: third build after 450.02
 #endif
 #define TINYG_FIRMWARE_VERSION		0.97					    // firmware major version
 #define TINYG_CONFIG_VERSION		5							// CV values start at 5 for backwards compatibility
