@@ -26,7 +26,7 @@ class FastStopHandoff(unittest.TestCase):
         hold = function(exec_source, r'if \(cm.motion_state == MOTION_HOLD\)')
         seams = (
             ("bool fast = cm.hold_fast;", 1),
-            ("if ((mr.section == SECTION_TAIL) && !fast) {", 2),
+            ("if ((mr.section == SECTION_TAIL) && !fast && !crawl) {", 2),   # N70 added the crawl test
             ("float fast_ratio = fast ? _fast_stop_ratio(bf) : 1;", 3),
             ("cm.hold_fast_request = false;\n            cm.hold_fast = true;", 5),
         )
@@ -50,6 +50,7 @@ class FastStopHandoff(unittest.TestCase):
 #define __AVR 1
 #define SW_LIMIT_BIT 1
 #define fp_ZERO(x) (fabs(x)<0.000001)
+#define EPSILON ((float)0.00001)
 enum { MOTION_STOP, MOTION_RUN, MOTION_HOLD };
 enum { FEEDHOLD_OFF, FEEDHOLD_REQUESTED, FEEDHOLD_SYNC,
        FEEDHOLD_DECEL_CONTINUE, FEEDHOLD_DECEL_TO_ZERO,
@@ -143,7 +144,9 @@ int main(int argc, char **argv) {
         return [tuple(map(float, line.split())) for line in out.splitlines()]
 
     def test_late_request_survives_and_rebuilds_once(self):
-        for seam, section, normal_builds in ((1, 1, 1), (2, 2, 0), (3, 1, 1)):
+        # seam 2 is an existing tail: since N70 it computes its stopping distance once to rule out a crawling
+        # tail (the stub's 9 vs a tail of 9 is not one), so it counts one build and keeps the tail
+        for seam, section, normal_builds in ((1, 1, 1), (2, 2, 1), (3, 1, 1)):
             with self.subTest(seam=seam):
                 first, second, third = self.run_case(seam, section)
                 self.assertEqual(first, (1, 0, 4, normal_builds, 0, 9, 0, 128, 1))
