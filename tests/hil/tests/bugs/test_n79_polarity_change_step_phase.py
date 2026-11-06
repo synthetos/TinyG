@@ -9,13 +9,20 @@ motor's rotation). Found on bench 3's MSO (2026-11-06): two Y motors with the sa
 after a job that flipped $3po and back.
 
 Motors 2 and 3 both drive Y with motor 2's geometry; from a reset, four moves of 400 + frac steps run with $3po set to
-1 after the first and back to 0 after the second. The firmware's own pulse count (en.en[m].encoder_steps, incremented
-for every pulse in the DDA ISR) must be the same for both motors.
+1 after the first and back to 0 after the second. The firmware's own pulse count must be the same for both motors: the
+DDA ISR adds every pulse to en.en[m].steps_run, which is folded into encoder_steps when the next segment loads, so the
+count is encoder_steps + steps_run (the last segment's pulses are still in steps_run once the machine is idle).
 """
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board,
               pytest.mark.dialect("d449"), pytest.mark.bug("N79", on=[])]
+
+
+def _pulses(ice):
+    """{encoder index: pulses so far} for motors 2 and 3, from one halt."""
+    v = ice.peek_many([f"en.en[{i}].{f}" for i in (1, 2) for f in ("encoder_steps", "steps_run")])
+    return {i: v[f"en.en[{i}].encoder_steps"] + v[f"en.en[{i}].steps_run"] for i in (1, 2)}
 
 
 @pytest.mark.parametrize("frac", [0.25, 0.4, 0.7])
@@ -28,16 +35,15 @@ def test_n79_polarity_change_keeps_step_count(tg, keep, record, ice, frac):
     tg.send_gcode("G21 G91", check=True, allow="relative")
     spm = 360.0 * tg.get("2mi") / (tg.get("2sa") * tg.get("2tr"))
     line = f"G1 Y{(400 + frac) / spm:.6f} F300"
-    before = ice.peek_many(["en.en[1].encoder_steps", "en.en[2].encoder_steps"])
+    before = _pulses(ice)
     for po in (None, 1, 0, None):
         if po is not None:
             tg.set("3po", po, allow="flip motor 3's polarity between moves")
         tg.send_gcode(line, check=True, allow="N79 Y move")
         tg.wait_idle(timeout=30)
-    after = ice.peek_many(["en.en[1].encoder_steps", "en.en[2].encoder_steps"])
+    after = _pulses(ice)
     tg.send_gcode("G90", check=True)
-    m2 = after["en.en[1].encoder_steps"] - before["en.en[1].encoder_steps"]
-    m3 = after["en.en[2].encoder_steps"] - before["en.en[2].encoder_steps"]
+    m2, m3 = after[1] - before[1], after[2] - before[2]
     r = {"frac": frac, "steps_per_mm": spm, "commanded": 4 * (400 + frac), "m2": m2, "m3": m3}
     record("n79", r)
     assert m2 == m3, f"motor 3 took {m3} steps and motor 2 {m2} after the $3po flips: {r}"
