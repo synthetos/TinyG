@@ -393,6 +393,7 @@ typedef struct stPrepMotor {
 	// direction and direction change
 	int8_t direction;					// travel direction corrected for polarity
 	uint8_t prev_direction;				// travel direction from previous segment run for this motor
+	int8_t prev_step_sign;				// step_sign of the previous segment run (0 before the first): reversals (N79)
 	int8_t step_sign;					// set to +1 or -1 for encoders
 
 	// following error correction

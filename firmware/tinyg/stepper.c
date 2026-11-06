@@ -1005,9 +1005,14 @@ static void _load_move()
 			//	- Set the direction bit in hardware.
 			//	- Compensate for direction change by flipping substep accumulator value about its midpoint.
 
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_1].prev_step_sign == 0) ? (st_pre.mot[MOTOR_1].direction != st_pre.mot[MOTOR_1].prev_direction)
+			                                         : (st_pre.mot[MOTOR_1].step_sign != st_pre.mot[MOTOR_1].prev_step_sign)) {
+				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_1].prev_step_sign = st_pre.mot[MOTOR_1].step_sign;
 			if (st_pre.mot[MOTOR_1].direction != st_pre.mot[MOTOR_1].prev_direction) {
 				st_pre.mot[MOTOR_1].prev_direction = st_pre.mot[MOTOR_1].direction;
-				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 				if (st_pre.mot[MOTOR_1].direction == DIRECTION_CW)
 				PORT_MOTOR_1_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_1_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -1035,9 +1040,14 @@ static void _load_move()
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_2].prev_step_sign == 0) ? (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction)
+			                                         : (st_pre.mot[MOTOR_2].step_sign != st_pre.mot[MOTOR_2].prev_step_sign)) {
+				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_2].prev_step_sign = st_pre.mot[MOTOR_2].step_sign;
 			if (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction) {
 				st_pre.mot[MOTOR_2].prev_direction = st_pre.mot[MOTOR_2].direction;
-				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
 				if (st_pre.mot[MOTOR_2].direction == DIRECTION_CW)
 				PORT_MOTOR_2_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_2_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -1061,9 +1071,14 @@ static void _load_move()
 				st_pre.mot[MOTOR_3].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_3].substep_accumulator *= st_pre.mot[MOTOR_3].accumulator_correction;
 			}
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_3].prev_step_sign == 0) ? (st_pre.mot[MOTOR_3].direction != st_pre.mot[MOTOR_3].prev_direction)
+			                                         : (st_pre.mot[MOTOR_3].step_sign != st_pre.mot[MOTOR_3].prev_step_sign)) {
+				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_3].prev_step_sign = st_pre.mot[MOTOR_3].step_sign;
 			if (st_pre.mot[MOTOR_3].direction != st_pre.mot[MOTOR_3].prev_direction) {
 				st_pre.mot[MOTOR_3].prev_direction = st_pre.mot[MOTOR_3].direction;
-				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
 				if (st_pre.mot[MOTOR_3].direction == DIRECTION_CW)
 				PORT_MOTOR_3_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_3_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -1087,9 +1102,14 @@ static void _load_move()
 				st_pre.mot[MOTOR_4].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_4].substep_accumulator *= st_pre.mot[MOTOR_4].accumulator_correction;
 			}
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_4].prev_step_sign == 0) ? (st_pre.mot[MOTOR_4].direction != st_pre.mot[MOTOR_4].prev_direction)
+			                                         : (st_pre.mot[MOTOR_4].step_sign != st_pre.mot[MOTOR_4].prev_step_sign)) {
+				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_4].prev_step_sign = st_pre.mot[MOTOR_4].step_sign;
 			if (st_pre.mot[MOTOR_4].direction != st_pre.mot[MOTOR_4].prev_direction) {
 				st_pre.mot[MOTOR_4].prev_direction = st_pre.mot[MOTOR_4].direction;
-				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
 				if (st_pre.mot[MOTOR_4].direction == DIRECTION_CW)
 				PORT_MOTOR_4_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_4_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -1113,9 +1133,14 @@ static void _load_move()
 				st_pre.mot[MOTOR_5].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_5].substep_accumulator *= st_pre.mot[MOTOR_5].accumulator_correction;
 			}
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_5].prev_step_sign == 0) ? (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction)
+			                                         : (st_pre.mot[MOTOR_5].step_sign != st_pre.mot[MOTOR_5].prev_step_sign)) {
+				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_5].prev_step_sign = st_pre.mot[MOTOR_5].step_sign;
 			if (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction) {
 				st_pre.mot[MOTOR_5].prev_direction = st_pre.mot[MOTOR_5].direction;
-				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
 				if (st_pre.mot[MOTOR_5].direction == DIRECTION_CW)
 				PORT_MOTOR_5_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_5_VPORT.OUT |= DIRECTION_BIT_bm;
@@ -1137,9 +1162,14 @@ static void _load_move()
 				st_pre.mot[MOTOR_6].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_6].substep_accumulator *= st_pre.mot[MOTOR_6].accumulator_correction;
 			}
+			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
+			if ((st_pre.mot[MOTOR_6].prev_step_sign == 0) ? (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction)
+			                                         : (st_pre.mot[MOTOR_6].step_sign != st_pre.mot[MOTOR_6].prev_step_sign)) {
+				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
+			}
+			st_pre.mot[MOTOR_6].prev_step_sign = st_pre.mot[MOTOR_6].step_sign;
 			if (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction) {
 				st_pre.mot[MOTOR_6].prev_direction = st_pre.mot[MOTOR_6].direction;
-				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
 				if (st_pre.mot[MOTOR_6].direction == DIRECTION_CW)
 				PORT_MOTOR_6_VPORT.OUT &= ~DIRECTION_BIT_bm; else
 				PORT_MOTOR_6_VPORT.OUT |= DIRECTION_BIT_bm;
