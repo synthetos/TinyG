@@ -19,6 +19,8 @@ PRELUDE = r'''
 #include <stdbool.h>
 #include <stdint.h>
 static void st_refresh_move_time(void) {}
+static int resyncs;                      /* stepper_reset() calls: a remap re-derives step positions (N82) */
+static void stepper_reset(void) { resyncs++; }
 #include <stdio.h>
 #include <string.h>
 #define STAT_OK 0
@@ -58,7 +60,9 @@ int main(void) {
     /* ma: an axis index 0..AXES-1 */
     cell.target = 0;
     assert(call(set_ma, AXES) == STAT_INPUT_VALUE_RANGE_ERROR && call(set_ma, 256 + 2) == STAT_INPUT_VALUE_RANGE_ERROR);
+    assert(resyncs == 0);                    /* a refused remap leaves the steppers alone */
     assert(cell.target == 0 && call(set_ma, 5) == STAT_OK && cell.target == 5); guards();
+    assert(resyncs == 1);                    /* an accepted one resyncs them (N82) */
     /* baud: 257 is not 1 (9600) */
     xio.usb_baud_rate = 5; xio.usb_baud_flag = false;
     assert(call(set_baud, 257) == STAT_INPUT_VALUE_RANGE_ERROR && xio.usb_baud_rate == 5 && !xio.usb_baud_flag);
