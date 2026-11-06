@@ -16,7 +16,7 @@ import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.resets_board,
               pytest.mark.dialect("d449"), pytest.mark.timeout(120),
-              pytest.mark.bug("N82", on=["d449"])]
+              pytest.mark.bug("N82", on=[])]
 
 
 def test_remapped_motor_does_not_jump(tg, keep, record):

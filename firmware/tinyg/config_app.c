@@ -1091,7 +1091,13 @@ static stat_t set_ma(nvObj_t *nv)
 		return (STAT_INPUT_VALUE_RANGE_ERROR);
 	}
 	stat_t status = set_ui8(nv);
-    if (status == STAT_OK) { st_refresh_move_time(); }
+    if (status == STAT_OK) {
+        // The motor now follows another axis: re-derive every motor's step position from the runtime position,
+        // as the steps-per-unit setters do, or the next move asks it for the axes' difference in one segment
+        // (N82). Persisted settings are refused while a cycle runs (N60), so the runtime is at rest here.
+        stepper_reset();
+        st_refresh_move_time();
+    }
     return status;
 }
 
