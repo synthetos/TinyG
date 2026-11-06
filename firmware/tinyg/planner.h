@@ -208,6 +208,9 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	float target[AXES];                 // final target for bf (used to correct rounding errors)
 	float position[AXES];               // current move position
 	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
+	float origin[AXES];                 // segment targets are measured from here: move start or last waypoint (N80)
+	float origin_distance;              // distance along unit from origin to the latest segment target
+	float body_base;                    // origin_distance when the body started
 
 	float target_steps[MOTORS];         // current MR target (absolute target as steps)
 	float position_steps[MOTORS];       // current MR position (target from previous segment)

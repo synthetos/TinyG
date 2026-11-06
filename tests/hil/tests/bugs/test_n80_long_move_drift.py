@@ -15,7 +15,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.resets_board, pytest.mark.dialect("d449"),
-              pytest.mark.timeout(400), pytest.mark.bug("N80", on=["d449"])]
+              pytest.mark.timeout(400), pytest.mark.bug("N80", on=[])]
 
 
 def test_n80_long_slow_move_ends_on_target(tg, keep, record):
