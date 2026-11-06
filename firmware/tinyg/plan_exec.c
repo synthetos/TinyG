@@ -236,6 +236,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
         copy_vector(mr.axis_flags, bf->axis_flags);
+        copy_vector(mr.origin, mr.position);           // segment targets are measured from the move start (N80)
+        mr.origin_distance = 0;
 
 		// generate the waypoints for position correction at section ends
 		for (uint8_t axis=0; axis<AXES; axis++) {
@@ -626,6 +628,7 @@ static stat_t _exec_aline_body()
 		mr.segment_time = mr.gm.move_time / mr.segments;
 		mr.segment_velocity = mr.cruise_velocity;
 		mr.segment_count = (uint32_t)mr.segments;
+		mr.body_base = mr.origin_distance;				// body targets are base + n * segment length (N80)
 		// Preserve this section: returning an error here frees the whole block.
 		if (mr.segment_time < MIN_SEGMENT_TIME) {
             mr.segment_time = MIN_SEGMENT_TIME;
@@ -730,14 +733,25 @@ static stat_t _exec_aline_segment()
 	// Don't do waypoint correction if you are going into a hold.
 
 	float segment_length;
+	bool at_waypoint = false;
 	if ((--mr.segment_count == 0) && (mr.section_state == SECTION_2nd_HALF) &&
 		(cm.motion_state == MOTION_RUN) && (cm.cycle_state == CYCLE_MACHINING)) {
 		copy_vector(mr.gm.target, mr.waypoint[mr.section]);
+		at_waypoint = true;
 		segment_length = fl_on ? (mr.segment_velocity * mr.segment_time) : 0;	// feed-limit accounting only
 	} else {
 		segment_length = mr.segment_velocity * mr.segment_time;
+		// Measure the target from the section origin, not by adding onto the last target: over thousands of
+		// segments a float running sum drifts (0.25 mm over a 1.5 m rapid), and the snap onto the waypoint at
+		// the section end then asks for more steps than the DDA can give (N80). In the body the distance is a
+		// product, so it carries one rounding however many segments the body has.
+		if (mr.section == SECTION_BODY) {
+			mr.origin_distance = mr.body_base + segment_length * (mr.segments - mr.segment_count);
+		} else {
+			mr.origin_distance += segment_length;
+		}
 		for (i=0; i<AXES; i++) {
-			mr.gm.target[i] = mr.position[i] + (mr.unit[i] * segment_length);
+			mr.gm.target[i] = mr.origin[i] + (mr.unit[i] * mr.origin_distance);
 		}
 	}
 
@@ -763,6 +777,10 @@ static stat_t _exec_aline_segment()
 	if (fl_on) { fl_segment(mr.segment_velocity, segment_length); } else { st_pre.fl_rec = 0; }
 	ritorno(st_prep_line(travel_steps, mr.following_error, mr.segment_time));
 	copy_vector(mr.position, mr.gm.target); 				// update position from target
+	if (at_waypoint) {										// the next section is measured from this waypoint
+		copy_vector(mr.origin, mr.position);
+		mr.origin_distance = 0;
+	}
 	if (mr.segment_count == 0) return (STAT_OK);			// this section has run all its segments
 	return (STAT_EAGAIN);									// this section still has more segments to run
 }
