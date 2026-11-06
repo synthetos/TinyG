@@ -65,5 +65,5 @@ class ProbePolarity(unittest.TestCase):
    code+=function(s,sig)+'\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'check.c';exe=Path(d)/'check';p.write_text(code+MAIN)
-   subprocess.run(['cc','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+   subprocess.run(['cc','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

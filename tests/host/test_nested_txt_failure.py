@@ -88,7 +88,7 @@ int main(void){
             path = Path(directory)
             (path / 'check.c').write_text(code)
             subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-Wno-deprecated-declarations', '-Wno-format',
-                            '-fsanitize=address,undefined',
+                            '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(path / 'check.c'), '-o', str(path / 'check')], check=True)
             output = subprocess.check_output([str(path / 'check')], text=True)
         bodies = [json.loads(line) for line in output.splitlines()]

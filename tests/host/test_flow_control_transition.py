@@ -107,6 +107,6 @@ class FlowControlTransition(unittest.TestCase):
         code+=rx[:rx.index('\n\t// normal character path')]+ '\nnormal++;\n}' +EXERCISE
         with tempfile.TemporaryDirectory() as tmp:
             src=pathlib.Path(tmp)/'flow.c';exe=pathlib.Path(tmp)/'flow';src.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Wno-unused-function','-fsanitize=address,undefined',str(src),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Wno-unused-function','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 if __name__=='__main__': unittest.main()

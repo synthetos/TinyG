@@ -64,7 +64,7 @@ int main(void) {
         with tempfile.TemporaryDirectory() as tmp:
             src=pathlib.Path(tmp)/'reset.c';exe=pathlib.Path(tmp)/'reset'
             src.write_text(code)
-            subprocess.run(['cc','-std=gnu99','-Wall','-Wextra','-Wno-unused-function','-Wno-unused-parameter','-fsanitize=address,undefined',str(src),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=gnu99','-Wall','-Wextra','-Wno-unused-function','-Wno-unused-parameter','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 
 if __name__=='__main__': unittest.main()

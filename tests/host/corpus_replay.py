@@ -132,7 +132,7 @@ def build(source, output, cc="cc"):
         dest.write_text(binary32(path.read_text(encoding="latin1")))
     args = [cc, "-std=gnu99", "-D__AVR=1", "-DFREQUENCY_DDA=50000",
             "-Dsnprintf_P=snprintf", "-O1", "-g", "-funsigned-char",
-            "-fsanitize=address,undefined,float-cast-overflow",
+            "-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",
             "-fno-sanitize-recover=all", "-Wno-incompatible-pointer-types",
             "-D_POSIX_C_SOURCE=200809L", "-include", "tgmath.h", "-include",
             str(output / "host_types.h"), "-I" + str(output),

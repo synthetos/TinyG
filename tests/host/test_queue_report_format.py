@@ -75,7 +75,7 @@ class QueueReportFormat(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-qr-") as tmp:
             c, exe = Path(tmp) / "qr.c", Path(tmp) / "qr"
             c.write_text(code)
-            subprocess.run([compiler, "-std=c99", "-Wno-format-security", "-fsanitize=address,undefined",
+            subprocess.run([compiler, "-std=c99", "-Wno-format-security", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

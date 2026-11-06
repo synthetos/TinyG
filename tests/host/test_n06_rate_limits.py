@@ -75,5 +75,5 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'rate.c'; c.write_text(code); exe=Path(d)/'rate'
-            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(c),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

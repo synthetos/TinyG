@@ -23,7 +23,7 @@ class PlannerStartup(unittest.TestCase):
             c.write_text((FIXTURE/'check.c').read_text()+'\nvoid cm_cycle_start(void) { cm.machine_state=MACHINE_CYCLE; cm.cycle_state=CYCLE_MACHINING; }\n'+dispatch+'\n'+hold)
             out=Path(d)/'check'
             flags=['-DHAS_STARTUP'] if 'mp_startup_callback' in (FIRMWARE/'planner.c').read_text() else []
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-D_POSIX_C_SOURCE=200809L','-include','tgmath.h','-I'+str(FIXTURE),'-I'+str(FIRMWARE),*flags,str(c),
                             *[str(FIRMWARE/f) for f in ['planner.c','plan_line.c','plan_zoid.c','util.c']],
                             '-lm','-o',str(out)],check=True)

@@ -19,7 +19,7 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){for(units=0;units<2;units++){\n float bad[]={1e30f,-1e30f,NAN,INFINITY};\n for(int k=0;k<4;k++){stored=123;nvObj_t n={.value_flt=bad[k]};assert(offset_set(&n)==110&&stored==123);}\n nvObj_t n={.value_flt=1000};assert(offset_set(&n)==0&&isfinite(stored));\n}}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
 class PlannerGeometry(unittest.TestCase):

@@ -74,7 +74,7 @@ class CharModeEOF(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             src = pathlib.Path(tmp)/'eof.c'; exe = pathlib.Path(tmp)/'eof'
             src.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(src),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 
 if __name__=='__main__': unittest.main()

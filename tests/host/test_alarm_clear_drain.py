@@ -70,7 +70,7 @@ class AlarmClearDrain(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-e144-") as tmp:
             c, exe = pathlib.Path(tmp) / "clear.c", pathlib.Path(tmp) / "clear"
             c.write_text(code)
-            subprocess.run([cc, "-std=c99", "-Wall", "-Werror", "-fsanitize=address,undefined",
+            subprocess.run([cc, "-std=c99", "-Wall", "-Werror", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

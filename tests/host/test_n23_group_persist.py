@@ -18,5 +18,5 @@ class Regression(unittest.TestCase):
   code+='\nstatic void setup(void){memset(nodes,0,sizeof(nodes));nodes[1].valuetype=TYPE_FLOAT;nodes[1].value_flt=0;stored=disk=800;writes=sets=gets=persist_error=get_error=0;}\nint main(void){\n setup();assert(set_grp(nodes)==108);assert(stored==800&&disk==800&&writes==0);\n setup();nodes[1].value_flt=900;nodes[2].valuetype=TYPE_FLOAT;nodes[2].value_flt=0;\n assert(set_grp(nodes)==108);assert(stored==900&&disk==900&&writes==1&&sets==2);\n setup();nodes[1].value_flt=900;persist_error=17;\n assert(set_grp(nodes)==17&&stored==900&&disk==800&&writes==1);\n setup();nodes[1].valuetype=TYPE_NULL;get_error=100;\n assert(set_grp(nodes)==100&&gets==1&&writes==0);\n setup();nodes[1].value_flt=900;assert(set_grp(nodes)==0&&stored==900&&disk==900&&writes==1);\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

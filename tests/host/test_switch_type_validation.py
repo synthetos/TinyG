@@ -56,5 +56,5 @@ int main(void){
 '''
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'switch.c';exe=Path(tmp)/'switch';p.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

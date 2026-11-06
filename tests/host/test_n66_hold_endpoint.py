@@ -51,6 +51,6 @@ int main(void) {
         with tempfile.TemporaryDirectory(prefix='tinyg-n66-') as tmp:
             src, exe = Path(tmp)/'check.c', Path(tmp)/'check'
             src.write_text(code)
-            subprocess.run([cc,'-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(src),'-lm','-o',str(exe)],check=True)
+            subprocess.run([cc,'-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-lm','-o',str(exe)],check=True)
             result=subprocess.run([str(exe)],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)

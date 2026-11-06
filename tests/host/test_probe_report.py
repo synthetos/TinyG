@@ -53,7 +53,7 @@ class ProbeReport(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-e101-") as tmp:
             c, exe = Path(tmp) / "prb.c", Path(tmp) / "prb"
             c.write_text(code)
-            subprocess.run([cc, "-std=c99", "-Wall", "-Wno-deprecated-declarations", "-fsanitize=address,undefined",
+            subprocess.run([cc, "-std=c99", "-Wall", "-Wno-deprecated-declarations", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(c), "-o", str(exe)], check=True)
             out = subprocess.run([str(exe)], capture_output=True, text=True, check=True).stdout
         reports = [json.loads(line) for line in out.splitlines()]      # strict: bare nan/inf would raise

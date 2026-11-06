@@ -95,6 +95,6 @@ int main(void){
   code+='}\n'
   with tempfile.TemporaryDirectory() as d:
    c=Path(d)/'check.c';exe=Path(d)/'check';c.write_text(code)
-   subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined',str(c),'-o',str(exe)],check=True)
+   subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(exe)],check=True)
    result=subprocess.run([str(exe)],capture_output=True,text=True)
    self.assertEqual(result.returncode,0,result.stderr)

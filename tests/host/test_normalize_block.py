@@ -60,7 +60,7 @@ class NormalizeBlock(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-e161-") as tmp:
             c, exe = Path(tmp) / "norm.c", Path(tmp) / "norm"
             c.write_text(code)
-            subprocess.run([cc, "-std=gnu99", "-Wall", "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+            subprocess.run([cc, "-std=gnu99", "-Wall", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

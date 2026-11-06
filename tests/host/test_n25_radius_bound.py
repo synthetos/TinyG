@@ -18,5 +18,5 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){for(units=0;units<2;units++){\n float bad[]={1e38f,1e30f,1e-40f,0,-1,NAN,INFINITY};\n for(int k=0;k<7;k++){stored=123;nvObj_t n={.value_flt=bad[k]};assert(radius_set(&n)!=0&&stored==123);}\n nvObj_t n={.value_flt=10};assert(radius_set(&n)==0);float scale=360.f/(2.f*3.14159265f*stored);assert(isfinite(scale)&&scale>0);\n}units=MILLIMETERS;nvObj_t n={.value_flt=1000000};assert(radius_set(&n)==0);assert(360.f/(2.f*3.14159265f*stored)>EPSILON);\n n.value_flt=1000001;assert(radius_set(&n)==110&&stored==1000000);\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

@@ -18,5 +18,5 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){\n for(int a=0;a<6;a++)for(units=0;units<2;units++)for(int kind=0;kind<2;kind++){\n  float bad[]={0,-0.f,-1,1e-38f,.001f,NAN,INFINITY};\n  for(int k=0;k<7;k++){stored=123;nvObj_t n={.index=a,.value_flt=bad[k]};assert((kind?cm_set_xjh(&n):cm_set_xjm(&n))!=0);assert(stored==123);}\n  nvObj_t good={.index=a,.value_flt=1};assert((kind?cm_set_xjh(&good):cm_set_xjm(&good))==0);\n }\n cache_test();\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

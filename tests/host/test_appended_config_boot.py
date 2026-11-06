@@ -139,5 +139,5 @@ int main(void){
 '''
     with tempfile.TemporaryDirectory() as tmp:
      c=Path(tmp)/'boot.c';exe=Path(tmp)/'boot';c.write_text(code)
-     subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(c),'-o',str(exe)],check=True)
+     subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(exe)],check=True)
      subprocess.run([str(exe)],check=True)

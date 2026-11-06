@@ -152,7 +152,7 @@ class SpindleCoolantStatus(unittest.TestCase):
             path, exe = Path(tmp) / (name + ".c"), Path(tmp) / name
             path.write_text(c)
             subprocess.run(["cc", "-std=gnu99", "-O1", "-Wall", "-Werror", "-Wno-unused-function", "-Wno-unused-variable",
-                            "-fsanitize=address,undefined", str(path), "-o", str(exe)], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(path), "-o", str(exe)], check=True)
             r = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
 

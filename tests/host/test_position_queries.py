@@ -116,7 +116,7 @@ int main(void) {
             c = Path(tmp) / 'queries.c'
             c.write_text(code)
             exe = Path(tmp) / 'queries'
-            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-Wno-unused-function', '-fsanitize=address,undefined',
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-Wno-unused-function', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)
             result = subprocess.run([str(exe)], check=True, capture_output=True, text=True)
             self.assertEqual(result.stderr.splitlines()[0],

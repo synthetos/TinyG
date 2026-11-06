@@ -35,7 +35,8 @@ static index_t nv_get_index(const char *group, const char *token) {
     (void)group; assert(strlen(token) == 4); strcpy(seen[count], token); return count;
 }
 static bool st_aline_in_flight(void) { return false; }
-static void nv_persist(nvObj_t *nv) { assert(nv->index == count); values[count++] = nv->value_flt; }
+static int nv_persist(nvObj_t *nv) { assert(nv->index == count); values[count++] = nv->value_flt; return 0; }
+static bool cm_persistence_busy(void) { return cm.cycle_state != CYCLE_OFF; }   /* N68: busy while a cycle runs */
 '''
 
 EXERCISE = r'''
@@ -69,7 +70,7 @@ class DeferredG10Tokens(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-g10-") as tmp:
             c, exe = Path(tmp) / "g10.c", Path(tmp) / "g10"
             c.write_text(code)
-            subprocess.run([cc, "-std=gnu99", "-Wall", "-Werror", "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+            subprocess.run([cc, "-std=gnu99", "-Wall", "-Werror", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 

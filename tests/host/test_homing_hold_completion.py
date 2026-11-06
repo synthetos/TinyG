@@ -132,7 +132,7 @@ class HomingHoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="tinyg-homing-") as directory:
             path = pathlib.Path(directory)
             (path / "check.c").write_text(definitions + PRELUDE + actual + EXERCISE)
-            subprocess.run([compiler, "-std=c99", "-O1", "-fsanitize=address,undefined",
+            subprocess.run([compiler, "-std=c99", "-O1", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(path / "check.c"), "-o", str(path / "check")], check=True)
             result = subprocess.run([str(path / "check")], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

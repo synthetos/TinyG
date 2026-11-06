@@ -58,6 +58,6 @@ int main(void){
 '''.replace('SETTER',setter)
         with tempfile.TemporaryDirectory() as tmp:
             c=Path(tmp)/'freq.c';c.write_text(code);exe=Path(tmp)/'freq'
-            subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined,float-cast-overflow','-fno-sanitize-recover=all',str(c),'-lm','-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined,float-cast-overflow','-fstrict-flex-arrays=3','-fno-sanitize-recover=all',str(c),'-lm','-o',str(exe)],check=True)
             r=subprocess.run([str(exe)],capture_output=True,text=True)
             self.assertEqual(r.returncode,0,r.stderr)

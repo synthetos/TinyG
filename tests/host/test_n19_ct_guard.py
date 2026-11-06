@@ -18,7 +18,7 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){\n for(units=0;units<2;units++){\n  float bad[]={-1,0,-0.f,NAN,INFINITY};\n  for(int i=0;i<5;i++){stored=123;nvObj_t n={.value_flt=bad[i]};assert(ct_set(&n)!=0);assert(stored==123);}\n  nvObj_t n={.value_flt=.01f};assert(ct_set(&n)==0);assert(stored>0&&isfinite(stored));\n }\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
 from pathlib import Path
@@ -59,7 +59,7 @@ int main(void){
 '''
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'arc.c'; c.write_text(pre); exe=Path(d)/'arc'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-funsigned-char','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-D_POSIX_C_SOURCE=200809L','-include','tgmath.h','-I'+str(FIX),'-I'+str(FW),str(c),
                             *[str(FW/f) for f in ['planner.c','plan_line.c','plan_zoid.c','util.c']],'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

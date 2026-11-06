@@ -88,7 +88,7 @@ int main(void) {
             tmp=Path(tmp); (tmp/'avr').mkdir()
             (tmp/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n#define strcmp_P strcmp\n')
             c=tmp/'overrides.c'; c.write_text(code); exe=tmp/'overrides'
-            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined',
+            subprocess.run(['cc','-std=gnu99','-O1','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-D_POSIX_C_SOURCE=200809L','-Wno-macro-redefined','-I'+str(tmp),
                             '-I'+str(FIRMWARE),str(c),'-lm','-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

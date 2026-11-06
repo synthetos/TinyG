@@ -50,5 +50,5 @@ int main(void){uint32_t bad[]={0,3,16,32,256,2147483648UL,UINT32_MAX};
 '''
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'check.c';p.write_text(code);exe=p.with_suffix('')
-   subprocess.run(['cc','-std=gnu99','-O1','-fsanitize=address,undefined',str(p),'-lm','-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=gnu99','-O1','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-lm','-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

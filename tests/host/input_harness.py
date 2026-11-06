@@ -133,7 +133,7 @@ int main(void) {
     folder=Path(folder); (folder/'avr').mkdir(exist_ok=True)
     (folder/'avr/pgmspace.h').write_text('#define PROGMEM\n#define PSTR(s) (s)\n#define strcmp_P strcmp\n')
     c=folder/(kind+'.c');exe=folder/kind;c.write_text(code)
-    subprocess.run([shutil.which('cc') or 'cc','-std=gnu99','-Wall','-Werror=format','-O1','-g','-funsigned-char','-fsanitize=address,undefined,float-cast-overflow','-fno-sanitize-recover=all','-Wno-macro-redefined','-include','stdio.h','-include','ctype.h','-D_POSIX_C_SOURCE=200809L','-I'+str(folder),'-I'+str(FW),str(c),'-lm','-o',str(exe)],check=True,capture_output=True,text=True,timeout=20)
+    subprocess.run([shutil.which('cc') or 'cc','-std=gnu99','-Wall','-Werror=format','-O1','-g','-funsigned-char','-fsanitize=address,undefined,float-cast-overflow','-fstrict-flex-arrays=3','-fno-sanitize-recover=all','-Wno-macro-redefined','-include','stdio.h','-include','ctype.h','-D_POSIX_C_SOURCE=200809L','-I'+str(folder),'-I'+str(FW),str(c),'-lm','-o',str(exe)],check=True,capture_output=True,text=True,timeout=20)
     return exe
 
 

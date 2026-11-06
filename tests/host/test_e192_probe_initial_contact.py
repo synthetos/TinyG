@@ -128,7 +128,7 @@ class ProbeInitialContact(unittest.TestCase):
             c, exe = Path(d) / "probe.c", Path(d) / "probe"
             c.write_text(probe_case())
             subprocess.run([cc, "-std=gnu99", "-O1", "-g", "-Wall", "-Wno-unused-function", "-Wno-unused-variable",
-                            "-fsanitize=address,undefined", str(c), "-o", str(exe)], check=True)
+                            "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             control = subprocess.run([str(exe), "control"], capture_output=True, text=True)
             self.assertEqual(control.returncode, 0, control.stderr)
             result = subprocess.run([str(exe)], capture_output=True, text=True)

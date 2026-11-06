@@ -15,5 +15,5 @@ class Regression(unittest.TestCase):
   code+='\nint main(void){\n units=INCHES;stored=123;nvObj_t n={.value_flt=1e38f};assert(set_flu(&n)==110&&stored==123&&isfinite(n.value_flt));\n for(int a=0;a<3;a++)for(int k=0;k<2;k++){stored=123;n=(nvObj_t){.index=a,.value_flt=1e38f};assert((k?cm_set_xjh(&n):cm_set_xjm(&n))==110&&stored==123);}\n units=MILLIMETERS;n.value_flt=1e30f;assert(set_flu(&n)==0&&isfinite(stored));\n units=INCHES;n.index=0;n.value_flt=20;assert(cm_set_xjm(&n)==0&&isfinite(cm.a[0].recip_jerk)&&cm.a[0].recip_jerk>0);\n float bad[]={NAN,INFINITY,-INFINITY};for(int i=0;i<3;i++){stored=123;n.value_flt=bad[i];assert(set_flu(&n)==110&&stored==123);}\n}\n'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/"check.c";p.write_text(code);exe=Path(d)/"check"
-   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow",str(p),"-lm","-o",str(exe)],check=True)
+   subprocess.run(["cc","-std=gnu99","-O1","-fsanitize=address,undefined,float-cast-overflow","-fstrict-flex-arrays=3",str(p),"-lm","-o",str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

@@ -136,7 +136,7 @@ int main(void) {
             source_file = Path(directory) / "check.c"
             source_file.write_text(code)
             executable = Path(directory) / "check"
-            subprocess.run(["cc", "-std=c99", "-g", "-fsanitize=address,undefined", str(source_file), "-o", str(executable)], check=True)
+            subprocess.run(["cc", "-std=c99", "-g", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(source_file), "-o", str(executable)], check=True)
             subprocess.run([str(executable)], check=True)
 
     def test_persistent_indexes_are_unchanged(self):

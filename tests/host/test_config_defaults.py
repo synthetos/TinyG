@@ -140,5 +140,5 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
         code += 'assert(count>100);printf("Checked %d initialized defaults; %d rejected\\n",count,failures);return failures?1:0;}\n'
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory);(path/'check.c').write_text(code)
-            subprocess.run(['cc','-Wall','-Werror','-Wno-unused-function','-fsanitize=address,undefined',str(path/'check.c'),'-lm','-o',str(path/'check')],check=True)
+            subprocess.run(['cc','-Wall','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(path/'check.c'),'-lm','-o',str(path/'check')],check=True)
             subprocess.run([str(path/'check')],check=True)

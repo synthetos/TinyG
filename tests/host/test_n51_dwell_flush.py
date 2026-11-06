@@ -82,5 +82,5 @@ int main(void) {
 '''
     with tempfile.TemporaryDirectory() as d:
         p=Path(d);(p/'check.c').write_text(code)
-        subprocess.run(['cc','-std=c99','-Wall','-fsanitize=address,undefined',str(p/'check.c'),'-o',str(p/'check')],check=True)
+        subprocess.run(['cc','-std=c99','-Wall','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
         subprocess.run([str(p/'check')],check=True)

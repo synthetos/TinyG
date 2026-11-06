@@ -58,5 +58,5 @@ int main(void){
         code=code.replace('\\x92gc','\\x92" "gc').replace('\\x90gc','\\x90" "gc').replace('\\x93gc','\\x93" "gc').replace('\\x9cgc','\\x9c" "gc')
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory);(path/'check.c').write_text(code)
-            subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined',str(path/'check.c'),'-o',str(path/'check')],check=True)
+            subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(path/'check.c'),'-o',str(path/'check')],check=True)
             subprocess.run([str(path/'check')],check=True)

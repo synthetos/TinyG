@@ -51,6 +51,6 @@ int main(void){
 '''
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'latch.c';p.write_text(code);exe=p.with_suffix('')
-   subprocess.run(['cc','-std=c99','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
    r=subprocess.run([str(exe)],capture_output=True,text=True);self.assertEqual(r.returncode,0,r.stderr)
 if __name__=='__main__':unittest.main()

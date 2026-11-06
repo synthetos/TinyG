@@ -87,7 +87,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'reader.c';exe=Path(tmp)/'reader';p.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 
     def test_damaged_usb_line_is_discarded_once(self):
@@ -160,5 +160,5 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)/'damaged.c';exe=Path(tmp)/'damaged';p.write_text(code)
-            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined',str(p),'-o',str(exe)],check=True)
+            subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
