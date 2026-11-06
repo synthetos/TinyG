@@ -15,7 +15,7 @@ for every pulse in the DDA ISR) must be the same for both motors.
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board,
-              pytest.mark.dialect("d449"), pytest.mark.bug("N79", on=["d449"])]
+              pytest.mark.dialect("d449"), pytest.mark.bug("N79", on=[])]
 
 
 @pytest.mark.parametrize("frac", [0.25, 0.4, 0.7])
