@@ -78,12 +78,14 @@ def braid():
     much free travel)."""
     from pathlib import Path
     src = (Path(__file__).resolve().parents[3] / "firmware/tinyg/tests/test_051_braid.h").read_text(errors="replace")
-    # The compiled string stops at N383; N384-N2517 sit in a comment (they did not fit in flash).
-    # Streaming has no such limit, so the whole original toolpath is sent.
+    # The compiled string stops at N370 and ends with N2519 M30"; N371-N2517 sit in a comment after it (they
+    # did not fit in flash). Streaming has no such limit, so the whole original toolpath is sent, without the C
+    # string terminator and without the program end: M30 cancels the program's G92 offset (NIST 3.6.1), which would
+    # move the reported end away from the toolpath's last point.
     lines = []
     for m in re.findall(r"^(N\d+[^\r\n]*)", src, re.M):
-        lines.append(re.sub(r"\\n\\.*$", "", m).strip())
-    return lines
+        lines.append(re.sub(r'(\\n)?\\?";.*$|\\n\\.*$', "", m).strip())
+    return [ln for ln in lines if not re.search(r"\bM(0?2|30)\b", ln)]
 
 
 PROGRAMS = {"squares": squares, "circles": circles, "goose": goose, "mixed": mixed}
