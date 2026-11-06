@@ -27,6 +27,7 @@ def test_remapped_motor_does_not_jump(tg, keep, record):
     tg.reset()
     tg.send_gcode("G21 G90 G17 G94 G54", check=True)
     tg.send_gcode("G28.3 X10 Y0 Z0", check=True, allow="X at 10, Y at 0")
+    tg.wait_idle(timeout=10)                               # G28.3 is queued: let it set the origin first
     tg.set(f"{ymotor}ma", 0, allow="remap the Y motor to X at rest")
     mark = len(tg.transport.history)
     tg.send_gcode("G1 X10.002 F300", check=True, allow="N82 tiny move")
