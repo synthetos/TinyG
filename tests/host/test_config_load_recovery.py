@@ -88,6 +88,7 @@ stat_t cm_panic_P(int status,const char *s){panics++;return status;}
 static void _set_defa(nvObj_t *nv);
 void config_init_assertions(void);
 static bool config_loaded;  /* config.c (N60): set at the end of config_init() */
+static bool cm_persistence_busy(void){return cm.cycle_state!=0;}
 '''
         code += fallback_source(source)                     # N61: the real report lists and fallback
         for name in ('config_init', '_set_defa', 'config_init_assertions', 'config_test_assertions'):
