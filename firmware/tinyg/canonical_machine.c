@@ -2034,10 +2034,13 @@ void cm_start_hold()
     // Decide and latch together; an empty queue alone does not mean the motor has stopped.
     if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
         bool runnable = mp_has_runnable_buffer();
+        // SYNC ends on a line, and a flush cancels the dwell that would wake the exec for one (N85).
+        // With a flush waiting and no line in the runtime this is already the stop.
+        bool flushing = (cm.queue_flush_state == FLUSH_REQUESTED) && (mr.block_state == BLOCK_IDLE);
         if ((cm.hold_state == FEEDHOLD_REQUESTED) && runnable) {
             cm_set_motion_state(MOTION_HOLD);
             cm.hold_state = FEEDHOLD_SYNC;
-        } else if (!runnable && mp_runtime_is_idle() &&
+        } else if ((!runnable || flushing) && mp_runtime_is_idle() &&
                    (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER)) {
             cm_set_motion_state(MOTION_HOLD);
             cm.hold_state = FEEDHOLD_HOLD;           // let pending '~' or '%' finish normally
