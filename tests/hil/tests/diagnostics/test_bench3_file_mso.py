@@ -198,6 +198,17 @@ def _dead(tg):
     return set(tg.dialect.stats("SHUTDOWN", "PANIC"))
 
 
+def _recover_refused_window(tg, stat):
+    """An unsupported line may be skipped; an alarm must finish recovery first."""
+    if stat in _dead(tg):
+        return False
+    if stat == tg.dialect.stat("ALARM"):
+        tg.clear_alarm()
+        tg.wait_idle(timeout=30)
+        assert tg.stat() in tg.dialect.idle_stats and tg.get("qr") == 32, "window alarm did not recover"
+    return True
+
+
 def _settle(tg, timeout):
     end = time.monotonic() + timeout
     alarm, idle = tg.dialect.stat("ALARM"), tg.dialect.stats("READY", "PROGRAM_STOP", "PROGRAM_END")
@@ -299,10 +310,11 @@ def test_bench3_file_mso(tg, keep, record, request):
             pre = modal.preamble()
             for ln in pre:
                 tg.guard.check_gcode(ln, allow=WHY)
+            pre_mark = len(tg.transport.history)
             r_pre = sender.stream(tg, pre, MODE, timeout=600)
             st_pre = _settle(tg, 600)                      # a preamble rapid can be long (a file's far start point)
             if st_pre in _dead(tg) or st_pre == tg.dialect.stat("ALARM"):
-                exc = [e.raw for e in tg.transport.history if e.kind == "exception"][-2:]
+                exc = [e.raw for e in tg.transport.history[pre_mark:] if e.kind == "exception"][-2:]
                 bad.append(f"window {n} lines {i}-{j}: stat {st_pre} during the preamble {pre} {exc}")
                 break
             p0 = {a: tg.get(f"mpo{a}") for a in "xyza"}
@@ -355,6 +367,9 @@ def test_bench3_file_mso(tg, keep, record, request):
             if r["refused"]:                              # a refused line may be the spindle command itself (Estlcam's
                 results.append(r)                         # unfilled "M03 S<s>"): the file's state no longer applies
                 print("WINDOW", json.dumps(r, default=str)[:1500])
+                if not _recover_refused_window(tg, stat):
+                    bad.append(f"window {n} lines {i}-{j}: stat {stat} {exc[-1:] if exc else ''}")
+                    break
                 continue
             want_mode = end_state["spindle"]
             want_duty = round(_duty(pwm, want_mode, end_state["s"]), 4)
