@@ -18,7 +18,7 @@ class HoldOutputs(unittest.TestCase):
         for name in ['_hold_outputs_cancel', '_hold_outputs_pause', '_hold_outputs_resume', '_hold_outputs_finish_resume',
                      'cm_start_hold', 'cm_end_hold', 'cm_queue_flush',
                      '_take_input_flush_request', '_service_input_flush', '_run_requested_queue_flush',
-                     'cm_feedhold_sequencing_callback', 'cm_request_feedhold', 'cm_request_end_hold']:
+                     'cm_feedhold_sequencing_callback', 'cm_request_feedhold', 'cm_request_end_hold', '_exec_program_finalize']:
             signature=r'(?m)^(?:static )?(?:void|stat_t|bool) '+name+r'\([^;{}\n]*\)\s*'
             match=re.search(signature+r'\{', source)
             self.assertIsNotNone(match,name)
@@ -49,6 +49,8 @@ class HoldOutputs(unittest.TestCase):
 #define AXIS_X 0
 #define BLOCK_IDLE 0
 #define CYCLE_MACHINING 1
+#define CYCLE_OFF 0
+#define MACHINE_PROGRAM_STOP 3
 #define SR_REQUEST_ASAP 1
 #define CONTROLLER_READY 1
 #define BLOCK_TYPE_COMMAND 2
@@ -57,7 +59,7 @@ class HoldOutputs(unittest.TestCase):
 #define FLAGS_NONE ((bool*)0)
 typedef int stat_t;
 struct { unsigned hold_state, motion_state, queue_flush_state; bool end_hold_requested, program_paused, job_kill_requested, queue_flush_input, queue_flush_input_due, hold_fast_request, hold_fast, job_kill_report_pending;
-         unsigned cycle_state, limit_requested, shutdown_requested;
+         unsigned cycle_state, limit_requested, shutdown_requested, machine_state;
          struct { uint8_t spindle_mode, mist_coolant, flood_coolant; } gm; } cm;
 struct { bool pause_on_hold, coolant_pause_on_hold; float dwell_seconds; } spindle_cfg;
 uint8_t SREG;
@@ -117,6 +119,7 @@ bool st_aline_in_flight(void){return aline_busy;}
 void st_cancel_dwell(void){if(!aline_busy)busy=false;}
 void st_prep_null(void){}
 void sr_request_status_report(int x){}
+void mp_zero_segment_velocity(void){}
 stat_t rpt_exception(int s,const char*m){return s;}
 stat_t rpt_exception_P(int s,const char*m){return s;}
 void cm_set_motion_state(int mode) { cm.motion_state=mode; }
@@ -227,6 +230,14 @@ int main(void) {
     service();assert(!hold_outputs.state&&output_mode==SPINDLE_CW);
     output_mode=cm.gm.spindle_mode=SPINDLE_OFF;st_pre.buffer_state=0;service();
     cm_request_end_hold();service();assert(exits==1&&!output_mode);
+    // A canned cycle may finish at its contact hold without an explicit resume.
+    // Its saved output modes must not leak into the next job's hold.
+    setup();service();queued=false;
+    float ended[]={MACHINE_PROGRAM_STOP};_exec_program_finalize(ended,FLAGS_NONE);
+    assert(!hold_outputs.state&&!cm.end_hold_requested&&cm.hold_state==FEEDHOLD_OFF);
+    output_mode=cm.gm.spindle_mode=SPINDLE_CCW;output_speed=2000;
+    queued=true;cm.hold_state=FEEDHOLD_HOLD;service();
+    assert(hold_outputs.spindle_mode==SPINDLE_CCW&&hold_outputs.spindle_speed==2000);
     // Already-masked callers must remain masked after nested cancellation.
     setup(); SREG=0x15; _hold_outputs_cancel(); assert(SREG==0x15);
 }
