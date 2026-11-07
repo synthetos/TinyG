@@ -88,6 +88,10 @@ stat_t cm_arc_callback()
 	if (arc.run_state == BLOCK_IDLE) {
         return (STAT_NOOP);
     }
+    if (cm_is_alarmed() != STAT_OK) {       // no more segments: cm_cycle_start() would overwrite the alarm (N84)
+        arc.run_state = BLOCK_IDLE;         // the alarm's flush corrects the model position
+        return (STAT_NOOP);
+    }
 	if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
         return (STAT_EAGAIN);
     }

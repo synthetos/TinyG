@@ -15,7 +15,7 @@ import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board,
               pytest.mark.dialect("d449"), pytest.mark.profile("switches-no"), pytest.mark.timeout(120),
-              pytest.mark.bug("N84", on=["d449"])]
+              pytest.mark.bug("N84", on=[])]
 
 WHY = "N84 limit during an arc"
 LINES = ["G21 G91"] + ["G1 X0.5 F300"] * 12 + ["G17 G2 X30 Y0 I15 J0 F400"]
