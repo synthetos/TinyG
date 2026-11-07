@@ -182,8 +182,16 @@ stat_t mp_aline(GCodeState_t *gm_in)
 			}
 		}
 		float move_time = (2 * length) / (2*entry_velocity + delta_velocity);// compute execution time for this move
-		if (move_time < MIN_BLOCK_TIME)
-			return (STAT_MINIMUM_TIME_MOVE);
+		if (move_time < MIN_BLOCK_TIME) {
+			// A move queued behind others is left to the next move, which starts from mm.position and so
+			// covers it; cm_short_move_callback() runs it if nothing follows (N87). With at most the running
+			// block queued the machine stops after it anyway: run it now at the minimum time.
+			if (!mm.short_move_run && (mp_get_planner_buffers_available() < PLANNER_BUFFER_POOL_SIZE - 1)) {
+				mm.short_move_pending = true;
+				return (STAT_MINIMUM_TIME_MOVE);
+			}
+			gm_in->move_time = MIN_BLOCK_TIME;
+		}
 	}
 
 	// get a cleared buffer and setup move variables
@@ -335,6 +343,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
         return (STAT_INPUT_VALUE_RANGE_ERROR);
     }
 	copy_vector(mm.position, bf->gm.target);	// set the planner position
+	mm.short_move_pending = false;				// this move covered any refused short move (N87)
 	mp_commit_write_buffer(BLOCK_TYPE_ALINE); 	// commit current block (must follow the position update)
 	return (STAT_OK);
 }

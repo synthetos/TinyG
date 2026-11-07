@@ -31,7 +31,7 @@ uint8_t cm_get_path_control(const GCodeState_t *gcode_state) { return (harness_p
 void cm_set_motion_state(const cmMotionState motion_state) { cm.motion_state = motion_state; }
 void cm_cycle_end(void) {}
 stat_t sr_request_status_report(uint8_t kind) { return STAT_OK; }
-void cm_abort_arc(void) {}
+void cm_abort_arc(void) {} void cm_run_short_move(void) {}
 stat_t cm_panic_P(const stat_t status, const char *msg_P)
 {
 	fprintf(stderr, "cm_panic_P(%d)\n", status);

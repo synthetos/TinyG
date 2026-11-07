@@ -698,6 +698,8 @@ void cm_finalize_move(void);
 #define G10_QUIET_MIN_MS 20						// ...the start of a gap will do: this long after a byte, for G10_QUIET_SLOT_MS
 #define G10_QUIET_SLOT_MS 10					// (one value blocks input about 30 ms, three about 90 ms)
 stat_t cm_deferred_write_callback(void);
+void cm_run_short_move(void);					// plan a refused short move before anything else (N87)
+stat_t cm_short_move_callback(void);			// ...or once nothing follows it
 bool cm_persistence_busy(void);                  // no EEPROM write now: a cycle, motion or a dwell runs (N68)
 #define MAX_GEOMETRY_COORDINATE 1.0e18f // six squared differences of two endpoints stay finite
 stat_t cm_set_coord_value(nvObj_t *nv);

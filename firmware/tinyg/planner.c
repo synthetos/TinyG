@@ -155,6 +155,7 @@ void mp_flush_planner()
 {
 	cm_abort_arc();
 	mp_init_buffers();
+	mm.short_move_pending = false;				// the caller resyncs the model to the runtime (N87)
 //    mr.block_state = BLOCK_IDLE;                // prevent MR from re-running
 	cm_set_motion_state(MOTION_STOP);
 }
@@ -226,6 +227,7 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 {
 	mpBuf_t *bf;
 
+	cm_run_short_move();								// a refused short move goes first (N87)
 	// Never supposed to fail as buffer availability was checked upstream in the controller
 	if ((bf = mp_get_write_buffer()) == NULL) {
 		cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_queue_command"));
@@ -270,6 +272,7 @@ stat_t mp_dwell(float seconds)
 {
 	mpBuf_t *bf;
 
+	cm_run_short_move();								// a refused short move goes first (N87)
 	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
    		return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_dwell")));	// never supposed to fail
     }

@@ -1292,7 +1292,7 @@ stat_t cm_resume_origin_offsets()
  */
 
 /*
- * _queue_line() - plan the move in cm.gm inside a machining cycle (G0/G1)
+ * _queue_line() - plan a move (cm.gm, or a refused short move) inside a machining cycle (G0/G1)
  *
  *	The cycle starts before the move is queued so a short move cannot finish and end the cycle
  *	before it was started. But mp_aline() plans before it reserves its buffer, and meanwhile the
@@ -1300,10 +1300,10 @@ stat_t cm_resume_origin_offsets()
  *	then cm_cycle_end()). So once the move is queued, check again with interrupts off: restart the
  *	cycle if anything is queued or running, end it if nothing is (a too-short or rejected move).
  */
-static stat_t _queue_line()
+static stat_t _queue_line(GCodeState_t *gm)
 {
 	cm_cycle_start();
-	stat_t status = mp_aline(&cm.gm);
+	stat_t status = mp_aline(gm);
 	if (cm_is_alarmed() != STAT_OK) {			// mp_aline can alarm or panic (failed reservation): the
 		return (status);						// cycle repair below must not overwrite that state
 	}
@@ -1325,6 +1325,42 @@ static stat_t _queue_line()
 		status = STAT_OK;						// too short to plan; not an error
 	}
 	return (status);
+}
+
+/*
+ * cm_run_short_move() - plan a move mp_aline() refused as too short, before anything else is queued
+ * cm_short_move_callback() - plan it once at most the running block is queued
+ *
+ *	mp_aline() refuses a move under the minimum block time while others are queued, and the model still
+ *	advances (cm_finalize_move()), so the next move starts from the planner position and covers it. When
+ *	no move follows, the tool would stop short while the position report (the model at rest) claims the
+ *	endpoint (N87). The rest of the way is planned at the minimum time: at a dwell or a queued command,
+ *	or when the queue has drained to the running block (the machine stops there anyway).
+ */
+void cm_run_short_move()
+{
+	if (!mm.short_move_pending || (cm_is_alarmed() != STAT_OK) || (cm.queue_flush_state != FLUSH_OFF)) {
+		return;									// a flush resyncs the model and clears it
+	}
+	mm.short_move_pending = false;
+	GCodeState_t gm;
+	memcpy(&gm, &cm.gm, sizeof(GCodeState_t));
+	copy_vector(gm.target, cm.gmx.position);	// where the model already is
+	if ((gm.feed_rate_mode == INVERSE_TIME_MODE) || !(gm.feed_rate > 0)) {
+		gm.motion_mode = MOTION_MODE_STRAIGHT_TRAVERSE;	// no feed to use (G93 clears it after each move)
+	}
+	gm.feed_rate_mode = UNITS_PER_MINUTE_MODE;
+	mm.short_move_run = true;
+	_queue_line(&gm);
+	mm.short_move_run = false;
+}
+
+stat_t cm_short_move_callback()
+{
+	if (mm.short_move_pending && (mp_get_planner_buffers_available() >= PLANNER_BUFFER_POOL_SIZE - 1)) {
+		cm_run_short_move();
+	}
+	return (STAT_OK);
 }
 
 static stat_t _straight_traverse(const float target[], const bool flags[], const bool machine_coordinates)
@@ -1355,7 +1391,7 @@ static stat_t _straight_traverse(const float target[], const bool flags[], const
 	// prep and plan the move
 	cm_set_work_offsets();				        // capture the fully resolved offsets to the state
 
-    status = _queue_line();                     // plan the move inside a machining cycle
+    status = _queue_line(&cm.gm);               // plan the move inside a machining cycle
     if (status != STAT_OK) {
         copy_vector(cm.gm.target, cm.gmx.position);
         return (status);
@@ -1572,7 +1608,7 @@ stat_t cm_straight_feed(const float target[], const bool flags[])
     }
 	// prep and plan the move
 	cm_set_work_offsets();                      // capture the fully resolved offsets to the state
-    status = _queue_line();                     // plan the move inside a machining cycle
+    status = _queue_line(&cm.gm);               // plan the move inside a machining cycle
     if (status != STAT_OK) {
         copy_vector(cm.gm.target, cm.gmx.position);
         return (status);

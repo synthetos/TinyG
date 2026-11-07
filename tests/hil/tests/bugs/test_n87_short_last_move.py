@@ -19,7 +19,7 @@ at rest) must reach the commanded 2.05 mm.
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.dialect("d449"),
-              pytest.mark.bug("N87", on=["d449"]), pytest.mark.timeout(6000)]   # includes waiting for the board lock
+              pytest.mark.bug("N87", on=[]), pytest.mark.timeout(6000)]   # includes waiting for the board lock
 
 WHY = "N87 short last move"
 MOVE_MS = 1.25                                     # the short move at the feed actually used
