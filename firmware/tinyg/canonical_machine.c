@@ -1209,6 +1209,7 @@ stat_t cm_set_absolute_origin(const float origin[], bool flags[])
 {
 	float value[AXES];
 
+	cm_run_short_move();								// before the rebase below, which would discard it (N87)
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		if (flags[axis]) {
 			value[axis] = (axis < AXIS_A) ? _to_millimeters(origin[axis]) : origin[axis];	// rotary words are degrees (E155)
@@ -1335,7 +1336,8 @@ static stat_t _queue_line(GCodeState_t *gm)
  *	advances (cm_finalize_move()), so the next move starts from the planner position and covers it. When
  *	no move follows, the tool would stop short while the position report (the model at rest) claims the
  *	endpoint (N87). The rest of the way is planned at the minimum time: at a dwell or a queued command,
- *	or when the queue has drained to the running block (the machine stops there anyway).
+ *	before G28.3 rebases the model and planner, or when the queue has drained to the running block (the
+ *	machine stops there anyway). Rebases from the runtime (flush, homing, probing) discard it on purpose.
  */
 void cm_run_short_move()
 {
