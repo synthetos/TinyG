@@ -38,7 +38,8 @@ enum { TYPE_INTEGER = 2, TYPE_FLOAT = 4 };
 enum { SPINDLE_OFF = 0, SPINDLE_CW, SPINDLE_CCW };
 enum { MODEL = 1 };
 enum { SPINDLE_BIT = 1, SPINDLE_DIR = 2, MIST_COOLANT_BIT = 4, FLOOD_COOLANT_BIT = 8 };
-typedef struct { uint8_t valuetype; union { float value_flt; uint32_t value_int; }; } nvObj_t;
+typedef struct { uint8_t valuetype; int8_t precision; union { float value_flt; uint32_t value_int; }; } nvObj_t;
+#define GET_TABLE_WORD(field) 3                                       /* the sps row's precision */
 struct { struct { uint8_t spindle_mode, mist_coolant, flood_coolant; float spindle_speed; } gm; int alarm; } cm;
 struct { uint8_t enable_polarity, direction_polarity; } spindle_cfg = { 1, 1 };
 uint8_t SREG = 0x80;
@@ -95,7 +96,7 @@ def code(split_read=False):
 
 MAIN = r'''
 static uint32_t i(stat_t (*f)(nvObj_t *)) { nvObj_t nv = {0}; assert(f(&nv) == STAT_OK && nv.valuetype == TYPE_INTEGER); return nv.value_int; }
-static float sps(void) { nvObj_t nv = {0}; assert(spindle_get_sps(&nv) == STAT_OK && nv.valuetype == TYPE_FLOAT); return nv.value_flt; }
+static float sps(void) { nvObj_t nv = {0}; assert(spindle_get_sps(&nv) == STAT_OK && nv.valuetype == TYPE_FLOAT && nv.precision == 3); return nv.value_flt; }
 static void exec(void (*f)(float *, bool *), float v) { float value[AXES] = { v }; f(value, FLAGS_NONE); }
 static void loader_s_update(void) { exec(_exec_spindle_speed, 20000.25f); }
 int main(void) {
@@ -170,6 +171,8 @@ class SpindleCoolantStatus(unittest.TestCase):
             self.assertIsNotNone(row, key)
             self.assertIn(row.group(1), ("_i0", "_f0"), key)            # no F_INITIALIZE or F_PERSIST
             self.assertEqual((row.group(2), row.group(3)), (getter, "set_nul"), key)
+        sps = re.search(r'\{\s*""\s*,\s*"sps"\s*,\s*_f0\s*,\s*(\d+)\s*,', table)
+        self.assertEqual(sps.group(1), "3")                             # N81: S 0-1 keeps its fraction
 
 
 if __name__ == "__main__":

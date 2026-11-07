@@ -11,7 +11,7 @@ import time
 
 import pytest
 
-pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.bug("N81", on=["d449"]),
+pytestmark = [pytest.mark.persists, pytest.mark.dialect("d449"), pytest.mark.bug("N81", on=[]),
               pytest.mark.timeout(6000)]   # includes waiting for the board lock
 
 VALUES = {"p1csl": 0.25, "p1csh": 0.8, "p1wsl": 0.125, "p1wsh": 0.75}
