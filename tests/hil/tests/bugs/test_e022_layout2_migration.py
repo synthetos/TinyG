@@ -27,7 +27,7 @@ def test_layout1_upgrade_keeps_motor_geometry(tg, keep, tmp_path):
     new_hex = flasher.build(SOURCE)
     saved = snapshot.take(tg)
     snapshot.save(saved, tmp_path)
-    keep("spep", "spdp", "prbp")    # not in older dialect catalogs
+    keep("spep", "spdp", "prbp", "spph", "spde", "coph")    # not in older dialect catalogs
     try:
         flasher.flash(tg, old_hex, expect_fb=flasher.source_build(old_source))
         restored = snapshot.restore(tg, saved)
@@ -39,8 +39,8 @@ def test_layout1_upgrade_keeps_motor_geometry(tg, keep, tmp_path):
         assert tg.get("spep") == 1
         assert tg.get("spdp") == 0
         assert tg.get("prbp") == 0
-        for token in ("spph", "spde", "coph"):
-            assert tg.send_json({token: None}).status == 17
+        for token, default in (("spph", 1), ("spde", 1), ("coph", 0)):
+            assert tg.get(token) == default
         tg.reset()
         assert tg.get("1sa") == pytest.approx(0.9)
     finally:

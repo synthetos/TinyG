@@ -46,6 +46,8 @@ def switch_code(probe=False):
     types += h[h.index("#define SW_LOCKOUT_MS"):h.index("/****************", h.index("switches_t sw;"))]
     pre = SWITCH_PRELUDE + INTERRUPTS + "\nstatic int inject, pending;\n"
     if probe:
+        pre = pre.replace("bool hold_fast,", "bool end_hold_requested, hold_fast,")
+        pre += "\nstatic struct {bool resume_cancelled;} hold_outputs;\n"
         pre = pre.replace("static void cm_request_feedhold(void) {holds++;}", "void cm_request_feedhold(void);")
     code = pre + types + "\nrtClock_t rtc;\n"
     code += "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }   /* switch.c reads the clock through it (E190) */\n"

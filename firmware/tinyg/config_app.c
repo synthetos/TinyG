@@ -61,7 +61,7 @@ cfgParameters_t cfg; 				// application specific configuration parameters
 
 // helpers (most helpers are defined immediately above their usage so they don't need prototypes here)
 
-// Reserve E060 indexes only; omit from group reports and reject direct GET/SET.
+// Hide the internal activation stamp from group reports and direct GET/SET.
 static stat_t _reserved_hold_setting(nvObj_t *nv)
 {
     nv->valuetype = TYPE_SKIP;      // not serialized; TYPE_EMPTY ended text group listings here (E151)
@@ -649,10 +649,10 @@ const cfgItem_t cfgArray[] PROGMEM = {
     // Append persistent settings so existing single-value EEPROM indexes stay unchanged.
     { "sys","spep",_iipn,0,cfg_print_spep,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.enable_polarity,SPINDLE_ENABLE_POLARITY },
     { "sys","spdp",_iipn,0,cfg_print_spdp,get_ui8,spindle_set_polarity,(uint32_t *)&spindle_cfg.direction_polarity,SPINDLE_DIR_POLARITY },
-    // No initialization or persistence until E060 passes its timing gate.
-    { "sys","spph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_PAUSE_ON_HOLD },
-    { "sys","spde",_f0,3,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,SPINDLE_DWELL_TIME },
-    { "sys","coph",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,COOLANT_PAUSE_ON_HOLD },
+    // Activate these reserved layout-2 slots in place; all existing indexes remain unchanged.
+    { "sys","spph",_iipn,0,cfg_print_spph,get_ui8,set_01,(uint32_t *)&spindle_cfg.pause_on_hold,SPINDLE_PAUSE_ON_HOLD },
+    { "sys","spde",_fipn,3,cfg_print_spde,get_flt,spindle_set_dwell,(uint32_t *)&spindle_cfg.dwell_seconds,SPINDLE_DWELL_TIME },
+    { "sys","coph",_iipn,0,cfg_print_coph,get_ui8,set_01,(uint32_t *)&spindle_cfg.coolant_pause_on_hold,COOLANT_PAUSE_ON_HOLD },
 
     { "sys","prbp",_iipn,0,cfg_print_prbp,get_ui8,sw_set_prbp,(uint32_t *)&sw.probe_type,SW_ACTIVE_LO },
 
@@ -696,6 +696,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "","sps",_f0, 3, tx_print_flt, spindle_get_sps, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","cof",_i0, 0, tx_print_int, coolant_get_cof, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","com",_i0, 0, tx_print_int, coolant_get_com, set_nul, (uint32_t *)&cs.null, 0},
+
+    // Internal stamp, appended after all existing single-value rows. Hidden and never a host SET.
+    { "","_hld",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,0 },
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
@@ -1123,6 +1126,9 @@ static const char fmt_ex[] PROGMEM = "[ex]  enable flow control%10d [0=off,1=XON
 static const char fmt_rxm[] PROGMEM = "[rxm] serial RX mode%15d [0=char_mode,1=line_mode]\n";
 static const char fmt_spep[] PROGMEM = "[spep] spindle enable polarity%5d [0=active_low,1=active_high]\n";
 static const char fmt_spdp[] PROGMEM = "[spdp] spindle direction polarity%2d [0=CW_low,1=CW_high]\n";
+static const char fmt_spph[] PROGMEM = "[spph] spindle pause on hold%7d [0=off,1=on]\n";
+static const char fmt_spde[] PROGMEM = "[spde] spindle spin-up delay%10.3f s\n";
+static const char fmt_coph[] PROGMEM = "[coph] coolant pause on hold%7d [0=off,1=on]\n";
 static const char fmt_prbp[] PROGMEM = "[prbp] probe input polarity%8d [0=normally_open,1=normally_closed]\n";
 static const char fmt_os[] PROGMEM = "[os]  optional stop (M1)%11d [0=off,1=on]\n";
 static const char fmt_baud[] PROGMEM = "[baud] USB baud rate%15d [1=9600,2=19200,3=38400,4=57600,5=115200,6=230400]\n";
@@ -1134,6 +1140,9 @@ void cfg_print_ex(nvObj_t *nv) { text_print(nv, fmt_ex);}
 void cfg_print_rxm(nvObj_t *nv) { text_print(nv, fmt_rxm);}
 void cfg_print_spep(nvObj_t *nv) { text_print(nv, fmt_spep);}
 void cfg_print_spdp(nvObj_t *nv) { text_print(nv, fmt_spdp);}
+void cfg_print_spph(nvObj_t *nv) { text_print(nv, fmt_spph);}
+void cfg_print_spde(nvObj_t *nv) { text_print(nv, fmt_spde);}
+void cfg_print_coph(nvObj_t *nv) { text_print(nv, fmt_coph);}
 void cfg_print_prbp(nvObj_t *nv) { text_print(nv, fmt_prbp);}
 void cfg_print_os(nvObj_t *nv) { text_print(nv, fmt_os);}
 void cfg_print_baud(nvObj_t *nv) { text_print(nv, fmt_baud);}

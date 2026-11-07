@@ -50,6 +50,9 @@ void spindle_config_init(void)
     spindle_configured = false;
     spindle_cfg.enable_polarity = SPINDLE_ENABLE_POLARITY;
     spindle_cfg.direction_polarity = SPINDLE_DIR_POLARITY;
+    spindle_cfg.pause_on_hold = SPINDLE_PAUSE_ON_HOLD;
+    spindle_cfg.coolant_pause_on_hold = COOLANT_PAUSE_ON_HOLD;
+    spindle_cfg.dwell_seconds = SPINDLE_DWELL_TIME;
 }
 
 void spindle_init_outputs(void)
@@ -80,6 +83,21 @@ stat_t spindle_set_polarity(nvObj_t *nv)
     return (status);
 }
 
+stat_t spindle_set_dwell(nvObj_t *nv)
+{
+    if (!isfinite(nv->value_flt) || nv->value_flt < 0 || nv->value_flt > 3600) {
+        return (STAT_INPUT_VALUE_RANGE_ERROR);
+    }
+    return (set_flt(nv));  // persisted SETs already pass the common idle gate
+}
+
+void spindle_control_immediate(uint8_t mode, float speed)
+{
+    cm_set_spindle_speed_parameter(MODEL, speed);
+    float value[] = { (float)mode };
+    _exec_spindle_control(value, FLAGS_NONE);
+}
+
 /*
  * spindle_init()
  * spindle_reset()
@@ -96,6 +114,15 @@ static struct {
 	volatile uint8_t ccw;						// direction last driven
 	float speed;								// speed in use; written from the loader interrupt too
 } spindle_out;
+
+void spindle_get_runtime(uint8_t *mode, float *speed)
+{
+    uint8_t saved_sreg = SREG;
+    cli();
+    *mode = spindle_out.mode;
+    *speed = spindle_out.speed;
+    SREG = saved_sreg;
+}
 
 static void _record_speed(float speed)
 {

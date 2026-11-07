@@ -57,7 +57,13 @@ uint8_t SREG=128;
 #define PSTR(x) (x)
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
-        bool program_paused, end_hold_requested, queue_flush_input, queue_flush_input_due; uint8_t optional_stop_enabled;} cm;
+        bool job_kill_requested,hold_fast_request,limit_requested,shutdown_requested; bool program_paused, end_hold_requested, queue_flush_input, queue_flush_input_due; uint8_t optional_stop_enabled;} cm;
+static struct {bool resume_cancelled;} hold_outputs;
+static int cm_is_alarmed(void) {return cm.machine_state==MACHINE_ALARM;}
+static void _hold_outputs_cancel(void) {}
+static void _hold_outputs_pause(void) {hold_outputs.resume_cancelled=false;}
+static bool _hold_outputs_resume(void) {return true;}
+static void _hold_outputs_finish_resume(void) {}
 static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
 static int fetched, ran, wakeups, finalized, queued_commands, replan_error, reports;
@@ -72,7 +78,7 @@ bool st_runtime_isbusy(void) {return !idle;}
 bool st_aline_in_flight(void) {return !idle;}
 void st_prep_null(void) {}
 void st_cancel_dwell(void) {}
-stat_t mp_replan_held_block(void) {assert(!cm.program_paused && cm.hold_state==FEEDHOLD_HOLD); return replan_error;}
+stat_t mp_replan_held_block(void) {assert(cm.program_paused && cm.hold_state==FEEDHOLD_HOLD); return replan_error;}
 void st_request_exec_move(void) {wakeups++;}
 stat_t rpt_exception_P(stat_t s,const char*m){reports++;return s;}
 void cm_set_motion_state(int state) {cm.motion_state=state;}
