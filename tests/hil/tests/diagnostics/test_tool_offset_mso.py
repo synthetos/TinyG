@@ -30,7 +30,9 @@ def _spm(tg, m):
 
 def _steps(tg, cfg, request, name, lines, channels=("M1 step", "M2 step", "M3 step")):
     """Run lines inside one MSO capture; return the step count per channel and the positions after."""
-    with mso.Capture(cfg, digital=list(channels), seconds=8, rate=1_000_000,
+    directions = {k: k.replace(" step", " dir") for k in channels}
+    positive = {k: int(bool(tg.get(k.split()[0][1:] + "po"))) for k in channels}
+    with mso.Capture(cfg, digital=[*channels, *directions.values()], seconds=8, rate=1_000_000,
                      save_as=request.config._tinyg_recorder.dir / name) as cap:
         time.sleep(0.15)
         for ln in lines:
@@ -38,7 +40,19 @@ def _steps(tg, cfg, request, name, lines, channels=("M1 step", "M2 step", "M3 st
             tg.send_gcode(ln, check=True, allow="tool offset check")
         tg.wait_idle(timeout=30)
     e = cap.edges()
+    initial = cap.initial()
     counts = {k: sum(1 for _, v in e[k] if v == 1) for k in channels}
+    for k, direction in directions.items():
+        level, cursor, net = initial[direction], 0, 0
+        edges = e[direction]
+        for t, value in e[k]:
+            if value != 1:
+                continue
+            while cursor < len(edges) and edges[cursor][0] <= t:
+                level = edges[cursor][1]
+                cursor += 1
+            net += 1 if level == positive[k] else -1
+        counts[k.replace(" step", " net")] = net
     return counts, {"posy": tg.get("posy"), "posz": tg.get("posz"), "mpoy": tg.get("mpoy"), "mpoz": tg.get("mpoz")}
 
 
@@ -57,12 +71,13 @@ def test_tool_offset_on_the_pulses(tg, keep, record, request):
         for k, v in want.items():
             if abs(pos[k] - v) > 0.001:
                 bad.append(f"{case}: {k} {pos[k]} != {v}")
-        if z_steps is not None and abs(counts["M1 step"] - z_steps) > 1:
-            bad.append(f"{case}: Z stepped {counts['M1 step']}, expected {z_steps}")
+        if z_steps is not None and abs(counts["M1 net"] - z_steps) > 1:
+            bad.append(f"{case}: Z net {counts['M1 net']}, expected {z_steps} ({counts['M1 step']} pulses)")
         if y_steps is not None:
             for k in ("M2 step", "M3 step"):
-                if abs(counts[k] - y_steps) > 1:
-                    bad.append(f"{case}: {k} stepped {counts[k]}, expected {y_steps}")
+                net = counts[k.replace(" step", " net")]
+                if abs(net - y_steps) > 1:
+                    bad.append(f"{case}: {k} net {net}, expected {y_steps} ({counts[k]} pulses)")
 
     c, p = _steps(tg, cfg, request, "tlo-set", ["G43.1 Z5"])
     check("G43.1 Z5 alone", c, p, {"posz": -5, "mpoz": 0}, z_steps=0, y_steps=0)
@@ -71,16 +86,16 @@ def test_tool_offset_on_the_pulses(tg, keep, record, request):
     c, p = _steps(tg, cfg, request, "tlo-change", ["G43.1 Z7", "G0 Z0"])
     check("offset 5 -> 7, G0 Z0", c, p, {"posz": 0, "mpoz": 7}, z_steps=round(2 * z_spm))
     c, p = _steps(tg, cfg, request, "tlo-g91", ["G91 G1 Z-2 F600", "G90"])
-    check("G91 Z-2 with the offset", c, p, {"posz": -2, "mpoz": 5}, z_steps=round(2 * z_spm))
+    check("G91 Z-2 with the offset", c, p, {"posz": -2, "mpoz": 5}, z_steps=-round(2 * z_spm))
     c, p = _steps(tg, cfg, request, "tlo-g53", ["G53 G0 Z1"])
-    check("G53 Z1 ignores the offset", c, p, {"posz": -6, "mpoz": 1}, z_steps=round(4 * z_spm))
+    check("G53 Z1 ignores the offset", c, p, {"posz": -6, "mpoz": 1}, z_steps=-round(4 * z_spm))
     c, p = _steps(tg, cfg, request, "tlo-g54", ["G10 L2 P1 Z1", "G0 Z0"])
     check("G54 Z1 plus offset 7", c, p, {"posz": 0, "mpoz": 8}, z_steps=round(7 * z_spm))
     c, p = _steps(tg, cfg, request, "tlo-y", ["G43.1 Y3", "G0 Y0"])
     check("Y offset 3 (two motors)", c, p, {"posy": 0, "mpoy": 3}, y_steps=round(3 * y_spm))
     c, p = _steps(tg, cfg, request, "tlo-g49", ["G49", "G0 Y0 Z0"])
     check("G49 then G0 Y0 Z0", c, p, {"posy": 0, "posz": 0, "mpoy": 0, "mpoz": 1},
-          z_steps=round(7 * z_spm), y_steps=round(3 * y_spm))
+          z_steps=-round(7 * z_spm), y_steps=-round(3 * y_spm))
     tg.send_gcode("G10 L2 P1 Z0", check=True, allow="G54 back to machine zero")
 
     # recorded only: what M2 and a reset do to an active offset
