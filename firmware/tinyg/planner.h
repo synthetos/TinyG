@@ -183,6 +183,7 @@ typedef struct mpBufferPool {		// ring buffer for sub-moves
 	mpBuf_t *r;						// get/end_run_buffer pointer
 	mpBuf_t bf[PLANNER_BUFFER_POOL_SIZE];// buffer storage
 	magic_t magic_end;
+	volatile bool exec_ran;			// a block ran: cm_deferred_write_callback() can miss a whole cycle (N83)
 } mpBufferPool_t;
 
 typedef struct mpMoveMasterSingleton { // common variables for planning (move master)

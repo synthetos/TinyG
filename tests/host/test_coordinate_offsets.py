@@ -37,6 +37,7 @@ class CoordinateOffsets(unittest.TestCase):
 cmSingleton_t cm;
 bool FLAGS_NONE[AXES];
 static void _exec_g10_offset(float *, bool *);
+static bool _host_awaits_reply(void) { return false; }
 static void _persist_coord_offsets(void) { assert(0); }
 bool st_aline_in_flight(void) { return false; }
 bool cm_persistence_busy(void) { return cm.cycle_state != CYCLE_OFF; }   /* N68: busy while a cycle runs */

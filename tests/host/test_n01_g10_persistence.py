@@ -3,6 +3,7 @@
 NIST RS274NGC v3 3.5.5; TinyG wiki Coordinate-Systems: G10 offsets persist once
 machining is done. EEPROM's AVR1008 workaround disables serial interrupts, so
 background writes after the response can lose the next stop-and-wait request.
+A host streaming ahead of the replies is N83: test_n83_g10_waits_for_quiet.py.
 """
 from pathlib import Path
 import re
@@ -29,8 +30,15 @@ bool FLAGS_NONE[AXES];
 static int saves, rx, tx;
 static bool segment;
 static int USBu;
+static uint32_t last_rx;
+mpBufferPool_t mb;
+static unsigned char SREG;
+#undef cli
+#define cli()
 uint16_t xio_get_rx_bufcount_usart(void *p) { return rx; }
 uint16_t xio_get_tx_bufcount_usart(void *p) { return tx; }
+uint8_t xio_usb_take_rx_seen(void) { return 0; }
+uint32_t SysTickTimer_getValue(void) { static uint32_t t = 100000; return t++; }
 bool st_aline_in_flight(void) { return segment; }
 bool mp_runtime_is_idle(void) { return true; }
 void cm_set_work_offsets(void) {}
@@ -45,9 +53,9 @@ stat_t nv_persist(nvObj_t *nv) { saves++; return STAT_OK; }
         # Compile the real AVR callback guard without dragging AVR headers into the host.
         code+='\n#define NUL 0\n'
         code+=function(source,r'bool cm_persistence_busy\(\)\s*(?=\{)')
-        names=['_persist_coord_offsets','cm_deferred_write_callback','cm_set_coord_offsets','_exec_g10_offset']
+        names=['_host_awaits_reply','_persist_coord_offsets','cm_deferred_write_callback','cm_set_coord_offsets','_exec_g10_offset']
         for name in names:
-            sig=r'(?:static )?(?:void|stat_t) '+name+r'\([^;{}]*\)\s*(?=\{)'
+            sig=r'(?:static )?(?:void|bool|stat_t) '+name+r'\([^;{}]*\)\s*(?=\{)'
             if re.search(sig,source): code+=function(source,sig)
         code+=r'''
 static void prepare(void) {

@@ -692,6 +692,11 @@ extern volatile uint8_t cm_position_epoch;
 // Critical helpers
 void cm_update_model_position_from_runtime(void);
 void cm_finalize_move(void);
+#define G10_HOST_WAIT_MS 100					// N83: a G10 at rest listens this long for the next line before it saves
+#define G10_QUIET_MS 250						// a save put off by more input waits this long after the last received byte
+#define G10_SAVE_WAIT_MS 5000					// after this long at rest and still unsaved...
+#define G10_QUIET_MIN_MS 20						// ...the start of a gap will do: this long after a byte, for G10_QUIET_SLOT_MS
+#define G10_QUIET_SLOT_MS 10					// (one value blocks input about 30 ms, three about 90 ms)
 stat_t cm_deferred_write_callback(void);
 bool cm_persistence_busy(void);                  // no EEPROM write now: a cycle, motion or a dwell runs (N68)
 #define MAX_GEOMETRY_COORDINATE 1.0e18f // six squared differences of two endpoints stay finite

@@ -39,6 +39,7 @@
 // Feedhold remains immediate even mid-line; it does not change the framing state.
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
+static volatile uint8_t usb_rx_seen;			// a byte came in since xio_usb_take_rx_seen()
 static volatile uint8_t usb_activity;			// a byte came in or went out since xio_usb_is_quiet() last looked
 
 // Framing heuristic (E195): a line in progress that has had no byte for about a second is taken to be
@@ -196,6 +197,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	uint8_t status = USBu.usart->STATUS;		// read before DATA: the error flags travel with the frame
 	char c = USBu.usart->DATA;					// can only read DATA once
+	usb_rx_seen = true;							// saving G10 offsets waits for a quiet wire (N83)
 	usb_activity = true;						// any byte, realtime characters too (rt heartbeat)
 
 	if (status & USART_BUFOVF_bm) {				// the USART lost a frame before this one while this
@@ -294,6 +296,19 @@ uint8_t xio_usb_is_quiet(void)
 	SREG = saved_sreg;
 	return (!active && (USBu.rx_buf_head == USBu.rx_buf_tail) && !(USB.flag_in_line && USB.len) &&
 			(USBu.tx_buf_head == USBu.tx_buf_tail));
+}
+
+/*
+ * xio_usb_take_rx_seen() - was a byte received since the last call?
+ */
+uint8_t xio_usb_take_rx_seen(void)
+{
+	uint8_t saved_sreg = SREG;					// take and clear as one, as in xio_usb_is_quiet()
+	cli();
+	uint8_t seen = usb_rx_seen;
+	usb_rx_seen = false;
+	SREG = saved_sreg;
+	return (seen);
 }
 
 uint8_t xio_usb_try_send_line(const char *line)

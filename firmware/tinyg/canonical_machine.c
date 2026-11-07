@@ -439,8 +439,10 @@ void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.g
  * _persist_coord_offsets() - main-loop write-back, before an idle G10 response or after motion
  * cm_deferred_write_callback() - service offsets left pending during motion
  *
- * The callback waits for empty serial rings. That check does not reserve the wire:
- * a host streaming data during a deferred write still needs persistence-aware flow control.
+ * Each write loses the bytes that arrive during it, about 30 ms a value (N83). A save left here by a host that kept
+ * sending waits until no byte has been received for G10_QUIET_MS. A host polling faster than that would put the save
+ * off for good and the offset would go with the power, so after G10_SAVE_WAIT_MS at rest it starts just after a byte,
+ * where the gap is longest and a stream of lines leaves none. A reply to such a G10 does not mean it is saved.
  */
 
 /*
@@ -448,12 +450,43 @@ void cm_update_model_position_from_runtime() { copy_vector(cm.gmx.position, mr.g
  *
  *	Each persisted value masks the medium and low interrupt levels while it is written (AVR1008 workaround), so
  *	serial input and segment preparation stall. A lone G4 dwell starts no cycle but keeps the runtime busy.
- *	Queued commands that have not started do not count: G10 queues its own offset update, and back-to-back idle
- *	G10s must still be written before their response (N01).
+ *	Queued commands that have not started do not count: G10 queues its own offset update.
  */
 bool cm_persistence_busy()
 {
 	return ((cm.cycle_state != CYCLE_OFF) || !mp_runtime_is_idle());
+}
+
+#ifdef __AVR
+static uint32_t last_rx;					// when a byte was last seen arriving
+#endif
+
+/*
+ * _host_awaits_reply() - is the sender of this G10 waiting for its reply? (N83)
+ *
+ *	Such a host is silent until the reply, the one time a write cannot lose its input (N01). A host streaming ahead of
+ *	the replies has its next line in the RX ring or on the wire, and an empty ring cannot tell them apart: listen for
+ *	G10_HOST_WAIT_MS. This blocks, but only at rest, and about as long as the write that follows. SysTick moves in
+ *	10 ms steps, so the time is up to one step short.
+ */
+static bool _host_awaits_reply()
+{
+#ifdef __AVR
+	uint32_t start = SysTickTimer_getValue();
+	(void)xio_usb_take_rx_seen();					// the G10's own bytes
+	while ((SysTickTimer_getValue() - start) < G10_HOST_WAIT_MS) {
+		if (xio_get_rx_bufcount_usart(&USBu) != 0) { break; }
+		if (xio_usb_take_rx_seen()) {
+			last_rx = SysTickTimer_getValue();
+			return (false);
+		}
+	}
+	if (xio_get_rx_bufcount_usart(&USBu) != 0) {
+		last_rx = SysTickTimer_getValue();
+		return (false);
+	}
+#endif
+	return (true);
 }
 
 static void _persist_coord_offsets()
@@ -479,12 +512,27 @@ static void _persist_coord_offsets()
 
 stat_t cm_deferred_write_callback()
 {
-    if (cm.deferred_write_flag && !cm_persistence_busy() && !st_aline_in_flight()) {
 #ifdef __AVR
-        if (xio_isbusy()) { return (STAT_OK); }
+    uint8_t saved_sreg = SREG;				// the rest and the latch as one: exec_ran may only clear at rest
+    cli();
 #endif
-        _persist_coord_offsets();
+    bool ready = cm.deferred_write_flag && !cm_persistence_busy() && !st_aline_in_flight();
+#ifdef __AVR
+    bool ran = mb.exec_ran;
+    if (ready) { mb.exec_ran = false; }		// not before: a dwell sets it once, as it starts, and may end unseen
+    SREG = saved_sreg;
+    static uint32_t ready_since;
+    uint32_t now = SysTickTimer_getValue();
+    if (xio_usb_take_rx_seen()) { last_rx = now; }
+    if (!ready || ran) { ready_since = now; }	// a block ran, seen or not: the rest starts again
+    if (ready) {
+        uint32_t gap = now - last_rx;
+        bool polled = ((now - ready_since) >= G10_SAVE_WAIT_MS) && (gap >= G10_QUIET_MIN_MS) &&
+                      (gap < (G10_QUIET_MIN_MS + G10_QUIET_SLOT_MS));
+        if (xio_isbusy() || ((gap < G10_QUIET_MS) && !polled)) { return (STAT_OK); }
     }
+#endif
+    if (ready) { _persist_coord_offsets(); }
     return (STAT_OK);
 }
 
@@ -1072,10 +1120,7 @@ stat_t cm_set_coord_offsets(const float coord_system,
             cm.deferred_write_flag = true; // persist once the machining cycle is over
         }
     }
-    // An idle stop-and-wait host may send the next line as soon as our response
-    // arrives. Finish EEPROM writes before returning to the parser, not after
-    // that response. During motion, retain the existing deferred write-back.
-    if (changed && !cm_persistence_busy() && !st_aline_in_flight()) {	// not during a dwell either (N68)
+    if (changed && !cm_persistence_busy() && !st_aline_in_flight() && _host_awaits_reply()) {	// not during a dwell either (N68)
         _persist_coord_offsets();
     }
     if (changed && (selected == cm.gm.coord_system)) {
