@@ -80,6 +80,8 @@ bool nv_index_lt_groups(int i) {return i<4;}
 bool cfg_has_flag(int i,int f) {return i==0 && f==F_PERSIST;}
 int cfg_is_type(int i) {return cfgArray[i].type;}
 void cm_set_units_mode(int m) {}
+static bool config_loaded;  /* config.c (N60): set at the end of config_init() */
+static bool cm_persistence_busy(void){return cm.cycle_state!=0;}
 void rpt_exception_P(int s,const char *m) {assert(0);}
 void sr_init_status_report_P(const char *s) {}
 void rpt_print_initializing_message(void) {}

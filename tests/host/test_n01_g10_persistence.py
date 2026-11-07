@@ -32,6 +32,7 @@ static int USBu;
 uint16_t xio_get_rx_bufcount_usart(void *p) { return rx; }
 uint16_t xio_get_tx_bufcount_usart(void *p) { return tx; }
 bool st_aline_in_flight(void) { return segment; }
+bool mp_runtime_is_idle(void) { return true; }
 void cm_set_work_offsets(void) {}
 float cm_get_active_coord_offset(uint8_t axis) { return 0; }
 void mp_queue_command(void(*fn)(float[],bool[]),float *v,bool *f) {}
@@ -43,6 +44,7 @@ stat_t nv_persist(nvObj_t *nv) { saves++; return STAT_OK; }
         code+=function((FW/'xio.c').read_text(),r'uint8_t xio_isbusy\(\)')
         # Compile the real AVR callback guard without dragging AVR headers into the host.
         code+='\n#define NUL 0\n'
+        code+=function(source,r'bool cm_persistence_busy\(\)\s*(?=\{)')
         names=['_persist_coord_offsets','cm_deferred_write_callback','cm_set_coord_offsets','_exec_g10_offset']
         for name in names:
             sig=r'(?:static )?(?:void|stat_t) '+name+r'\([^;{}]*\)\s*(?=\{)'

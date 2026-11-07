@@ -98,6 +98,7 @@ static uint16_t xio_get_rx_bufcount_usart(void *d){(void)d;return 0;}
 static void xio_xoff_usart(void *d){(void)d;}
 int cm_get_units_mode(int model){return MILLIMETERS;}
 #define _to_millimeters(a) (a) /* defaults are loaded in millimeters */
+static bool st_motor_is_rotary(const void *nv){return false;}  /* the motors here are linear */
 static uint8_t _get_axis(index_t index){const char *p=strchr("xyzabc",cfgArray[index].token[0]);assert(p);return p-"xyzabc";}
 static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
 '''

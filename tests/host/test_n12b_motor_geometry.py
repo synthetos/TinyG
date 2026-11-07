@@ -41,6 +41,7 @@ stat_t set_flu(nvObj_t *nv){*(float *)nv->target=_to_millimeters(nv->value_flt);
 stat_t set_u32(nvObj_t *nv){*(uint32_t *)nv->target=nv->value_int;return 0;}
 void nv_add_message_P(const char *s){}
 void _set_hw_microsteps(int m,int value){pin_writes++;}
+static bool st_motor_is_rotary(const void *nv){return false;}  /* the motors here are linear */
 '''
   for m in range(1,7):
    code+=f'#define MOTOR_{m} {m-1}\n'
