@@ -2442,6 +2442,8 @@ void cm_queue_flush()
 static void _exec_program_finalize(float *value, bool *flags)
 {
 	if (cm_is_alarmed() != STAT_OK) { return; }			// only $clear or a reset ends these (N84)
+    hold_outputs.state = 0;                      // a canned cycle may finish at a contact hold, without ~
+    hold_outputs.resume_cancelled = false;
 	cm.machine_state = (uint8_t)value[0];               // set to one of STOP or END
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {
