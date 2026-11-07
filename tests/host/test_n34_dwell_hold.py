@@ -95,6 +95,7 @@ enum {FEEDHOLD_OFF,FEEDHOLD_HOLD};
 enum {BLOCK_TYPE_NULL,BLOCK_TYPE_ALINE,BLOCK_TYPE_DWELL};
 struct {bool program_paused;int hold_state,motion_state;} cm;
 typedef struct mpBuf {int block_type;int (*bf_func)(struct mpBuf*);} mpBuf_t;
+static struct {bool exec_ran;} mb;
 static mpBuf_t block;
 static bool busy,aline,startup;
 static int staged,called;

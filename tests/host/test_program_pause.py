@@ -63,6 +63,7 @@ static bool flags_one[AXES]={true};
 static int fetched, ran, wakeups, finalized, queued_commands, replan_error, reports;
 static bool queued, idle=true;
 typedef struct mpBuf {int block_type; stat_t (*bf_func)(struct mpBuf *);} mpBuf_t;
+static struct {bool exec_ran;} mb;
 mpBuf_t block;
 mpBuf_t *mp_get_run_buffer(void) {fetched++; return queued ? &block : NULL;}
 bool mp_has_runnable_buffer(void) {return queued;}

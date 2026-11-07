@@ -82,6 +82,7 @@ stat_t mp_exec_move()
 	if (bf->bf_func == NULL) {
         return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_move"))); // never supposed to get here
     }
+	mb.exec_ran = true;									// the machine is not at rest (N83)
 	return (bf->bf_func(bf)); 							// run the move callback in the planner buffer
 }
 
