@@ -2,8 +2,8 @@
 
 plan_exec.c _exec_aline_segment() built each segment's target by adding unit * segment_length onto the last one, in
 32-bit floats, and snapped the section's last segment onto its waypoint. Over the ~21,900 segments of a 1,460 mm
-move at 800 mm/min the board's running sum fell millimetres behind, and the snap asked for thousands of steps in one
-5 ms segment: st_prep_line() panicked "step rate exceeds DDA" (st 20) and the board needed a reset. Found by the
+move at 800 mm/min the board's running sum fell about 0.3 mm behind, and the snap asked for about 400 steps in one
+5 ms segment of 250 DDA ticks: st_prep_line() panicked "step rate exceeds DDA" (st 20) and the board needed a reset. Found by the
 bench 3 corpus pass (2026-11-06) and reproduced there on every run, with G0 Y1460 alone. Wiki: a G0/G1 ends at its
 programmed point (Gcode-Support); nothing limits move length.
 
