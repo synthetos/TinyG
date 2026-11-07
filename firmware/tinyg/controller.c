@@ -194,6 +194,7 @@ static void _controller_HSM()
 	DISPATCH(cm_probe_callback());				// G38.2 continuation
 	DISPATCH(cm_jogging_callback());			// jog function
 	DISPATCH(cm_deferred_write_callback());		// persist G10 changes when not in machining cycle
+	DISPATCH(cm_short_move_callback());			// run a refused short move once nothing follows it (N87)
 
 //----- command readers and parsers --------------------------------------------------//
 

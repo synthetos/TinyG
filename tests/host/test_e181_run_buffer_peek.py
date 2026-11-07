@@ -55,7 +55,7 @@ char text_item[256];
 uint8_t cm_get_path_control(const GCodeState_t *gcode_state) { return (PATH_CONTINUOUS); }
 void cm_set_motion_state(const cmMotionState motion_state) { cm.motion_state = motion_state; }
 void cm_cycle_end(void) {}
-void cm_abort_arc(void) {}
+void cm_abort_arc(void) {} void cm_run_short_move(void) {}
 stat_t cm_is_alarmed(void) { return cm.machine_state == MACHINE_ALARM; }
 static int panics;
 stat_t cm_panic_P(const stat_t status, const char *msg_P) { panics++; return (status); }

@@ -37,6 +37,7 @@ class QueueLineTerminalState(unittest.TestCase):
 #define CYCLE_OFF 0
 #define CYCLE_MACHINING 1
 typedef int stat_t;
+typedef int GCodeState_t;
 struct {int gm, machine_state, cycle_state;} cm;
 uint8_t SREG;
 int injection, terminal, has_buffer, starts, ends;
@@ -70,13 +71,13 @@ stat_t mp_aline(void *gm) {
     return STAT_OK;
 }
 '''
-        code += function(source, r'static stat_t _queue_line\(\)(?=\s*\{)')
+        code += function(source, r'static stat_t _queue_line\(GCodeState_t \*gm\)(?=\s*\{)')
         code += r'''
 int main(int argc,char **argv) {
     if(argc!=5) return 2;
     injection=atoi(argv[1]);terminal=atoi(argv[2]);has_buffer=atoi(argv[3]);SREG=atoi(argv[4]);
     cm.machine_state=MACHINE_PROGRAM_STOP;cm.cycle_state=CYCLE_OFF;
-    int status=_queue_line();
+    int status=_queue_line(&cm.gm);
     printf("%d %d %d %d %u\n",status,cm.machine_state,starts,ends,(unsigned)SREG);
     return 0;
 }

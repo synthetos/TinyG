@@ -194,6 +194,9 @@ typedef struct mpMoveMasterSingleton { // common variables for planning (move ma
 	float recip_jerk;
 	float cbrt_jerk;
 
+	bool short_move_pending;		// a short move was refused: the model is ahead of position (N87)
+	bool short_move_run;			// plan the next move even if it is short (N87)
+
 	magic_t magic_end;
 } mpMoveMasterSingleton_t;
 
