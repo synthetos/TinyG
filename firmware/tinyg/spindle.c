@@ -123,6 +123,7 @@ stat_t spindle_get_sps(nvObj_t *nv)
 	float speed = spindle_out.speed;
 	SREG = saved_sreg;
 	nv->value_flt = speed;
+	nv->precision = (int8_t)GET_TABLE_WORD(precision);	// a custom getter sets the row's precision itself (N81)
 	nv->valuetype = TYPE_FLOAT;
 	return (STAT_OK);
 }
