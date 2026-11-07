@@ -22,6 +22,7 @@ def test_one_leading_pulse_with_all_successors_aligned():
     ([1, 2, 3, 4], [3, 4]),     # two excess pulses
     ([1, 2, 3], [1, 2, 3]),     # not a startup exception
     ([1, 2, 3], [2.001, 3.001]),  # remaining trains are out of phase
+    ([1, 1.000020, 1.000040, 1.000060], [1.0000026, 1.0000426, 1.0000626]),  # missing middle at DDA maximum rate
 ])
 def test_does_not_excuse_other_pulse_differences(a, b):
     assert not windows._one_startup_pulse(a, b)

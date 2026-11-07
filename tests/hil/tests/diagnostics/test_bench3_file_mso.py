@@ -179,8 +179,8 @@ def _one_startup_pulse(a, b):
     """Opposite initial DIR phases may differ once; every following pulse must pair."""
     if len(a) < len(b):
         a, b = b, a
-    return (len(a) == len(b) + 1 and bool(b) and a[0] < b[0] and
-            all(abs(x - y) <= 20e-6 for x, y in zip(a[1:], b)))
+    return (len(a) == len(b) + 1 and bool(b) and b[0] - a[0] > 10e-6 and
+            all(abs(x - y) < 10e-6 for x, y in zip(a[1:], b)))
 
 
 def _signed(step_edges, dir_edges, dir_initial, plus_level):
@@ -341,12 +341,12 @@ def test_bench3_file_mso(tg, keep, record, request):
             twins = len(ys) == 2 and abs(motors[ys[0]][1] - motors[ys[1]][1]) < 1e-6   # same steps/mm (a geometry can differ)
             if settled_in_capture and twins and r["motors"][ys[0]]["steps"] != r["motors"][ys[1]]["steps"]:
                 a, b = (_rises(e[f"M{m} step"]) for m in ys)
-                if n == 0 and _one_startup_pulse(a, b):
+                if n == 0 and plus_level[ys[0]] != plus_level[ys[1]] and _one_startup_pulse(a, b):
                     # The loader preserves its original first-segment phase rule: with opposite initial
                     # DIR levels one accumulator starts at 0 and the other at -dda_ticks_X_substeps.
                     # After that first tick their accumulators and all subsequent pulses agree.
                     r["twin_startup_pulse"] = {"motors": ys, "extra": ys[0] if len(a) > len(b) else ys[1],
-                                               "paired_pulses": min(len(a), len(b)), "max_pair_skew_s": 20e-6}
+                                               "paired_pulses": min(len(a), len(b)), "max_pair_skew_s": 10e-6}
                 else:
                     bad.append(f"window {n}: Y motors stepped {r['motors'][ys[0]]['steps']} and {r['motors'][ys[1]]['steps']}")
             r["refused"] = [(status, text[:60]) for _, status, text in getattr(res, "errors", [])][:10]
