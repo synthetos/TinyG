@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import unittest
 from source_extract import function
 
 FW=Path(__file__).resolve().parents[2]/'firmware/tinyg'
@@ -62,3 +63,8 @@ int main(void) {
         p=Path(d);(p/'check.c').write_text(code)
         subprocess.run(['cc','-std=c99','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
         subprocess.run([str(p/'check')],check=True)
+
+
+class Check(unittest.TestCase):
+    def test_check(self):
+        test_real_status_row_setter_preserves_unused_marker()

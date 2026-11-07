@@ -1,6 +1,7 @@
 """Control overtaking DATA must return its credit when its fragment is reclaimed."""
 from pathlib import Path
 import os,subprocess,tempfile,re
+import unittest
 from source_extract import function
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -74,3 +75,8 @@ int main(void) {
         p=Path(d);(p/'check.c').write_text(code)
         subprocess.run(['cc','-std=c99','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
         subprocess.run([str(p/'check')],check=True)
+
+
+class Check(unittest.TestCase):
+    def test_check(self):
+        test_fragment_reclamation_returns_line_credit()
