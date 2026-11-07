@@ -268,6 +268,97 @@ static void _write_nvm_layout_marker(nvObj_t *nv)
 }
 
 /************************************************************************************
+ * Master settings migration (N92)
+ *
+ *	Master builds 440.20 and 440.21 keep the build number in record 0 and every F_INITIALIZE row as a
+ *	float at its master index * 4 (config_master.h). A board upgraded from master used to load the
+ *	defaults: switch type, protocol and every machine setting changed at once. _migrate_master() puts
+ *	each master value into the live settings by token, then writes the edge layout and the marker last.
+ *	It reads everything before it writes anything because the two layouts overlap in EEPROM.
+ *	A value edge refuses runs on its default and is reported (status 118). Mapped on purpose:
+ *	  - jv 1 or 2 becomes 3: master echoed configuration values at every verbosity;
+ *	  - zsn 0 becomes 4: master probed on Z-min whatever its mode, edge needs a probe-mode switch;
+ *	  - rxm becomes 0: master's character-mode protocol, which its hosts speak;
+ *	  - the status report list gets the defaults: master reset it to its own defaults at every boot.
+ */
+#include "config_master.h"
+
+#define MASTER_BUILD_A	440.20
+#define MASTER_BUILD_B	440.21
+
+static bool _nvm_layout_is_master(nvObj_t *nv)
+{
+	return ((nv->value_int != 0xFFFFFFFF) &&
+	        (fp_EQ(nv->value_flt, (float)MASTER_BUILD_A) || fp_EQ(nv->value_flt, (float)MASTER_BUILD_B)));	// as stored
+}
+
+static bool _is_sr_slot(const char *token)				// se00 - se29: status report list slots
+{
+	return ((token[0] == 's') && (token[1] == 'e') && (token[2] >= '0') && (token[2] <= '9'));
+}
+
+static void _migrate_master(nvObj_t *nv)
+{
+	nvObj_t m;												// master values: read_persistent_value() reads index * 4
+
+	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {	// defaults first, written later
+		if (cfg_has_flag(nv->index, F_INITIALIZE)) {
+			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
+			_load_config_default(nv);
+		}
+	}
+	const char *p = master_tokens;
+	for (index_t mi = 0; mi < MASTER_NV_ROWS; p += strlen_P(p) + 1, mi++) {
+		if (pgm_read_byte(p) == NUL) { continue; }			// a row master did not load at boot
+		strncpy_P(nv->token, p, TOKEN_LEN);
+		nv->token[TOKEN_LEN] = NUL;
+		m.index = mi;
+		read_persistent_value(&m);
+		nv->index = nv_get_index("", nv->token);
+		if ((nv->index == NO_MATCH) || !cfg_has_flag(nv->index, F_INITIALIZE)) { continue; }
+		if (cfg_is_type(nv->index) == TYPE_DATA) {
+			nv->value_int = m.value_int;					// raw bits on both
+			nv->valuetype = TYPE_INTEGER;
+		} else if (!isfinite(m.value_flt)) {
+			_report_list_add(&config_restored, nv->index);	// keeps its default
+			continue;
+		} else if (cfg_is_type(nv->index) == TYPE_FLOAT) {
+			nv->value_flt = m.value_flt;
+			nv->valuetype = TYPE_FLOAT;
+		} else {
+			nv->value_int = (uint32_t)lround(m.value_flt);	// master kept integers as floats
+			nv->valuetype = TYPE_INTEGER;
+			if ((strcmp(nv->token, "jv") == 0) && ((nv->value_int == 1) || (nv->value_int == 2))) {
+				nv->value_int = 3;
+			}
+			if ((strcmp(nv->token, "zsn") == 0) && (nv->value_int == 0)) {
+				nv->value_int = 4;
+			}
+		}
+		if (nv_set(nv) != STAT_OK) {
+			_load_config_fallback(nv);
+		}
+	}
+	strcpy(nv->token, "rxm");
+	if ((nv->index = nv_get_index("", nv->token)) != NO_MATCH) {
+		nv->value_int = 0;
+		nv->valuetype = TYPE_INTEGER;
+		nv_set(nv);
+	}
+	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {	// now write the edge layout
+		if (cfg_has_flag(nv->index, F_INITIALIZE)) {
+			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
+			if (!_is_sr_slot(nv->token)) {				// written by the status report defaults below
+				nv_get(nv);
+				nv_persist(nv);
+			}
+		}
+	}
+	sr_init_status_report_P(SR_DEFAULTS);
+	_write_nvm_layout_marker(nv);								// commit the migration last
+}
+
+/************************************************************************************
  * config_init() - called once on hard reset
  *
  * Load a current layout, migrate the append-only layout-1 prefix, or initialize defaults
@@ -295,7 +386,10 @@ void config_init()
 
 	read_persistent_value(nv);
     bool migrate = _nvm_layout_is_legacy(nv);
-	if (!_nvm_layout_is_current(nv) && !migrate) {			// case (1) NVM is not setup or has another layout
+	if (_nvm_layout_is_master(nv)) {						// a board upgraded from master 440.20/440.21 (N92)
+		rpt_print_loading_configs_message();
+		_migrate_master(nv);
+	} else if (!_nvm_layout_is_current(nv) && !migrate) {	// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
         bool initialized = true;

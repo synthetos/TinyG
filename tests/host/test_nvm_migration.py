@@ -102,6 +102,7 @@ void rpt_exception(int status,const char *token){assert(tx);reported_status=stat
     code+=function(source,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
+  code+='bool _nvm_layout_is_master(nvObj_t *nv){(void)nv;return false;}  /* N92: these boards never hold a master build */\nvoid _migrate_master(nvObj_t *nv){(void)nv;}\n'
   code+=function(source,r'void config_init\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=r'''
 void prepare(float marker) {
