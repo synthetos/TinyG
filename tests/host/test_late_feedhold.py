@@ -19,7 +19,10 @@ class LateFeedhold(unittest.TestCase):
 enum {FEEDHOLD_OFF,FEEDHOLD_REQUESTED,FEEDHOLD_SYNC,FEEDHOLD_DECEL_TO_ZERO,FEEDHOLD_HOLD};
 enum {MOTION_STOP,MOTION_RUN,MOTION_HOLD};
 enum {PREP_BUFFER_OWNED_BY_EXEC,PREP_BUFFER_OWNED_BY_LOADER};
-struct {int hold_state,motion_state,machine_state;bool end_hold_requested;} cm;
+enum {FLUSH_OFF,FLUSH_REQUESTED};
+enum {BLOCK_IDLE,BLOCK_RUNNING};
+struct {int hold_state,motion_state,machine_state,queue_flush_state;bool end_hold_requested;} cm;
+struct {int block_state;} mr;
 struct {int buffer_state;} st_pre;
 uint8_t SREG;
 bool runnable,busy;int inject;

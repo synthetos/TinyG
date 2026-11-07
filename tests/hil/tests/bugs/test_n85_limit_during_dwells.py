@@ -16,7 +16,7 @@ import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board,
               pytest.mark.dialect("d449"), pytest.mark.profile("switches-no"), pytest.mark.timeout(120),
-              pytest.mark.bug("N85", on=["d449"])]
+              pytest.mark.bug("N85", on=[])]
 
 WHY = "N85 limit during dwells"
 LINES = ["G21 G91", "G1 X0.5 F600", "M7", "G4 P0.6", "M3 S1000", "G4 P0.6", "M4 S1500", "G4 P0.6", "M5", "G4 P0.6",
