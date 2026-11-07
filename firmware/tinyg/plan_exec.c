@@ -194,6 +194,21 @@ static float _fast_stop_ratio(const mpBuf_t *bf)
 	return ((ratio > 1) ? ratio : 1);
 }
 
+/*
+ * _end_decel_continue() - a stop that ran out of line continues only into another line
+ *
+ *	Case (1b) leaves the hold in DECEL_CONTINUE for the next line. M codes, a dwell or an empty queue next
+ *	are not a line, and nothing else ends that state: wait in SYNC as a hold between blocks does (N85).
+ *	Call after the finished block is freed.
+ */
+static void _end_decel_continue(void)
+{
+	if ((cm.hold_state == FEEDHOLD_DECEL_CONTINUE) &&
+	    (!mp_has_runnable_buffer() || (mb.r->block_type != BLOCK_TYPE_ALINE))) {
+		cm.hold_state = FEEDHOLD_SYNC;
+	}
+}
+
 stat_t mp_exec_aline(mpBuf_t *bf)
 {
 	if (bf->block_state == BLOCK_IDLE) {
@@ -394,6 +409,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         	if (mp_free_run_buffer() && cm.hold_state == FEEDHOLD_OFF) {
             	cm_cycle_end();	// free buffer & end cycle if planner is empty
         	}
+        	_end_decel_continue();
     	}
 	}
 	return (status);

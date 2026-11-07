@@ -3,7 +3,8 @@
 An alarm (or '!' then '%') between moves leaves the hold in SYNC with the planner flush pending. SYNC only ends when an
 aline runs, but _run_requested_queue_flush() refuses to flush in SYNC and cancels the dwell on every pass, and the
 cancelled dwell was the only wakeup for the exec. Nothing moves, nothing is flushed, and $clear leaves the hold latched.
-Real cm_start_hold(); no timing claim.
+A stop that runs out of line in DECEL_CONTINUE with no line next never ended either. Real cm_start_hold() and
+_end_decel_continue(); no timing claim.
 """
 from pathlib import Path
 import subprocess
@@ -59,6 +60,51 @@ int main(void){
  cm_start_hold();assert(cm.hold_state==FEEDHOLD_SYNC);
  state(FLUSH_REQUESTED,BLOCK_IDLE,false,PREP_BUFFER_OWNED_BY_LOADER);
  cm_start_hold();assert(cm.hold_state==FEEDHOLD_SYNC);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d)
+            (p/'check.c').write_text(code)
+            subprocess.run(['cc', '-std=c99', '-fsanitize=address,undefined', '-fstrict-flex-arrays=3', str(p/'check.c'),
+                            '-o', str(p/'check')], check=True)
+            subprocess.run([str(p/'check')], check=True)
+
+
+class DecelContinue(unittest.TestCase):
+    def test_a_stop_continues_only_into_a_line(self):
+        source = (ROOT/'firmware/tinyg/plan_exec.c').read_text()
+        code = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+enum {FEEDHOLD_OFF,FEEDHOLD_REQUESTED,FEEDHOLD_SYNC,FEEDHOLD_DECEL_CONTINUE,FEEDHOLD_DECEL_TO_ZERO,FEEDHOLD_PENDING,FEEDHOLD_HOLD};
+enum {BLOCK_TYPE_NULL,BLOCK_TYPE_ALINE,BLOCK_TYPE_DWELL,BLOCK_TYPE_COMMAND};
+struct {int hold_state;} cm;
+struct {int block_type;} next;
+struct {__typeof__(next) *r;} mb = {&next};
+bool runnable;
+bool mp_has_runnable_buffer(void){return runnable;}
+'''
+        code += function(source, r'static void _end_decel_continue\(void\)(?=\s*\{)')
+        code += r'''
+static int after(int hold,bool queued,int type){
+ cm.hold_state=hold;runnable=queued;next.block_type=type;
+ _end_decel_continue();
+ return cm.hold_state;
+}
+int main(void){
+ // The next line carries the stop on.
+ assert(after(FEEDHOLD_DECEL_CONTINUE,true,BLOCK_TYPE_ALINE)==FEEDHOLD_DECEL_CONTINUE);
+ // M codes, a dwell, a block still being written or nothing at all: nothing would ever end the state.
+ assert(after(FEEDHOLD_DECEL_CONTINUE,true,BLOCK_TYPE_COMMAND)==FEEDHOLD_SYNC);
+ assert(after(FEEDHOLD_DECEL_CONTINUE,true,BLOCK_TYPE_DWELL)==FEEDHOLD_SYNC);
+ assert(after(FEEDHOLD_DECEL_CONTINUE,true,BLOCK_TYPE_NULL)==FEEDHOLD_SYNC);
+ assert(after(FEEDHOLD_DECEL_CONTINUE,false,BLOCK_TYPE_NULL)==FEEDHOLD_SYNC);
+ // No other hold state is touched.
+ assert(after(FEEDHOLD_OFF,true,BLOCK_TYPE_DWELL)==FEEDHOLD_OFF);
+ assert(after(FEEDHOLD_DECEL_TO_ZERO,false,BLOCK_TYPE_NULL)==FEEDHOLD_DECEL_TO_ZERO);
+ assert(after(FEEDHOLD_PENDING,true,BLOCK_TYPE_COMMAND)==FEEDHOLD_PENDING);
  return 0;
 }
 '''
