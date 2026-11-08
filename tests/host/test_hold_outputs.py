@@ -18,9 +18,13 @@ class HoldOutputs(unittest.TestCase):
         for name in ['_hold_outputs_cancel', '_hold_outputs_pause', '_hold_outputs_resume', '_hold_outputs_finish_resume',
                      'cm_start_hold', 'cm_end_hold', 'cm_queue_flush',
                      '_take_input_flush_request', '_service_input_flush', '_run_requested_queue_flush',
-                     'cm_feedhold_sequencing_callback', 'cm_request_feedhold', 'cm_request_end_hold', '_exec_program_finalize']:
+                     'cm_feedhold_sequencing_callback', 'cm_request_feedhold', 'cm_request_cycle_feedhold', 'cm_request_end_hold', '_exec_program_finalize']:
             signature=r'(?m)^(?:static )?(?:void|stat_t|bool) '+name+r'\([^;{}\n]*\)\s*'
             match=re.search(signature+r'\{', source)
+            if match is None and name == 'cm_request_cycle_feedhold':
+                # Before provenance exists, cycle contacts use the ordinary request path.
+                definitions.append('void cm_request_cycle_feedhold(void) {cm_request_feedhold();}')
+                continue
             self.assertIsNotNone(match,name)
             definitions.append(function(source[match.start():],signature))
         state=re.search(r'static struct \{[^}]*\} hold_outputs;',source).group()
@@ -50,6 +54,8 @@ class HoldOutputs(unittest.TestCase):
 #define BLOCK_IDLE 0
 #define CYCLE_MACHINING 1
 #define CYCLE_OFF 0
+#define CYCLE_HOMING 2
+#define CYCLE_PROBE 3
 #define MACHINE_PROGRAM_STOP 3
 #define SR_REQUEST_ASAP 1
 #define CONTROLLER_READY 1
@@ -82,7 +88,7 @@ static uint32_t now;
 static int starts, exits, stops, spindle_starts, off_calls, exec_requests;
 static int replan_interrupt, replans;
 static bool paused_before_service;
-void cm_request_feedhold(void); void cm_request_end_hold(void);
+void cm_request_feedhold(void); void cm_request_cycle_feedhold(void); void cm_request_end_hold(void);
 stat_t mp_replan_held_block(void) {
     assert(SREG & 128);  // serial reception must run during the whole planner walk
     assert(cm.hold_state==FEEDHOLD_HOLD && cm.program_paused==paused_before_service);
@@ -111,6 +117,7 @@ void spindle_control_immediate(uint8_t mode,float speed) { assert(!(SREG&128)); 
 void _exec_flood_coolant_control(float *v,bool *f) { cm.gm.flood_coolant=coolant_out_flood=v[0]; if(!v[0]) cm.gm.mist_coolant=coolant_out_mist=0; }
 void _exec_mist_coolant_control(float *v,bool *f) { cm.gm.mist_coolant=coolant_out_mist=v[0]; }
 stat_t cm_is_alarmed(void) { return alarmed; }
+bool cm_outputs_inhibited(void) { return alarmed || cm.queue_flush_state || cm.job_kill_requested || cm.limit_requested || cm.shutdown_requested; }
 uint32_t SysTickTimer_getValue(void) { assert(!(SREG&128)); return now; }
 bool mp_has_runnable_buffer(void) { return queued; }
 bool mp_runtime_is_idle(void) { return !busy; }
@@ -238,6 +245,32 @@ int main(void) {
     output_mode=cm.gm.spindle_mode=SPINDLE_CCW;output_speed=2000;
     queued=true;cm.hold_state=FEEDHOLD_HOLD;service();
     assert(hold_outputs.spindle_mode==SPINDLE_CCW&&hold_outputs.spindle_speed==2000);
+    // A probe/homing contact stops the cycle's move, not the spindle or vacuum.
+    for(int cycle=CYCLE_HOMING;cycle<=CYCLE_PROBE;cycle++) {
+        setup();cm.program_paused=false;cm.cycle_state=cycle;
+        cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;busy=aline_busy=true;
+        cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;busy=aline_busy=false;
+        service();assert(output_mode==SPINDLE_CW&&coolant_out_mist&&coolant_out_flood&&!hold_outputs.state);
+        // A later operator ! upgrades the internal hold, so the normal pause policy applies.
+        cm_request_feedhold();service();assert(output_mode==SPINDLE_OFF&&hold_outputs.state==1);
+        cm_request_end_hold();service();now+=1010;service();assert(exits==1&&output_mode==SPINDLE_CW);
+        setup();cm.program_paused=false;cm.cycle_state=cycle;
+        cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
+        cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;
+        service();alarmed=true;service();assert(!output_mode&&!coolant_out_mist&&!coolant_out_flood);
+    }
+    // Direct homing housekeeping may flush a contact hold between phases without an output pause.
+    setup();cm.program_paused=false;cm.cycle_state=CYCLE_HOMING;
+    cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
+    cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;
+    service();cm_queue_flush();assert(output_mode==SPINDLE_CW&&coolant_out_mist&&coolant_out_flood);
+    // An explicit host flush during the same internal hold still discards and turns everything off.
+    setup();cm.program_paused=false;cm.cycle_state=CYCLE_HOMING;
+    cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
+    cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;
+    cm.queue_flush_state=FLUSH_REQUESTED;service();assert(!output_mode&&!coolant_out_flood&&!hold_outputs.state);
+    // An internal contact may not downgrade an operator pause already in progress.
+    setup();service();cm_request_cycle_feedhold();service();assert(!output_mode&&hold_outputs.state==1);
     // Already-masked callers must remain masked after nested cancellation.
     setup(); SREG=0x15; _hold_outputs_cancel(); assert(SREG==0x15);
 }
