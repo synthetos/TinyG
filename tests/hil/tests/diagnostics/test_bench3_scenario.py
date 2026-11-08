@@ -36,6 +36,9 @@ pytestmark = [pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.persists, 
 RUNS = int(os.environ.get("SCENARIO_RUNS", "3"))
 BASE_SEED = int(os.environ.get("SCENARIO_SEED", "0")) or random.SystemRandom().randrange(1, 2**31)
 EVENTS = ["none", "none", "hold", "hold", "flush", "limit", "limit", "limit"]
+# A queued line is answered only when the planner has room for it: behind dwells (G4) or a long arc that can take
+# seconds, so the 2 s default made correct flow control look like a lost line (most of the pre-2026-11-08 failures).
+LINE_REPLY_S = 60.0
 SWITCH_TOKENS = {"xmin": "xsn", "xmax": "xsx", "ymin": "ysn", "ymax": "ysx", "zmin": "zsn", "amin": "asn"}
 DWELL = 0.6
 WHY = "bench 3 random scenario"
@@ -254,6 +257,8 @@ def _recover(tg):
     if st == tg.dialect.stat("ALARM"):
         tg.clear_alarm()
     elif st is None or st not in tg.dialect.idle_stats:
+        tg.send_raw(b"!")                       # % flushes only from a hold
+        time.sleep(0.5)
         tg.send_raw(b"%")
         time.sleep(0.5)
         try:
@@ -270,6 +275,9 @@ def test_bench3_scenario(tg, keep, record, request, k):
     event = rng.choice(EVENTS)
     trip = rng.choice(sorted(SWITCH_TOKENS)) if event == "limit" else None
     keep(*SWITCH_TOKENS.values())
+    # registered after keep's restore, so it runs first: a job still running at teardown refuses the switch settings
+    # (status 117, N60) and left the bench on the trip's switch modes
+    request.addfinalizer(lambda: _recover(tg))
     if trip:
         for name, tok in SWITCH_TOKENS.items():
             tg.set(tok, 2 if name == trip else 0, allow="one limit input for the trip")
@@ -299,7 +307,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
             time.sleep(3.5)                                # the MSO starts recording late (test_mso_start_lag)
             t0 = time.monotonic()
             for ln in lines:
-                tg.send_gcode(ln, allow=WHY)
+                tg.send_gcode(ln, allow=WHY, timeout=LINE_REPLY_S)   # a line waits for planner room behind dwells/arcs
             at = rng.uniform(0.25, 0.8) * prog.est
             end = t0 + secs - 4.0
             while time.monotonic() < end:
