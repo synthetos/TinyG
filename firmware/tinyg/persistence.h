@@ -48,5 +48,6 @@ typedef struct nvmSingleton {
 void persistence_init(void);
 stat_t read_persistent_value(nvObj_t *nv);
 stat_t write_persistent_value(nvObj_t *nv);
+void write_persistent_byte(index_t index, uint8_t offset, uint8_t value);
 
 #endif // End of include guard: PERSISTENCE_H_ONCE

@@ -111,3 +111,19 @@ stat_t write_persistent_value(nvObj_t *nv)
 	return (STAT_OK);
 }
 #endif // __ARM
+
+/*
+ * write_persistent_byte() - write one byte of a record, for records whose writes must not tear (N92)
+ *
+ *	EEPROM_WriteBytes() writes a record one byte at a time: a power loss can leave any prefix written.
+ */
+#ifdef __AVR
+void write_persistent_byte(index_t index, uint8_t offset, uint8_t value)
+{
+	EEPROM_WriteByte(nvm.profile_base + (index * NVM_VALUE_LEN) + offset, value);
+}
+#endif // __AVR
+
+#ifdef __ARM
+void write_persistent_byte(index_t index, uint8_t offset, uint8_t value) {}
+#endif // __ARM
