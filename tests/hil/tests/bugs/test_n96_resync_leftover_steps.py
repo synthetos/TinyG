@@ -23,7 +23,7 @@ LEFTOVER = 3            # steps planted in the last segment's count; above STEP_
 DISTANCE = 5.0          # mm
 
 
-@pytest.mark.bug("N96", on=["d449"])
+@pytest.mark.bug("N96", on=[])
 def test_resync_drops_the_last_segment_steps(tg, ice, steps, record):
     axis = "xyzabc"[tg.get("1ma")]
     spm = 360 / tg.get("1sa") * tg.get("1mi") / tg.get("1tr")     # steps per mm (per degree on a rotary axis)

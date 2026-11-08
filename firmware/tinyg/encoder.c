@@ -77,6 +77,7 @@ stat_t encoder_test_assertions()
 
 void en_set_encoder_steps(uint8_t motor, float steps)
 {
+	ACCUMULATE_ENCODER(motor);						// the last segment's steps are in the position set below (N96)
 	en.en[motor].encoder_steps = (int32_t)round(steps);
 }
 
