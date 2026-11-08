@@ -198,20 +198,42 @@ void cm_set_motion_state(const cmMotionState motion_state)
  */
 cmCombinedState cm_get_combined_state()
 {
-    if (cm.machine_state <= MACHINE_PROGRAM_END) {  // replaces first 5 cm.machine_state cases
-        return ((cmCombinedState)cm.machine_state); //...where MACHINE_xxx == COMBINED_xxx
+    // A dwell (or final segment) can outlive its planner slot and stored STOP/END state.
+    // Snapshot the runtime with the states: the HI loader can finish/start work between reads.
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    cmMachineState machine_state = cm.machine_state;
+    cmCycleState cycle_state = cm.cycle_state;
+    cmMotionState motion_state = cm.motion_state;
+    bool pending = false;
+    if (!cm.program_paused &&
+        ((machine_state == MACHINE_READY) || (machine_state == MACHINE_PROGRAM_STOP) ||
+         (machine_state == MACHINE_PROGRAM_END))) {
+        pending = !mp_runtime_is_idle() || mp_has_runnable_buffer() ||
+            ((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) &&
+             (st_pre.block_type != BLOCK_TYPE_NULL));
     }
-    switch(cm.machine_state) {
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    // Reporting must not restart a cycle, undo M0/M1, or overwrite an alarm.
+    if (pending) { return (motion_state == MOTION_HOLD ? COMBINED_HOLD : COMBINED_RUN); }
+    if (machine_state <= MACHINE_PROGRAM_END) {  // replaces first 5 machine_state cases
+        return ((cmCombinedState)machine_state); //...where MACHINE_xxx == COMBINED_xxx
+    }
+    switch(machine_state) {
         case MACHINE_INTERLOCK:     { return (COMBINED_INTERLOCK); }
         case MACHINE_SHUTDOWN:      { return (COMBINED_SHUTDOWN); }
         case MACHINE_PANIC:         { return (COMBINED_PANIC); }
         case MACHINE_CYCLE: {
-            switch(cm.cycle_state) {
+            switch(cycle_state) {
                 case CYCLE_HOMING:  { return (COMBINED_HOMING); }
                 case CYCLE_PROBE:   { return (COMBINED_PROBE); }
                 case CYCLE_JOG:     { return (COMBINED_JOG); }
                 case CYCLE_MACHINING: case CYCLE_OFF: {
-                    switch(cm.motion_state) {
+                    switch(motion_state) {
                         case MOTION_STOP:     { return (COMBINED_RUN); }    // See NOTE_1, above
                         case MOTION_RUN:      { return (COMBINED_RUN); }
                         case MOTION_HOLD:     { return (COMBINED_HOLD); }

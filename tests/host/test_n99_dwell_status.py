@@ -27,7 +27,9 @@ class DwellStatus(unittest.TestCase):
 #define __AVR 1
 #endif
 static uint8_t SREG;
-#define cli() (SREG &= ~128)
+static bool inject_alarm;
+static void fake_cli(void) __attribute__((unused));
+#define cli() fake_cli()
 enum { PREP_BUFFER_OWNED_BY_EXEC, PREP_BUFFER_OWNED_BY_LOADER };
 enum { BLOCK_TYPE_NULL, BLOCK_TYPE_ALINE, BLOCK_TYPE_DWELL, BLOCK_TYPE_COMMAND };
 struct { cmMachineState machine_state; cmCycleState cycle_state;
@@ -36,11 +38,24 @@ struct { uint8_t buffer_state, block_type; } st_pre;
 struct { uint32_t dda_ticks_downcount; } st_run;
 struct { uint8_t buffer_state; } block;
 struct { typeof(block) *r; } mb = { &block };
+static void fake_cli(void) {
+ if(inject_alarm && (SREG & 128)){cm.machine_state=MACHINE_ALARM;inject_alarm=false;}
+ SREG &= ~128;
+}
 static void cm_panic_P(int status, const char *message) { (void)status;(void)message;assert(0); }
 '''
         code += function((ROOT / 'stepper.c').read_text(), r'uint8_t st_runtime_isbusy\(') + '\n'
         code += function((ROOT / 'plan_line.c').read_text(), r'bool mp_runtime_is_idle\(') + '\n'
         code += function((ROOT / 'planner.c').read_text(), r'bool mp_has_runnable_buffer\(') + '\n'
+        code += r'''
+static bool snapshot_runtime_idle(void) {
+#ifdef __AVR
+ assert(!(SREG & 128));
+#endif
+ return mp_runtime_is_idle();
+}
+#define mp_runtime_is_idle snapshot_runtime_idle
+'''
         code += function((ROOT / 'canonical_machine.c').read_text(), r'cmCombinedState cm_get_combined_state\(')
         code += r'''
 static void check(int expected) {
@@ -79,6 +94,13 @@ int main(void) {
   int states[]={MACHINE_INITIALIZING,MACHINE_ALARM,MACHINE_INTERLOCK,MACHINE_SHUTDOWN,MACHINE_PANIC};
   int combined[]={COMBINED_INITIALIZING,COMBINED_ALARM,COMBINED_INTERLOCK,COMBINED_SHUTDOWN,COMBINED_PANIC};
   for(int n=0;n<5;n++){cm.machine_state=states[n];check(combined[n]);}
+#ifdef __AVR
+  if(irq) {
+   cm.machine_state=MACHINE_READY;inject_alarm=true;
+   assert(cm_get_combined_state()==COMBINED_ALARM);
+   assert(cm.machine_state==MACHINE_ALARM && !inject_alarm && SREG==irq);
+  }
+#endif
  }
 }
 '''
