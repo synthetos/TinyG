@@ -68,7 +68,8 @@ bool _nvm_layout_is_current(nvObj_t *nv){return current;}
 bool _nvm_layout_is_legacy(nvObj_t *nv){return false;}
 bool _nvm_layout_is_master(nvObj_t *nv){return false;}
 void _migrate_master(nvObj_t *nv,index_t done){}
-index_t _master_migration_done(nvObj_t *nv){return 0;}
+index_t _master_checkpoint(index_t *slot,uint8_t *seq){(void)slot;(void)seq;return 0;}
+void _clear_master_checkpoints(void){}
 index_t nv_index_max(void){return 3;}
 index_t nv_get_index(const char *g,const char *t){assert(0);return NO_MATCH;}
 bool nv_index_is_single(int index){return index<3;}

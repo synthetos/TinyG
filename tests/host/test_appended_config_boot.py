@@ -104,7 +104,7 @@ stat_t write_persistent_value(nvObj_t *nv){
      code+=function(config,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
     code+=function(config,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
     code+=function(config,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
-    code+='bool _nvm_layout_is_master(nvObj_t *nv){(void)nv;return false;}  /* N92: these boards never hold a master build */\nvoid _migrate_master(nvObj_t *nv,index_t done){(void)nv;(void)done;}\nindex_t _master_migration_done(nvObj_t *nv){(void)nv;return 0;}\n'
+    code+='bool _nvm_layout_is_master(nvObj_t *nv){(void)nv;return false;}  /* N92: these boards never hold a master build */\nvoid _migrate_master(nvObj_t *nv,index_t done){(void)nv;(void)done;}\nindex_t _master_checkpoint(index_t *slot,uint8_t *seq){(void)slot;(void)seq;return 0;}\nvoid _clear_master_checkpoints(void){}\n'
     code+=function(config,r'void config_init\([^;{}]*\)(?=\s*\{)')+'\n'
     code+=r'''
 value_t def(int i){value_t v;if(cfg_is_type(i)==TYPE_FLOAT)v.f=cfgArray[i].default_value;else v.u=(uint32_t)cfgArray[i].default_value;return v;}

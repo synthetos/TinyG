@@ -280,20 +280,28 @@ static void _write_nvm_layout_marker(nvObj_t *nv)
  *	  - rxm becomes 0: master's character-mode protocol, which its hosts speak;
  *	  - the status report list gets the defaults: master reset it to its own defaults at every boot.
  *
- *	The two layouts overlap in EEPROM, so a power loss part way through must not re-read a master
- *	record an edge value has already replaced. Before the first overlapping write, each master value
- *	whose record is written no later than its own edge row is copied to a journal record past the edge
- *	table. Then record 0 holds MASTER_MIGRATION_PROGRESS + the edge row being written: rows are written
- *	in index order and the progress moves before each changed row. A boot that finds the progress loads
- *	the rows below it as edge values and reads the rest from the journal or from master records that
- *	have not been written yet, so the migration resumes with the same result.
+ *	The two layouts overlap in EEPROM, and a record is written one byte at a time, so a power loss part
+ *	way through must not re-read a master record an edge value has already replaced:
+ *	  - Before the first overlapping write, each master value whose record is written no later than its
+ *	    own edge row is copied to a journal record past the edge table.
+ *	  - Rows are written in index order. A checkpoint "edge rows below N are written" goes to one of two
+ *	    slots at the top of EEPROM before any row write that would lose the master source of a row
+ *	    already written since the last checkpoint, and before the status report defaults and the marker.
+ *	  - A checkpoint is a sequence number, N with a tag, and a check byte. Its check byte is first set to
+ *	    a value no partly written slot can match and is written last, so a torn checkpoint is invalid
+ *	    and the other slot still holds the previous one.
+ *	  - A boot that finds a checkpoint (record 0 is master, or torn on its way to the marker) loads the
+ *	    rows below N as edge values, reads the rest from the journal or from master records not yet
+ *	    written, and finishes with the same result. The checkpoints are cleared after the marker.
  */
 #include "config_master.h"
 
 #define MASTER_BUILD_A	440.20
 #define MASTER_BUILD_B	440.21
-#define MASTER_MIGRATION_PROGRESS	20000.0							// + the edge row being written
 #define NVM_RECORDS		((E2END + 1) / NVM_VALUE_LEN)
+#define CHECKPOINT_A	(NVM_RECORDS - 2)		// the two checkpoint slots; the journal ends below them
+#define CHECKPOINT_B	(NVM_RECORDS - 1)
+#define CHECKPOINT_TAG	0xB0					// high nibble of byte 2; bytes: seq, N low, tag | N high, check
 
 static bool _nvm_layout_is_master(nvObj_t *nv)
 {
@@ -301,24 +309,82 @@ static bool _nvm_layout_is_master(nvObj_t *nv)
 	        (fp_EQ(nv->value_flt, (float)MASTER_BUILD_A) || fp_EQ(nv->value_flt, (float)MASTER_BUILD_B)));	// as stored
 }
 
-static index_t _master_migration_done(nvObj_t *nv)		// edge rows below it are written; 0 if no migration ran
+static uint8_t _checkpoint_check(uint32_t v)			// byte 3 of a checkpoint, over bytes 0-2
 {
-	if (nv->value_int == 0xFFFFFFFF) {
-		return (0);
-	}
-	float done = nv->value_flt - MASTER_MIGRATION_PROGRESS;
-	if (!(done >= 1) || (done > nv_index_max()) || (done != floorf(done))) {	// !(>=) also refuses NaN
-		return (0);
-	}
-	return ((index_t)done);
+	return ((uint8_t)(v ^ (v >> 8) ^ (v >> 16) ^ 0xA5));
 }
 
-static void _write_master_progress(index_t done)
+static index_t _checkpoint_rows(uint32_t v)			// N of a valid checkpoint, else 0
 {
-	nvObj_t p;
-	p.index = 0;
-	p.value_flt = MASTER_MIGRATION_PROGRESS + done;
-	write_persistent_value(&p);
+	index_t rows = (index_t)(((v >> 8) & 0xFF) | ((v >> 8) & 0x0F00));
+	if ((((v >> 16) & 0xF0) != CHECKPOINT_TAG) || ((uint8_t)(v >> 24) != _checkpoint_check(v)) ||
+	    (rows < 1) || (rows > nv_index_max())) {
+		return (0);
+	}
+	return (rows);
+}
+
+static index_t _master_checkpoint(index_t *slot, uint8_t *seq)	// the newest valid checkpoint's N, or 0
+{
+	nvObj_t a, b;
+	a.index = CHECKPOINT_A;
+	b.index = CHECKPOINT_B;
+	read_persistent_value(&a);
+	read_persistent_value(&b);
+	index_t na = _checkpoint_rows(a.value_int);
+	index_t nb = _checkpoint_rows(b.value_int);
+	if ((nb > 0) && ((na == 0) || ((int8_t)((uint8_t)b.value_int - (uint8_t)a.value_int) > 0))) {
+		*slot = CHECKPOINT_B;
+		*seq = (uint8_t)b.value_int;
+		return (nb);
+	}
+	*slot = CHECKPOINT_A;
+	*seq = (uint8_t)a.value_int;
+	return (na);
+}
+
+static void _write_master_checkpoint(index_t rows)	// edge rows below this one hold edge values
+{
+	index_t slot;
+	uint8_t seq;
+	index_t newest = _master_checkpoint(&slot, &seq);
+	if (newest == rows) { return; }
+	if (newest > 0) {
+		slot = (slot == CHECKPOINT_A) ? CHECKPOINT_B : CHECKPOINT_A;	// keep the newest until this one is valid
+		seq++;
+	} else {
+		seq = 0;
+	}
+	uint32_t n = seq | ((uint32_t)(rows & 0xFF) << 8) | ((uint32_t)(CHECKPOINT_TAG | (rows >> 8)) << 16);
+	n |= (uint32_t)_checkpoint_check(n) << 24;
+	nvObj_t r;
+	r.index = slot;
+	read_persistent_value(&r);
+	uint8_t hold = 0;										// a check byte that matches no state on the way to n
+	for (bool clash = true; clash; ) {
+		uint32_t s = r.value_int;
+		clash = false;
+		for (uint8_t k = 0; k < 4; k++) {
+			clash |= (hold == _checkpoint_check(s));
+			s = (s & ~(0xFFUL << (8 * k))) | (n & (0xFFUL << (8 * k)));
+		}
+		if (clash) { hold++; }
+	}
+	write_persistent_byte(slot, 3, hold);
+	for (uint8_t k = 0; k < 4; k++) {						// bytes 0-2, then the check byte commits it
+		write_persistent_byte(slot, k, (uint8_t)(n >> (8 * k)));
+	}
+}
+
+static void _clear_master_checkpoints(void)
+{
+	nvObj_t r;
+	for (r.index = CHECKPOINT_A; r.index <= CHECKPOINT_B; r.index++) {
+		read_persistent_value(&r);
+		if (_checkpoint_rows(r.value_int) > 0) {
+			write_persistent_byte(r.index, 3, ~_checkpoint_check(r.value_int));
+		}
+	}
 }
 
 static bool _master_journaled(index_t mi, index_t ei)	// is master record mi written before edge row ei?
@@ -326,12 +392,25 @@ static bool _master_journaled(index_t mi, index_t ei)	// is master record mi wri
 	return ((mi <= ei) && (mi < nv_index_max()) && cfg_has_flag(mi, F_INITIALIZE));
 }
 
+static bool _master_source_pending(index_t row, index_t safe)	// would writing row lose the source of a row in [safe, row)?
+{
+	if (row >= MASTER_NV_ROWS) { return (false); }
+	const char *p = master_tokens;
+	for (index_t mi = 0; mi < row; mi++) { p += strlen_P(p) + 1; }
+	if (pgm_read_byte(p) == NUL) { return (false); }
+	char token[TOKEN_LEN+1];
+	strncpy_P(token, p, TOKEN_LEN);
+	token[TOKEN_LEN] = NUL;
+	index_t ei = nv_get_index("", token);
+	return ((ei != NO_MATCH) && cfg_has_flag(ei, F_INITIALIZE) && (ei >= safe) && (ei < row));
+}
+
 static bool _is_sr_slot(const char *token)				// se00 - se29: status report list slots
 {
 	return ((token[0] == 's') && (token[1] == 'e') && (token[2] >= '0') && (token[2] <= '9'));
 }
 
-static void _migrate_master(nvObj_t *nv, index_t done)
+static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's N, 0 on the first boot
 {
 	nvObj_t m;												// master values: read_persistent_value() reads index * 4
 	index_t journal = nv_index_max();
@@ -362,7 +441,7 @@ static void _migrate_master(nvObj_t *nv, index_t done)
 		if ((nv->index == NO_MATCH) || !cfg_has_flag(nv->index, F_INITIALIZE)) { continue; }
 		m.index = mi;
 		if (_master_journaled(mi, nv->index)) {
-			if (journal >= NVM_RECORDS) {					// no room to keep it safely
+			if (journal >= CHECKPOINT_A) {					// no room to keep it safely
 				_report_list_add(&config_restored, nv->index);
 				continue;
 			}
@@ -406,7 +485,9 @@ static void _migrate_master(nvObj_t *nv, index_t done)
 		nv->valuetype = TYPE_INTEGER;
 		nv_set(nv);
 	}
-	for (nv->index = (done > 1) ? done : 1; nv_index_is_single(nv->index); nv->index++) {	// the edge layout
+	index_t safe = (done > 1) ? done : 1;					// rows below it count as written on a resume
+	_write_master_checkpoint(safe);							// the journal is complete
+	for (nv->index = safe; nv_index_is_single(nv->index); nv->index++) {	// the edge layout
 		if (cfg_has_flag(nv->index, F_INITIALIZE) && cfg_has_flag(nv->index, F_PERSIST)) {
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
 			if (_is_sr_slot(nv->token)) { continue; }		// written by the status report defaults below
@@ -414,14 +495,18 @@ static void _migrate_master(nvObj_t *nv, index_t done)
 			m.index = nv->index;
 			read_persistent_value(&m);
 			if (m.value_int != nv->value_int) {
-				_write_master_progress(nv->index);			// rows below this one hold edge values
+				if (_master_source_pending(nv->index, safe)) {
+					safe = nv->index;
+					_write_master_checkpoint(safe);
+				}
 				nv_persist(nv);
 			}
 		}
 	}
-	_write_master_progress(nv_index_max());
+	_write_master_checkpoint(nv_index_max());
 	sr_init_status_report_P(SR_DEFAULTS);
-	_write_nvm_layout_marker(nv);								// commit the migration last
+	_write_nvm_layout_marker(nv);								// commit the migration
+	_clear_master_checkpoints();
 }
 
 /************************************************************************************
@@ -452,8 +537,11 @@ void config_init()
 
 	read_persistent_value(nv);
     bool migrate = _nvm_layout_is_legacy(nv);
-	index_t master_done = _master_migration_done(nv);
-	if (_nvm_layout_is_master(nv) || (master_done > 0)) {	// a board upgraded from master 440.20/440.21 (N92)
+	index_t checkpoint_slot;
+	uint8_t checkpoint_seq;
+	index_t master_done = _master_checkpoint(&checkpoint_slot, &checkpoint_seq);
+	if (_nvm_layout_is_master(nv) ||						// a board upgraded from master 440.20/440.21 (N92),
+	    ((master_done > 0) && !migrate && !_nvm_layout_is_current(nv))) {	// or its marker write was cut
 		rpt_print_loading_configs_message();
 		_migrate_master(nv, master_done);
 	} else if (!_nvm_layout_is_current(nv) && !migrate) {	// case (1) NVM is not setup or has another layout
@@ -492,6 +580,9 @@ void config_init()
         if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
 #endif
+	if (master_done > 0) {
+		_clear_master_checkpoints();				// left by a migration that wrote its marker
+	}
 	config_loaded = true;                       // from here a SET while work runs is refused (N60)
 }
 
