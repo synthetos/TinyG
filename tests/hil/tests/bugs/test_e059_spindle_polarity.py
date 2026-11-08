@@ -37,13 +37,19 @@ def test_polarity_rejects_invalid_values(tg, token, value):
 @pytest.mark.bug("E059", on=["d440"])
 def test_polarity_cannot_change_during_queued_work(tg):
     """Reject even an unchanged value while a dwell occupies the runtime."""
+    import time
+
     before = tg.get("spdp")
+    started = time.monotonic()
     try:
         tg.send_gcode("G4 P2", check=True)
         response = tg.send_json({"spdp": before})
         assert response.status == 117               # N60: the dwell is a cycle; refused before the setter runs
         assert tg.get("spdp") == before
     finally:
+        # N99: during a dwell the board reports stat 4 and an empty planner, so wait_idle returns at once;
+        # sit the dwell out so the next test does not meet it (its first persisted setting would get 117)
+        time.sleep(max(0.0, 2.2 - (time.monotonic() - started)))
         tg.wait_idle(timeout=5)
 
 
