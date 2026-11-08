@@ -216,6 +216,7 @@ buffer_t xio_get_rx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_tx_bufcount_usart(const xioUsart_t *dx);
 buffer_t xio_get_usb_rx_free(void);
 void xio_reset_usb_rx_buffers(void);
+void xio_usb_startup_complete(void);
 void xio_drop_usb_rx_before_mark(void);
 void xio_usb_rtc_callback(void);
 uint8_t xio_usb_is_quiet(void);

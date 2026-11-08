@@ -10,7 +10,7 @@ import pytest
 
 pytestmark = [pytest.mark.ice, pytest.mark.destructive, pytest.mark.persists,
               pytest.mark.resets_board, pytest.mark.dialect("d449"), pytest.mark.timeout(180),
-              pytest.mark.bug("N93", on=["d449"])]
+              pytest.mark.bug("N93", on=[])]
 
 
 def _install_and_reset(ice, image):

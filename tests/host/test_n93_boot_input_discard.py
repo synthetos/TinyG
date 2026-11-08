@@ -17,7 +17,6 @@ FW = ROOT / "firmware/tinyg"
 
 
 class BootInputDiscard(unittest.TestCase):
-    @unittest.expectedFailure
     def test_boot_overrun_is_discarded_but_runtime_loss_is_reported(self):
         usb = (FW / "xio/xio_usb.c").read_text()
         usart = (FW / "xio/xio_usart.c").read_text()
@@ -29,7 +28,6 @@ class BootInputDiscard(unittest.TestCase):
         code = code.replace("cm.queue_flush_input = true;", "controls++; cm.queue_flush_input = true;")
         code += r'''
 #define USART_RXCIF_bm 0x80
-static bool usb_boot_discard;
 static bool loaded;
 static unsigned fifo_count, fifo_reads;
 static unsigned char fifo_data[2], fifo_status[2];

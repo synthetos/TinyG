@@ -170,6 +170,7 @@ static void _application_init_startup(void)
 
 #ifdef __AVR
 	// now bring up the interrupts and get started
+	xio_usb_startup_complete(); // drain boot input before RX interrupts can run
 	PMIC_SetVectorLocationToApplication();      // as opposed to boot ROM
 	PMIC_EnableHighLevel();			            // all levels are used, so don't bother to abstract them
 	PMIC_EnableMediumLevel();

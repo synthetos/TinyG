@@ -40,6 +40,7 @@
 // Terminate a partial line before resuming or flushing. Reset/enquiry/flow control are unchanged.
 static volatile bool rx_in_line;
 static volatile uint8_t usb_rx_seen;			// a byte came in since xio_usb_take_rx_seen()
+static bool usb_boot_discard; // boot-time partial input needs a clean boundary
 static volatile uint8_t usb_activity;			// a byte came in or went out since xio_usb_is_quiet() last looked
 
 // Framing heuristic (E195): a line in progress that has had no byte for about a second is taken to be
@@ -197,6 +198,16 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	uint8_t status = USBu.usart->STATUS;		// read before DATA: the error flags travel with the frame
 	char c = USBu.usart->DATA;					// can only read DATA once
+	// Startup input has had no reply. Drop its uncertain tail without reporting loss.
+	if (usb_boot_discard && (c != CHAR_RESET)) {
+		if (rx_quiet_ticks >= 2) {
+			usb_boot_discard = false;
+		} else {
+			rx_quiet_ticks = 0;
+			if ((c == '\r') || (c == '\n')) { usb_boot_discard = false; }
+			return;
+		}
+	}
 	usb_rx_seen = true;							// saving G10 offsets waits for a quiet wire (N83)
 	usb_activity = true;						// any byte, realtime characters too (rt heartbeat)
 
@@ -379,6 +390,26 @@ void xio_reset_usb_rx_buffers(void)
 	USBu.rx_lost_open = false;
 	USBu.rx_line_damaged = false;
 	USBu.rx_gap_report = false;
+}
+
+// Called before enabling RX interrupts, after all startup EEPROM writes.
+void xio_usb_startup_complete(void)
+{
+	uint8_t saved_sreg = SREG;
+	cli();
+	bool discarded = usb_rx_seen || rx_in_line || USB.len ||
+		(USBu.rx_buf_head != USBu.rx_buf_tail) || USBu.rx_lost || USBu.rx_lost_open ||
+		USBu.rx_line_damaged || USBu.rx_gap_report;
+	while (USBu.usart->STATUS & USART_RXCIF_bm) {
+		(void)USBu.usart->DATA;
+		discarded = true;
+	}
+	xio_reset_usb_rx_buffers();
+	USBu.rx_buf_count = 0;
+	usb_rx_seen = false;
+	rx_quiet_ticks = 0;
+	usb_boot_discard = discarded;
+	SREG = saved_sreg;
 }
 
 /*
