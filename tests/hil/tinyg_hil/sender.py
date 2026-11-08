@@ -20,6 +20,7 @@ arrival time for path reconstruction. After the last answer the stream waits for
 StreamResult.completion says how that ended, and only "idle" is a finished program.
 """
 from dataclasses import dataclass, field
+import os
 import time
 
 MODES = {"line": {"rxm": 1, "ex": 1}, "g2": {"rxm": 1, "ex": 1}, "xon": {"rxm": 0, "ex": 1},
@@ -121,8 +122,10 @@ def diagnose(snap):
 
 
 def stall_snapshot(ice):
-    """Halt once and read STALL_SYMBOLS plus the bytes waiting in the USB RX ring; unknown names are skipped."""
-    names = [n for n in STALL_SYMBOLS if _resolvable(ice, n)]
+    """Halt once and read STALL_SYMBOLS plus the bytes waiting in the USB RX ring; unknown names are skipped.
+    TINYG_STALL_EXTRA adds comma-separated symbols for one investigation (e.g. "cm.gmx.position,mr.position")."""
+    extra = [n.strip() for n in os.environ.get("TINYG_STALL_EXTRA", "").split(",") if n.strip()]
+    names = [n for n in STALL_SYMBOLS + extra if _resolvable(ice, n)]
     snap = ice.peek_many(names)
     for k, v in list(snap.items()):              # byte arrays (cs.saved_buf) as text: the run record is JSON
         if isinstance(v, (bytes, bytearray)):
