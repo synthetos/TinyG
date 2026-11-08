@@ -108,9 +108,10 @@ class SoftSwitches:
     def _mount_in_firmware(self, axis, end, at):
         motor, spu = self.geometry(axis)
         board, i = self.ice.board, self._mount_index(axis, end)
-        here = self.ice.peek_many([f"test_hook.steps[{motor}]",
+        here = self.ice.peek_many([f"test_hook.steps[{motor}]", f"en.en[{motor}].steps_run",
                                    f"{board.symbols['runtime_position']}[{board.axis_index(axis)}]"])
-        steps, pos = here.values()
+        accumulated, running, pos = here.values()
+        steps = accumulated + running
         tripped, untripped = (1, 0) if self.normally_closed else (0, 1)
         action = {0: self.ice.HOOK_DRIVE_LOW, 1: self.ice.HOOK_RELEASE}
         m = f"test_hook.mount[{i}]"
@@ -133,13 +134,19 @@ class SoftSwitches:
         m = f"test_hook.mount[{self._mount_index(axis, end)}]"
         v = self.ice.peek_many([f"{m}.closed", f"{m}.trips", f"{m}.trip_steps"])
         trips = v[f"{m}.trips"]
-        return {"closed": bool(v[f"{m}.closed"]), "trips": trips,
-                "trip_at": pos0 + (v[f"{m}.trip_steps"] - steps0) / spu if trips else None}
+        result = {"closed": bool(v[f"{m}.closed"]), "trips": trips,
+                  "trip_at": pos0 + (v[f"{m}.trip_steps"] - steps0) / spu if trips else None}
+        if self._has_member(f"mount[{self._mount_index(axis, end)}].min_steps"):
+            extrema = self.ice.peek_many([f"{m}.min_steps", f"{m}.max_steps"])
+            result.update(min_position=pos0 + (extrema[f"{m}.min_steps"] - steps0) / spu,
+                          max_position=pos0 + (extrema[f"{m}.max_steps"] - steps0) / spu)
+        return result
 
     def physical_position(self, axis):
         """Position in the mount frame from the never-rewritten step count (test-hooks builds)."""
         steps0, pos0, spu, motor = next(f for (a, _), f in self.frames.items() if a == axis)
-        return pos0 + (self.ice.peek(f"test_hook.steps[{motor}]") - steps0) / spu     # no serial traffic
+        v = self.ice.peek_many([f"test_hook.steps[{motor}]", f"en.en[{motor}].steps_run"])
+        return pos0 + (sum(v.values()) - steps0) / spu  # one halt; include the last segment's pulses
 
     def unmount_all(self):
         if self.frames:

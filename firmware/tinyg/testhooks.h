@@ -29,6 +29,8 @@ typedef struct testHookMount {
 	uint8_t trips;			// count of open -> closed transitions (wraps)
 	int32_t at;				// threshold in physical steps
 	int32_t trip_steps;		// physical steps at the last open -> closed transition
+	int32_t min_steps;		// sampled range: observe homing after it ends, without halting motion
+	int32_t max_steps;
 } test_mount_t;
 
 #define TEST_HOOK_MOUNTS	8		// switch pair index * 2 + (0 = min, 1 = max)

@@ -67,6 +67,12 @@ static void _service_mounts()
 		cli();
 		int32_t steps = test_hook.steps[m->motor] + en.en[m->motor].steps_run;
 		SREG = sreg;
+		if (m->closed == TEST_HOOK_UNKNOWN) {
+			m->min_steps = m->max_steps = steps;
+		} else {
+			if (steps < m->min_steps) { m->min_steps = steps; }
+			if (steps > m->max_steps) { m->max_steps = steps; }
+		}
 		uint8_t closed = (m->sense > 0) ? (steps >= m->at) : (steps <= m->at);
 		if (closed == m->closed) {
 			continue;
