@@ -22,6 +22,8 @@ StreamResult.completion says how that ended, and only "idle" is a finished progr
 from dataclasses import dataclass, field
 import time
 
+from .hostpower import AwakeSession
+
 MODES = {"line": {"rxm": 1, "ex": 1}, "g2": {"rxm": 1, "ex": 1}, "xon": {"rxm": 0, "ex": 1},
          "xon-app": {"rxm": 0, "ex": 1}, "rts": {"rxm": 0, "ex": 2}, "count": {"rxm": 0, "ex": 0},
          "count-crlf": {"rxm": 0, "ex": 0}}
@@ -303,8 +305,11 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             return False
         return True
 
+    power = AwakeSession()
     try:
+        power.start()
         while res.acked < res.lines:
+            power.check()
             now = time.monotonic()
             if now > deadline:
                 raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
@@ -331,6 +336,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 flow_seen += 1
             # send as much as the scheme allows
             while i < res.lines:
+                power.check()
                 data = _wire(todo[i], i, mode)
                 if mode == "line":
                     room = free - len(inflight)
@@ -360,6 +366,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     break                   # one line per pass so responses are read promptly
             # read whatever arrived
             ev = tr.next_event(0.005)
+            power.check()
             while ev is not None:
                 if ev.kind in ("response", "status", "queue"):
                     progress = ev.t
@@ -370,6 +377,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                         res.stall_probes.append((ev.t, body["stat"]))
                         probe_at = None
                         ev = tr.next_event(0)
+                        power.check()
                         continue
                     if i <= res.acked:
                         raise _with(res, StreamProtocolError(f"{mode}: response with no line outstanding "
@@ -390,14 +398,17 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                         res.min_free = free if res.min_free is None else min(res.min_free, free)
                     res.acked += 1
                 ev = tr.next_event(0)
+                power.check()
         # all answered: wait for motion to finish, polling stat and still collecting status reports
         asked = 0.0
         res.completion = "timeout"          # unless the machine is seen to stop
         while time.monotonic() < deadline:
+            power.check()
             if time.monotonic() - asked > 0.3:
                 tr.write(b'{"stat":null}\n')
                 asked = time.monotonic()
             ev = tr.next_event(0.05)
+            power.check()
             if ev is None:
                 continue
             if _report(ev) or ev.kind != "response":
@@ -416,9 +427,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                 break                       # nothing more will run: don't wait it out
         res.finished = time.monotonic()
     finally:
-        tr.ser.write_timeout = saved_write_timeout
-        if mode == "rts":
-            tr.ser.rtscts = False
-        elif mode == "xon":
-            _restore_tty(tr.ser, saved_tty)
+        try:
+            tr.ser.write_timeout = saved_write_timeout
+            if mode == "rts":
+                tr.ser.rtscts = False
+            elif mode == "xon":
+                _restore_tty(tr.ser, saved_tty)
+        finally:
+            power.close()
     return res

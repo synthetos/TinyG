@@ -9,7 +9,6 @@ class SuspendDetected(TimeoutError):
     pass
 
 
-@pytest.mark.xfail(strict=True, reason="N97: stream ignores host suspend and can trust lost serial credits")
 @pytest.mark.parametrize("when", ["write", "reply", "drain"])
 def test_stream_rejects_suspend_instead_of_accepting_credits(monkeypatch, when):
     sessions = []
@@ -58,3 +57,80 @@ def test_stream_rejects_suspend_instead_of_accepting_credits(monkeypatch, when):
     assert len(sessions) == 1 and sessions[0].started and sessions[0].closed
     if when == "write":
         assert len(tg.transport.writes) == 1, "sent another line after host suspend"
+
+
+@pytest.fixture
+def clock_session(monkeypatch):
+    from tinyg_hil import hostpower
+    clock = {"awake": 10.0, "continuous": 910.0}
+    monkeypatch.setattr(hostpower.sys, "platform", "test")
+    monkeypatch.setattr(hostpower, "_continuous_clock", lambda: lambda: clock["continuous"])
+    monkeypatch.setattr(hostpower.time, "monotonic", lambda: clock["awake"])
+    session = hostpower.AwakeSession()
+    session.start()
+    return session, clock
+
+
+def test_503_second_sleep_is_detected_and_stays_invalid(clock_session):
+    from tinyg_hil.hostpower import HostSuspended
+    session, clock = clock_session
+    clock["awake"] += 0.47
+    clock["continuous"] += 503.47
+    for _ in range(2):
+        with pytest.raises(HostSuspended, match="host suspended.*503.0"):
+            session.check()
+    session.close()
+
+
+def test_cpu_delay_and_wall_clock_adjustments_are_not_sleep(clock_session, monkeypatch):
+    from tinyg_hil import hostpower
+    session, clock = clock_session
+    clock["awake"] += 900
+    clock["continuous"] += 900
+    monkeypatch.setattr(hostpower.time, "time", lambda: -1000000)
+    session.check()
+    session.close()
+
+
+def test_macos_assertion_has_pid_lease_and_is_released(monkeypatch):
+    from tinyg_hil import hostpower
+    calls = []
+
+    class Child:
+        stopped = False
+        def poll(self): return 0 if self.stopped else None
+        def terminate(self): self.stopped = True
+        def wait(self, timeout): assert self.stopped and timeout == 1
+
+    child = Child()
+    monkeypatch.setattr(hostpower.sys, "platform", "darwin")
+    monkeypatch.setattr(hostpower, "_continuous_clock", lambda: None)
+    monkeypatch.setattr(hostpower.subprocess, "Popen", lambda args, **kwargs: calls.append(args) or child)
+    session = hostpower.AwakeSession()
+    session.start()
+    assert calls == [["/usr/bin/caffeinate", "-is", "-w", str(hostpower.os.getpid())]]
+    session.check()
+    session.close()
+    session.close()
+    assert child.stopped
+
+
+def test_exited_assertion_invalidates_the_session(clock_session):
+    from tinyg_hil.hostpower import HostSuspended
+    session, _ = clock_session
+    class Child:
+        def poll(self): return 1
+        def wait(self, timeout): return 1
+    session._child = Child()
+    with pytest.raises(HostSuspended, match="sleep protection exited"):
+        session.check()
+    session.close()
+
+
+def test_native_continuous_clock_adapter():
+    from tinyg_hil import hostpower
+    clock = hostpower._continuous_clock()
+    if clock is None:
+        pytest.skip("no continuous clock on this platform")
+    before = clock()
+    assert clock() >= before >= 0
