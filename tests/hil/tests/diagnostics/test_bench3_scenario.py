@@ -39,6 +39,10 @@ EVENTS = ["none", "none", "hold", "hold", "flush", "limit", "limit", "limit"]
 # A queued line is answered only when the planner has room for it: behind dwells (G4) or a long arc that can take
 # seconds, so the 2 s default made correct flow control look like a lost line (most of the pre-2026-11-08 failures).
 LINE_REPLY_S = 60.0
+# Two duty levels closer than this are one level, both in the program and on the MSO. Merging the measured plateaus at
+# 2 x 0.004 but the program's at 0.006 turned a 0.007 step (S2034 clamped to 0.200, then S1907 = 0.193) into a
+# "missing" plateau.
+DUTY_SAME = 0.006
 SWITCH_TOKENS = {"xmin": "xsn", "xmax": "xsx", "ymin": "ysn", "ymax": "ysx", "zmin": "zsn", "amin": "asn"}
 DWELL = 0.6
 WHY = "bench 3 random scenario"
@@ -200,7 +204,7 @@ def _plateaus(rows, tol=0.004):
     for a, b in zip(rows, rows[1:]):
         if abs(a["duty"] - b["duty"]) <= tol:
             out.append(round((a["duty"] + b["duty"]) / 2, 4))
-    return _dedupe(out, lambda x, y: abs(x - y) <= 2 * tol)
+    return _dedupe(out, lambda x, y: abs(x - y) <= DUTY_SAME)   # the same tolerance as the program's levels
 
 
 def _signed(step_edges, dir_edges, dir_initial, plus_level):
@@ -353,7 +357,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
         counts[m] = len(_rises(st_e))
     rows = cap.pwm(pwm_name)
     seen_pwm = _plateaus(rows)
-    want_pwm = _dedupe([round(_duty(pwm, md, s), 4) for md, s in prog.spindle], lambda a, b: abs(a - b) <= 0.006)
+    want_pwm = _dedupe([round(_duty(pwm, md, s), 4) for md, s in prog.spindle], lambda a, b: abs(a - b) <= DUTY_SAME)
     enable_seq = _dedupe([p["spindle_enable"] for p in polled])
     cool_seq = _dedupe([p["coolant"] for p in polled])
     dir_seq = _dedupe([p["spindle_dir"] for p in polled if p["spindle_enable"] == 1])
@@ -379,7 +383,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
     ys = [m for m, (ax, _) in motors.items() if ax == "y"]
     if len(ys) == 2 and counts[ys[0]] != counts[ys[1]]:
         bad.append(f"the Y motors stepped {counts[ys[0]]} and {counts[ys[1]]}")
-    near = lambda a, b: abs(a - b) <= 0.006  # noqa: E731
+    near = lambda a, b: abs(a - b) <= DUTY_SAME  # noqa: E731
     if event in ("none", "hold") and not bad:
         if stat not in tg.dialect.idle_stats:
             bad.append(f"stat {stat} after the program")
