@@ -35,7 +35,7 @@ enum {FC_IN_XON,FC_IN_XOFF};
 static uint8_t SREG;
 static void cli(void) {SREG=0;}
 static struct {uint8_t enable_flow_control;} xio;
-static volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks; static volatile uint8_t usb_activity; static volatile uint8_t usb_rx_seen;
+static volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks; static bool usb_boot_discard; static volatile uint8_t usb_activity; static volatile uint8_t usb_rx_seen;
 #define RX_STALE_LINE_TICKS 103
 #define RX_STALE_LINE_MARK 0x1A
 

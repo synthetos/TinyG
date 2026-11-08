@@ -72,6 +72,7 @@ void switch_init(void){}
 void canonical_machine_reset(void){queued=true;}
 void spindle_init(void){}
 void spindle_reset(void){}
+void xio_usb_startup_complete(void){}
 void PMIC_SetVectorLocationToApplication(void){}
 void PMIC_EnableHighLevel(void){}
 void PMIC_EnableMediumLevel(void){}
