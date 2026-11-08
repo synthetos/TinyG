@@ -70,6 +70,28 @@ def _pulses(edges, step_ch):
     return sum(1 for _, level in edges.get(step_ch, []) if level)
 
 
+def _host_safe(lines):
+    """What a careful host does before streaming a file (N67, N101), unless SOAK_RAW=1:
+    - drop lines that switch the board to text mode or are commands, not G-code: a leading $ (GRBL posts emit $H, $HZ,
+      $X), ? or h (TinyG enters text mode on these, and a JSON host then loses every reply);
+    - drop a lone % (a program delimiter in many files; the board takes a leading % as a queue flush);
+    - remove ! and ~ anywhere (the board takes them as feedhold and resume even inside a comment).
+    Returns (lines, record of what was changed)."""
+    if os.environ.get("SOAK_RAW") == "1":
+        return lines, {"raw": True}
+    out, dropped, cleaned = [], [], 0
+    for n, line in enumerate(lines, 1):
+        head = line.lstrip()
+        if head[:1] in ("$", "?") or head[:1] in ("h", "H") or head == "%":
+            dropped.append((n, line[:40]))
+            continue
+        clean = line.replace("!", "").replace("~", "")
+        cleaned += clean != line
+        if clean.strip():
+            out.append(clean)
+    return out, {"dropped": dropped[:20], "dropped_count": len(dropped), "realtime_chars_removed": cleaned}
+
+
 def _mpo(tg):
     return {a: tg.get(f"mpo{a}") for a in AXES}
 
@@ -79,6 +101,7 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip("SOAK_FILE not set")
     raw = open(FILE, "rb").read().decode("latin-1")
     lines = [l.rstrip("\r") for l in raw.split("\n") if l.strip()]
+    lines, stripped = _host_safe(lines)
     for line in lines:
         tg.guard.check_gcode(line, allow="soak file on an unloaded bench")
     keep("ej", "rxm", "ex", "qv", "sv", "si")
@@ -106,7 +129,7 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip(f"the board's A axis is in radius mode with ara {tg.get('ara')}: A words would mean thousands "
                     "of degrees per unit (N48); set aam=1 or a sane ara before soaking A files")
     seed = int(os.environ.get("SOAK_HOLD_SEED", "0")) or random.randrange(1, 1 << 30)
-    info = {"file": FILE, "mode": MODE, "lines": len(lines), "start": start, "saleae": use_saleae, "holds": HOLDS,
+    info = {"file": FILE, "mode": MODE, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),
             "hold_seed": seed}
     holder = _Holder(tg, HOLDS, seed) if HOLDS else None
