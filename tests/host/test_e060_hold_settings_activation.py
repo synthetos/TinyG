@@ -86,6 +86,11 @@ static void _set_defa(nvObj_t*n){
  for(n->index=1;n->index<5;n->index++){_load_config_default(n);nv_persist(n);}
  n->index=0;n->value_flt=10002;write_persistent_value(n);
 }
+static index_t _master_checkpoint(index_t *slot,uint8_t *seq){return 0;}
+static bool _nvm_layout_is_master(nvObj_t*n){return fp_EQ(n->value_flt,440.21f);}
+static void _clear_master_checkpoints(void){}
+// Master migration itself has separate real-code coverage; here exercise activation after it completes.
+static void _migrate_master(nvObj_t*n,index_t done){assert(done==0);_set_defa(n);}
 ''' + defines + "\n"
         for name in ("_nvm_layout_is_current", "_nvm_layout_is_legacy", "_write_nvm_layout_marker",
                      "_hold_settings_need_defaults", "_is_hold_setting", "_write_hold_settings_marker", "config_init"):
@@ -112,6 +117,10 @@ int main(void){
  assert(stored[0]==bits(10002)&&stored[5]==CONFIG_HOLD_SETTINGS_STAMP);
  stored[0]=bits(10001);stored[5]=UINT32_MAX;stored[2]=0;stored[4]=1;boot();
  assert(stored[0]==bits(10002)&&stored[2]==1&&stored[4]==0&&stored[5]==CONFIG_HOLD_SETTINGS_STAMP);
+ // The master-migration route must stamp activation only after its defaults were written.
+ stored[0]=bits(440.21f);stored[5]=UINT32_MAX;stored[2]=0;stored[4]=1;boot();
+ assert(stored[0]==bits(10002)&&stored[2]==1&&stored[3]==bits(1)&&stored[4]==0);
+ assert(stored[5]==CONFIG_HOLD_SETTINGS_STAMP&&last_written==5);
  return 0;
 }
 '''
