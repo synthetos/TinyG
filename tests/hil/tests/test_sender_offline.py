@@ -18,6 +18,16 @@ from tinyg_hil import gcodeplay, sender
 from tinyg_hil.protocol import parse_line
 
 
+@pytest.fixture(autouse=True)
+def no_real_power_assertion(monkeypatch):
+    # Fake serial boards: assertion/clock behavior has separate coverage.
+    class Power:
+        def start(self): pass
+        def check(self): pass
+        def close(self): pass
+    monkeypatch.setattr(sender, "AwakeSession", Power)
+
+
 class FakeSerial:
     def __init__(self):
         self.write_timeout = 5
