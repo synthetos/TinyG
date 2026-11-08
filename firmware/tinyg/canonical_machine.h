@@ -798,6 +798,7 @@ void cm_message(char *message);								                // msg to console (e.g. G
 
 // Program Functions (4.3.10)
 void cm_request_feedhold(void);
+void cm_request_cycle_feedhold(void);
 void cm_request_job_kill(void);
 void cm_request_end_hold(void);
 void cm_request_queue_flush(void);

@@ -26,7 +26,7 @@ enum {BLOCK_TYPE_NULL,BLOCK_TYPE_DWELL,BLOCK_TYPE_ALINE};
 enum {CONTROLLER_READY,CONTROLLER_PAUSED};
 struct {int hold_state,motion_state,cycle_state,machine_state;bool hold_fast,hold_fast_request,end_hold_requested;} cm;
 struct {int controller_state;} cs;
-static struct {bool resume_cancelled;} hold_outputs;
+static struct {bool resume_cancelled, internal_hold;} hold_outputs;
 struct {int buffer_state,block_type;} st_pre;
 uint8_t SREG;
 static bool startup_pending,busy,aline;

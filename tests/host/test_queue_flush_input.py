@@ -30,7 +30,8 @@ enum { FLUSH_OFF, FLUSH_REQUESTED };
 #define AXES 6
 #define STAT_OK 0
 typedef int stat_t;
-struct { int hold_state, queue_flush_state; bool program_paused, end_hold_requested, job_kill_report_pending; volatile bool queue_flush_input, queue_flush_input_due, job_kill_requested; } cm;
+#define CYCLE_HOMING 2
+struct { int cycle_state, hold_state, queue_flush_state; bool program_paused, end_hold_requested, job_kill_report_pending; volatile bool queue_flush_input, queue_flush_input_due, job_kill_requested; } cm;
 #define STAT_KILL_JOB 207
 #define PSTR(s) (s)
 static int kill_alarms;
@@ -52,6 +53,8 @@ void cm_set_position(int axis, float position) { (void)axis; (void)position; }
 void cm_end_hold(void) { cm.hold_state = FEEDHOLD_OFF; if (inject == 2) { inject = 0; isr_percent(); } }
 static int cm_is_alarmed(void) {return 0;}
 static void _hold_outputs_cancel(void) {}
+static struct {unsigned state;bool internal_hold,resume_cancelled;} hold_outputs;
+bool cm_outputs_inhibited(void) {return cm_is_alarmed() || cm.queue_flush_state != FLUSH_OFF;}
 static void _hold_outputs_pause(void) {}
 void mp_exit_hold_state(void) {cm_end_hold();}
 void cm_cycle_end(void) {}

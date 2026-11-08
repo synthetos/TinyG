@@ -48,6 +48,7 @@ uint8_t SREG=128;
 #define MOTION_HOLD 2
 #define CYCLE_OFF 0
 #define CYCLE_MACHINING 1
+#define CYCLE_HOMING 2
 #define FEEDHOLD_OFF 0
 #define FEEDHOLD_HOLD 6
 #define FLUSH_OFF 0
@@ -58,9 +59,10 @@ uint8_t SREG=128;
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
         bool job_kill_requested,hold_fast_request,limit_requested,shutdown_requested; bool program_paused, end_hold_requested, queue_flush_input, queue_flush_input_due; uint8_t optional_stop_enabled;} cm;
-static struct {bool resume_cancelled;} hold_outputs;
+static struct {unsigned state;bool resume_cancelled, internal_hold;} hold_outputs;
 static int cm_is_alarmed(void) {return cm.machine_state==MACHINE_ALARM;}
 static void _hold_outputs_cancel(void) {}
+static bool cm_outputs_inhibited(void) {return cm_is_alarmed() || cm.queue_flush_state != FLUSH_OFF;}
 static void _hold_outputs_pause(void) {hold_outputs.resume_cancelled=false;}
 static bool _hold_outputs_resume(void) {return true;}
 static void _hold_outputs_finish_resume(void) {}

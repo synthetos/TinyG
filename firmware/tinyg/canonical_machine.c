@@ -135,6 +135,7 @@ static struct {
     uint8_t state;                       // 0=inactive, 1=paused, 2=spin-up delay
     uint8_t spindle_mode, mist, flood;
     float spindle_speed;
+    volatile bool internal_hold;         // probe/homing contact, not an operator pause
     volatile bool resume_cancelled;      // latch an ISR ! even if a later ~ arrives during replanning
     uint32_t started, delay;
 } hold_outputs;
@@ -1965,6 +1966,7 @@ void cm_request_feedhold(void) {
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    hold_outputs.internal_hold = false;          // an operator request upgrades any internal contact hold
     if (cm.hold_state == FEEDHOLD_HOLD) {
         cm.end_hold_requested = false;
         hold_outputs.resume_cancelled = true;
@@ -1992,6 +1994,22 @@ void cm_request_feedhold(void) {
         cm.hold_fast_request = false;
         sr_request_status_report(SR_REQUEST_ASAP);
     }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+// Probe/homing switches stop an internal move without pausing spindle/vacuum outputs.
+// Never downgrade a hold that an operator or alarm already requested.
+void cm_request_cycle_feedhold(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool internal = (cm.hold_state == FEEDHOLD_OFF) || hold_outputs.internal_hold;
+    cm_request_feedhold();                       // a new contact must still cancel a pending resume
+    hold_outputs.internal_hold = internal && (cm.hold_state != FEEDHOLD_OFF);
 #ifdef __AVR
     SREG = saved_sreg;
 #endif
@@ -2132,6 +2150,7 @@ static void _hold_outputs_cancel(void)
     cli();
 #endif
     hold_outputs.state = 0;
+    hold_outputs.internal_hold = false;
     hold_outputs.resume_cancelled = false;
     spindle_reset();
     float off[] = { 0 };
@@ -2147,8 +2166,10 @@ static void _hold_outputs_pause(void)
     uint8_t saved_sreg = SREG;
     cli();
 #endif
-    if (cm_is_alarmed()) {
+    if (cm_outputs_inhibited()) {
         _hold_outputs_cancel();
+    } else if (hold_outputs.internal_hold) {
+        // A cycle contact is not an operator pause; the cycle will flush/finalize its move.
     } else if ((hold_outputs.state == 0) &&
                !((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) &&
                  (st_pre.block_type == BLOCK_TYPE_COMMAND))) {
@@ -2176,6 +2197,7 @@ static void _hold_outputs_pause(void)
 
 static bool _hold_outputs_resume(void)
 {
+    if (hold_outputs.internal_hold) { return (true); }
     if (hold_outputs.state == 0) { _hold_outputs_pause(); }
     if (hold_outputs.state == 0) { return (false); } // a prepared output command must settle first
     if (hold_outputs.state == 1) {
@@ -2198,6 +2220,7 @@ static bool _hold_outputs_resume(void)
 
 static void _hold_outputs_finish_resume(void)
 {
+    if (hold_outputs.internal_hold) { hold_outputs.internal_hold = false; return; }
     if (hold_outputs.flood) {
         float on[] = { 1 };
         _exec_flood_coolant_control(on, FLAGS_NONE);
@@ -2338,11 +2361,20 @@ bool cm_has_hold()
 
 void cm_queue_flush()
 {
-    _hold_outputs_cancel();
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    // Homing flushes each phase as housekeeping. Preserve its live spindle/vacuum unless the
+    // flush is an explicit abort or there really are saved operator-pause modes to discard.
+    bool preserve_outputs = (cm.cycle_state == CYCLE_HOMING) &&
+                            !cm_outputs_inhibited() && !hold_outputs.state;
+    if (!preserve_outputs) {
+        _hold_outputs_cancel();
+    } else {
+        hold_outputs.internal_hold = false;
+        hold_outputs.resume_cancelled = false;
+    }
     // Homing calls this directly as housekeeping, not as a request to abort a dwell.
     if ((cm.hold_state == FEEDHOLD_HOLD) || (cm.queue_flush_state == FLUSH_REQUESTED)) {
         st_cancel_dwell();
@@ -2378,6 +2410,9 @@ void cm_queue_flush()
         uint8_t saved_sreg = SREG;
         cli();
 #endif
+        // A host abort can arrive while the planner/position walk had interrupts enabled.
+        // Turn outputs off before consuming that request; it is no longer just housekeeping.
+        if (preserve_outputs && cm_outputs_inhibited()) { _hold_outputs_cancel(); }
         _take_input_flush_request();                // nests: restores the cleared SREG
         cm.queue_flush_state = FLUSH_OFF;
 #ifdef __AVR
@@ -2443,6 +2478,7 @@ static void _exec_program_finalize(float *value, bool *flags)
 {
 	if (cm_is_alarmed() != STAT_OK) { return; }			// only $clear or a reset ends these (N84)
     hold_outputs.state = 0;                      // a canned cycle may finish at a contact hold, without ~
+    hold_outputs.internal_hold = false;
     hold_outputs.resume_cancelled = false;
 	cm.machine_state = (uint8_t)value[0];               // set to one of STOP or END
 	cm_set_motion_state(MOTION_STOP);

@@ -212,7 +212,7 @@ static void _dispatch_switch(const uint8_t sw_num)
 
     // functions that trigger on either edge
 	if (cm.cycle_state == CYCLE_HOMING) {
-    	cm_request_feedhold();
+        cm_request_cycle_feedhold();
         sw.s[sw_num].edge = SW_EDGE_NONE;
         return;
     }
@@ -226,7 +226,7 @@ static void _dispatch_switch(const uint8_t sw_num)
     }
 
 	if ((cm.cycle_state == CYCLE_PROBE) && (sw.s[sw_num].mode == SW_MODE_PROBE)) {
-    	cm_request_feedhold();						// the probe contact ends the probe move...
+        cm_request_cycle_feedhold();						// the probe contact ends the probe move...
         return;
     }											// ...any other switch keeps its limit action
 	if (sw.s[sw_num].mode & SW_LIMIT_BIT) {

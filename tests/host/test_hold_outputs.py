@@ -87,6 +87,7 @@ static bool queued, busy, alarmed, aline_busy;
 static uint32_t now;
 static int starts, exits, stops, spindle_starts, off_calls, exec_requests;
 static int replan_interrupt, replans;
+static bool flush_interrupt;
 static bool paused_before_service;
 void cm_request_feedhold(void); void cm_request_cycle_feedhold(void); void cm_request_end_hold(void);
 stat_t mp_replan_held_block(void) {
@@ -134,7 +135,8 @@ void cm_cycle_start(void) { assert(!(SREG&128)); assert(cm.hold_state==FEEDHOLD_
 void cm_cycle_end(void) { stops++; }
 void mp_exit_hold_state(void) { assert(!(SREG&128)); exits++; cm.hold_state=FEEDHOLD_OFF; cm.motion_state=queued?MOTION_RUN:MOTION_STOP; }
 void st_request_exec_move(void) { exec_requests++; }
-void mp_flush_planner(void) { queued=false; cm.motion_state=MOTION_STOP; }
+void mp_flush_planner(void) { queued=false; cm.motion_state=MOTION_STOP;
+ if(flush_interrupt){flush_interrupt=false;cm.queue_flush_state=FLUSH_REQUESTED;} }
 void cm_set_position(uint8_t a,float p) {}
 float mp_get_runtime_absolute_position(uint8_t a) { return 0; }
 void qr_request_queue_report(int d) {}
@@ -147,7 +149,7 @@ static void setup(void) {
     cm.hold_state=FEEDHOLD_HOLD; cm.motion_state=MOTION_HOLD; cm.program_paused=true;
     queued=true; busy=alarmed=aline_busy=false; now=100;
     memset(&st_pre,0,sizeof(st_pre));memset(&mr,0,sizeof(mr));
-    replan_interrupt=replans=0; starts=exits=stops=spindle_starts=off_calls=exec_requests=0; SREG=0x95;
+    flush_interrupt=false;replan_interrupt=replans=0; starts=exits=stops=spindle_starts=off_calls=exec_requests=0; SREG=0x95;
 }
 static void service(void) { paused_before_service=cm.program_paused; cm_feedhold_sequencing_callback(); assert(SREG==0x95); }
 int main(void) {
@@ -264,6 +266,11 @@ int main(void) {
     cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
     cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;
     service();cm_queue_flush();assert(output_mode==SPINDLE_CW&&coolant_out_mist&&coolant_out_flood);
+    // A host abort arriving during the unmasked planner flush must not be consumed as housekeeping.
+    setup();cm.program_paused=false;cm.cycle_state=CYCLE_HOMING;
+    cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
+    cm_request_cycle_feedhold();cm.hold_state=FEEDHOLD_HOLD;
+    flush_interrupt=true;cm_queue_flush();assert(!output_mode&&!coolant_out_flood);
     // An explicit host flush during the same internal hold still discards and turns everything off.
     setup();cm.program_paused=false;cm.cycle_state=CYCLE_HOMING;
     cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_RUN;
@@ -271,6 +278,16 @@ int main(void) {
     cm.queue_flush_state=FLUSH_REQUESTED;service();assert(!output_mode&&!coolant_out_flood&&!hold_outputs.state);
     // An internal contact may not downgrade an operator pause already in progress.
     setup();service();cm_request_cycle_feedhold();service();assert(!output_mode&&hold_outputs.state==1);
+    // Contact during an operator spin-up must still cancel resume, without changing pause ownership.
+    setup();service();cm_request_end_hold();service();
+    assert(output_mode==SPINDLE_CW&&hold_outputs.state==2);
+    cm_request_cycle_feedhold();service();
+    assert(!cm.end_hold_requested&&!starts&&!output_mode&&hold_outputs.state==1);
+    // Resume/flush/alarm continue to work with a pending probe block behind an ordinary line.
+    setup();cm.program_paused=false;service();alarmed=true;cm.queue_flush_state=FLUSH_REQUESTED;
+    service();assert(!queued&&!output_mode&&!hold_outputs.state&&cm.hold_state==FEEDHOLD_OFF);
+    cm.queue_flush_input=true;service(); // a late host '%' cannot resurrect output modes
+    alarmed=false;service();assert(!output_mode&&!cm.end_hold_requested);
     // Already-masked callers must remain masked after nested cancellation.
     setup(); SREG=0x15; _hold_outputs_cancel(); assert(SREG==0x15);
 }

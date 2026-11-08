@@ -52,6 +52,8 @@ static void cm_set_position(uint8_t axis,float value) {assert(value==axis+0.25f)
 static void mp_exit_hold_state(void) {cm.hold_state=FEEDHOLD_OFF;ended++;}
 static void cm_cycle_end(void) {}
 static void _hold_outputs_cancel(void) {}
+static struct {unsigned state;bool internal_hold,resume_cancelled;} hold_outputs;
+bool cm_outputs_inhibited(void) {return cm_is_alarmed() || cm.queue_flush_state != FLUSH_OFF;}
 static void qr_request_queue_report(int value) {assert(value==0);reports++;}
 '''
 

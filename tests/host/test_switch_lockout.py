@@ -52,7 +52,7 @@ static void sr_request_status_report(int request) {
     }
     reports++;
 }
-static void cm_request_feedhold(void) {holds++;}
+static void cm_request_cycle_feedhold(void) {holds++;}
 static void cm_set_motion_state(int state) {cm.motion_state=state;}
 static void controller_assert_limit_condition(uint8_t n) {assert(n>=1&&n<=8);limits++;}
 '''
