@@ -41,6 +41,9 @@
 #include "text_parser.h"
 #include "util.h"
 #include "settings.h"
+#ifdef TINYG_TEST_HOOKS
+#include <util/delay.h>
+#endif
 
 /**** Allocate structures ****/
 
@@ -705,6 +708,13 @@ ISR(TIMER_DDA_ISR_vect)
 	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 2 uSec
 
 	if (--st_run.dda_ticks_downcount != 0) return;
+#ifdef TINYG_TEST_HOOKS
+    if ((cm.hold_state == FEEDHOLD_PENDING) && test_timer.dda_finish_delay) {
+        test_timer.dda_finish_delay = 0;
+        test_timer.dda_finish_delays++;
+        _delay_us(25);                   // more than one 20 us DDA period: latch another overflow
+    }
+#endif
 
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
 	_load_move();										// load the next move
