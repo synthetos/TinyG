@@ -281,3 +281,120 @@ class AdvisorStep3Gaps(unittest.TestCase):
         self.assertNotIn("usb_activity", unread)          # no side effect on the heartbeat's quiet detection
         cb = function(src("runtime.c"), r"stat_t rt_feedlimit_callback\(void\)")
         self.assertLess(cb.index("_fl_gap(now);"), cb.index("_fl_event(now);"))
+
+
+# D. fs v2 and the fg frame. fs carries "v":2 and a 7th c entry (command boundary) and stays ungated. fg holds the gap
+#    and boundary counters: {"fg":{"e":E,"q":Q,"g":[ms_pending,ms_none,gaps],"b":[[n,ms],[n,ms],[n,ms]],"x":1?}}. It is
+#    sent only after the host opts in with {"rt":{"fg":1}} (a host that does not know fg would take it for damage),
+#    right after each fs with the same e and q; a busy link retries it and holds the next fs, so pairs never
+#    interleave. Its "x" flags only the gap and boundary counters. RAM only, cleared by reset, not by a new window.
+FG_MAIN = r'''
+static stat_t set_fi(uint32_t v) { nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER; nv.value_int = v; return rt_set_fi(&nv); }
+static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
+static void ask(void) { nvObj_t nv = {0}; assert(rt_get_fs(&nv) == STAT_OK); }
+int main(void) {
+    rt.allowed = true; systick = 1000; cm.machine_state = MACHINE_READY;
+    assert(_fl_tick_ms(1024) == 1000 && _fl_tick_ms(512) == 500 && _fl_tick_ms(4294967295u) == 4194303999u);
+    assert(set_fi(1) == STAT_OK);
+
+    /* without the opt-in: fs only, as before */
+    nframes = 0; ask(); tick(systick + 50);
+    assert(nframes == 1 && strstr(last(), "{\"fs\":{\"v\":2,") && count("\"fg\"") == 0);
+
+    /* opted in: fs then fg with the same e and q */
+    rt.fg = 1; fla.gaps = 3; fla.gap_ticks[0] = 2048; fla.gap_ticks[1] = 1024;
+    fla.breaks[FL_CLS_SPINDLE] = 4; fla.cls_ms[FL_CLS_SPINDLE] = 120; fla.breaks[FL_CLS_OTHER] = 1; fla.cls_ms[FL_CLS_OTHER] = 7;
+    nframes = 0; ask(); tick(systick + 50);
+    assert(nframes == 2 && strstr(frames[0], "{\"fs\":{\"v\":2,\"e\":1,\"q\":2,"));
+    assert(!strcmp(frames[1], "{\"fg\":{\"e\":1,\"q\":2,\"g\":[2000,1000,3],\"b\":[[4,120],[0,0],[1,7]]}}\n"));
+    printf("%s", frames[1]);
+
+    /* an open gap's accruing interval is included */
+    rt.job = 1; fl_job_moved = 1; busy = false; tick(systick + 1);         /* a class-2 gap opens */
+    tick(systick + 1024); nframes = 0; ask(); tick(systick + 50);
+    assert(nframes == 2 && strstr(frames[1], "\"g\":[2000,") && fla.gaps == 4);
+    { uint32_t a, b, n; assert(sscanf(strstr(frames[1], "\"g\":["), "\"g\":[%u,%u,%u]", &a, &b, &n) == 3); assert(b >= 2000 && b < 2200 && n == 4); }
+    rt.job = 0; tick(systick + 2);
+
+    /* link busy after the fs: fg is retried and the next fs waits for it */
+    nframes = 0; ask(); tx_ready = 1; tick(systick + 1); assert(nframes == 1 && fla.fg_due);
+    tx_ready = 0; ask(); tick(systick + 200); assert(nframes == 1);
+    tx_ready = 1; tick(systick + 15); assert(nframes == 2 && strstr(last(), "{\"fg\":") && fla.fs_ask);
+    tick(systick + 15); assert(nframes == 3 && strstr(last(), "{\"fs\":"));
+    tick(systick + 15); assert(nframes == 4 && strstr(last(), "{\"fg\":"));
+    { char q1[16], q2[16]; sscanf(strstr(frames[2], "\"q\":"), "\"q\":%15[0-9]", q1); sscanf(strstr(frames[3], "\"q\":"), "\"q\":%15[0-9]", q2);
+      assert(!strcmp(q1, q2)); }
+
+    /* opting out drops a pending fg; fi 0 still lets an owed fg out */
+    nframes = 0; ask(); tick(systick + 1); assert(fla.fg_due); rt.fg = 0; tick(systick + 50); assert(nframes == 1 && !fla.fg_due);
+    rt.fg = 1; nframes = 0; ask(); tick(systick + 1); assert(fla.fg_due); assert(set_fi(0) == STAT_OK);
+    tick(systick + 50); assert(nframes == 2 && strstr(last(), "{\"fg\":"));
+    assert(set_fi(1) == STAT_OK && rt.fg == 1 && !fla.fg_due);              /* a new window keeps the opt-in */
+
+    /* x: gap or boundary wrap marks fg only; a pending wrap marks both */
+    fla.gap_ticks[0] = 4294967000u; fla.gap_cls = FL_GAP_PENDING; fla.gap_t = systick - 1000; _fl_gap_close(systick);
+    assert(fla.fg_invalid && !fla.invalid);
+    nframes = 0; ask(); tick(systick + 50); assert(!strstr(frames[0], "\"x\"") && strstr(frames[1], ",\"x\":1}}"));
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK && !fla.fg_invalid);
+    fla.breaks[0] = 4294967295u; fl_pend[fl_bank].breaks[0] = 1; _fl_fold(); assert(fla.fg_invalid && !fla.invalid);
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK);
+    fla.cls_ms[1] = 4294967295u; fl_pend[fl_bank].cls_ticks[1] = 100; _fl_fold(); assert(fla.fg_invalid);
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK);
+    fla.gaps = 4294967295u; rt.job = 1; fl_job_moved = 1; busy = false; tick(systick + 2); assert(fla.fg_invalid);
+    rt.job = 0; tick(systick + 2);
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK);
+    fl_pend[fl_bank].wrapped = 1; _fl_fold(); assert(fla.invalid && fla.fg_invalid);
+
+    /* largest frames fit the send limit (each LF counts 2) and their buffers */
+    fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
+    fla.mm = 4294967295u; fla.um = 999; fla.gaps = 4294967295u;
+    for (int k = 0; k < 2; k++) fla.gap_ticks[k] = 4294967295u;
+    for (int c = 0; c < FL_CLASSES; c++) { fla.breaks[c] = 4294967295u; fla.cls_ms[c] = 4294967295u; }
+    fla.gap_open = false; fla.gap_cls = 0;
+    nframes = 0; ask(); tick(systick + 50); assert(nframes == 2);
+    for (int i = 0; i < 2; i++) { assert(strlen(frames[i]) + 1 <= 248); printf("%s", frames[i]); }
+    assert(strlen(frames[0]) < FL_FS_LEN && strlen(frames[1]) < FL_FG_LEN);
+    return 0;
+}
+'''
+
+FG_FLAG_MAIN = r'''
+static stat_t set_int(stat_t (*f)(nvObj_t *), uint32_t v) { nvObj_t nv = { .valuetype = TYPE_INTEGER, .value_int = v }; return f(&nv); }
+int main(void) {
+    assert(_scan_rt("{\"rt\":{\"fg\":1}}") == RT_ENVELOPE_PURE && _scan_rt("{\"rt\":{\"fg\":null,\"fi\":2}}") == RT_ENVELOPE_PURE);
+    assert(_scan_rt("{\"rt\":{\"fg\":1,\"fg\":0}}") == RT_ENVELOPE_BAD && _scan_rt("{\"rt\":{\"fg\":1},\"sv\":1}") == RT_ENVELOPE_BAD);
+    memset(&rt, 0, sizeof(rt));
+    assert(set_int(rt_set_fg, 1) == STAT_UNRECOGNIZED_NAME && rt.fg == 0);
+    rt.allowed = true;
+    assert(set_int(rt_set_fg, 2) == STAT_INPUT_VALUE_RANGE_ERROR && rt.fg == 0);
+    rt.check_only = true; assert(set_int(rt_set_fg, 1) == STAT_OK && rt.fg == 0); rt.check_only = false;
+    assert(set_int(rt_set_fg, 1) == STAT_OK && rt.fg == 1);
+    { nvObj_t nv = { .valuetype = TYPE_NULL }; assert(rt_get_fg(&nv) == STAT_OK && nv.value_int == 1 && nv.valuetype == TYPE_INTEGER); }
+    assert(set_int(rt_set_fg, 0) == STAT_OK && rt.fg == 0);
+    return 0;
+}
+'''
+
+
+class AdvisorStep3Frames(unittest.TestCase):
+    run_c = fla_t.FeedLimitAccounting.run_c
+    build_run = _build_run
+
+    def test_fs_v2_and_fg(self):
+        code = fla_t.COMMON + fla_t.feedlimit_code() + fla_t.LINK + fla_t.runtime_code() + FG_MAIN
+        import json
+        out = [json.loads(l) for l in self.run_c(code, "fg").splitlines()]
+        self.assertEqual(out[0]["fg"], {"e": 1, "q": 2, "g": [2000, 1000, 3], "b": [[4, 120], [0, 0], [1, 7]]})
+        self.assertEqual(len(out[1]["fs"]["c"]), 7)
+        self.assertEqual(out[2]["fg"]["x"], 1)
+
+    def test_fg_flag(self):
+        h = src("runtime.h")
+        code = job_code() + fn("runtime.c", "rt_get_fg") + "\n" + fn("runtime.c", "rt_set_fg") + "\n" + FG_FLAG_MAIN
+        self.build_run(code, "fgflag")
+
+    def test_fg_wiring(self):
+        cfg = src("config_app.c")
+        self.assertTrue(re.search(r'\{ "rt","rtfg",_i0, 0, tx_print_nul, rt_get_fg, rt_set_fg,', cfg), "no rtfg row in cfgArray")
+        self.assertIn("uint8_t fg;", src("runtime.h"))
+        self.assertIn("memset(&rt, 0, sizeof(rt));", fn("runtime.c", "rt_init"))   # reset clears the opt-in

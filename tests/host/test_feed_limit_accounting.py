@@ -92,7 +92,7 @@ struct { uint8_t run_state; } arc;
 uint8_t SREG = 0x80;
 static void cli(void) { SREG &= ~0x80; }
 struct { int motion_state, hold_state, cycle_state, machine_state, queue_flush_state; bool job_kill_requested, program_paused; } cm;
-struct { bool allowed, check_only; volatile uint8_t job; } rt;
+struct { bool allowed, check_only; volatile uint8_t job; uint8_t fg; } rt;
 struct { uint8_t fl_load, fl_rec, fl_cls; uint32_t fl_um, dda_ticks; int buffer_state; } st_pre;
 struct { uint8_t fl_rec, fl_cls; uint32_t fl_um, fl_ticks; } st_run;
 '''
@@ -128,6 +128,7 @@ def runtime_code():
     for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
                 r"static bool _fl_finished\(void\)", r"static uint8_t _fl_supply\(void\)",
                 r"static void _fl_gap_close\(uint32_t now\)", r"static void _fl_gap\(uint32_t now\)",
+                r"static uint32_t _fl_tick_ms\(uint32_t t\)", r"static bool _fl_send_fg\(uint32_t now\)",
                 r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
                 r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",
@@ -272,7 +273,7 @@ int main(void) {
       fla.ms[FL_CAUSES] = 0; fla.ms[1] = 0; fla.rem[FL_CAUSES] = 0; fla.rem[1] = 0; fla.mm = 0; fla.um = 0;
       fl_pend[fl_bank].ticks[FL_CAUSES] = 49; fl_pend[fl_bank].ticks[1] = 50; fl_pend[fl_bank].um = 999; }
     assert(_fl_send_fs() && fla.q == 1);
-    assert(strstr(last(), "\"q\":1,") && strstr(last(), "\"c\":[0,1,0,0,0,0]") && strstr(last(), "\"ct\":0,") && strstr(last(), "\"cd\":0.999}"));
+    assert(strstr(last(), "\"q\":1,") && strstr(last(), "{\"fs\":{\"v\":2,") && strstr(last(), "\"c\":[0,1,0,0,0,0,0]") && strstr(last(), "\"ct\":0,") && strstr(last(), "\"cd\":0.999}"));
     fl_pend[fl_bank].ticks[FL_CAUSES] = 1; fl_pend[fl_bank].um = 2;
     assert(_fl_send_fs() && strstr(last(), "\"ct\":1,") && strstr(last(), "\"cd\":1.001}") && fla.q == 2);
     tx_ready = 0; fl_pend[fl_bank].ticks[FL_CAUSES] = 5000; assert(!_fl_send_fs() && fla.q == 2 && fl_pend[fl_bank].ticks[FL_CAUSES] == 5000); tx_ready = 1;
@@ -345,7 +346,7 @@ int main(void) {
     /* largest summary */
     fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
     fla.mm = 4294967295u; fla.um = 999; tx_ready = 1; assert(_fl_send_fs());
-    assert(strlen(last()) + 1 <= 248 && strlen(last()) < 160); printf("%s", last());
+    assert(strlen(last()) + 1 <= 248 && strlen(last()) < FL_FS_LEN); printf("%s", last());
     return 0;
 }
 '''
