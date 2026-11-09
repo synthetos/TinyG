@@ -42,9 +42,10 @@ STALL_PROBE = 20.0          # line/g2 modes: a {stat} probe must answer within t
                             # a full line pool: reserved headers do not reserve pool bytes)
 PROBE_TID = 990001          # the probe's transaction id; its answer is matched by the echo, never by its body
 STALL_HARD = 900.0          # s without a line acknowledged although the board answers probes (one block can run minutes)
-RTS_INFLIGHT_LIMIT = 512    # rts: unanswered bytes. More than the RX ring (250), so CTS still paces the
-                            # stream, but '!'/'~'/^X never queue behind kilobytes in the macOS FTDI driver, whose
-                            # buffer is much deeper than out_waiting shows (N102: a hold reached the board ~90 s late)
+RTS_INFLIGHT_LIMIT = 192    # rts: unanswered bytes, line ends included. The board's RTS marks (224 off, 192 on) leave
+                            # room for every unanswered byte, so CTS never drops on a host within this window and
+                            # '!'/'~'/^X always get through, even while a hold stops the board reading input (N102:
+                            # a 512-byte window locked the link in a hold; an uncapped macOS host queued ~14 KB)
 TTY_ROOM = 256              # rts/xon: bytes allowed in the host driver's output queue before a write
 TTY_WRITE_TIMEOUT = 1.0     # rts/xon: a write that still blocks (queue full anyway) fails after this
 IDLE_STATS = (1, 3, 4)      # READY, PROGRAM_STOP, PROGRAM_END: the program finished

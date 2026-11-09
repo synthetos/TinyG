@@ -184,7 +184,7 @@ def test_rts_writes_are_bounded_while_flowing():
 
 def test_rts_bounds_unanswered_bytes_when_the_driver_hides_its_queue():
     """N102: the macOS FTDI driver accepts kilobytes while out_waiting reads near zero, so a '!' written
-    mid-stream reached the board ~90 s late. The board here answers one line only when the host waits for
+    mid-stream reached the board ~90 s late, and a hold with more unanswered bytes than the RTS marks allow locks the link. The board here answers one line only when the host waits for
     input and out_waiting always reads 0; the bytes it holds unanswered must stay within RTS_INFLIGHT_LIMIT."""
     held, peak = [], {"bytes": 0}
 
@@ -213,7 +213,7 @@ def test_rts_bounds_unanswered_bytes_when_the_driver_hides_its_queue():
     assert sum(len(x) + 1 for x in lines) > 4 * sender.RTS_INFLIGHT_LIMIT
     res = sender.stream(tg, lines, "rts", timeout=10)
     assert res.ok, (res.completion, res.errors)
-    assert sender.RX_COUNT_LIMIT < peak["bytes"] <= sender.RTS_INFLIGHT_LIMIT, peak
+    assert sender.RTS_INFLIGHT_LIMIT - 60 < peak["bytes"] <= sender.RTS_INFLIGHT_LIMIT, peak
 
 PATH = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0)]
 
