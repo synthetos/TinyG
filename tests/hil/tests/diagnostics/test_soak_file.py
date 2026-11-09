@@ -22,7 +22,7 @@ import time
 
 import pytest
 
-from tinyg_hil import benches, saleae, sender
+from tinyg_hil import benches, hostlines, saleae, sender
 
 pytestmark = [pytest.mark.timeout(5400), pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.dialect("d449")]
 
@@ -70,28 +70,6 @@ def _pulses(edges, step_ch):
     return sum(1 for _, level in edges.get(step_ch, []) if level)
 
 
-def _host_safe(lines):
-    """What a careful host does before streaming a file (N67, N101), unless SOAK_RAW=1:
-    - drop lines that switch the board to text mode or are commands, not G-code: a leading $ (GRBL posts emit $H, $HZ,
-      $X), ? or h (TinyG enters text mode on these, and a JSON host then loses every reply);
-    - drop a lone % (a program delimiter in many files; the board takes a leading % as a queue flush);
-    - remove ! and ~ anywhere (the board takes them as feedhold and resume even inside a comment).
-    Returns (lines, record of what was changed)."""
-    if os.environ.get("SOAK_RAW") == "1":
-        return lines, {"raw": True}
-    out, dropped, cleaned = [], [], 0
-    for n, line in enumerate(lines, 1):
-        head = line.lstrip()
-        if head[:1] in ("$", "?") or head[:1] in ("h", "H") or head == "%":
-            dropped.append((n, line[:40]))
-            continue
-        clean = line.replace("!", "").replace("~", "")
-        cleaned += clean != line
-        if clean.strip():
-            out.append(clean)
-    return out, {"dropped": dropped[:20], "dropped_count": len(dropped), "realtime_chars_removed": cleaned}
-
-
 def _mpo(tg):
     return {a: tg.get(f"mpo{a}") for a in AXES}
 
@@ -101,7 +79,7 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip("SOAK_FILE not set")
     raw = open(FILE, "rb").read().decode("latin-1")
     lines = [l.rstrip("\r") for l in raw.split("\n") if l.strip()]
-    lines, stripped = _host_safe(lines)
+    lines, stripped = hostlines.host_safe(lines, raw=os.environ.get("SOAK_RAW") == "1")   # N67, N101
     for line in lines:
         tg.guard.check_gcode(line, allow="soak file on an unloaded bench")
     keep("ej", "rxm", "ex", "qv", "sv", "si")
