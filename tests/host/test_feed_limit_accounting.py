@@ -125,10 +125,11 @@ def loader_code():
 def runtime_code():
     rtc = src("runtime.c")
     code = rtc[rtc.index("#define FL_FS_LEN"):rtc.index("} fla;") + len("} fla;")] + "\n"
-    for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
+    for sig in (r"static void _fl_fold\(void\)", r"static uint32_t _fl_tick_ms\(uint32_t t\)",
+                r"static void _fl_fg_take\(uint32_t now\)", r"static bool _fl_send_fs\(void\)",
                 r"static bool _fl_finished\(void\)", r"static uint8_t _fl_supply\(void\)",
                 r"static void _fl_gap_close\(uint32_t now\)", r"static void _fl_gap\(uint32_t now\)",
-                r"static uint32_t _fl_tick_ms\(uint32_t t\)", r"static bool _fl_send_fg\(uint32_t now\)",
+                r"static bool _fl_send_fg\(void\)",
                 r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
                 r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",

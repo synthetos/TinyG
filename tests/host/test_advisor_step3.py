@@ -289,6 +289,7 @@ int main(void) {
 
 class AdvisorStep3Gaps(unittest.TestCase):
     run_c = fla_t.FeedLimitAccounting.run_c
+    build_run = _build_run
 
     def test_supply_gaps(self):
         code = fla_t.COMMON + fla_t.feedlimit_code() + fla_t.LINK + fla_t.runtime_code() + C_MAIN

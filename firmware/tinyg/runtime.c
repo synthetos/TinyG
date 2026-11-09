@@ -396,6 +396,9 @@ static struct flAccounting {
 	uint8_t gap_cls;							// class accruing now (FL_GAP_*), 0 while not accruing
 	bool fg_due;								// the fs just sent owes its fg (opted in); the next fs waits for it
 	uint32_t fg_q;								// that fs's q
+	uint32_t fg_g[3];							// its payload, frozen with the fs: g (ms pending, ms none, gaps)
+	uint32_t fg_b[2 * FL_CLASSES];				// and b ([n, ms] per class)
+	bool fg_x;
 	bool fg_invalid;							// a gap or boundary counter wrapped (fg "x":1)
 } fla;
 
@@ -433,6 +436,34 @@ static void _fl_fold(void)						// take the loader's pending credits into the to
 }
 
 
+static uint32_t _fl_tick_ms(uint32_t t)		// SysTick (1/1024 s) to ms, no 32-bit overflow
+{
+	return ((t >> 10) * 1000UL + (((t & 1023UL) * 1000UL) >> 10));
+}
+
+/*
+ * _fl_fg_take() - freeze the fg payload with the fs just sent, so the pair describes one moment however long the
+ *	link keeps fg waiting. An open gap's running interval is included; a sum that wraps marks x for good.
+ */
+static void _fl_fg_take(uint32_t now)
+{
+	for (uint8_t k = 0; k < 2; k++) {
+		uint32_t t = fla.gap_ticks[k];
+		if (fla.gap_cls == k + 1) {
+			uint32_t sum = t + (now - fla.gap_t);
+			if (sum < t) { fla.fg_invalid = true; }
+			t = sum;
+		}
+		fla.fg_g[k] = _fl_tick_ms(t);
+	}
+	fla.fg_g[2] = fla.gaps;
+	for (uint8_t c = 0; c < FL_CLASSES; c++) {
+		fla.fg_b[2 * c] = fla.breaks[c];
+		fla.fg_b[2 * c + 1] = fla.cls_ms[c];
+	}
+	fla.fg_x = fla.fg_invalid;
+}
+
 static bool _fl_send_fs(void)					// fold, format and send a summary; false if the link was busy
 {
 	if (!xio_usb_tx_ready()) { return (false); }
@@ -449,13 +480,9 @@ static bool _fl_send_fs(void)					// fold, format and send a summary; false if t
 	if (rt.fg) {								// opted in: its fg follows before any other fs
 		fla.fg_due = true;
 		fla.fg_q = fla.q;
+		_fl_fg_take(SysTickTimer_getValue());
 	}
 	return (true);
-}
-
-static uint32_t _fl_tick_ms(uint32_t t)		// SysTick (1/1024 s) to ms, no 32-bit overflow
-{
-	return ((t >> 10) * 1000UL + (((t & 1023UL) * 1000UL) >> 10));
 }
 
 /*
@@ -464,25 +491,19 @@ static uint32_t _fl_tick_ms(uint32_t t)		// SysTick (1/1024 s) to ms, no 32-bit 
  *	{"fg":{"e":E,"q":Q,"g":[ms_pending,ms_none,gaps],"b":[[n,ms],[n,ms],[n,ms]],"x":1?}}. g: supply gap time
  *	with input pending and with no known input (an open gap's running interval included) and the gap count; b per
  *	class (spindle/S, coolant, other): motion breaks at command boundaries and below-F ms of the moves tagged by them.
- *	x: one of these counters wrapped (fs has its own x). The counters fold just before, with the fs.
+ *	x: one of these counters wrapped (fs has its own x). The payload was frozen with the fs (_fl_fg_take).
  */
-static bool _fl_send_fg(uint32_t now)
+static bool _fl_send_fg(void)
 {
 	if (!xio_usb_tx_ready()) { return (false); }
-	uint32_t g[2];
-	for (uint8_t k = 0; k < 2; k++) {
-		uint32_t t = fla.gap_ticks[k];
-		if (fla.gap_cls == k + 1) { t += now - fla.gap_t; }
-		g[k] = _fl_tick_ms(t);
-	}
 	char frame[FL_FG_LEN];
 	snprintf_P(frame, sizeof(frame),
 			   PSTR("{\"fg\":{\"e\":%u,\"q\":%lu,\"g\":[%lu,%lu,%lu],\"b\":[[%lu,%lu],[%lu,%lu],[%lu,%lu]]%s}}\n"),
-			   (unsigned)fla.epoch, (unsigned long)fla.fg_q, (unsigned long)g[0], (unsigned long)g[1], (unsigned long)fla.gaps,
-			   (unsigned long)fla.breaks[FL_CLS_SPINDLE], (unsigned long)fla.cls_ms[FL_CLS_SPINDLE],
-			   (unsigned long)fla.breaks[FL_CLS_COOLANT], (unsigned long)fla.cls_ms[FL_CLS_COOLANT],
-			   (unsigned long)fla.breaks[FL_CLS_OTHER], (unsigned long)fla.cls_ms[FL_CLS_OTHER],
-			   fla.fg_invalid ? ",\"x\":1" : "");
+			   (unsigned)fla.epoch, (unsigned long)fla.fg_q,
+			   (unsigned long)fla.fg_g[0], (unsigned long)fla.fg_g[1], (unsigned long)fla.fg_g[2],
+			   (unsigned long)fla.fg_b[0], (unsigned long)fla.fg_b[1], (unsigned long)fla.fg_b[2],
+			   (unsigned long)fla.fg_b[3], (unsigned long)fla.fg_b[4], (unsigned long)fla.fg_b[5],
+			   fla.fg_x ? ",\"x\":1" : "");
 	return (xio_usb_try_send_frame(frame));
 }
 
@@ -688,7 +709,7 @@ stat_t rt_feedlimit_callback(void)
 	if (fla.fg_due && !rt.fg) { fla.fg_due = false; }	// the host opted out: nothing owed
 	if (fla.fg_due) {							// the fs's fg first: pairs never interleave
 		if ((int32_t)(now - fla.next_try) >= 0) {
-			if (_fl_send_fg(now)) {
+			if (_fl_send_fg()) {
 				fla.fg_due = false;
 			}
 			fla.next_try = now + FL_RETRY_TICKS;
@@ -725,7 +746,13 @@ stat_t rt_set_fi(nvObj_t *nv)
 	nv->value_int = fi;
 	if ((fi == 0) || (fla.fi != 0)) {			// off, or only a new interval
 		if (!rt.check_only) {
-			if (fi == 0) { fl_on = false; fla.fs_auto = false; }	// queued automatic output is cancelled
+			if (fi == 0) {							// queued automatic output is cancelled; an open gap ends here
+				fl_on = false;
+				fla.fs_auto = false;
+				_fl_gap_close(SysTickTimer_getValue());
+				fla.gap_open = false;
+				fl_job_moved = false;
+			}
 			fla.fi = fi;
 		}
 		return (STAT_OK);

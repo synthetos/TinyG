@@ -34,7 +34,6 @@ class ProgramPause(unittest.TestCase):
 #include <stddef.h>
 #define __AVR 1
 uint8_t SREG=128;
-struct {volatile uint8_t job;} rt;volatile uint8_t fl_on,fl_underrun;   /* mp_exec_move: feed-limit underrun latch */
 #define cli() (SREG=0)
 #define AXES 6
 #define AXIS_X 0

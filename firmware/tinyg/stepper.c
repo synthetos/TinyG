@@ -993,7 +993,7 @@ static uint8_t fl_moved;								// the last load was a move segment
 
 static void _fl_command_break(const mpBuf_t *bf)
 {
-	if (fl_on && rt.job && fl_moved) {
+	if (fl_on && rt.job && fl_job_moved && fl_moved) {	// a move made in this job, which has moved
 		uint8_t cls = bf->fl_cls;
 		fl_pend[fl_bank].breaks[(cls < FL_CLASSES) ? cls : FL_CLS_OTHER]++;
 	}
@@ -1011,6 +1011,10 @@ static void _load_move()
 		_fl_retire();
 	}
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
+		// The runtime has played out with nothing prepared: during a host job, outside a hold or M0/M1, motion
+		// has physically stopped for want of input. Latched so a drain and refill between two looks of
+		// rt_feedlimit_callback still counts as a supply gap (feed-limit advisor step 3).
+		if (fl_on && rt.job && (cm.hold_state == FEEDHOLD_OFF) && !cm.program_paused) { fl_underrun = true; }
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 //		}
@@ -1032,7 +1036,7 @@ static void _load_move()
 			st_run.fl_ticks = st_pre.dda_ticks;
 			st_run.fl_cls = st_pre.fl_cls;
 		}
-		fl_moved = true;										// a later command is a motion break (step 3)
+		fl_moved = (fl_on && rt.job);							// a later command is a motion break (step 3)
 
 		//**** MOTOR_1 LOAD ****
 
