@@ -99,6 +99,7 @@
 #include "spindle.h"
 #include "runtime.h"
 #include "feedlimit.h"			// FL_CLS_COOLANT (feed-limit advisor step 3)
+#include "override.h"
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
@@ -926,6 +927,7 @@ stat_t cm_alarm_P(const stat_t status, const char *msg_P)
 // Apply the stop without reporting: also safe while a response is waiting for TX space.
 static bool _enter_alarm(void)
 {
+    ov_cancel();
     if ((cm.machine_state == MACHINE_ALARM) ||
         (cm.machine_state == MACHINE_PANIC) ||
         (cm.machine_state == MACHINE_SHUTDOWN)) {
@@ -995,6 +997,7 @@ stat_t cm_alarm(const stat_t status, const char *msg)
 
 stat_t cm_shutdown(const stat_t status, const char *msg)
 {
+    ov_cancel();
     if ((cm.machine_state == MACHINE_SHUTDOWN) || (cm.machine_state == MACHINE_PANIC)) {
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
@@ -1032,6 +1035,7 @@ stat_t cm_panic_P(const stat_t status, const char *msg_P)
 
 stat_t cm_panic(const stat_t status, const char *msg)
 {
+    ov_cancel();
     if (cm.machine_state == MACHINE_PANIC) {    // only do this once
         return (STAT_OK);
     }
@@ -1981,12 +1985,14 @@ void cm_message(char *message)
  */
 void cm_request_job_kill(void)
 {
+    ov_cancel();
     rt_qt_invalidate();
     rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
 }
 
 void cm_request_feedhold(void) {
+    ov_cancel();
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
     cli();
@@ -2059,6 +2065,7 @@ void cm_request_queue_flush()
 
 void cm_request_planner_flush()
 {
+    ov_cancel();
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
         cm.queue_flush_state = FLUSH_REQUESTED;     // flushed from the main loop
@@ -2569,6 +2576,7 @@ static void _exec_program_stop(float *value, bool *flags)
 
 void cm_program_stop()
 {
+    ov_cancel();
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP };
 	mp_queue_command(_exec_program_stop, value, FLAGS_ONE);
 }
@@ -2580,6 +2588,7 @@ void cm_optional_program_stop()
 
 void cm_program_end()
 {
+    ov_cancel();
 	// Reset the model now, in the main loop, so blocks parsed after the M2/M30 keep their modes, and
 	// queue ONE runtime command for the rest: the per-block planner demand stays bounded (E069, E088)
 	cm.gmx.origin_offset_enable = 0;				// 1.  G92.1 - we do G91.1 instead of G92.2

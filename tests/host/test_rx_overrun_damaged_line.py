@@ -10,6 +10,8 @@ forget losses before its mark and keep the ones after it. A seeded stream with r
 and reader calls checks that no spliced line is ever returned as XIO_OK and that the loss state
 always clears once the reader catches up.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,7 +22,7 @@ from source_extract import function
 
 ROOT = Path(__file__).resolve().parents[2]
 
-PRELUDE = r'''
+PRELUDE = OVERRIDE_STUBS + r'''
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -274,7 +276,7 @@ class RxOverrunDamagedLine(unittest.TestCase):
         code += EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-e162-") as tmp:
             c, exe = Path(tmp) / "overrun.c", Path(tmp) / "overrun"
-            c.write_text(code)
+            c.write_text(OVERRIDE_STUBS+code)
             subprocess.run([cc, "-std=gnu99", "-Wall", "-Wno-unused-function", "-fsanitize=address,undefined","-fstrict-flex-arrays=3",
                             str(c), "-o", str(exe)], check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)

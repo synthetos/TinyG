@@ -30,6 +30,7 @@
 
 // application specific stuff that's littered into the USB handler
 #include "../tinyg.h"
+#include "../override.h"
 #include "../config.h"					// needed to find flow control setting
 #include "../hardware.h"
 #include "../controller.h"
@@ -194,6 +195,12 @@ static void _usb_rx_lost(void)				// lost right after the last byte kept, at the
 	}												// reader reports it if the ring is still empty
 }
 
+static bool _usb_override_byte(uint8_t c,uint8_t status)
+{
+    return ov_usb_byte(c,cm_is_alarmed()==STAT_OK,
+        !(status & (USART_BUFOVF_bm | USART_FERR_bm | USART_PERR_bm)));
+}
+
 ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 {
 	uint8_t status = USBu.usart->STATUS;		// read before DATA: the error flags travel with the frame
@@ -270,6 +277,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
         rx_in_line = true;
     }
 
+    if (_usb_override_byte((uint8_t)c,status)) { return; }
 	// normal character path; a stale line's mark goes in ahead of the '{' (E195)
 	for (uint8_t n = (stale ? 2 : 1); n > 0; n--) {
 		char k = ((n == 2) ? RX_STALE_LINE_MARK : c);
@@ -458,4 +466,11 @@ void xio_drop_usb_rx_before_mark(void)
 	USBu.rx_buf_count = xio_get_rx_bufcount_usart(&USBu);
 	USB.len = 0;				// the partial line was read before the mark
 	USB.flag_in_line = false;	// rx_in_line stays: it follows the bytes kept in the ring
+}
+
+/* Non-destructive framing query; used only with interrupts masked by the opt-in setter. */
+uint8_t xio_usb_input_boundary(void)
+{
+    return !(USBu.usart->STATUS & USART_RX_DATA_READY_bm) && !rx_in_line &&
+        USBu.rx_buf_head==USBu.rx_buf_tail && (!USB.flag_in_line || USB.len==0);
 }

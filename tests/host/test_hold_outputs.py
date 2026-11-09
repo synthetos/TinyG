@@ -1,4 +1,6 @@
 """Deterministic hold/output sequencing; physical timing requires external capture."""
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import os
 import re
@@ -319,7 +321,7 @@ int main(void) {
             enums += definition + '\n'
         code = enums + code
         with tempfile.TemporaryDirectory() as d:
-            c=Path(d)/'check.c'; c.write_text(code); out=Path(d)/'check'
+            c=Path(d)/'check.c'; c.write_text(OVERRIDE_STUBS+code); out=Path(d)/'check'
             subprocess.run(['cc','-std=c99','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(out)],check=True)
             subprocess.run([str(out)],check=True)
 

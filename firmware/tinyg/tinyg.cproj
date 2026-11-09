@@ -237,6 +237,8 @@
     <Compile Include="gcode_parser.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="override.c"><SubType>compile</SubType></Compile>
+    <Compile Include="override.h"><SubType>compile</SubType></Compile>
     <Compile Include="feedlimit.c">
       <SubType>compile</SubType>
     </Compile>

@@ -58,4 +58,17 @@ stat_t rt_get_fg(nvObj_t *nv);
 stat_t rt_set_fg(nvObj_t *nv);
 void rt_job_end(void);						// reset, % flush, job kill, program end: the host job is over
 
+stat_t ov_get_mfo(nvObj_t *nv);
+stat_t ov_get_sso(nvObj_t *nv);
+stat_t ov_get_mfc(nvObj_t *nv);
+stat_t ov_get_ssc(nvObj_t *nv);
+stat_t ov_get_state(nvObj_t *nv);
+stat_t rt_set_mfo(nvObj_t *nv);
+stat_t rt_set_sso(nvObj_t *nv);
+stat_t rt_set_mfe(nvObj_t *nv);
+stat_t rt_set_sse(nvObj_t *nv);
+stat_t rt_get_mfe(nvObj_t *nv);
+stat_t rt_get_sse(nvObj_t *nv);
+stat_t rt_get_ovb(nvObj_t *nv);
+stat_t rt_set_ovb(nvObj_t *nv);
 #endif // End of include guard: RUNTIME_H_ONCE

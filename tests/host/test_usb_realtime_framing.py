@@ -1,4 +1,6 @@
 """Exercise the actual RX ISR against a byte/register fixture; no timing claims."""
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import os
 import subprocess
@@ -101,7 +103,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             c = Path(tmp) / 'rx.c'
-            c.write_text(code)
+            c.write_text(OVERRIDE_STUBS+code)
             exe = Path(tmp) / 'rx'
             subprocess.run(['cc', '-std=gnu99', '-Wall', '-Werror', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)

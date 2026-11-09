@@ -9,6 +9,7 @@
 #include "plan_arc.h"
 #include "stepper.h"
 #include "runtime.h"
+#include "override.h"
 #include "util.h"
 #include "xio.h"
 #include "feedlimit.h"
@@ -23,6 +24,7 @@ rtSingleton_t rt;
 void rt_init(void)
 {
 	memset(&rt, 0, sizeof(rt));
+    ov_init();
 }
 
 void rt_qt_invalidate(void)
@@ -814,4 +816,58 @@ stat_t rt_get_fs(nvObj_t *nv)
 	nv->value_int = fla.q + 1;
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
+}
+
+/* Infrastructure only: requests/readouts are live, but no motion/output commit path exists yet. */
+static stat_t _ov_result(uint8_t result)
+{
+    return result==OV_OK ? STAT_OK : result==OV_RANGE ? STAT_INPUT_VALUE_RANGE_ERROR : STAT_COMMAND_NOT_ACCEPTED;
+}
+static stat_t _ov_float(nvObj_t *nv,uint16_t q)
+{
+    nv->value_flt=q/1000.0f;nv->valuetype=TYPE_FLOAT;nv->precision=3;return STAT_OK;
+}
+stat_t ov_get_mfo(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.feed);}
+stat_t ov_get_sso(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.spindle);}
+stat_t ov_get_mfc(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.committed_feed);}
+stat_t ov_get_ssc(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.committed_spindle);}
+stat_t ov_get_state(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.state;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
+{
+    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_FLOAT && nv->valuetype!=TYPE_INTEGER)return STAT_INPUT_VALUE_RANGE_ERROR;
+    float value=nv->valuetype==TYPE_FLOAT?nv->value_flt:(float)nv->value_int;
+    status=_ov_result(ov_set_factor(which,value,!rt.check_only,true));
+    if(status==STAT_OK && !rt.check_only){if(which==OV_FEED)ov_get_mfo(nv);else ov_get_sso(nv);}
+    return status;
+}
+stat_t rt_set_mfo(nvObj_t *nv){return _ov_factor(nv,OV_FEED);}
+stat_t rt_set_sso(nvObj_t *nv){return _ov_factor(nv,OV_SPINDLE);}
+static stat_t _ov_enable(nvObj_t *nv,uint8_t which)
+{
+    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
+    return _ov_result(ov_set_enable(which,nv->value_int,!rt.check_only,true));
+}
+stat_t rt_set_mfe(nvObj_t *nv){return _ov_enable(nv,OV_FEED);}
+stat_t rt_set_sse(nvObj_t *nv){return _ov_enable(nv,OV_SPINDLE);}
+stat_t rt_get_mfe(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_FEED);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t rt_get_sse(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_SPINDLE);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t rt_get_ovb(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.armed;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t rt_set_ovb(nvObj_t *nv)
+{
+    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
+#ifdef __AVR
+    uint8_t saved_sreg=SREG;cli();
+#endif
+    bool quiet=_machine_quiet() && !xio_rx_data_pending() && xio_usb_input_boundary();
+    status=_ov_result(ov_arm(nv->value_int,quiet,true,!rt.check_only));
+#ifdef __AVR
+    SREG=saved_sreg;
+#endif
+    return status;
 }

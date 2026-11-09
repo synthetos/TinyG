@@ -2,6 +2,8 @@
 
 The runtime finalizer and physical step generator are fixtures; no timing claim is made.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import re
 import subprocess
@@ -179,7 +181,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             c = Path(tmp) / 'pause.c'
-            c.write_text(code)
+            c.write_text(OVERRIDE_STUBS+code)
             exe = Path(tmp) / 'pause'
             subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)
