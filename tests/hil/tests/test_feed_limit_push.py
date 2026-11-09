@@ -1,9 +1,10 @@
 """Feed-limit push (step 2): {rt:{fi:N}} opens an accounting window; the board pushes fs summaries and fl
 cause-change lines (runtime.c, feedlimit.c, stepper.c; .analysis/feed-advisor-design.md).
 
-  {"fs":{"v":1,"e":window,"q":seq,"c":[ms per cause...],"ct":cutting_ms,"cd":cutting_mm}}
+  {"fs":{"v":2,"e":window,"q":seq,"c":[ms per cause...],"ct":cutting_ms,"cd":cutting_mm}}
       every N s while a cycle runs, and once more after the cycle has drained; cumulative since the window
-      opened. c order: axis cap, corner, exact stop, short, single segment, other. Overlapping counters.
+      opened. c order: axis cap, corner, exact stop, short, single segment, other, command boundary (v2).
+      Overlapping counters.
   {"fl":{"k":kind,"m":tags,"p":pct,"n":line}}
       when the executing move's kind or tags change, at most 4 a second; k 0 when nothing runs.
 
@@ -28,7 +29,7 @@ def rt(tg, body, timeout=2.0):
 
 
 def since(tg, mark, kind):
-    return [e.data[{"feedlimit": "fl", "feedsummary": "fs"}[kind]] for e in tg.transport.history[mark:] if e.kind == kind]
+    return [e.data[{"feedlimit": "fl", "feedsummary": "fs", "feedgaps": "fg"}[kind]] for e in tg.transport.history[mark:] if e.kind == kind]
 
 
 def settle(tg, seconds):                                 # let pushed lines arrive (they are kept in history)
@@ -96,7 +97,7 @@ def test_job_summaries_and_events(tg, at_x0):
     assert fs, "no summary"
     assert [s["q"] for s in fs] == list(range(1, len(fs) + 1)) and len({s["e"] for s in fs}) == 1, fs
     final = fs[-1]
-    assert all(s["v"] == 1 and len(s["c"]) == 6 for s in fs)
+    assert all(s["v"] == 2 and len(s["c"]) == 7 for s in fs)
     assert final["cd"] == pytest.approx(80.0, abs=0.4), final
     at_cruise_ms = 60000 * (30 / xfr + 50 / 600)
     assert at_cruise_ms <= final["ct"] <= 1.6 * at_cruise_ms, (final, at_cruise_ms)
