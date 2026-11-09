@@ -88,6 +88,7 @@ static bool _utf_data(uint8_t c)
     if(c>=0xC0 && !utf_remaining)utf_remaining=255; /* invalid lead */
     return utf_remaining!=0;
 }
+bool ov_usb_armed(void) { return ov.armed != 0; }
 bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame)
 {
     if (!ov.armed) return false;

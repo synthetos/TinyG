@@ -197,6 +197,7 @@ static void _usb_rx_lost(void)				// lost right after the last byte kept, at the
 
 static bool _usb_override_byte(uint8_t c,uint8_t status)
 {
+    if (!ov_usb_armed()) { return false; }
     return ov_usb_byte(c,cm_is_alarmed()==STAT_OK,
         !(status & (USART_BUFOVF_bm | USART_FERR_bm | USART_PERR_bm)));
 }
@@ -264,6 +265,7 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
 		}
 	}
 
+    if (_usb_override_byte((uint8_t)c,status)) { return; }
     if (c == RX_STALE_LINE_MARK) {				// reserved for the ring (E195): a host's own is dropped
         return;
     }
@@ -277,7 +279,6 @@ ISR(USB_RX_ISR_vect)	//ISR(USARTC0_RXC_vect)	// serial port C0 RX int
         rx_in_line = true;
     }
 
-    if (_usb_override_byte((uint8_t)c,status)) { return; }
 	// normal character path; a stale line's mark goes in ahead of the '{' (E195)
 	for (uint8_t n = (stale ? 2 : 1); n > 0; n--) {
 		char k = ((n == 2) ? RX_STALE_LINE_MARK : c);

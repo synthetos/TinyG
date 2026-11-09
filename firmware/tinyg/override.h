@@ -42,6 +42,7 @@ void ov_snapshot(ovSnapshot_t *out);
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted);
 uint8_t ov_set_enable(uint8_t which,bool enable,bool apply,bool permitted);
 uint8_t ov_arm(bool enable,bool quiet,bool permitted,bool apply);
+bool ov_usb_armed(void);
 bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame);
 void ov_cancel(void);
 /* Caller supplies a private snapshot of a genuinely analytical future boundary; no exec producer is installed yet. */
