@@ -10,6 +10,7 @@ class Stimulus(unittest.TestCase):
     def test_pending_with_an_aline_in_prep_does_not_consume_the_hook(self):
         code=r'''
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #define __AVR 1
 #define TINYG_TEST_HOOKS 1

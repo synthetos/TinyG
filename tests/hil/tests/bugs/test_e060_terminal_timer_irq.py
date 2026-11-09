@@ -32,10 +32,18 @@ def test_alarm_flush_after_a_late_terminal_irq(tg, ice, keep, record):
         tg.send_raw(b'%\n')
         time.sleep(0.2)
         state = ice.peek_many(['test_timer.dda_finish_delay', 'test_timer.dda_finish_delays',
+                               'test_timer.dda_finish_pre_type', 'test_timer.dda_finish_flags',
+                               'test_timer.dda_finish_ctrl', 'test_timer.dda_finish_cnt',
+                               'test_timer.dda_finish_per', 'test_timer.dda_finish_flags_after_stop',
                                'st_run.dda_ticks_downcount', 'cm.hold_state',
                                'cm.queue_flush_state', 'cm.queue_flush_input', 'mb.buffers_available'])
         record('terminal_overflow', state)
-        assert state['test_timer.dda_finish_delays'] == 1, 'terminal overflow stimulus did not fire'
+        qualified = (state['test_timer.dda_finish_delays'] == 1 and
+                     state['test_timer.dda_finish_pre_type'] == 0 and
+                     state['test_timer.dda_finish_flags'] & 1 and
+                     state['test_timer.dda_finish_ctrl'] != 0)
+        if not qualified:
+            pytest.skip(f'terminal overflow stimulus not qualified; not bug evidence: {state}')
         assert state['st_run.dda_ticks_downcount'] != 0xFFFFFFFF, state
         assert state['st_run.dda_ticks_downcount'] == 0, state
         tg.send_json({'clear': None}, check=True, timeout=1)

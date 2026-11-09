@@ -709,14 +709,27 @@ ISR(TIMER_DDA_ISR_vect)
 
 	if (--st_run.dda_ticks_downcount != 0) return;
 #ifdef TINYG_TEST_HOOKS
-    if ((cm.hold_state == FEEDHOLD_PENDING) && test_timer.dda_finish_delay) {
+    bool observed_terminal = false;
+    // PENDING is set when the last braking segment is PREPARED, not when it has loaded.
+    // Do not consume the hook on its predecessor: loading that segment would replace count zero.
+    if ((cm.hold_state == FEEDHOLD_PENDING) && (st_pre.block_type == BLOCK_TYPE_NULL) &&
+        test_timer.dda_finish_delay) {
         test_timer.dda_finish_delay = 0;
         test_timer.dda_finish_delays++;
-        _delay_us(25);                   // more than one 20 us DDA period: latch another overflow
+        test_timer.dda_finish_pre_type = st_pre.block_type;
+        _delay_us(25);
+        test_timer.dda_finish_flags = TIMER_DDA.INTFLAGS;
+        test_timer.dda_finish_ctrl = TIMER_DDA.CTRLA;
+        test_timer.dda_finish_cnt = TIMER_DDA.CNT;
+        test_timer.dda_finish_per = TIMER_DDA.PER;
+        observed_terminal = true;
     }
 #endif
 
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
+#ifdef TINYG_TEST_HOOKS
+    if (observed_terminal) { test_timer.dda_finish_flags_after_stop = TIMER_DDA.INTFLAGS; }
+#endif
 	_load_move();										// load the next move
 }
 #endif // __AVR
