@@ -165,11 +165,11 @@ int main(void) {
         self.assertEqual(new[end+16:end+19], [("rt", "rthb"), ("rt", "rtqt"), ("rt", "rtup")])   # runtime session, RAM only
         self.assertEqual(new[end+19:end+23], [("rt", "rtflk"), ("rt", "rtflm"), ("rt", "rtflp"), ("rt", "rtflf")])  # feed-limit report
         self.assertEqual(new[end+23:end+25], [("rt", "rtfi"), ("rt", "rtfs")])     # feed-limit push (step 2)
-        self.assertEqual(new[end+25:end+27], [("rt", "rtjob"), ("rt", "rtfg")])      # host job flag, fg opt-in (step 3), RAM only
-        self.assertEqual(new[end+27:end+33], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
+        self.assertEqual(new[end+25:end+31], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
         groups = list(old[end:])
         groups.insert(groups.index(("", "jid")) + 1, ("", "rt"))                    # runtime session group
-        self.assertEqual(new[end+33], ("", "_hld"))
+        self.assertEqual(new[end+31], ("", "_hld"))                                 # E060 stamp: its index must not move
+        self.assertEqual(new[end+32:end+34], [("rt", "rtjob"), ("rt", "rtfg")])      # host job flag, fg opt-in (step 3), RAM only
         self.assertEqual(new[end+34:], groups)
 
 
