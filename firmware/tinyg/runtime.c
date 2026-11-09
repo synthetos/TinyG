@@ -185,6 +185,37 @@ stat_t rt_get_up(nvObj_t *nv)
 }
 
 /*
+ * rt_get_job(), rt_set_job(), rt_job_end() - the host's job flag (feed-limit advisor step 3)
+ *
+ *	{"rt":{"job":1}} while a host streams a job and has more motion to send, {"rt":{"job":0}} after its last
+ *	motion line and before its own deliberate stops, so the normal stop at the end is not a supply gap. RAM
+ *	only, written any time (no quiescence: rt control lines can overtake buffered data, which errs towards
+ *	fewer gaps). Reset (rt_init), a % flush, a job kill and program end clear it; a feedhold does not.
+ */
+stat_t rt_get_job(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	nv->value_int = rt.job;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t rt_set_job(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	if ((nv->valuetype != TYPE_INTEGER) || (nv->value_int > 1)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+	if (rt.check_only) { return (STAT_OK); }
+	rt.job = (uint8_t)nv->value_int;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+void rt_job_end(void)
+{
+	rt.job = 0;								// one byte: safe from interrupts and the main loop alike
+}
+
+/*
  * rt_set_grp() - {"rt":{...}}: check every leaf, then apply them; the first refusal is the reply
  *
  *	The ordinary group setter ignores its children's status. Here a refused leaf changes nothing, and

@@ -1958,6 +1958,7 @@ void cm_message(char *message)
 void cm_request_job_kill(void)
 {
     rt_qt_invalidate();
+    rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
 }
 
@@ -2027,6 +2028,7 @@ void cm_request_queue_flush()
     cm_request_planner_flush();
     if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
         rt_qt_invalidate();
+        rt_job_end();                               // a discarded job is over (advisor step 3)
         cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
     }
 }
@@ -2591,6 +2593,7 @@ static void _exec_program_end(float *value, bool *flags)
 	mp_set_runtime_work_offset(offsets);
 	spindle_reset();								// M5 now (immediate; S is kept)
 	cm_coolant_off_immediate();						// M9 now
+	rt_job_end();									// M2/M30 executed: no supply gaps after it (advisor step 3)
 	_exec_program_finalize(value, flags);			// value[0] is MACHINE_PROGRAM_END
 }
 

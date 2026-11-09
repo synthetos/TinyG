@@ -29,6 +29,7 @@ typedef struct rtSingleton {
 	uint32_t hb_quiet_since;				// SysTick time the board last went quiet (or last beat)
 	volatile uint8_t qt_valid;				// cleared from interrupts too (flush, job kill)
 	char qt[RT_QT_LEN+1];
+	volatile uint8_t job;					// host streaming a job with more motion to send (step 3); cleared from interrupts
 } rtSingleton_t;
 extern rtSingleton_t rt;
 
@@ -50,5 +51,8 @@ stat_t rt_get_fi(nvObj_t *nv);
 stat_t rt_set_fi(nvObj_t *nv);
 stat_t rt_get_fs(nvObj_t *nv);
 stat_t rt_feedlimit_callback(void);
+stat_t rt_get_job(nvObj_t *nv);
+stat_t rt_set_job(nvObj_t *nv);
+void rt_job_end(void);						// reset, % flush, job kill, program end: the host job is over
 
 #endif // End of include guard: RUNTIME_H_ONCE

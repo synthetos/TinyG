@@ -7,9 +7,10 @@ A. Host job flag: {"rt":{"job":1|0}} says whether a host is streaming a job with
 import re
 import unittest
 
-from test_runtime_rt import PRELUDE, RuntimeFamily, fn, function, src
+import test_runtime_rt
+from test_runtime_rt import PRELUDE, fn, function, src
 
-_build_run = RuntimeFamily.build_run          # reuse the compile-and-run helper, not RuntimeFamily's tests
+_build_run = test_runtime_rt.RuntimeFamily.build_run     # the compile-and-run helper, not RuntimeFamily's tests
 
 
 def job_code():
@@ -62,11 +63,9 @@ int main(void) {
 class AdvisorStep3Job(unittest.TestCase):
     build_run = _build_run
 
-    @unittest.expectedFailure      # step 3 A: removed by the commit that adds the job flag
     def test_job_flag(self):
         self.build_run(job_code() + JOB_MAIN, "job")
 
-    @unittest.expectedFailure      # step 3 A
     def test_job_flag_wiring(self):
         cfg = src("config_app.c")
         self.assertTrue(re.search(r'\{ "rt","rtjob",_i0, 0, tx_print_nul, rt_get_job, rt_set_job,', cfg), "no rtjob row in cfgArray")
@@ -75,7 +74,7 @@ class AdvisorStep3Job(unittest.TestCase):
             self.assertIn(proto, h)
         cm = src("canonical_machine.c")
         for name in (r"void cm_request_queue_flush\((?:void)?\)", r"void cm_request_job_kill\((?:void)?\)",
-                     r"static void _exec_program_end\(float \*value, bool \*flags\)"):
+                     r"static void _exec_program_end\(float \*value, bool \*flags\)(?=\s*\{)"):
             body = function(cm, name)
             self.assertIn("rt_job_end();", body, name)
         # reset: rt_init clears the whole singleton, so the flag starts at 0 after every boot and ^X
