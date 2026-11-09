@@ -251,7 +251,6 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 
 		copy_vector(mr.unit, bf->unit);
 		copy_vector(mr.target, bf->gm.target);			// save the final target of the move
-        copy_vector(mr.axis_flags, bf->axis_flags);
         copy_vector(mr.origin, mr.position);           // segment targets are measured from the move start (N80)
         mr.origin_distance = 0;
 

@@ -267,7 +267,7 @@ void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool 
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		bf->value_vector[axis] = value[axis];
-		bf->axis_flags[axis] = flags[axis];
+		if (flags[axis]) { bf->axis_mask |= (uint8_t)(1u << axis); }
 	}
 	mp_commit_write_buffer(BLOCK_TYPE_COMMAND);			// must be final operation before exit
 }
@@ -280,7 +280,11 @@ static stat_t _exec_command(mpBuf_t *bf)
 
 stat_t mp_runtime_command(mpBuf_t *bf)
 {
-	bf->cm_func(bf->value_vector, bf->axis_flags);		// 2 vectors used by callbacks
+	bool flags[AXES];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		flags[axis] = (bf->axis_mask & (1u << axis)) != 0;
+	}
+	bf->cm_func(bf->value_vector, flags); // callback uses this vector synchronously
 	if (mp_free_run_buffer()) {
 		cm_cycle_end();									// free buffer & perform cycle_end if planner is empty
     }

@@ -149,7 +149,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 //	uint8_t block_code;				// byte that can be used by used exec functions
 
 	float unit[AXES];				// unit vector for axis scaling & planning
-    bool axis_flags[AXES];          // set true for axes participating in the move & for command parameters
+    uint8_t axis_mask;              // packed synchronous command flags
 
 	float length;					// total length of line or helix in mm
 	float head_length;
@@ -209,7 +209,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	sectionState section_state;         // state within a move section
 
 	float unit[AXES];                   // unit vector for axis scaling & planning
-    bool axis_flags[AXES];              // set true for axes participating in the move
 	float target[AXES];                 // final target for bf (used to correct rounding errors)
 	float position[AXES];               // current move position
 	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
