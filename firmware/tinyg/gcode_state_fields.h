@@ -55,7 +55,7 @@
 	uint8_t spindle_mode                 : 2 ;  // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
 	uint8_t mist_coolant                 : 1 ;  // TRUE = mist on (M7), FALSE = off (M9)
 	uint8_t flood_coolant                : 1 ;  // TRUE = flood on (M8), FALSE = off (M9)
-#else 
+#else
     // keep all bitfields together
 //    uint8_t :0;  // alignment
 	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80 - G89
@@ -76,4 +76,3 @@
 #endif
 
 	float spindle_speed;				// in RPM
-
