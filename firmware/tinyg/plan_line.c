@@ -607,7 +607,7 @@ static float _exit_of_previous(const mpBuf_t *bp)
 
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 {
-	static mpBuf_t plan;							// main loop only; static keeps it off the stack
+	static mpTrapezoid_t plan;							// main loop only; static keeps it off the stack
 	float taken_exit;
 	bool taken;
 #ifdef __AVR
@@ -622,7 +622,16 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 	if (taken) {
 		return (taken_exit);
 	}
-	plan = *bp;
+    plan.length = bp->length;
+    plan.head_length = bp->head_length;
+    plan.body_length = bp->body_length;
+    plan.tail_length = bp->tail_length;
+    plan.naiive_move_time = bp->naiive_move_time;
+    plan.cruise_vmax = bp->cruise_vmax;
+    plan.delta_vmax = bp->delta_vmax;
+    plan.jerk = bp->jerk;
+    plan.recip_jerk = bp->recip_jerk;
+    plan.cbrt_jerk = bp->cbrt_jerk;
 	plan.entry_velocity = entry_velocity;
 	plan.cruise_velocity = bp->cruise_vmax;
 	plan.exit_velocity = exit_velocity;

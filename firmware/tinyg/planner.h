@@ -124,6 +124,15 @@ typedef enum {
  *	Planner structures
  */
 
+/* Private planning inputs and results, never queue links, model state or slot ownership. */
+typedef struct {
+    float naiive_move_time;
+    float length, head_length, body_length, tail_length;
+    float entry_velocity, cruise_velocity, exit_velocity;
+    float cruise_vmax, delta_vmax;
+    float jerk, recip_jerk, cbrt_jerk;
+} mpTrapezoid_t;
+
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
@@ -325,7 +334,7 @@ stat_t mp_end_hold(void);
 //stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // plan_zoid.c functions
-void mp_calculate_trapezoid(mpBuf_t *bf);
+void mp_calculate_trapezoid(mpTrapezoid_t *bf);
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf);
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 

@@ -123,7 +123,10 @@
 #define MIN_TAIL_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * (bf->cruise_velocity + bf->exit_velocity))
 #define MIN_BODY_LENGTH (MIN_SEGMENT_TIME_PLUS_MARGIN * bf->cruise_velocity)
 
-void mp_calculate_trapezoid(mpBuf_t *bf)
+static float _target_length(const float Vi, const float Vf, const float recip_jerk);
+static float _target_velocity(const float Vi, const float L, const float cbrt_jerk, const float jerk);
+
+void mp_calculate_trapezoid(mpTrapezoid_t *bf)
 {
 	//********************************************
 	//********************************************
@@ -188,12 +191,12 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 #ifdef TINYG_TEST_HOOKS
 	testhooks_replan_delay();								// E180 test: hold the rewrite part way
 #endif
-	float minimum_length = mp_get_target_length(bf->entry_velocity, bf->exit_velocity, bf);
+	float minimum_length = _target_length(bf->entry_velocity, bf->exit_velocity, bf->recip_jerk);
 	if (bf->length <= (minimum_length + MIN_BODY_LENGTH)) {	// head-only & tail-only cases
 
 		if (bf->entry_velocity > bf->exit_velocity)	{		// tail-only cases (short decelerations)
 			if (bf->length < minimum_length) { 				// T" (degraded case)
-				bf->entry_velocity = mp_get_target_velocity(bf->exit_velocity, bf->length, bf);
+				bf->entry_velocity = _target_velocity(bf->exit_velocity, bf->length, bf->cbrt_jerk, bf->jerk);
 			}
 			bf->cruise_velocity = bf->entry_velocity;
 			bf->tail_length = bf->length;
@@ -203,7 +206,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 
 		if (bf->entry_velocity < bf->exit_velocity)	{		// head-only cases (short accelerations)
 			if (bf->length < minimum_length) { 				// H" (degraded case)
-				bf->exit_velocity = mp_get_target_velocity(bf->entry_velocity, bf->length, bf);
+				bf->exit_velocity = _target_velocity(bf->entry_velocity, bf->length, bf->cbrt_jerk, bf->jerk);
 			}
 			bf->cruise_velocity = bf->exit_velocity;
 			bf->head_length = bf->length;
@@ -213,8 +216,8 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 	}
 
 	// Set head and tail lengths for evaluating the next cases
-	bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
-	bf->tail_length = mp_get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
+	bf->head_length = _target_length(bf->entry_velocity, bf->cruise_velocity, bf->recip_jerk);
+	bf->tail_length = _target_length(bf->exit_velocity, bf->cruise_velocity, bf->recip_jerk);
 	if (bf->head_length < MIN_HEAD_LENGTH) { bf->head_length = 0;}
 	if (bf->tail_length < MIN_TAIL_LENGTH) { bf->tail_length = 0;}
 
@@ -225,7 +228,7 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		if (fabs(bf->entry_velocity - bf->exit_velocity) < TRAPEZOID_VELOCITY_TOLERANCE) {
 			bf->head_length = bf->length/2;
 			bf->tail_length = bf->head_length;
-			bf->cruise_velocity = min(bf->cruise_vmax, mp_get_target_velocity(bf->entry_velocity, bf->head_length, bf));
+			bf->cruise_velocity = min(bf->cruise_vmax, _target_velocity(bf->entry_velocity, bf->head_length, bf->cbrt_jerk, bf->jerk));
 
 			if (bf->head_length < MIN_HEAD_LENGTH) {
 				// Convert this to a body-only move
@@ -248,21 +251,21 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
 		float computed_velocity = bf->cruise_vmax;
 		do {
 			bf->cruise_velocity = computed_velocity;	// initialize from previous iteration
-			bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
-			bf->tail_length = mp_get_target_length(bf->exit_velocity, bf->cruise_velocity, bf);
+			bf->head_length = _target_length(bf->entry_velocity, bf->cruise_velocity, bf->recip_jerk);
+			bf->tail_length = _target_length(bf->exit_velocity, bf->cruise_velocity, bf->recip_jerk);
 			if (bf->head_length > bf->tail_length) {
 				bf->head_length = (bf->head_length / (bf->head_length + bf->tail_length)) * bf->length;
-				computed_velocity = mp_get_target_velocity(bf->entry_velocity, bf->head_length, bf);
+				computed_velocity = _target_velocity(bf->entry_velocity, bf->head_length, bf->cbrt_jerk, bf->jerk);
 			} else {
 				bf->tail_length = (bf->tail_length / (bf->head_length + bf->tail_length)) * bf->length;
-				computed_velocity = mp_get_target_velocity(bf->exit_velocity, bf->tail_length, bf);
+				computed_velocity = _target_velocity(bf->exit_velocity, bf->tail_length, bf->cbrt_jerk, bf->jerk);
 			}
 			// insert iteration trap here if needed
 		} while ((fabs(bf->cruise_velocity - computed_velocity) / computed_velocity) > TRAPEZOID_ITERATION_ERROR_PERCENT);
 
 		// set velocity and clean up any parts that are too short
 		bf->cruise_velocity = computed_velocity;
-		bf->head_length = mp_get_target_length(bf->entry_velocity, bf->cruise_velocity, bf);
+		bf->head_length = _target_length(bf->entry_velocity, bf->cruise_velocity, bf->recip_jerk);
 		bf->tail_length = bf->length - bf->head_length;
 		if (bf->head_length < MIN_HEAD_LENGTH) {
 			bf->tail_length = bf->length;			// adjust the move to be all tail...
@@ -345,9 +348,14 @@ void mp_calculate_trapezoid(mpBuf_t *bf)
  * 	return(cube(deltaV / (pow(L, 0.66666666))));
  */
 
+static float _target_length(const float Vi, const float Vf, const float recip_jerk)
+{
+	return (fabs(Vi-Vf) * sqrt(fabs(Vi-Vf) * recip_jerk));		// old formula
+}
+
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 {
-	return (fabs(Vi-Vf) * sqrt(fabs(Vi-Vf) * bf->recip_jerk));		// old formula
+    return _target_length(Vi, Vf, bf->recip_jerk);
 }
 
 /* Regarding mp_get_target_velocity:
@@ -395,24 +403,29 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
  */
 
 #define GET_VELOCITY_ITERATIONS 0		// must be 0, 1, or 2
-float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
+static float _target_velocity(const float Vi, const float L, const float cbrt_jerk, const float jerk)
 {
     // 0 iterations (a reasonable estimate)
-    float estimate = pow(L, 0.66666666) * bf->cbrt_jerk + Vi;
+    float estimate = pow(L, 0.66666666) * cbrt_jerk + Vi;
 
 #if (GET_VELOCITY_ITERATIONS >= 1)
     // 1st iteration
     float L_squared = L*L;
     float Vi_squared = Vi*Vi;
-    float J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - bf->jerk;
+    float J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - jerk;
     float J_d = (2*Vi*estimate - Vi_squared + 3*(estimate*estimate)) / L_squared;
     estimate = estimate - J_z/J_d;
 #endif
 #if (GET_VELOCITY_ITERATIONS >= 2)
     // 2nd iteration
-    J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - bf->jerk;
+    J_z = ((estimate - Vi) * (Vi + estimate) * (Vi + estimate)) / L_squared - jerk;
     J_d = (2*Vi*estimate - Vi_squared + 3*(estimate*estimate)) / L_squared;
     estimate = estimate - J_z/J_d;
 #endif
     return estimate;
+}
+
+float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
+{
+    return _target_velocity(Vi, L, bf->cbrt_jerk, bf->jerk);
 }
