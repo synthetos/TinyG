@@ -198,9 +198,9 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	if ((bf = mp_get_write_buffer()) == NULL) {
         return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
     }
-	bf->bf_func = mp_exec_aline;										// register the callback to the exec function
 	bf->length = length;
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
+    float planned_time = gm_in->move_time; // capture beside the context snapshot, as before
+    memcpy(&bf->gm, gm_in, sizeof(bf->gm));
 
 	// Compute the unit vector and find the right jerk to use (combined operations)
 	// To determine the jerk value to use for the block we want to find the axis for which
@@ -293,7 +293,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 		exact_stop = 8675309;								// an arbitrarily large floating point number
 		fl_tags &= ~FL_EXACT_STOP;
 	}
-	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
+	bf->cruise_vmax = bf->length / planned_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
 	// The exec frees a block once its last segment is prepared, possibly while still moving, and clears its
 	// direction (E196). If the previous buffer is empty now, it was freed before or during the read above
@@ -383,7 +383,6 @@ stat_t mp_aline(GCodeState_t *gm_in)
  *
  *	Sets the following variables in the gcode_state struct
  *	  - move_time is set to optimal time
- *	  - minimum_time is set to minimum time
  */
 /* --- NIST RS274NGC_v3 Guidance ---
  *
@@ -428,7 +427,6 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 	float abc_time=0;				// coordinated move rotary part at requested feed rate
 	float max_time=0;				// time required for the rate-limiting axis
 	float tmp_time=0;				// used in computation
-	gms->minimum_time = 8675309;	// arbitrarily large number
 
 	// compute times for feed motion
 	if (gms->motion_mode != MOTION_MODE_STRAIGHT_TRAVERSE) {
@@ -451,10 +449,6 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 			tmp_time = fabs(axis_length[axis]) / cm.a[axis].feedrate_max;
 		}
 		max_time = max(max_time, tmp_time);
-
-		if (tmp_time > 0) { 	// collect minimum time if this axis is not zero
-			gms->minimum_time = min(gms->minimum_time, tmp_time);
-		}
 	}
     float motor_time = st_get_move_time(axis_length);
     if (motor_time > max_time) { max_time = motor_time; }
@@ -614,7 +608,7 @@ static float _exit_of_previous(const mpBuf_t *bp)
 
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 {
-	static mpBuf_t plan;							// main loop only; static keeps it off the stack
+	static mpTrapezoid_t plan;							// main loop only; static keeps it off the stack
 	float taken_exit;
 	bool taken;
 #ifdef __AVR
@@ -629,7 +623,16 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 	if (taken) {
 		return (taken_exit);
 	}
-	plan = *bp;
+    plan.length = bp->length;
+    plan.head_length = bp->head_length;
+    plan.body_length = bp->body_length;
+    plan.tail_length = bp->tail_length;
+    plan.naiive_move_time = bp->naiive_move_time;
+    plan.cruise_vmax = bp->cruise_vmax;
+    plan.delta_vmax = bp->delta_vmax;
+    plan.jerk = bp->jerk;
+    plan.recip_jerk = bp->recip_jerk;
+    plan.cbrt_jerk = bp->cbrt_jerk;
 	plan.entry_velocity = entry_velocity;
 	plan.cruise_velocity = bp->cruise_vmax;
 	plan.exit_velocity = exit_velocity;

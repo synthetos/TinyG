@@ -124,10 +124,18 @@ typedef enum {
  *	Planner structures
  */
 
+/* Private planning inputs and results, never queue links, model state or slot ownership. */
+typedef struct {
+    float naiive_move_time;
+    float length, head_length, body_length, tail_length;
+    float entry_velocity, cruise_velocity, exit_velocity;
+    float cruise_vmax, delta_vmax;
+    float jerk, recip_jerk, cbrt_jerk;
+} mpTrapezoid_t;
+
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
-	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec_t cm_func;				// callback to canonical machine execution function
 
 	float naiive_move_time;
@@ -149,7 +157,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 //	uint8_t block_code;				// byte that can be used by used exec functions
 
 	float unit[AXES];				// unit vector for axis scaling & planning
-    bool axis_flags[AXES];          // set true for axes participating in the move & for command parameters
+    uint8_t axis_mask;              // packed synchronous command flags
 
 	float length;					// total length of line or helix in mm
 	float head_length;
@@ -170,7 +178,10 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float recip_jerk;				// 1/Jm used for planning (computed and cached)
 	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
 
-	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
+    union {
+        GCodeQueuedState_t gm;  // modal/motion snapshot for a line, target[] for command values
+        float dwell_seconds;   // only BLOCK_TYPE_DWELL uses this payload
+    };
 	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
 	uint8_t fl_cls;					// a command: its class (FL_CLS_*); a FL_COMMAND move: its neighbour command's (step 3)
 
@@ -209,7 +220,6 @@ typedef struct mpMoveRuntimeSingleton {	// persistent runtime variables
 	sectionState section_state;         // state within a move section
 
 	float unit[AXES];                   // unit vector for axis scaling & planning
-    bool axis_flags[AXES];              // set true for axes participating in the move
 	float target[AXES];                 // final target for bf (used to correct rounding errors)
 	float position[AXES];               // current move position
 	float waypoint[SECTIONS][AXES];     // head/body/tail endpoints for correction
@@ -270,6 +280,8 @@ void mp_set_steps_to_runtime_position(void);
 void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags);
 void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool *flags, uint8_t cls);
 stat_t mp_runtime_command(mpBuf_t *bf);
+stat_t mp_exec_command(mpBuf_t *bf);
+stat_t mp_exec_dwell(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);
@@ -325,7 +337,7 @@ stat_t mp_end_hold(void);
 //stat_t mp_feed_rate_override(uint8_t flag, float parameter);
 
 // plan_zoid.c functions
-void mp_calculate_trapezoid(mpBuf_t *bf);
+void mp_calculate_trapezoid(mpTrapezoid_t *bf);
 float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf);
 float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf);
 

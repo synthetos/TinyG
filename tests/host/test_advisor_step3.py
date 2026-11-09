@@ -113,7 +113,7 @@ enum { MP_BUFFER_EMPTY = 0, MP_BUFFER_LOADING, MP_BUFFER_QUEUED };
 enum { BLOCK_TYPE_NULL = 0, BLOCK_TYPE_ALINE, BLOCK_TYPE_DWELL, BLOCK_TYPE_COMMAND };
 enum { BLOCK_IDLE = 0, BLOCK_INITIALIZING, BLOCK_RUNNING };
 typedef struct mpBuffer { struct mpBuffer *pv; stat_t (*bf_func)(struct mpBuffer *); void (*cm_func)(float[], bool[]);
-    uint8_t buffer_state, block_type, block_state; float value_vector[AXES]; bool axis_flags[AXES];
+    uint8_t buffer_state, block_type, block_state; float value_vector[AXES]; uint8_t axis_mask;
     uint8_t fl_tags, fl_cls; } mpBuf_t;
 '''
 

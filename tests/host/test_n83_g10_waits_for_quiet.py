@@ -303,7 +303,9 @@ class G10WaitsForQuiet(unittest.TestCase):
 
     def test_every_block_latches_that_it_ran(self):
         move = function((FW / "plan_exec.c").read_text(), r"stat_t mp_exec_move\(\)")
-        self.assertLess(move.index("mb.exec_ran = true"), move.index("bf->bf_func(bf)"))
+        for target in ('mp_exec_aline', 'mp_exec_dwell', 'mp_exec_command'):
+            call = move.index('return ' + target + '(bf)')
+            self.assertIn('mb.exec_ran = true', move[move.rfind('case ', 0, call):call])
 
 
 if __name__ == "__main__":

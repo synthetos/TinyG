@@ -80,12 +80,7 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
 static volatile bool startup_pending;
 static uint32_t startup_started;
 
-#define spindle_speed move_time	    // local alias for spindle_speed to the time variable
 #define value_vector gm.target	    // alias for vector of values
-
-// execution routines (NB: These are all called from the LO interrupt)
-static stat_t _exec_dwell(mpBuf_t *bf);
-static stat_t _exec_command(mpBuf_t *bf);
 
 /*
  * planner_init()
@@ -205,14 +200,14 @@ void mp_set_steps_to_runtime_position()
 
 /************************************************************************************
  * mp_queue_command() - queue a synchronous Mcode, program control, or other command
- * _exec_command() 	  - callback to execute command
+ * mp_exec_command() 	  - callback to execute command
  *
  *	How this works:
  *	  - The command is called by the Gcode interpreter (cm_<command>, e.g. an M code)
  *	  - cm_ function calls mp_queue_command which puts it in the planning queue (bf buffer).
  *		This involves setting some parameters and registering a callback to the
  *		execution function in the canonical machine
- *	  - the planning queue gets to the function and calls _exec_command()
+ *	  - the planning queue gets to the function and calls mp_exec_command()
  *	  - ...which puts a pointer to the bf buffer in the prep stratuc (st_pre)
  *	  - When the runtime gets to the end of the current activity (sending steps, counting a dwell)
  *		if executes mp_runtime_command...
@@ -248,7 +243,6 @@ void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool 
 	}
 
 	bf->block_type = BLOCK_TYPE_COMMAND;
-	bf->bf_func = _exec_command;						// callback to planner queue exec function
 	bf->cm_func = cm_exec;								// callback to canonical machine exec function
 	bf->fl_cls = cls;
 #ifdef __AVR
@@ -267,12 +261,12 @@ void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool 
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		bf->value_vector[axis] = value[axis];
-		bf->axis_flags[axis] = flags[axis];
+		if (flags[axis]) { bf->axis_mask |= (uint8_t)(1u << axis); }
 	}
 	mp_commit_write_buffer(BLOCK_TYPE_COMMAND);			// must be final operation before exit
 }
 
-static stat_t _exec_command(mpBuf_t *bf)
+stat_t mp_exec_command(mpBuf_t *bf)
 {
 	st_prep_command(bf);
 	return (STAT_OK);
@@ -280,7 +274,11 @@ static stat_t _exec_command(mpBuf_t *bf)
 
 stat_t mp_runtime_command(mpBuf_t *bf)
 {
-	bf->cm_func(bf->value_vector, bf->axis_flags);		// 2 vectors used by callbacks
+	bool flags[AXES];
+	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
+		flags[axis] = (bf->axis_mask & (1u << axis)) != 0;
+	}
+	bf->cm_func(bf->value_vector, flags); // callback uses this vector synchronously
 	if (mp_free_run_buffer()) {
 		cm_cycle_end();									// free buffer & perform cycle_end if planner is empty
     }
@@ -289,7 +287,7 @@ stat_t mp_runtime_command(mpBuf_t *bf)
 
 /*************************************************************************
  * mp_dwell() 	 - queue a dwell
- * _exec_dwell() - dwell execution
+ * mp_exec_dwell() - dwell execution
  *
  * Dwells are performed by passing a dwell move to the stepper drivers.
  * When the stepper driver sees a dwell it times the dwell on a separate
@@ -303,16 +301,15 @@ stat_t mp_dwell(float seconds)
 	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
    		return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_dwell")));	// never supposed to fail
     }
-	bf->bf_func = _exec_dwell;							// register callback to dwell start
-	bf->gm.move_time = seconds;							// in seconds, not minutes
+	bf->dwell_seconds = seconds;							// in seconds, not minutes
 	bf->block_state = BLOCK_INITIALIZING;
 	mp_commit_write_buffer(BLOCK_TYPE_DWELL);			// must be final operation before exit
 	return (STAT_OK);
 }
 
-static stat_t _exec_dwell(mpBuf_t *bf)
+stat_t mp_exec_dwell(mpBuf_t *bf)
 {
-	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
+	st_prep_dwell((uint32_t)(bf->dwell_seconds * 1000000));// convert seconds to uSec
 	if (mp_free_run_buffer()) {
         cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
     }

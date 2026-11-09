@@ -59,6 +59,22 @@ class Symbols:
             die = die.get_DIE_from_attribute("DW_AT_type")
         return die
 
+    @classmethod
+    def _members(cls, die, base=0):
+        """Promote anonymous aggregate members, retaining each enclosing byte offset."""
+        for child in die.iter_children():
+            if child.tag != "DW_TAG_member":
+                continue
+            if child.attributes.get("DW_AT_name"):
+                yield child, base
+            elif "DW_AT_type" in child.attributes:
+                aggregate = cls._strip(child.get_DIE_from_attribute("DW_AT_type"))
+                if aggregate.tag in ("DW_TAG_union_type", "DW_TAG_structure_type"):
+                    loc = child.attributes.get("DW_AT_data_member_location")
+                    loc = loc.value if loc is not None else 0
+                    offset = loc if isinstance(loc, int) else loc[-1]
+                    yield from cls._members(aggregate, base + offset)
+
     def resolve(self, expr):
         """'name', 'name.member[.member]', 'name[3]' or 'name+offset' -> (sram address, size, kind).
 
@@ -86,12 +102,12 @@ class Symbols:
                 esize = elem.attributes["DW_AT_byte_size"].value
                 addr, size, die = addr + index * esize, esize, elem
                 continue
-            for child in die.iter_children():
+            for child, anonymous_offset in self._members(die):
                 if child.tag == "DW_TAG_member" and child.attributes.get("DW_AT_name") and \
                         child.attributes["DW_AT_name"].value.decode() == part:
                     a = child.attributes
                     loc = a["DW_AT_data_member_location"].value if "DW_AT_data_member_location" in a else 0
-                    addr += loc if isinstance(loc, int) else loc[-1]
+                    addr += anonymous_offset + (loc if isinstance(loc, int) else loc[-1])
                     die = self._strip(child.get_DIE_from_attribute("DW_AT_type"))
                     size = die.attributes["DW_AT_byte_size"].value if "DW_AT_byte_size" in die.attributes else size
                     bits = None

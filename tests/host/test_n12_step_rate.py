@@ -55,7 +55,7 @@ int main(void){
   init_rate();st_cfg.mot[0].motor_map=0;st_cfg.mot[0].steps_per_unit=160000;
   st_refresh_move_time();mpBuf_t*b=move(rapid?MOTION_MODE_STRAIGHT_TRAVERSE:MOTION_MODE_STRAIGHT_FEED,30,negative?-1:1,0);
   assert(b->cruise_vmax*160000/60 <= FREQUENCY_DDA*.90001f);
-  assert(b->gm.feed_rate==30);assert(b->gm.move_time >= 160000/(FREQUENCY_DDA*.90001f*60));
+  assert(b->gm.feed_rate==30);assert((b->length/b->cruise_vmax) >= 160000/(FREQUENCY_DDA*.90001f*60));
  }
  init_rate();st_cfg.mot[2].motor_map=0;st_cfg.mot[2].steps_per_unit=160000;
  st_cfg.mot[3].motor_map=0;st_cfg.mot[3].steps_per_unit=320000;
