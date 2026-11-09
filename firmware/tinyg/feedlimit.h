@@ -93,6 +93,8 @@ extern volatile flPending_t fl_pend[2];	// loader adds into fl_pend[fl_bank]; th
 extern volatile uint8_t fl_bank;
 extern uint16_t fl_um_q16;			// exec: sub-micrometre remainder (1/65536 um) carried to the next segment
 extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
+extern volatile uint8_t fl_job_moved;	// exec: a block started during the host job (step 3 gaps; main loop clears it)
+extern volatile uint8_t fl_underrun;	// exec: found nothing to run during a job, outside a hold (main loop takes it)
 
 void fl_stage_block(const struct mpBuffer *bf);
 void fl_segment(float velocity, float length);

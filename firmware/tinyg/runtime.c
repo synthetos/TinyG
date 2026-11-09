@@ -6,6 +6,7 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "plan_arc.h"
 #include "stepper.h"
 #include "runtime.h"
 #include "util.h"
@@ -337,6 +338,11 @@ stat_t rt_get_flf(nvObj_t *nv)
 #define FL_POLL_TICKS	20						// ~20 ms between looks for a changed state
 #define FL_RETRY_TICKS	10						// ~10 ms before a frame that did not fit is tried again
 #define FL_TICKS_PER_MS	50						// DDA ticks per ms (FREQUENCY_DDA 50 kHz)
+#define FL_GAP_PENDING	1						// supply gap classes: input is on the board, not yet run
+#define FL_GAP_NONE		2						// no known complete input: the host did not send in time
+#define FL_SUPPLY_OK	0						// _fl_supply(): motion or work is queued
+#define FL_SUPPLY_PAUSED 3						// a hold or M0/M1: an open gap stops accruing
+#define FL_SUPPLY_OFF	4						// no job, accounting off, alarm, shutdown, flush, kill or program end
 #define FL_FOLD_TICKS	(RT_TICKS_PER_SECOND / 4)	// pending credits are folded every ~250 ms, link or not; if the
 												// main loop is held up long enough for them to wrap (~23.8 h of
 												// cutting) the loader flags it and summaries carry "x":1
@@ -357,8 +363,13 @@ static struct flAccounting {
 	bool fs_auto;								// a periodic or final summary is due (fi 0 cancels it)
 	bool fs_ask;								// a summary was asked for ({rt:{fs:null}}; survives fi 0)
 	bool invalid;								// a pending total wrapped: these totals are short (fs "x":1)
-	bool fl_known;								// last_k and last_m are the state last sent
-	uint8_t last_k, last_m;
+	bool fl_known;								// last_k, last_m and last_g are the state last sent
+	uint8_t last_k, last_m, last_g;
+	uint32_t gaps;								// supply gaps in this window (step 3)
+	uint32_t gap_ticks[2];						// their SysTick time by class: [0] input pending, [1] no input
+	uint32_t gap_t;								// SysTick time the accruing interval began
+	bool gap_open;								// a gap is open (it survives a hold or M0/M1)
+	uint8_t gap_cls;							// class accruing now (FL_GAP_*), 0 while not accruing
 } fla;
 
 static void _fl_fold(void)						// take the loader's pending credits into the totals
@@ -431,7 +442,89 @@ static bool _fl_finished(void)
 }
 
 /*
- * _fl_event() - one fl line when the executing move's kind or tags change
+ * Supply gaps (step 3). With accounting on and a host job ({rt:{job:1}}), a stop after motion began this job, in
+ * which the runtime has drained (nothing stepping or dwelling, nothing prepared or runnable), outside a hold,
+ * M0/M1, alarm, shutdown, flush, kill or program end, is a supply gap. Class FL_GAP_PENDING: input is on the
+ * board but not yet run (raw RX, a buffered data line, an arc being generated); FL_GAP_NONE: no complete input
+ * is known, so the host did not send in time. A class change keeps the gap; a hold or M0/M1 stops the accrual and
+ * keeps it open; alarm, shutdown, flush, kill, program end and job end close it and forget the motion. The exec
+ * latches fl_underrun when it found nothing to run during a job, so a drain and refill between two looks still
+ * counts once. Times are SysTick (1/1024 s, steps of 10): entry and exit are seen up to one main-loop pass late.
+ */
+static uint8_t _fl_supply(void)
+{
+	if (!fl_on || !rt.job) { return (FL_SUPPLY_OFF); }
+	if ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
+		(cm.machine_state == MACHINE_PANIC) || (cm.machine_state == MACHINE_PROGRAM_END) ||
+		(cm.queue_flush_state != FLUSH_OFF) || cm.job_kill_requested) {
+		return (FL_SUPPLY_OFF);
+	}
+	if ((cm.hold_state != FEEDHOLD_OFF) || cm.program_paused) { return (FL_SUPPLY_PAUSED); }
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	bool drained = !st_runtime_isbusy() && (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) &&
+				   !mp_has_runnable_buffer() && !st_aline_in_flight();
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	if (!drained) { return (FL_SUPPLY_OK); }
+	if (xio_rx_data_pending() || xio_usb_rx_unread() || (arc.run_state != BLOCK_IDLE)) { return (FL_GAP_PENDING); }
+	return (FL_GAP_NONE);
+}
+
+static void _fl_gap_close(uint32_t now)		// end the accruing interval (the gap itself may stay open)
+{
+	if (fla.gap_cls != 0) {
+		fla.gap_ticks[fla.gap_cls - 1] += now - fla.gap_t;
+		fla.gap_cls = 0;
+	}
+}
+
+static void _fl_gap(uint32_t now)
+{
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	bool under = fl_underrun;
+	fl_underrun = false;
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
+	uint8_t s = _fl_supply();
+	if (s == FL_SUPPLY_OFF) {					// the gap ends; the next one needs motion first
+		_fl_gap_close(now);
+		fla.gap_open = false;
+		fl_job_moved = false;
+		return;
+	}
+	if (!fl_job_moved) { return; }				// waiting for the first move is not a gap
+	if (s == FL_SUPPLY_PAUSED) {				// the operator's time, not the host's
+		_fl_gap_close(now);
+		return;
+	}
+	if (s == FL_SUPPLY_OK) {
+		if (!fla.gap_open && under) { fla.gaps++; }	// ran dry and was refilled between two looks
+		_fl_gap_close(now);
+		fla.gap_open = false;
+		return;
+	}
+	if (!fla.gap_open) {
+		fla.gap_open = true;
+		fla.gaps++;
+	}
+	if (fla.gap_cls != s) {						// a new interval in the other class, the same gap
+		_fl_gap_close(now);
+		fla.gap_cls = s;
+		fla.gap_t = now;
+	}
+}
+
+/*
+ * _fl_event() - one fl line when the executing move's kind or tags change, or a supply gap opens, changes
+ *	class or ends (while starved: "g" the class and "n" the last line run)
  *
  *	The look takes two bytes of the current slot (kind and the exec's all_tags) with interrupts masked; only
  *	on a change are the percent and line inputs taken, again together with kind and tags, so the line
@@ -463,7 +556,8 @@ static void _fl_event(uint32_t now)
 {
 	uint8_t k, m;
 	_fl_look(&k, &m, NULL);
-	if (fla.fl_known && (k == fla.last_k) && (m == fla.last_m)) {
+	uint8_t g = fla.gap_open ? fla.gap_cls : 0;
+	if (fla.fl_known && (k == fla.last_k) && (m == fla.last_m) && (g == fla.last_g)) {
 		fla.next_fl = now + FL_POLL_TICKS;
 		return;
 	}
@@ -479,12 +573,17 @@ static void _fl_event(uint32_t now)
 	}
 	if (running) {
 		snprintf_P(n, sizeof(n), PSTR("%lu"), (unsigned long)b.line);
+	} else if (g != 0) {
+		snprintf_P(n, sizeof(n), PSTR("%lu"), (unsigned long)mr.gm.linenum);	// the last line run
 	}
-	char frame[64];
-	snprintf_P(frame, sizeof(frame), PSTR("{\"fl\":{\"k\":%u,\"m\":%u,\"p\":%s,\"n\":%s}}\n"), (unsigned)k, (unsigned)m, p, n);
+	char gs[8] = "";
+	if (g != 0) { snprintf_P(gs, sizeof(gs), PSTR(",\"g\":%u"), (unsigned)g); }
+	char frame[72];								// the longest fl, with g, is 61 bytes
+	snprintf_P(frame, sizeof(frame), PSTR("{\"fl\":{\"k\":%u,\"m\":%u,\"p\":%s,\"n\":%s%s}}\n"), (unsigned)k, (unsigned)m, p, n, gs);
 	if (xio_usb_try_send_frame(frame)) {
 		fla.last_k = k;
 		fla.last_m = m;
+		fla.last_g = g;
 		fla.fl_known = true;
 		fla.next_fl = now + FL_EVENT_TICKS;
 	} else {
@@ -515,6 +614,7 @@ stat_t rt_feedlimit_callback(void)
 			_fl_fold();
 			fla.next_fold = now + FL_FOLD_TICKS;
 		}
+		_fl_gap(now);
 		if ((int32_t)(now - fla.next_fl) >= 0) { _fl_event(now); }
 	}
 	if ((fla.fs_auto || fla.fs_ask) && ((int32_t)(now - fla.next_try) >= 0)) {
@@ -567,6 +667,7 @@ stat_t rt_set_fi(nvObj_t *nv)
 	} else if (!rt.check_only) {
 		fl_um_q16 = 0;
 		fl_activity = false;
+		fl_job_moved = false;
 		fl_on = true;
 	}
 #ifdef __AVR

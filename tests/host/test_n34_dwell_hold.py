@@ -98,6 +98,8 @@ struct {bool program_paused;int hold_state,motion_state;} cm;
 typedef struct mpBuf {int block_type;int (*bf_func)(struct mpBuf*);} mpBuf_t;
 static struct {bool exec_ran;} mb;
 static mpBuf_t block;
+#include <stdint.h>
+struct {volatile uint8_t job;} rt;volatile uint8_t fl_on,fl_underrun;   /* mp_exec_move: feed-limit underrun latch */
 static bool busy,aline,startup;
 static int staged,called;
 bool mp_startup_is_pending(void){return startup;}

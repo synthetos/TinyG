@@ -79,6 +79,8 @@ int main(void){
 #include "canonical_machine.h"
 #include "stepper.h"
 #include "feedlimit.h"
+#include "runtime.h"
+rtSingleton_t rt;
 
 #include "planner.h"
 #include "util.h"

@@ -16,6 +16,7 @@ void xio_flush_input(void);
 
 bool xio_rx_data_pending(void);
 bool xio_usb_is_quiet(void);
+uint8_t xio_usb_rx_unread(void);
 bool xio_usb_tx_ready(void);
 bool xio_usb_try_send_frame(const char *s);
 bool xio_usb_try_send_line(const char *s);

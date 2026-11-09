@@ -31,6 +31,7 @@
 #include "controller.h"
 #include "planner.h"
 #include "feedlimit.h"
+#include "runtime.h"		// rt.job (feed-limit advisor step 3 supply gaps)
 #include "kinematics.h"
 #include "stepper.h"
 #include "encoder.h"
@@ -70,6 +71,9 @@ stat_t mp_exec_move()
 	mpBuf_t *bf;
 
 	if ((bf = mp_get_run_buffer()) == NULL) {			// NULL means nothing's running
+		// a host job ran dry: the last block stopped for want of the next (a drain and refill between two
+		// looks of rt_feedlimit_callback is still counted as a supply gap)
+		if (fl_on && rt.job && (cm.hold_state == FEEDHOLD_OFF)) { fl_underrun = true; }
 		st_prep_null();
 		return (STAT_NOOP);
 	}

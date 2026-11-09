@@ -41,6 +41,8 @@ CHECK = r'''
 #include "encoder.h"
 #include "report.h"
 #include "feedlimit.h"
+#include "runtime.h"
+rtSingleton_t rt;                       /* fl_stage_block reads rt.job (advisor step 3) */
 #include "xmega/xmega_rtc.h"
 
 cmSingleton_t cm;

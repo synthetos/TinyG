@@ -35,6 +35,8 @@ CHECK = r'''
 #include "plan_arc.h"
 #include "kinematics.h"
 #include "stepper.h"
+#include "runtime.h"
+rtSingleton_t rt;                       /* mp_exec_move and fl_stage_block read rt.job */
 #include "encoder.h"
 #include "report.h"
 #include "xmega/xmega_rtc.h"

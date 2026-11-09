@@ -12,8 +12,12 @@
 #include "encoder.h"
 #include "report.h"
 #include "xmega/xmega_rtc.h"
+#include "feedlimit.h"
+#include "runtime.h"
 
 cmSingleton_t cm;
+__attribute__((weak)) rtSingleton_t rt;               // mp_exec_move: the feed-limit underrun latch (advisor step 3)
+__attribute__((weak)) volatile uint8_t fl_on, fl_underrun;
 stPrepSingleton_t st_pre;
 float st_get_move_time(const float axis_length[]) { return 0; }
 rtClock_t rtc;

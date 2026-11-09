@@ -8,6 +8,7 @@
 #include "canonical_machine.h"
 #include "stepper.h"
 #include "feedlimit.h"
+#include "runtime.h"		// rt.job (step 3 supply gaps)
 
 flBlock_t fl_slot[2];
 uint8_t fl_stage;
@@ -18,6 +19,8 @@ volatile flPending_t fl_pend[2];
 volatile uint8_t fl_bank;
 uint16_t fl_um_q16;
 volatile uint8_t fl_activity;
+volatile uint8_t fl_job_moved;
+volatile uint8_t fl_underrun;
 
 static uint8_t fl_blk_ok;			// exec: the running block's segments are eligible (G94 linear XYZ feed)
 static uint8_t fl_blk_mask;			// exec: its cause bits (static and profile tags, or FL_REC_OTHER)
@@ -49,6 +52,7 @@ void fl_stage_block(const mpBuf_t *bf)
 	fl_staged = FL_LOAD_SLOT0 + fl_stage;
 	if (fl_on) {									// accounting: classify the block once, for all its segments
 		fl_activity = true;							// a final summary is due once this has run
+		if (rt.job) { fl_job_moved = true; }		// motion began during the host job: a later drain can be a gap
 		fl_blk_ok = s->pct_ok;
 		float reached = s->feed * 0.01;				// the same 1% (or 2 mm/min) as fl_profile_tags()
 		if (reached < 2) { reached = 2; }

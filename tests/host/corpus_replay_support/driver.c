@@ -271,6 +271,7 @@ int main(int argc, char **argv)
 
 bool xio_rx_data_pending(void){return false;}
 bool xio_usb_is_quiet(void){return true;}
+uint8_t xio_usb_rx_unread(void){return 0;}
 bool xio_usb_tx_ready(void){return true;}
 bool xio_usb_try_send_frame(const char *s){return true;}
 bool xio_usb_try_send_line(const char *s){return true;}

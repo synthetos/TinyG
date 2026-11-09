@@ -46,7 +46,7 @@ typedef struct mpBuffer { float unit[AXES]; float cruise_velocity, cruise_vmax, 
 uint8_t SREG = 0x80;
 static void cli(void) { SREG &= ~0x80; }
 struct { int motion_state, hold_state; } cm;
-struct { bool allowed, fl_taken; } rt;
+struct { bool allowed, fl_taken; volatile uint8_t job; } rt;
 struct { uint8_t fl_load; } st_pre;
 '''
 
