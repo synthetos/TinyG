@@ -183,3 +183,101 @@ class AdvisorStep3Commands(unittest.TestCase):
         st = src("stepper.c")
         self.assertRegex(st, r"_fl_command_break\(st_pre\.bf\);[^\n]*\n\s*mp_runtime_command\(st_pre\.bf\);")
         self.assertEqual(st.count("fl_moved = true;"), 1)
+
+
+# C. Supply gaps: with accounting on and a host job, a stop after motion began in which the runtime drained with
+#    no hold, M0/M1, alarm, flush or kill is a supply gap. Class 1: input is on the board (a line in RX, a buffered
+#    data line, an arc being generated); class 2: no known complete input. A class change keeps the gap; a hold or
+#    M0/M1 stops the accrual and keeps it open; alarm, flush, kill and job end close it. The exec latches an underrun
+#    so a drain and refill between two looks still counts. While starved, fl carries "g" and the last line run.
+import test_feed_limit_accounting as fla_t
+
+C_MAIN = r'''
+static stat_t set_fi(uint32_t v) { nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER; nv.value_int = v; return rt_set_fi(&nv); }
+static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
+static void moving(void) { busy = true; fl_job_moved = 1; }
+int main(void) {
+    rt.allowed = true; systick = 1000; cm.machine_state = MACHINE_READY;
+    fl_job_moved = 1; assert(set_fi(1) == STAT_OK && fl_on && !fl_job_moved);     /* a new window forgets old motion */
+    rt.job = 1;
+    tick(1100); assert(fla.gaps == 0);                                            /* drained before any motion: not a gap */
+    moving(); tick(1200); assert(fla.gaps == 0 && !fla.gap_open);
+    busy = false; uint32_t s = systick;                                           /* drained, nothing on the board */
+    tick(s + 512); assert(fla.gaps == 1 && fla.gap_open && fla.gap_cls == FL_GAP_NONE);
+    rx_unread = true; tick(s + 768);                                              /* a line arrives: same gap, class 1 */
+    assert(fla.gaps == 1 && fla.gap_cls == FL_GAP_PENDING && fla.gap_ticks[FL_GAP_NONE - 1] == 512);
+    rx_unread = false; runnable = true; tick(s + 868);                            /* refilled: the gap ends */
+    assert(fla.gaps == 1 && !fla.gap_open && fla.gap_cls == 0 && fla.gap_ticks[FL_GAP_PENDING - 1] == 256);
+    runnable = false; in_flight = true; tick(s + 900); assert(fla.gaps == 1);      /* an aline still in flight */
+    in_flight = false; st_pre.buffer_state = PREP_BUFFER_OWNED_BY_LOADER; tick(s + 950); assert(fla.gaps == 1);
+    st_pre.buffer_state = 0; rx_pending = true; tick(s + 1000);                   /* a buffered data line: class 1 */
+    assert(fla.gaps == 2 && fla.gap_cls == FL_GAP_PENDING); rx_pending = false; arc.run_state = 1; tick(s + 1010);
+    assert(fla.gaps == 2 && fla.gap_cls == FL_GAP_PENDING); arc.run_state = 0;    /* an arc being generated: class 1 */
+
+    /* a hold or M0/M1 stops the accrual and keeps the gap open */
+    tick(s + 1100); uint32_t g = fla.gap_ticks[FL_GAP_NONE - 1];
+    cm.hold_state = FEEDHOLD_HOLD; tick(s + 1400); assert(fla.gap_open && fla.gap_cls == 0 && fla.gaps == 2);
+    cm.hold_state = FEEDHOLD_OFF; cm.program_paused = true; tick(s + 1700); assert(fla.gap_open && fla.gaps == 2);
+    cm.program_paused = false; tick(s + 1800);
+    assert(fla.gaps == 2 && fla.gap_cls == FL_GAP_NONE);
+    tick(s + 1900); _fl_gap_close(systick); assert(fla.gap_ticks[FL_GAP_NONE - 1] - g < 300);   /* hold and M0 time left out */
+
+    /* alarm, flush, kill and job end close the gap and forget the motion: no gap until motion starts again */
+    int (*stops[])[1] = { 0 }; (void)stops;
+    for (int k = 0; k < 6; k++) {
+        moving(); tick(systick + 5); busy = false; tick(systick + 5); assert(fla.gap_open);
+        uint32_t n = fla.gaps;
+        switch (k) {
+        case 0: cm.machine_state = MACHINE_ALARM; break;     case 1: cm.machine_state = MACHINE_SHUTDOWN; break;
+        case 2: cm.queue_flush_state = 1; break;             case 3: cm.job_kill_requested = true; break;
+        case 4: cm.machine_state = MACHINE_PROGRAM_END; break; case 5: rt.job = 0; break;
+        }
+        tick(systick + 5); assert(!fla.gap_open && !fl_job_moved && fla.gap_cls == 0);
+        cm.machine_state = MACHINE_READY; cm.queue_flush_state = 0; cm.job_kill_requested = false; rt.job = 1;
+        tick(systick + 100); assert(fla.gaps == n);
+    }
+
+    /* drained and refilled between two looks: the exec's underrun latch counts it once */
+    moving(); tick(systick + 10); uint32_t n = fla.gaps;
+    fl_underrun = 1; tick(systick + 1); assert(fla.gaps == n + 1 && !fla.gap_open && !fl_underrun);
+    tick(systick + 100); assert(fla.gaps == n + 1);
+    busy = false; tick(systick + 10); assert(fla.gaps == n + 2);                  /* a seen gap ... */
+    fl_underrun = 1; busy = true; tick(systick + 1); assert(fla.gaps == n + 2);    /* ... latched during it: not twice */
+    fl_job_moved = 0; fl_underrun = 1; tick(systick + 1); assert(fla.gaps == n + 2 && !fl_underrun);   /* before motion */
+
+    /* fl while starved: {"fl":{"k":0,"m":0,"p":null,"n":<last line>,"g":1|2}}; refilled: no g */
+    nframes = 0; fl_cur = FL_CUR_NONE; cm.motion_state = MOTION_STOP; mr.gm.linenum = 77;
+    moving(); tick(systick + 300); busy = false;
+    while (!count("\"g\":2")) tick(systick + 1);
+    assert(strstr(last(), "{\"fl\":{\"k\":0,\"m\":0,\"p\":null,\"n\":77,\"g\":2}}")); printf("%s", last());
+    rx_unread = true; uint32_t t = systick; while (!count("\"g\":1")) tick(systick + 1);
+    assert(systick - t >= FL_EVENT_TICKS - 1 && strstr(last(), "\"n\":77,\"g\":1}}"));
+    rx_unread = false; busy = true; int had = nframes; while (nframes == had) tick(systick + 1);
+    assert(strstr(last(), "{\"fl\":{\"k\":0,\"m\":0,\"p\":null,\"n\":null}}"));
+
+    /* accounting off: no gaps */
+    assert(set_fi(0) == STAT_OK); n = fla.gaps; busy = false; tick(systick + 500); assert(fla.gaps == n && !fla.gap_open);
+    return 0;
+}
+'''
+
+
+class AdvisorStep3Gaps(unittest.TestCase):
+    run_c = fla_t.FeedLimitAccounting.run_c
+
+    def test_supply_gaps(self):
+        code = fla_t.COMMON + fla_t.feedlimit_code() + fla_t.LINK + fla_t.runtime_code() + C_MAIN
+        out = self.run_c(code, "gaps")
+        import json
+        self.assertEqual(json.loads(out.splitlines()[0])["fl"], {"k": 0, "m": 0, "p": None, "n": 77, "g": 2})
+
+    def test_gap_wiring(self):
+        ex = function(src("plan_exec.c"), r"stat_t mp_exec_move\(\)")
+        self.assertRegex(ex, r"if \(fl_on && rt\.job && \(cm\.hold_state == FEEDHOLD_OFF\)\) \{ fl_underrun = true; \}")
+        stage = function(src("feedlimit.c"), r"void fl_stage_block\(const mpBuf_t \*bf\)")
+        self.assertIn("if (rt.job) { fl_job_moved = true; }", stage)
+        self.assertIn("fl_job_moved = false;", function(src("runtime.c"), r"stat_t rt_set_fi\(nvObj_t \*nv\)"))
+        unread = function(src("xio/xio_usb.c"), r"uint8_t xio_usb_rx_unread\(void\)")
+        self.assertNotIn("usb_activity", unread)          # no side effect on the heartbeat's quiet detection
+        cb = function(src("runtime.c"), r"stat_t rt_feedlimit_callback\(void\)")
+        self.assertLess(cb.index("_fl_gap(now);"), cb.index("_fl_event(now);"))

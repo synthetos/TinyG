@@ -72,6 +72,10 @@ enum { TYPE_NULL = 0, TYPE_INTEGER = 2, TYPE_FLOAT = 4 };
 enum { MOTION_STOP = 0, MOTION_RUN, MOTION_HOLD };
 enum { FEEDHOLD_OFF = 0, FEEDHOLD_SYNC = 1, FEEDHOLD_HOLD = 4 };
 enum { CYCLE_OFF = 0, CYCLE_MACHINING = 1 };
+enum { MACHINE_INITIALIZING = 0, MACHINE_READY, MACHINE_ALARM, MACHINE_PROGRAM_STOP, MACHINE_PROGRAM_END, MACHINE_CYCLE,
+       MACHINE_INTERLOCK, MACHINE_SHUTDOWN, MACHINE_PANIC };
+#define FLUSH_OFF 0
+#define BLOCK_IDLE 0
 enum { MOTION_MODE_STRAIGHT_TRAVERSE = 0, MOTION_MODE_STRAIGHT_FEED = 1 };
 enum { INVERSE_TIME_MODE = 0, UNITS_PER_MINUTE_MODE = 1 };
 enum { AXIS_X, AXIS_Y, AXIS_Z, AXIS_A, AXIS_B, AXIS_C, AXES };
@@ -83,10 +87,12 @@ typedef struct nvObj { uint8_t valuetype; union { float value_flt; uint32_t valu
 typedef struct { uint8_t motion_mode, feed_rate_mode; float feed_rate; uint32_t linenum; } GCodeState_t;
 typedef struct mpBuffer { float unit[AXES]; float cruise_velocity, cruise_vmax, naiive_move_time;
                           GCodeState_t gm; uint8_t fl_tags, fl_cls; } mpBuf_t;
+struct { GCodeState_t gm; } mr;
+struct { uint8_t run_state; } arc;
 uint8_t SREG = 0x80;
 static void cli(void) { SREG &= ~0x80; }
-struct { int motion_state, hold_state, cycle_state; } cm;
-struct { bool allowed, check_only; } rt;
+struct { int motion_state, hold_state, cycle_state, machine_state, queue_flush_state; bool job_kill_requested, program_paused; } cm;
+struct { bool allowed, check_only; volatile uint8_t job; } rt;
 struct { uint8_t fl_load, fl_rec, fl_cls; uint32_t fl_um, dda_ticks; int buffer_state; } st_pre;
 struct { uint8_t fl_rec, fl_cls; uint32_t fl_um, fl_ticks; } st_run;
 '''
@@ -120,7 +126,9 @@ def runtime_code():
     rtc = src("runtime.c")
     code = rtc[rtc.index("#define FL_FS_LEN"):rtc.index("} fla;") + len("} fla;")] + "\n"
     for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
-                r"static bool _fl_finished\(void\)", r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
+                r"static bool _fl_finished\(void\)", r"static uint8_t _fl_supply\(void\)",
+                r"static void _fl_gap_close\(uint32_t now\)", r"static void _fl_gap\(uint32_t now\)",
+                r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
                 r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",
                 r"stat_t rt_set_fi\(nvObj_t \*nv\)", r"stat_t rt_get_fs\(nvObj_t \*nv\)"):
@@ -136,6 +144,10 @@ static bool _machine_quiet(void) { return quiet; }
 bool xio_rx_data_pending(void) { return rx_pending; }
 uint8_t st_runtime_isbusy(void) { return busy; }
 uint8_t st_fl_record_pending(void) { return rec_pending; }
+static bool runnable = false, in_flight = false, rx_unread = false;
+bool mp_has_runnable_buffer(void) { return runnable; }
+bool st_aline_in_flight(void) { return in_flight; }
+uint8_t xio_usb_rx_unread(void) { return rx_unread; }
 static int tx_ready = 1;
 static char frames[64][200]; static int nframes;
 uint8_t xio_usb_tx_ready(void) { return tx_ready; }
