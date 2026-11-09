@@ -42,7 +42,7 @@ enum { AXIS_X, AXIS_Y, AXIS_Z, AXIS_A, AXIS_B, AXIS_C, AXES };
 typedef struct nvObj { uint8_t valuetype; union { float value_flt; uint32_t value_int; }; } nvObj_t;
 typedef struct { uint8_t motion_mode, feed_rate_mode; float feed_rate; uint32_t linenum; } GCodeState_t;
 typedef struct mpBuffer { float unit[AXES]; float cruise_velocity, cruise_vmax, naiive_move_time;
-                          GCodeState_t gm; uint8_t fl_tags; } mpBuf_t;
+                          GCodeState_t gm; uint8_t fl_tags, fl_cls; } mpBuf_t;
 uint8_t SREG = 0x80;
 static void cli(void) { SREG &= ~0x80; }
 struct { int motion_state, hold_state; } cm;
@@ -73,7 +73,7 @@ def firmware_code():
     i = h.index("static inline uint8_t fl_axis_moves(float unit)")
     code += h[i:h.index("\n}", i) + 2] + "\n"
     code += h[h.index("typedef struct flPending"):h.index("} flPending_t;") + len("} flPending_t;")] + "\n"
-    last = "static float fl_blk_below;"
+    last = "static uint8_t fl_blk_cls;"
     code += fc[fc.index("flBlock_t fl_slot[2];"):fc.index(last) + len(last)] + "\n"
     code += function(fc, r"uint8_t fl_profile_tags\(float naiive_move_time, float cruise, float cruise_vmax\)") + "\n"
     code += function(fc, r"void fl_stage_block\(const mpBuf_t \*bf\)") + "\n"

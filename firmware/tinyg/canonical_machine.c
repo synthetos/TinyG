@@ -98,6 +98,7 @@
 #include "encoder.h"
 #include "spindle.h"
 #include "runtime.h"
+#include "feedlimit.h"			// FL_CLS_COOLANT (feed-limit advisor step 3)
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
@@ -1728,7 +1729,7 @@ stat_t cm_tool_offset_cancel()
 stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
 {
 	float value[AXES] = { (float)mist_coolant };
-	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_mist_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
 	return (STAT_OK);
 }
 // Coolant outputs as last driven, for the g2core-named cof and com readouts: the model runs ahead of the
@@ -1763,7 +1764,7 @@ static void _exec_mist_coolant_control(float *value, bool *flags)
 stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
 {
 	float value[AXES] = { (float)flood_coolant };
-	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_flood_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
 	return (STAT_OK);
 }
 /*

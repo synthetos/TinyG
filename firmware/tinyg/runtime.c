@@ -345,8 +345,11 @@ static struct flAccounting {
 	uint8_t fi;									// summary interval, seconds; 0 = off
 	uint16_t epoch;								// windows opened since reset (fs "e")
 	uint32_t q;									// summaries sent in this window (fs "q")
-	uint32_t ms[FL_CAUSES + 1];					// totals, ms: [0..5] causes, [FL_CAUSES] cutting
+	uint32_t ms[FL_CAUSES + 1];					// totals, ms: [0..6] causes, [FL_CAUSES] cutting
 	uint8_t rem[FL_CAUSES + 1];					// DDA ticks not yet a whole ms
+	uint32_t cls_ms[FL_CLASSES];				// below-F ms of command-tagged moves, by class (fs "b", step 3)
+	uint8_t cls_rem[FL_CLASSES];
+	uint32_t breaks[FL_CLASSES];				// motion breaks at command boundaries while a job ran, by class
 	uint32_t mm;								// cutting distance: whole mm
 	uint16_t um;								// and micrometres
 	uint32_t next_fs, next_try, next_fl, next_fold;	// SysTick times
@@ -377,6 +380,12 @@ static void _fl_fold(void)						// take the loader's pending credits into the to
 		fla.ms[k] += p.ticks[k] / FL_TICKS_PER_MS;
 		fla.rem[k] += p.ticks[k] % FL_TICKS_PER_MS;
 		if (fla.rem[k] >= FL_TICKS_PER_MS) { fla.rem[k] -= FL_TICKS_PER_MS; fla.ms[k]++; }
+	}
+	for (uint8_t c = 0; c < FL_CLASSES; c++) {	// command boundaries by class (step 3)
+		fla.cls_ms[c] += p.cls_ticks[c] / FL_TICKS_PER_MS;
+		fla.cls_rem[c] += p.cls_ticks[c] % FL_TICKS_PER_MS;
+		if (fla.cls_rem[c] >= FL_TICKS_PER_MS) { fla.cls_rem[c] -= FL_TICKS_PER_MS; fla.cls_ms[c]++; }
+		fla.breaks[c] += p.breaks[c];
 	}
 	fla.mm += p.um / 1000;
 	fla.um += p.um % 1000;

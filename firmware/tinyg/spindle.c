@@ -30,6 +30,7 @@
 #include "spindle.h"
 #include "gpio.h"
 #include "planner.h"
+#include "feedlimit.h"		// FL_CLS_SPINDLE (feed-limit advisor step 3)
 #include "hardware.h"
 #include "pwm.h"
 #include "util.h"
@@ -210,7 +211,7 @@ float cm_get_spindle_pwm( uint8_t spindle_mode )
 stat_t cm_spindle_control(uint8_t spindle_mode)
 {
 	float value[AXES] = { (float)spindle_mode };
-	mp_queue_command(_exec_spindle_control, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_spindle_control, value, FLAGS_ONE, FL_CLS_SPINDLE);
 	return(STAT_OK);
 }
 
@@ -262,7 +263,7 @@ stat_t cm_set_spindle_speed(float speed)
 //        return (STAT_MAX_SPINDLE_SPEED_EXCEEDED);
 //  }
 	float value[AXES] = { speed };
-	mp_queue_command(_exec_spindle_speed, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_spindle_speed, value, FLAGS_ONE, FL_CLS_SPINDLE);
 	return (STAT_OK);
 }
 

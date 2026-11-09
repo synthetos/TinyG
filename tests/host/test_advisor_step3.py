@@ -83,3 +83,103 @@ class AdvisorStep3Job(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# B. Command boundaries -----------------------------------------------------------------------------------------
+B_PRELUDE = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#define __AVR
+uint8_t SREG = 0x80;
+static void cli(void) { SREG &= ~0x80; }
+#define AXES 6
+#define AXIS_X 0
+#define PSTR(s) s
+#define STAT_BUFFER_FULL_FATAL 251
+typedef uint8_t stat_t;
+enum { MP_BUFFER_EMPTY = 0, MP_BUFFER_LOADING, MP_BUFFER_QUEUED };
+enum { BLOCK_TYPE_NULL = 0, BLOCK_TYPE_ALINE, BLOCK_TYPE_DWELL, BLOCK_TYPE_COMMAND };
+enum { BLOCK_IDLE = 0, BLOCK_INITIALIZING, BLOCK_RUNNING };
+typedef struct mpBuffer { struct mpBuffer *pv; stat_t (*bf_func)(struct mpBuffer *); void (*cm_func)(float[], bool[]);
+    uint8_t buffer_state, block_type, block_state; float value_vector[AXES]; bool axis_flags[AXES];
+    uint8_t fl_tags, fl_cls; } mpBuf_t;
+'''
+
+
+def b_code():
+    h = src("feedlimit.h")
+    code = B_PRELUDE + "\n".join(l for l in h.splitlines() if l.startswith("#define FL_")) + "\n"
+    code += h[h.index("typedef struct flPending"):h.index("} flPending_t;") + len("} flPending_t;")] + "\n"
+    code += "volatile flPending_t fl_pend[2]; volatile uint8_t fl_bank, fl_on;\nstruct { volatile uint8_t job; } rt;\n"
+    st = src("stepper.c")
+    code += "static uint8_t fl_moved;\n" + function(st, r"static void _fl_command_break\(const mpBuf_t \*bf\)") + "\n"
+    code += r'''
+static mpBuf_t ring[4], *wr;
+static int committed, panics;
+static void cm_run_short_move(void) {}
+static void cm_panic_P(int s, const char *m) { (void)s; (void)m; panics++; }
+static mpBuf_t *mp_get_write_buffer(void) { mpBuf_t *b = wr; memset(b, 0, sizeof(*b)); b->pv = (b == ring) ? &ring[3] : b - 1; return b; }
+static void mp_commit_write_buffer(uint8_t t) { (void)t; committed++; }
+static stat_t _exec_command(mpBuf_t *bf) { (void)bf; return 0; }
+static void cmd(float v[], bool f[]) { (void)v; (void)f; }
+'''
+    code += function(src("planner.c"), r"void mp_queue_command_class\(void\(\*cm_exec\)\(float\[\], bool\[\]\), float \*value, bool \*flags, uint8_t cls\)") + "\n"
+    return code
+
+
+B_MAIN = r'''
+static void load_move(void) { fl_moved = true; }               /* an ALINE segment load (stepper.c) */
+static void load_dwell(void) { fl_moved = false; }
+static mpBuf_t cmd_buf(uint8_t cls) { mpBuf_t b; memset(&b, 0, sizeof(b)); b.block_type = BLOCK_TYPE_COMMAND; b.fl_cls = cls; return b; }
+int main(void) {
+    /* breaks: only with accounting on and a host job, and only after a move */
+    mpBuf_t s = cmd_buf(FL_CLS_SPINDLE), c = cmd_buf(FL_CLS_COOLANT), o = cmd_buf(FL_CLS_OTHER), bad = cmd_buf(9);
+    fl_on = 1; rt.job = 1;
+    _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 0);            /* no move before it */
+    load_move(); _fl_command_break(&s); _fl_command_break(&c);                        /* S then M8: one break */
+    assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1 && fl_pend[0].breaks[FL_CLS_COOLANT] == 0);
+    load_move(); _fl_command_break(&c); assert(fl_pend[0].breaks[FL_CLS_COOLANT] == 1);
+    load_move(); load_dwell(); _fl_command_break(&o); assert(fl_pend[0].breaks[FL_CLS_OTHER] == 0);   /* after a dwell */
+    load_move(); _fl_command_break(&bad); assert(fl_pend[0].breaks[FL_CLS_OTHER] == 1);  /* unknown class -> other */
+    rt.job = 0; load_move(); _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1);   /* no job */
+    rt.job = 1; fl_on = 0; load_move(); _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1); /* off */
+    fl_on = 1; fl_bank = 1; load_move(); _fl_command_break(&s); assert(fl_pend[1].breaks[FL_CLS_SPINDLE] == 1);  /* bank */
+
+    /* tagging: the queued move before a command gets FL_COMMAND and the command's class */
+    float v[AXES] = { 0 }; bool f[AXES] = { 0 };
+    memset(ring, 0, sizeof(ring)); wr = &ring[1];
+    ring[0].buffer_state = MP_BUFFER_QUEUED; ring[0].block_type = BLOCK_TYPE_ALINE; ring[0].block_state = BLOCK_INITIALIZING;
+    mp_queue_command_class(cmd, v, f, FL_CLS_COOLANT);
+    assert(ring[1].block_type == BLOCK_TYPE_COMMAND && ring[1].fl_cls == FL_CLS_COOLANT && committed == 1);
+    assert((ring[0].fl_tags & FL_COMMAND) && ring[0].fl_cls == FL_CLS_COOLANT && SREG == 0x80);
+    ring[0].fl_tags = FL_JUNCTION | FL_COMMAND; ring[0].fl_cls = FL_CLS_SPINDLE; wr = &ring[1];   /* keeps the first class */
+    mp_queue_command_class(cmd, v, f, FL_CLS_OTHER);
+    assert(ring[0].fl_tags == (FL_JUNCTION | FL_COMMAND) && ring[0].fl_cls == FL_CLS_SPINDLE);
+    ring[0].fl_tags = 0; ring[0].block_state = BLOCK_RUNNING; wr = &ring[1];                  /* exec took it: untouched */
+    mp_queue_command_class(cmd, v, f, FL_CLS_SPINDLE); assert(ring[0].fl_tags == 0);
+    ring[0].block_state = BLOCK_INITIALIZING; ring[0].buffer_state = MP_BUFFER_EMPTY; wr = &ring[1];   /* freed */
+    mp_queue_command_class(cmd, v, f, FL_CLS_SPINDLE); assert(ring[0].fl_tags == 0);
+    ring[0].buffer_state = MP_BUFFER_QUEUED; ring[0].block_type = BLOCK_TYPE_COMMAND; wr = &ring[1];   /* a command */
+    mp_queue_command_class(cmd, v, f, FL_CLS_SPINDLE); assert(ring[0].fl_tags == 0);
+    return 0;
+}
+'''
+
+
+class AdvisorStep3Commands(unittest.TestCase):
+    build_run = _build_run
+
+    def test_breaks_and_tagging(self):
+        self.build_run(b_code() + B_MAIN, "commands")
+
+    def test_command_wiring(self):
+        sp, cm, pl = src("spindle.c"), src("canonical_machine.c"), src("plan_line.c")
+        self.assertEqual(len(re.findall(r"mp_queue_command_class\([^;]*FL_CLS_SPINDLE\)", sp)), 2)   # M3/M4/M5 and S
+        self.assertEqual(len(re.findall(r"mp_queue_command_class\([^;]*FL_CLS_COOLANT\)", cm)), 2)   # M7 and M8/M9
+        self.assertRegex(pl, r"if \(pv_type == BLOCK_TYPE_COMMAND\) \{[^}]*fl_tags \|= FL_COMMAND;")  # the move after a command
+        st = src("stepper.c")
+        self.assertRegex(st, r"_fl_command_break\(st_pre\.bf\);[^\n]*\n\s*mp_runtime_command\(st_pre\.bf\);")
+        self.assertEqual(st.count("fl_moved = true;"), 1)

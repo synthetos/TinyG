@@ -22,6 +22,7 @@ volatile uint8_t fl_activity;
 static uint8_t fl_blk_ok;			// exec: the running block's segments are eligible (G94 linear XYZ feed)
 static uint8_t fl_blk_mask;			// exec: its cause bits (static and profile tags, or FL_REC_OTHER)
 static float fl_blk_below;			// exec: a segment slower than this (mm/min) is below F
+static uint8_t fl_blk_cls;			// exec: class of the command next to it (FL_CLS_*), for FL_COMMAND time
 
 /*
  * fl_stage_block() - stage a block's report at its exec start (called from the exec interrupt)
@@ -61,6 +62,7 @@ void fl_stage_block(const mpBuf_t *bf)
 		}
 		s->all_tags = s->tags | profile;
 		fl_blk_mask = (s->all_tags != 0) ? s->all_tags : FL_REC_OTHER;
+		fl_blk_cls = bf->fl_cls;
 	}
 }
 
@@ -79,6 +81,7 @@ void fl_segment(float velocity, float length)
 	if (fl_blk_ok && (cm.hold_state == FEEDHOLD_OFF)) {
 		rec = FL_REC_ELIGIBLE;
 		if (velocity < fl_blk_below) { rec |= fl_blk_mask; }
+		st_pre.fl_cls = fl_blk_cls;
 		float q16 = length * (1000.0f * 65536.0f);
 		if (q16 < 4.0e9f) {							// up to ~61 mm in one segment (a 5-10 ms segment is far less)
 			uint32_t um = (uint32_t)q16 + fl_um_q16;

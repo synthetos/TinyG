@@ -381,6 +381,7 @@ typedef struct stRunSingleton {			// Stepper static values and axis parameters
 	uint8_t fl_rec;						// feed-limit record of the running segment, retired when it finishes
 	uint32_t fl_um;
 	uint32_t fl_ticks;					// its DDA ticks (the downcount itself runs down)
+	uint8_t fl_cls;						// class of the command next to its block (FL_COMMAND time, step 3)
 	uint16_t magic_end;
 } stRunSingleton_t;
 
@@ -420,6 +421,7 @@ typedef struct stPrepSingleton {
 	uint8_t fl_load;					// what this load does to the feed-limit report (FL_LOAD_*); last, so no other member moves
 	uint8_t fl_rec;						// feed-limit accounting record of this segment (FL_REC_*, cause bits), 0 = none
 	uint32_t fl_um;						// and its commanded length, micrometres
+	uint8_t fl_cls;						// class of the command next to its block (FL_COMMAND time, step 3)
 	uint16_t magic_end;
 } stPrepSingleton_t;
 

@@ -304,7 +304,14 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	if (bf->pv->buffer_state == MP_BUFFER_EMPTY) {
 		junction_velocity = _get_junction_vmax(mr.unit, bf->unit);
 	} else {
-		after_move = (bf->pv->block_type == BLOCK_TYPE_ALINE);
+		uint8_t pv_cls = bf->pv->fl_cls;				// class first: a command still queued below had this class
+		__asm__ __volatile__ ("" ::: "memory");
+		uint8_t pv_type = bf->pv->block_type;
+		after_move = (pv_type == BLOCK_TYPE_ALINE);
+		if (pv_type == BLOCK_TYPE_COMMAND) {			// it starts from rest because of the command (step 3);
+			fl_tags |= FL_COMMAND;						// a command already run and freed is missed (advisory)
+			bf->fl_cls = pv_cls;
+		}
 	}
 	// min3(cruise_vmax, junction_velocity, exact_stop), its first compare kept as the corner tag
 	bool corner = (junction_velocity < bf->cruise_vmax);
