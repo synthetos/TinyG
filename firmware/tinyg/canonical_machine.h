@@ -334,7 +334,6 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 	float target[AXES]; 				// XYZABC where the move should go
 	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
     float feed_rate;                    // F - normalized to millimeters/minute or in inverse time mode
-    float parameter;					// P - parameter used for dwell time in seconds, G10 coord select...
 
 #ifdef __BITFIELDS
     // keep all bitfields together
@@ -376,9 +375,7 @@ typedef struct GCodeState {				// Gcode model state - used by model, planning an
 
 	float spindle_speed;				// in RPM
 
-    //+++ These 2 should get (re)moved
     float move_time;					// optimal time for move given axis constraints
-    float minimum_time;					// minimum time possible for move given axis constraints
 
 } GCodeState_t;
 

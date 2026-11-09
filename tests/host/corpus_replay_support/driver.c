@@ -90,7 +90,6 @@ static void check_plan(mpBuf_t *b) {
  FIELD(recip_jerk);
  FIELD(cbrt_jerk);
  FIELD(gm.move_time);
- FIELD(gm.minimum_time);
  if(!isfinite(b->naiive_move_time) && !naive_seen[b-mb.bf]){naive_seen[b-mb.bf]=true;printf("NAIVE_INF %u %.9g %.9g %.9g\n",n,(double)b->naiive_move_time,(double)b->entry_velocity,(double)b->exit_velocity);}
  for(int a=0;a<AXES;a++){if(!isfinite(b->unit[a])||!isfinite(b->gm.target[a])){printf("BAD %u vector%u\n",n,a);bad++;}}
  #undef FIELD
