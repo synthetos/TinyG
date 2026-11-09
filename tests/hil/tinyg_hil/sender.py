@@ -42,6 +42,9 @@ STALL_PROBE = 20.0          # line/g2 modes: a {stat} probe must answer within t
                             # a full line pool: reserved headers do not reserve pool bytes)
 PROBE_TID = 990001          # the probe's transaction id; its answer is matched by the echo, never by its body
 STALL_HARD = 900.0          # s without a line acknowledged although the board answers probes (one block can run minutes)
+RTS_INFLIGHT_LIMIT = 512    # rts: unanswered bytes. More than the RX ring (250), so CTS still paces the
+                            # stream, but '!'/'~'/^X never queue behind kilobytes in the macOS FTDI driver, whose
+                            # buffer is much deeper than out_waiting shows (N102: a hold reached the board ~90 s late)
 TTY_ROOM = 256              # rts/xon: bytes allowed in the host driver's output queue before a write
 TTY_WRITE_TIMEOUT = 1.0     # rts/xon: a write that still blocks (queue full anyway) fails after this
 IDLE_STATS = (1, 3, 4)      # READY, PROGRAM_STOP, PROGRAM_END: the program finished
@@ -260,7 +263,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                                         f"{RX_COUNT_LIMIT}-byte budget: {text[:60]!r}")
     res = StreamResult(mode=mode, lines=len(todo))
     sr = {k: tg.get(k) for k in ("posx", "posy", "posz")}   # filtered reports carry only what changed: start known
-    inflight = []                    # byte lengths (count mode) or 1s (line mode), oldest first
+    inflight = []                    # byte lengths (count, rts) or 1s (line mode), oldest first
     free = tg.get("rx") if mode == "line" else None   # free line slots before the first footer
     credit = G2_PRIME                # g2 mode: lines the host may send; +1 per response, ignoring the footer
     sent_bytes = reported = 0        # count-crlf: bytes written, bytes the footers reported removed
@@ -352,10 +355,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     break
                 elif mode == "xon-app" and xoff:
                     break                   # the application honours XOFF, as terminal programs do
+                elif mode == "rts" and inflight and sum(inflight) + len(data) > RTS_INFLIGHT_LIMIT:
+                    break                   # bounded unanswered bytes keep feedhold latency short (N102)
                 elif mode in ("rts", "xon") and tr.ser.out_waiting + len(data) > TTY_ROOM:
                     break                   # the board is holding output back: read and watch, write later
                 tr.write(data, drain_timeout=None if mode in ("rts", "xon") else 2.0)
-                inflight.append(len(data) if mode == "count" else 1)
+                inflight.append(len(data) if mode in ("count", "rts") else 1)
                 credit -= 1
                 sent_bytes += len(data)
                 res.max_inflight = max(res.max_inflight, len(inflight))

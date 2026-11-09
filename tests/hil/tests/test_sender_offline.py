@@ -181,6 +181,40 @@ def test_rts_writes_are_bounded_while_flowing():
     assert tg.transport.ser.write_timeout == 5
 
 
+
+def test_rts_bounds_unanswered_bytes_when_the_driver_hides_its_queue():
+    """N102: the macOS FTDI driver accepts kilobytes while out_waiting reads near zero, so a '!' written
+    mid-stream reached the board ~90 s late. The board here answers one line only when the host waits for
+    input and out_waiting always reads 0; the bytes it holds unanswered must stay within RTS_INFLIGHT_LIMIT."""
+    held, peak = [], {"bytes": 0}
+
+    def lazy(tr, data):
+        if data.startswith(b'{"stat"'):
+            tr.emit(json.dumps({"r": {"stat": 3}, "f": [3, 0, 8]}))
+            return
+        held.append(data)
+        peak["bytes"] = max(peak["bytes"], sum(len(d) for d in held))
+    tg = FakeTG(lazy)
+    real_next = tg.transport.next_event
+
+    def next_event(timeout):
+        ev = real_next(0)
+        if ev is None and held:
+            tg.transport.emit(ok(held.pop(0).decode().rstrip("\n")))
+            ev = real_next(0)
+        return ev
+    calls = {"n": 0}
+
+    def slow_next(timeout):                     # a planner-bound board: finishes a line every 8th poll
+        calls["n"] += 1
+        return next_event(timeout) if calls["n"] % 8 == 0 else real_next(0)
+    tg.transport.next_event = slow_next
+    lines = [f"G1 X{k} Y{k} (pad {'p' * (k % 40)})" for k in range(120)]
+    assert sum(len(x) + 1 for x in lines) > 4 * sender.RTS_INFLIGHT_LIMIT
+    res = sender.stream(tg, lines, "rts", timeout=10)
+    assert res.ok, (res.completion, res.errors)
+    assert sender.RX_COUNT_LIMIT < peak["bytes"] <= sender.RTS_INFLIGHT_LIMIT, peak
+
 PATH = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0)]
 
 
