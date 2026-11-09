@@ -36,15 +36,22 @@ def _reset_and_wait(tg, ice, record):
     # Purge pre-reset events, then send nothing through the bootloader's listen window.
     tg.drain(quiet=0.05, limit=0.5)
     try:
-        ice.reset()
+        try:
+            ice.reset()
+        finally:
+            # Release PDI so the target boots before settings are restored.
+            ice.close()
+        tg.wait_for(lambda ev: ev.kind == "banner" and ev.body.get("msg") == "SYSTEM READY", timeout=20.0)
+        value = tg.get("rxm", timeout=3.0)
+        record("reset_ready", {"rxm": value})
     finally:
-        # Some ICE/target combinations hold reset until PDI detaches. No more peeks follow;
-        # fixture teardown may close again (Ice.close already tolerates disconnected steps).
-        ice.close()
-    tg.wait_for(lambda ev: ev.kind == "banner" and ev.body.get("msg") == "SYSTEM READY", timeout=20.0)
-    # Prove the exact first restore query answers before keep() starts restoring.
-    value = tg.get("rxm", timeout=3.0)
-    record("reset_ready", {"rxm": value})
+        # The fixture is session-scoped: even a failed boot wait must not leave later tests disconnected.
+        ice.open()
+
+
+def _hold_reached(ice):
+    with ice.halted():
+        return ice.peek_many(["cm.hold_state"])["cm.hold_state"] >= 4
 
 
 @pytest.mark.bug("N102", on=[])
@@ -91,6 +98,7 @@ def test_rts_hold(tg, ice, keep, record):
             bang_queued = False
         t_bang = time.monotonic()
         held_at = None
+        next_hold_poll = t_bang
         ser.write_timeout = 0.05
         # a host keeps streaming during a hold (it does not know when the board stops consuming): keep the capped
         # stream going for 6 s after '!', reading answers, and note when the board reports the hold
@@ -99,9 +107,12 @@ def test_rts_hold(tg, ice, keep, record):
             while ev is not None:
                 if ev.kind == "response" and inflight:
                     inflight.pop(0)
-                if held_at is None and ev.kind == "status" and isinstance(ev.body, dict) and ev.body.get("stat") == 6:
-                    held_at = time.monotonic() - t_bang
                 ev = tg.transport.next_event(0)
+            now = time.monotonic()
+            if held_at is None and now >= next_hold_poll:
+                if _hold_reached(ice):
+                    held_at = time.monotonic() - t_bang
+                next_hold_poll = time.monotonic() + 0.5
             if i < len(lines):
                 data = (lines[i] + "\n").encode()
                 if sum(inflight) + len(data) <= CAP:
