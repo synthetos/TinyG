@@ -192,6 +192,9 @@
     <Compile Include="canonical_machine.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="gcode_state_fields.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="config.c">
       <SubType>compile</SubType>
     </Compile>

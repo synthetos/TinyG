@@ -31,6 +31,7 @@
 #ifndef CANONICAL_MACHINE_H_ONCE
 #define CANONICAL_MACHINE_H_ONCE
 
+#include <stddef.h>
 #include "config.h"
 
 /* Defines, Macros, and  Assorted Parameters */
@@ -329,55 +330,18 @@ typedef enum {					    // axis modes (ordered: see _cm_get_feed_time())
 #define TOOL_SELECT_MAX 255
 #endif
 
-typedef struct GCodeState {				// Gcode model state - used by model, planning and runtime
-	uint32_t linenum;					// Gcode block line number
-	float target[AXES]; 				// XYZABC where the move should go
-	float work_offset[AXES];			// offset from the work coordinate system (for reporting only)
-    float feed_rate;                    // F - normalized to millimeters/minute or in inverse time mode
+/* Queue snapshots omit timing scratch; both forms use exactly the same modal fields. */
+typedef struct GCodeQueuedState {
+#include "gcode_state_fields.h"
+} GCodeQueuedState_t;
 
-#ifdef __BITFIELDS
-    // keep all bitfields together
-    uint8_t :0;  // alignment
-	cmMotionMode motion_mode             : 3 ;  // Group1: G0, G1, G2, G3, G38.2, G80 - G89
-    cmFeedRateMode feed_rate_mode        : 2 ;  // See cmFeedRateMode for settings
-    cmCanonicalPlane select_plane        : 2 ;  // G17,G18,G19 - values to set plane to
-    cmUnitsMode units_mode               : 2 ;  // G20,G21 - 0=inches (G20), 1 = mm (G21)
-    cmPathControl path_control           : 2 ;  // G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
-    cmDistanceMode distance_mode         : 1 ;  // G90=use absolute coords, G91=incremental movement
-    cmDistanceMode arc_distance_mode     : 1 ;  // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
-    cmAbsoluteOverride absolute_override : 1 ;  // G53 TRUE = move using machine coordinates - this block only
-    cmCoordSystem coord_system           : 3 ;  // G54-G59 - select coordinate system 1-6
-    uint8_t tool                         : 5 ;  // M6 tool change - moves "tool_select" to "tool"
-    uint8_t tool_select                  : 5 ;  // T value - T sets this value
-
-	uint8_t spindle_mode                 : 2 ;  // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-	uint8_t mist_coolant                 : 1 ;  // TRUE = mist on (M7), FALSE = off (M9)
-	uint8_t flood_coolant                : 1 ;  // TRUE = flood on (M8), FALSE = off (M9)
-#else 
-    // keep all bitfields together
-//    uint8_t :0;  // alignment
-	uint8_t motion_mode;				// Group1: G0, G1, G2, G3, G38.2, G80 - G89
-    cmFeedRateMode feed_rate_mode;      // See cmFeedRateMode for settings
-    cmCanonicalPlane select_plane;      // G17,G18,G19 - values to set plane to
-    cmUnitsMode units_mode;             // G20,G21 - 0=inches (G20), 1 = mm (G21)
-    cmPathControl path_control;         // G61... EXACT_PATH, EXACT_STOP, CONTINUOUS
-    cmDistanceMode distance_mode;       // G90=use absolute coords, G91=incremental movement
-    cmDistanceMode arc_distance_mode;   // G90.1=use absolute IJK offsets, G91.1=incremental IJK offsets
-    cmAbsoluteOverride absolute_override; // G53 TRUE = move using machine coordinates - this block only
-    cmCoordSystem coord_system;         // G54-G59 - select coordinate system 1-6
-    uint8_t tool;                       // M6 tool change - moves "tool_select" to "tool"
-    uint8_t tool_select;                // T value - T sets this value
-
-    uint8_t spindle_mode;               // 0=OFF (M5), 1=CW (M3), 2=CCW (M4)
-    uint8_t mist_coolant;               // TRUE = mist on (M7), FALSE = off (M9)
-    uint8_t flood_coolant;              // TRUE = flood on (M8), FALSE = off (M9)
-#endif
-
-	float spindle_speed;				// in RPM
-
-    float move_time;					// optimal time for move given axis constraints
-
+typedef struct GCodeState {
+#include "gcode_state_fields.h"
+    float move_time; // model planning time or runtime section time; never queued
 } GCodeState_t;
+
+typedef char gcode_snapshot_prefix_must_match[
+    (offsetof(GCodeState_t, move_time) == sizeof(GCodeQueuedState_t)) ? 1 : -1];
 
 typedef struct GCodeStateExtended {		// Gcode dynamic state extensions - used by model and arcs
 	uint16_t magic_start;				// magic number to test memory integrity

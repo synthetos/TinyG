@@ -126,7 +126,7 @@ int main(void) {
     assert(!HAS(move(MOTION_MODE_STRAIGHT_TRAVERSE, 0, 100, 0), FL_AXIS_CAP));  /* G0: no F to fall short of */
     setup(); cm.a[AXIS_C].feedrate_max = 0;                             /* unused C with fr 0: its time is NaN */
     mpBuf_t *z = line_to(600, 100, 0);
-    assert(isfinite(z->gm.move_time) && fabs(z->gm.move_time - 100.0f / 600) < 1e-6 && !HAS(z, FL_AXIS_CAP));
+    assert(isfinite((z->length/z->cruise_vmax)) && fabs((z->length/z->cruise_vmax) - 100.0f / 600) < 1e-6 && !HAS(z, FL_AXIS_CAP));
 
     /* exact stop */
     setup(); path_control = PATH_EXACT_STOP;

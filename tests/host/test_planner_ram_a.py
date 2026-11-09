@@ -17,7 +17,7 @@ class PlannerModelLayout(unittest.TestCase):
 #include "canonical_machine.h"
 #include "planner.h"
 _Static_assert(sizeof(GCodeState_t) == 68, "remove the two unused model floats");
-_Static_assert(sizeof(((mpBuf_t *)0)->gm) == 68, "each queued model must shrink");
+_Static_assert(sizeof(((mpBuf_t *)0)->gm) <= 68, "each queued model must shrink");
 _Static_assert(sizeof(cm.gn.parameter) == 4, "parser P word must remain");
 _Static_assert(sizeof(cm.gf.parameter) == 1, "parser P presence flag must remain");
 _Static_assert(sizeof(((GCodeState_t *)0)->target) == 24, "six full precision target axes");

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from source_extract import function
 
 ROOT = Path(__file__).resolve().parents[2]
 FW = ROOT/'firmware/tinyg'
@@ -56,6 +57,46 @@ int main(void){
             src,exe=Path(d)/'copy.c',Path(d)/'copy';src.write_text(code)
             subprocess.run(['cc','-std=gnu99','-funsigned-char','-fshort-enums','-fpack-struct',
                             '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
+                            '-I'+str(ROOT/'tests/host/planner_startup'),'-I'+str(FW),
+                            str(src),'-o',str(exe)],check=True)
+            subprocess.run([str(exe)],check=True)
+
+    def test_dwell_payload_keeps_units_and_queue_completion(self):
+        code=HEADERS+r'''
+#include <assert.h>
+#include <string.h>
+static mpBuf_t block;
+static float staged;
+static unsigned ends,commits;
+static bool empty;
+void cm_run_short_move(void) {}
+stat_t cm_panic_P(const stat_t status,const char *msg){assert(0);return status;}
+mpBuf_t *mp_get_write_buffer(void){memset(&block,0,sizeof block);return &block;}
+void mp_commit_write_buffer(const uint8_t type){assert(type==BLOCK_TYPE_DWELL);block.block_type=type;commits++;}
+uint8_t mp_free_run_buffer(void){return empty;}
+void cm_cycle_end(void){ends++;}
+void st_prep_dwell(float us){staged=us;}
+'''
+        source=(FW/'planner.c').read_text()
+        code+=function(source,r'stat_t mp_dwell\(')+'\n'+function(source,r'stat_t mp_exec_dwell\(')
+        code+=r'''
+int main(void){
+ const float seconds[]={0,0.125,1,12.5};
+ const float micros[]={0,125000,1000000,12500000};
+ for(unsigned i=0;i<4;i++){
+  empty=(i&1);unsigned before=ends;
+  assert(mp_dwell(seconds[i])==STAT_OK);
+  assert(block.block_type==BLOCK_TYPE_DWELL&&block.block_state==BLOCK_INITIALIZING);
+  assert(block.dwell_seconds==seconds[i]);
+  assert(mp_exec_dwell(&block)==STAT_OK&&staged==micros[i]);
+  assert(ends==before+empty);
+ }
+ assert(commits==4);
+}
+'''
+        with tempfile.TemporaryDirectory() as d:
+            src,exe=Path(d)/'dwell.c',Path(d)/'dwell';src.write_text(code)
+            subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             '-I'+str(ROOT/'tests/host/planner_startup'),'-I'+str(FW),
                             str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)

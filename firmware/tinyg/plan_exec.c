@@ -237,7 +237,8 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 //        }
 
         // Start a new move by setting up the runtime singleton (mr)
-		memcpy(&mr.gm, &(bf->gm), sizeof(GCodeState_t));    // copy in the gcode model state
+        memcpy(&mr.gm, &(bf->gm), sizeof(bf->gm)); // restore only the common context
+        mr.gm.move_time = 0; // every executable section computes its own time before use
 		bf->replannable = false;
 		bf->block_state = BLOCK_RUNNING;
 		mr.block_state = BLOCK_INITIALIZING;

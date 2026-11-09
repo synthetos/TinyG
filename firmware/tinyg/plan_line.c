@@ -199,7 +199,8 @@ stat_t mp_aline(GCodeState_t *gm_in)
         return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
     }
 	bf->length = length;
-	memcpy(&bf->gm, gm_in, sizeof(GCodeState_t));						// copy model state into planner buffer
+    float planned_time = gm_in->move_time; // capture beside the context snapshot, as before
+    memcpy(&bf->gm, gm_in, sizeof(bf->gm));
 
 	// Compute the unit vector and find the right jerk to use (combined operations)
 	// To determine the jerk value to use for the block we want to find the axis for which
@@ -292,7 +293,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
 		exact_stop = 8675309;								// an arbitrarily large floating point number
 		fl_tags &= ~FL_EXACT_STOP;
 	}
-	bf->cruise_vmax = bf->length / bf->gm.move_time;		// target velocity requested
+	bf->cruise_vmax = bf->length / planned_time;		// target velocity requested
 	junction_velocity = _get_junction_vmax(bf->pv->unit, bf->unit);
 	// The exec frees a block once its last segment is prepared, possibly while still moving, and clears its
 	// direction (E196). If the previous buffer is empty now, it was freed before or during the read above

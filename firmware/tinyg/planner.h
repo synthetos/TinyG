@@ -178,7 +178,10 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	float recip_jerk;				// 1/Jm used for planning (computed and cached)
 	float cbrt_jerk;				// cube root of Jm used for planning (computed and cached)
 
-	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
+    union {
+        GCodeQueuedState_t gm;  // modal/motion snapshot for a line, target[] for command values
+        float dwell_seconds;   // only BLOCK_TYPE_DWELL uses this payload
+    };
 	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
 	uint8_t fl_cls;					// a command: its class (FL_CLS_*); a FL_COMMAND move: its neighbour command's (step 3)
 

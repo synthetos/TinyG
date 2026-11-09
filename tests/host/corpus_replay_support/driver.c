@@ -89,7 +89,6 @@ static void check_plan(mpBuf_t *b) {
  FIELD(jerk);
  FIELD(recip_jerk);
  FIELD(cbrt_jerk);
- FIELD(gm.move_time);
  if(!isfinite(b->naiive_move_time) && !naive_seen[b-mb.bf]){naive_seen[b-mb.bf]=true;printf("NAIVE_INF %u %.9g %.9g %.9g\n",n,(double)b->naiive_move_time,(double)b->entry_velocity,(double)b->exit_velocity);}
  for(int a=0;a<AXES;a++){if(!isfinite(b->unit[a])||!isfinite(b->gm.target[a])){printf("BAD %u vector%u\n",n,a);bad++;}}
  #undef FIELD
@@ -114,7 +113,8 @@ static void check_plan(mpBuf_t *b) {
   if(feed>kin)kin=feed;
  }
  if(kin<MIN_SEGMENT_TIME)kin=MIN_SEGMENT_TIME;
- if(b->gm.move_time>10*kin){printf("BASE_SLOW %u %.9g %.9g\n",n,(double)b->gm.move_time,kin);slow++;}
+ float base_time=b->length/b->cruise_vmax; /* initial time is not part of the queued snapshot */
+ if(base_time>10*kin){printf("BASE_SLOW %u %.9g %.9g\n",n,(double)base_time,kin);slow++;}
  double expect=kin+4*cbrt(b->length/(2*b->jerk));
  if(!isfinite(t)||t<0){printf("BAD %u duration %.9g\n",n,t);bad++;}
  if(t/expect>maximum_ratio)maximum_ratio=t/expect;

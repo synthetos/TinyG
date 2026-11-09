@@ -80,7 +80,6 @@ mpMoveRuntimeSingleton_t mr;	// context for line runtime
 static volatile bool startup_pending;
 static uint32_t startup_started;
 
-#define spindle_speed move_time	    // local alias for spindle_speed to the time variable
 #define value_vector gm.target	    // alias for vector of values
 
 /*
@@ -302,7 +301,7 @@ stat_t mp_dwell(float seconds)
 	if ((bf = mp_get_write_buffer()) == NULL) {			// get write buffer or fail
    		return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_dwell")));	// never supposed to fail
     }
-	bf->gm.move_time = seconds;							// in seconds, not minutes
+	bf->dwell_seconds = seconds;							// in seconds, not minutes
 	bf->block_state = BLOCK_INITIALIZING;
 	mp_commit_write_buffer(BLOCK_TYPE_DWELL);			// must be final operation before exit
 	return (STAT_OK);
@@ -310,7 +309,7 @@ stat_t mp_dwell(float seconds)
 
 stat_t mp_exec_dwell(mpBuf_t *bf)
 {
-	st_prep_dwell((uint32_t)(bf->gm.move_time * 1000000));// convert seconds to uSec
+	st_prep_dwell((uint32_t)(bf->dwell_seconds * 1000000));// convert seconds to uSec
 	if (mp_free_run_buffer()) {
         cm_cycle_end();			// free buffer & perform cycle_end if planner is empty
     }

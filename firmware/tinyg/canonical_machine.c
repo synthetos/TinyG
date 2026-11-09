@@ -343,7 +343,7 @@ float cm_get_active_coord_offset(const uint8_t axis)
  *
  *	This function accepts as input:
  *		MODEL 		(GCodeState_t *)&cm.gm		// absolute pointer from canonical machine gm model
- *		PLANNER		(GCodeState_t *)&bf->gm		// relative to buffer *bf is currently pointing to
+ *		Queued snapshots must be restored into a full model before these accessors are used.
  *		RUNTIME		(GCodeState_t *)&mr.gm		// absolute pointer from runtime mm struct
  *		ACTIVE_MODEL cm.am						// active model pointer is maintained by state management
  */
