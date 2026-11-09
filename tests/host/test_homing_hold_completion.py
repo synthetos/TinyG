@@ -34,7 +34,7 @@ enum {BLOCK_IDLE, BLOCK_INITIALIZING, BLOCK_RUNNING};
 enum {FLUSH_OFF, FLUSH_REQUESTED};
 #define AXES 6
 #define AXIS_X 0
-static struct {int cycle_state, hold_state, queue_flush_state;} cm;
+static struct {int cycle_state, hold_state, queue_flush_state; bool program_paused,end_hold_requested;} cm;
 static struct {int block_state;} mr;
 static struct {stat_t (*func)(int8_t); int8_t axis; float saved_jerk;} hm;
 static bool moving, planner_live;
@@ -49,7 +49,11 @@ void st_cancel_dwell(void) {}
 static void mp_flush_planner(void) {planner_live=false;flushed++;}
 static float mp_get_runtime_absolute_position(uint8_t axis) {return axis+0.25f;}
 static void cm_set_position(uint8_t axis,float value) {assert(value==axis+0.25f);positions++;}
-static void cm_end_hold(void) {cm.hold_state=FEEDHOLD_OFF;ended++;}
+static void mp_exit_hold_state(void) {cm.hold_state=FEEDHOLD_OFF;ended++;}
+static void cm_cycle_end(void) {}
+static void _hold_outputs_cancel(void) {}
+static struct {unsigned state;bool internal_hold,resume_cancelled;} hold_outputs;
+bool cm_outputs_inhibited(void) {return cm_is_alarmed() || cm.queue_flush_state != FLUSH_OFF;}
 static void qr_request_queue_report(int value) {assert(value==0);reports++;}
 '''
 

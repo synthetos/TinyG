@@ -157,6 +157,36 @@ class SpindleCoolantStatus(unittest.TestCase):
             r = subprocess.run([str(exe)], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
 
+    def test_pending_aborts_inhibit_real_output_executors(self):
+        c = code()
+        c = c.replace("int alarm;", "int alarm,machine_state,queue_flush_state; bool job_kill_requested,limit_requested,shutdown_requested;")
+        c = c.replace("static bool cm_outputs_inhibited(void) { return cm.alarm; }",
+                      "enum {MACHINE_READY,MACHINE_ALARM,MACHINE_SHUTDOWN,MACHINE_PANIC};\n#define FLUSH_OFF 0\n" +
+                      fn("canonical_machine.c", "cm_outputs_inhibited", ret="bool"))
+        c += fn("spindle.c", "spindle_get_runtime") + "\n" + fn("spindle.c", "spindle_control_immediate") + r"""
+static void loader_s_update(void) {}
+int main(void) {
+ for(int reason=0;reason<7;reason++) {
+  cm.machine_state=MACHINE_READY;cm.queue_flush_state=0;
+  cm.job_kill_requested=cm.limit_requested=cm.shutdown_requested=false;
+  spindle_control_immediate(SPINDLE_CW,1234.5f);
+  uint8_t mode;float speed;spindle_get_runtime(&mode,&speed);
+  assert(mode==SPINDLE_CW&&speed==1234.5f&&SREG==128);
+  if(reason<3)cm.machine_state=reason+MACHINE_ALARM;
+  if(reason==3)cm.queue_flush_state=1;
+  if(reason==4)cm.job_kill_requested=true;
+  if(reason==5)cm.limit_requested=true;
+  if(reason==6)cm.shutdown_requested=true;
+  float on[]={1};
+  spindle_control_immediate(SPINDLE_CW,1234.5f);
+  _exec_mist_coolant_control(on,FLAGS_NONE);_exec_flood_coolant_control(on,FLAGS_NONE);
+  spindle_get_runtime(&mode,&speed);
+  assert(mode==SPINDLE_OFF&&speed==0&&coolant_out_mist==0&&coolant_out_flood==0);
+ }
+}
+"""
+        self.build_run(c,"abort_outputs")
+
     def test_readouts_follow_the_outputs(self):
         self.build_run(code() + MAIN, "sp")
 

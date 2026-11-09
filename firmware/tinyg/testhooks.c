@@ -14,6 +14,7 @@
 
 volatile test_hook_t test_hook;
 volatile test_plan_t test_plan;
+volatile test_timer_t test_timer;
 
 void testhooks_replan_delay()
 {

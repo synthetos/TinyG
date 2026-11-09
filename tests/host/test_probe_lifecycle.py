@@ -58,7 +58,7 @@ stat_t cm_set_distance_mode(const uint8_t mode) { cm.gm.distance_mode=mode; retu
 int8_t find_probe_switch(void) { return 0; }
 swState read_switch(const uint8_t s) { return SW_INACTIVE; }
 static unsigned feedholds;
-void cm_request_feedhold(void) { feedholds++; }   /* E192: a contact after the initial sample holds the move */
+void cm_request_cycle_feedhold(void) { feedholds++; }   /* E192: a contact after the initial sample holds the move */
 stat_t cm_spindle_control(uint8_t mode) { queued=true; return STAT_OK; }
 stat_t cm_straight_feed(const float *target, const bool *flags) {
     feeds++;

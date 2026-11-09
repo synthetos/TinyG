@@ -41,6 +41,9 @@
 #include "text_parser.h"
 #include "util.h"
 #include "settings.h"
+#ifdef TINYG_TEST_HOOKS
+#include <util/delay.h>
+#endif
 
 /**** Allocate structures ****/
 
@@ -705,8 +708,29 @@ ISR(TIMER_DDA_ISR_vect)
 	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 2 uSec
 
 	if (--st_run.dda_ticks_downcount != 0) return;
+#ifdef TINYG_TEST_HOOKS
+    bool observed_terminal = false;
+    // PENDING is set when the last braking segment is PREPARED, not when it has loaded.
+    // Do not consume the hook on its predecessor: loading that segment would replace count zero.
+    if ((cm.hold_state == FEEDHOLD_PENDING) && (st_pre.block_type == BLOCK_TYPE_NULL) &&
+        test_timer.dda_finish_delay) {
+        test_timer.dda_finish_delay = 0;
+        test_timer.dda_finish_delays++;
+        test_timer.dda_finish_pre_type = st_pre.block_type;
+        _delay_us(25);
+        test_timer.dda_finish_flags = TIMER_DDA.INTFLAGS;
+        test_timer.dda_finish_ctrl = TIMER_DDA.CTRLA;
+        test_timer.dda_finish_cnt = TIMER_DDA.CNT;
+        test_timer.dda_finish_per = TIMER_DDA.PER;
+        observed_terminal = true;
+    }
+#endif
 
 	TIMER_DDA.CTRLA = STEP_TIMER_DISABLE;				// disable DDA timer
+#ifdef TINYG_TEST_HOOKS
+    if (observed_terminal) { test_timer.dda_finish_flags_after_stop = TIMER_DDA.INTFLAGS; }
+#endif
+	TIMER_DDA.INTFLAGS = TC0_OVFIF_bm;             // discard an overflow latched before clock-off
 	_load_move();										// load the next move
 }
 #endif // __AVR
@@ -786,6 +810,7 @@ MOTATE_TIMER_INTERRUPT(dda_timer_num)
 ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
+	TIMER_DWELL.INTFLAGS = TC0_OVFIF_bm;             // discard an overflow latched before clock-off
 		_load_move();
 	}
 }

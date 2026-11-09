@@ -30,6 +30,7 @@ static void cm_set_distance_mode(int a){}
 static void cm_set_feed_rate_mode(int a){}
 static void cm_set_motion_mode(int a,int b){}
 static void cm_set_motion_state(int a){}
+static struct {unsigned state;bool resume_cancelled, internal_hold;} hold_outputs;
 static void mp_zero_segment_velocity(void){}
 static void sr_request_status_report(int a){}
 

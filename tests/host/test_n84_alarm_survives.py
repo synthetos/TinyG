@@ -95,6 +95,7 @@ uint8_t SREG;
 stat_t cm_is_alarmed(void){return (cm.machine_state==MACHINE_ALARM)||(cm.machine_state==MACHINE_SHUTDOWN)||
                                   (cm.machine_state==MACHINE_PANIC);}
 void cm_set_motion_state(int s){cm.motion_state=s;}
+static struct {unsigned state;bool resume_cancelled, internal_hold;} hold_outputs;
 void mp_zero_segment_velocity(void){}
 void sr_request_status_report(int v){(void)v;}
 '''

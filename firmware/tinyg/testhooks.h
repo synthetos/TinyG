@@ -68,6 +68,16 @@ typedef struct testHookPlan {
 
 extern volatile test_plan_t test_plan;
 
+/* One-shot late terminal overflow, for the hold/flush responsiveness regression. */
+typedef struct testHookTimer {
+    uint8_t dda_finish_delay;             // debugger arms; final hold tick consumes it
+    uint8_t dda_finish_delays;            // injected events, not inferred from host timing
+    uint8_t dda_finish_pre_type, dda_finish_flags, dda_finish_ctrl, dda_finish_flags_after_stop;
+    uint16_t dda_finish_cnt, dda_finish_per; // historical timer state, sampled inside the injected ISR
+} test_timer_t;
+extern volatile test_timer_t test_timer;
+
+
 void testhooks_init(void);
 stat_t testhooks_callback(void);
 void testhooks_replan_delay(void);

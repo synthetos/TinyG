@@ -81,7 +81,7 @@ stat_t nv_set(nvObj_t *nv){
  if(nv->index==1 && ((reject && nv->value_flt==9) || (reject_default && nv->value_flt==1.8f))) return 106;
  ram[nv->index]=nv->valuetype==TYPE_FLOAT?nv->value_flt:nv->value_int;return 0;
 }
-void nv_persist(nvObj_t *nv){persisted[nv->index]++;}
+stat_t nv_persist(nvObj_t *nv){persisted[nv->index]++;return STAT_OK;}
 void rpt_print_loading_configs_message(void){}
 void rpt_print_initializing_message(void){}
 void sr_init_status_report_P(const char *s){}

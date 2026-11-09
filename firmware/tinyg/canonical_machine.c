@@ -126,6 +126,20 @@ static void _exec_program_finalize(float *value, bool *flags);
 static void _exec_program_end(float *value, bool *flags);
 static void _exec_program_stop(float *value, bool *flags);
 
+static void _hold_outputs_pause(void);
+static bool _hold_outputs_resume(void);
+static void _hold_outputs_cancel(void);
+static void _hold_outputs_finish_resume(void);
+
+static struct {
+    uint8_t state;                       // 0=inactive, 1=paused, 2=spin-up delay
+    uint8_t spindle_mode, mist, flood;
+    float spindle_speed;
+    volatile bool internal_hold;         // probe/homing contact, not an operator pause
+    volatile bool resume_cancelled;      // latch an ISR ! even if a later ~ arrives during replanning
+    uint32_t started, delay;
+} hold_outputs;
+
 static int8_t _get_axis(const index_t index);
 static int8_t _get_axis_type(const index_t index);
 static uint8_t _report_units(void);
@@ -925,8 +939,7 @@ static bool _enter_alarm(void)
                                                 // kept and rejected line by line while alarmed (E145)
     }
 
-    spindle_reset();                            // stop spindle immediately (a queued M5 would be flushed); S is kept
-    cm_coolant_off_immediate();                 // stop coolant immediately
+    _hold_outputs_cancel();                     // discard paused modes; an alarm must not resurrect them
 //	cm_spindle_optional_pause(spindle.pause_on_hold);
 //	cm_coolant_optional_pause(coolant.pause_on_hold);
 
@@ -963,8 +976,7 @@ stat_t cm_shutdown(const stat_t status, const char *msg)
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-    spindle_reset();                            // stop spindle immediately (S is kept, like M5)
-    cm_coolant_off_immediate();                 // stop coolant immediately
+    _hold_outputs_cancel();
     cm_queue_flush();                           // flush all queues and reset positions
 
     for (uint8_t i = 0; i < HOMING_AXES; i++) { // unhome axes and the machine
@@ -1001,8 +1013,7 @@ stat_t cm_panic(const stat_t status, const char *msg)
         return (STAT_OK);
     }
     cm_halt_motion();                           // halt motors (may have already been done from GPIO)
-    spindle_reset();                            // stop spindle immediately (S is kept, like M5)
-    cm_coolant_off_immediate();                 // stop coolant immediately
+    _hold_outputs_cancel();
     cm_queue_flush();                           // flush all queues and reset positions
 
 	cm.machine_state = MACHINE_PANIC;           // don't reset anything. Panics are not recoverable
@@ -1764,7 +1775,8 @@ stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
 bool cm_outputs_inhibited()
 {
     return ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
-            (cm.machine_state == MACHINE_PANIC));
+            (cm.machine_state == MACHINE_PANIC) || (cm.queue_flush_state != FLUSH_OFF) ||
+            cm.job_kill_requested || cm.limit_requested || cm.shutdown_requested);
 }
 
 /*
@@ -1954,6 +1966,11 @@ void cm_request_feedhold(void) {
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    hold_outputs.internal_hold = false;          // an operator request upgrades any internal contact hold
+    if (cm.hold_state == FEEDHOLD_HOLD) {
+        cm.end_hold_requested = false;
+        hold_outputs.resume_cancelled = true;
+    }
     bool held = mp_hold_startup();
     if (!held && (cm.hold_state == FEEDHOLD_OFF)) {
         bool stopped = !st_aline_in_flight();
@@ -1977,6 +1994,22 @@ void cm_request_feedhold(void) {
         cm.hold_fast_request = false;
         sr_request_status_report(SR_REQUEST_ASAP);
     }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+// Probe/homing switches stop an internal move without pausing spindle/vacuum outputs.
+// Never downgrade a hold that an operator or alarm already requested.
+void cm_request_cycle_feedhold(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    bool internal = (cm.hold_state == FEEDHOLD_OFF) || hold_outputs.internal_hold;
+    cm_request_feedhold();                       // a new contact must still cancel a pending resume
+    hold_outputs.internal_hold = internal && (cm.hold_state != FEEDHOLD_OFF);
 #ifdef __AVR
     SREG = saved_sreg;
 #endif
@@ -2048,6 +2081,7 @@ static void _service_input_flush()
 
 static void _run_requested_queue_flush()
 {
+    _hold_outputs_cancel();                     // a discarded job never restarts saved outputs
     st_cancel_dwell();                             // discarding a job also discards its remaining dwell
     if (!mp_runtime_is_idle() ||
         ((cm.hold_state != FEEDHOLD_OFF) && (cm.hold_state != FEEDHOLD_REQUESTED) &&
@@ -2073,6 +2107,7 @@ void cm_tx_blocked_callback(void)
     if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
         cm_start_hold();
     }
+    if (cm.hold_state == FEEDHOLD_HOLD) { _hold_outputs_pause(); }
 }
 
 stat_t cm_feedhold_sequencing_callback()
@@ -2089,6 +2124,7 @@ stat_t cm_feedhold_sequencing_callback()
 	if ((cm.hold_state == FEEDHOLD_REQUESTED) || (cm.hold_state == FEEDHOLD_SYNC)) {
 		cm_start_hold();                            // feed won't run unless the machine is moving
 	}
+    if (cm.hold_state == FEEDHOLD_HOLD) { _hold_outputs_pause(); }
 	if (cm.queue_flush_state == FLUSH_REQUESTED) {
         _run_requested_queue_flush();               // runs once motion has stopped
 	}
@@ -2106,6 +2142,95 @@ stat_t cm_feedhold_sequencing_callback()
  * cm_end_hold()   - end a feedhold by returning the system to normal operation
  * cm_has_hold()   - return true if a hold condition exists (or a pending hold request)
  */
+
+static void _hold_outputs_cancel(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    hold_outputs.state = 0;
+    hold_outputs.internal_hold = false;
+    hold_outputs.resume_cancelled = false;
+    spindle_reset();
+    float off[] = { 0 };
+    _exec_flood_coolant_control(off, FLAGS_NONE);
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+static void _hold_outputs_pause(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (cm_outputs_inhibited()) {
+        _hold_outputs_cancel();
+    } else if (hold_outputs.internal_hold) {
+        // A cycle contact is not an operator pause; the cycle will flush/finalize its move.
+    } else if ((hold_outputs.state == 0) &&
+               !((st_pre.buffer_state == PREP_BUFFER_OWNED_BY_LOADER) &&
+                 (st_pre.block_type == BLOCK_TYPE_COMMAND))) {
+        uint8_t mode;
+        spindle_get_runtime(&mode, &hold_outputs.spindle_speed);
+        hold_outputs.spindle_mode = spindle_cfg.pause_on_hold ? mode : SPINDLE_OFF;
+        hold_outputs.mist = spindle_cfg.coolant_pause_on_hold && coolant_out_mist;
+        hold_outputs.flood = spindle_cfg.coolant_pause_on_hold && coolant_out_flood;
+        if (spindle_cfg.pause_on_hold) { spindle_reset(); }
+        if (spindle_cfg.coolant_pause_on_hold) {
+            float off[] = { 0 };
+            _exec_flood_coolant_control(off, FLAGS_NONE);
+        }
+        hold_outputs.state = 1;
+    } else if ((hold_outputs.state == 2) &&
+               (hold_outputs.resume_cancelled || !cm.end_hold_requested)) {
+        if (hold_outputs.spindle_mode != SPINDLE_OFF) { spindle_reset(); }
+        hold_outputs.state = 1;
+    }
+    hold_outputs.resume_cancelled = false;
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
+static bool _hold_outputs_resume(void)
+{
+    if (hold_outputs.internal_hold) { return (true); }
+    if (hold_outputs.state == 0) { _hold_outputs_pause(); }
+    if (hold_outputs.state == 0) { return (false); } // a prepared output command must settle first
+    if (hold_outputs.state == 1) {
+        hold_outputs.delay = 0;
+        if (hold_outputs.spindle_mode != SPINDLE_OFF) {
+            spindle_control_immediate(hold_outputs.spindle_mode, hold_outputs.spindle_speed);
+            if (spindle_cfg.dwell_seconds > 0) {
+                // RTC is quantized to 10 ms; add one tick so rounding cannot shorten the delay.
+                hold_outputs.delay = (uint32_t)ceilf(spindle_cfg.dwell_seconds * 1000) + 10;
+            }
+        }
+        hold_outputs.started = SysTickTimer_getValue();
+        hold_outputs.state = 2;
+    }
+    if ((uint32_t)(SysTickTimer_getValue() - hold_outputs.started) < hold_outputs.delay) {
+        return (false);
+    }
+    return (true);
+}
+
+static void _hold_outputs_finish_resume(void)
+{
+    if (hold_outputs.internal_hold) { hold_outputs.internal_hold = false; return; }
+    if (hold_outputs.flood) {
+        float on[] = { 1 };
+        _exec_flood_coolant_control(on, FLAGS_NONE);
+    }
+    if (hold_outputs.mist) {
+        float on[] = { 1 };
+        _exec_mist_coolant_control(on, FLAGS_NONE);
+    }
+    hold_outputs.state = 0;
+}
 
 void cm_start_hold()
 {
@@ -2136,35 +2261,59 @@ void cm_start_hold()
 
 void cm_end_hold()
 {
-	if (cm.hold_state == FEEDHOLD_HOLD) {
-        cm.program_paused = false;
-        cm.end_hold_requested = false;
-        stat_t status = mp_replan_held_block();       // keep the hold if its new plan is invalid
-        if (status != STAT_OK) {
-            rpt_exception_P(status, PSTR("held move geometry"));
-            return;
-        }
-        if ((cm.machine_state != MACHINE_ALARM) && mp_has_runnable_buffer()) {
-            cm_cycle_start();                       // before the exec may run a block: a block that ends the
-        }                                           // cycle (a dwell emptying the queue) must find it started (E165)
-	    mp_exit_hold_state();
-
-        // State machine cases:
-        if (cm.machine_state == MACHINE_ALARM) {
-//            cm_spindle_off_immediate();
-//            cm_coolant_off_immediate();
-
-        } else if (cm.motion_state == MOTION_STOP) { // && (! MACHINE_ALARM)
-//            cm_spindle_off_immediate();
-//            cm_coolant_off_immediate();
-		    cm_cycle_end();
-
-        } else {    // (MOTION_RUN || MOTION_PLANNING)  && (! MACHINE_ALARM): cycle started above
-//            cm_spindle_resume(spindle.dwell_seconds);
-//            cm_coolant_resume();
-            st_request_exec_move();
+    bool resume_ready = false;
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if ((cm.hold_state == FEEDHOLD_HOLD) && cm.end_hold_requested) {
+        if (cm_is_alarmed() || (cm.queue_flush_state != FLUSH_OFF) || cm.job_kill_requested ||
+            cm.hold_fast_request || cm.limit_requested || cm.shutdown_requested) {
+            _hold_outputs_cancel();
+            cm.end_hold_requested = false;
+        } else {
+#ifdef __AVR
+            // Never force interrupts on for a masked caller or walk the planner list masked.
+            if (saved_sreg & 0x80) { resume_ready = _hold_outputs_resume(); }
+#else
+            resume_ready = _hold_outputs_resume();
+#endif
         }
     }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (!resume_ready) { return; }
+
+    // HOLD and program_paused stay latched throughout this interruptible planner walk.
+    stat_t status = mp_replan_held_block();
+#ifdef __AVR
+    cli();
+#endif
+    bool aborted = cm_is_alarmed() || (cm.queue_flush_state != FLUSH_OFF) || cm.job_kill_requested ||
+                   cm.hold_fast_request || cm.limit_requested || cm.shutdown_requested;
+    if ((status == STAT_OK) && (cm.hold_state == FEEDHOLD_HOLD) && cm.end_hold_requested &&
+        !hold_outputs.resume_cancelled && !aborted) {
+        _hold_outputs_finish_resume();
+        cm.program_paused = false;
+        cm.end_hold_requested = false;
+        bool runnable = mp_has_runnable_buffer();
+        if (runnable) { cm_cycle_start(); }        // before an executor can empty the queue (E165)
+        mp_exit_hold_state();
+        if (!runnable) { cm_cycle_end(); }         // a lone dwell or M0 can also resume with an empty queue
+    } else if (aborted || (cm.hold_state != FEEDHOLD_HOLD)) {
+        _hold_outputs_cancel();
+        cm.end_hold_requested = false;
+    } else {
+        // A second !, even followed by ~ during replanning, cancels this entire spin-up.
+        hold_outputs.resume_cancelled = true;
+        if (status != STAT_OK) { cm.end_hold_requested = false; }
+        _hold_outputs_pause();
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    if (status != STAT_OK) { rpt_exception_P(status, PSTR("held move geometry")); }
 }
 
 bool cm_has_hold()
@@ -2216,6 +2365,16 @@ void cm_queue_flush()
     uint8_t saved_sreg = SREG;
     cli();
 #endif
+    // Homing flushes each phase as housekeeping. Preserve its live spindle/vacuum unless the
+    // flush is an explicit abort or there really are saved operator-pause modes to discard.
+    bool preserve_outputs = (cm.cycle_state == CYCLE_HOMING) &&
+                            !cm_outputs_inhibited() && !hold_outputs.state;
+    if (!preserve_outputs) {
+        _hold_outputs_cancel();
+    } else {
+        hold_outputs.internal_hold = false;
+        hold_outputs.resume_cancelled = false;
+    }
     // Homing calls this directly as housekeeping, not as a request to abort a dwell.
     if ((cm.hold_state == FEEDHOLD_HOLD) || (cm.queue_flush_state == FLUSH_REQUESTED)) {
         st_cancel_dwell();
@@ -2231,9 +2390,19 @@ void cm_queue_flush()
         for (uint8_t axis = AXIS_X; axis < AXES; axis++) { // set all positions
             cm_set_position(axis, mp_get_runtime_absolute_position(axis));
         }
-        if(cm.hold_state == FEEDHOLD_HOLD) {        // end feedhold if we're in one
-            cm_end_hold();
+#ifdef __AVR
+        uint8_t hold_sreg = SREG;
+        cli();
+#endif
+        cm.program_paused = false;
+        cm.end_hold_requested = false;
+        if (cm.hold_state == FEEDHOLD_HOLD) {
+            mp_exit_hold_state();                 // empty queue: MOTION_STOP, including in ALARM
+            if (!cm_is_alarmed()) { cm_cycle_end(); }
         }
+#ifdef __AVR
+        SREG = hold_sreg;
+#endif
         // Consume a host '%' together with the state change: the RX ISR sets both (E145). A '%' that
         // lands before this is handed off; after it, the flush is over and the '%' is not honored.
         // Callers include panic paths, so the input pool is reset later, by the sequencing callback.
@@ -2241,6 +2410,9 @@ void cm_queue_flush()
         uint8_t saved_sreg = SREG;
         cli();
 #endif
+        // A host abort can arrive while the planner/position walk had interrupts enabled.
+        // Turn outputs off before consuming that request; it is no longer just housekeeping.
+        if (preserve_outputs && cm_outputs_inhibited()) { _hold_outputs_cancel(); }
         _take_input_flush_request();                // nests: restores the cleared SREG
         cm.queue_flush_state = FLUSH_OFF;
 #ifdef __AVR
@@ -2305,6 +2477,9 @@ void cm_queue_flush()
 static void _exec_program_finalize(float *value, bool *flags)
 {
 	if (cm_is_alarmed() != STAT_OK) { return; }			// only $clear or a reset ends these (N84)
+    hold_outputs.state = 0;                      // a canned cycle may finish at a contact hold, without ~
+    hold_outputs.internal_hold = false;
+    hold_outputs.resume_cancelled = false;
 	cm.machine_state = (uint8_t)value[0];               // set to one of STOP or END
 	cm_set_motion_state(MOTION_STOP);
 	if (cm.cycle_state == CYCLE_MACHINING) {

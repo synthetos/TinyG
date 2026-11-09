@@ -46,7 +46,9 @@ def switch_code(probe=False):
     types += h[h.index("#define SW_LOCKOUT_MS"):h.index("/****************", h.index("switches_t sw;"))]
     pre = SWITCH_PRELUDE + INTERRUPTS + "\nstatic int inject, pending;\n"
     if probe:
-        pre = pre.replace("static void cm_request_feedhold(void) {holds++;}", "void cm_request_feedhold(void);")
+        pre = pre.replace("bool hold_fast,", "bool end_hold_requested, hold_fast,")
+        pre += "\nstatic struct {bool resume_cancelled, internal_hold;} hold_outputs;\n"
+        pre = pre.replace("static void cm_request_cycle_feedhold(void) {holds++;}", "void cm_request_feedhold(void); void cm_request_cycle_feedhold(void);")
     code = pre + types + "\nrtClock_t rtc;\n"
     code += "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }   /* switch.c reads the clock through it (E190) */\n"
     code += "\n".join(fn("xmega/xmega_rtc.c", n) for n in ("Timeout_isSet", "Timeout_isPast", "Timeout_set", "Timeout_clear"))
@@ -82,6 +84,7 @@ static void cm_cycle_start(void) {assert(0);} // no dwell is modeled in this pro
 
 '''
     code += fn("canonical_machine.c", "cm_request_feedhold")
+    code += fn("canonical_machine.c", "cm_request_cycle_feedhold")
     code += r'''
 /* the probe touches right after the pin is sampled; the edge interrupt runs then if interrupts are
    enabled, else as soon as the critical section ends (before anything else the main loop does) */

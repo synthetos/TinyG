@@ -37,6 +37,10 @@ class SpindlePolarity(unittest.TestCase):
 #define MACHINE_ALARM 10
 #define MACHINE_SHUTDOWN 11
 #define MACHINE_PANIC 12
+#define FLUSH_OFF 0
+#define SPINDLE_PAUSE_ON_HOLD 1
+#define SPINDLE_DWELL_TIME 1.0f
+#define COOLANT_PAUSE_ON_HOLD 0
 #define SPINDLE_OFF 0
 #define SPINDLE_CW 1
 #define SPINDLE_CCW 2
@@ -55,8 +59,8 @@ class SpindlePolarity(unittest.TestCase):
 #define cli() (SREG &= ~128)
 typedef int stat_t;
 typedef struct { uint32_t value_int; uint8_t *target; } nvObj_t;
-struct { uint8_t enable_polarity, direction_polarity; } spindle_cfg;
-struct { int machine_state; struct { int spindle_mode; float spindle_speed; } gm; } cm;
+struct { uint8_t enable_polarity, direction_polarity, pause_on_hold, coolant_pause_on_hold; float dwell_seconds; } spindle_cfg;
+struct { int machine_state,queue_flush_state; bool job_kill_requested,limit_requested,shutdown_requested; struct { int spindle_mode; float spindle_speed; } gm; } cm;
 struct { int buffer_state; } st_pre;
 uint8_t SREG;
 static bool queued, running, spindle_configured;
@@ -164,7 +168,8 @@ int main(void) {
         self.assertEqual(new[end+25:end+31], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
         groups = list(old[end:])
         groups.insert(groups.index(("", "jid")) + 1, ("", "rt"))                    # runtime session group
-        self.assertEqual(new[end+31:], groups)
+        self.assertEqual(new[end+31], ("", "_hld"))
+        self.assertEqual(new[end+32:], groups)
 
 
 if __name__ == "__main__":

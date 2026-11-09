@@ -267,6 +267,35 @@ static void _write_nvm_layout_marker(nvObj_t *nv)
 	write_persistent_value(nv);
 }
 
+// The three hold settings already have layout-2 slots. Their unused bytes are not saved values.
+// A hidden, appended stamp makes activation one-time without changing any existing index or the layout marker.
+#define CONFIG_HOLD_SETTINGS_STAMP 0xE060A501UL
+
+static bool _hold_settings_need_defaults(nvObj_t *nv)
+{
+    index_t saved_index = nv->index;
+    uint32_t saved_value = nv->value_int;
+    nv->index = nv_get_index("", "_hld");
+    read_persistent_value(nv);
+    bool initialize = (nv->value_int != CONFIG_HOLD_SETTINGS_STAMP);
+    nv->index = saved_index;
+    nv->value_int = saved_value;
+    return initialize;
+}
+
+static bool _is_hold_setting(nvObj_t *nv)
+{
+    return !strcmp_P(nv->token, PSTR("spph")) || !strcmp_P(nv->token, PSTR("spde")) ||
+           !strcmp_P(nv->token, PSTR("coph"));
+}
+
+static void _write_hold_settings_marker(nvObj_t *nv)
+{
+    nv->index = nv_get_index("", "_hld");
+    nv->value_int = CONFIG_HOLD_SETTINGS_STAMP;
+    write_persistent_value(nv);  // boot only: commit after all three defaults have been persisted
+}
+
 /************************************************************************************
  * Master settings migration (N92)
  *
@@ -537,6 +566,8 @@ void config_init()
 
 	read_persistent_value(nv);
     bool migrate = _nvm_layout_is_legacy(nv);
+    bool initialize_hold = _hold_settings_need_defaults(nv);
+    bool initialized = true;
 	index_t checkpoint_slot;
 	uint8_t checkpoint_seq;
 	index_t master_done = _master_checkpoint(&checkpoint_slot, &checkpoint_seq);
@@ -547,7 +578,6 @@ void config_init()
 	} else if (!_nvm_layout_is_current(nv) && !migrate) {	// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
-        bool initialized = true;
         index_t first_new = nv_index_max();
         if (migrate) {
             strcpy_P(nv->token, PSTR("spep"));
@@ -561,9 +591,9 @@ void config_init()
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
             if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-                if (migrate && (nv->index >= first_new)) {
+                if ((migrate && (nv->index >= first_new)) || (initialize_hold && _is_hold_setting(nv))) {
                     if (_load_config_default(nv) == STAT_OK) {
-                        nv_persist(nv);
+                        if (nv_persist(nv) != STAT_OK) { initialized = false; }
                     } else {
                         initialized = false;
                     }
@@ -579,6 +609,7 @@ void config_init()
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
         if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
+    if (initialize_hold && initialized && (config_failed.count == 0)) { _write_hold_settings_marker(nv); }
 #endif
 	if (master_done > 0) {
 		_clear_master_checkpoints();				// left by a migration that wrote its marker
