@@ -13,10 +13,11 @@ class OverrideBindings(unittest.TestCase):
                    '-I'+str(FW),str(c),str(FW/'override.c'),'-lm','-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
  def test_usb_filters_only_opted_in_standalone_knobs(self):
-  code='#define OVERRIDE_FIXTURE_STUBS\n'+PRELUDE+'\n#include "override.h"\n#define USART_RX_DATA_READY_bm 0x80\n#define USART_FERR_bm 0x10\n#define USART_PERR_bm 0x04\n#define STAT_OK 0\nstatic int cm_is_alarmed(void){return 0;}\n'
+  code='#define OVERRIDE_FIXTURE_STUBS\n'+PRELUDE+'\n#include "override.h"\n#define USART_RX_DATA_READY_bm 0x80\n#define USART_FERR_bm 0x10\n#define USART_PERR_bm 0x04\n#define STAT_OK 0\nstatic unsigned alarm_checks;static int cm_is_alarmed(void){alarm_checks++;return 0;}\n'
   code=code.replace('static void cm_request_feedhold(void) {}','static void cm_request_feedhold(void) {ov_cancel();}')
   # The function above needs its declaration before the fixture's emergency callbacks.
-  code='#include "override.h"\n'+code
+  code=code.replace('static void cm_request_end_hold(void) {}','static void cm_request_end_hold(void) {resumes++;}')
+  code='#include "override.h"\nstatic unsigned resumes;\n'+code
   usart=(FW/'xio/xio_usart.c').read_text();usb=(FW/'xio/xio_usb.c').read_text()
   for source,sig in ((usart,r'buffer_t xio_get_rx_bufcount_usart\('),(usart,r'void xio_xon_usart\('),
                      (usart,r'void xio_fc_usart\('),(usb,r'static void _usb_rx_lost\('),
@@ -28,10 +29,26 @@ static void send(unsigned char c){uart.DATA=c;USB_RX_ISR_vect();}
 int main(void){
  USB.x=&USBu;USB.x_flow=xio_fc_usart;USBu.usart=&uart;USBu.port=&port;
  xio_reset_usb_rx_buffers();ov_init();ovSnapshot_t s;
+ send('G');send('1');send('\n');assert(alarm_checks==0); /* disabled path never asks permission */
+ xio_reset_usb_rx_buffers();USBu.rx_buf_count=0;
  assert(xio_usb_input_boundary());uart.STATUS=USART_RX_DATA_READY_bm;assert(!xio_usb_input_boundary());uart.STATUS=0;
  send(0x9C);ov_snapshot(&s);assert(s.spindle==1000&&USBu.rx_buf_count==1);
  xio_reset_usb_rx_buffers();USBu.rx_buf_count=0;
  assert(ov_arm(true,true,true,true)==OV_OK);
+ for(unsigned knob=0x90;knob<=0x9D;knob++) {
+  if(knob==0x98)continue;
+  xio_reset_usb_rx_buffers();USBu.rx_buf_count=0;cm.queue_flush_input=false;
+  rx_quiet_ticks=RX_STALE_LINE_TICKS;
+  send(knob);assert(!rx_in_line&&rx_quiet_ticks==RX_STALE_LINE_TICKS&&USBu.rx_buf_count==0);
+  send('%');assert(cm.queue_flush_input&&USBu.rx_buf_count==0);
+  unsigned before=resumes;send('~');assert(resumes==before+1&&USBu.rx_buf_count==0);
+  send('G');send('1');unsigned count=USBu.rx_buf_count;uint8_t head=USBu.rx_buf_head;
+  rx_quiet_ticks=RX_STALE_LINE_TICKS;
+  send(knob);assert(rx_in_line&&rx_quiet_ticks==RX_STALE_LINE_TICKS&&USBu.rx_buf_count==count&&USBu.rx_buf_head==head);
+  send('{');assert(USBu.rx_buf_count==count+2); /* E195 mark precedes the opening brace */
+  assert((uint8_t)USBu.rx_buf[head-1]==RX_STALE_LINE_MARK);
+ }
+ xio_reset_usb_rx_buffers();USBu.rx_buf_count=0;ov_init();assert(ov_arm(true,true,true,true)==OV_OK);
  send(0xE2);send(0x80);send('!');send(0x9C); /* a hold invalidates tickets, not UTF-8 continuation */
  ov_snapshot(&s);assert(s.spindle==1000&&USBu.rx_buf_count==3);
  send('\n');unsigned kept=USBu.rx_buf_count;
