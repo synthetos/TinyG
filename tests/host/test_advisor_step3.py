@@ -113,7 +113,7 @@ def b_code():
     h = src("feedlimit.h")
     code = B_PRELUDE + "\n".join(l for l in h.splitlines() if l.startswith("#define FL_")) + "\n"
     code += h[h.index("typedef struct flPending"):h.index("} flPending_t;") + len("} flPending_t;")] + "\n"
-    code += "volatile flPending_t fl_pend[2]; volatile uint8_t fl_bank, fl_on;\nstruct { volatile uint8_t job; } rt;\n"
+    code += "volatile flPending_t fl_pend[2]; volatile uint8_t fl_bank, fl_on, fl_job_moved;\nstruct { volatile uint8_t job; } rt;\n"
     st = src("stepper.c")
     code += "static uint8_t fl_moved;\n" + function(st, r"static void _fl_command_break\(const mpBuf_t \*bf\)") + "\n"
     code += r'''
@@ -131,13 +131,13 @@ static void cmd(float v[], bool f[]) { (void)v; (void)f; }
 
 
 B_MAIN = r'''
-static void load_move(void) { fl_moved = true; }               /* an ALINE segment load (stepper.c) */
+static void load_move(void) { fl_moved = (fl_on && rt.job); }  /* an ALINE segment load (stepper.c) */
 static void load_dwell(void) { fl_moved = false; }
 static mpBuf_t cmd_buf(uint8_t cls) { mpBuf_t b; memset(&b, 0, sizeof(b)); b.block_type = BLOCK_TYPE_COMMAND; b.fl_cls = cls; return b; }
 int main(void) {
     /* breaks: only with accounting on and a host job, and only after a move */
     mpBuf_t s = cmd_buf(FL_CLS_SPINDLE), c = cmd_buf(FL_CLS_COOLANT), o = cmd_buf(FL_CLS_OTHER), bad = cmd_buf(9);
-    fl_on = 1; rt.job = 1;
+    fl_on = 1; rt.job = 1; fl_job_moved = 1;
     _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 0);            /* no move before it */
     load_move(); _fl_command_break(&s); _fl_command_break(&c);                        /* S then M8: one break */
     assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1 && fl_pend[0].breaks[FL_CLS_COOLANT] == 0);
@@ -147,6 +147,10 @@ int main(void) {
     rt.job = 0; load_move(); _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1);   /* no job */
     rt.job = 1; fl_on = 0; load_move(); _fl_command_break(&s); assert(fl_pend[0].breaks[FL_CLS_SPINDLE] == 1); /* off */
     fl_on = 1; fl_bank = 1; load_move(); _fl_command_break(&s); assert(fl_pend[1].breaks[FL_CLS_SPINDLE] == 1);  /* bank */
+    /* a move outside the job, or before this job moved, is not a predecessor */
+    rt.job = 0; load_move(); rt.job = 1; _fl_command_break(&s); assert(fl_pend[1].breaks[FL_CLS_SPINDLE] == 1);
+    load_move(); fl_job_moved = 0; _fl_command_break(&s); assert(fl_pend[1].breaks[FL_CLS_SPINDLE] == 1);
+    fl_job_moved = 1; load_move(); _fl_command_break(&s); assert(fl_pend[1].breaks[FL_CLS_SPINDLE] == 2);
 
     /* tagging: the queued move before a command gets FL_COMMAND and the command's class */
     float v[AXES] = { 0 }; bool f[AXES] = { 0 };
@@ -182,7 +186,7 @@ class AdvisorStep3Commands(unittest.TestCase):
         self.assertRegex(pl, r"if \(pv_type == BLOCK_TYPE_COMMAND\) \{[^}]*fl_tags \|= FL_COMMAND;")  # the move after a command
         st = src("stepper.c")
         self.assertRegex(st, r"_fl_command_break\(st_pre\.bf\);[^\n]*\n\s*mp_runtime_command\(st_pre\.bf\);")
-        self.assertEqual(st.count("fl_moved = true;"), 1)
+        self.assertEqual(st.count("fl_moved = (fl_on && rt.job);"), 1)      # only a job move is a predecessor
 
 
 # C. Supply gaps: with accounting on and a host job, a stop after motion began in which the runtime drained with
@@ -191,6 +195,27 @@ class AdvisorStep3Commands(unittest.TestCase):
 #    M0/M1 stops the accrual and keeps it open; alarm, flush, kill and job end close it. The exec latches an underrun
 #    so a drain and refill between two looks still counts. While starved, fl carries "g" and the last line run.
 import test_feed_limit_accounting as fla_t
+
+U_MAIN = r'''
+int main(void) {
+    fl_on = 1; rt.job = 1; st_pre.buffer_state = 2;                   /* the loader finds nothing prepared */
+    load_empty(); assert(fl_underrun);
+    fl_underrun = 0; cm.hold_state = 4; load_empty(); assert(!fl_underrun); cm.hold_state = 0;     /* hold */
+    cm.program_paused = true; load_empty(); assert(!fl_underrun); cm.program_paused = false;      /* M0/M1 */
+    rt.job = 0; load_empty(); assert(!fl_underrun); rt.job = 1;                                   /* no job */
+    fl_on = 0; load_empty(); assert(!fl_underrun); fl_on = 1;                                     /* off */
+    return 0;
+}
+'''
+
+
+def u_code():
+    st = src("stepper.c")
+    load = function(st, r"static void _load_move\(\)")
+    return (B_PRELUDE + "#define PREP_BUFFER_OWNED_BY_LOADER 0\n#define FEEDHOLD_OFF 0\n"
+            "struct { int buffer_state; } st_pre;\nstruct { int hold_state; bool program_paused; } cm;\n"
+            "volatile uint8_t fl_on, fl_underrun;\nstruct { volatile uint8_t job; } rt;\n"
+            "static void load_empty(void) {\n" + fla_t.block(load, "if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {") + "\n}\n")
 
 C_MAIN = r'''
 static stat_t set_fi(uint32_t v) { nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER; nv.value_int = v; return rt_set_fi(&nv); }
@@ -271,9 +296,12 @@ class AdvisorStep3Gaps(unittest.TestCase):
         import json
         self.assertEqual(json.loads(out.splitlines()[0])["fl"], {"k": 0, "m": 0, "p": None, "n": 77, "g": 2})
 
+    def test_underrun_latch(self):
+        self.build_run(u_code() + U_MAIN, "underrun")
+
     def test_gap_wiring(self):
         ex = function(src("plan_exec.c"), r"stat_t mp_exec_move\(\)")
-        self.assertRegex(ex, r"if \(fl_on && rt\.job && \(cm\.hold_state == FEEDHOLD_OFF\)\) \{ fl_underrun = true; \}")
+        self.assertNotIn("fl_underrun", ex)       # an empty planner while the last segment steps is not a drain
         stage = function(src("feedlimit.c"), r"void fl_stage_block\(const mpBuf_t \*bf\)")
         self.assertIn("if (rt.job) { fl_job_moved = true; }", stage)
         self.assertIn("fl_job_moved = false;", function(src("runtime.c"), r"stat_t rt_set_fi\(nvObj_t \*nv\)"))
@@ -293,6 +321,7 @@ static stat_t set_fi(uint32_t v) { nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER
 static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
 static void ask(void) { nvObj_t nv = {0}; assert(rt_get_fs(&nv) == STAT_OK); }
 static void settle(void) { tick(systick + 300); }                         /* let a pending fl event go out first */
+static const char *last_of(const char *k) { for (int i = nframes - 1; i >= 0; i--) if (strstr(frames[i], k)) return frames[i]; return ""; }
 int main(void) {
     rt.allowed = true; systick = 1000; cm.machine_state = MACHINE_READY;
     assert(_fl_tick_ms(1024) == 1000 && _fl_tick_ms(512) == 500 && _fl_tick_ms(4294967295u) == 4194303999u);
@@ -345,6 +374,31 @@ int main(void) {
     rt.job = 0; tick(systick + 2);
     assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK);
     fl_pend[fl_bank].wrapped = 1; _fl_fold(); assert(fla.invalid && fla.fg_invalid);
+
+    /* fi 0 freezes an open gap: no accrual while accounting is off, and summaries keep that cutoff */
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK); settle();
+    rt.job = 1; fl_job_moved = 1; busy = false; tick(systick + 1); assert(fla.gap_open && fla.gap_cls == FL_GAP_NONE);
+    tick(systick + 1024); assert(set_fi(0) == STAT_OK && !fla.gap_open && fla.gap_cls == 0);
+    { uint32_t frozen = fla.gap_ticks[FL_GAP_NONE - 1]; assert(frozen >= 1023 && frozen <= 1025);
+      tick(systick + 4096); assert(fla.gap_ticks[FL_GAP_NONE - 1] == frozen);
+      nframes = 0; ask(); while (count("\"fg\"") < 1) tick(systick + 1);
+      char want[32]; snprintf(want, sizeof(want), "\"g\":[0,%lu,1]", (unsigned long)_fl_tick_ms(frozen)); assert(strstr(last_of("\"fg\""), want)); }
+    rt.job = 0;
+
+    /* fg is the snapshot taken with its fs, even if the counters move while it waits for the link */
+    assert(set_fi(1) == STAT_OK); settle();
+    fla.breaks[FL_CLS_SPINDLE] = 1; nframes = 0; ask(); while (count("\"fs\"") < 1) tick(systick + 1);
+    assert(fla.fg_due); tx_ready = 0; fla.breaks[FL_CLS_SPINDLE] = 9; fla.gaps = 50; tick(systick + 100);
+    tx_ready = 1; while (count("\"fg\"") < 1) tick(systick + 1);
+    assert(strstr(last_of("\"fg\""), "\"g\":[0,0,0],\"b\":[[1,0],"));
+
+    /* an open gap's running interval that wraps the total marks fg x at once */
+    assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK); settle();
+    rt.job = 1; fl_job_moved = 1; busy = false; rx_unread = true; tick(systick + 1); assert(fla.gap_cls == FL_GAP_PENDING);
+    fla.gap_ticks[FL_GAP_PENDING - 1] = 4294967295u - 1000; tick(systick + 2048);
+    nframes = 0; ask(); while (count("\"fg\"") < 1) tick(systick + 1);
+    assert(strstr(last_of("\"fg\""), ",\"x\":1}}") && fla.fg_invalid);
+    rx_unread = false; rt.job = 0; tick(systick + 2);
 
     /* largest frames fit the send limit (each LF counts 2) and their buffers */
     fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
