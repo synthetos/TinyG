@@ -206,7 +206,13 @@ stat_t rt_set_job(nvObj_t *nv)
 	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
 	if ((nv->valuetype != TYPE_INTEGER) || (nv->value_int > 1)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
 	if (rt.check_only) { return (STAT_OK); }
-	rt.job = (uint8_t)nv->value_int;
+	uint8_t job = (uint8_t)nv->value_int;
+	if (job != rt.job) {							// a job starts or ends: its motion evidence starts clean
+		rt.job = 0;								// first, so the exec and loader stop adding evidence
+		fl_job_moved = false;
+		fl_underrun = false;
+		rt.job = job;
+	}
 	nv->valuetype = TYPE_INTEGER;
 	return (STAT_OK);
 }
@@ -236,7 +242,9 @@ stat_t rt_set_fg(nvObj_t *nv)
 
 void rt_job_end(void)
 {
-	rt.job = 0;								// one byte: safe from interrupts and the main loop alike
+	rt.job = 0;								// one byte each: safe from interrupts and the main loop alike;
+	fl_job_moved = false;					// the job's motion evidence ends with it, not at the gap callback's
+	fl_underrun = false;					// next look (a new job could start before that)
 }
 
 /*
@@ -752,6 +760,7 @@ stat_t rt_set_fi(nvObj_t *nv)
 				_fl_gap_close(SysTickTimer_getValue());
 				fla.gap_open = false;
 				fl_job_moved = false;
+				fl_underrun = false;				// after fl_on: the loader latches no more
 			}
 			fla.fi = fi;
 		}
@@ -771,6 +780,7 @@ stat_t rt_set_fi(nvObj_t *nv)
 		fl_um_q16 = 0;
 		fl_activity = false;
 		fl_job_moved = false;
+		fl_underrun = false;
 		fl_on = true;
 	}
 #ifdef __AVR
