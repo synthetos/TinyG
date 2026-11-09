@@ -72,6 +72,10 @@ enum { TYPE_NULL = 0, TYPE_INTEGER = 2, TYPE_FLOAT = 4 };
 enum { MOTION_STOP = 0, MOTION_RUN, MOTION_HOLD };
 enum { FEEDHOLD_OFF = 0, FEEDHOLD_SYNC = 1, FEEDHOLD_HOLD = 4 };
 enum { CYCLE_OFF = 0, CYCLE_MACHINING = 1 };
+enum { MACHINE_INITIALIZING = 0, MACHINE_READY, MACHINE_ALARM, MACHINE_PROGRAM_STOP, MACHINE_PROGRAM_END, MACHINE_CYCLE,
+       MACHINE_INTERLOCK, MACHINE_SHUTDOWN, MACHINE_PANIC };
+#define FLUSH_OFF 0
+#define BLOCK_IDLE 0
 enum { MOTION_MODE_STRAIGHT_TRAVERSE = 0, MOTION_MODE_STRAIGHT_FEED = 1 };
 enum { INVERSE_TIME_MODE = 0, UNITS_PER_MINUTE_MODE = 1 };
 enum { AXIS_X, AXIS_Y, AXIS_Z, AXIS_A, AXIS_B, AXIS_C, AXES };
@@ -82,13 +86,15 @@ enum { AXIS_X, AXIS_Y, AXIS_Z, AXIS_A, AXIS_B, AXIS_C, AXES };
 typedef struct nvObj { uint8_t valuetype; union { float value_flt; uint32_t value_int; }; } nvObj_t;
 typedef struct { uint8_t motion_mode, feed_rate_mode; float feed_rate; uint32_t linenum; } GCodeState_t;
 typedef struct mpBuffer { float unit[AXES]; float cruise_velocity, cruise_vmax, naiive_move_time;
-                          GCodeState_t gm; uint8_t fl_tags; } mpBuf_t;
+                          GCodeState_t gm; uint8_t fl_tags, fl_cls; } mpBuf_t;
+struct { GCodeState_t gm; } mr;
+struct { uint8_t run_state; } arc;
 uint8_t SREG = 0x80;
 static void cli(void) { SREG &= ~0x80; }
-struct { int motion_state, hold_state, cycle_state; } cm;
-struct { bool allowed, check_only; } rt;
-struct { uint8_t fl_load, fl_rec; uint32_t fl_um, dda_ticks; int buffer_state; } st_pre;
-struct { uint8_t fl_rec; uint32_t fl_um, fl_ticks; } st_run;
+struct { int motion_state, hold_state, cycle_state, machine_state, queue_flush_state; bool job_kill_requested, program_paused; } cm;
+struct { bool allowed, check_only; volatile uint8_t job; uint8_t fg; } rt;
+struct { uint8_t fl_load, fl_rec, fl_cls; uint32_t fl_um, dda_ticks; int buffer_state; } st_pre;
+struct { uint8_t fl_rec, fl_cls; uint32_t fl_um, fl_ticks; } st_run;
 '''
 
 
@@ -99,7 +105,7 @@ def feedlimit_code():
     i = h.index("static inline uint8_t fl_axis_moves(float unit)")
     code += h[i:h.index("\n}", i) + 2] + "\n"
     code += h[h.index("typedef struct flPending"):h.index("} flPending_t;") + len("} flPending_t;")] + "\n"
-    last = "static float fl_blk_below;"
+    last = "static uint8_t fl_blk_cls;"
     code += fc[fc.index("flBlock_t fl_slot[2];"):fc.index(last) + len(last)] + "\n"
     code += function(fc, r"uint8_t fl_profile_tags\(float naiive_move_time, float cruise, float cruise_vmax\)") + "\n"
     code += function(fc, r"void fl_stage_block\(const mpBuf_t \*bf\)") + "\n"
@@ -119,8 +125,12 @@ def loader_code():
 def runtime_code():
     rtc = src("runtime.c")
     code = rtc[rtc.index("#define FL_FS_LEN"):rtc.index("} fla;") + len("} fla;")] + "\n"
-    for sig in (r"static void _fl_fold\(void\)", r"static bool _fl_send_fs\(void\)",
-                r"static bool _fl_finished\(void\)", r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
+    for sig in (r"static void _fl_fold\(void\)", r"static uint32_t _fl_tick_ms\(uint32_t t\)",
+                r"static void _fl_fg_take\(uint32_t now\)", r"static bool _fl_send_fs\(void\)",
+                r"static bool _fl_finished\(void\)", r"static uint8_t _fl_supply\(void\)",
+                r"static void _fl_gap_close\(uint32_t now\)", r"static void _fl_gap\(uint32_t now\)",
+                r"static bool _fl_send_fg\(void\)",
+                r"static bool _fl_look\(uint8_t \*k, uint8_t \*m, flBlock_t \*b\)",
                 r"static void _fl_event\(uint32_t now\)",
                 r"stat_t rt_feedlimit_callback\(void\)", r"stat_t rt_get_fi\(nvObj_t \*nv\)",
                 r"stat_t rt_set_fi\(nvObj_t \*nv\)", r"stat_t rt_get_fs\(nvObj_t \*nv\)"):
@@ -136,6 +146,10 @@ static bool _machine_quiet(void) { return quiet; }
 bool xio_rx_data_pending(void) { return rx_pending; }
 uint8_t st_runtime_isbusy(void) { return busy; }
 uint8_t st_fl_record_pending(void) { return rec_pending; }
+static bool runnable = false, in_flight = false, rx_unread = false;
+bool mp_has_runnable_buffer(void) { return runnable; }
+bool st_aline_in_flight(void) { return in_flight; }
+uint8_t xio_usb_rx_unread(void) { return rx_unread; }
 static int tx_ready = 1;
 static char frames[64][200]; static int nframes;
 uint8_t xio_usb_tx_ready(void) { return tx_ready; }
@@ -207,10 +221,16 @@ int main(void) {
     load_entry(); load_entry();                                         /* a second LOAD call adds nothing */
     assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 250 && fl_pend[fl_bank].ticks[1] == 250 && fl_pend[fl_bank].ticks[0] == 0 && fl_pend[fl_bank].um == 50);
     st_pre.fl_rec = 0; load_aline(); load_entry(); assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 250);   /* no record: nothing */
-    st_pre.fl_rec = FL_REC_ELIGIBLE | 0x3F; st_pre.dda_ticks = 100; load_aline(); load_entry();
+    /* every cause bit: 0x01..0x10 -> c[0..4], FL_REC_OTHER 0x40 -> c[5], FL_COMMAND 0x20 -> c[6] plus its class */
+    st_pre.fl_rec = FL_REC_ELIGIBLE | 0x7F; st_pre.fl_cls = FL_CLS_COOLANT; st_pre.dda_ticks = 100; load_aline(); load_entry();
     for (int k = 0; k <= FL_CAUSES; k++) assert(fl_pend[fl_bank].ticks[k] == ((k == 1) ? 350 : (k == FL_CAUSES) ? 350 : 100));
+    assert(fl_pend[fl_bank].cls_ticks[FL_CLS_COOLANT] == 100 && fl_pend[fl_bank].cls_ticks[FL_CLS_SPINDLE] == 0);
+    st_pre.fl_rec = FL_REC_ELIGIBLE | FL_REC_OTHER; st_pre.dda_ticks = 10; load_aline(); load_entry();   /* other alone: c[5] only */
+    assert(fl_pend[fl_bank].ticks[FL_C_OTHER] == 110 && fl_pend[fl_bank].ticks[FL_C_COMMAND] == 100 && fl_pend[fl_bank].ticks[0] == 100);
+    st_pre.fl_rec = FL_REC_ELIGIBLE | FL_COMMAND; st_pre.fl_cls = 7; st_pre.dda_ticks = 5; load_aline(); load_entry();  /* bad class -> other */
+    assert(fl_pend[fl_bank].cls_ticks[FL_CLS_OTHER] == 5 && fl_pend[fl_bank].ticks[FL_C_COMMAND] == 105);
     st_pre.fl_rec = FL_REC_ELIGIBLE; load_aline(); fl_on = 0; load_entry();       /* off: dropped */
-    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 350 && st_run.fl_rec == 0); fl_on = 1;
+    assert(fl_pend[fl_bank].ticks[FL_CAUSES] == 365 && st_run.fl_rec == 0); fl_on = 1;
     assert(!fl_pend[fl_bank].wrapped);                                           /* a wrap of the pending totals is flagged */
     fl_pend[fl_bank].ticks[FL_CAUSES] = 4294967295u - 100; st_pre.fl_rec = FL_REC_ELIGIBLE; st_pre.dda_ticks = 200;
     load_aline(); load_entry(); assert(fl_pend[fl_bank].wrapped);
@@ -254,7 +274,7 @@ int main(void) {
       fla.ms[FL_CAUSES] = 0; fla.ms[1] = 0; fla.rem[FL_CAUSES] = 0; fla.rem[1] = 0; fla.mm = 0; fla.um = 0;
       fl_pend[fl_bank].ticks[FL_CAUSES] = 49; fl_pend[fl_bank].ticks[1] = 50; fl_pend[fl_bank].um = 999; }
     assert(_fl_send_fs() && fla.q == 1);
-    assert(strstr(last(), "\"q\":1,") && strstr(last(), "\"c\":[0,1,0,0,0,0]") && strstr(last(), "\"ct\":0,") && strstr(last(), "\"cd\":0.999}"));
+    assert(strstr(last(), "\"q\":1,") && strstr(last(), "{\"fs\":{\"v\":2,") && strstr(last(), "\"c\":[0,1,0,0,0,0,0]") && strstr(last(), "\"ct\":0,") && strstr(last(), "\"cd\":0.999}"));
     fl_pend[fl_bank].ticks[FL_CAUSES] = 1; fl_pend[fl_bank].um = 2;
     assert(_fl_send_fs() && strstr(last(), "\"ct\":1,") && strstr(last(), "\"cd\":1.001}") && fla.q == 2);
     tx_ready = 0; fl_pend[fl_bank].ticks[FL_CAUSES] = 5000; assert(!_fl_send_fs() && fla.q == 2 && fl_pend[fl_bank].ticks[FL_CAUSES] == 5000); tx_ready = 1;
@@ -327,7 +347,7 @@ int main(void) {
     /* largest summary */
     fla.epoch = 65535; fla.q = 4294967294u; for (int k = 0; k <= FL_CAUSES; k++) fla.ms[k] = 4294967295u;
     fla.mm = 4294967295u; fla.um = 999; tx_ready = 1; assert(_fl_send_fs());
-    assert(strlen(last()) + 1 <= 248 && strlen(last()) < 160); printf("%s", last());
+    assert(strlen(last()) + 1 <= 248 && strlen(last()) < FL_FS_LEN); printf("%s", last());
     return 0;
 }
 '''

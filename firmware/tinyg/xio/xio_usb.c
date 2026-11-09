@@ -310,6 +310,19 @@ uint8_t xio_usb_is_quiet(void)
 }
 
 /*
+ * xio_usb_rx_unread() - bytes in the RX ring or a partly read line (feed-limit supply gaps). Unlike
+ *	xio_usb_is_quiet() it has no side effect: the heartbeat's activity latch is left alone.
+ */
+uint8_t xio_usb_rx_unread(void)
+{
+	uint8_t saved_sreg = SREG;
+	cli();
+	bool unread = (USBu.rx_buf_head != USBu.rx_buf_tail) || (USB.flag_in_line && USB.len);
+	SREG = saved_sreg;
+	return (unread);
+}
+
+/*
  * xio_usb_take_rx_seen() - was a byte received since the last call?
  */
 uint8_t xio_usb_take_rx_seen(void)

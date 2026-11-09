@@ -172,6 +172,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 
 	GCodeState_t gm;				// Gode model state - passed from model, used by planner and runtime
 	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
+	uint8_t fl_cls;					// a command: its class (FL_CLS_*); a FL_COMMAND move: its neighbour command's (step 3)
 
 } mpBuf_t;
 
@@ -267,6 +268,7 @@ void mp_set_runtime_position(uint8_t axis, const float position);
 void mp_set_steps_to_runtime_position(void);
 
 void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags);
+void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool *flags, uint8_t cls);
 stat_t mp_runtime_command(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);

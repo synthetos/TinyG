@@ -699,6 +699,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
 
     // Internal stamp, appended after all existing single-value rows. Hidden and never a host SET.
     { "","_hld",_i0,0,tx_print_nul,_reserved_hold_setting,_reserved_hold_setting,(uint32_t *)&cs.null,0 },
+	// Feed-limit advisor step 3 (RAM only, never persisted): appended after the hold stamp so no index moves
+	{ "rt","rtjob",_i0, 0, tx_print_nul, rt_get_job, rt_set_job, (uint32_t *)&cs.null, 0},	// host job flag (step 3)
+	{ "rt","rtfg",_i0, 0, tx_print_nul, rt_get_fg, rt_set_fg, (uint32_t *)&cs.null, 0},	// fg frames opt-in (step 3)
 
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***

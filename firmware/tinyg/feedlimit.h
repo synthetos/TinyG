@@ -21,7 +21,7 @@
 #define FL_EXACT_STOP	0x04		// G61 exact stop: entry and exit planned to zero
 #define FL_SHORT		0x08		// too short to reach its cruise speed between entry and exit
 #define FL_MIN_SEGMENT	0x10		// single-segment short-block profile (the F and B'' cases)
-									// 0x20 reserved
+#define FL_COMMAND		0x20		// a queued command (S, M3-M5, M7-M9, ...) next to the move makes it rest at that end (step 3)
 #define FL_STATIC_TAGS	(FL_AXIS_CAP | FL_JUNCTION | FL_EXACT_STOP)	// set once at creation (mp_aline)
 #define FL_PROFILE_TAGS	(FL_SHORT | FL_MIN_SEGMENT)	// derived from the plan when a report reads it
 
@@ -70,13 +70,21 @@ extern volatile uint8_t fl_cur;		// current slot, or FL_CUR_NONE; set by the ste
 // carries a record (st_pre.fl_rec/fl_um); the loader installs it when the segment loads and retires it when
 // the segment has finished, adding into fl_pend[fl_bank]. The main loop flips fl_bank with interrupts masked
 // (a few cycles), then reads and clears the other bank with them enabled: the loader only writes fl_bank.
-#define FL_CAUSES		6			// fs "c" order: axis cap, corner, exact stop, short, single segment, other
-#define FL_REC_OTHER	0x20		// record: below F with no tag (ramps, end of path, downstream braking)
+#define FL_CAUSES		7			// fs "c" order: axis cap, corner, exact stop, short, single segment, other, command
+#define FL_REC_OTHER	0x40		// record: below F with no tag (ramps, end of path, downstream braking)
+#define FL_C_OTHER		5			// c[] index of FL_REC_OTHER (bits 0x01..0x10 are c[0..4])
+#define FL_C_COMMAND	6			// c[] index of FL_COMMAND (its bit 0x20 predates step 3's c order)
+#define FL_CLASSES		3			// command boundary classes (fs "b" order)
+#define FL_CLS_SPINDLE	0			// S, M3, M4, M5
+#define FL_CLS_COOLANT	1			// M7, M8, M9
+#define FL_CLS_OTHER	2			// any other queued command
 #define FL_REC_ELIGIBLE	0x80		// record: a G94 linear XYZ feed segment prepared outside a hold
 
 typedef struct flPending {
 	uint32_t ticks[FL_CAUSES + 1];	// DDA ticks: [0..5] below F with that cause, [FL_CAUSES] all eligible
 	uint32_t um;					// commanded length of all eligible segments, micrometres
+	uint32_t cls_ticks[FL_CLASSES];	// DDA ticks below F of command-tagged segments, by the command's class
+	uint32_t breaks[FL_CLASSES];	// motion breaks at command boundaries while a host job runs, by class
 	uint8_t wrapped;				// a pending total wrapped (the main loop could not fold in time)
 } flPending_t;
 
@@ -85,6 +93,8 @@ extern volatile flPending_t fl_pend[2];	// loader adds into fl_pend[fl_bank]; th
 extern volatile uint8_t fl_bank;
 extern uint16_t fl_um_q16;			// exec: sub-micrometre remainder (1/65536 um) carried to the next segment
 extern volatile uint8_t fl_activity;	// exec: a block started since the last final summary (main loop clears it)
+extern volatile uint8_t fl_job_moved;	// exec: a block started during the host job (step 3 gaps; main loop clears it)
+extern volatile uint8_t fl_underrun;	// exec: found nothing to run during a job, outside a hold (main loop takes it)
 
 void fl_stage_block(const struct mpBuffer *bf);
 void fl_segment(float velocity, float length);

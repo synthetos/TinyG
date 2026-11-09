@@ -35,6 +35,7 @@
 #include "encoder.h"
 #include "planner.h"
 #include "feedlimit.h"
+#include "runtime.h"			// rt.job (feed-limit advisor step 3)
 #include "canonical_machine.h"
 #include "report.h"
 #include "hardware.h"
@@ -970,10 +971,33 @@ static void _fl_retire(void)
 	if ((total < ticks) || (um < st_run.fl_um)) { p->wrapped = true; }
 	p->ticks[FL_CAUSES] = total;
 	p->um = um;
-	rec &= ((1 << FL_CAUSES) - 1);						// cause bits only; at F there are none
+	if (rec & FL_COMMAND) {								// next to a queued command (step 3): also by its class
+		p->ticks[FL_C_COMMAND] += ticks;
+		uint8_t cls = st_run.fl_cls;
+		p->cls_ticks[(cls < FL_CLASSES) ? cls : FL_CLS_OTHER] += ticks;
+	}
+	if (rec & FL_REC_OTHER) { p->ticks[FL_C_OTHER] += ticks; }
+	rec &= (FL_AXIS_CAP | FL_JUNCTION | FL_EXACT_STOP | FL_SHORT | FL_MIN_SEGMENT);	// bits 0..4 are c[0..4]; at F none
 	for (uint8_t k = 0; rec != 0; k++, rec >>= 1) {
 		if (rec & 1) { p->ticks[k] += ticks; }
 	}
+}
+
+/*
+ * _fl_command_break() - a queued command is about to run (loader): count a motion break at a command boundary
+ *
+ *	Only while accounting is on and a host job runs (rt.job). A run of commands between two moves is one break,
+ *	counted under the first command's class; a command with no move before it (or after a dwell) is not counted.
+ */
+static uint8_t fl_moved;								// the last load was a move segment
+
+static void _fl_command_break(const mpBuf_t *bf)
+{
+	if (fl_on && rt.job && fl_job_moved && fl_moved) {	// a move made in this job, which has moved
+		uint8_t cls = bf->fl_cls;
+		fl_pend[fl_bank].breaks[(cls < FL_CLASSES) ? cls : FL_CLS_OTHER]++;
+	}
+	fl_moved = false;
 }
 
 static void _load_move()
@@ -987,6 +1011,10 @@ static void _load_move()
 		_fl_retire();
 	}
 	if (st_pre.buffer_state != PREP_BUFFER_OWNED_BY_LOADER) {	// if there are no moves to load...
+		// The runtime has played out with nothing prepared: during a host job, outside a hold or M0/M1, motion
+		// has physically stopped for want of input. Latched so a drain and refill between two looks of
+		// rt_feedlimit_callback still counts as a supply gap (feed-limit advisor step 3).
+		if (fl_on && rt.job && (cm.hold_state == FEEDHOLD_OFF) && !cm.program_paused) { fl_underrun = true; }
 //		for (uint8_t motor = MOTOR_1; motor < MOTORS; motor++) {
 //			st_run.mot[motor].power_state = MOTOR_POWER_TIMEOUT_START;	// ...start motor power timeouts
 //		}
@@ -1006,7 +1034,9 @@ static void _load_move()
 		if ((st_run.fl_rec = st_pre.fl_rec)) {					// install its accounting record (feedlimit.h)
 			st_run.fl_um = st_pre.fl_um;
 			st_run.fl_ticks = st_pre.dda_ticks;
+			st_run.fl_cls = st_pre.fl_cls;
 		}
+		fl_moved = (fl_on && rt.job);							// a later command is a motion break (step 3)
 
 		//**** MOTOR_1 LOAD ****
 
@@ -1220,9 +1250,11 @@ static void _load_move()
 		st_run.dda_ticks_downcount = st_pre.dda_ticks;
 		TIMER_DWELL.PER = st_pre.dda_period;			// load dwell timer period
 		TIMER_DWELL.CTRLA = STEP_TIMER_ENABLE;			// enable the dwell timer
+		fl_moved = false;								// motion already rests for the dwell (step 3)
 
 	// handle synchronous commands
 	} else if (st_pre.block_type == BLOCK_TYPE_COMMAND) {
+		_fl_command_break(st_pre.bf);					// before its callback (which frees the buffer)
 		mp_runtime_command(st_pre.bf);
 		cm_position_changed();							// offsets, origin or program end may have changed (E166)
 	}

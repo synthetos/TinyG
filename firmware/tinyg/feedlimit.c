@@ -8,6 +8,7 @@
 #include "canonical_machine.h"
 #include "stepper.h"
 #include "feedlimit.h"
+#include "runtime.h"		// rt.job (step 3 supply gaps)
 
 flBlock_t fl_slot[2];
 uint8_t fl_stage;
@@ -18,10 +19,13 @@ volatile flPending_t fl_pend[2];
 volatile uint8_t fl_bank;
 uint16_t fl_um_q16;
 volatile uint8_t fl_activity;
+volatile uint8_t fl_job_moved;
+volatile uint8_t fl_underrun;
 
 static uint8_t fl_blk_ok;			// exec: the running block's segments are eligible (G94 linear XYZ feed)
 static uint8_t fl_blk_mask;			// exec: its cause bits (static and profile tags, or FL_REC_OTHER)
 static float fl_blk_below;			// exec: a segment slower than this (mm/min) is below F
+static uint8_t fl_blk_cls;			// exec: class of the command next to it (FL_CLS_*), for FL_COMMAND time
 
 /*
  * fl_stage_block() - stage a block's report at its exec start (called from the exec interrupt)
@@ -48,6 +52,7 @@ void fl_stage_block(const mpBuf_t *bf)
 	fl_staged = FL_LOAD_SLOT0 + fl_stage;
 	if (fl_on) {									// accounting: classify the block once, for all its segments
 		fl_activity = true;							// a final summary is due once this has run
+		if (rt.job) { fl_job_moved = true; }		// motion began during the host job: a later drain can be a gap
 		fl_blk_ok = s->pct_ok;
 		float reached = s->feed * 0.01;				// the same 1% (or 2 mm/min) as fl_profile_tags()
 		if (reached < 2) { reached = 2; }
@@ -61,6 +66,7 @@ void fl_stage_block(const mpBuf_t *bf)
 		}
 		s->all_tags = s->tags | profile;
 		fl_blk_mask = (s->all_tags != 0) ? s->all_tags : FL_REC_OTHER;
+		fl_blk_cls = bf->fl_cls;
 	}
 }
 
@@ -79,6 +85,7 @@ void fl_segment(float velocity, float length)
 	if (fl_blk_ok && (cm.hold_state == FEEDHOLD_OFF)) {
 		rec = FL_REC_ELIGIBLE;
 		if (velocity < fl_blk_below) { rec |= fl_blk_mask; }
+		st_pre.fl_cls = fl_blk_cls;
 		float q16 = length * (1000.0f * 65536.0f);
 		if (q16 < 4.0e9f) {							// up to ~61 mm in one segment (a 5-10 ms segment is far less)
 			uint32_t um = (uint32_t)q16 + fl_um_q16;

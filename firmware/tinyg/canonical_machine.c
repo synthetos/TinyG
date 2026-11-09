@@ -98,6 +98,7 @@
 #include "encoder.h"
 #include "spindle.h"
 #include "runtime.h"
+#include "feedlimit.h"			// FL_CLS_COOLANT (feed-limit advisor step 3)
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
@@ -1728,7 +1729,7 @@ stat_t cm_tool_offset_cancel()
 stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
 {
 	float value[AXES] = { (float)mist_coolant };
-	mp_queue_command(_exec_mist_coolant_control, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_mist_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
 	return (STAT_OK);
 }
 // Coolant outputs as last driven, for the g2core-named cof and com readouts: the model runs ahead of the
@@ -1763,7 +1764,7 @@ static void _exec_mist_coolant_control(float *value, bool *flags)
 stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
 {
 	float value[AXES] = { (float)flood_coolant };
-	mp_queue_command(_exec_flood_coolant_control, value, FLAGS_ONE);
+	mp_queue_command_class(_exec_flood_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
 	return (STAT_OK);
 }
 /*
@@ -1958,6 +1959,7 @@ void cm_message(char *message)
 void cm_request_job_kill(void)
 {
     rt_qt_invalidate();
+    rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
 }
 
@@ -2027,6 +2029,7 @@ void cm_request_queue_flush()
     cm_request_planner_flush();
     if (cm.queue_flush_state == FLUSH_REQUESTED) {  // honored now, or already pending from an alarm
         rt_qt_invalidate();
+        rt_job_end();                               // a discarded job is over (advisor step 3)
         cm.queue_flush_input = true;                // the host asked: drop what it sent before the '%'
     }
 }
@@ -2591,6 +2594,7 @@ static void _exec_program_end(float *value, bool *flags)
 	mp_set_runtime_work_offset(offsets);
 	spindle_reset();								// M5 now (immediate; S is kept)
 	cm_coolant_off_immediate();						// M9 now
+	rt_job_end();									// M2/M30 executed: no supply gaps after it (advisor step 3)
 	_exec_program_finalize(value, flags);			// value[0] is MACHINE_PROGRAM_END
 }
 

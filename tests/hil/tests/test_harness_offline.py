@@ -36,8 +36,10 @@ def test_parse_heartbeat():
 def test_parse_feed_limit_lines():
     ev = protocol.parse_line('{"fl":{"k":1,"m":2,"p":61,"n":20}}', 0.0)
     assert ev.kind == "feedlimit" and ev.data["fl"]["n"] == 20
-    ev = protocol.parse_line('{"fs":{"v":1,"e":1,"q":3,"c":[0,1,2,3,4,5],"ct":10,"cd":1.500}}', 0.0)
-    assert ev.kind == "feedsummary" and ev.data["fs"]["c"][5] == 5
+    ev = protocol.parse_line('{"fs":{"v":2,"e":1,"q":3,"c":[0,1,2,3,4,5,6],"ct":10,"cd":1.500}}', 0.0)
+    assert ev.kind == "feedsummary" and ev.data["fs"]["c"][6] == 6
+    ev = protocol.parse_line('{"fg":{"e":1,"q":3,"g":[0,1500,2],"b":[[1,40],[0,0],[0,0]]}}', 0.0)
+    assert ev.kind == "feedgaps" and ev.data["fg"]["g"][2] == 2
 
 
 def test_parse_banners():

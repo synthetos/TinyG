@@ -33,5 +33,6 @@ RUNTIME_STUBS = r'''
 static struct { bool allowed, fl_taken; } rt __attribute__((unused));
 static inline __attribute__((unused)) void rt_qt_invalidate(void) {}
 static inline __attribute__((unused)) void rt_init(void) {}
+static inline __attribute__((unused)) void rt_job_end(void) {}
 #endif
 '''

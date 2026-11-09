@@ -56,6 +56,7 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
+#include "feedlimit.h"			// FL_COMMAND, FL_CLS_* (feed-limit advisor step 3)
 #include "kinematics.h"
 #include "stepper.h"
 #include "encoder.h"
@@ -225,6 +226,18 @@ void mp_set_steps_to_runtime_position()
 
 void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags)
 {
+	mp_queue_command_class(cm_exec, value, flags, FL_CLS_OTHER);
+}
+
+/*
+ * mp_queue_command_class() - mp_queue_command() with a feed-limit class (FL_CLS_*: spindle/S, coolant, other)
+ *
+ *	A command makes the move queued just before it rest at its end: tag that move FL_COMMAND (advisor step 3),
+ *	with interrupts masked and only while it is a queued move the exec has not started (E180), so a slot the
+ *	exec has staged or freed is never touched. A move between two commands keeps the first command's class.
+ */
+void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool *flags, uint8_t cls)
+{
 	mpBuf_t *bf;
 
 	cm_run_short_move();								// a refused short move goes first (N87)
@@ -237,6 +250,20 @@ void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags
 	bf->block_type = BLOCK_TYPE_COMMAND;
 	bf->bf_func = _exec_command;						// callback to planner queue exec function
 	bf->cm_func = cm_exec;								// callback to canonical machine exec function
+	bf->fl_cls = cls;
+#ifdef __AVR
+	uint8_t saved_sreg = SREG;
+	cli();
+#endif
+	mpBuf_t *pv = bf->pv;
+	if ((pv->buffer_state != MP_BUFFER_EMPTY) && (pv->block_type == BLOCK_TYPE_ALINE) &&
+		(pv->block_state != BLOCK_RUNNING)) {
+		if (!(pv->fl_tags & FL_COMMAND)) { pv->fl_cls = cls; }
+		pv->fl_tags |= FL_COMMAND;
+	}
+#ifdef __AVR
+	SREG = saved_sreg;
+#endif
 
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		bf->value_vector[axis] = value[axis];

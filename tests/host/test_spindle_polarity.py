@@ -168,8 +168,9 @@ int main(void) {
         self.assertEqual(new[end+25:end+31], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
         groups = list(old[end:])
         groups.insert(groups.index(("", "jid")) + 1, ("", "rt"))                    # runtime session group
-        self.assertEqual(new[end+31], ("", "_hld"))
-        self.assertEqual(new[end+32:], groups)
+        self.assertEqual(new[end+31], ("", "_hld"))                                 # E060 stamp: its index must not move
+        self.assertEqual(new[end+32:end+34], [("rt", "rtjob"), ("rt", "rtfg")])      # host job flag, fg opt-in (step 3), RAM only
+        self.assertEqual(new[end+34:], groups)
 
 
 if __name__ == "__main__":
