@@ -142,6 +142,11 @@ def test_command_between_moves_is_a_break(tg, window):
     for line in ("G1 X10 F600", "S1000", "M8", "G1 X20 F600", "M9"):
         tg.send_gcode(line, check=True, allow="feed moves around an S and coolant words")
     tg.send_gcode("G1 X30 F600", check=True, allow="last move")
+    # job writes take effect at once (an rt line overtakes buffered moves), so end the job only once M9 has
+    # executed, during the last move: earlier, the queued commands would run after the job and not count
+    end = time.monotonic() + 15
+    while tg.get("posx") < 22 and time.monotonic() < end:
+        time.sleep(0.1)
     rt(tg, {"job": 0})
     tg.wait_idle(timeout=20)
     settle(tg, 1.2)
