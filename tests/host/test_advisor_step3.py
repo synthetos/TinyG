@@ -17,7 +17,7 @@ def job_code():
     h = src("runtime.h")
     defs = "\n".join(l for l in h.splitlines() if l.startswith("#define RT_"))
     struct = h[h.index("typedef struct rtSingleton"):h.index("extern rtSingleton_t rt;")]
-    code = PRELUDE + defs + "\n" + struct + "\nrtSingleton_t rt;\n"
+    code = PRELUDE + defs + "\n" + struct + "\nrtSingleton_t rt;\nvolatile uint8_t fl_job_moved, fl_underrun;\n"
     for name in ("rt_get_job", "rt_set_job", "rt_job_end"):
         code += fn("runtime.c", name) + "\n"
     code += "#define RT_ENVELOPE_NONE 0\n#define RT_ENVELOPE_PURE 1\n#define RT_ENVELOPE_BAD 2\n"
@@ -55,6 +55,15 @@ int main(void) {
     rt_job_end();
     assert(rt.job == 0);
     assert(set_int(rt_set_job, 1) == STAT_OK && set_int(rt_set_job, 0) == STAT_OK && rt.job == 0);
+    /* job motion evidence ends with the job, at once (not when the gap callback next looks) */
+    assert(set_int(rt_set_job, 1) == STAT_OK); fl_job_moved = 1; fl_underrun = 1;
+    assert(set_int(rt_set_job, 1) == STAT_OK && fl_job_moved && fl_underrun);            /* re-sent mid-job: kept */
+    rt_job_end(); assert(!fl_job_moved && !fl_underrun);                                 /* program end, %, kill */
+    assert(set_int(rt_set_job, 1) == STAT_OK); fl_job_moved = 1; fl_underrun = 1;
+    assert(set_int(rt_set_job, 0) == STAT_OK && !fl_job_moved && !fl_underrun);
+    fl_job_moved = 1; fl_underrun = 1;                                                    /* stale from outside a job */
+    assert(set_int(rt_set_job, 1) == STAT_OK && !fl_job_moved && !fl_underrun);          /* a new job starts clean */
+    rt.check_only = true; fl_job_moved = 1; assert(set_int(rt_set_job, 0) == STAT_OK && fl_job_moved && rt.job == 1); rt.check_only = false;
     return 0;
 }
 '''
@@ -223,7 +232,8 @@ static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++;
 static void moving(void) { busy = true; fl_job_moved = 1; }
 int main(void) {
     rt.allowed = true; systick = 1000; cm.machine_state = MACHINE_READY;
-    fl_job_moved = 1; assert(set_fi(1) == STAT_OK && fl_on && !fl_job_moved);     /* a new window forgets old motion */
+    fl_job_moved = 1; fl_underrun = 1; assert(set_fi(1) == STAT_OK && fl_on && !fl_job_moved && !fl_underrun);   /* a new window starts clean */
+    fl_underrun = 1; assert(set_fi(0) == STAT_OK && !fl_underrun); fl_underrun = 1; assert(set_fi(1) == STAT_OK && !fl_underrun);
     rt.job = 1;
     tick(1100); assert(fla.gaps == 0);                                            /* drained before any motion: not a gap */
     moving(); tick(1200); assert(fla.gaps == 0 && !fla.gap_open);
