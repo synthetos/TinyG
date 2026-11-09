@@ -40,6 +40,9 @@ def pytest_addoption(parser):
     g.addoption("--elf", default=None, help="ELF of the flashed build for --ice (default: recorded at flash time)")
     g.addoption("--lock-wait", type=float, default=600.0,
                 help="seconds to wait for another user of the board to finish [default 600]")
+    g.addoption("--keep-captures", action="store_true",
+                help="keep raw analog traces (*.npy) of passing tests; by default they are deleted when a test passes "
+                     "(the parsed edges, PWM windows and the run record stay)")
     g.addoption("--switchbox", action="store_true",
                 help="enable switchbox tests (ESP8266 driving the switch inputs electrically)")
     g.addoption("--switchbox-port", default=os.environ.get("TINYG_SWITCHBOX_PORT"),
@@ -65,6 +68,43 @@ def pytest_runtest_logreport(report):
     config = _CONFIG.get("config")
     if config is not None and config._tinyg_recorder:
         config._tinyg_recorder.report(report)
+    _prune_captures(config, report)
+
+
+_TEST_START = {}
+
+
+def pytest_runtest_setup(item):
+    _TEST_START[item.nodeid] = time.time()
+
+
+def _prune_captures(config, report):
+    """A passing test's raw analog traces are ~hundreds of MB each and add nothing to its record: delete them.
+    Failures (any phase) keep theirs as evidence; --keep-captures keeps everything."""
+    if config is None or not config._tinyg_recorder or config.getoption("--keep-captures"):
+        return
+    if report.when != "teardown" or report.nodeid not in _TEST_START:
+        return
+    start = _TEST_START.pop(report.nodeid)
+    if _FAILED.pop(report.nodeid, False) or not report.passed:
+        return
+    for f in pathlib.Path(config._tinyg_recorder.dir).glob("*.npy"):
+        try:
+            if f.stat().st_mtime >= start - 1:
+                f.unlink()
+        except OSError:
+            pass
+
+
+_FAILED = {}
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    rep = outcome.get_result()
+    if rep.failed or (rep.when == "call" and not rep.passed and not getattr(rep, "wasxfail", None)):
+        _FAILED[item.nodeid] = True
 
 
 def pytest_unconfigure(config):

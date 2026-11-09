@@ -79,6 +79,9 @@ def main(req, tag=""):
                                                   req.get("pwm_threshold", 1.5)),
                                "edges": threshold_edges(y, req.get("rate", 2e6), req.get("pwm_threshold", 1.5))}
     out.write_text(json.dumps(res))
+    if not req.get("keep_raw"):                 # the instrument's own binary save (~70 MB a capture) is parsed above; nothing
+        import shutil                            # reads it later, so it is not kept unless asked for
+        shutil.rmtree(out.parent / (out.stem + "-raw"), ignore_errors=True)
     print("DONE", tag.strip(), flush=True)
 
 
