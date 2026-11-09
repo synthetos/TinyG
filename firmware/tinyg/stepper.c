@@ -730,6 +730,7 @@ ISR(TIMER_DDA_ISR_vect)
 #ifdef TINYG_TEST_HOOKS
     if (observed_terminal) { test_timer.dda_finish_flags_after_stop = TIMER_DDA.INTFLAGS; }
 #endif
+	TIMER_DDA.INTFLAGS = TC0_OVFIF_bm;             // discard an overflow latched before clock-off
 	_load_move();										// load the next move
 }
 #endif // __AVR
@@ -809,6 +810,7 @@ MOTATE_TIMER_INTERRUPT(dda_timer_num)
 ISR(TIMER_DWELL_ISR_vect) {								// DWELL timer interrupt
 	if (--st_run.dda_ticks_downcount == 0) {
 		TIMER_DWELL.CTRLA = STEP_TIMER_DISABLE;			// disable DWELL timer
+	TIMER_DWELL.INTFLAGS = TC0_OVFIF_bm;             // discard an overflow latched before clock-off
 		_load_move();
 	}
 }

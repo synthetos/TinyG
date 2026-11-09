@@ -6,7 +6,7 @@ pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.persists,
               pytest.mark.resets_board, pytest.mark.dialect('d449'), pytest.mark.timeout(45)]
 
 
-@pytest.mark.bug('E060', on=['d449'])
+@pytest.mark.bug('E060', on=[])
 def test_alarm_flush_after_a_late_terminal_irq(tg, ice, keep, record):
     try:
         ice.symbols.resolve('test_timer.dda_finish_delay')
