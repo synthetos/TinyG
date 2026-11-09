@@ -20,6 +20,9 @@ class RtsHoldHeadroom(unittest.TestCase):
         code = re.sub(r"#define (XOFF|RTS)_RX_(HI|LO)_WATER_MARK[^\n]*", "", code)
         code += "\n" + "\n".join(l for l in header.splitlines() if re.match(r"#define (XOFF|RTS)_RX_(HI|LO)_WATER_MARK\b", l)) + "\n"
         code = code.replace("static void cm_request_end_hold(void) {}", "static unsigned resumes; static void cm_request_end_hold(void) {resumes++;}")
+        for name in ("hw_hard_reset", "cm_request_feedhold", "cm_request_job_kill"):
+            code = re.sub(r"static void " + name + r"\(void\) \{[^}]*\}",
+                          "static unsigned " + name + "_calls; static void " + name + "(void) {" + name + "_calls++;}", code)
         for source, sig in ((usart, r"buffer_t xio_get_rx_bufcount_usart\("),
                             (usart, r"void xio_xon_usart\("), (usart, r"void xio_xoff_usart\("),
                             (usart, r"void xio_fc_usart\("), (usb, r"static void _usb_rx_lost\("),
@@ -41,7 +44,11 @@ int main(void) {
     /* The planner is full and held: the main loop consumes no RX bytes. */
     fresh(FLOW_CONTROL_RTS);
     for(unsigned i=0;i<192;i++) assert(wire(i%6==5?'\n':' '));
+    assert(wire('!') && cm_request_feedhold_calls==1);
     assert(wire('~') && resumes==1);
+    assert(wire('%') && cm.queue_flush_input);
+    assert(wire(CHAR_KILL_JOB) && cm_request_job_kill_calls==1);
+    assert(wire(CHAR_RESET) && hw_hard_reset_calls==1);
     assert(USBu.rx_buf_count==192 && !USBu.rx_lost);
     /* Every byte was retained, including across a ring wrap. */
     for(unsigned i=0;i<192;i++) {

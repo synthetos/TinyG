@@ -1,11 +1,8 @@
-"""N102: RTS/CTS stream, feedhold mid-stream. Does the board itself stop accepting input in the hold?
+"""A 192-byte unanswered RTS stream must leave real-time controls reachable during a hold.
 
-Bench 2 and bench 1 both locked up in rts soak jobs with feedholds: '!' reached the board late behind data the
-macOS FTDI driver had accepted, the board held with its planner and RX ring full, and '~'/^X stayed queued on the
-host. This test streams dense moves with hardware flow control, sends '!', and with the ICE reads the board's
-side during the hold: RX ring count, its RX flow state and the RTS pin it drives (PC0, 1 = not ready), plus the
-host's CTS and queued bytes. Then it sends '~' and checks whether the hold ends. The board is reset through the
-ICE afterwards; the host driver may stay wedged (USB replug) - that is part of the finding.
+Stock uses the early software XOFF watermark for RTS too. With a held/full planner the RX ring stops draining,
+CTS stays off, and resume sits behind data at the host. A bounded sender must retain every queued byte while
+keeping the wire open for resume. The ICE observes hold/RX/RTS state; teardown resets before settings restore.
 """
 import time
 
@@ -25,7 +22,7 @@ def board_side(ice):
     with ice.halted():
         pc = ice.read(PORTC, 9)
         vals = ice.peek_many(["cm.hold_state", "cm.motion_state", "cm.machine_state", "mb.buffers_available",
-                              "us[0].rx_buf_count", "us[0].fc_state_rx", "us[0].fc_state_tx", "xio.enable_flow_control"])
+                              "us[0].rx_buf_count", "us[0].rx_lost", "us[0].fc_state_rx", "us[0].fc_state_tx", "xio.enable_flow_control"])
     vals["rts_out"] = pc[4] & 1
     vals["rts_pin"] = pc[8] & 1
     return vals
@@ -35,7 +32,7 @@ def host_side(ser):
     return {"cts": ser.cts, "out_waiting": ser.out_waiting}
 
 
-@pytest.mark.bug("N102", on=["d449"])
+@pytest.mark.bug("N102", on=[])
 def test_rts_hold(tg, ice, keep, record):
     keep("rxm"); keep("ex"); keep("qv"); keep("ej")
     tg.set("ej", 1); tg.set("qv", 0)
@@ -123,6 +120,8 @@ def test_rts_hold(tg, ice, keep, record):
         assert bang_queued and held_at is not None, timeline
         assert h["cts"] and b["rts_pin"] == 0, timeline
         assert tilde_queued and after[1]["cm.hold_state"] == 0, timeline
+        assert not b["us[0].rx_lost"] and not after[1]["us[0].rx_lost"], timeline
+        assert after[1]["cm.machine_state"] not in tg.dialect.stats("ALARM", "SHUTDOWN", "PANIC"), timeline
     finally:
         ser.rtscts = False
         ser.write_timeout = saved_wt

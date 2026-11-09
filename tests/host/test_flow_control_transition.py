@@ -21,6 +21,7 @@ enum {FC_IN_XON,FC_IN_XOFF};
 #define USB_RTS_bm 1
 #define CTRLA_RXON_TXON 7
 #define XOFF_RX_HI_WATER_MARK 200
+#define RTS_RX_HI_WATER_MARK 224
 #define XIO_DEV_USB 0
 #define XIO_XOFF 1
 #define XIO_NOXOFF 2
@@ -64,7 +65,7 @@ EXERCISE=r'''
 static void init(unsigned old,unsigned tx,unsigned rx,unsigned high,unsigned saved) {
     memset(&uart,0,sizeof(uart));memset(&port,0,sizeof(port));
     USBu=(xioUsart_t){rx,tx,0,&uart,&port};xio.enable_flow_control=old;
-    USB.flag_xoff=old!=FLOW_CONTROL_OFF;count=high?201:0;SREG=saved;
+    USB.flag_xoff=old!=FLOW_CONTROL_OFF;count=high?225:0;SREG=saved;
 }
 static void change(unsigned mode) {nvObj_t nv={mode};assert(set_ex(&nv)==STAT_OK);}
 int main(void) {

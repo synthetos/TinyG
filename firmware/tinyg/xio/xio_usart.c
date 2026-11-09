@@ -183,6 +183,10 @@ void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
 void xio_xoff_usart(xioUsart_t *dx)
 {
 	if (dx->fc_state_rx == FC_IN_XON) {
+        // Hardware RTS can leave room for a bounded sender and its real-time controls.
+        // Keep the early XOFF reserve for software flow control only.
+        if ((xio.enable_flow_control == FLOW_CONTROL_RTS) &&
+            (xio_get_rx_bufcount_usart(dx) <= RTS_RX_HI_WATER_MARK)) { return; }
 		dx->fc_state_rx = FC_IN_XOFF;
 
 		// If using XON/XOFF flow control
@@ -221,7 +225,8 @@ void xio_xon_usart(xioUsart_t *dx)
 void xio_fc_usart(xioDev_t *d)		// callback from the usart handlers
 {
 	xioUsart_t *dx = d->x;
-	if (xio_get_rx_bufcount_usart(dx) < XOFF_RX_LO_WATER_MARK) {
+	if (xio_get_rx_bufcount_usart(dx) < ((xio.enable_flow_control == FLOW_CONTROL_RTS) ?
+        RTS_RX_LO_WATER_MARK : XOFF_RX_LO_WATER_MARK)) {
 		xio_xon_usart(dx);
 	}
 }
