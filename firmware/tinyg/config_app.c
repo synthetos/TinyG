@@ -690,6 +690,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "rt","rtfi",_i0, 0, tx_print_nul, rt_get_fi, rt_set_fi, (uint32_t *)&cs.null, 0},	// feed-limit push (step 2)
 	{ "rt","rtfs",_i0, 0, tx_print_nul, rt_get_fs, set_nul, (uint32_t *)&cs.null, 0},
 	{ "rt","rtjob",_i0, 0, tx_print_nul, rt_get_job, rt_set_job, (uint32_t *)&cs.null, 0},	// host job flag (step 3)
+	{ "rt","rtfg",_i0, 0, tx_print_nul, rt_get_fg, rt_set_fg, (uint32_t *)&cs.null, 0},	// fg frames opt-in (step 3)
 	// Spindle and coolant state readouts, named as in g2core: read-only, never initialized or persisted
 	{ "","spe",_i0, 0, tx_print_int, spindle_get_spe, set_nul, (uint32_t *)&cs.null, 0},
 	{ "","spd",_i0, 0, tx_print_int, spindle_get_spd, set_nul, (uint32_t *)&cs.null, 0},

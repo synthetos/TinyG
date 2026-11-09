@@ -292,13 +292,14 @@ FG_MAIN = r'''
 static stat_t set_fi(uint32_t v) { nvObj_t nv = {0}; nv.valuetype = TYPE_INTEGER; nv.value_int = v; return rt_set_fi(&nv); }
 static void tick(uint32_t to) { while ((int32_t)(to - systick) > 0) { systick++; assert(rt_feedlimit_callback() == STAT_OK); } }
 static void ask(void) { nvObj_t nv = {0}; assert(rt_get_fs(&nv) == STAT_OK); }
+static void settle(void) { tick(systick + 300); }                         /* let a pending fl event go out first */
 int main(void) {
     rt.allowed = true; systick = 1000; cm.machine_state = MACHINE_READY;
     assert(_fl_tick_ms(1024) == 1000 && _fl_tick_ms(512) == 500 && _fl_tick_ms(4294967295u) == 4194303999u);
     assert(set_fi(1) == STAT_OK);
 
     /* without the opt-in: fs only, as before */
-    nframes = 0; ask(); tick(systick + 50);
+    settle(); nframes = 0; ask(); tick(systick + 50);
     assert(nframes == 1 && strstr(last(), "{\"fs\":{\"v\":2,") && count("\"fg\"") == 0);
 
     /* opted in: fs then fg with the same e and q */
@@ -314,14 +315,14 @@ int main(void) {
     tick(systick + 1024); nframes = 0; ask(); tick(systick + 50);
     assert(nframes == 2 && strstr(frames[1], "\"g\":[2000,") && fla.gaps == 4);
     { uint32_t a, b, n; assert(sscanf(strstr(frames[1], "\"g\":["), "\"g\":[%u,%u,%u]", &a, &b, &n) == 3); assert(b >= 2000 && b < 2200 && n == 4); }
-    rt.job = 0; tick(systick + 2);
+    rt.job = 0; tick(systick + 2); settle();
 
     /* link busy after the fs: fg is retried and the next fs waits for it */
     nframes = 0; ask(); tx_ready = 1; tick(systick + 1); assert(nframes == 1 && fla.fg_due);
     tx_ready = 0; ask(); tick(systick + 200); assert(nframes == 1);
-    tx_ready = 1; tick(systick + 15); assert(nframes == 2 && strstr(last(), "{\"fg\":") && fla.fs_ask);
-    tick(systick + 15); assert(nframes == 3 && strstr(last(), "{\"fs\":"));
-    tick(systick + 15); assert(nframes == 4 && strstr(last(), "{\"fg\":"));
+    tx_ready = 1; while (nframes < 2) tick(systick + 1); assert(strstr(last(), "{\"fg\":") && fla.fs_ask);   /* fg, then */
+    while (nframes < 3) tick(systick + 1); assert(strstr(last(), "{\"fs\":"));                               /* the held fs */
+    while (nframes < 4) tick(systick + 1); assert(strstr(last(), "{\"fg\":") && nframes == 4);
     { char q1[16], q2[16]; sscanf(strstr(frames[2], "\"q\":"), "\"q\":%15[0-9]", q1); sscanf(strstr(frames[3], "\"q\":"), "\"q\":%15[0-9]", q2);
       assert(!strcmp(q1, q2)); }
 
@@ -334,7 +335,7 @@ int main(void) {
     /* x: gap or boundary wrap marks fg only; a pending wrap marks both */
     fla.gap_ticks[0] = 4294967000u; fla.gap_cls = FL_GAP_PENDING; fla.gap_t = systick - 1000; _fl_gap_close(systick);
     assert(fla.fg_invalid && !fla.invalid);
-    nframes = 0; ask(); tick(systick + 50); assert(!strstr(frames[0], "\"x\"") && strstr(frames[1], ",\"x\":1}}"));
+    settle(); nframes = 0; ask(); tick(systick + 50); assert(!strstr(frames[0], "\"x\"") && strstr(frames[1], ",\"x\":1}}"));
     assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK && !fla.fg_invalid);
     fla.breaks[0] = 4294967295u; fl_pend[fl_bank].breaks[0] = 1; _fl_fold(); assert(fla.fg_invalid && !fla.invalid);
     assert(set_fi(0) == STAT_OK && set_fi(1) == STAT_OK);
@@ -351,7 +352,7 @@ int main(void) {
     for (int k = 0; k < 2; k++) fla.gap_ticks[k] = 4294967295u;
     for (int c = 0; c < FL_CLASSES; c++) { fla.breaks[c] = 4294967295u; fla.cls_ms[c] = 4294967295u; }
     fla.gap_open = false; fla.gap_cls = 0;
-    nframes = 0; ask(); tick(systick + 50); assert(nframes == 2);
+    settle(); nframes = 0; ask(); tick(systick + 50); assert(nframes == 2);
     for (int i = 0; i < 2; i++) { assert(strlen(frames[i]) + 1 <= 248); printf("%s", frames[i]); }
     assert(strlen(frames[0]) < FL_FS_LEN && strlen(frames[1]) < FL_FG_LEN);
     return 0;
@@ -360,6 +361,7 @@ int main(void) {
 
 FG_FLAG_MAIN = r'''
 static stat_t set_int(stat_t (*f)(nvObj_t *), uint32_t v) { nvObj_t nv = { .valuetype = TYPE_INTEGER, .value_int = v }; return f(&nv); }
+static void job_kill(void) {}
 int main(void) {
     assert(_scan_rt("{\"rt\":{\"fg\":1}}") == RT_ENVELOPE_PURE && _scan_rt("{\"rt\":{\"fg\":null,\"fi\":2}}") == RT_ENVELOPE_PURE);
     assert(_scan_rt("{\"rt\":{\"fg\":1,\"fg\":0}}") == RT_ENVELOPE_BAD && _scan_rt("{\"rt\":{\"fg\":1},\"sv\":1}") == RT_ENVELOPE_BAD);

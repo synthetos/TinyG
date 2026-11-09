@@ -211,6 +211,29 @@ stat_t rt_set_job(nvObj_t *nv)
 	return (STAT_OK);
 }
 
+/*
+ * rt_get_fg(), rt_set_fg() - {"rt":{"fg":1}}: follow every fs with an fg frame (gap and boundary counters,
+ *	step 3). Opt-in because a host that does not know fg would read it as a damaged line. RAM only, written any
+ *	time; reset clears it, a new fi window does not.
+ */
+stat_t rt_get_fg(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	nv->value_int = rt.fg;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
+stat_t rt_set_fg(nvObj_t *nv)
+{
+	if (!rt.allowed) { return (STAT_UNRECOGNIZED_NAME); }
+	if ((nv->valuetype != TYPE_INTEGER) || (nv->value_int > 1)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+	if (rt.check_only) { return (STAT_OK); }
+	rt.fg = (uint8_t)nv->value_int;
+	nv->valuetype = TYPE_INTEGER;
+	return (STAT_OK);
+}
+
 void rt_job_end(void)
 {
 	rt.job = 0;								// one byte: safe from interrupts and the main loop alike
@@ -333,7 +356,8 @@ stat_t rt_get_flf(nvObj_t *nv)
  * costs a flag test. The totals wrap at 2^32 ms (49.7 days of cutting) and 2^32 mm.
  * See .analysis/feed-advisor-design.md.
  */
-#define FL_FS_LEN		160
+#define FL_FS_LEN		176						// fs v2: the largest is 165 bytes (166 on the wire)
+#define FL_FG_LEN		176						// fg: the largest is 157 bytes (158 on the wire)
 #define FL_EVENT_TICKS	(RT_TICKS_PER_SECOND / 4)	// at least this long between two fl events
 #define FL_POLL_TICKS	20						// ~20 ms between looks for a changed state
 #define FL_RETRY_TICKS	10						// ~10 ms before a frame that did not fit is tried again
@@ -370,6 +394,9 @@ static struct flAccounting {
 	uint32_t gap_t;								// SysTick time the accruing interval began
 	bool gap_open;								// a gap is open (it survives a hold or M0/M1)
 	uint8_t gap_cls;							// class accruing now (FL_GAP_*), 0 while not accruing
+	bool fg_due;								// the fs just sent owes its fg (opted in); the next fs waits for it
+	uint32_t fg_q;								// that fs's q
+	bool fg_invalid;							// a gap or boundary counter wrapped (fg "x":1)
 } fla;
 
 static void _fl_fold(void)						// take the loader's pending credits into the totals
@@ -386,17 +413,19 @@ static void _fl_fold(void)						// take the loader's pending credits into the to
 	flPending_t p;
 	memcpy(&p, (const void *)&fl_pend[bank], sizeof(p));
 	memset((void *)&fl_pend[bank], 0, sizeof(p));
-	if (p.wrapped) { fla.invalid = true; }
+	if (p.wrapped) { fla.invalid = true; fla.fg_invalid = true; }
 	for (uint8_t k = 0; k <= FL_CAUSES; k++) {	// whole parts and remainders apart: no 32-bit sum can overflow
 		fla.ms[k] += p.ticks[k] / FL_TICKS_PER_MS;
 		fla.rem[k] += p.ticks[k] % FL_TICKS_PER_MS;
 		if (fla.rem[k] >= FL_TICKS_PER_MS) { fla.rem[k] -= FL_TICKS_PER_MS; fla.ms[k]++; }
 	}
 	for (uint8_t c = 0; c < FL_CLASSES; c++) {	// command boundaries by class (step 3)
+		uint32_t ms = fla.cls_ms[c], n = fla.breaks[c];
 		fla.cls_ms[c] += p.cls_ticks[c] / FL_TICKS_PER_MS;
 		fla.cls_rem[c] += p.cls_ticks[c] % FL_TICKS_PER_MS;
 		if (fla.cls_rem[c] >= FL_TICKS_PER_MS) { fla.cls_rem[c] -= FL_TICKS_PER_MS; fla.cls_ms[c]++; }
 		fla.breaks[c] += p.breaks[c];
+		if ((fla.cls_ms[c] < ms) || (fla.breaks[c] < n)) { fla.fg_invalid = true; }	// fg's own wrap flag
 	}
 	fla.mm += p.um / 1000;
 	fla.um += p.um % 1000;
@@ -410,14 +439,51 @@ static bool _fl_send_fs(void)					// fold, format and send a summary; false if t
 	_fl_fold();
 	char frame[FL_FS_LEN];
 	snprintf_P(frame, sizeof(frame),
-			   PSTR("{\"fs\":{\"v\":1,\"e\":%u,\"q\":%lu,\"c\":[%lu,%lu,%lu,%lu,%lu,%lu],\"ct\":%lu,\"cd\":%lu.%03u%s}}\n"),
+			   PSTR("{\"fs\":{\"v\":2,\"e\":%u,\"q\":%lu,\"c\":[%lu,%lu,%lu,%lu,%lu,%lu,%lu],\"ct\":%lu,\"cd\":%lu.%03u%s}}\n"),
 			   (unsigned)fla.epoch, (unsigned long)(fla.q + 1),
 			   (unsigned long)fla.ms[0], (unsigned long)fla.ms[1], (unsigned long)fla.ms[2],
-			   (unsigned long)fla.ms[3], (unsigned long)fla.ms[4], (unsigned long)fla.ms[5],
+			   (unsigned long)fla.ms[3], (unsigned long)fla.ms[4], (unsigned long)fla.ms[5], (unsigned long)fla.ms[6],
 			   (unsigned long)fla.ms[FL_CAUSES], (unsigned long)fla.mm, (unsigned)fla.um, fla.invalid ? ",\"x\":1" : "");
 	if (!xio_usb_try_send_frame(frame)) { return (false); }
 	fla.q++;
+	if (rt.fg) {								// opted in: its fg follows before any other fs
+		fla.fg_due = true;
+		fla.fg_q = fla.q;
+	}
 	return (true);
+}
+
+static uint32_t _fl_tick_ms(uint32_t t)		// SysTick (1/1024 s) to ms, no 32-bit overflow
+{
+	return ((t >> 10) * 1000UL + (((t & 1023UL) * 1000UL) >> 10));
+}
+
+/*
+ * _fl_send_fg() - the gap and boundary counters for the fs just sent (same e and q); false if the link was busy
+ *
+ *	{"fg":{"e":E,"q":Q,"g":[ms_pending,ms_none,gaps],"b":[[n,ms],[n,ms],[n,ms]],"x":1?}}. g: supply gap time
+ *	with input pending and with no known input (an open gap's running interval included) and the gap count; b per
+ *	class (spindle/S, coolant, other): motion breaks at command boundaries and below-F ms of the moves tagged by them.
+ *	x: one of these counters wrapped (fs has its own x). The counters fold just before, with the fs.
+ */
+static bool _fl_send_fg(uint32_t now)
+{
+	if (!xio_usb_tx_ready()) { return (false); }
+	uint32_t g[2];
+	for (uint8_t k = 0; k < 2; k++) {
+		uint32_t t = fla.gap_ticks[k];
+		if (fla.gap_cls == k + 1) { t += now - fla.gap_t; }
+		g[k] = _fl_tick_ms(t);
+	}
+	char frame[FL_FG_LEN];
+	snprintf_P(frame, sizeof(frame),
+			   PSTR("{\"fg\":{\"e\":%u,\"q\":%lu,\"g\":[%lu,%lu,%lu],\"b\":[[%lu,%lu],[%lu,%lu],[%lu,%lu]]%s}}\n"),
+			   (unsigned)fla.epoch, (unsigned long)fla.fg_q, (unsigned long)g[0], (unsigned long)g[1], (unsigned long)fla.gaps,
+			   (unsigned long)fla.breaks[FL_CLS_SPINDLE], (unsigned long)fla.cls_ms[FL_CLS_SPINDLE],
+			   (unsigned long)fla.breaks[FL_CLS_COOLANT], (unsigned long)fla.cls_ms[FL_CLS_COOLANT],
+			   (unsigned long)fla.breaks[FL_CLS_OTHER], (unsigned long)fla.cls_ms[FL_CLS_OTHER],
+			   fla.fg_invalid ? ",\"x\":1" : "");
+	return (xio_usb_try_send_frame(frame));
 }
 
 /*
@@ -477,7 +543,9 @@ static uint8_t _fl_supply(void)
 static void _fl_gap_close(uint32_t now)		// end the accruing interval (the gap itself may stay open)
 {
 	if (fla.gap_cls != 0) {
+		uint32_t was = fla.gap_ticks[fla.gap_cls - 1];
 		fla.gap_ticks[fla.gap_cls - 1] += now - fla.gap_t;
+		if (fla.gap_ticks[fla.gap_cls - 1] < was) { fla.fg_invalid = true; }
 		fla.gap_cls = 0;
 	}
 }
@@ -506,14 +574,14 @@ static void _fl_gap(uint32_t now)
 		return;
 	}
 	if (s == FL_SUPPLY_OK) {
-		if (!fla.gap_open && under) { fla.gaps++; }	// ran dry and was refilled between two looks
+		if (!fla.gap_open && under && (++fla.gaps == 0)) { fla.fg_invalid = true; }	// ran dry and refilled between looks
 		_fl_gap_close(now);
 		fla.gap_open = false;
 		return;
 	}
 	if (!fla.gap_open) {
 		fla.gap_open = true;
-		fla.gaps++;
+		if (++fla.gaps == 0) { fla.fg_invalid = true; }
 	}
 	if (fla.gap_cls != s) {						// a new interval in the other class, the same gap
 		_fl_gap_close(now);
@@ -593,7 +661,7 @@ static void _fl_event(uint32_t now)
 
 stat_t rt_feedlimit_callback(void)
 {
-	if ((fla.fi == 0) && !fla.fs_ask) { return (STAT_OK); }
+	if ((fla.fi == 0) && !fla.fs_ask && !fla.fg_due) { return (STAT_OK); }
 	uint32_t now = SysTickTimer_getValue();
 	if (fla.fi != 0) {
 		bool cycle = (cm.cycle_state != CYCLE_OFF);
@@ -617,7 +685,15 @@ stat_t rt_feedlimit_callback(void)
 		_fl_gap(now);
 		if ((int32_t)(now - fla.next_fl) >= 0) { _fl_event(now); }
 	}
-	if ((fla.fs_auto || fla.fs_ask) && ((int32_t)(now - fla.next_try) >= 0)) {
+	if (fla.fg_due && !rt.fg) { fla.fg_due = false; }	// the host opted out: nothing owed
+	if (fla.fg_due) {							// the fs's fg first: pairs never interleave
+		if ((int32_t)(now - fla.next_try) >= 0) {
+			if (_fl_send_fg(now)) {
+				fla.fg_due = false;
+			}
+			fla.next_try = now + FL_RETRY_TICKS;
+		}
+	} else if ((fla.fs_auto || fla.fs_ask) && ((int32_t)(now - fla.next_try) >= 0)) {
 		if (_fl_send_fs()) {
 			fla.fs_auto = false;
 			fla.fs_ask = false;
