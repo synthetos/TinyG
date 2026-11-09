@@ -79,11 +79,19 @@ stat_t mp_exec_move()
         	cm_set_motion_state(MOTION_RUN);
     	}
 	}
-	if (bf->bf_func == NULL) {
-        return(cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_move"))); // never supposed to get here
+    switch (bf->block_type) {
+        case BLOCK_TYPE_ALINE:
+            mb.exec_ran = true; // record execution before entering any block function (N83)
+            return mp_exec_aline(bf);
+        case BLOCK_TYPE_DWELL:
+            mb.exec_ran = true;
+            return mp_exec_dwell(bf);
+        case BLOCK_TYPE_COMMAND:
+            mb.exec_ran = true;
+            return mp_exec_command(bf);
+        default:
+            return cm_panic_P(STAT_INTERNAL_ERROR, PSTR("mp_exec_move"));
     }
-	mb.exec_ran = true;									// the machine is not at rest (N83)
-	return (bf->bf_func(bf)); 							// run the move callback in the planner buffer
 }
 
 /*************************************************************************/

@@ -93,9 +93,9 @@ typedef int stat_t;
 #define PSTR(s) (s)
 enum {MOTION_STOP,MOTION_RUN,MOTION_HOLD};
 enum {FEEDHOLD_OFF,FEEDHOLD_HOLD};
-enum {BLOCK_TYPE_NULL,BLOCK_TYPE_ALINE,BLOCK_TYPE_DWELL};
+enum {BLOCK_TYPE_NULL,BLOCK_TYPE_ALINE,BLOCK_TYPE_DWELL,BLOCK_TYPE_COMMAND};
 struct {bool program_paused;int hold_state,motion_state;} cm;
-typedef struct mpBuf {int block_type;int (*bf_func)(struct mpBuf*);} mpBuf_t;
+typedef struct mpBuf {int block_type;} mpBuf_t;
 static struct {bool exec_ran;} mb;
 static mpBuf_t block;
 static bool busy,aline,startup;
@@ -108,11 +108,14 @@ bool st_aline_in_flight(void){return aline;}
 void cm_set_motion_state(int s){cm.motion_state=s;}
 int cm_panic_P(int status,const char *s){return status;}
 static int run(mpBuf_t *b){called++;return STAT_OK;}
+static int mp_exec_aline(mpBuf_t *b){return run(b);}
+static int mp_exec_dwell(mpBuf_t *b){return run(b);}
+static int mp_exec_command(mpBuf_t *b){return run(b);}
 """
         code += function((ROOT/'plan_exec.c').read_text(),r'stat_t mp_exec_move\(\)(?=\s*\{)')
         code+=r"""
 int main(void){
- block.block_type=BLOCK_TYPE_ALINE;block.bf_func=run;busy=true;
+ block.block_type=BLOCK_TYPE_ALINE;busy=true;
  assert(mp_exec_move()==STAT_OK);assert(staged==1&&called==0); // bubble wakes exec when dwell ends
  cm.hold_state=FEEDHOLD_HOLD;busy=false;
  assert(mp_exec_move()==STAT_NOOP&&called==0); // no queued block runs in HOLD

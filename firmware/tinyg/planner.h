@@ -127,7 +127,6 @@ typedef enum {
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
-	stat_t (*bf_func)(struct mpBuffer *bf); // callback to buffer exec function
 	cm_exec_t cm_func;				// callback to canonical machine execution function
 
 	float naiive_move_time;
@@ -269,6 +268,8 @@ void mp_set_steps_to_runtime_position(void);
 void mp_queue_command(void(*cm_exec)(float[], bool[]), float *value, bool *flags);
 void mp_queue_command_class(void(*cm_exec)(float[], bool[]), float *value, bool *flags, uint8_t cls);
 stat_t mp_runtime_command(mpBuf_t *bf);
+stat_t mp_exec_command(mpBuf_t *bf);
+stat_t mp_exec_dwell(mpBuf_t *bf);
 
 stat_t mp_dwell(const float seconds);
 void mp_end_dwell(void);

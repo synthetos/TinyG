@@ -55,6 +55,8 @@ uint8_t SREG=128;
 #define FLUSH_REQUESTED 1
 #define SR_REQUEST_ASAP 1
 #define BLOCK_TYPE_ALINE 1
+#define BLOCK_TYPE_DWELL 2
+#define BLOCK_TYPE_COMMAND 3
 #define PSTR(x) (x)
 typedef int stat_t;
 struct {int machine_state, cycle_state, motion_state, hold_state, queue_flush_state;
@@ -70,7 +72,7 @@ static bool flags_one[AXES]={true};
 #define FLAGS_ONE flags_one
 static int fetched, ran, wakeups, finalized, queued_commands, replan_error, reports;
 static bool queued, idle=true;
-typedef struct mpBuf {int block_type; stat_t (*bf_func)(struct mpBuf *);} mpBuf_t;
+typedef struct mpBuf {int block_type; } mpBuf_t;
 static struct {bool exec_ran;} mb;
 mpBuf_t block;
 mpBuf_t *mp_get_run_buffer(void) {fetched++; return queued ? &block : NULL;}
@@ -108,6 +110,9 @@ void cm_cycle_start(void);
 void cm_cycle_end(void);
 void mp_exit_hold_state(void);
 static stat_t run(mpBuf_t *bf) {(void)bf;ran++;return STAT_OK;}
+static stat_t mp_exec_aline(mpBuf_t *bf) {return run(bf);}
+static stat_t mp_exec_dwell(mpBuf_t *bf) {return run(bf);}
+static stat_t mp_exec_command(mpBuf_t *bf) {return run(bf);}
 '''
         for name in ('_exec_program_stop', 'cm_program_stop', 'cm_optional_program_stop',
                      'cm_cycle_start', 'cm_cycle_end', 'cm_request_end_hold', 'cm_end_hold',
@@ -122,7 +127,7 @@ void run_stop_callback(void) {
     SREG=previous;
 }
 int main(void) {
-    block.bf_func=run; queued=true;
+    queued=true;
     for(int type=1;type<=3;type++) {
         block.block_type=type; cm.program_paused=false;
         cm.hold_state=FEEDHOLD_OFF; cm.cycle_state=CYCLE_MACHINING;
