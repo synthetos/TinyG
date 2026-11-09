@@ -32,6 +32,16 @@ def host_side(ser):
     return {"cts": ser.cts, "out_waiting": ser.out_waiting}
 
 
+def _reset_and_wait(tg, ice, record):
+    # Purge pre-reset events, then send nothing through the bootloader's listen window.
+    tg.drain(quiet=0.05, limit=0.5)
+    ice.reset()
+    tg.wait_for(lambda ev: ev.kind == "banner" and ev.body.get("msg") == "SYSTEM READY", timeout=20.0)
+    # Prove the exact first restore query answers before keep() starts restoring.
+    value = tg.get("rxm", timeout=3.0)
+    record("reset_ready", {"rxm": value})
+
+
 @pytest.mark.bug("N102", on=[])
 def test_rts_hold(tg, ice, keep, record):
     keep("rxm"); keep("ex"); keep("qv"); keep("ej")
@@ -129,9 +139,4 @@ def test_rts_hold(tg, ice, keep, record):
             ser.reset_output_buffer()
         except Exception:  # noqa: BLE001
             pass
-        ice.reset()                                      # leave the hold and the RX ring behind
-        time.sleep(12.0)
-        try:
-            tg.connect()                                 # after the reset (raises if the host driver is wedged)
-        except Exception as e:  # noqa: BLE001
-            record("reconnect_error", str(e))
+        _reset_and_wait(tg, ice, record)
