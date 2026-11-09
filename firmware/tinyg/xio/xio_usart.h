@@ -61,10 +61,16 @@
 //#define RX_BUFFER_SIZE (buffer_t)1022			// 2046 is the practical upper limit
 //#define TX_BUFFER_SIZE (buffer_t)1022			// 2046 is practical upper limit given RAM
 
-// XON/XOFF (and RTS) hi and lo watermarks. At 115.200 a char takes ~87 uSec. A USB-serial host sees
+// XON/XOFF hi and lo watermarks (RTS uses separate marks below). At 115.200 a char takes ~87 uSec. A USB-serial host sees
 // an XOFF only after the adapter forwards it - the FTDI latency timer alone is 16 ms, ~180 chars - and
 // what it wrote meanwhile still arrives (E163). XOFF at 30% leaves 175 chars; XON at 15% keeps ~2 lines
 // queued while the host restarts. The planner's own queue covers far longer than the host's reaction.
+// RTS acts at the FTDI UART, so it needs no USB-latency reserve. A sender must
+// cap all unanswered data (including line terminators) at 192 bytes so controls
+// still reach the RX ISR when a feedhold stops consumption. Larger/unbounded
+// streams can fill any finite ring and block controls behind data at the host.
+#define RTS_RX_HI_WATER_MARK 224              // stop before the 248-byte ring fills
+#define RTS_RX_LO_WATER_MARK 192              // restart below the sender window
 #define XOFF_RX_HI_WATER_MARK (RX_BUFFER_SIZE * 0.3)	// % to issue XOFF
 #define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.15)	// % to issue XON
 #define XOFF_TX_HI_WATER_MARK (TX_BUFFER_SIZE * 0.9)	// % to issue XOFF

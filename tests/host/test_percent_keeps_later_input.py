@@ -31,6 +31,9 @@ PRELUDE = r'''
 #define XON 0x11
 #define XOFF 0x13
 #define RX_BUFFER_SIZE 64
+// Scaled thresholds for this small synthetic ring; N102 covers hardware marks.
+#define RTS_RX_HI_WATER_MARK XOFF_RX_HI_WATER_MARK
+#define RTS_RX_LO_WATER_MARK XOFF_RX_LO_WATER_MARK
 #define XOFF_RX_LO_WATER_MARK (RX_BUFFER_SIZE * 0.1)
 #define CTRLA_RXON_TXON 0x3c
 #define USB_RTS_bm 0x08
