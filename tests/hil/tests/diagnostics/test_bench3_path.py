@@ -71,7 +71,11 @@ def _circle(tg, request, cfg, name, lines):
     y = _signed(e["M2 step"], e["M2 dir"], init["M2 dir"])
     z = _signed(e["M1 step"], e["M1 dir"], init["M1 dir"])
     sp = _speed(y, z, spm)
-    mid = sp[len(sp) // 8: -len(sp) // 8] if len(sp) > 16 else sp
+    # mid-path: from the first to the last bin at 95% of the median speed. A fixed slice (the middle three
+    # quarters) cut into the S-curve ramps, which take ~0.47 s to 5 mm/s at $yjm 20, and read them as dips (N100)
+    med = sorted(sp)[len(sp) // 2] if sp else 0
+    fast = [i for i, v in enumerate(sp) if v >= 0.95 * med]
+    mid = sp[fast[0]:fast[-1] + 1] if fast else sp
     s = {"y_steps": len(y), "z_steps": len(z), "y_net": sum(d for _, d in y), "z_net": sum(d for _, d in z),
          "speed_mid_min": round(min(mid), 3) if mid else None, "speed_mid_median": round(sorted(mid)[len(mid) // 2], 3) if mid else None,
          "duration_s": round(max(y[-1][0], z[-1][0]) - min(y[0][0], z[0][0]), 3) if y and z else None,
@@ -93,12 +97,17 @@ def test_dwell_accuracy(tg, record, request):
         tg.wait_idle(timeout=20)
     r = [t for t, v in cap.edges()["M2 step"] if v == 1]
     gap = max(b - a for a, b in zip(r, r[1:]))
-    s = {"steps": len(r), "gap_s": round(gap, 4)}
+    # the gap runs from the last step of one move to the first step of the next, so it holds the jerk-limited tail
+    # at each end: from rest the first step comes after (6 / (spm * J)) ** (1/3) s (~37 ms at $yjm 20; N100)
+    spm = 360.0 * tg.get("2mi") / (tg.get("2sa") * tg.get("2tr"))
+    tail = (6.0 / (spm * tg.get("yjm") * 1e6 / 216000.0)) ** (1 / 3)
+    s = {"steps": len(r), "gap_s": round(gap, 4), "ramp_tail_s": round(tail, 4), "dwell_s": round(gap - 2 * tail, 4)}
     record("dwell_accuracy", s)
     print("DWELL", s)
     tg.send_gcode("G90 G0 Y0", allow="return Y")
     tg.wait_idle(timeout=30)
-    assert 0.495 <= gap <= 0.53, f"the 0.5 s dwell measured {gap:.4f} s between the moves: {s}"
+    # at least the dwell plus one tail (the model's tails are an upper bound: segment averaging starts sooner)
+    assert 0.5 + tail <= gap <= 0.5 + 2 * tail + 0.015, f"the 0.5 s dwell measured {gap:.4f} s between the moves: {s}"
 
 
 def test_arc_closure_speed(tg, record, request):
@@ -106,7 +115,7 @@ def test_arc_closure_speed(tg, record, request):
     s = _circle(tg, request, cfg, "arc-yz", ["G19 G2 Y0 Z0 J2 K0 F300", "G17"])
     record("arc_closure", s)
     print("ARC", s)
-    assert s["y_net"] == 0 and s["z_net"] == 0, f"the circle did not close on the steps: {s}"
+    assert abs(s["y_net"]) <= 1 and abs(s["z_net"]) <= 1, f"the circle did not close on the steps: {s}"   # DDA residual (N89)
     assert abs(s["posy"]) < 0.001 and abs(s["posz"]) < 0.001, f"reported position not back at 0: {s}"
     assert s["speed_mid_min"] >= 0.85 * F / 60, f"path speed dipped mid-arc: {s}"
 
@@ -119,7 +128,7 @@ def test_dense_chain_speed(tg, record, request):
     s = _circle(tg, request, cfg, "dense-yz", lines)
     record("dense_chain", s)
     print("DENSE", s)
-    assert s["y_net"] == 0 and s["z_net"] == 0, f"the polygon did not close on the steps: {s}"
+    assert abs(s["y_net"]) <= 1 and abs(s["z_net"]) <= 1, f"the polygon did not close on the steps: {s}"   # DDA residual (N89)
     assert abs(s["posy"]) < 0.001 and abs(s["posz"]) < 0.001, f"reported position not back at 0: {s}"
 
 
