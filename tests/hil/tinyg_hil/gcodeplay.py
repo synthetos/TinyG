@@ -202,6 +202,11 @@ def path_check(status, pts, sr_interval, tol, min_samples):
     reports, a report off the path, or a stretch of path with no report all fail; no reports at all is
     a failure, never a pass by default."""
     with_pos = [(t, st) for t, st in status if "posx" in st and "posy" in st]
+    # Leading reports that never carried a position hold the one read before the stream (the sender fills
+    # them in), not a place on the path: a program that opens with G92 (braid) moves the origin after they
+    # were sent. A setup report landing in the first milliseconds of the stream failed the braid this way.
+    while with_pos and not re.search(r'"pos[xy]"', with_pos[0][1].get("_raw", '"posx"')):
+        with_pos.pop(0)
     samples = [(st["posx"], st["posy"]) for _, st in with_pos]
     scored = sorted(((distance_to_path((st["posx"], st["posy"]), pts), t, st) for t, st in with_pos),
                     key=lambda r: -r[0])

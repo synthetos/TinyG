@@ -36,3 +36,24 @@ def test_a_skipped_stretch_shows_as_a_gap():
     cut = len(samples) // 3
     cover = gcodeplay.coverage(samples[:cut] + samples[cut + 60:], path)
     assert cover["max_gap_mm"] >= 25, cover
+
+
+def test_a_setup_report_before_a_g92_program_starts_is_not_scored():
+    """braid opens with G92 X0.327 Y-33.521: a positionless report sent before that line runs carries the
+    pre-stream position (0, 0), which is off the program's path (a count-crlf braid run failed on it)."""
+    path = gcodeplay.path(gcodeplay.LARGE_PROGRAMS["braid"]())
+    status = [(0.048, {"posx": 0.0, "posy": 0.0, "stat": 4, "_raw": '{"sr":{"stat":4}}'})]
+    status += [(1.0 + i, {"posx": x, "posy": y, "_raw": f'{{"sr":{{"posx":{x},"posy":{y}}}}}'})
+               for i, (x, y) in enumerate(walk(path))]
+    check = gcodeplay.path_check(status, path, 0.1, 0.01, 10)
+    assert not check["failures"], check["failures"]
+    assert check["samples"][0] != (0.0, 0.0) and len(check["samples"]) == len(status) - 1
+
+
+def test_an_off_path_report_with_a_position_still_fails():
+    path = gcodeplay.path(gcodeplay.LARGE_PROGRAMS["braid"]())
+    status = [(1.0 + i, {"posx": x, "posy": y, "_raw": f'{{"sr":{{"posx":{x},"posy":{y}}}}}'})
+              for i, (x, y) in enumerate(walk(path))]
+    status.insert(5, (1.5, {"posx": 0.0, "posy": 0.0, "_raw": '{"sr":{"posx":0.000,"posy":0.000}}'}))
+    check = gcodeplay.path_check(status, path, 0.1, 0.01, 10)
+    assert any("off the commanded path" in f for f in check["failures"]), check["failures"]
