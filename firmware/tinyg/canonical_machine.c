@@ -2117,6 +2117,7 @@ stat_t cm_feedhold_sequencing_callback()
 {
     if (cm.job_kill_requested) {
         cm.job_kill_requested = false;
+        xio_cancel_pgm_source();                    // return canned-file input to the host (N43)
         if (cm.job_kill_report_pending) {
             cm.job_kill_report_pending = false;
             rpt_exception(STAT_KILL_JOB, "job kill"); // stop already applied by the blocked writer

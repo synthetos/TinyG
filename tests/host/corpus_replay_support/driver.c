@@ -268,6 +268,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void xio_cancel_pgm_source(void){}
 bool xio_rx_data_pending(void){return false;}
 bool xio_usb_is_quiet(void){return true;}
 uint8_t xio_usb_rx_unread(void){return 0;}

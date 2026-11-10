@@ -5,7 +5,7 @@ import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.resets_board,
               pytest.mark.persists, pytest.mark.dialect('d449'),
-              pytest.mark.bug('N43', on=['d449'])]
+              pytest.mark.bug('N43', on=[])]
 
 
 def wait_state(ice, predicate, timeout=10):
@@ -45,7 +45,7 @@ def test_stopped_file_returns_to_usb(tg, ice, keep, record, mode, stop):
             tg.wait_idle()
         tg.send_gcode('M5', check=True)
         errors = [e.raw for e in tg.transport.history[mark:]
-                  if e.kind == 'exception' and e.body.get('st') == 13]
+                  if e.kind == 'exception' and e.data.get('er', {}).get('st') == 13]
         assert not errors, errors
     finally:
         tg.reset()

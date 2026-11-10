@@ -81,6 +81,7 @@ static uint8_t output_mode; static float output_speed;
 bool mp_hold_startup(void) {return false;}
 void cm_alarm_P(int status, const char *message) {assert(0);}
 static void _take_input_flush_request(void);
+void xio_cancel_pgm_source(void) {}
 void xio_flush_input(void) {}
 
 static bool queued, busy, alarmed, aline_busy;

@@ -12,6 +12,7 @@ void xio_drop_usb_rx_before_mark(void);
 void xio_flush_readline(void);
 void xio_flush_rx(void);
 #define NUL 0
+void xio_cancel_pgm_source(void);
 void xio_flush_input(void);
 
 bool xio_rx_data_pending(void);

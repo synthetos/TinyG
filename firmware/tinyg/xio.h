@@ -334,6 +334,7 @@ char *readline(devflags_t *flags, uint16_t *size);
 uint8_t xio_rx_data_pending(void);
 uint8_t xio_prepare_pgm_source(void);
 void xio_reset_readline_linemode(void);
+void xio_cancel_pgm_source(void);
 void xio_flush_input(void);
 uint8_t xio_get_line_buffers_available(void);
 //uint8_t xio_is_control(char *str);
