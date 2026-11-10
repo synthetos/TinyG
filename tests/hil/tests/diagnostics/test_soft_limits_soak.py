@@ -55,7 +55,7 @@ def test_soft_limits_soak(tg, keep, record):
     g55 = {"x": round(r.uniform(-8, 8), 3), "y": round(r.uniform(-8, 8), 3), "z": 0.0}
     tg.send_gcode(f"G10 L2 P2 X{g55['x']} Y{g55['y']} Z0", check=True, allow="G55 offset")
     machine = {"x": 0.0, "y": 0.0, "z": 0.0}
-    failures, cases = [], 0
+    failures, cases, near_fence = [], 0, 0
 
     def mpo():
         tg.wait_idle(timeout=60)
@@ -130,8 +130,15 @@ def test_soft_limits_soak(tg, keep, record):
                     cases -= 1
                     continue                             # endpoint cases are covered above; this tests the body
                 body = _arc_extremes(c1, c2, rad, a0, math.atan2(end[p2] - c2, end[p1] - c1), cw)
-                ok_body = all(LIM[p1][0] - 1e-3 <= u <= LIM[p1][1] + 1e-3 and LIM[p2][0] - 1e-3 <= v <= LIM[p2][1] + 1e-3
-                              for u, v in body)
+                # The firmware compares the arc's extremes with the limits exactly (plan_arc.c, centre +/- radius). An
+                # extreme within TOL of a limit (2 um, under two steps) is too close to call from the sent words, so
+                # draw another case; judge the rest exactly. (A 1 um slack once called an arc 0.7 um past the limit
+                # "inside", seed 1000770929.)
+                if any(abs(u - LIM[p1][k]) < TOL or abs(v - LIM[p2][k]) < TOL for u, v in body for k in (0, 1)):
+                    near_fence += 1
+                    cases -= 1
+                    continue
+                ok_body = all(LIM[p1][0] <= u <= LIM[p1][1] and LIM[p2][0] <= v <= LIM[p2][1] for u, v in body)
                 g = "G2" if cw else "G3"
                 line = (f"{plane} G90 {g} F2000 {p1.upper()}{end[p1]} {p2.upper()}{end[p2]} "
                         f"{i1}{round(c1 - machine[p1], 4)} {i2}{round(c2 - machine[p2], 4)}")
@@ -160,5 +167,5 @@ def test_soft_limits_soak(tg, keep, record):
         tg.send_gcode("G21 G90 G17 G54 G92.1", allow="cleanup")
         tg.send_gcode("G53 G0 X0 Y0 Z0", allow="return")
         tg.wait_idle(timeout=60)
-        record("soft_limits", {"seed": SEED, "cases": cases, "failures": failures})
+        record("soft_limits", {"seed": SEED, "cases": cases, "arcs_near_fence_skipped": near_fence, "failures": failures})
     assert not failures, f"seed {SEED}: " + json.dumps(failures[:3])
