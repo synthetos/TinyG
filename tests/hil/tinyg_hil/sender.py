@@ -69,7 +69,7 @@ class StreamProtocolError(StreamFailed):
 
 
 class StreamLineTooLong(ValueError):
-    """Count mode: a line longer than RX_COUNT_LIMIT can never be sent inside the byte budget."""
+    """A line cannot fit within the selected mode's unanswered-byte limit."""
 
 
 # Firmware state worth reading over the Atmel-ICE when a stream hangs (one halt, consistent snapshot)
@@ -257,11 +257,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     feedhold and a queue flush immediately and raises StreamRunaway (a corrupted line must not run on)."""
     tr = tg.transport
     todo = _payload(lines)
-    if mode in ("count", "count-crlf"):
+    if mode in ("count", "count-crlf", "rts"):
+        limit = RTS_INFLIGHT_LIMIT if mode == "rts" else RX_COUNT_LIMIT
         for k, text in enumerate(todo):
-            if len(_wire(text, k, mode)) > RX_COUNT_LIMIT:
+            if len(_wire(text, k, mode)) > limit:
                 raise StreamLineTooLong(f"{mode}: line {k} is {len(_wire(text, k, mode))} bytes, more than the "
-                                        f"{RX_COUNT_LIMIT}-byte budget: {text[:60]!r}")
+                                        f"{limit}-byte budget: {text[:60]!r}")
     res = StreamResult(mode=mode, lines=len(todo))
     sr = {k: tg.get(k) for k in ("posx", "posy", "posz")}   # filtered reports carry only what changed: start known
     inflight = []                    # byte lengths (count, rts) or 1s (line mode), oldest first
@@ -356,7 +357,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     break
                 elif mode == "xon-app" and xoff:
                     break                   # the application honours XOFF, as terminal programs do
-                elif mode == "rts" and inflight and sum(inflight) + len(data) > RTS_INFLIGHT_LIMIT:
+                elif mode == "rts" and sum(inflight) + len(data) > RTS_INFLIGHT_LIMIT:
                     break                   # bounded unanswered bytes keep feedhold latency short (N102)
                 elif mode in ("rts", "xon") and tr.ser.out_waiting + len(data) > TTY_ROOM:
                     break                   # the board is holding output back: read and watch, write later

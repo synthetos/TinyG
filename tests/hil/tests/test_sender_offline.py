@@ -131,6 +131,25 @@ def test_count_mode_refuses_a_line_that_cannot_fit():
     assert tg.transport.writes == []
 
 
+@pytest.mark.parametrize("wire_size", [193, 225, 250])
+def test_rts_refuses_oversized_line_before_starting_job(wire_size):
+    # N04/N102: one oversized line can lower CTS during a hold and trap resume.
+    # Count the LF too, and reject the whole job before its first move is sent.
+    line = "G1 X1 (" + "p" * (wire_size - 9) + ")"
+    assert len(line.encode()) + 1 == wire_size
+    tg = FakeTG(board())
+    with pytest.raises(sender.StreamLineTooLong):
+        sender.stream(tg, ["G1 X0", line], "rts", timeout=1)
+    assert tg.transport.writes == []
+
+
+def test_rts_accepts_a_line_at_the_byte_limit():
+    line = "G1 X1 (" + "p" * (sender.RTS_INFLIGHT_LIMIT - 9) + ")"
+    tg = FakeTG(board())
+    assert sender.stream(tg, [line], "rts", timeout=1).ok
+    assert len(tg.transport.writes[0][0]) == sender.RTS_INFLIGHT_LIMIT
+
+
 def test_count_mode_keeps_its_byte_budget():
     """The board answers one line only when the host is waiting for input, so the host fills its budget;
     the bytes the board holds unanswered never exceed RX_COUNT_LIMIT."""
