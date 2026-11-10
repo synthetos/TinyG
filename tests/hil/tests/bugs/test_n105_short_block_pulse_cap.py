@@ -25,6 +25,15 @@ def test_short_block_cap_prevents_dda_panic(tg, ice, keep, record):
         for axis in 'xy':
             for suffix, value in (('vm', 20000), ('fr', 20000), ('jm', 5000)):
                 tg.set(axis + suffix, value, allow='N105 planner must enforce its 50 kHz DDA capacity')
+        profile = {f'{m}{suffix}': value for m in range(1, 5)
+                   for suffix, value in (('ma', m - 1), ('sa', 1.8), ('mi', 8),
+                                         ('tr', 1.25 if m <= 3 else 360))}
+        profile.update({axis + suffix: value for axis in 'xy'
+                        for suffix, value in (('vm', 20000), ('fr', 20000), ('jm', 5000))})
+        applied = {token: tg.get(token) for token in profile}
+        record('short_block_cap_profile', applied)
+        for token, value in profile.items():
+            assert applied[token] == pytest.approx(value), (token, applied[token], value)
         tg.set('rxm', 1)
         tg.set('ex', 1)
         tg.send_gcode('G21 G90 G17 G94 G92.1 G54', check=True)
@@ -33,7 +42,9 @@ def test_short_block_cap_prevents_dda_panic(tg, ice, keep, record):
         names = [f'en.en[{m}].{field}' for m in range(2) for field in ('encoder_steps', 'steps_run')]
         before = ice.peek_many(names)
         program = Path(__file__).resolve().parents[2] / 'corpus/n105/short-block-pulse-cap.nc'
-        lines = program.read_text().splitlines()
+        # The host counterexample plans all nine moves before executing. Without this
+        # dwell the serial sender can starve the short chain and hide the bad profile.
+        lines = ['G4 P2', *program.read_text().splitlines()]
         for line in lines:
             tg.guard.check_gcode(line, allow='N105 reduced CAM chain inside a 2 mm box')
         result = stream(tg, lines, 'g2', timeout=20)
