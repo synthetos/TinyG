@@ -1,4 +1,4 @@
-"""N12 residual found during N78 replication: short profiles discard their rate cap.
+"""N105 found during N78 replication: short profiles discard their rate cap.
 
 The minimized valid CAM chain panics without a hold. It is a separate confirmed
 counterexample; it does not reproduce the original N78 hold-only report.
@@ -83,7 +83,7 @@ int main(void) {
                                                          for n in ('plan_exec', 'kinematics', 'step_engine')]
             args.insert(1, '-DF_CPU=32000000UL')
             subprocess.run(args, check=True, capture_output=True, text=True)
-            program = (ROOT / 'tests/hil/corpus/n12/short-block-pulse-cap.nc').read_bytes()
+            program = (ROOT / 'tests/hil/corpus/n105/short-block-pulse-cap.nc').read_bytes()
             for batch in (4, 16, 28):
                 with self.subTest(batch=batch):
                     result = subprocess.run([str(exe), str(batch)], input=program,
