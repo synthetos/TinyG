@@ -20,11 +20,11 @@ WHY = "N104 refusal check and 0.1 mm recovery move"
 ])
 @pytest.mark.parametrize("direction", ["G2", "G3"])
 @pytest.mark.parametrize("mode,zero", [
-    pytest.param("G91.1", False, marks=pytest.mark.bug("N104", on=["d449"])),
-    pytest.param("G91.1", True, marks=pytest.mark.bug("N104", on=["d449"])),
+    pytest.param("G91.1", False, marks=pytest.mark.bug("N104", on=[])),
+    pytest.param("G91.1", True, marks=pytest.mark.bug("N104", on=[])),
     # Missing absolute words already refuse correctly: keep this a passing control.
     pytest.param("G90.1", False, marks=pytest.mark.bug("N104", on=[])),
-    pytest.param("G90.1", True, marks=pytest.mark.bug("N104", on=["d449"])),
+    pytest.param("G90.1", True, marks=pytest.mark.bug("N104", on=[])),
 ])
 def test_missing_or_zero_centre_refuses_without_alarm(tg, plane, endpoint, offsets, direction, mode, zero):
     before = [tg.get("mpo" + axis) for axis in "xyz"]
