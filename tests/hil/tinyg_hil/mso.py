@@ -266,7 +266,8 @@ class Capture:
         return self.finish()["analog"][self._akey(name)]["pwm"]
 
     def _akey(self, name):
-        return next(k for k, v in self.anames.items() if v == name or k == name)
+        """An analog channel by its configured name, its key ("a2") or the bench file's channel number ("2")."""
+        return next(k for k, v in self.anames.items() if v == name or k == name or k == f"a{name}")
 
 
 def pwm_windows(y, rate, window=0.5, threshold=1.5):

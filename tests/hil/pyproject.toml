@@ -14,6 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 evidence = ["matplotlib>=3.8"]
+mso = ["numpy>=1.26"]               # MSO capture analysis (tinyg_hil.mso_worker, bench 3 diagnostics)
 
 [tool.uv]
 package = false
