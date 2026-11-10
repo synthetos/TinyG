@@ -1,0 +1,12 @@
+(Short CAM chords, reduced from tiny_cat_outline; all coordinates in a 2 mm box)
+G21 G90 G94 G61
+G0
+X0.5008 Y0.6181
+X1.1201 Y0.9013
+X1.5944 Y1.1941
+X1.7208 Y1.2939
+X1.8237 Y1.3942
+X1.9030 Y1.4963
+X1.9582 Y1.6017
+X1.9890 Y1.7119
+X1.9951 Y1.8282
