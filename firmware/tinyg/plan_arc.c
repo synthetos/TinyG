@@ -211,11 +211,27 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
             return (STAT_ARC_RADIUS_OUT_OF_TOLERANCE);
         }
     } 
-    else {  // test that center format absolute distance mode arcs have both offsets specified
+    else {  // validate the centre before cm_set_model_target() can change the model
         if (cm.gm.arc_distance_mode == ABSOLUTE_MODE) {
             if (!(offset_f[arc.plane_axis_0] && offset_f[arc.plane_axis_1])) {  // if one or both offsets are missing
                 return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
             }
+        } else if (!(offset_f[arc.plane_axis_0] || offset_f[arc.plane_axis_1])) {
+            return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
+        }
+
+        for (uint8_t axis = AXIS_X; axis <= AXIS_Z; axis++) {
+            arc.offset[axis] = _to_millimeters(offset[axis]);
+            if (cm.gm.arc_distance_mode == ABSOLUTE_MODE) {
+                // Absolute centre words use the current work frame, including G92 and tool offsets.
+                // Resolve without writing gm.work_offset: a refused line must leave the model alone.
+                float work_offset = cm_get_active_coord_offset(axis) + cm.gmx.tool_offset[axis];
+                arc.offset[axis] += work_offset - cm.gmx.position[axis];
+            }
+        }
+        // A normal-axis offset is ignored; it cannot give a zero-radius planar arc a centre.
+        if (fp_ZERO(arc.offset[arc.plane_axis_0]) && fp_ZERO(arc.offset[arc.plane_axis_1])) {
+            return (STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE);
         }
     }
 
@@ -253,27 +269,6 @@ stat_t cm_arc_feed(const float target[], const bool target_f[],     // target en
 	cm_set_work_offsets();                          // capture the fully resolved offsets to gm
 	memcpy(&arc.gm, &cm.gm, sizeof(GCodeState_t));  // copy GCode context to arc singleton - some will be overwritten to run segments
 	copy_vector(arc.position, cm.gmx.position);     // set initial arc position from gcode model
-
-    if (!radius_f) {                 // radius arcs derive offsets in _compute_arc()
-        // setup offsets
-        arc.offset[OFS_I] = _to_millimeters(offset[OFS_I]); // copy offsets with conversion to canonical form (mm)
-        arc.offset[OFS_J] = _to_millimeters(offset[OFS_J]);
-        arc.offset[OFS_K] = _to_millimeters(offset[OFS_K]);
-
-        if (arc.gm.arc_distance_mode == ABSOLUTE_MODE) {    // adjust offsets if in absolute mode:
-            // IJK is a centre in work coordinates; work_offset (captured just above) maps work to
-            // machine coordinates with the coordinate system, G92 and tool offset already folded in
-             arc.offset[OFS_I] += arc.gm.work_offset[AXIS_X] - arc.position[AXIS_X];
-             arc.offset[OFS_J] += arc.gm.work_offset[AXIS_Y] - arc.position[AXIS_Y];
-             arc.offset[OFS_K] += arc.gm.work_offset[AXIS_Z] - arc.position[AXIS_Z];
-        }
-
-        if ((fp_ZERO(arc.offset[OFS_I])) &&             // it's an error if no offsets are provided
-            (fp_ZERO(arc.offset[OFS_J])) &&
-            (fp_ZERO(arc.offset[OFS_K]))) {
-            return (cm_alarm_P(STAT_ARC_OFFSETS_MISSING_FOR_SELECTED_PLANE, PSTR("arc offsets missing or zero")));
-        }
-    }
 
 	// compute arc runtime values
 	ritorno(_compute_arc(radius_f));
