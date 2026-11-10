@@ -391,7 +391,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
         pwm_ok = lambda q: len(q) == len(want_pwm) and all(near(a, b) for a, b in zip(q, want_pwm))  # noqa: E731
         line_ok = lambda q, w: _is_subsequence(q, w) and not (q and w and q[-1] != w[-1])  # noqa: E731
         if _get0(tg, "spph"):
-            seen_pwm = _first(_hold_variants(seen_pwm, pwm["pof"], near), pwm_ok)
+            seen_pwm = _first(_hold_variants(seen_pwm, pwm["pof"], near) + _averaged_pause(seen_pwm, pwm["pof"]), pwm_ok)
             enable_seq = _first(_hold_variants(enable_seq, 0), lambda q: line_ok(q, want_enable))
         if _get0(tg, "coph"):
             cool_seq = _first(_hold_variants(cool_seq, 0), lambda q: line_ok(q, want_cool))
@@ -452,6 +452,16 @@ def _hold_variants(seq, off, same=lambda a, b: a == b):
             out.append(list(seq[:i]) + list(seq[i + 1:]))
     return out
 
+
+def _averaged_pause(seq, off, tol=3 * DUTY_SAME):
+    """A pause too short for its own plateau: the duty window across it reads a little below the speed around it.
+    Variants with one such entry (between its predecessor and off, within tol of the predecessor) dropped."""
+    out = []
+    for i in range(1, len(seq)):
+        lo, hi = sorted((seq[i - 1], off))
+        if lo <= seq[i] <= hi and abs(seq[i] - seq[i - 1]) <= tol and abs(seq[i - 1] - off) > tol:
+            out.append(list(seq[:i]) + list(seq[i + 1:]))
+    return out
 
 def _first(variants, ok):
     """The first variant that passes ok (the seen sequence when none does, so the failure shows what was seen)."""
