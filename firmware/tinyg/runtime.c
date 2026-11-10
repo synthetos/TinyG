@@ -673,7 +673,7 @@ static void _fl_event(uint32_t now)
 	} else if (g != 0) {
 		snprintf_P(n, sizeof(n), PSTR("%lu"), (unsigned long)mr.gm.linenum);	// the last line run
 	}
-	char gs[8] = "";
+	char gs[12] = "";								// ,"g":N with any uint8_t N (g is 1 or 2 today)
 	if (g != 0) { snprintf_P(gs, sizeof(gs), PSTR(",\"g\":%u"), (unsigned)g); }
 	char frame[72];								// the longest fl, with g, is 61 bytes
 	snprintf_P(frame, sizeof(frame), PSTR("{\"fl\":{\"k\":%u,\"m\":%u,\"p\":%s,\"n\":%s%s}}\n"), (unsigned)k, (unsigned)m, p, n, gs);
