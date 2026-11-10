@@ -384,6 +384,14 @@ def test_bench3_scenario(tg, keep, record, request, k):
     if len(ys) == 2 and counts[ys[0]] != counts[ys[1]]:
         bad.append(f"the Y motors stepped {counts[ys[0]]} and {counts[ys[1]]}")
     near = lambda a, b: abs(a - b) <= DUTY_SAME  # noqa: E731
+    if event == "hold":
+        # E060: with $spph (and $coph for coolant) a feedhold pauses the spindle and resumes it on ~, so one
+        # off stretch between two equal on stretches is the hold, not a program state
+        if _get0(tg, "spph"):
+            seen_pwm = _unpause(seen_pwm, pwm["pof"], near)
+            enable_seq = _unpause(enable_seq, 0)
+        if _get0(tg, "coph"):
+            cool_seq = _unpause(cool_seq, 0)
     if event in ("none", "hold") and not bad:
         if stat not in tg.dialect.idle_stats:
             bad.append(f"stat {stat} after the program")
@@ -427,3 +435,19 @@ def test_bench3_scenario(tg, keep, record, request, k):
     finally:
         pass
     assert not bad, f"seed {seed} {event} {trip}: {bad}"
+
+
+def _unpause(seq, off, same=lambda a, b: a == b):
+    """Drop one hold pause: an `off` entry between two equal entries that are not off (E060 spindle/coolant pause)."""
+    for i in range(1, len(seq) - 1):
+        if same(seq[i], off) and same(seq[i - 1], seq[i + 1]) and not same(seq[i - 1], off):
+            return seq[:i] + seq[i + 2:]
+    return seq
+
+
+def _get0(tg, token):
+    """A setting's value, or 0 on firmware without it (before E060 there is no $spph/$coph)."""
+    try:
+        return tg.get(token) or 0
+    except Exception:  # noqa: BLE001
+        return 0
