@@ -18,6 +18,7 @@ def test_latch_must_release_switch(tg,keep,switches,ice,record):
         switches.unmount_all();switches.open("x","min");switches.open("x","max")
         time.sleep(.1)
         tg.send_gcode("G21 G90 G28.3 X0",check=True,allow="seed X machine position")
+        started=time.monotonic()
         tg.send_gcode("G28.2 X0",check=True,allow="bounded homing with stuck latch switch")
         deadline=time.monotonic()+10
         while time.monotonic()<deadline:
@@ -29,7 +30,7 @@ def test_latch_must_release_switch(tg,keep,switches,ice,record):
         # halts here can interrupt that serial message (N106). Wait on serial first.
         failed=tg.dialect.status("HOMING_CYCLE_FAILED")
         def is_failure(event):
-            if event.damaged:
+            if event.damaged or event.t < started:
                 return False
             footer=event.data.get("f",[])
             return ((event.kind=="exception" and event.data["er"].get("st")==failed) or

@@ -1,5 +1,6 @@
 """N106: the latch test must receive the failure report before halting for its final snapshot."""
 import importlib.util
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -28,7 +29,7 @@ def test_latch_failure_waits_for_report_before_debugger_snapshot(report):
         def drain(self): return []
         def reset(self): pending['report'] = False
         def wait_for(self, predicate, timeout):
-            event = parse_line(report, 1.0)
+            event = parse_line(report, time.monotonic())
             assert predicate(event)
             self.transport.history.append(event)
             pending['report'] = False
