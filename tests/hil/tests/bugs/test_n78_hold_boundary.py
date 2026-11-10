@@ -22,8 +22,8 @@ def test_hold_at_new_cam_block_does_not_panic(tg, ice, keep, record):
                for suffix, value in (('ma', m-1), ('sa', 1.8), ('mi', 8),
                                      ('tr', 1.25 if m<=3 else 360))}
     profile.update({a+s: v for a in 'xy' for s,v in
-                    (('vm', 20000), ('fr', 20000), ('jm', 5000), ('jd', .05))})
-    profile.update(ja=100000, rxm=1, ex=1, spph=0)
+                    (('am', 1), ('vm', 20000), ('fr', 20000), ('jm', 5000), ('jd', .05))})
+    profile.update(ja=100000, rxm=1, ex=1, spph=0, sl=0, g54x=0, g54y=0)
     keep(*profile)
     resumed = []
 
@@ -56,6 +56,11 @@ def test_hold_at_new_cam_block_does_not_panic(tg, ice, keep, record):
                              'test_hold.previous_segment','test_hold.previous_diff'])
         record('hold_boundary', {'state':state,'stream':str(result),'resumed':bool(resumed)})
         assert state['test_hold.fired']==1, state
+        # A passing run is useful only if the old block's speed plus its next
+        # acceleration step would exceed this new block's limit.
+        inherited = state['test_hold.previous_segment'] + state['test_hold.previous_diff']
+        assert inherited > state['test_hold.cruise_cap'] + 1, state
+        assert 0 < state['test_hold.planned_entry'] <= state['test_hold.cruise_cap'] + .01, state
         assert result.ok, result
         assert resumed, 'hold must reach HOLD and resume'
         after=ice.peek_many(names+['mr.position[0]','mr.position[1]'])
