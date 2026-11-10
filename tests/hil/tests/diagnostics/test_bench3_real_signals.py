@@ -92,7 +92,10 @@ def test_probe_real_edge(tg, keep, record, request):
     tg.send_gcode("G90", allow="absolute")
     assert prb and prb[-1].get("e") == 1, f"the probe did not report a trip: {summary}"
     assert summary["m2_steps"] == summary["m3_steps"], f"the two Y motors stepped differently: {summary}"
-    stop_from_steps = 20 + net / spm
+    # the probe only moves toward -Y, so the stop is 20 minus the steps taken; the direction pin's level for +Y depends
+    # on the motor's wiring and $2po (low on bench 3's M2), so only its constancy is checked, not its meaning
+    assert abs(net) == summary["m2_steps"], f"M2 changed direction during a one-way probe move: {summary}"
+    stop_from_steps = 20 - abs(net) / spm
     assert abs(prb[-1]["y"] - stop_from_steps) <= 2.0 / spm + 0.0005, \
         f"probe report {prb[-1]['y']} vs real stop {stop_from_steps:.4f}: {summary}"
 
