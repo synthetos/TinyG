@@ -78,6 +78,15 @@ typedef struct testHookTimer {
 extern volatile test_timer_t test_timer;
 
 
+/* N78: request a real feedhold at a numbered block's first exec call. */
+typedef struct testHookHold {
+    uint32_t line;
+    uint8_t fired;
+    float planned_entry, previous_segment, previous_diff, cruise_cap;
+} test_hold_t;
+extern volatile test_hold_t test_hold;
+void testhooks_hold_boundary(void);
+
 void testhooks_init(void);
 stat_t testhooks_callback(void);
 void testhooks_replan_delay(void);

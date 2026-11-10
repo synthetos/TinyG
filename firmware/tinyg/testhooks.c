@@ -7,6 +7,8 @@
 #include "encoder.h"
 #include "switch.h"
 #include "testhooks.h"
+#include "canonical_machine.h"
+#include "planner.h"
 #include <math.h>
 #include <util/delay.h>
 
@@ -15,6 +17,21 @@
 volatile test_hook_t test_hook;
 volatile test_plan_t test_plan;
 volatile test_timer_t test_timer;
+volatile test_hold_t test_hold;
+
+void testhooks_hold_boundary(void)
+{
+    if (test_hold.line && !test_hold.fired && mr.block_state == BLOCK_IDLE &&
+        mb.r->gm.linenum == test_hold.line && cm.hold_state == FEEDHOLD_OFF) {
+        test_hold.planned_entry = mb.r->entry_velocity;
+        test_hold.cruise_cap = mb.r->cruise_vmax;
+        test_hold.previous_segment = mr.segment_velocity;
+        test_hold.previous_diff = mr.forward_diff_5;
+        test_hold.fired = 1;
+        cm_request_feedhold();
+        cm_start_hold();
+    }
+}
 
 void testhooks_replan_delay()
 {

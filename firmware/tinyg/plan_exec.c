@@ -224,6 +224,10 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         return (STAT_NOOP);
     }
 
+#ifdef TINYG_TEST_HOOKS
+    testhooks_hold_boundary();
+#endif
+
     // Initialize new blocks - except during actual hold (motion stopped)
 
 	if ((mr.block_state == BLOCK_IDLE) && (cm.hold_state != FEEDHOLD_HOLD)) {
