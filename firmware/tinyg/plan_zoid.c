@@ -143,7 +143,7 @@ void mp_calculate_trapezoid(mpTrapezoid_t *bf)
 	bf->naiive_move_time = 2 * bf->length / (bf->entry_velocity + bf->exit_velocity); // average
 
 	if (bf->naiive_move_time < MIN_SEGMENT_TIME_PLUS_MARGIN) {
-		bf->cruise_velocity = bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN;
+		bf->cruise_velocity = min(bf->cruise_vmax, bf->length / MIN_SEGMENT_TIME_PLUS_MARGIN);
 		bf->exit_velocity = max(0.0, min(bf->cruise_velocity, (bf->entry_velocity - bf->delta_vmax)));
 		bf->body_length = bf->length;
 		bf->head_length = 0;
@@ -157,12 +157,13 @@ void mp_calculate_trapezoid(mpTrapezoid_t *bf)
 	if (bf->naiive_move_time <= NOM_SEGMENT_TIME) {
 		// entry_velocity is the previous block's exit as the caller planned it; the previous buffer
 		// itself may already have been run and cleared by the exec (E180)
+		// Short-block degradation must not relax the configured cruise cap.
 		if (fp_NOT_ZERO(bf->entry_velocity)) {
-			bf->cruise_velocity = bf->entry_velocity;
-			bf->exit_velocity = bf->entry_velocity;
+			bf->cruise_velocity = min(bf->cruise_vmax, bf->entry_velocity);
+			bf->exit_velocity = bf->cruise_velocity;
 		} else {
-			bf->cruise_velocity = bf->delta_vmax / 2;
-			bf->exit_velocity = bf->delta_vmax;
+			bf->cruise_velocity = min(bf->cruise_vmax, bf->delta_vmax / 2);
+			bf->exit_velocity = min(bf->cruise_vmax, bf->delta_vmax);
 		}
 		bf->body_length = bf->length;
 		bf->head_length = 0;

@@ -11,7 +11,7 @@ from tinyg_hil.sender import stream
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists,
               pytest.mark.resets_board, pytest.mark.dialect('d449'),
-              pytest.mark.bug('N12', on=['d449'])]
+              pytest.mark.bug('N12', on=[])]
 
 
 def test_short_block_cap_prevents_dda_panic(tg, ice, keep, record):
