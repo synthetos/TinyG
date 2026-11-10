@@ -53,7 +53,9 @@ def test_hold_at_new_cam_block_does_not_panic(tg, ice, keep, record):
             tg.guard.check_gcode(line, allow='N78 reduced CAM chain in a 3 mm box')
         result=stream(tg, lines, 'g2', timeout=20, on_status=resume_once)
         state=ice.peek_many(['test_hold.fired','test_hold.planned_entry','test_hold.cruise_cap',
-                             'test_hold.previous_segment','test_hold.previous_diff'])
+                             'test_hold.previous_segment','test_hold.previous_diff',
+                             'cm.hold_state','cm.end_hold_requested','cm.motion_state',
+                             'cm.cycle_state','mr.block_state','mb.buffers_available'])
         record('hold_boundary', {'state':state,'stream':str(result),'resumed':bool(resumed)})
         assert state['test_hold.fired']==1, state
         # A passing run is useful only if the old block's speed plus its next

@@ -254,7 +254,9 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
 
     The result's completion records how the wait for the machine ended; res.ok is the whole verdict.
     bounds = ((xmin, xmax), (ymin, ymax)) in work coordinates: a status report outside them sends a
-    feedhold and a queue flush immediately and raises StreamRunaway (a corrupted line must not run on)."""
+    feedhold and a queue flush immediately and raises StreamRunaway (a corrupted line must not run on).
+    on_status receives automatic status reports and validated final stat-poll replies; the latter
+    update machine state only and do not add position samples to the result."""
     tr = tg.transport
     todo = _payload(lines)
     if mode in ("count", "count-crlf"):
@@ -425,6 +427,12 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             if footer is None or footer[0] != 0 or not isinstance(stat, int) or isinstance(stat, bool):
                 raise _with(res, StreamProtocolError(f"{mode}: stat poll after the last line got an invalid "
                                                      f"or failed answer: {ev.raw[:120]}"))
+            # A hold can outlive all line replies. Automatic SR fields are user-configured,
+            # so notify the control callback from a validated poll too (N78).
+            # Do not add a position sample: this reply contains only machine state.
+            sr['stat'] = stat
+            if on_status:
+                on_status(ev.t, sr)
             if stat in IDLE_STATS:
                 res.completion = "idle"
                 break
