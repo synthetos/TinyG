@@ -304,3 +304,31 @@ def test_final_wait_status_keeps_metadata_and_callback():
     assert res.ok
     assert res.status and "_raw" in res.status[-1][1] and "_damaged" in res.status[-1][1]
     assert seen and seen[-1]["posx"] == 1.0
+
+
+def test_final_poll_can_resume_hold_without_automatic_status():
+    """N78 gate: an SR list containing only line never announces HOLD to the callback."""
+    held = {'value': True}
+
+    def hold_board(tr, data):
+        if data == b'~':
+            held['value'] = False
+        elif data.startswith(b'{"stat"'):
+            stat = 6 if held['value'] else 3
+            tr.emit(json.dumps({'r': {'stat': stat}, 'f': [3, 0, 8]}))
+        else:
+            board()(tr, data)
+
+    tg = FakeTG(hold_board)
+    seen = []
+
+    def resume(timestamp, status):
+        seen.append(status['stat'])
+        if status['stat'] == 6:
+            tg.transport.write(b'~')
+
+    result = sender.stream(tg, ['G1 X1 F600'], 'g2', timeout=1.5, on_status=resume)
+    assert result.ok, result
+    assert [d for d, _ in tg.transport.writes].count(b'~') == 1
+    assert 6 in seen
+    assert result.status == [], 'stat-only polls must not create position samples'

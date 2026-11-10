@@ -224,6 +224,10 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         return (STAT_NOOP);
     }
 
+#ifdef TINYG_TEST_HOOKS
+    testhooks_hold_boundary();
+#endif
+
     // Initialize new blocks - except during actual hold (motion stopped)
 
 	if ((mr.block_state == BLOCK_IDLE) && (cm.hold_state != FEEDHOLD_HOLD)) {
@@ -237,6 +241,10 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 //        }
 
         // Start a new move by setting up the runtime singleton (mr)
+        // A continued stop enters at the preceding braking block's actual exit.
+        // Otherwise the planner supplies this new block's boundary speed.
+        float entry_velocity = (cm.hold_state == FEEDHOLD_DECEL_CONTINUE) ?
+                               mr.exit_velocity : bf->entry_velocity;
         memcpy(&mr.gm, &(bf->gm), sizeof(bf->gm)); // restore only the common context
         mr.gm.move_time = 0; // every executable section computes its own time before use
 		bf->replannable = false;
@@ -249,7 +257,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 		mr.body_length = bf->body_length;
 		mr.tail_length = bf->tail_length;
 
-		mr.entry_velocity = bf->entry_velocity;
+		mr.entry_velocity = entry_velocity;
 		mr.cruise_velocity = bf->cruise_velocity;
 		mr.exit_velocity = bf->exit_velocity;
 
@@ -353,9 +361,13 @@ stat_t mp_exec_aline(mpBuf_t *bf)
                     cm.hold_state = FEEDHOLD_DECEL_CONTINUE;
                 }
             } else {
-                mr.entry_velocity = mr.segment_velocity;
-                if (mr.section == SECTION_HEAD) {
-                    mr.entry_velocity += mr.forward_diff_5; // compute velocity for next segment (this new one)
+                // Segment velocity and forward differences belong to the old block
+                // until this block has actually prepared its first segment.
+                if (mr.block_state != BLOCK_INITIALIZING) {
+                    mr.entry_velocity = mr.segment_velocity;
+                    if (mr.section == SECTION_HEAD) {
+                        mr.entry_velocity += mr.forward_diff_5; // next segment in the running head
+                    }
                 }
                 if (mr.entry_velocity < 0) { mr.entry_velocity = 0; }    // a stopped axis stops at once (N70)
                 mr.cruise_velocity = mr.entry_velocity;
