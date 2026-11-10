@@ -49,7 +49,9 @@ typedef struct {uint8_t fc_char_rx, fc_state_rx; buffer_t rx_buf_tail,rx_buf_hea
                 uint8_t rx_flush_marked,rx_lost_first,rx_lost_last,rx_lost,rx_lost_after_mark,rx_lost_post_first,rx_lost_open,rx_line_damaged,rx_gap_report; typeof(uart) *usart; typeof(port) *port; char rx_buf[64];} xioUsart_t;
 typedef struct dev {xioUsart_t *x;uint8_t len;int size,signal;char *buf;bool flag_in_line,flag_echo;
  void (*x_flow)(struct dev*);int (*x_putc)(char,FILE*);} xioDev_t;
-struct {int enable_flow_control, buf_state;} xio;
+enum {XIO_DEV_USB, XIO_DEV_PGM};
+struct {int enable_flow_control, buf_state, primary_src;} xio;
+static void controller_reset_source(void) { xio.primary_src=XIO_DEV_USB; }
 xioUsart_t USBu; xioDev_t USB; volatile bool rx_in_line; volatile uint8_t rx_quiet_ticks; static volatile uint8_t usb_activity;
 #define RX_STALE_LINE_TICKS 103
 #define RX_STALE_LINE_MARK 0x1A
@@ -58,7 +60,8 @@ uint8_t SREG = 0x80;
 static int inject;                                   /* an RX interrupt armed to fire at the next cli() */
 static void isr_mark_and_post(void);
 static void cli(void) { if ((SREG & 0x80) && inject) { inject = 0; isr_mark_and_post(); } SREG &= ~0x80; }
-static void _init_readline_linemode(void) {}
+static unsigned pool_resets;
+static void _init_readline_linemode(void) { pool_resets++; }
 void xio_fc_usart(xioDev_t *d);
 '''
 
@@ -72,6 +75,12 @@ static void start(buffer_t at) { xio_reset_usb_rx_buffers(); USBu.rx_buf_head = 
 static bool released(void) { return USBu.fc_state_rx == FC_IN_XON; }
 int main(void) {
     USB.x = &USBu; USB.x_flow = xio_fc_usart; USBu.usart = &uart; USBu.port = &port;
+    /* N43: flushing a canned program returns input to USB and keeps post-'%' bytes. */
+    start(1); xio.primary_src=XIO_DEV_PGM; xio.buf_state=1;
+    rx("discard\n"); percent(); rx("{\"stat\":null}\n");
+    xio_flush_input();
+    assert(xio.primary_src==XIO_DEV_USB && xio.buf_state==BUFFER_FREE && pool_resets);
+    assert(getline_()==XIO_OK && !strcmp(line,"{\"stat\":null}"));
     /* a whole line and half a line came before the '%', a query follows */
     start(1);
     rx("G1 X5\n{\"fb\":nu"); percent(); rx("{\"stat\":null}\n");
@@ -131,6 +140,8 @@ class PercentKeepsLaterInput(unittest.TestCase):
         usb = (fw / "xio/xio_usb.c").read_text()
         xio = (fw / "xio.c").read_text()
         code = PRELUDE
+        if "void xio_cancel_pgm_source(void)" in xio:
+            code += function(xio, r"void xio_cancel_pgm_source\(void\)") + "\n"
         for source, signature in ((usart, r"buffer_t xio_get_rx_bufcount_usart\("), (usart, r"void xio_xon_usart\("),
                                   (usart, r"void xio_fc_usart\("), (usart, r"static int _gets_helper\("),
                                   (usart, r"int xio_gets_usart\("), (usb, r"void xio_reset_usb_rx_buffers\("),

@@ -52,6 +52,7 @@ static void cm_coolant_off_immediate(void){off++;}
 static void _hold_outputs_cancel(void){spindle_reset();cm_coolant_off_immediate();}
 static void rpt_exception(int s,const char*m){assert(!in_wait);assert(s==STAT_KILL_JOB);reports++;}
 static void _run_requested_queue_flush(void){assert(!in_wait);flushes++;cm.queue_flush_state=FLUSH_OFF;}
+static void xio_cancel_pgm_source(void){assert(!in_wait);}
 static void _service_input_flush(void){assert(!in_wait);}
 static void cm_end_hold(void){assert(!in_wait);}
 static void sleep_mode(void){

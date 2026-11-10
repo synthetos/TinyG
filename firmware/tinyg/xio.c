@@ -460,8 +460,18 @@ void xio_reset_readline_linemode()
  *  Main loop only (requested queue flush). The RX ISR also writes the ring and line state.
  */
 
+// Main loop only: discard canned-file lines while preserving unread USB bytes.
+void xio_cancel_pgm_source(void)
+{
+    if (xio.primary_src != XIO_DEV_PGM) { return; }
+    controller_reset_source();
+    _init_readline_linemode();
+    xio.buf_state = BUFFER_FREE;
+}
+
 void xio_flush_input()
 {
+    xio_cancel_pgm_source();
     uint8_t sreg = SREG;
     cli();
     xio_drop_usb_rx_before_mark();          // a host '%' keeps what was sent after it (E146)

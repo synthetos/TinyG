@@ -38,8 +38,9 @@ static int kill_alarms;
 static int cm_alarm_P(int status, const char *msg) { (void)msg; kill_alarms += (status == STAT_KILL_JOB); return status; }
 static void rpt_exception(int s,const char*m){cm_alarm_P(s,m);}
 uint8_t SREG = 0x80;
-static int input_flushes, planner_flushes, input_before_planner;
+static int input_flushes, planner_flushes, input_before_planner, file_cancels;
 static int inject, in_direct_flush;                          /* 1: '%' during the planner flush, 2: '%' in cm_end_hold */
+void xio_cancel_pgm_source(void) { assert(!in_direct_flush); file_cancels++; }
 void cm_request_queue_flush(void);
 void cm_request_planner_flush(void);
 static void isr_percent(void) { cm_request_queue_flush(); }
@@ -102,7 +103,7 @@ int main(void) {
     assert(input_flushes == 0 && !cm.queue_flush_input_due);
     /* ^d: the callback raises one kill-job alarm and consumes the request (E096) */
     reset(); cm.job_kill_requested = true; cm_feedhold_sequencing_callback();
-    assert(kill_alarms == 1 && !cm.job_kill_requested);
+    assert(kill_alarms == 1 && !cm.job_kill_requested && file_cancels == 1);
     cm_feedhold_sequencing_callback(); assert(kill_alarms == 1);
     return 0;
 }
