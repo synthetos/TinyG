@@ -10,7 +10,7 @@ from tinyg_hil.sender import stream
 
 pytestmark = [pytest.mark.motion, pytest.mark.ice, pytest.mark.persists,
               pytest.mark.resets_board, pytest.mark.dialect('d449'),
-              pytest.mark.bug('N78', on=['d449'])]
+              pytest.mark.bug('N78', on=[])]
 
 
 def test_hold_at_new_cam_block_does_not_panic(tg, ice, keep, record):
