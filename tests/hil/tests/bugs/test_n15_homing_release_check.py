@@ -18,7 +18,6 @@ def test_latch_must_release_switch(tg,keep,switches,ice,record):
         switches.unmount_all();switches.open("x","min");switches.open("x","max")
         time.sleep(.1)
         tg.send_gcode("G21 G90 G28.3 X0",check=True,allow="seed X machine position")
-        mark=len(tg.transport.history)
         tg.send_gcode("G28.2 X0",check=True,allow="bounded homing with stuck latch switch")
         deadline=time.monotonic()+10
         while time.monotonic()<deadline:
@@ -26,19 +25,22 @@ def test_latch_must_release_switch(tg,keep,switches,ice,record):
             time.sleep(.05)
         else:pytest.fail("homing search never started")
         switches.close("x","min")  # held active for the entire latch and backoff
-        deadline=time.monotonic()+15
-        while time.monotonic()<deadline:
-            state=ice.peek_many(["cm.cycle_state","cm.homed[0]","sw.s[0].state","mr.position[0]"])
-            if state["cm.cycle_state"]==0:break
-            time.sleep(.1)
+        # The cycle state can clear before its buffered report reaches the host. ICE
+        # halts here can interrupt that serial message (N106). Wait on serial first.
+        failed=tg.dialect.status("HOMING_CYCLE_FAILED")
+        def is_failure(event):
+            if event.damaged:
+                return False
+            footer=event.data.get("f",[])
+            return ((event.kind=="exception" and event.data["er"].get("st")==failed) or
+                    (event.kind=="response" and len(footer)>1 and footer[1]==failed))
+        failure=tg.wait_for(is_failure,timeout=15)
+        record("latch failure report",failure.raw)
+        tg.drain()
+        state=ice.peek_many(["cm.cycle_state","cm.homed[0]","sw.s[0].state","mr.position[0]"])
         record("stuck latch result",state)
         assert state["cm.cycle_state"]==0,"homing failed to terminate"
         assert state["sw.s[0].state"]==1,"test did not hold the switch active"
         assert state["cm.homed[0]"]==0,"homing accepted a switch that never released"
-        tg.drain()
-        failed=tg.dialect.status("HOMING_CYCLE_FAILED")
-        assert any((e.kind=="exception" and e.data["er"].get("st")==failed) or
-                   (e.kind=="response" and e.data.get("f",[0,0])[1]==failed)
-                   for e in tg.transport.history[mark:]),"failed latch was not reported"
     finally:
         tg.reset();switches.open("x","min");switches.open("x","max")

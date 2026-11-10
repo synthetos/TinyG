@@ -3,10 +3,16 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from tinyg_hil.protocol import parse_line
 
 
-def test_latch_failure_waits_for_report_before_debugger_snapshot():
+@pytest.mark.parametrize('report', [
+    '{"er":{"st":240,"msg":"Homing error - X axis"}}',
+    '{"r":{},"msg":"Homing error - X axis","f":[3,240,0]}',
+])
+def test_latch_failure_waits_for_report_before_debugger_snapshot(report):
     path = Path(__file__).parent / 'bugs/test_n15_homing_release_check.py'
     spec = importlib.util.spec_from_file_location('n15_observation', path)
     module = importlib.util.module_from_spec(spec)
@@ -22,7 +28,7 @@ def test_latch_failure_waits_for_report_before_debugger_snapshot():
         def drain(self): return []
         def reset(self): pending['report'] = False
         def wait_for(self, predicate, timeout):
-            event = parse_line('{"er":{"st":240,"msg":"Homing error - X latch did not release"}}', 1.0)
+            event = parse_line(report, 1.0)
             assert predicate(event)
             self.transport.history.append(event)
             pending['report'] = False
