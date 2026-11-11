@@ -16,7 +16,16 @@ _setup_err() {
   [[ $1 == *error* && $1 != *passed* && $1 != *failed* && $1 =~ ' in [0-9]+\.[0-9]+s' ]] && return 0   # errors only, however long the setup took
   [[ $1 != *passed* ]] && grep -q "saleae start_capture\|INTERNAL_ERROR\|BoardBusy" $N/logs/$BENCH-last.out
 }
-_flashed() { grep -q "$1" /tmp/tinyg-hil-${P:t}.flashed 2>/dev/null; }
+_flash_record() {
+  local current="${TINYG_HIL_STATE:-/Volumes/External/projects/TinyG-work/state}/tinyg-hil-${P:t}.flashed"
+  local legacy="/tmp/tinyg-hil-${P:t}.flashed"
+  if [[ ! -f "$current" || "$legacy" -nt "$current" ]]; then
+    print -r -- "$legacy"
+  else
+    print -r -- "$current"
+  fi
+}
+_flashed() { grep -q "$1" "$(_flash_record)" 2>/dev/null; }
 # A board whose main loop is gone ignores ^X; the debugger resets it (nothing in flash or EEPROM changes).
 # Before the reset, where the CPU is (three samples) and the key state go to the log as a BOARD LOCKED finding,
 # so a dead main loop is a scoreboard entry and not a silent bench stop.
@@ -24,10 +33,10 @@ _ice_reset() {
   local pc st
   pc=$(for i in 1 2 3; do uv run python -m tinyg_hil.ice where --port $P 2>/dev/null; done | sort -u | tr '\n' ' ')
   st=$(uv run python -m tinyg_hil.ice peek --port $P cm.machine_state cs.controller_state us[0].rx_buf_count cs.saved_buf 2>/dev/null | cut -c1-300)
-  echo "$(date '+%m-%d %T') $BENCH BOARD LOCKED (no answer, ^X ignored) pc: ${pc:-unknown} | state: ${st:-unreadable} | after job: ${PREV:-?} | firmware: $(grep -o 'wt-[a-z0-9]*' /tmp/tinyg-hil-${P:t}.flashed 2>/dev/null | head -1)" >> $LOG
+  echo "$(date '+%m-%d %T') $BENCH BOARD LOCKED (no answer, ^X ignored) pc: ${pc:-unknown} | state: ${st:-unreadable} | after job: ${PREV:-?} | firmware: $(grep -o 'wt-[a-z0-9]*' "$(_flash_record)" 2>/dev/null | head -1)" >> $LOG
   uv run python -m tinyg_hil.ice reset --port $P >/dev/null 2>&1; sleep 3
   # a session that died with the board leaves its settings behind: back to the day's first snapshot
-  local snap; snap=$(ls ${TINYG_SCRATCH:-/tmp/tinyg-scratch}/wt-night/tests/hil/.snapshots/$(uv run python -m tinyg_hil info --port $P 2>/dev/null | grep -o '"id": "[^"]*"' | cut -d'"' -f4)* 2>/dev/null | head -1)
+  local snap; snap=$(ls ${TINYG_SCRATCH:-/Volumes/External/projects/TinyG-worktrees}/wt-night/tests/hil/.snapshots/$(uv run python -m tinyg_hil info --port $P 2>/dev/null | grep -o '"id": "[^"]*"' | cut -d'"' -f4)* 2>/dev/null | head -1)
   [[ -n $snap ]] && uv run python -m tinyg_hil restore --port $P $snap >> $N/logs/$BENCH-restore.log 2>&1
 }
 _unstick() {

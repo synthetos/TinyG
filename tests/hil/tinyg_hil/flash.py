@@ -8,6 +8,7 @@ import subprocess
 import time
 
 from .driver import NoResponse, TinyG
+from .state import flash_record, write_flash_record
 
 
 def build(source_dir, make_args=()) -> pathlib.Path:
@@ -63,7 +64,7 @@ def flash_provenance(hex_path, stock_ref="origin/edge-0.97") -> dict:
 
 def read_provenance(port) -> dict:
     """The flash record for a port ({} if none). Older records held just the ELF path."""
-    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
+    record = flash_record(port)
     if not record.exists():
         return {}
     text = record.read_text().strip()
@@ -100,8 +101,7 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         except NoResponse:
             if time.monotonic() > deadline:
                 raise
-    record = pathlib.Path("/tmp") / f"tinyg-hil-{pathlib.Path(port).name}.flashed"
-    record.write_text(json.dumps(flash_provenance(hex_path), indent=1))    # read by record.py and ice.py
+    write_flash_record(port, flash_provenance(hex_path))    # read by record.py and ice.py
     if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
         raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
     return identity
