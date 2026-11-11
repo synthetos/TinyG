@@ -1,7 +1,7 @@
 """Test-first long-move override handoffs through the real planner and exec.
 
-The two response checks are strict expected failures while the mailbox is
-record-only. Remove their decorators when the live engine is connected.
+The response checks require the new speed during the running block, while
+preflight checks retain the endpoint and step-count requirements.
 """
 from pathlib import Path
 import math
@@ -55,11 +55,9 @@ class OverrideEngine(unittest.TestCase):
                         f'no in-move body response to {target} mm/min; '
                         f'observed {min(samples)}..{max(samples)}')
 
-    @unittest.expectedFailure
     def test_body_reduction_takes_effect_before_the_move_ends(self):
         self._assert_body_response(self.runs[1], 300)
 
-    @unittest.expectedFailure
     def test_body_increase_takes_effect_before_the_move_ends(self):
         self._assert_body_response(self.increase, 900)
 
