@@ -16,10 +16,10 @@ class HoldOutputs(unittest.TestCase):
         source=(FIRMWARE/'canonical_machine.c').read_text()
         definitions=[]
         for name in ['_hold_outputs_cancel', '_hold_outputs_pause', '_hold_outputs_resume', '_hold_outputs_finish_resume',
-                     'cm_start_hold', 'cm_end_hold', 'cm_queue_flush',
+                     'cm_get_combined_state', 'cm_start_hold', 'cm_end_hold', 'cm_queue_flush',
                      '_take_input_flush_request', '_service_input_flush', '_run_requested_queue_flush',
                      'cm_feedhold_sequencing_callback', 'cm_request_feedhold', 'cm_request_cycle_feedhold', 'cm_request_end_hold', '_exec_program_finalize']:
-            signature=r'(?m)^(?:static )?(?:void|stat_t|bool) '+name+r'\([^;{}\n]*\)\s*'
+            signature=r'(?m)^(?:static )?(?:void|stat_t|bool|cmCombinedState) '+name+r'\([^;{}\n]*\)\s*'
             match=re.search(signature+r'\{', source)
             if match is None and name == 'cm_request_cycle_feedhold':
                 # Before provenance exists, cycle contacts use the ordinary request path.
@@ -37,6 +37,9 @@ class HoldOutputs(unittest.TestCase):
 #define __AVR 1
 #define cli() (SREG &= ~128)
 #define STAT_OK 0
+#define STAT_STATE_MANAGEMENT_ASSERTION_FAILURE 1
+#define BLOCK_TYPE_NULL 0
+static void cm_panic_P(int status, const char *message) {assert(0);}
 #define SPINDLE_OFF 0
 #define SPINDLE_CW 1
 #define SPINDLE_CCW 2
@@ -223,9 +226,22 @@ int main(void) {
     cm_request_end_hold();service();now+=1010;service();
     assert(output_mode==SPINDLE_CW&&output_speed==1000&&coolant_out_mist&&coolant_out_flood);
     // A held lone dwell has no queued buffer; resume still restores the spindle and respects spin-up.
-    setup();queued=false;busy=true;service();cm_request_end_hold();service();
+    setup();queued=false;busy=true;cm.program_paused=false;
+    cm.machine_state=MACHINE_PROGRAM_STOP;cm.cycle_state=CYCLE_OFF;
+    service();cm_request_end_hold();service();
+    assert(cm_get_combined_state()==COMBINED_HOLD); // E060 keeps hold latched during spindle restart
     assert(!exits&&hold_outputs.state==2&&busy);
     now+=1010;service();assert(exits==1&&!starts&&output_mode==SPINDLE_CW&&busy);
+    assert(cm_get_combined_state()==COMBINED_RUN); // remaining G4 timer wins over stored STOP
+    busy=false;assert(cm_get_combined_state()==COMBINED_PROGRAM_STOP);
+    // M0 and enabled M1 share the explicit program-pause latch, even with a dwell queued.
+    setup();cm.machine_state=MACHINE_PROGRAM_STOP;cm.cycle_state=CYCLE_OFF;
+    assert(queued && cm.program_paused);
+    assert(cm_get_combined_state()==COMBINED_PROGRAM_STOP);
+    service();cm_request_end_hold();service();
+    assert(cm_get_combined_state()==COMBINED_PROGRAM_STOP); // pause remains through spindle delay
+    now+=1010;service();assert(!cm.program_paused && exits==1);
+    assert(cm_get_combined_state()==COMBINED_RUN);
     // A flush of that dwell cancels the timer and all saved outputs, without a spin-up or motion release in ALARM.
     setup();queued=false;busy=true;service();cm.queue_flush_state=FLUSH_REQUESTED;service();
     assert(!busy&&!hold_outputs.state&&!output_mode&&!cm.end_hold_requested);
@@ -293,6 +309,15 @@ int main(void) {
     setup(); SREG=0x15; _hold_outputs_cancel(); assert(SREG==0x15);
 }
 '''
+        # Use firmware state values for the real combined-state getter alongside E060 sequencing.
+        header = (FIRMWARE/'canonical_machine.h').read_text()
+        enums = ''
+        for name in ('cmCombinedState', 'cmMachineState', 'cmCycleState', 'cmMotionState'):
+            definition = re.search(r'typedef enum \{[^{}]*\}\s*' + name + r';', header).group()
+            for token in re.findall(r'\b(?:COMBINED|MACHINE|CYCLE|MOTION)_[A-Z_]+', definition):
+                code = re.sub(r'(?m)^#define ' + token + r' .*\n', '', code)
+            enums += definition + '\n'
+        code = enums + code
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'check.c'; c.write_text(code); out=Path(d)/'check'
             subprocess.run(['cc','-std=c99','-g','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(out)],check=True)
