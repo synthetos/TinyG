@@ -46,12 +46,12 @@ def test_fake_reproduces_destructive_json():
 def test_session_open_and_teardown_never_feed_bootloader_text(boot):
     transport = Transport('fake-guard-port')
     with pytest.raises(bootloader.BootloaderActive): transport.open()
-    assert boot.sent == [b'\x1bS']
+    assert boot.sent == [b'\x1bS', b'E', b'\x1bS']
     for payload in (b'{"e":null}\n', b'G1 X1\n', b'\x18', b'\x11\n'):
         with pytest.raises(bootloader.BootloaderActive): transport.write(payload)
     transport.close()
     with pytest.raises(bootloader.BootloaderActive): Transport('fake-guard-port').open()
-    assert boot.sent == [b'\x1bS'] and boot.closed
+    assert boot.sent == [b'\x1bS', b'E', b'\x1bS'] and boot.closed
     assert not boot.erases and not boot.lock_writes
 
 
@@ -118,3 +118,42 @@ def test_quarantined_silent_board_requires_ice_without_text(boot, monkeypatch):
     with pytest.raises(bootloader.BootloaderActive): flash.flash(Board(), 'unused.hex')
     assert boot.sent == [b'\x1bS'] and boot.closed
     assert not boot.erases and not boot.lock_writes
+
+
+def test_marked_session_never_attempts_exit(boot):
+    bootloader.quarantine('fake-guard-port', 'uncertain flash')
+    with pytest.raises(bootloader.BootloaderActive):
+        Transport('fake-guard-port').open()
+    assert boot.sent == []
+    assert not boot.erases and not boot.lock_writes
+
+
+def test_entry_window_exits_once_then_starts_application(boot, monkeypatch):
+    import io
+    import threading
+    original_write = boot.write
+    application = False
+    def write(data):
+        nonlocal application
+        if data == b'E':
+            application = True
+            boot.sent.append(data)
+            boot.reply = b'\r{"r":{"fv":0.97}}\n'
+        elif application:
+            boot.sent.append(data)
+            if data == b'\x1bS': boot.reply = b''
+        else:
+            original_write(data)
+    boot.write = write
+    # No real serial reader is needed to check the open sequence.
+    monkeypatch.setattr(threading.Thread, 'start', lambda self: None)
+    monkeypatch.setattr(threading.Thread, 'join', lambda self, **kw: None)
+    transcript = io.StringIO()
+    transport = Transport('fake-guard-port', transcript=transcript)
+    transport.open()
+    assert transport.is_open
+    assert boot.sent == [b'\x1bS', b'E', b'\x1bS', b'\n']
+    assert not bootloader.marker(transport.port).exists()
+    assert 'bootloader auto-exit' in transcript.getvalue()
+    assert not boot.erases and not boot.lock_writes
+    transport.close()
