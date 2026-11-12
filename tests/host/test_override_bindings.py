@@ -91,6 +91,18 @@ int main(void){
  assert(rt_set_mfo(&n)==100);rt.allowed=true;rt.check_only=true;assert(rt_set_mfo(&n)==0);
  rt.check_only=false;ov_get_mfo(&n);assert(n.value_flt==1&&n.precision==3);
  n.value_flt=0.8;assert(rt_set_mfo(&n)==0);ov_get_mfo(&n);assert(fabsf(n.value_flt-0.8f)<1e-6);
+ /* A live request does not require a quiet machine: hold/motion may record it,
+    but the committed readout remains unchanged until an execution handoff. */
+ quiet=false;n.valuetype=TYPE_FLOAT;n.value_flt=0.6f;assert(rt_set_mfo(&n)==0);
+ ov_get_mfo(&n);assert(fabsf(n.value_flt-0.6f)<1e-6);
+ ov_get_mfc(&n);assert(n.value_flt==1);
+ for(unsigned i=0;i<4;i++){
+  n.valuetype=TYPE_FLOAT;n.value_flt=(float[]){0.049f,2.001f,NAN,INFINITY}[i];
+  assert(rt_set_mfo(&n)==STAT_INPUT_VALUE_RANGE_ERROR);
+  ov_get_mfo(&n);assert(fabsf(n.value_flt-0.6f)<1e-6);
+ }
+ n.valuetype=TYPE_FLOAT;n.value_flt=0.8f;assert(rt_set_mfo(&n)==0);
+
  quiet=false;n.valuetype=TYPE_INTEGER;n.value_int=1;assert(rt_set_ovb(&n)==106);
  quiet=true;boundary=false;assert(rt_set_ovb(&n)==106);boundary=true;pending=true;assert(rt_set_ovb(&n)==106);
  pending=false;assert(rt_set_ovb(&n)==0);assert(SREG==128);
