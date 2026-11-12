@@ -45,6 +45,10 @@ enum { SECTION_NEW = 0, SECTION_1st_HALF, SECTION_2nd_HALF };
 enum { MOTION_STOP = 0, MOTION_PLANNING, MOTION_RUN, MOTION_HOLD };
 enum { CYCLE_OFF = 0, CYCLE_MACHINING };
 static stat_t status_code;
+/* This regression exercises the unchanged cruise path with no override request. */
+static uint32_t ov_segment_ordinal;
+static bool _override_take_body(void) { return false; }
+static stat_t _exec_aline_head(void) { return STAT_OK; }
 static struct {
     uint8_t section, section_state;
     float unit[AXES], target[AXES], position[AXES], waypoint[SECTIONS][AXES];

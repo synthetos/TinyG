@@ -266,6 +266,7 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
  * Global Scope Functions
  */
 
+stat_t mp_override_callback(void);
 void planner_init(void);
 void planner_reset(void);
 void planner_init_assertions(void);

@@ -52,14 +52,16 @@ ifneq (,$(filter 12 13,$(GCC_MAJOR)))
 CFLAGS += --param=min-pagesize=0
 endif
 
-LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
+# Keep the image below the bootloader. Relax only linker branches/calls;
+# all motion arithmetic retains the existing compiler settings.
+LDFLAGS = -Wl,--relax -Wl,--defsym=__TEXT_REGION_LENGTH__=196608 -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
           -Wl,--start-group -lm -lprintf_flt -Wl,--end-group -Wl,--gc-sections
 
 all: $(BUILDDIR)/tinyg.hex size
 
 build: all                 # Xcode's legacy target passes $(ACTION): build or clean
 
-$(BUILDDIR)/tinyg.elf: $(OBJS)
+$(BUILDDIR)/tinyg.elf: $(OBJS) Makefile
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 $(BUILDDIR)/tinyg.hex: $(BUILDDIR)/tinyg.elf

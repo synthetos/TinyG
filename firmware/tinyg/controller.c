@@ -189,6 +189,7 @@ static void _controller_HSM()
 	DISPATCH(rt_feedlimit_callback());			// feed-limit fs and fl lines, when enabled ({"rt":{"fi":n}})
 
 	DISPATCH(cm_feedhold_sequencing_callback());// feedhold state machine runner
+    DISPATCH(mp_override_callback());           // private future-boundary speed plan, main loop only
 	DISPATCH(cm_arc_callback());				// arc generation runs behind lines
 	DISPATCH(cm_homing_callback());				// G28.2 continuation
 	DISPATCH(cm_probe_callback());				// G38.2 continuation

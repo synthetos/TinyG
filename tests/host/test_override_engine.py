@@ -50,6 +50,64 @@ class OverrideEngine(unittest.TestCase):
         for result in (self.runs[1],self.increase):
             self.assertEqual([r[2] for r in result['steps']], [r[2] for r in self.plain['steps']])
 
+    def test_jerk_through_body_transition(self):
+        for result in (self.runs[1],self.increase):
+            rows=[x for x in result['segments'] if x[0]>result['requests'][0][0]+30 and x[2]>0]
+            accel=[((b[2]-a[2])/((a[3]+b[3])/2),(a[3]+b[3])/2)
+                   for a,b in zip(rows,rows[1:])]
+            jerk=[abs(2*(b[0]-a[0])/(a[1]+b[1])) for a,b in zip(accel,accel[1:])]
+            self.assertLessEqual(max(jerk),500e6*1.005)
+
+    def test_new_request_and_cancel_during_planning_reject_old_plan(self):
+        for mode in (1,3):
+            result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=mode)
+            self.assertEqual(len(result['interleave']),1)
+            self.assertEqual(result['taken'],[])
+            self.assertEqual(result['steps'],self.plain['steps'])
+
+    def test_stop_requests_cancel_private_plan(self):
+        for mode in (4,5,6,7):
+            with self.subTest(mode=mode):
+                result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=mode)
+                self.assertEqual(len(result['interleave']),1)
+                self.assertEqual(result['taken'],[])
+                self.assertEqual(len(result['stops']),1)
+                if mode==4:
+                    self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in self.plain['steps']])
+                    for _,target,pulses in result['steps']:
+                        self.assertLessEqual(abs(target-pulses),1.5)
+                else:
+                    self.assertLess(result['steps'][0][2], self.plain['steps'][0][2])
+
+    def test_hold_after_handoff_keeps_endpoint_and_requested_speed_on_resume(self):
+        result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=9)
+        self.assertEqual(len(result['stops']),1)
+        stopped=result['stops'][0][0]
+        samples=[x[2] for x in result['segments'] if x[0]>stopped+100 and x[1]==1]
+        self.assertTrue(samples)
+        self.assertTrue(any(abs(v-300)<.5 for v in samples), (min(samples),max(samples)))
+        self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in self.plain['steps']])
+        for _,target,pulses in result['steps']:
+            self.assertLessEqual(abs(target-pulses),1.5)
+
+    def test_completed_block_rejects_private_plan(self):
+        program=PROGRAM+'N20 G1 X200 F600\n'
+        result=replay.run(self.exe,program,at=20,factor=500,section=1,interleave=8)
+        plain=replay.run(self.exe,program)
+        self.assertEqual(len(result['interleave']),1)
+        self.assertTrue(result['taken'])
+        self.assertGreater(result['taken'][0][0], result['interleave'][0][0]+30)
+        self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in plain['steps']])
+        for _,target,pulses in result['steps']:
+            self.assertLessEqual(abs(target-pulses),1.5)
+
+    def test_expired_future_boundary_is_not_applied_late(self):
+        result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=2)
+        self.assertEqual(len(result['interleave']),1)
+        self.assertTrue(result['taken'])
+        self.assertGreater(result['taken'][0][0],result['interleave'][0][0]+30)
+        self._assert_body_response(result,300)
+
     def _assert_body_response(self, result, target):
         tick = result['requests'][0][0]
         samples = [velocity for step, section, velocity, dt, x in result['segments']

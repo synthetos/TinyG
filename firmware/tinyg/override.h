@@ -1,4 +1,4 @@
-/* Manual override infrastructure. This increment records requests; it never changes a trajectory/output. */
+/* Manual override requests and private future-boundary plans. */
 #ifndef TINYG_OVERRIDE_H
 #define TINYG_OVERRIDE_H
 #include <stdbool.h>
@@ -11,7 +11,7 @@
 #define OV_FACTOR_MAX 2000
 #define OV_TICKET_MIN_TICKS 21UL
 #define OV_TICKET_MAX_TICKS 64UL
-/* No engine is connected yet. Committed factors remain unity in this increment. */
+/* Wire publication remains separate from private motion-plan acceptance. */
 enum { OV_RECORD_ONLY=0, OV_CANCELLED=1, OV_UNSUPPORTED=2 };
 enum { OV_OK=0, OV_RANGE=1, OV_DENIED=2 };
 enum { OV_BOUNDARY_HEAD=0, OV_BOUNDARY_TAIL, OV_BOUNDARY_BODY, OV_BOUNDARY_SECTION_END };
@@ -54,7 +54,11 @@ uint8_t ov_arm(bool enable,bool quiet,bool permitted,bool apply);
 bool ov_usb_armed(void);
 bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame);
 void ov_cancel(void);
-/* Caller supplies a private snapshot of a genuinely analytical future boundary; no exec producer is installed yet. */
+/* Caller supplies a private snapshot of an analytical future boundary.
+ * Stamp/current only check request, cancellation and age; the exec consumer
+ * also checks the live block, segment, speed and position before accepting it. */
+void ov_ticket_stamp(ovTicket_t *ticket,uint32_t now);
+bool ov_ticket_current(const ovTicket_t *ticket,uint32_t now);
 bool ov_ticket_make(const ovBoundary_t *boundary,uint32_t now,ovTicket_t *ticket);
 bool ov_ticket_valid(const ovTicket_t *ticket,const ovBoundary_t *boundary,uint32_t now);
 /* Structural composition check ONLY: not a jerk/acceleration proof or publication routine. */

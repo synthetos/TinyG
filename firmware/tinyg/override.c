@@ -129,18 +129,28 @@ static bool _boundary(const ovBoundary_t *b)
     for(uint8_t i=0;i<6;i++)if(!isfinite(b->position[i]))return false;
     return true;
 }
+/* Trusted runtime snapshot: capture only the request and stop generations. */
+void ov_ticket_stamp(ovTicket_t *t,uint32_t now)
+{
+    t->created=now;
+    OV_LOCK;t->request=ov.request;t->cancel_epoch=cancel_epoch;OV_UNLOCK;
+}
+bool ov_ticket_current(const ovTicket_t *t,uint32_t now)
+{
+    if (!t || (uint32_t)(now-t->created)>=t->boundary.lead_ticks) return false;
+    OV_LOCK;bool current=t->request==ov.request && t->cancel_epoch==cancel_epoch;OV_UNLOCK;
+    return current;
+}
 bool ov_ticket_make(const ovBoundary_t *b,uint32_t now,ovTicket_t *t)
 {
     if (!t || !_boundary(b)) return false;
-    t->boundary=*b;t->created=now;
-    OV_LOCK;t->request=ov.request;t->cancel_epoch=cancel_epoch;OV_UNLOCK;
+    t->boundary=*b;ov_ticket_stamp(t,now);
     return true;
 }
 bool ov_ticket_valid(const ovTicket_t *t,const ovBoundary_t *b,uint32_t now)
 {
     if(!t || !_boundary(b) || (uint32_t)(now-t->created)>=t->boundary.lead_ticks) return false;
-    OV_LOCK;bool current=t->request==ov.request && t->cancel_epoch==cancel_epoch;OV_UNLOCK;
-    return current && t->boundary.incarnation==b->incarnation && t->boundary.ordinal==b->ordinal &&
+    return ov_ticket_current(t,now) && t->boundary.incarnation==b->incarnation && t->boundary.ordinal==b->ordinal &&
            t->boundary.stop_epoch==b->stop_epoch && t->boundary.slot==b->slot && t->boundary.kind==b->kind &&
            t->boundary.velocity==b->velocity && !memcmp(t->boundary.position,b->position,sizeof(b->position));
 }
@@ -179,17 +189,17 @@ bool ov_plan_transition(float length,float entry,float feed,float exit,float vma
        !isfinite(feed) || feed<=0 || !isfinite(exit) || exit<0 ||
        !isfinite(vmax) || vmax<=0 || entry>vmax || exit>vmax ||
        !isfinite(jerk) || jerk<=0 || factor<OV_FACTOR_MIN || factor>OV_FACTOR_MAX)return false;
-    ovTransition_t p={0};
+    ovTransition_t p;
     p.entry=entry;p.exit=exit;p.factor_q1000=factor;
     float requested=feed*(factor/1000.0f);
     if(!isfinite(requested))return false;
-    p.cruise=fminf(requested,vmax);p.capped=requested>vmax;
+    p.capped=requested>vmax;p.cruise=p.capped?vmax:requested;
     p.head_time=_transition_time(entry,p.cruise,jerk);
     p.tail_time=_transition_time(p.cruise,exit,jerk);
     p.head=(entry+p.cruise)*0.5f*p.head_time;
     p.tail=(p.cruise+exit)*0.5f*p.tail_time;
     p.body=length-p.head-p.tail;
-    if(!isfinite(p.head) || !isfinite(p.tail) || !isfinite(p.body) || p.body<0)return false;
+    if(!isfinite(p.body) || p.body<0)return false;
     *out=p;
     return true;
 }
