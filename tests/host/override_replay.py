@@ -56,6 +56,7 @@ def build(root, out):
                            INJECTION + '\nstatic void take_one(void)\n')
     driver = _replace_once(driver, '            stat_t status=mp_exec_move();',
                            '            host_override_step();\n'
+                           '            mp_override_callback();\n'
                            '            stat_t status=mp_exec_move();\n'
                            '            host_override_trace();')
     driver = _replace_once(driver, '    setup();',

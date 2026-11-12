@@ -46,6 +46,10 @@ class OverrideEngine(unittest.TestCase):
         self.assertEqual([r[:2] for r in self.increase['steps']],
                          [r[:2] for r in self.plain['steps']])
 
+    def test_body_endpoint_pulses_match_plain_run(self):
+        for result in (self.runs[1],self.increase):
+            self.assertEqual([r[2] for r in result['steps']], [r[2] for r in self.plain['steps']])
+
     def _assert_body_response(self, result, target):
         tick = result['requests'][0][0]
         samples = [velocity for step, section, velocity, dt, x in result['segments']
