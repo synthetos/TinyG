@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 import pytest
 from tinyg_hil import sender
-from tinyg_hil.feed_causes import check_cause,check_command,check_gaps
+from tinyg_hil.feed_causes import check_cause,check_command,check_gaps,check_accounted_cause,exact_stop_lines
 from test_feed_advisor_step3 import rt,since,settle
 
 pytestmark=[pytest.mark.motion,pytest.mark.persists,pytest.mark.dialect('d449'),pytest.mark.timeout(120)]
@@ -41,7 +41,7 @@ def finish(tg,mark,record,label):
 
 def test_exact_stop_tag_and_time(tg,cause_window,record):
     mark=len(tg.transport.history)
-    lines=(FIXTURES/'13_exact_stop.nc').read_text().splitlines()
+    lines=exact_stop_lines((FIXTURES/'13_exact_stop.nc').read_text().splitlines())
     for line in lines:tg.guard.check_gcode(line,allow='fixture13 exact-stop cause')
     res=sender.stream(tg,lines,'line',timeout=60)
     assert res.ok
@@ -49,15 +49,19 @@ def test_exact_stop_tag_and_time(tg,cause_window,record):
     check_cause(fl,fs,4,2)
 
 
-def test_single_segment_without_short_or_corner(tg,cause_window,record):
-    # Fixture05's collinear chain, lengthened in time so the 4Hz fl reporter sees its steady interior.
+def test_single_segment_accounted_time(tg,cause_window,record):
+    # Short blocks can end between periodic fl reports; fs retains their completed time.
     # No reversal, G61, above-cap F, or command boundary inside the chain.
     lines=['G21 G90 G17 G94 G64 G92 X0']+[f'N{i+10} G1 X{i*.05:.4f} F1200' for i in range(1,2001)]
     mark=len(tg.transport.history)
     for line in lines:tg.guard.check_gcode(line,allow='fixture05 single-segment chain')
     res=sender.stream(tg,lines,'line',timeout=60);assert res.ok
     fl,fs,_=finish(tg,mark,record,'fixture05_single')
-    check_cause(fl,fs,16,4,alone=True)
+    check_accounted_cause(fs,4)
+    # This does not qualify the separate single-segment-with-no-other-tag case.
+    # Retain sampled masks so bench evidence can establish that coverage later.
+    record('single_segment_sampling',dict(masks=[e.get('m') for e in fl],
+           alone_observed=any(e.get('k')==1 and e.get('m')==16 for e in fl)))
 
 
 def test_command_time_in_fs_v2(tg,cause_window,record):
