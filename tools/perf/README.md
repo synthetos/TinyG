@@ -404,3 +404,19 @@ and waits for the recorder process group to disappear before propagating the
 error. The cached persistent worker is discarded, so the next capture starts a
 fresh session. The same cleanup covers capture-start and finish failures. It does
 not search for or kill unrelated MSO processes.
+
+### Credit recovery in a priority reply
+
+A stat reply refreshes the sender's receive-credit estimate without acknowledging
+any G-code. When older data holds priority fragments in RX, the final data reply
+can report zero credits; a later probe can be the only reply announcing that
+those fragments are now free. Ignoring that recovery stalls the host with unsent
+lines even though the board has stopped with an empty RX queue.
+
+Serial records include `sent`, `sent_rows` (index, time, line), `acked`, `pending`
+and `unsent`. These distinguish data never written from data awaiting a reply.
+The 2026-11-12 short-arcs failures sent13/22 lines and received13 data replies;
+lines13..21 were never sent. The last executed endpoint was X10/Y0, not X24/Y0.
+This was a collector credit-refresh bug, not evidence of firmware dropping lines.
+Minimum credit remains reported; temporary credit pressure is not itself proof
+of an N55 leak when credit later recovers.

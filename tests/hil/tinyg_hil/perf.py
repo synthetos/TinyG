@@ -81,6 +81,7 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
     queue=deque();i=acked=0;started=clock();next_probe=started
     pending=None;tid=810000;action=None;last_stat=None;idle_since=None;done='timeout'
     rows,probes,statuses,errors,events=[],[],[],[],[]
+    sent_rows=[]
     credit_initial=credit_min=credit_last=free
     credit_rows=[]
     fb=getattr(tg,'identity',{}).get('fb',450)
@@ -116,7 +117,8 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
                 else: raise ValueError('invalid directive: '+line)
                 events.append([clock(),line]);i+=1;break
             last_stat=None;idle_since=None;velocity=None
-            tr.write((line+'\n').encode(),drain_timeout=2);queue.append((i,clock(),line));i+=1
+            tr.write((line+'\n').encode(),drain_timeout=2);sent=clock()
+            queue.append((i,sent,line));sent_rows.append(dict(index=i,sent=sent,line=line));i+=1
         ev=tr.next_event(.005)
         if ev is None: continue
         if ev.kind=='exception': errors.append(ev.raw);break
@@ -148,6 +150,9 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
         if pending and echo==pending[0]:
             stat=body.get('stat')
             if footer[0] or not isinstance(stat,int): errors.append('invalid stat probe reply');break
+            # A priority reply can be the only response after fragmented RX headers
+            # become reusable. Refresh credit without acknowledging queued G-code.
+            free=footer[1]
             probes.append(dict(sent=pending[1],received=ev.t,rtt_s=ev.t-pending[1],stat=stat,
                                lines_pending=len(queue),lines_unsent=len(todo)-i))
             pending=None;last_stat=stat
@@ -164,7 +169,8 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
         if footer[0]: errors.append(dict(index=index,status=footer[0],line=line));break
     span=rows[-1]['acked']-rows[0]['sent'] if rows else 0
     rtts=[p['rtt_s'] for p in probes if p['lines_pending'] or p['lines_unsent']]
-    return dict(completion=done,errors=errors,acked=acked,started=started,finished=clock(),ack_rows=rows,
+    return dict(completion=done,errors=errors,acked=acked,sent=len(sent_rows),sent_rows=sent_rows,
+                pending=len(queue),unsent=sum(not l.startswith((';HOST-PAUSE',';HOLD-RESUME')) for l in todo[i:]),started=started,finished=clock(),ack_rows=rows,
                 hold_detection='449 post-! vel=0 plus 0.5 s settle' if legacy else 'HOLD stat',
                 probe_mode='off' if probe_interval is None else '250ms',
                 rx_credit_initial=credit_initial,rx_credit_min=credit_min,rx_credit_last=credit_last,rx_credit_rows=credit_rows,
