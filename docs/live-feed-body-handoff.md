@@ -34,9 +34,10 @@ never grows with the number of moves or requests. No stepper changes were made.
 
 The HIL test checks sustained speed and the reported endpoint. It does not prove
 pulse counts or interrupt latency. Those require an instrumented bench run.
-Committed-factor publication, the versioned override frame, selectable status
-fields and ordered M48/M49/M50 permissions belong to the following increment;
-the current committed readout still reports unity.
+The publication increment adds committed-factor and cap readouts, a versioned
+override frame and selectable status fields. Ordered M48/M49/M50 permissions
+and reset/program-end lifecycle are the next increment. The frozen BODY bench
+tip predates publication and still reports unity in its committed readout.
 
 The portable build now relaxes linker branches/calls and enforces the 192 KiB
 application limit, excluding the bootloader. Both normal and hooks images must

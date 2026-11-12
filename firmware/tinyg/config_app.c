@@ -703,7 +703,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
 	{ "rt","rtjob",_i0, 0, tx_print_nul, rt_get_job, rt_set_job, (uint32_t *)&cs.null, 0},	// host job flag (step 3)
 	{ "rt","rtfg",_i0, 0, tx_print_nul, rt_get_fg, rt_set_fg, (uint32_t *)&cs.null, 0},	// fg frames opt-in (step 3)
 
-    // Override infrastructure: all rows are RAM-only; no plan/output commit in this increment.
+    // Live override fields: RAM only, appended so existing saved indexes stay put.
     { "rt","rtmfo",_f0,3,tx_print_nul,ov_get_mfo,rt_set_mfo,(uint32_t *)&cs.null,0 },
     { "rt","rtsso",_f0,3,tx_print_nul,ov_get_sso,rt_set_sso,(uint32_t *)&cs.null,0 },
     { "rt","rtmfe",_i0,0,tx_print_nul,rt_get_mfe,rt_set_mfe,(uint32_t *)&cs.null,0 },
@@ -715,6 +715,11 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "","mfc",_f0,3,tx_print_nul,ov_get_mfc,set_nul,(uint32_t *)&cs.null,0 },
     { "","ssc",_f0,3,tx_print_nul,ov_get_ssc,set_nul,(uint32_t *)&cs.null,0 },
     { "","ovs",_i0,0,tx_print_nul,ov_get_state,set_nul,(uint32_t *)&cs.null,0 },
+    { "rt","rtmfc",_f0,3,tx_print_nul,ov_get_mfc,set_nul,(uint32_t *)&cs.null,0 },
+    { "rt","rtov",_i0,0,tx_print_nul,rt_get_ov,rt_set_ov,(uint32_t *)&cs.null,0 },
+    { "rt","rtmcp",_i0,0,tx_print_nul,ov_get_capped,set_nul,(uint32_t *)&cs.null,0 },
+    { "","mcp",_i0,0,tx_print_nul,ov_get_capped,set_nul,(uint32_t *)&cs.null,0 },
+    { "","mfe",_i0,0,tx_print_nul,rt_get_mfe,set_nul,(uint32_t *)&cs.null,0 },
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***

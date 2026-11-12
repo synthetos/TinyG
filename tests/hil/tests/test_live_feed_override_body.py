@@ -44,6 +44,9 @@ def test_long_body_changes_speed_and_keeps_endpoint(tg, keep, record, factor):
         reply = rt(tg, {'mfo': factor})
         assert reply.status == 0, reply
         wait_speed(tg, 600*factor, rows)
+        assert float(tg.get("mfc")) == pytest.approx(factor)
+        assert not tg.get("mcp")
+        assert rt(tg, {"ov": None}).status == 0
         tg.wait_idle(timeout=35)
         assert float(tg.get('mpox')) == pytest.approx(100, abs=.001)
         record('body_override', dict(factor=factor, requested_at=request_time, speeds=rows,
@@ -55,3 +58,27 @@ def test_long_body_changes_speed_and_keeps_endpoint(tg, keep, record, factor):
         tg.send_raw(b'~')
         tg.wait_idle(timeout=10)
         tg.send_gcode('G90', check=True)
+
+
+def test_override_get_without_event_opt_in(tg, record):
+    assert rt(tg, {'ov': 0}).status == 0
+    try:
+        assert rt(tg, {'mfo': 1.25}).status == 0
+        mark=len(tg.transport.history)
+        assert rt(tg, {'ov': None}).status == 0
+        deadline=time.monotonic()+3
+        frames=[]
+        while time.monotonic()<deadline:
+            frames=[e.data['ov'] for e in tg.transport.history[mark:] if e.kind=='override']
+            if frames:
+                break
+            tg.transport.next_event(.1)
+        assert frames, 'explicit ov GET must work with change events disabled'
+        frame=frames[-1]
+        assert frame['v']==1 and frame['mfo']==pytest.approx(1.25)
+        assert frame['mfc']==pytest.approx(float(tg.get('mfc')))
+        assert bool(frame['mfe'])==bool(rt(tg, {'mfe': None}).body['rt']['mfe'])
+        assert frame['capped']==bool(tg.get('mcp'))
+        record('override_connect_read',frame)
+    finally:
+        assert rt(tg, {'mfo': 1, 'ov': 0}).status == 0

@@ -10,6 +10,7 @@
 #include "stepper.h"
 #include "runtime.h"
 #include "override.h"
+#include "report.h"
 #include "util.h"
 #include "xio.h"
 #include "feedlimit.h"
@@ -818,11 +819,17 @@ stat_t rt_get_fs(nvObj_t *nv)
 	return (STAT_OK);
 }
 
-/* Infrastructure only: requests/readouts are live, but no motion/output commit path exists yet. */
+/* Live requests and the factor accepted by the exec handoff. */
+#ifdef __AVR
+#pragma GCC push_options
+#pragma GCC optimize ("Os")
+#endif
 static stat_t _ov_result(uint8_t result)
 {
     return result==OV_OK ? STAT_OK : result==OV_RANGE ? STAT_INPUT_VALUE_RANGE_ERROR : STAT_COMMAND_NOT_ACCEPTED;
 }
+// Share the float conversion across the four main-loop getters.
+static stat_t _ov_float(nvObj_t *nv,uint16_t q) __attribute__((noinline));
 static stat_t _ov_float(nvObj_t *nv,uint16_t q)
 {
     nv->value_flt=q/1000.0f;nv->valuetype=TYPE_FLOAT;nv->precision=3;return STAT_OK;
@@ -871,3 +878,46 @@ stat_t rt_set_ovb(nvObj_t *nv)
 #endif
     return status;
 }
+
+stat_t ov_get_capped(nvObj_t *nv)
+{
+    ovSnapshot_t s;ov_snapshot(&s);
+    nv->value_int=s.capped;nv->valuetype=TYPE_BOOLEAN;return STAT_OK;
+}
+stat_t rt_get_ov(nvObj_t *nv)
+{
+    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
+    ovSnapshot_t s;ov_snapshot(&s);rt.ov_ask=true;
+    nv->value_int=s.revision;nv->valuetype=TYPE_INTEGER;return STAT_OK;
+}
+stat_t rt_set_ov(nvObj_t *nv)
+{
+    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
+    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
+    if(!rt.check_only) {rt.ov_events=nv->value_int;rt.ov_revision=0;rt.ov_sent_at=SysTickTimer_getValue();}
+    return STAT_OK;
+}
+stat_t rt_override_callback(void)
+{
+    if((!rt.ov_events && !rt.ov_ask) || cs.comm_mode!=JSON_MODE)return STAT_OK;
+    uint32_t now=SysTickTimer_getValue();
+    uint32_t ms=sr.status_report_interval;
+    // Convert even the maximum interval without overflowing a 32-bit product.
+    uint32_t ticks=(ms/125)*128+((ms%125)*128)/125;
+    if(!rt.ov_ask && rt.ov_revision && (uint32_t)(now-rt.ov_sent_at)<ticks)return STAT_OK;
+    ovSnapshot_t s;ov_snapshot(&s);
+    if(!rt.ov_ask && s.revision==rt.ov_revision)return STAT_OK;
+    char frame[112];
+    snprintf_P(frame,sizeof(frame),PSTR("{\"ov\":{\"v\":1,\"q\":%lu,\"mfo\":%.3f,\"mfc\":%.3f,\"mfe\":%u,\"capped\":%s}}\n"),
+        (unsigned long)s.revision,(double)(s.feed/1000.0f),(double)(s.committed_feed/1000.0f),
+        (unsigned)!!(s.enables&OV_FEED),s.capped?"true":"false");
+    if(xio_usb_try_send_frame(frame)) {
+        rt.ov_revision=s.revision;rt.ov_ask=false;
+        rt.ov_sent_at=now;
+    }
+    return STAT_OK;
+}
+
+#ifdef __AVR
+#pragma GCC pop_options
+#endif

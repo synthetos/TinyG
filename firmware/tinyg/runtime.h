@@ -31,6 +31,8 @@ typedef struct rtSingleton {
 	char qt[RT_QT_LEN+1];
 	volatile uint8_t job;					// host streaming a job with more motion to send (step 3); cleared from interrupts
 	uint8_t fg;								// host opted in to fg frames after each fs (step 3); reset clears it
+    uint32_t ov_revision,ov_sent_at;
+    bool ov_events,ov_ask;
 } rtSingleton_t;
 extern rtSingleton_t rt;
 
@@ -52,6 +54,10 @@ stat_t rt_get_fi(nvObj_t *nv);
 stat_t rt_set_fi(nvObj_t *nv);
 stat_t rt_get_fs(nvObj_t *nv);
 stat_t rt_feedlimit_callback(void);
+stat_t rt_override_callback(void);
+stat_t rt_get_ov(nvObj_t *nv);
+stat_t rt_set_ov(nvObj_t *nv);
+stat_t ov_get_capped(nvObj_t *nv);
 stat_t rt_get_job(nvObj_t *nv);
 stat_t rt_set_job(nvObj_t *nv);
 stat_t rt_get_fg(nvObj_t *nv);

@@ -205,6 +205,7 @@ static bool _override_take_body(void)
     copy_vector(mr.waypoint[SECTION_TAIL], ov_body.target);
     mr.section = SECTION_HEAD;
     mr.section_state = SECTION_NEW;
+    ov_commit_feed(ov_body.plan.factor_q1000, ov_body.plan.capped);
     ov_applied_request = ov_body.ticket.request;
     ov_applied_valid = true;
     BODY_UNLOCK;
@@ -403,6 +404,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 //            rpt_exception(STAT_PLANNER_ASSERTION_FAILURE, "mp_exec_aline() zero length move");
 //        }
 
+        ov_commit_feed(OV_FACTOR_ONE, false);
         ov_block_generation++;
         ov_segment_ordinal = 0;
         ov_body.ready = false;

@@ -81,6 +81,16 @@ class OverrideEngine(unittest.TestCase):
                 self.assertEqual(sum(tick==0 for _,tick,_ in result['changes']),50)
                 self.assertGreaterEqual(len(result['taken']),100)
 
+    def test_committed_factor_and_cap_follow_the_accepted_plan(self):
+        self.assertTrue(self.runs[1]['committed'])
+        self.assertTrue(all(row[1:]==(500,0) for row in self.runs[1]['committed']))
+        self.assertTrue(all(row[1:]==(1500,0) for row in self.increase['committed']))
+        capped=replay.run(self.exe,PROGRAM,at=20,factor=1500,section=1,max_feed=800)
+        self.assertTrue(capped['committed'])
+        self.assertTrue(all(row[1:]==(1500,1) for row in capped['committed']))
+        self._assert_body_response(capped,800)
+        self.assert_consistent_endpoints(capped)
+
     def test_jerk_through_body_transition(self):
         for result in (self.runs[1],self.increase):
             rows=[x for x in result['segments'] if x[0]>result['requests'][0][0]+30 and x[2]>0]

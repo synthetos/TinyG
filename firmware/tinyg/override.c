@@ -1,4 +1,4 @@
-/* Manual override state and proof helpers; no motion or output publication in this increment. */
+/* Manual override requests, committed feed and private-plan proof helpers. */
 #include "override.h"
 #include <math.h>
 #include <string.h>
@@ -19,6 +19,7 @@ void ov_init(void)
     OV_LOCK;
     memset((void *)&ov,0,sizeof(ov));
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
+    ov.revision=1;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -31,7 +32,7 @@ static void _set(uint8_t which,uint16_t factor,uint8_t enables)
     uint16_t old=(which==OV_FEED)?ov.feed:ov.spindle;
     if (old!=factor || ov.enables!=enables) {
         if (which==OV_FEED) ov.feed=factor; else ov.spindle=factor;
-        ov.enables=enables;ov.request++;ov.state=OV_RECORD_ONLY;
+        ov.enables=enables;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;
     }
 }
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted)
@@ -115,6 +116,15 @@ bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame)
     _set(which,(uint16_t)factor,ov.enables|which);
     OV_UNLOCK;
     return true;
+}
+/* Called inside exec's validated handoff; no floating-point work. */
+void ov_commit_feed(uint16_t factor,bool capped)
+{
+    OV_LOCK;
+    if(ov.committed_feed!=factor || ov.capped!=capped) {
+        ov.committed_feed=factor;ov.capped=capped;ov.revision++;
+    }
+    OV_UNLOCK;
 }
 void ov_cancel(void)
 {

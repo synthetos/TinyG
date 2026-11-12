@@ -171,7 +171,8 @@ int main(void) {
         self.assertEqual(new[end+31], ("", "_hld"))
         self.assertEqual(new[end+32:end+34], [("rt", "rtjob"), ("rt", "rtfg")])
         self.assertEqual(new[end+34:end+45], [("rt", "rtmfo"), ("rt", "rtsso"), ("rt", "rtmfe"), ("rt", "rtsse"), ("rt", "rtovb"), ("rt", "rtovs"), ("", "mfo"), ("", "sso"), ("", "mfc"), ("", "ssc"), ("", "ovs")])
-        self.assertEqual(new[end+45:], groups)
+        self.assertEqual(new[end+45:end+50], [("rt", "rtmfc"), ("rt", "rtov"), ("rt", "rtmcp"), ("", "mcp"), ("", "mfe")])
+        self.assertEqual(new[end+50:], groups)
 
 
 if __name__ == "__main__":

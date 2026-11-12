@@ -67,7 +67,11 @@ $(BUILDDIR)/tinyg.elf: $(OBJS) Makefile
 $(BUILDDIR)/tinyg.hex: $(BUILDDIR)/tinyg.elf
 	$(OBJCOPY) -O ihex -R .eeprom $< $@
 
-$(BUILDDIR)/%.o: %.c
+# Configuration load/migration is main-loop work. Keep
+# motion, exec and interrupt code at the existing optimization level.
+$(BUILDDIR)/config.o: CFLAGS += -Os
+
+$(BUILDDIR)/%.o: %.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 

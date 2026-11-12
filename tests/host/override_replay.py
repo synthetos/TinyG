@@ -78,6 +78,8 @@ static void host_override_trace(void)
 void host_override_taken(void)
 {
     if (ov_interleave==9 && !ov_hold_at) ov_hold_at=ov_tick+80;
+    ovSnapshot_t committed;ov_snapshot(&committed);
+    printf("OVCOMMIT %lu %u %u\n",ov_tick,committed.committed_feed,committed.capped);
     printf("OVTAKE %lu %.9g\n",ov_tick,(double)mr.cruise_velocity);
 }
 void host_override_interleave(void)
@@ -144,7 +146,8 @@ def build(root, out):
                            '    if(argc>3)ov_factor=(unsigned)strtoul(argv[3],NULL,10);\n'
                            '    if(argc>4)ov_section=atoi(argv[4]);\n'
                            '    if(argc>5)ov_interleave=atoi(argv[5]);\n'
-                           '    if(argc>6)ov_schedule=atoi(argv[6]);')
+                           '    if(argc>6)ov_schedule=atoi(argv[6]);\n'
+                           '    if(argc>7){cm.a[0].feedrate_max=atof(argv[7]);cm.a[0].velocity_max=atof(argv[7]);}')
     # Release a lone first move as the clock-driven startup callback would.
     driver = _replace_once(driver, 'static void finish(void)\n{\n',
                            'static void finish(void)\n{\n'
@@ -188,20 +191,22 @@ void host_checkpoint(unsigned move)
     return exe
 
 
-def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False):
+def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False, max_feed=1200):
     if at < 0 or not 50 <= factor <= 2000 or section not in (-1, 0, 1, 2):
         raise ValueError('invalid injection schedule')
-    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule))],
+    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule)), str(max_feed)],
                             input=program, capture_output=True, text=True, timeout=60)
     if result.returncode:
         raise RuntimeError(f'replay exit {result.returncode}: {result.stderr[-2000:]}')
-    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': [], 'ends': [], 'changes': []}
+    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': [], 'ends': [], 'changes': [], 'committed': []}
     for line in result.stdout.splitlines():
         fields = line.split()
         if not fields:
             continue
         if fields[0] == 'OVREQ':
             rows['requests'].append(tuple(map(int, fields[1:])))
+        elif fields[0] == 'OVCOMMIT':
+            rows['committed'].append(tuple(map(int,fields[1:])))
         elif fields[0] == 'OVTAKE':
             rows['taken'].append((int(fields[1]),float(fields[2])))
         elif fields[0] == 'OVINTERLEAVE':

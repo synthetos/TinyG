@@ -17,8 +17,8 @@ enum { OV_OK=0, OV_RANGE=1, OV_DENIED=2 };
 enum { OV_BOUNDARY_HEAD=0, OV_BOUNDARY_TAIL, OV_BOUNDARY_BODY, OV_BOUNDARY_SECTION_END };
 typedef struct {
     uint16_t feed,spindle,committed_feed,committed_spindle;
-    uint32_t request;
-    uint8_t enables,armed,state,unsupported;
+    uint32_t request,revision;
+    uint8_t enables,armed,state,unsupported,capped;
 } ovSnapshot_t;
 typedef struct {
     float position[6],velocity;
@@ -54,6 +54,7 @@ uint8_t ov_arm(bool enable,bool quiet,bool permitted,bool apply);
 bool ov_usb_armed(void);
 bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame);
 void ov_cancel(void);
+void ov_commit_feed(uint16_t factor,bool capped);
 /* Caller supplies a private snapshot of an analytical future boundary.
  * Stamp/current only check request, cancellation and age; the exec consumer
  * also checks the live block, segment, speed and position before accepting it. */

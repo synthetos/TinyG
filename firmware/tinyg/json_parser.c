@@ -228,6 +228,9 @@ static uint8_t _scan_rt(const char *p)
                                ((n == 3) && !memcmp(key,"sse",3)) ? (1UL<<19) :
                                ((n == 3) && !memcmp(key,"ovb",3)) ? (1UL<<20) :
                                ((n == 3) && !memcmp(key,"ovs",3)) ? (1UL<<21) :
+                               ((n == 3) && !memcmp(key,"mfc",3)) ? (1UL<<22) :
+                               ((n == 3) && !memcmp(key,"mcp",3)) ? (1UL<<23) :
+                               ((n == 2) && !memcmp(key,"ov",2)) ? (1UL<<24) :
 							   ((n == 3) && (key[0] == 'f') && (key[1] == 'l')) ?
 									((key[2] == 'k') ? 8 : (key[2] == 'm') ? 16 : (key[2] == 'p') ? 32 : (key[2] == 'f') ? 64 : 0) : 0;
 				twice |= (leaf & leaves) != 0;
