@@ -19,6 +19,7 @@
 #include "tinyg.h"			// #1
 #include "config.h"			// #2
 #include "controller.h"
+#include "planner.h"
 #include "gcode_parser.h"
 #include "adc_report.h"
 #include "canonical_machine.h"
@@ -623,6 +624,14 @@ static stat_t _parse_gcode_block(char *buf)
 
 static stat_t _execute_gcode_block()
 {
+    // Check an ungated stored-position line before any command/model update.
+    // Normal dispatch already guarantees this reserve; the helper later needs
+    // only its two legs after preceding commands have consumed their slots.
+    if ((cm.gn.next_action == NEXT_ACTION_GOTO_G28_POSITION ||
+         cm.gn.next_action == NEXT_ACTION_GOTO_G30_POSITION) &&
+        mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
+        return STAT_BUFFER_FULL;
+    }
 	stat_t status = STAT_OK;
 
 	cm_set_model_linenum(cm.gn.linenum);
