@@ -12,7 +12,10 @@ FIRMWARE = Path(os.environ.get('TINYG_FIRMWARE', ROOT/'firmware/tinyg'))
 
 
 class HoldOutputs(unittest.TestCase):
-    def test_sequence(self):
+    def test_motion_only_hold_resume_and_flush(self):
+        self.test_sequence(motion_only=True)
+
+    def test_sequence(self, motion_only=False):
         source=(FIRMWARE/'canonical_machine.c').read_text()
         definitions=[]
         for name in ['_hold_outputs_cancel', '_hold_outputs_pause', '_hold_outputs_resume', '_hold_outputs_finish_resume',
@@ -307,6 +310,24 @@ int main(void) {
     alarmed=false;service();assert(!output_mode&&!cm.end_hold_requested);
     // Already-masked callers must remain masked after nested cancellation.
     setup(); SREG=0x15; _hold_outputs_cancel(); assert(SREG==0x15);
+}
+'''
+        if motion_only:
+            code = code[:code.index('int main(void) {')] + r'''int main(void) {
+    setup();cm.program_paused=false;
+    cm.hold_state=FEEDHOLD_PENDING;service();
+    cm.hold_state=FEEDHOLD_HOLD;service();
+    assert(output_mode==SPINDLE_CW && output_speed==1000);
+    assert(coolant_out_mist && coolant_out_flood && off_calls==0);
+    cm_request_end_hold();service();
+    assert(starts==1 && exits==1 && cm.hold_state==FEEDHOLD_OFF);
+    assert(output_mode==SPINDLE_CW && spindle_starts==0);
+    assert(coolant_out_mist && coolant_out_flood);
+    setup();cm.program_paused=false;service();
+    cm.queue_flush_state=FLUSH_REQUESTED;service();
+    assert(!queued && cm.hold_state==FEEDHOLD_OFF);
+    assert(output_mode==SPINDLE_CW && output_speed==1000 && off_calls==0);
+    assert(coolant_out_mist && coolant_out_flood);
 }
 '''
         # Use firmware state values for the real combined-state getter alongside E060 sequencing.
