@@ -52,6 +52,7 @@ def _limit_run(tg, request, name, line, trigger, cfg, sbcfg, amin, hold_first=Fa
     tg.send_gcode("G28.3 Y0", allow="declare Y")
     tg.guard.check_gcode(line, allow=name)
     y0 = tg.get("mpoy")
+    assert y0 == 0, "declared Y origin must be zero before the measured move"
     sb = _box(sbcfg)
     mark = len(tg.transport.history)
     try:
@@ -80,8 +81,10 @@ def _limit_run(tg, request, name, line, trigger, cfg, sbcfg, amin, hold_first=Fa
     after = [t for t in m2 if t_edge is not None and t >= t_edge]
     before = [t for t in m2 if t_edge is not None and t < t_edge][-400:]
     v = (len(before) - 1) / (before[-1] - before[0]) / spm if len(before) > 10 else None
-    return {"steps_m2": len(m2), "steps_m3": len(m3), "reported_mm": round(y1 - y0, 4),
-            "step_mm": round(len(m2) / spm, 4), "stat": stat, "exceptions": exc, "edge_s": t_edge,
+    return {"steps_m2": len(m2), "steps_m3": len(m3), "reported_mm": y1 - y0,
+            "position_tolerance_mm": 1 / spm + 0.0005,
+            "report_quantum_mm": 0.001,
+            "step_mm": len(m2) / spm, "stat": stat, "exceptions": exc, "edge_s": t_edge,
             "v_at_edge_mm_s": round(v, 3) if v else None, "stop_after_edge_mm": round(len(after) / spm, 4),
             "edge_to_last_step_ms": round((after[-1] - t_edge) * 1e3, 2) if after else 0.0, "spm": spm}
 
@@ -90,7 +93,11 @@ def _check_kept(tg, s):
     assert s["edge_s"] is not None, f"the limit line never went low on the MSO: {s}"
     assert s["stat"] == tg.dialect.stat("ALARM"), f"a limit hit must alarm: {s}"
     assert s["steps_m2"] == s["steps_m3"], f"the two Y motors stepped differently: {s}"
-    assert abs(s["reported_mm"] - s["step_mm"]) <= 1.5 / s["spm"], f"position not kept: {s}"
+    # G28.3 declares an exact zero, so only the final report contributes rounding.
+    # mpoy/posy use three decimals in config_app.c. Compare exact pulse distance;
+    # this establishes consistency with one DDA step, not substep accuracy.
+    tolerance = 1 / s["spm"] + 0.0005
+    assert abs(s["reported_mm"] - s["steps_m2"] / s["spm"]) <= tolerance, f"position not kept: {s}"
 
 
 def test_limit_during_hold(tg, keep, record, request):
