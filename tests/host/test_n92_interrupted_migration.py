@@ -112,6 +112,9 @@ struct {char token[6]; int type, flags; float default_value;} cfgArray[] = {
 #define COUNT ((int)(sizeof(cfgArray)/sizeof(*cfgArray)))
 #define RECORDS ((E2END + 1) / NVM_VALUE_LEN)
 #define MASTER_NV_ROWS @MASTER_ROWS@
+#define MASTER_SR_FIRST 280
+#define NV_STATUS_REPORT_LEN 10
+#define master_report_tokens master_tokens
 static const char master_tokens[] = "@TOKENS@";
 static uint8_t eeprom[RECORDS * 4];
 static uint32_t model[COUNT];
@@ -164,7 +167,7 @@ void write_persistent_byte(index_t index, uint8_t offset, uint8_t value) {
 stat_t nv_set(nvObj_t *nv) {model[nv->index] = nv->value_int; return 0;}
 stat_t nv_get(nvObj_t *nv) {nv->value_int = model[nv->index]; return 0;}
 void sr_init_status_report_P(const char *s) {   /* the defaults write the list slots */
- if (!*s) return;
+ if (!*s) {for(int i=0;i<10;i++){nvObj_t n={.index=270+i};read_persistent_value(&n);nv_set(&n);}return;}
  for (int i = 0; i < 10; i++) {nvObj_t sr = {.index = 270 + i, .value_int = 40 + i}; nv_set(&sr); write_persistent_value(&sr);}
 }
 static void eeprom_put(int i, float f) {memcpy(&eeprom[i * 4], &f, 4);}
@@ -172,6 +175,7 @@ static void master_board(void) {
  memset(eeprom, 0xFF, sizeof(eeprom));
  eeprom_put(0, 440.21f);
 @IMAGE@
+ for(int i=0;i<10;i++)eeprom_put(MASTER_SR_FIRST+i,i<2?2+i:-1);
 }
 '''
 
@@ -190,7 +194,7 @@ static uint32_t want_model[COUNT];
 static void same(unsigned c1, unsigned c2) {
  index_t slot; uint8_t seq;
  assert(_master_checkpoint(&slot, &seq) == 0);                 /* cleared */
- float r0; memcpy(&r0, eeprom, 4); assert(r0 == 10002);
+ float r0; memcpy(&r0, eeprom, 4); assert(r0 == 10003);
  for (int i = 0; i < CHECKPOINT_A; i++) {                       /* the checkpoint slots may hold other bytes */
   uint32_t e, w; memcpy(&e, &eeprom[i * 4], 4); memcpy(&w, &want_eeprom[i * 4], 4);
   bool m = i < COUNT && (cfgArray[i].flags & 1) && model[i] != want_model[i];
@@ -209,7 +213,7 @@ int main(void) {
  unsigned total = writes;
  assert(edge("jv") == 3 && edge("zsn") == 4 && edge("rxm") == 0 && edge("hv") == 8 && edge("m001") == 2);
  assert(edge_f("m000") == .25f && edge_f("f019") == 1019 && edge("s009") == 11 && edge("u009") == 12);
- assert(edge_f("q000") == 77.5f && edge("se03") == 43 && config_restored.count == 0);
+ assert(edge_f("q000") == 77.5f && edge("se00") == 2 && edge("se01") == 3 && edge("se03") == (uint32_t)NO_MATCH && config_restored.count == 0);
  memcpy(want_eeprom, eeprom, sizeof(eeprom)); memcpy(want_model, model, sizeof(model));
  unsigned doubles = 0;
  for (unsigned c1 = 1; c1 <= total; c1++) {
@@ -287,7 +291,7 @@ class InterruptedMasterMigration(unittest.TestCase):
         for name in ("_nvm_layout_is_current", "_nvm_layout_is_legacy", "_write_nvm_layout_marker",
                      "_nvm_layout_is_master", "_checkpoint_check", "_checkpoint_rows", "_master_checkpoint",
                      "_write_master_checkpoint", "_clear_master_checkpoints", "_master_journaled",
-                     "_master_source_pending", "_is_sr_slot", "_migrate_master"):
+                     "_master_source_pending", "_is_sr_slot", "_master_report_index", "_migrate_master"):
             code += function(source, r"static (?:bool|void|index_t|uint8_t) " + name +
                              r"\([^;{}]*\)(?=[ \t]*(?://[^\n]*)?\s*\{)") + "\n"
         code += function(source, r"stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)") + "\n"
