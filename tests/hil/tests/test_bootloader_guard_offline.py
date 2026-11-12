@@ -157,3 +157,16 @@ def test_entry_window_exits_once_then_starts_application(boot, monkeypatch):
     assert 'bootloader auto-exit' in transcript.getvalue()
     assert not boot.erases and not boot.lock_writes
     transport.close()
+
+
+def test_exit_io_failure_quarantines_without_application_traffic(boot):
+    original_write = boot.write
+    def write(data):
+        original_write(data)
+        if data == b'E': raise OSError('exit interrupted')
+    boot.write = write
+    with pytest.raises(OSError, match='exit interrupted'):
+        Transport('fake-guard-port').open()
+    assert boot.sent == [b'\x1bS', b'E'] and boot.closed
+    assert bootloader.marker('fake-guard-port').exists()
+    assert not boot.erases and not boot.lock_writes

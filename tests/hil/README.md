@@ -60,9 +60,14 @@ uv run python -m tinyg_hil.switchbox info --port /dev/cu.usbserial-XXXX
 ### Failed flash: AVR109 recovery only
 
 Every application transport open first sends only ESC/S and checks for the
-`XBoot++` signature. A detected bootloader is closed and quarantined before any
-JSON, G-code, reset or XON byte is sent. A flash creates the same persistent
-per-port guard before entering the bootloader. Failure leaves it in place;
+`XBoot++` signature. With no unsafe-flash marker, the probe may itself enter a
+healthy bootloader during its reset entry window. In that case open sends AVR109
+`E` exactly once, drains the ACK/banner until quiet (bounded to three seconds),
+then re-probes with ESC/S. It logs the attempt and result in the transcript and
+standard warning log. A remaining signature or an exception closes and
+quarantines the port before any JSON, G-code, reset or XON byte is sent. An
+existing unsafe-flash marker blocks open before any probe or auto-exit.
+A flash creates the same persistent per-port guard before entering the bootloader. Failure leaves it in place;
 ordinary open/write calls, including teardown and later sessions, refuse traffic.
 The marker is `TINYG_HIL_STATE/tinyg-hil-<port>.flash-unsafe` (under the normal
 persistent state directory when the variable is unset). Do not delete it simply

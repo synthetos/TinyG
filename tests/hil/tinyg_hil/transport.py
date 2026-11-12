@@ -1,4 +1,5 @@
 """Serial transport: a reader thread that timestamps bytes, strips XON/XOFF and yields parsed lines."""
+import logging
 import queue
 import threading
 import time
@@ -44,9 +45,26 @@ class Transport:
         bootloader.require_application(self.port)
         wire, in_bootloader = bootloader.inspect_port(self.port, self.baud)
         if in_bootloader:
-            wire.close()
-            bootloader.quarantine(self.port, 'XBoot++ signature on session open')
-            bootloader.require_application(self.port)
+            try:
+                # An unmarked healthy board may have accepted our ESC in its
+                # reset entry window. Never auto-exit an uncertain flash.
+                bootloader.require_application(self.port)
+                note = 'bootloader auto-exit: unmarked session, sending AVR109 E once'
+                self._log('!!', note.encode())
+                logging.getLogger(__name__).warning('%s: %s', self.port, note)
+                in_bootloader = bootloader.exit_and_inspect(wire)
+                outcome = ('still active; quarantined' if in_bootloader else
+                           'no signature after exit; opening application transport')
+                self._log('!!', ('bootloader auto-exit: ' + outcome).encode())
+                logging.getLogger(__name__).warning('%s: bootloader auto-exit: %s', self.port, outcome)
+                if in_bootloader:
+                    bootloader.quarantine(self.port, 'XBoot++ still active after session auto-exit')
+                    bootloader.require_application(self.port)
+            except BaseException:
+                wire.close()
+                if not bootloader.marker(self.port).exists():
+                    bootloader.quarantine(self.port, 'uncertain session bootloader auto-exit')
+                raise
         self.ser = wire
         self.ser.timeout = .02
         # Finish the harmless ESC/S probe line only after rejecting the bootloader.

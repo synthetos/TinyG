@@ -46,3 +46,14 @@ def inspect_port(port, baud=115200):
     except BaseException:
         wire.close()
         raise
+
+
+def exit_and_inspect(wire):
+    """Try AVR109 exit once, drain its ACK/banner to quiet, then probe again."""
+    wire.write(b'E')
+    deadline = time.monotonic() + 3
+    while time.monotonic() < deadline:
+        if not wire.read(256):
+            break
+    wire.write(b'\x1bS')
+    return b'XBoot++' in wire.read(256)
