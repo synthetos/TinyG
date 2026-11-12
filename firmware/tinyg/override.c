@@ -163,3 +163,33 @@ bool ov_window_valid(const ovPlan_t *p,const ovReference_t *r,uint8_t n,float en
     }
     return prior==exit;
 }
+
+/* Called only on private snapshots in the main loop. The quintic velocity curve
+ * has maximum |d2v/dt2| = (10/sqrt(3))*|delta-v|/T^2 < 6*|delta-v|/T^2.
+ * This conservative duration bounds jerk for acceleration AND deceleration.
+ * It does not alter the machine's jerk, axis limits, or boundary speeds. */
+static float _transition_time(float from,float to,float jerk)
+{
+    return from==to ? 0 : sqrtf(6.0f*fabsf(to-from)/jerk);
+}
+bool ov_plan_transition(float length,float entry,float feed,float exit,float vmax,
+                        float jerk,uint16_t factor,ovTransition_t *out)
+{
+    if(!out || !isfinite(length) || length<=0 || !isfinite(entry) || entry<0 ||
+       !isfinite(feed) || feed<=0 || !isfinite(exit) || exit<0 ||
+       !isfinite(vmax) || vmax<=0 || entry>vmax || exit>vmax ||
+       !isfinite(jerk) || jerk<=0 || factor<OV_FACTOR_MIN || factor>OV_FACTOR_MAX)return false;
+    ovTransition_t p={0};
+    p.entry=entry;p.exit=exit;p.factor_q1000=factor;
+    float requested=feed*(factor/1000.0f);
+    if(!isfinite(requested))return false;
+    p.cruise=fminf(requested,vmax);p.capped=requested>vmax;
+    p.head_time=_transition_time(entry,p.cruise,jerk);
+    p.tail_time=_transition_time(p.cruise,exit,jerk);
+    p.head=(entry+p.cruise)*0.5f*p.head_time;
+    p.tail=(p.cruise+exit)*0.5f*p.tail_time;
+    p.body=length-p.head-p.tail;
+    if(!isfinite(p.head) || !isfinite(p.tail) || !isfinite(p.body) || p.body<0)return false;
+    *out=p;
+    return true;
+}

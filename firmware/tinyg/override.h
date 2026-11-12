@@ -37,6 +37,15 @@ typedef struct {
     uint8_t slot;
 } ovPlan_t;
 typedef struct {float length,vmax;uint32_t incarnation;uint8_t slot;} ovReference_t;
+/* Main-loop-only private plan; entry/exit are unchanged outer boundary speeds.
+ * Times are minutes, speeds mm/min, jerk mm/min^3. No runtime writes. */
+typedef struct {
+    float entry,cruise,exit,head,body,tail,head_time,tail_time;
+    uint16_t factor_q1000;
+    bool capped;
+} ovTransition_t;
+bool ov_plan_transition(float length,float entry,float feed,float exit,float vmax,
+                        float jerk,uint16_t factor,ovTransition_t *out);
 void ov_init(void);
 void ov_snapshot(ovSnapshot_t *out);
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted);
