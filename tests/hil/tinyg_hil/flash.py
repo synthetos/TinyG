@@ -82,26 +82,40 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
     (config_init then loads defaults). Take a snapshot first.
     """
     port = tg.transport.port
+    # A prior interrupted flash may have left the serial port closed. Open
+    # without probing: the board may still be in xboot, not application firmware.
+    if not tg.transport.is_open:
+        tg.transport.open()
     tg.transport.write(b'{"boot":1}\n')     # the reply may be cut off by the reset
-    time.sleep(0.3)
-    tg.close()
-    time.sleep(0.5)
-    cmd = [avrdude, "-p", "x192a3", "-c", "avr109", "-b", "115200", "-P", port,
-           "-U", f"flash:w:{hex_path}:i"]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if proc.returncode != 0:
-        raise RuntimeError(f"avrdude failed ({proc.returncode}):\n{proc.stderr[-2000:]}")
-    # The first boot of a new fb writes every default to EEPROM before answering.
-    deadline = time.monotonic() + 30
-    while True:
-        time.sleep(1.0)
-        try:
-            identity = tg.connect(timeout=3.0)
-            break
-        except NoResponse:
-            if time.monotonic() > deadline:
-                raise
-    write_flash_record(port, flash_provenance(hex_path))    # read by record.py and ice.py
-    if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
-        raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
-    return identity
+    try:
+        time.sleep(0.3)
+        tg.close()
+        time.sleep(0.5)
+        cmd = [avrdude, "-p", "x192a3", "-c", "avr109", "-b", "115200", "-P", port,
+               "-U", f"flash:w:{hex_path}:i"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        if proc.returncode != 0:
+            raise RuntimeError(f"avrdude failed ({proc.returncode}):\n{proc.stderr[-2000:]}")
+        # The first boot of a new fb writes every default to EEPROM before answering.
+        deadline = time.monotonic() + 30
+        while True:
+            time.sleep(1.0)
+            try:
+                identity = tg.connect(timeout=3.0)
+                break
+            except NoResponse:
+                if time.monotonic() > deadline:
+                    raise
+        write_flash_record(port, flash_provenance(hex_path))    # read by record.py and ice.py
+        if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
+            raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
+        return identity
+    except BaseException as error:
+        # Leave a usable transport for recovery/teardown even when avrdude or
+        # pytest-timeout interrupts us. Never hide the original flash failure.
+        if not tg.transport.is_open:
+            try:
+                tg.transport.open()
+            except Exception as reopen_error:
+                error.add_note(f"serial reopen after failed flash: {reopen_error}")
+        raise
