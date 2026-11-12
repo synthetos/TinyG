@@ -4,7 +4,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.resets_board, pytest.mark.dialect('d449'),
-              pytest.mark.bug('N108', on=['d449'])]
+              pytest.mark.bug('N108', on=[])]
 
 
 @pytest.mark.parametrize('group,token,flat', [('x', 'vm', 'xvm'), ('1', 'mi', '1mi')])

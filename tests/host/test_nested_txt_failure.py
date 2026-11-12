@@ -53,6 +53,12 @@ int _marshall_nv_pair(nvObj_t **p,char **s,char *group,int depth,bool safe,...){
 }
 int controller_dispatch_txt_container(nvObj_t *n,char *s){(void)n;(void)s;assert(0);return 0;}
 int nv_get(nvObj_t *n){(void)n;return 0;}
+typedef stat_t (*fptrCmd)(nvObj_t *);
+int set_grp(nvObj_t *n){(void)n;return 0;}
+int rt_set_grp(nvObj_t *n){(void)n;return 0;}
+#ifndef GET_TABLE_WORD
+#define GET_TABLE_WORD(a) 0
+#endif
 int nv_set(nvObj_t *n){(void)n;return 0;}
 int nv_persist(nvObj_t *n){(void)n;return 0;}
 int cm_is_alarmed(void){return 0;}

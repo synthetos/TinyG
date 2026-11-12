@@ -67,6 +67,12 @@ char *str_unescape(char *s){return s;}
 int nv_copy_string(nvObj_t *n,char *s){n->str=s;return 0;}
 int _tokenize_json_string(char *s,int size,int pairs){(void)s;(void)size;(void)pairs;return 0;}
 int nv_get(nvObj_t *n){(void)n;executed++;return 0;}
+typedef stat_t (*fptrCmd)(nvObj_t *);
+int set_grp(nvObj_t *n){(void)n;return 0;}
+int rt_set_grp(nvObj_t *n){(void)n;return 0;}
+#ifndef GET_TABLE_WORD
+#define GET_TABLE_WORD(a) 0
+#endif
 int nv_set(nvObj_t *n){(void)n;executed++;return 0;}
 int nv_persist(nvObj_t *n){(void)n;return 0;}
 int cm_is_alarmed(void){return 0;}
