@@ -2,7 +2,7 @@
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.resets_board,
-              pytest.mark.dialect('d449'), pytest.mark.bug('N107', on=['d449'])]
+              pytest.mark.dialect('d449'), pytest.mark.bug('N107', on=[])]
 
 
 @pytest.mark.parametrize('stored', ['G28', 'G30'])

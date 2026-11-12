@@ -1506,8 +1506,9 @@ stat_t cm_get_firmware(void)
 
 static stat_t _goto_stored_position(const float stored[], const float target[], const bool flags[])
 {
-    // Normal dispatch reserves this headroom; reject ungated calls instead of blocking in a hold.
-    if (mp_get_planner_buffers_available() < PLANNER_BUFFER_HEADROOM) {
+    // Earlier commands in this line have used part of the dispatch reserve.
+    // Require only these two legs, before either is queued.
+    if (mp_get_planner_buffers_available() < 2) {
         return (STAT_BUFFER_FULL);
     }
     uint8_t saved_override = cm.gm.absolute_override;
