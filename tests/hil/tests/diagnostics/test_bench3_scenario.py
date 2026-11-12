@@ -23,6 +23,7 @@ import json
 import math
 import os
 import random
+import statistics
 import time
 import urllib.request
 
@@ -43,6 +44,8 @@ LINE_REPLY_S = 60.0
 # 2 x 0.004 but the program's at 0.006 turned a 0.007 step (S2034 clamped to 0.200, then S1907 = 0.193) into a
 # "missing" plateau.
 DUTY_SAME = 0.006
+PWM_WINDOW = 0.02
+PWM_MIN_WINDOWS = 3  # At least60ms of steady duty; programmed changes dwell for600ms.
 SWITCH_TOKENS = {"xmin": "xsn", "xmax": "xsx", "ymin": "ysn", "ymax": "ysx", "zmin": "zsn", "amin": "asn"}
 DWELL = 0.6
 WHY = "bench 3 random scenario"
@@ -199,12 +202,22 @@ def _duty(pwm, mode, s):
 
 
 def _plateaus(rows, tol=0.004):
-    """Duty levels held for at least two consecutive windows (a window that straddles a change stands alone)."""
-    out = []
-    for a, b in zip(rows, rows[1:]):
-        if abs(a["duty"] - b["duty"]) <= tol:
-            out.append(round((a["duty"] + b["duty"]) / 2, 4))
-    return _dedupe(out, lambda x, y: abs(x - y) <= DUTY_SAME)   # the same tolerance as the program's levels
+    """Require several stable windows and use their median, not a transition-pair average.
+
+    A mixed first window must not anchor deduplication between two real speeds.
+    Keep the whole run within tol so a slow drift cannot bridge distinct levels.
+    """
+    out, run = [], []
+    for row in rows:
+        duty = row["duty"]
+        if run and max(max(run), duty) - min(min(run), duty) > tol:
+            if len(run) >= PWM_MIN_WINDOWS:
+                out.append(round(statistics.median(run), 4))
+            run = []
+        run.append(duty)
+    if len(run) >= PWM_MIN_WINDOWS:
+        out.append(round(statistics.median(run), 4))
+    return _dedupe(out, lambda x, y: abs(x - y) <= DUTY_SAME)
 
 
 def _signed(step_edges, dir_edges, dir_initial, plus_level):
@@ -306,7 +319,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
     t_event, stat_at_event, hold_stat = None, None, None
     try:
         sb.release_all()
-        with mso.Capture(cfg, digital=digital, analog=analog, seconds=secs, rate=1_000_000, pwm_window=0.1,
+        with mso.Capture(cfg, digital=digital, analog=analog, seconds=secs, rate=1_000_000, pwm_window=PWM_WINDOW,
                          save_as=request.config._tinyg_recorder.dir / f"scenario-{seed}") as cap:
             time.sleep(3.5)                                # the MSO starts recording late (test_mso_start_lag)
             t0 = time.monotonic()
@@ -369,6 +382,7 @@ def test_bench3_scenario(tg, keep, record, request, k):
            "stat": stat, "exceptions": exc, "start": p0, "end": p1, "total": prog.total,
            "motors": {m: {"axis": ax, "spm": spm, "steps": counts[m], "net": net[m], "plus_level": plus[m],
                           "reported_steps": round((p1[ax] - p0[ax]) * spm, 2)} for m, (ax, spm) in motors.items()},
+           "pwm_window_s": PWM_WINDOW, "pwm_min_windows": PWM_MIN_WINDOWS,
            "pwm_seen": seen_pwm, "pwm_want": want_pwm, "enable": [enable_seq, want_enable],
            "coolant": [cool_seq, want_cool], "dir": [dir_seq, want_dir], "capture_s": secs}
     record("scenario", rec)
