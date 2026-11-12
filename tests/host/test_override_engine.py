@@ -25,6 +25,20 @@ class OverrideEngine(unittest.TestCase):
                     for section in (0, 1, 2)}
         cls.increase = replay.run(cls.exe, PROGRAM, at=20, factor=1500, section=1)
 
+    def test_queued_permission_blocks_and_reenables_live_requests(self):
+        disabled=replay.run(self.exe,'M49\n'+PROGRAM,at=20,factor=1500,section=1)
+        self.assertTrue(disabled['requests'])
+        self.assertFalse(disabled['taken'])
+        self.assert_consistent_endpoints(disabled)
+        for permission in ('M48','M50','M50 P1'):
+            enabled=replay.run(self.exe,'M49\n'+permission+'\n'+PROGRAM,
+                               at=20,factor=1500,section=1)
+            self.assertTrue(enabled['taken'],permission)
+            self.assert_consistent_endpoints(enabled)
+        disabled=replay.run(self.exe,'M50 P0\n'+PROGRAM,at=20,factor=500,section=1)
+        self.assertFalse(disabled['taken'])
+        self.assert_consistent_endpoints(disabled)
+
     def test_injections_reach_all_sections_and_keep_endpoints(self):
         # Infrastructure failures must fail this ordinary test, not disappear
         # behind an expected-failure response assertion.

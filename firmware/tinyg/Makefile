@@ -29,6 +29,18 @@ BUILDDIR = build-fb$(FW_BUILD)
 TEST_DEFS += -DTINYG_FIRMWARE_BUILD=$(FW_BUILD)
 endif
 
+# Separate timing images: 1 exec ISR, 2 DDA ISR, 3 snapshot, 4 publish, 5 consume.
+ifdef MOTION_PROFILE
+ifeq (,$(filter $(MOTION_PROFILE),1 2 3 4 5))
+$(error MOTION_PROFILE must be 1 through 5)
+endif
+ifdef TEST_HOOKS
+$(error MOTION_PROFILE and TEST_HOOKS must be separate images)
+endif
+BUILDDIR = build-profile$(MOTION_PROFILE)
+TEST_DEFS += -DTINYG_MOTION_PROFILE=$(MOTION_PROFILE)
+endif
+
 SRCS  = $(filter-out system.c,$(wildcard *.c))
 SRCS += $(filter-out xio/xio.c,$(wildcard xio/*.c))
 SRCS += $(filter-out xmega/xmega_wdt.c,$(wildcard xmega/*.c))
@@ -69,7 +81,7 @@ $(BUILDDIR)/tinyg.hex: $(BUILDDIR)/tinyg.elf
 
 # Configuration load/migration is main-loop work. Keep
 # motion, exec and interrupt code at the existing optimization level.
-$(BUILDDIR)/config.o: CFLAGS += -Os
+$(BUILDDIR)/config.o $(BUILDDIR)/json_parser.o: CFLAGS += -Os
 
 $(BUILDDIR)/%.o: %.c Makefile
 	@mkdir -p $(dir $@)

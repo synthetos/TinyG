@@ -292,6 +292,9 @@ static bool _takes_subcode(char letter, uint16_t code)
 
 static stat_t _validate_gcode_block()
 {
+    if (cm.gf.feed_rate_override_enable && cm.gf.parameter &&
+        cm.gn.parameter != 0 && cm.gn.parameter != 1) return STAT_P_WORD_IS_INVALID;
+
 	//	From NIST, section 3.4 "It is an error to put a G-code from group 1 and a G-code from group 0 on
 	//	the same line if both of them use axis words. If an axis word-using G-code from group 1 is implicitly
 	//	in effect on a line (by having been activated on an earlier line), and a group 0 G-code that uses
@@ -501,10 +504,10 @@ static stat_t _parse_gcode_block(char *buf)
 				case 7: SET_COOLANT_ON (mist_coolant);
 				case 8: SET_COOLANT_ON (flood_coolant);
 				case 9: SET_MODAL (MODAL_GROUP_M8, flood_coolant, false);
-				// No planner or spindle consumer applies these override settings yet.
-				case 48: case 49: case 50: case 51:
-					status = STAT_MCODE_COMMAND_UNSUPPORTED;
-					break;
+                case 48: SET_MODAL (MODAL_GROUP_M9, override_enables, true);
+                case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
+                case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true);
+                case 51: status = STAT_MCODE_COMMAND_UNSUPPORTED; break;
                 case 105: SET_NEXT_ACTION (NEXT_ACTION_GET_ADC);
 				case 114: SET_NEXT_ACTION (NEXT_ACTION_GET_POSITION);
 				case 115: SET_NEXT_ACTION (NEXT_ACTION_GET_FIRMWARE);

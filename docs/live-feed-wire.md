@@ -1,8 +1,7 @@
-# Live feed wire format (publication increment)
+# Live feed wire format (development branch)
 
-This is the publication increment on the development branch. Ordered program
-permissions and the final reset/program-end lifecycle are not complete yet.
-Do not treat this draft as the final 450.05 interface.
+This draft includes ordered program permission and job resets. Physical pulse,
+interrupt-time and stack qualification remain required before the 450.05 gate.
 
 A pure `{"rt":{"mfo":0.5}}` requests 50% feed. The accepted range is 0.05 through
 2.0; values outside it return a nonzero status. The reply acknowledges the
@@ -39,7 +38,22 @@ limits still apply. The frame describes the factor accepted for the plan,
 not the instantaneous speed during a transition. Read `vel` for speed.
 
 All of these values are RAM only. Board reset clears events and the byte opt-in,
-and restores requested/committed factors to unity. The final lifecycle increment
-will implement and test program-end and job-kill resets and separate ordered
-M48/M49/M50 program permission from the live operator request. Spindle override
-is outside this feature; its outputs must remain unaffected by feed changes.
+and restores requested/committed factors to unity with feed permission enabled.
+M2/M30 reset factors and both permissions in queue order when program end executes;
+job kill clears them immediately and invalidates private plans. Both disable the
+byte opt-in. The event opt-in survives job end/kill, so the host can see the reset.
+Feedhold and flush invalidate pending plans but retain the operator request;
+a change during hold is accepted and considered after resume. Neither resumes motion.
+
+M48 enables program permission, M49 disables it, and M50 defaults to P1 (enable);
+M50 P0 disables it. Other P values fail before executing any part of the line.
+These commands execute in queue order. Program permission is independent of
+`rt.mfe`, the operator enable: effective `mfe` is true only when both permit feed
+override. A live request or byte knob cannot bypass M49. Permission changes retain
+the requested factor. M2/M30 restore both permissions, following the
+[LinuxCNC program-end rule](https://www.linuxcnc.org/docs/html/gcode/m-code.html).
+
+Spindle and rapid override are outside this feature. Spindle factor/enable writes
+are refused; their factors stay unity. Opted-in spindle/rapid bytes are consumed
+as unsupported, never interpreted as feed changes. No output is changed by a
+feed override command.

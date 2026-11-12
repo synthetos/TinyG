@@ -1,3 +1,4 @@
+#include "motion_profile.h"
 /*
  * plan_exec.c - execution function for acceleration managed lines
  * This file is part of the TinyG project
@@ -90,18 +91,30 @@ stat_t mp_override_callback(void)
 {
     ovSnapshot_t request;
     ov_snapshot(&request);
-    uint16_t factor = (request.enables & OV_FEED) ? request.feed : OV_FACTOR_ONE;
+    uint16_t factor = ((request.enables & OV_FEED) && request.program_feed) ? request.feed : OV_FACTOR_ONE;
     float length, feed, jerk, base, segments, tail;
     {
         BODY_LOCK;
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_begin();
+#endif
+
         if ((ov_applied_valid && ov_applied_request == request.request) ||
             !_override_body_eligible() || mr.segment_count <= OV_BODY_LEAD + 1) {
-            BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
             return STAT_NOOP;
         }
         if (ov_body.ready && ov_body.ticket.request == request.request &&
             ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
-            BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
             return STAT_NOOP;
         }
         ov_body.ready = false;
@@ -109,7 +122,11 @@ stat_t mp_override_callback(void)
         if (!ov_applied_valid && factor == OV_FACTOR_ONE) {
             ov_applied_valid = true;
             ov_applied_request = request.request;
-            BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
             return STAT_NOOP;
         }
         ovBoundary_t *b = &ov_body.ticket.boundary;
@@ -137,7 +154,11 @@ stat_t mp_override_callback(void)
         ov_body.plan.exit = mr.exit_velocity;
         // Capture the request/cancellation generation in the same critical section.
         ov_ticket_stamp(&ov_body.ticket, ov_segment_ordinal);
-        BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
     }
     float segment_length = ov_body.ticket.boundary.velocity * ov_body.segment_time;
     float distance = base + segment_length * (segments - ov_body.remaining);
@@ -164,6 +185,10 @@ stat_t mp_override_callback(void)
     // Revalidate after all floating-point planning, before publishing a single ready byte.
     {
         BODY_LOCK;
+#if TINYG_MOTION_PROFILE == 4
+    motion_profile_begin();
+#endif
+
         if (_override_body_eligible() && ov_body.ticket.request == request.request &&
             ov_body.ticket.boundary.incarnation == ov_block_generation &&
             ov_body.ticket.boundary.slot == (uint8_t)(mb.r - mb.bf) &&
@@ -172,7 +197,11 @@ stat_t mp_override_callback(void)
             __asm__ __volatile__("" ::: "memory");
             ov_body.ready = true;
         }
-        BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 4
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
     }
     return STAT_OK;
 }
@@ -180,8 +209,20 @@ stat_t mp_override_callback(void)
 static bool _override_take_body(void)
 {
     BODY_LOCK;
-    if (!ov_body.ready) { BODY_UNLOCK; return false; }
-    if ((int32_t)(ov_body.ticket.boundary.ordinal - ov_segment_ordinal) > 0) { BODY_UNLOCK; return false; }
+#if TINYG_MOTION_PROFILE == 5
+    motion_profile_begin();
+#endif
+
+    if (!ov_body.ready) {
+#if TINYG_MOTION_PROFILE == 5
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK; return false; }
+    if ((int32_t)(ov_body.ticket.boundary.ordinal - ov_segment_ordinal) > 0) {
+#if TINYG_MOTION_PROFILE == 5
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK; return false; }
     ov_body.ready = false;
     __asm__ __volatile__("" ::: "memory");
     if (!_override_body_eligible() || ov_body.ticket.boundary.ordinal != ov_segment_ordinal ||
@@ -191,7 +232,11 @@ static bool _override_take_body(void)
         mr.cruise_velocity != ov_body.ticket.boundary.velocity || mr.exit_velocity != ov_body.plan.exit ||
         memcmp(mr.position, ov_body.ticket.boundary.position, sizeof(mr.position)) ||
         memcmp(mr.target, ov_body.target, sizeof(mr.target)) ||
-        !ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) { BODY_UNLOCK; return false; }
+        !ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
+#if TINYG_MOTION_PROFILE == 5
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK; return false; }
     mr.head_length = ov_body.plan.head;
     mr.body_length = ov_body.plan.body;
     mr.tail_length = ov_body.plan.tail;
@@ -208,7 +253,11 @@ static bool _override_take_body(void)
     ov_commit_feed(ov_body.plan.factor_q1000, ov_body.plan.capped);
     ov_applied_request = ov_body.ticket.request;
     ov_applied_valid = true;
-    BODY_UNLOCK;
+
+#if TINYG_MOTION_PROFILE == 5
+    motion_profile_end(mr.section);
+#endif
+ BODY_UNLOCK;
     return true;
 }
 

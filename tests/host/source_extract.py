@@ -46,6 +46,7 @@ OVERRIDE_STUBS = r'''
 #include <stdbool.h>
 static inline __attribute__((unused)) void ov_init(void) {}
 static inline __attribute__((unused)) void ov_cancel(void) {}
+static inline __attribute__((unused)) void ov_reset_job(void) {}
 static inline __attribute__((unused)) bool _usb_override_byte(uint8_t c,uint8_t status) {(void)c;(void)status;return false;}
 #endif
 '''

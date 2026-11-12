@@ -43,13 +43,23 @@ static stat_t _execute_gcode_block(void) { executions++; return STAT_OK; }
         code += '\n'.join(definitions)
         code += r'''
 int main(void) {
-    const char *commands[]={"M48","M49","M50","M50P0","M50P1","M50.1P0.5",
-        "M50.2P0.5","M50.3P0.5","M51","M51P0","M51P1","M51.1P0.5","F600M50S1000"};
+    const char *commands[]={"M50.1P0.5",
+        "M50.2P0.5","M50.3P0.5","M51","M51P0","M51P1","M51.1P0.5"};
     for(unsigned i=0;i<sizeof(commands)/sizeof(commands[0]);i++) {
         memset(&cm,0,sizeof(cm)); executions=0; alarms=0;
         char line[40]; strcpy(line,commands[i]);
         assert(_parse_gcode_block(line)==STAT_MCODE_COMMAND_UNSUPPORTED);
         assert(executions==0 && alarms==0);
+    }
+    const char *bad_p[]={"M50P2","M50P-1","M50P0.5","F600M50P99S1000"};
+    for(unsigned i=0;i<sizeof(bad_p)/sizeof(bad_p[0]);i++) {
+        memset(&cm,0,sizeof(cm)); executions=0; char line[40]; strcpy(line,bad_p[i]);
+        assert(_parse_gcode_block(line)==STAT_P_WORD_IS_INVALID && executions==0);
+    }
+    const char *conflicts[]={"M48M49","M49M50P1","M50M48"};
+    for(unsigned i=0;i<sizeof(conflicts)/sizeof(conflicts[0]);i++) {
+        memset(&cm,0,sizeof(cm)); executions=0; char line[40]; strcpy(line,conflicts[i]);
+        assert(_parse_gcode_block(line)==STAT_GCODE_MODAL_GROUP_VIOLATION && executions==0);
     }
     /* an E after a value is a word, not an exponent (E159) */
     const char *exponents[]={"G1X10E5","G1X1E-3F100","G0X0.001E3","G1X1F1E2","M3E0"};
@@ -71,7 +81,7 @@ int main(void) {
         if(_parse_gcode_block(line)!=STAT_MCODE_COMMAND_UNSUPPORTED) { fprintf(stderr,"%s\n",m_rejected[i]); assert(0); }
         assert(executions==0);
     }
-    const char *accepted[]={"G92.1","G92.10","G92.100","G28.1","G28.10","G61.1","G61.10","G90.1","G91.1","G59","G59.0","G28.3X0"};
+    const char *accepted[]={"M48","M49","M50","M50P0","M50P1","G92.1","G92.10","G92.100","G28.1","G28.10","G61.1","G61.10","G90.1","G91.1","G59","G59.0","G28.3X0"};
     for(unsigned i=0;i<sizeof(accepted)/sizeof(accepted[0]);i++) {
         memset(&cm,0,sizeof(cm)); executions=0; char line[40]; strcpy(line,accepted[i]);
         if(_parse_gcode_block(line)!=STAT_OK) { fprintf(stderr,"%s\n",accepted[i]); assert(0); }

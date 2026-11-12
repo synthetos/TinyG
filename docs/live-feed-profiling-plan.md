@@ -48,3 +48,32 @@ Keep motion/exec/interrupt optimization unchanged. Measure again after the
 motion-only hold branch is integrated; do not assume the removal yields savings,
 since it also adds migration code. If either final image does not fit, it is not
 READY. Re-run the 100% performance comparison on the final integrated image.
+
+## Building and reading the counters
+
+Build one site at a time with `make -C firmware/tinyg MOTION_PROFILE=N`:
+
+| N | Timed body |
+|---|---|
+| 1 | AVR exec ISR, including higher-priority preemption |
+| 2 | AVR DDA ISR, ordinary and terminal/load paths |
+| 3 | Main-loop future-boundary snapshot under the interrupt guard |
+| 4 | Main-loop ready-byte validation/publication under the interrupt guard |
+| 5 | Exec's boundary validation and plan acceptance under the interrupt guard |
+
+The images are in `build-profileN`. They cannot be combined with `TEST_HOOKS`.
+The ELF symbol `motion_profile` contains `calls`, `overflows`, `maximum_ticks`,
+`site`, and `section_at_maximum` (the motion section at the end of that sample). Read it after stopping through an ICE with working OCD access.
+At 32 MHz each tick is 0.25 us. Any nonzero overflow count invalidates the bound;
+the maximum saturates at 65535 rather than showing a wrapped short measurement.
+Board reset clears the record. Each image instruments only one site, so a
+preempting interrupt cannot restart another site's counter.
+
+The count excludes ISR prologue/epilogue and the timer setup / record accounting
+instructions. In particular, sites 3–5 keep interrupts masked while recording:
+add the worst-case cycles of those excluded instructions from that ELF's
+disassembly when assessing the actual profiling image's masked interval. Do not
+report the timer count alone as the full interrupt latency or masked interval.
+The record itself adds 12 bytes of RAM only in the profiling image. The normal
+and hooks images compile out all instrumentation. Match the baseline's compiler,
+link relaxation and site bracket before comparing it with these measurements.

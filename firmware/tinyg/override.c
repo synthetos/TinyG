@@ -19,8 +19,29 @@ void ov_init(void)
     OV_LOCK;
     memset((void *)&ov,0,sizeof(ov));
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
+    ov.enables=OV_FEED;ov.program_feed=true;
     ov.revision=1;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
+    OV_UNLOCK;
+}
+/* Ordered program permission is independent of the operator request. */
+void ov_set_program_feed(bool enable)
+{
+    OV_LOCK;
+    if(ov.program_feed!=enable) {
+        ov.program_feed=enable;ov.request++;ov.revision++;
+    }
+    OV_UNLOCK;
+}
+/* Preserve generation monotonicity so an old private plan cannot survive a job. */
+void ov_reset_job(void)
+{
+    OV_LOCK;
+    ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
+    ov.enables=OV_FEED;ov.program_feed=true;ov.armed=0;ov.capped=0;
+    ov.unsupported=0;ov.state=OV_CANCELLED;
+    ov.request++;ov.revision++;cancel_epoch++;
+    utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
 void ov_snapshot(ovSnapshot_t *out)
@@ -38,7 +59,7 @@ static void _set(uint8_t which,uint16_t factor,uint8_t enables)
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted)
 {
     if ((which!=OV_FEED && which!=OV_SPINDLE) || !isfinite(factor) || factor<0.05f || factor>2.0f) return OV_RANGE;
-    if (!permitted) return OV_DENIED;
+    if (!permitted || which==OV_SPINDLE) return OV_DENIED;
     uint16_t q=(uint16_t)(factor*1000.0f+0.5f); /* float work stays outside the interrupt guard */
     if (apply) {OV_LOCK;_set(which,q,ov.enables);OV_UNLOCK;}
     return OV_OK;
@@ -46,7 +67,7 @@ uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted)
 uint8_t ov_set_enable(uint8_t which,bool enable,bool apply,bool permitted)
 {
     if (which!=OV_FEED && which!=OV_SPINDLE) return OV_RANGE;
-    if (!permitted) return OV_DENIED;
+    if (!permitted || which==OV_SPINDLE) return OV_DENIED;
     if (apply) {
         OV_LOCK;
         uint8_t enables=enable?(ov.enables|which):(ov.enables&~which);
@@ -95,16 +116,15 @@ bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame)
     if (!ov.armed) return false;
     if (!good_frame) {utf_remaining=0;return false;}
     if (_utf_data(c)) return false;
-    if (c>=0x95 && c<=0x97) {
+    if ((c>=0x95 && c<=0x97) || (c>=0x99 && c<=0x9D)) {
         if (permitted) {
             if (ov.unsupported!=255) ov.unsupported++;
             ov.state=OV_UNSUPPORTED;
         }
-        return true; /* Rapid overrides are explicitly unsupported, never aliases for feed. */
+        return true; /* Rapid and spindle knobs are unsupported, never aliases for feed. */
     }
     uint8_t which,command;
     if(c>=0x90 && c<=0x94){which=OV_FEED;command=c-0x90;}
-    else if(c>=0x99 && c<=0x9D){which=OV_SPINDLE;command=c-0x99;}
     else return false;
     if (!permitted) return true;
     OV_LOCK;

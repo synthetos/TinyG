@@ -860,7 +860,7 @@ static stat_t _ov_enable(nvObj_t *nv,uint8_t which)
 }
 stat_t rt_set_mfe(nvObj_t *nv){return _ov_enable(nv,OV_FEED);}
 stat_t rt_set_sse(nvObj_t *nv){return _ov_enable(nv,OV_SPINDLE);}
-stat_t rt_get_mfe(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_FEED);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t rt_get_mfe(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=((s.enables&OV_FEED) && s.program_feed);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 stat_t rt_get_sse(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_SPINDLE);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 stat_t rt_get_ovb(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.armed;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 stat_t rt_set_ovb(nvObj_t *nv)
@@ -910,7 +910,7 @@ stat_t rt_override_callback(void)
     char frame[112];
     snprintf_P(frame,sizeof(frame),PSTR("{\"ov\":{\"v\":1,\"q\":%lu,\"mfo\":%.3f,\"mfc\":%.3f,\"mfe\":%u,\"capped\":%s}}\n"),
         (unsigned long)s.revision,(double)(s.feed/1000.0f),(double)(s.committed_feed/1000.0f),
-        (unsigned)!!(s.enables&OV_FEED),s.capped?"true":"false");
+        (unsigned)((s.enables&OV_FEED) && s.program_feed),s.capped?"true":"false");
     if(xio_usb_try_send_frame(frame)) {
         rt.ov_revision=s.revision;rt.ov_ask=false;
         rt.ov_sent_at=now;

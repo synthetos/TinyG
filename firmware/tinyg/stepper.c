@@ -1,3 +1,4 @@
+#include "motion_profile.h"
 /*
  * stepper.c - stepper motor controls
  * This file is part of the TinyG project
@@ -681,6 +682,10 @@ stat_t st_motor_power_callback() 	// called by controller
  */
 ISR(TIMER_DDA_ISR_vect)
 {
+#if TINYG_MOTION_PROFILE == 2
+       motion_profile_begin();
+#endif
+
 	if ((st_run.mot[MOTOR_1].substep_accumulator += st_run.mot[MOTOR_1].substep_increment) > 0) {
 		PORT_MOTOR_1_VPORT.OUT |= STEP_BIT_bm;		// turn step bit on
 		st_run.mot[MOTOR_1].substep_accumulator -= st_run.dda_ticks_X_substeps;
@@ -708,7 +713,11 @@ ISR(TIMER_DDA_ISR_vect)
 	PORT_MOTOR_3_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 3 uSec
 	PORT_MOTOR_4_VPORT.OUT &= ~STEP_BIT_bm;				// ~ 2 uSec
 
-	if (--st_run.dda_ticks_downcount != 0) return;
+	if (--st_run.dda_ticks_downcount != 0) {
+#if TINYG_MOTION_PROFILE == 2
+       motion_profile_end(mr.section);
+#endif
+return; }
 #ifdef TINYG_TEST_HOOKS
     bool observed_terminal = false;
     // PENDING is set when the last braking segment is PREPARED, not when it has loaded.
@@ -733,6 +742,10 @@ ISR(TIMER_DDA_ISR_vect)
 #endif
 	TIMER_DDA.INTFLAGS = TC0_OVFIF_bm;             // discard an overflow latched before clock-off
 	_load_move();										// load the next move
+
+#if TINYG_MOTION_PROFILE == 2
+       motion_profile_end(mr.section);
+#endif
 }
 #endif // __AVR
 
@@ -844,7 +857,11 @@ void st_request_exec_move()
 	}
 }
 
-ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
+ISR(TIMER_EXEC_ISR_vect) {
+#if TINYG_MOTION_PROFILE == 1
+       motion_profile_begin();
+#endif
+								// exec move SW interrupt
 	TIMER_EXEC.CTRLA = EXEC_TIMER_DISABLE;				// disable SW interrupt timer
 
 	// exec_move
@@ -855,6 +872,10 @@ ISR(TIMER_EXEC_ISR_vect) {								// exec move SW interrupt
 		}
 		cm_position_changed();							// the runtime position moved (E166)
 	}
+
+#if TINYG_MOTION_PROFILE == 1
+       motion_profile_end(mr.section);
+#endif
 }
 #endif // __AVR
 

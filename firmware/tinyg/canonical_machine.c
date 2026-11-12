@@ -1855,22 +1855,21 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
  *	See http://www.linuxcnc.org/docs/2.4/html/gcode_main.html#sec:M50:-Feed-Override
  */
 
-stat_t cm_override_enables(uint8_t flag)			// M48, M49
+/* Executed in queue order, never at parse time ahead of earlier motion. */
+static void _exec_feed_permission(float *value, bool *flags)
 {
-	cm.gmx.feed_rate_override_enable = flag;
-	cm.gmx.traverse_override_enable = flag;
-	cm.gmx.spindle_override_enable = flag;
-	return (STAT_OK);
+    ov_set_program_feed(value[0] != 0);
 }
-
-stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
+stat_t cm_override_enables(uint8_t flag)
 {
-	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
-		cm.gmx.feed_rate_override_enable = false;
-	} else {
-		cm.gmx.feed_rate_override_enable = true;
-	}
-	return (STAT_OK);
+    float value[AXES] = {0};
+    value[0] = flag;
+    mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    return STAT_OK;
+}
+stat_t cm_feed_rate_override_enable(uint8_t flag)
+{
+    return cm_override_enables(!cm.gf.parameter || cm.gn.parameter != 0);
 }
 
 stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
@@ -1985,7 +1984,7 @@ void cm_message(char *message)
  */
 void cm_request_job_kill(void)
 {
-    ov_cancel();
+    ov_reset_job();
     rt_qt_invalidate();
     rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
@@ -2619,6 +2618,7 @@ void cm_program_end()
  */
 static void _exec_program_end(float *value, bool *flags)
 {
+    ov_reset_job();
 	uint8_t coord_system = (uint8_t)value[1];
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {

@@ -52,7 +52,7 @@ int main(void){
  send(0xE2);send(0x80);send('!');send(0x9C); /* a hold invalidates tickets, not UTF-8 continuation */
  ov_snapshot(&s);assert(s.spindle==1000&&USBu.rx_buf_count==3);
  send('\n');unsigned kept=USBu.rx_buf_count;
- send(0x9C);ov_snapshot(&s);assert(s.spindle==1010&&USBu.rx_buf_count==kept);
+ send(0x9C);ov_snapshot(&s);assert(s.spindle==1000&&USBu.rx_buf_count==kept);
  send('G');send('1');send('\n');assert(USBu.rx_buf_count==kept+3);
  return 0;
 }
