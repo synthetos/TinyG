@@ -1,0 +1,18 @@
+{
+  "commit": "c50241864d7a42f36b8adff4e44a46c907720ecc",
+  "file": "firmware/tinyg/config_app.c",
+  "sha256": "442eacee4ae0e1ab92a578565097cee08ad0683750ddb6351bdd0d845386483f",
+  "fb": 449.01,
+  "tokens": {
+    "bjd": {
+      "precision": 0,
+      "line": 318,
+      "row": "{ \"b\",\"bjd\",_fip,  0, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_B].junction_dev,\tB_JUNCTION_DEVIATION },"
+    },
+    "cjd": {
+      "precision": 0,
+      "line": 337,
+      "row": "{ \"c\",\"cjd\",_fip,  0, cm_print_jd, get_flt,   set_flt,   (uint32_t *)&cm.a[AXIS_C].junction_dev,\tC_JUNCTION_DEVIATION },"
+    }
+  }
+}

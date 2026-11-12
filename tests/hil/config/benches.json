@@ -1,9 +1,17 @@
 {
- "description": "Which instruments are wired to which board, keyed by the board's serial port. An Atmel-ICE is opened only by serial number: with two attached, 'the first one' can be the other bench's.",
+ "description": "Which instruments are wired to which board, keyed by the board's serial port. An Atmel-ICE is opened only by serial number: with two attached, 'the first one' can be the other bench's. never_open lists ports that are never a switchbox (tinyg_hil.switchbox refuses them and every bench port).",
+ "never_open": [
+  "/dev/cu.usbserial-OTHER"
+ ],
+ "switchbox": {
+  "port": "/dev/cu.usbserial-SWITCHBOX",
+  "note": "The ESP8266 switchbox when it is not wired to a bench: used only by runs without --port. A bench it is wired to gets its own \"switchbox\": {\"port\": ...} entry instead."
+ },
  "/dev/cu.usbserial-BENCH1": {
   "name": "bench-1",
   "ice_serial": "ICE-BENCH1",
-  "saleae": null
+  "saleae": null,
+  "switchbox": null
  },
  "/dev/cu.usbserial-BENCH2": {
   "name": "bench-2",
@@ -21,6 +29,7 @@
   "saleae_faulty_channels": [
    1
   ],
-  "saleae_note": "ch1 faulty (lead-swap confirmed 2026-10-30). M1 on ch6 (step)/ch7 (dir); ch0 = X-min switch (confirmed by the bench owner 2026-10-31); ch1 unused; M4 not monitored."
+  "saleae_note": "ch1 faulty (lead-swap confirmed 2026-10-30). M1 on ch6 (step)/ch7 (dir); ch0 = X-min switch (confirmed by the bench owner 2026-10-31); ch1 unused; M4 not monitored.",
+  "switchbox": null
  }
 }

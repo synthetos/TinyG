@@ -44,6 +44,11 @@ class RunRecorder:
         self.meta["purpose"] = purpose or ("stock-baseline" if self.meta["firmware"].get("stock") else "fix-verify")
         self._write_meta()
 
+    def instrument(self, name, info):
+        """Identity of an extra instrument used in this run (e.g. the switchbox), stored in run.json."""
+        self.meta.setdefault("instruments", {})[name] = info
+        self._write_meta()
+
     def begin(self, nodeid, tg, bugs, markers):
         rec = {"nodeid": nodeid, "bugs": bugs, "markers": markers, "phases": {},
                "history_start": len(tg.transport.history), "sent_start": len(tg.transport.sent),

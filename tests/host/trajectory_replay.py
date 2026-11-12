@@ -33,13 +33,16 @@ def build(root, out, extra_patch=None):
                             '(int)mb.r->nx->buffer_state,(int)mb.r->nx->block_type,(double)mb.r->nx->entry_vmax,'
                             '(double)mb.r->nx->braking_velocity,(unsigned)(mb.r->fl_tags|fl_profile_tags(mb.r->naiive_move_time,'
                             'mb.r->cruise_velocity,mb.r->cruise_vmax)));', 1)
+    if not (Path(root) / 'firmware/tinyg/feedlimit.h').exists():
+        engine = engine.replace('mb.r->fl_tags|fl_profile_tags(mb.r->naiive_move_time,mb.r->cruise_velocity,mb.r->cruise_vmax)', '0')
     (out / "step_engine.c").write_text(engine)
     # The planner holds a lone first move for PLANNER_STARTUP_MS waiting for lookahead; the host clock never
     # advances, so release it as the firmware's own callback would once the time has passed.
     driver = (out / "driver.c").read_text()
     old = "static void finish(void)\n{\n"
     assert driver.count(old) == 1, "finish() not found"
-    driver = driver.replace(old, old + "    rtc.sys_ticks += 1024; mp_startup_callback();\n")
+    if 'mp_startup_callback' in (Path(root) / 'firmware/tinyg/planner.h').read_text():
+        driver = driver.replace(old, old + "    rtc.sys_ticks += 1024; mp_startup_callback();\n")
     # The arc generator queues a chord only with PLANNER_BUFFER_HEADROOM buffers free; drain to that, not just
     # to the replay's batch level, or a long arc waits forever.
     arc = "        while (arc.run_state != BLOCK_IDLE && cm_is_alarmed() == STAT_OK) {\n            room();\n"
@@ -73,9 +76,14 @@ def run(exe, gcode, batch=28, timeout=60):
     p = subprocess.run([str(exe), str(batch)], input=gcode.encode(), capture_output=True, timeout=timeout)
     if p.returncode:
         raise RuntimeError(p.stderr.decode()[-2000:])
+    if 'EXCEPTION' in p.stderr.decode():
+        raise RuntimeError(p.stderr.decode()[-2000:])
     segs, steps = [], []
     for line in p.stdout.decode().splitlines():
         f = line.split()
+        if f and (f[0] in ('STATE', 'ARC_STATUS', 'EXEC', 'STUCK', 'BAD') or
+                  (f[0] in ('LINE', 'JSON', 'TEXT') and int(f[2]) not in (0, 3))):
+            raise RuntimeError('replay rejected program: ' + line)
         if f and f[0] == "SEG":
             segs.append((float(f[1]), [float(x) for x in f[2:6]], float(f[6]), float(f[7]), int(f[8]), int(f[9])))
         elif f and f[0] == "STEPS":

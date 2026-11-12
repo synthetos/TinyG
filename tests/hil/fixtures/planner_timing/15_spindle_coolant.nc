@@ -1,0 +1,15 @@
+(S, M3/M5 and M8/M9 between moves: command boundaries)
+G21 G90 G94 G17 G64
+G92 X0 Y0 Z0
+M3 S8000
+G1 X10 F1500
+S9000
+G1 X20
+M8
+G1 X30
+S10000
+M9
+G1 X40
+M5
+G1 X0
+M2

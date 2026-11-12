@@ -14,6 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 evidence = ["matplotlib>=3.8"]
+mso = ["numpy>=1.26"]               # MSO capture analysis (tinyg_hil.mso_worker, bench 3 diagnostics)
 
 [tool.uv]
 package = false
@@ -23,13 +24,13 @@ testpaths = ["tests"]
 timeout = 120
 addopts = "-ra"
 markers = [
-    "timing: timing assertions need external capture before final validation",
     "hardware: needs a TinyG on --port (applied automatically to tests using the tg fixture)",
     "motion: moves axes; skipped unless --allow-motion",
     "resets_board: resets the board (^X)",
     "persists: writes EEPROM; the session restores settings afterwards",
     "destructive: flashing or $defa; skipped unless --allow-destructive",
     "ice: needs the Atmel-ICE on the PDI header; skipped unless --ice",
+    "switchbox: needs the ESP8266 switchbox (synthetos/tinyg-switchbox); skipped unless --switchbox",
     "timing: timing-pending until independently confirmed by external capture",
     "diagnostic: investigation test that records observations; skipped unless --diagnostics",
     "streaming: streams whole G-code files with each flow-control mode; skipped unless --streaming",

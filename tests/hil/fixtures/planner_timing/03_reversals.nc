@@ -1,0 +1,12 @@
+(back-to-back reversals on X: exact-stop at each reversal)
+G21 G90 G94 G17 G64
+G92 X0 Y0 Z0
+G1 X30 F1500
+G1 X0 F1500
+G1 X30 F1500
+G1 X0 F1500
+G1 X30 F1500
+G1 X0 F1500
+G1 X30 F1500
+G1 X0 F1500
+M2

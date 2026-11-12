@@ -20,6 +20,7 @@ tens of ms). A short pre-roll inside the block is still wise.
 import json
 import os
 import pathlib
+import signal
 import subprocess
 import tempfile
 import time
@@ -30,8 +31,45 @@ EXCLUSIVE_HINT = ("the MSO is held by another program; start Logic 2 with SALEAE
                   "(~/.config/tinyg-hil/start-logic2.sh)")
 
 
+ABORT_TIMEOUT = 5.0
+
+
 class MsoError(RuntimeError):
     pass
+
+
+def _stop_owned_worker(proc):
+    """Stop only the session we launched, including its recorder child; reap worker."""
+    if proc is None:return
+    def send(sig):
+        try:os.killpg(proc.pid,sig)
+        except ProcessLookupError:pass
+        except PermissionError:
+            # macOS can report EPERM for a group whose leader has already exited.
+            # Never suppress a permission failure while our worker is still alive.
+            if proc.poll() is None:raise
+    send(signal.SIGTERM)
+    try:
+        proc.wait(timeout=ABORT_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        pass
+    finally:
+        # Even an exited wrapper can leave a recorder child in its session.
+        send(signal.SIGKILL)
+    proc.communicate(timeout=10)
+    # Reaping the wrapper alone is insufficient: wait for the recorder's group
+    # to disappear before a following capture can try to acquire the instrument.
+    deadline=time.monotonic()+5
+    while True:
+        try:os.killpg(proc.pid,0)
+        except ProcessLookupError:break
+        except PermissionError:
+            if proc.poll() is not None:break
+            raise
+        if time.monotonic()>=deadline:
+            raise MsoError('MSO recorder group did not exit after termination')
+        time.sleep(.01)
+
 
 
 def _lookup(mapping, wanted):
@@ -63,20 +101,28 @@ class _Server:
 
     @classmethod
     def get(cls, wheel, cfg=None):
-        if cls.proc is None or cls.proc.poll() is not None:
+        if cls.proc is not None and cls.proc.poll() is not None:
+            cls.stop()  # an exited wrapper can still own a live recorder descendant
+        if cls.proc is None:
             import atexit
             cmd = worker_command(wheel, "--serve")
             cls.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                        text=True, bufsize=1)
+                                        text=True, bufsize=1, start_new_session=True)
             atexit.register(cls.stop)
-            end = time.monotonic() + 120
-            while time.monotonic() < end:
-                line = cls.proc.stdout.readline()
-                if not line:
-                    raise MsoError("MSO server exited before READY")
-                if line.startswith("READY"):
-                    break
-            cls._warm_up(cfg or {})
+            try:
+                end = time.monotonic() + 120
+                while time.monotonic() < end:
+                    line = cls.proc.stdout.readline()
+                    if not line:
+                        raise MsoError("MSO server exited before READY")
+                    if line.startswith("READY"):
+                        break
+                else:
+                    raise MsoError("MSO server did not become READY")
+                cls._warm_up(cfg or {})
+            except BaseException:
+                cls.stop()
+                raise
         return cls.proc
 
     @classmethod
@@ -105,13 +151,9 @@ class _Server:
 
     @classmethod
     def stop(cls):
-        if cls.proc is not None and cls.proc.poll() is None:
-            try:
-                cls.proc.stdin.close()
-                cls.proc.wait(timeout=10)
-            except Exception:  # noqa: BLE001
-                cls.proc.kill()
-        cls.proc = None
+        proc=cls.proc
+        cls.proc=None
+        _stop_owned_worker(proc)
 
 
 def _persistent():
@@ -150,9 +192,13 @@ class Capture:
                "pwm_threshold": self.pwm_threshold, "out": str(out)}
         self._seen = []
         if _persistent():
-            return self._enter_server(req)
+            try:
+                return self._enter_server(req)
+            except BaseException:
+                self.abort()
+                raise
         self.proc = subprocess.Popen(worker_command(self.cfg.get("wheel", DEFAULT_WHEEL), json.dumps(req)),
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
         end = time.monotonic() + self.arm_timeout
         while time.monotonic() < end:
             line = self.proc.stdout.readline()
@@ -192,6 +238,7 @@ class Capture:
         self._fail("did not start recording" if self.armed_wall else "did not arm")
 
     def _fail(self, what):
+        self.abort()
         rest = ""
         if self.proc is not None:
             try:
@@ -204,6 +251,12 @@ class Capture:
         raise MsoError(f"MSO worker {what}{': ' + hint if hint else ''}\n{rest[-1500:]}")
 
     def finish(self):
+        try:return self._finish()
+        except BaseException:
+            self.abort()
+            raise
+
+    def _finish(self):
         if self.result is None and getattr(self, "server", None) is not None:
             end = time.monotonic() + self.seconds + 120
             while time.monotonic() < end:
@@ -233,14 +286,23 @@ class Capture:
             self.result = json.loads(self.out.read_text())
         return self.result
 
+    def abort(self):
+        server=getattr(self,'server',None)
+        if server is not None:
+            if _Server.proc is server:_Server.proc=None
+            _stop_owned_worker(server)
+            self.server=None
+        elif self.proc is not None:
+            _stop_owned_worker(self.proc)
+        if self._tmp is not None:self._tmp.cleanup()
+
     def __exit__(self, *exc):
-        if exc[0] is None:
-            self.finish()
-        elif self.proc is not None and self.proc.poll() is None:
-            self.proc.kill()
-            self.proc.communicate()
-        if self._tmp is not None and exc[0] is not None:
-            self._tmp.cleanup()
+        try:
+            if exc[0] is None:self.finish()
+            else:self.abort()
+        except BaseException:
+            self.abort()
+            raise
 
     def edges(self):
         """{bench name: [(t, level), ...]} for the digital channels (seconds from the capture start)."""
@@ -266,7 +328,8 @@ class Capture:
         return self.finish()["analog"][self._akey(name)]["pwm"]
 
     def _akey(self, name):
-        return next(k for k, v in self.anames.items() if v == name or k == name)
+        """An analog channel by its configured name, its key ("a2") or the bench file's channel number ("2")."""
+        return next(k for k, v in self.anames.items() if v == name or k == name or k == f"a{name}")
 
 
 def pwm_windows(y, rate, window=0.5, threshold=1.5):

@@ -1051,10 +1051,15 @@ dependencies = [
 evidence = [
     { name = "matplotlib" },
 ]
+mso = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "matplotlib", marker = "extra == 'evidence'", specifier = ">=3.8" },
+    { name = "numpy", marker = "extra == 'mso'", specifier = ">=1.26" },
     { name = "pyelftools", specifier = ">=0.31" },
     { name = "pymcuprog", specifier = ">=3.19" },
     { name = "pyserial", specifier = ">=3.5" },
@@ -1062,7 +1067,7 @@ requires-dist = [
     { name = "pytest-timeout", specifier = ">=2.3" },
     { name = "pyusb", specifier = ">=1.2" },
 ]
-provides-extras = ["evidence"]
+provides-extras = ["mso", "evidence"]
 
 [[package]]
 name = "tzdata"
