@@ -1067,7 +1067,7 @@ requires-dist = [
     { name = "pytest-timeout", specifier = ">=2.3" },
     { name = "pyusb", specifier = ">=1.2" },
 ]
-provides-extras = ["evidence", "mso"]
+provides-extras = ["mso", "evidence"]
 
 [[package]]
 name = "tzdata"

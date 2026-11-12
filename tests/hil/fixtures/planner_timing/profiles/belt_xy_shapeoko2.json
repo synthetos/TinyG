@@ -1,0 +1,6 @@
+{"name": "belt_xy_shapeoko2", "source": "firmware settings/settings_shapeoko2.h defaults: belt X/Y (40 mm/rev, dual Y), screw Z",
+ "axes": {"x": {"vm": 16000, "fr": 16000, "jm": 5000, "jd": 0.01}, "y": {"vm": 16000, "fr": 16000, "jm": 5000, "jd": 0.01},
+          "z": {"vm": 1000, "fr": 1000, "jm": 50, "jd": 0.01}, "a": {"vm": 3600, "fr": 3600, "jm": 20, "jd": 0.01}},
+ "ja": 2000000, "ct": 0.01,
+ "motors": [{"axis": "x", "steps_per_unit": 40}, {"axis": "y", "steps_per_unit": 40},
+            {"axis": "y", "steps_per_unit": 40}, {"axis": "z", "steps_per_unit": 755.9293}]}

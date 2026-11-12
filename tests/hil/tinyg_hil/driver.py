@@ -172,6 +172,13 @@ class TinyG:
                 raise NoResponse(f"no response to {sent!r} within {timeout}s; saw:\n  {tail}")
             if ev.kind == "response":
                 tagged = ev.data.get("tid")
+                # 449.01 echoes transaction metadata inside r. Keep the 450+
+                # top-level contract strict, and never override a top-level tid.
+                if ("tid" not in ev.data and self.dialect is not None and
+                        self.dialect.name == "d449" and
+                        449 <= float(self.identity.get("fb", 0)) < 450 and
+                        isinstance(ev.body, dict)):
+                    tagged = ev.body.get("tid")
                 keyed = keys is not None and isinstance(ev.body, dict) and all(k in ev.body for k in keys)
                 footer = Footer.from_event(ev)
                 # At ordinary verbosity gc itself is hidden, but (MSG ...) output is returned.

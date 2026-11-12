@@ -1,0 +1,6 @@
+{"name": "bench1", "source": "bench 1 saved settings (2U2971-SEX, 450.03, 2026-11-08)",
+ "axes": {"x": {"vm": 800, "fr": 800, "jm": 20, "jd": 0.05}, "y": {"vm": 800, "fr": 800, "jm": 20, "jd": 0.05},
+          "z": {"vm": 800, "fr": 800, "jm": 20, "jd": 0.05}, "a": {"vm": 3600, "fr": 3600, "jm": 20, "jd": 0.05}},
+ "ja": 100000, "ct": 0.01,
+ "motors": [{"axis": "x", "steps_per_unit": 1280}, {"axis": "y", "steps_per_unit": 1280},
+            {"axis": "z", "steps_per_unit": 1280}, {"axis": "a", "steps_per_unit": 4.444444}]}

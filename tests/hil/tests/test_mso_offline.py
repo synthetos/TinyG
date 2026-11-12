@@ -38,6 +38,9 @@ def test_capture_maps_bench_names_and_reads_edges(fake_worker, tmp_path):
     assert cap.edges() == {"M1 step": [(0.1, 1), (0.2, 0)], "M4 step": [(0.3, 0)]}
     assert cap.initial() == {"M1 step": 0, "M4 step": 1}
     rows = cap.pwm("spindle PWM")
+    for name in ("spindle PWM", "a0", "0", 0):
+        assert cap.pwm(name) == rows
+        assert cap.analog_path(name) == "unused.npy"
     assert all(abs(r["freq_hz"] - 100) < 0.5 and abs(r["duty"] - 0.2) < 0.01 for r in rows)
 
 
@@ -91,3 +94,52 @@ def test_worker_reads_the_start_time_from_the_device_log(capsys):
     mso_worker.watch_start(types.SimpleNamespace(last_stdout=log), threading.Event())
     want = datetime.datetime(2026, 11, 4, 20, 36, 43, 408633).timestamp()
     assert capsys.readouterr().out == f"STARTED {want!r}\n"
+
+
+@pytest.mark.parametrize('stubborn',[False,True])
+def test_failed_persistent_capture_releases_recorder_before_next_capture(tmp_path, monkeypatch, stubborn):
+    import fcntl
+    import textwrap
+    lock=tmp_path/'recorder.lock'
+    script=tmp_path/'server.py'
+    child="import fcntl,signal,sys,time; f=open(sys.argv[1],'w'); fcntl.flock(f,fcntl.LOCK_EX); " + ("signal.signal(signal.SIGTERM,signal.SIG_IGN); " if stubborn else "") + "print('locked',flush=True); time.sleep(500)"
+    script.write_text(textwrap.dedent('''
+        import json,sys,subprocess,signal
+        print('READY',flush=True)
+        for line in sys.stdin:
+            r=json.loads(line);i=r['id']
+            if i=='warmup':print('DONE warmup',flush=True);continue
+            child=subprocess.Popen([sys.executable,'-c',CHILD,LOCK],stdout=subprocess.PIPE,text=True)
+            assert child.stdout.readline().strip()=='locked'
+            if STUBBORN:signal.signal(signal.SIGTERM,signal.SIG_IGN)
+            print('ARMED '+i+' 1',flush=True);print('STARTED '+i+' 2',flush=True)
+            child.wait()
+    ''').replace('LOCK',repr(str(lock))).replace('STUBBORN',repr(stubborn)).replace('CHILD',repr(child)))
+    monkeypatch.setattr(mso,'_persistent',lambda:True)
+    monkeypatch.setattr(mso,'worker_command',lambda wheel,req:[sys.executable,str(script),req])
+    monkeypatch.setattr(mso,'ABORT_TIMEOUT',.1,raising=False)
+    monkeypatch.setattr(mso._Server,'proc',None)
+    proc=None
+    try:
+        with pytest.raises(RuntimeError,match='stream refused'):
+            with mso.Capture(BENCH,digital=['M1 step'],seconds=500,save_as=tmp_path/'cap') as cap:
+                proc=cap.server
+                raise RuntimeError('stream refused')
+        assert proc.poll() is not None
+        assert mso._Server.proc is None
+        with lock.open('a') as f:
+            fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        # A subsequent capture can arm immediately; abort it too without waiting 500 s.
+        with pytest.raises(RuntimeError,match='next stream'):
+            with mso.Capture(BENCH,digital=['M1 step'],seconds=500,save_as=tmp_path/'next'):
+                raise RuntimeError('next stream')
+    finally:
+        # Test-first cleanup touches only this test's descendants, never instruments.
+        if proc and proc.poll() is None:
+            import subprocess as sp
+            children=sp.check_output(['pgrep','-P',str(proc.pid)],text=True).split()
+            for pid in children:
+                try:os.kill(int(pid),9)
+                except ProcessLookupError:pass
+            proc.kill();proc.wait()
+        mso._Server.proc=None

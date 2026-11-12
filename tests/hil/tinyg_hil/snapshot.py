@@ -12,6 +12,14 @@ NEVER_WRITE = set(IDENTITY) | {"baud"}
 # and writing them stores the low 16 bits of the float (E140). The list is saved by name via "sr".
 INTERNAL = re.compile(r"^se\d\d$")
 # Communication settings change how the board answers, so they are written last, jv very last.
+USER_DATA = frozenset(f'ud{bank}{i}' for bank in 'abcd' for i in range(4))
+USER_DATA_REASON = 'opaque user data: current TYPE_DATA JSON restore is unsupported; not a motion setting'
+
+
+def not_restorable(values):
+    return [dict(token=k,value=values[k],reason=USER_DATA_REASON) for k in sorted(USER_DATA & values.keys())]
+
+
 COMM_ORDER = ["js", "ee", "ec", "ej", "ex", "rxm", "jv"]
 
 
@@ -64,15 +72,15 @@ def _typed(tg: TinyG, token: str, value):
     return value
 
 
-def restore(tg: TinyG, snap: dict) -> dict:
+def restore(tg: TinyG, snap: dict, *, readback_equal=None, force_tokens=()) -> dict:
     """Write back every snapshot value that differs on the board. Returns what changed/dropped/failed."""
     _units_mm(tg)
     tg.wait_idle()
-    result = {"changed": [], "dropped": [], "failed": []}
+    result = {"changed": [], "dropped": [], "failed": [], "not_restorable": not_restorable(snap["values"])}
     tokens = tg.dialect.tokens
     values = snap["values"]
     for token in [t for t in values if t not in COMM_ORDER]:
-        _restore_one(tg, token, values[token], result)
+        _restore_one(tg, token, values[token], result, readback_equal=readback_equal, force_tokens=force_tokens)
     if snap.get("sr"):
         current = tg.get("sr")
         if not isinstance(current, dict) or list(current) != snap["sr"]:
@@ -80,20 +88,20 @@ def restore(tg: TinyG, snap: dict) -> dict:
             result["changed"].append("sr")
     # jv is last in COMM_ORDER: it can make later responses terse, so nothing is read after it
     for token in [t for t in COMM_ORDER if t in values]:
-        _restore_one(tg, token, values[token], result)
+        _restore_one(tg, token, values[token], result, readback_equal=readback_equal, force_tokens=force_tokens)
     return result
 
 
-def _restore_one(tg: TinyG, token: str, value, result: dict):
+def _restore_one(tg: TinyG, token: str, value, result: dict, *, readback_equal=None, force_tokens=()):
     tokens = tg.dialect.tokens
-    if token in NEVER_WRITE or INTERNAL.match(token):
+    if token in NEVER_WRITE or INTERNAL.match(token) or token in USER_DATA:
         return
     if token not in tokens or not tokens[token]["persist"]:
         result["dropped"].append(token)
         return
     want = _typed(tg, token, value)
     try:
-        if tg.values_equal(token, tg.get(token), want):
+        if token not in force_tokens and tg.values_equal(token, tg.get(token), want):
             return
     except StatusError:
         pass
@@ -103,7 +111,7 @@ def _restore_one(tg: TinyG, token: str, value, result: dict):
         except StatusError as e:
             result["failed"].append((token, want, e.response.status))
             return
-        if token == "jv" or tg.values_equal(token, tg.get(token), want):
+        if token == "jv" or (readback_equal or tg.values_equal)(token, tg.get(token), want):
             result["changed"].append(token)
             return
     result["failed"].append((token, want, "readback mismatch"))

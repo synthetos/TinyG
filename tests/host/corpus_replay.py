@@ -57,13 +57,13 @@ def extract(fw, filename, name):
     return f'\n#line {line} "{fw / filename}"\n{definition}\n'
 
 
-def json_chain(fw):
+def json_chain(fw, support=None):
     """Use actual tokenization and setters with an explicitly limited table."""
     app = (fw / "config_app.c").read_text(encoding="latin1")
     rows = re.findall(r'\{\s*"[^"\n]*"\s*,\s*"[^"\n]*"[^\n{}]*\}', app)
     fields = {row.split(",")[1].strip().strip('"'): row[1:-1].split(",")
               for row in rows}
-    pre = (SUPPORT / "json_prelude.h").read_text()
+    pre = ((support or SUPPORT) / "json_prelude.h").read_text()
     for marker, token in (("@JA_SET@", "ja"), ("@VM_SET@", "xvm")):
         pre = pre.replace(marker, fields[token][6].strip())
     tokens = "static const char *firmware_tokens[] = {" + ",".join(
@@ -93,7 +93,12 @@ stat_t sr_run_text_status_report(void){return STAT_OK;}
 
 
 def build(source, output, cc="cc"):
+    source = Path(source).resolve()
     fw = source / "firmware/tinyg"
+    own = source / "tests/host/corpus_replay_support"
+    support = own if own.is_dir() else SUPPORT
+    sources = tuple(n for n in SOURCES if n not in ('runtime', 'feedlimit', 'override') or (fw / (n + '.c')).exists())
+    legacy = not (fw / 'runtime.c').exists()
     output.mkdir(parents=True, exist_ok=True)
     exe = output / "replay"
     exe.unlink(missing_ok=True)  # a failed build must never reuse an old executable
@@ -104,9 +109,20 @@ def build(source, output, cc="cc"):
         "typedef struct {unsigned char OUTSET,OUTCLR,OUT,IN;} PORT_t;\n"
         "typedef struct {int unused;} TC1_t;\n")
     for name in ("host_xio.h", "host_gpio.h", "driver.c"):
-        shutil.copyfile(SUPPORT / name, output / name)
-    for name in SOURCES:
+        shutil.copyfile(support / name, output / name)
+    if legacy:
+        from replay_legacy import prepare
+        prepare(output, fw)
+    else:
+        stub = output / 'feedlimit.h'
+        if stub.exists() and stub.read_text() == '/* 449 has no advisor. */\n':
+            stub.unlink()
+    for name in sources:
         code = (fw / (name + ".c")).read_text(encoding="latin1")
+        if legacy:
+            # Old command queue copies AXES arguments even for one-value callbacks.
+            # Pad unused slots for host sanitizers; do not change callback values or motion.
+            code = re.sub(r'float value\[\]\s*=', 'float value[AXES] =', code)
         code = code.replace('#include "xio.h"', '#include "host_xio.h"')
         code = code.replace('#include "gpio.h"', '#include "host_gpio.h"')
         (output / (name + ".c")).write_text(binary32(code))
@@ -125,7 +141,7 @@ def build(source, output, cc="cc"):
     motor = ('#include "tinyg.h"\n#include "config.h"\n'
              '#include "canonical_machine.h"\n#include "stepper.h"\n') + motor
     (output / "motor_time.c").write_text(binary32(motor))
-    (output / "json_chain.c").write_text(binary32(json_chain(fw)))
+    (output / "json_chain.c").write_text(binary32(json_chain(fw, support)) if not legacy else "")
     for path in fw.rglob("*.h"):
         dest = output / "headers" / path.relative_to(fw)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -142,7 +158,7 @@ def build(source, output, cc="cc"):
     else:
         args += ["-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections"]
     args += [str(output / (name + ".c")) for name in
-             (*SOURCES, "motor_time", "json_chain", "driver")]
+             (*sources, "motor_time", "json_chain", "driver")]
     args += ["-lm", "-o", str(exe)]
     result = subprocess.run(args, capture_output=True, text=True)
     (output / "build.log").write_text(result.stdout + result.stderr)

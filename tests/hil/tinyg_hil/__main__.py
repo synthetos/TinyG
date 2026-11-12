@@ -9,12 +9,14 @@ flash always takes a snapshot first (to --out) and, unless --no-restore, writes 
 afterwards, so a flash that changes fb (and therefore loads defaults) keeps the settings.
 """
 import argparse
+import os
 import json
 import pathlib
 import sys
 
 from . import flash as flasher
 from . import snapshot
+from . import perf_snapshot
 from .driver import TinyG
 from .lock import BoardLock
 
@@ -38,8 +40,19 @@ def main(argv=None):
     p.add_argument("--no-snapshot", action="store_true",
                    help="flash without reading settings first (board in PANIC); needs --restore FILE")
     p.add_argument("--no-restore", action="store_true")
+    p.add_argument("--perf-snapshot", default=os.environ.get("PERF_SNAPSHOT"),
+                   help="fixed A/B settings file: restore and verify after every flash")
     p.add_argument("--transcript", help="write a timestamped raw serial transcript here")
     args = p.parse_args(argv)
+
+    fixed = None
+    if args.command == 'flash' and (args.perf_snapshot or os.environ.get('FIRMWARE_TAG') in ('A','B')):
+        if not args.perf_snapshot:p.error('A/B flash requires --perf-snapshot or PERF_SNAPSHOT')
+        if args.no_restore:p.error('A/B flash cannot use --no-restore')
+        if args.restore and pathlib.Path(args.restore).resolve()!=pathlib.Path(args.perf_snapshot).resolve():
+            p.error('--restore and --perf-snapshot must name the same fixed file')
+        fixed, fixed_meta = perf_snapshot.load(args.perf_snapshot)
+        args.restore = args.perf_snapshot
 
     lock = BoardLock(args.port).acquire(f"tinyg_hil {args.command}", wait=600)
     tg = TinyG(args.port, transcript=open(args.transcript, "w") if args.transcript else None)
@@ -57,6 +70,9 @@ def main(argv=None):
     elif args.command == "restore":
         print(snapshot.restore(tg, snapshot.load(args.file)))
     elif args.command == "flash":
+        if fixed and fixed.get('identity',{}).get('id') not in (None,tg.identity.get('id')):
+            tg.close();lock.release()
+            p.error('fixed snapshot belongs to another board')
         expect = None
         hex_path = args.hex
         if args.build:
@@ -75,8 +91,15 @@ def main(argv=None):
         ident = flasher.flash(tg, hex_path, expect_fb=expect)
         print(f"flashed: {json.dumps(ident)} dialect {tg.dialect.name}")
         if not args.no_restore:
-            source = snapshot.load(args.restore) if args.restore else snap
-            print("restore:", snapshot.restore(tg, source))
+            source = fixed if fixed is not None else (snapshot.load(args.restore) if args.restore else snap)
+            if fixed is not None:
+                try:
+                    print('fixed restore:', perf_snapshot.restore_verified(tg, fixed))
+                    print('fixed snapshot:', json.dumps(fixed_meta))
+                except Exception:
+                    tg.close();lock.release();raise
+            else:
+                print("restore:", snapshot.restore(tg, source))
     tg.close()
     lock.release()
 

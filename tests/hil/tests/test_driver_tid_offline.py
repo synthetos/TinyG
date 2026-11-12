@@ -303,3 +303,61 @@ def test_gc_message_reply_without_gc_echo_keeps_tab_escape(monkeypatch):
     r = tg.send_json({"gc": "(msgA\tB)"}, allow="test")
     assert r.status == 0 and r.body == {"msg": "A\tB"}
     assert tg._next_tid == 1
+
+
+@pytest.mark.parametrize('fb,nested_ok',[(449.01,True),(450.04,False)])
+def test_nested_tid_only_for_legacy_449(fb,nested_ok):
+    from tinyg_hil.dialect import for_build
+    def answer(data):
+        tid=json.loads(data)['tid']
+        return [json.dumps({'r':{'js':1,'tid':tid+1},'f':[3,0,10]}),
+                json.dumps({'r':{'js':1,'tid':tid},'f':[3,0,10]})]
+    tg=driver(answer=answer);tg.identity={'fb':fb};tg.dialect=for_build(fb)
+    if nested_ok:
+        result=tg.send_line('{"js":1}',timeout=.01)
+        assert result.body['tid']==1 and len(result.events)==1
+    else:
+        with pytest.raises(NoResponse):tg.send_line('{"js":1}',timeout=.01)
+
+
+def test_449_session_start_snapshot_and_collector_probes(monkeypatch):
+    import time
+    from tinyg_hil import perf,snapshot
+    from tinyg_hil.safety import Guard
+    # Reuse the actual session baseline, so a new baseline SET is covered too.
+    import conftest
+    values={'fb':449.01,'fv':.97,'hp':1,'hv':8,'id':'old-board','stat':3,'rx':8,'qr':32,
+            'sr':{'stat':True,'posx':True},'js':1,'jv':4,'ee':0,'ec':0,'tv':1,'sv':1,'qv':0}
+    def answer(data):
+        text=data.decode().strip()
+        if text.startswith('$'):
+            key=text[1:];return [f'[{key}] setting {values[key]}','tinyg [mm] ok>']
+        if not text.startswith('{'):return [reply(),json.dumps({'sr':{'stat':3,'vel':0}})]
+        obj=json.loads(text);body={}
+        for key,value in obj.items():
+            if key=='tid':continue
+            if value is not None:values[key]=value
+            body[key]=values.get(key,1)
+        if 'tid' in obj:body['tid']=obj['tid'] #449.01 echo shape
+        return [json.dumps({'r':body,'f':[3,0,8]})]
+    tg=driver(answer=answer);tg.guard=Guard(allow_motion=True)
+    tg.transport.is_open=False
+    tg.transport.open=lambda:setattr(tg.transport,'is_open',True)
+    tg.transport.drain=lambda **kw:[]
+    assert tg.connect()['fb']==449.01
+    original={k:tg.get_text(k) for k in conftest.BASELINE}
+    assert original==conftest.BASELINE
+    monkeypatch.setattr(tg,'persist_pause',0)
+    for token,value in conftest.BASELINE.items():tg.set(token,value)
+    snap=snapshot.take(tg) # actual complete persisted-token session snapshot
+    assert snap['identity']['fb']==449.01 and snap['values']
+    assert perf.settings_snapshot(tg)['values']
+    # Collector uses real timestamps; no hardware or blocking serial involved.
+    old_write=tg.transport.write
+    def write(data,**kwargs):
+        old_write(data)
+        for ev in tg.transport.events:ev.t=time.monotonic()
+    tg.transport.write=write
+    result=perf.stream(tg,['G1 X1 F600','G1 X0'],2,probe_interval=.02)
+    assert result['completion']=='idle' and not result['errors'] and result['acked']==2
+    assert len(result['probes'])>2
