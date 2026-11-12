@@ -23,11 +23,14 @@ make room. The transition keeps axis velocity, motor pulse-rate and jerk caps.
 Host replay checks cover 600 to 300 and 600 to 900 mm/min, measured transition
 jerk, unchanged endpoint coordinates, cancellation during planning, block
 completion during planning, expiration, and hold/resume after acceptance.
-The strict equality check for pulse counts remains a qualification blocker:
-with the 1280 steps/mm host profile, the plain 100 mm move emits 128001 pulses,
-the 50% move emits 128000, and the 150% move emits 128001. All have a 128000-step
-endpoint target. This is consistent with a DDA phase residual, but exact equality
-has not been waived or hidden behind an expected failure.
+Each motor must stay within one step of its commanded endpoint, with exact
+agreement between emitted pulses and the firmware encoder count. The replay
+checks plain motion, constant 50%/150% requests, mid-move changes, and a 50-move
+out-and-back sequence with boundary requests and several changes within each
+move. It checks every endpoint and every move's pulse increment, not only the
+final return to zero. The same consistency checks run after hold/resume with an
+accepted override. The allowance is the established one-step DDA residual; it
+never grows with the number of moves or requests. No stepper changes were made.
 
 The HIL test checks sustained speed and the reported endpoint. It does not prove
 pulse counts or interrupt latency. Those require an instrumented bench run.

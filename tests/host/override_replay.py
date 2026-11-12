@@ -20,12 +20,27 @@ static unsigned ov_factor, ov_sent;
 static int ov_section = -1, ov_interleave;
 static unsigned ov_interleaved, ov_stopped;
 static unsigned long ov_hold_at;
+static unsigned ov_schedule, ov_move, ov_move_tick;
+void host_checkpoint(unsigned move);
+static void host_set_factor(unsigned factor)
+{
+    if(ov_set_enable(OV_FEED,true,true,true)!=OV_OK ||
+       ov_set_factor(OV_FEED,factor/1000.0f,true,true)!=OV_OK)exit(124);
+    printf("OVCHANGE %u %u %u\n",ov_move,ov_move_tick,factor);
+}
+static void host_move_begin(void)
+{
+    ov_move++;ov_move_tick=0;
+    if(ov_schedule)host_set_factor(ov_schedule==1?(ov_move%2?500:1500):ov_factor);
+}
 void host_run_active(void);
 void host_report(void);
 void xio_flush_input(void){}
 static void host_override_step(void)
 {
-    ov_tick++;
+    ov_tick++;ov_move_tick++;
+    if(ov_schedule==1 && (ov_move_tick==100 || ov_move_tick==400 || ov_move_tick==800))
+        host_set_factor(ov_move_tick==400?1000:(ov_move_tick==100?1500:500));
     if (ov_hold_at && ov_tick==ov_hold_at) cm_request_feedhold();
     if (!ov_at || ov_sent || ov_tick < ov_at || cm.motion_state != MOTION_RUN ||
         (ov_section >= 0 && (int)mr.section != ov_section)) return;
@@ -79,13 +94,13 @@ void host_override_interleave(void)
         }
     } else if (ov_interleave==8) {
         mpBuf_t *old=mb.r;
-        unsigned guard=0;
+        unsigned advance_guard=0;
         while(mb.r==old && old->buffer_state!=MP_BUFFER_EMPTY) {
             ov_tick++;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;
             stat_t yielded=mp_exec_move();
             if(yielded!=STAT_OK && yielded!=STAT_EAGAIN)exit(123);
             host_override_trace();
-            if(++guard>100000)exit(122);
+            if(++advance_guard>100000)exit(122);
         }
     } else if (ov_interleave==3) {
         ov_cancel();
@@ -119,12 +134,17 @@ def build(root, out):
                            '            if(ov_interleave<3 || ov_interleave>=8 || !ov_interleaved)mp_override_callback();\n'
                            '            stat_t status=mp_exec_move();\n'
                            '            host_override_trace();')
+    driver = _replace_once(driver, '        unsigned guard=0;',
+                           '        host_move_begin();\n        unsigned guard=0;')
+    driver = _replace_once(driver, '            if(++guard>1000000)abort();\n        }',
+                           '            if(++guard>1000000)abort();\n        }\n        host_checkpoint(ov_move);')
     driver = _replace_once(driver, '    setup();',
                            '    setup(); ov_init();\n'
                            '    if(argc>2)ov_at=strtoul(argv[2],NULL,10);\n'
                            '    if(argc>3)ov_factor=(unsigned)strtoul(argv[3],NULL,10);\n'
                            '    if(argc>4)ov_section=atoi(argv[4]);\n'
-                           '    if(argc>5)ov_interleave=atoi(argv[5]);')
+                           '    if(argc>5)ov_interleave=atoi(argv[5]);\n'
+                           '    if(argc>6)ov_schedule=atoi(argv[6]);')
     # Release a lone first move as the clock-driven startup callback would.
     driver = _replace_once(driver, 'static void finish(void)\n{\n',
                            'static void finish(void)\n{\n'
@@ -138,6 +158,25 @@ def build(root, out):
                          '    extern void host_override_taken(void); host_override_taken();\n'
                          '    ov_applied_request = ov_body.ticket.request;')
     (out/'plan_exec.c').write_text(plan)
+    # Finish the last loaded segment before observing an endpoint. A real null
+    # load folds its counted pulses into encoder_steps; the base replay's null
+    # loader is a stub, so do that accounting explicitly here.
+    step = (out/'step_engine.c').read_text()
+    step += r"""
+void host_checkpoint(unsigned move)
+{
+    host_run_active();
+    for(unsigned m=0;m<MOTORS;m++) {
+        ACCUMULATE_ENCODER(m);
+        unsigned axis=st_cfg.mot[m].motor_map;
+        printf("OVEND %u %u %.9g %lld %ld %.9g\n",move,m,
+            (double)mr.target_steps[m],(long long)pulses[m],
+            (long)en.en[m].encoder_steps,
+            (double)(mp_get_runtime_absolute_position(axis)*st_cfg.mot[m].steps_per_unit));
+    }
+}
+"""
+    (out/'step_engine.c').write_text(step)
     args = json.loads((out / 'command.json').read_text())
     args[args.index('-lm'):args.index('-lm')] = [
         str(out / (name + '.c')) for name in ('plan_exec', 'kinematics', 'step_engine')]
@@ -149,14 +188,14 @@ def build(root, out):
     return exe
 
 
-def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0):
+def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False):
     if at < 0 or not 50 <= factor <= 2000 or section not in (-1, 0, 1, 2):
         raise ValueError('invalid injection schedule')
-    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave)],
+    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule))],
                             input=program, capture_output=True, text=True, timeout=60)
     if result.returncode:
         raise RuntimeError(f'replay exit {result.returncode}: {result.stderr[-2000:]}')
-    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': []}
+    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': [], 'ends': [], 'changes': []}
     for line in result.stdout.splitlines():
         fields = line.split()
         if not fields:
@@ -169,6 +208,10 @@ def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0):
             rows['interleave'].append(tuple(map(int,fields[1:])))
         elif fields[0] == 'OVSTOP':
             rows['stops'].append(tuple(map(int,fields[1:])))
+        elif fields[0] == 'OVEND':
+            rows['ends'].append((int(fields[1]),int(fields[2]),float(fields[3]),int(fields[4]),int(fields[5]),float(fields[6])))
+        elif fields[0] == 'OVCHANGE':
+            rows['changes'].append(tuple(map(int,fields[1:])))
         elif fields[0] == 'OVSEG':
             rows['segments'].append((int(fields[1]), int(fields[2]),
                                      *map(float, fields[3:])))

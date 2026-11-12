@@ -39,16 +39,47 @@ class OverrideEngine(unittest.TestCase):
                 self.assertEqual([r[:2] for r in result['steps']],
                                  [r[:2] for r in self.plain['steps']])
                 for motor, target, pulses in result['steps']:
-                    self.assertLessEqual(abs(target - pulses), 1.5, motor)
+                    self.assertLessEqual(abs(target - pulses), 1, motor)
                 self.assertTrue(all(math.isfinite(x) for row in result['segments'] for x in row))
         self.assertEqual(len(self.increase['requests']), 1)
         self.assertEqual(self.increase['requests'][0][1:3], (1, 1500))
         self.assertEqual([r[:2] for r in self.increase['steps']],
                          [r[:2] for r in self.plain['steps']])
 
-    def test_body_endpoint_pulses_match_plain_run(self):
-        for result in (self.runs[1],self.increase):
-            self.assertEqual([r[2] for r in result['steps']], [r[2] for r in self.plain['steps']])
+    def assert_consistent_endpoints(self,result):
+        self.assertTrue(result['ends'])
+        previous={}
+        for move,motor,target,pulses,encoder,position in result['ends']:
+            with self.subTest(move=move,motor=motor):
+                self.assertLessEqual(abs(target-pulses),1)
+                old_target,old_pulses=previous.get(motor,(0,0))
+                self.assertLessEqual(abs((pulses-old_pulses)-(target-old_target)),1)
+                previous[motor]=(target,pulses)
+                self.assertEqual(encoder,pulses)
+                self.assertLessEqual(abs(position-pulses),1)
+                self.assertAlmostEqual(position,target,places=4)
+
+    def test_body_pulses_are_within_one_step_of_target(self):
+        fixed=[replay.run(self.exe,PROGRAM,factor=f,schedule=2) for f in (500,1500)]
+        for result in (self.plain,self.runs[1],self.increase,*fixed):
+            self.assert_consistent_endpoints(result)
+
+    def test_many_changes_do_not_accumulate_position_error(self):
+        program='G21 G90 G94\n'+''.join(
+            f'N{i+10} G1 X{100 if i%2==0 else 0} F600\n' for i in range(50))
+        for scheduled in (False,True):
+            result=replay.run(self.exe,program,schedule=scheduled)
+            self.assertEqual(len(result['ends']),50*4)
+            self.assert_consistent_endpoints(result)
+            for move,motor,target,*_ in result['ends']:
+                self.assertEqual(target,128000 if motor<2 and move%2 else 0)
+            for _,target,pulses in result['steps']:
+                self.assertEqual(target,0)
+                self.assertLessEqual(abs(pulses),1)
+            if scheduled:
+                self.assertGreaterEqual(len(result['changes']),150)
+                self.assertEqual(sum(tick==0 for _,tick,_ in result['changes']),50)
+                self.assertGreaterEqual(len(result['taken']),100)
 
     def test_jerk_through_body_transition(self):
         for result in (self.runs[1],self.increase):
@@ -75,20 +106,21 @@ class OverrideEngine(unittest.TestCase):
                 if mode==4:
                     self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in self.plain['steps']])
                     for _,target,pulses in result['steps']:
-                        self.assertLessEqual(abs(target-pulses),1.5)
+                        self.assertLessEqual(abs(target-pulses),1)
                 else:
                     self.assertLess(result['steps'][0][2], self.plain['steps'][0][2])
 
     def test_hold_after_handoff_keeps_endpoint_and_requested_speed_on_resume(self):
         result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=9)
         self.assertEqual(len(result['stops']),1)
+        self.assert_consistent_endpoints(result)
         stopped=result['stops'][0][0]
         samples=[x[2] for x in result['segments'] if x[0]>stopped+100 and x[1]==1]
         self.assertTrue(samples)
         self.assertTrue(any(abs(v-300)<.5 for v in samples), (min(samples),max(samples)))
         self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in self.plain['steps']])
         for _,target,pulses in result['steps']:
-            self.assertLessEqual(abs(target-pulses),1.5)
+            self.assertLessEqual(abs(target-pulses),1)
 
     def test_completed_block_rejects_private_plan(self):
         program=PROGRAM+'N20 G1 X200 F600\n'
@@ -99,7 +131,7 @@ class OverrideEngine(unittest.TestCase):
         self.assertGreater(result['taken'][0][0], result['interleave'][0][0]+30)
         self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in plain['steps']])
         for _,target,pulses in result['steps']:
-            self.assertLessEqual(abs(target-pulses),1.5)
+            self.assertLessEqual(abs(target-pulses),1)
 
     def test_expired_future_boundary_is_not_applied_late(self):
         result=replay.run(self.exe,PROGRAM,at=20,factor=500,section=1,interleave=2)
