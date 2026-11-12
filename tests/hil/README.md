@@ -55,3 +55,31 @@ uv run pytest --port ... --ice           # enables tests marked @pytest.mark.ice
 uv run pytest tests/test_switchbox.py --switchbox --switchbox-port /dev/cu.usbserial-XXXX   # fixture: switchbox
 uv run python -m tinyg_hil.switchbox info --port /dev/cu.usbserial-XXXX
 ```
+
+
+### Failed flash: AVR109 recovery only
+
+Every application transport open first sends only ESC/S and checks for the
+`XBoot++` signature. A detected bootloader is closed and quarantined before any
+JSON, G-code, reset or XON byte is sent. A flash creates the same persistent
+per-port guard before entering the bootloader. Failure leaves it in place;
+ordinary open/write calls, including teardown and later sessions, refuse traffic.
+The marker is `TINYG_HIL_STATE/tinyg-hil-<port>.flash-unsafe` (under the normal
+persistent state directory when the variable is unset). Do not delete it simply
+to make a session connect.
+
+Recovery uses `tinyg_hil flash --no-snapshot --restore SAVED.json --hex IMAGE.hex`.
+This skips application bootstrap, probes with ESC/S and retries programming
+through AVR109 directly. It never sends a boot JSON request to a responding
+bootloader. If a quarantined port does not return the signature, stop and use
+the ICE; do not send wake/reset text. Only a verified programming run with no
+remaining bootloader signature clears the guard before reconnecting and restoring
+settings. Physical recovery/ICE verification may require the operator to retire
+the guard explicitly after verifying the application; absence of a signature
+alone is not sufficient to clear a failed-flash guard.
+
+All avrdude calls retain durable start/output/error records under
+`TINYG_HIL_STATE/flash-attempts`. A cleanup failure preserves the first error.
+Use the updated harness for subsequent sessions: older worktrees do not enforce
+this guard. The new bootloader protections are an additional layer, not a reason
+to send application text into AVR109.

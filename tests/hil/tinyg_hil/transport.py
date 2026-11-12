@@ -5,6 +5,7 @@ import time
 
 import serial
 
+from . import bootloader
 from .protocol import XOFF, XON, Event, parse_line
 
 
@@ -40,7 +41,16 @@ class Transport:
         self.wire_margin = 0.0                  # extra hold after a write; Ice sets it (USB bridge FIFO + 1 ms frames)
 
     def open(self):
-        self.ser = serial.Serial(self.port, self.baud, timeout=0.02, xonxoff=False, rtscts=False, write_timeout=5)
+        bootloader.require_application(self.port)
+        wire, in_bootloader = bootloader.inspect_port(self.port, self.baud)
+        if in_bootloader:
+            wire.close()
+            bootloader.quarantine(self.port, 'XBoot++ signature on session open')
+            bootloader.require_application(self.port)
+        self.ser = wire
+        self.ser.timeout = .02
+        # Finish the harmless ESC/S probe line only after rejecting the bootloader.
+        self.ser.write(b'\n')
         restart_output(self.ser)
         self._stop.clear()
         self._thread = threading.Thread(target=self._reader, name="tinyg-reader", daemon=True)
@@ -59,6 +69,7 @@ class Transport:
         return self.ser is not None
 
     def write(self, data: bytes, drain_timeout: float | None = 2.0):
+        bootloader.require_application(self.port)
         self.sent.append((time.monotonic(), data))
         self._log(">>", data)
         with self.wire:

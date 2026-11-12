@@ -7,7 +7,7 @@ import json
 from tinyg_hil.state import state_dir
 
 import pytest
-from tinyg_hil import flash, snapshot
+from tinyg_hil import flash, snapshot, bootloader
 from tinyg_hil.protocol import loads
 
 spec=importlib.util.spec_from_file_location('layout3_case',Path(__file__).parent/'bugs/test_layout3_upgrade.py')
@@ -22,10 +22,12 @@ class Wire:
         self.sent=[]
         self.opens=0
     def open(self):
+        bootloader.require_application(self.port)
         self.is_open=True
         self.opens+=1
     def close(self):self.is_open=False
     def write(self,data):
+        bootloader.require_application(self.port)
         assert self.is_open, 'attempted write on a closed transport'
         self.sent.append(data)
 
@@ -37,6 +39,7 @@ class Board:
         self.fields=['stat','posx']
         self.old_fb=old_fb
         self.old=False
+        self.boot=False
         self.identity={'id':'fake','fb':450.04}
         self.resets=0
         self.dialect=NS(name='d449',status=lambda key: {'FUNCTION_IS_STUBBED':17,'UNRECOGNIZED_NAME':100}[key],
@@ -87,12 +90,20 @@ def rig(monkeypatch,tmp_path):
         monkeypatch.setattr(flash.time,'sleep',lambda _:None)
         monkeypatch.setattr(flash,'flash_provenance',lambda path:{'hex':str(path)})
         monkeypatch.setattr(flash,'write_flash_record',lambda *a:None)
+        class Raw:
+            def write(self, data):
+                assert data == b'\n{"boot":1}\n'
+                assert not board.boot, 'application text sent to AVR109'
+                board.boot=True
+            def close(self): pass
+        monkeypatch.setattr(bootloader, 'inspect_port', lambda *a: (Raw(), board.boot))
         def program(cmd,**kwargs):
             assert not board.transport.is_open, 'avrdude must own the closed port'
             calls.append(cmd)
             if len(calls) in fail:
                 if timeout:raise subprocess.TimeoutExpired(cmd,kwargs['timeout'])
                 return NS(returncode=1,stderr='flash verification mismatch at addr 0x0002')
+            board.boot=False
             board.old=str(tmp_path/'old') in cmd[-1]
             board.identity['fb']=old_fb if board.old else 450.04
             if not board.old:
@@ -132,7 +143,7 @@ def test_old_flash_upgrade_verify_and_restore(rig,old_fb):
 
 @pytest.mark.parametrize('failed_flash',[1,2])
 @pytest.mark.parametrize('timeout',[False,True])
-def test_failed_flash_reopens_and_recovery_preserves_original_error(rig,failed_flash,timeout):
+def test_failed_flash_uses_avr109_recovery_and_preserves_original_error(rig,failed_flash,timeout):
     board,calls,_=rig(fail=(failed_flash,),timeout=timeout)
     error=subprocess.TimeoutExpired if timeout else RuntimeError
     with pytest.raises(error) as caught:
@@ -148,25 +159,26 @@ def test_recovery_failure_does_not_replace_primary_flash_error(rig):
     with pytest.raises(RuntimeError,match='verification mismatch') as caught:
         case.test_layout2_upgrade_preserves_settings_and_report_fields(board,lambda *a:None)
     assert any('recovery also failed' in note for note in caught.value.__notes__)
-    assert board.transport.is_open
+    assert not board.transport.is_open
+    with pytest.raises(bootloader.BootloaderActive):board.reset()
 
 
 def test_flash_can_start_with_closed_transport(rig):
     board,_,_=rig()
     board.close()
     flash.flash(board,case.SOURCE/'tinyg.hex',expect_fb=450.04)
-    assert board.transport.is_open and board.transport.opens==2
+    assert board.transport.is_open and board.transport.opens==1
 
 
-def test_connect_failure_reopens_for_teardown(rig):
+def test_connect_failure_blocks_teardown_traffic(rig):
     board,_,_=rig(reconnect_failure=True)
     with pytest.raises(RuntimeError,match='connect failed'):
         flash.flash(board,case.SOURCE/'tinyg.hex')
-    assert board.transport.is_open
-    board.reset()
+    assert not board.transport.is_open
+    with pytest.raises(bootloader.BootloaderActive):board.reset()
 
 
-def test_timeout_interrupt_between_close_and_programming_reopens(rig,monkeypatch):
+def test_timeout_interrupt_before_programming_keeps_quarantine(rig,monkeypatch):
     board,_,_=rig()
     class Interrupted(BaseException):pass
     def sleep(seconds):
@@ -174,7 +186,8 @@ def test_timeout_interrupt_between_close_and_programming_reopens(rig,monkeypatch
     monkeypatch.setattr(flash.time,'sleep',sleep)
     with pytest.raises(Interrupted,match='test deadline'):
         flash.flash(board,case.SOURCE/'tinyg.hex')
-    assert board.transport.is_open
+    assert not board.transport.is_open
+    with pytest.raises(bootloader.BootloaderActive):board.reset()
 
 
 @pytest.mark.parametrize('corrupt',['prbp','sr'])
@@ -225,4 +238,5 @@ def test_timeout_log_retains_partial_byte_output(rig, monkeypatch):
         flash.flash(board, case.SOURCE/'tinyg.hex')
     entry = json.loads(next((state_dir()/'flash-attempts').glob('*.json')).read_text())
     assert entry['stdout'] == 'write started' and entry['stderr'] == 'partial verify'
-    assert board.transport.is_open
+    assert not board.transport.is_open
+    with pytest.raises(bootloader.BootloaderActive):board.reset()

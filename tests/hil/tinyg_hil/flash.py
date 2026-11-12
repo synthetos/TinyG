@@ -10,6 +10,7 @@ import subprocess
 import time
 
 from .driver import NoResponse, TinyG
+from . import bootloader
 from .state import flash_record, write_flash_record, state_dir
 
 
@@ -125,18 +126,31 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
     (config_init then loads defaults). Take a snapshot first.
     """
     port = tg.transport.port
-    # A prior interrupted flash may have left the serial port closed. Open
-    # without probing: the board may still be in xboot, not application firmware.
-    if not tg.transport.is_open:
-        tg.transport.open()
-    tg.transport.write(b'{"boot":1}\n')     # the reply may be cut off by the reset
+    # No application traffic while the image is uncertain. This guard survives
+    # process death and is checked by every ordinary transport write/open.
+    tg.close()
+    wire, in_bootloader = bootloader.inspect_port(port)
     try:
-        time.sleep(0.3)
-        tg.close()
-        time.sleep(0.5)
+        if not in_bootloader:
+            bootloader.require_application(port)
+        bootloader.quarantine(port, 'programming in progress or incomplete')
+        if not in_bootloader:
+            wire.write(b'\n{"boot":1}\n')
+            time.sleep(.3)
+    finally:
+        wire.close()
+    try:
+        time.sleep(.5)
         cmd = [avrdude, "-p", "x192a3", "-c", "avr109", "-b", "115200", "-P", port,
                "-U", f"flash:w:{hex_path}:i"]
         _program(cmd, timeout)
+        # avrdude verified the image and issued exit. Independently reject a
+        # remaining command interpreter before allowing any JSON or wake bytes.
+        wire, in_bootloader = bootloader.inspect_port(port)
+        wire.close()
+        if in_bootloader:
+            raise bootloader.BootloaderActive('avrdude returned success but XBoot++ is still active; use AVR109 recovery or ICE')
+        bootloader.marker(port).unlink()
         # The first boot of a new fb writes every default to EEPROM before answering.
         deadline = time.monotonic() + 30
         while True:
@@ -151,12 +165,7 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
             raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
         return identity
-    except BaseException as error:
-        # Leave a usable transport for recovery/teardown even when avrdude or
-        # pytest-timeout interrupts us. Never hide the original flash failure.
-        if not tg.transport.is_open:
-            try:
-                tg.transport.open()
-            except Exception as reopen_error:
-                error.add_note(f"serial reopen after failed flash: {reopen_error}")
+    except BaseException:
+        bootloader.quarantine(port, 'flash or reconnect failed; AVR109/ICE recovery required')
+        tg.close()
         raise
