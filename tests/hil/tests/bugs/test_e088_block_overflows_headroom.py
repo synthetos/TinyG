@@ -65,13 +65,14 @@ def test_densest_block_with_program_end_behind_a_full_queue(tg):
 @pytest.mark.motion
 @pytest.mark.resets_board
 @pytest.mark.dialect('d449')
-def test_permission_fits_densest_legal_block(tg):
+@pytest.mark.parametrize('permission', ['M48', 'M50 P0'])
+def test_permission_fits_densest_legal_block(tg, permission):
     """Permission adds one command; G28's two legs still fit the 12-slot reserve."""
     try:
         tg.send_gcode('G28.1', check=True, allow='save current unloaded machine position')
         for _ in range(30):
             tg.send_gcode('G4 P2', check=True, timeout=10)
-        reply = tg.send_gcode('S100 T1 M6 M3 M7 M8 M48 G49 G54 G28 X0 M30',
+        reply = tg.send_gcode(f'S100 T1 M6 M3 M7 M8 {permission} G49 G54 G28 X0 M30',
                               timeout=40, allow='unloaded headroom test with outputs and saved-position motion')
         assert reply.status == 0, reply.raw
         assert not [e.raw for e in reply.events + tg.drain(quiet=.3) if e.kind == 'exception']

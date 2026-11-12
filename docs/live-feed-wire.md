@@ -14,6 +14,12 @@ Each newline-terminated rt envelope consumes one line slot and produces one
 ordinary response with a footer, regardless of how many fields it contains.
 A host must keep its control reserve and account for that response. Optional
 standalone feed bytes consume no line slots, and remain disabled after reset.
+`ovb` must be the only field inside its `rt` envelope (a top-level `tid` is
+allowed). For example, send `{"rt":{"mfo":0.5,"mfe":1}}` and then
+`{"rt":{"ovb":1}}` as two lines. Combining `ovb` with another rt field is
+refused with status 106 before applying the envelope. Byte opt-in changes the
+receive interpretation and requires a quiet machine and an input-line boundary;
+keeping it exclusive gives that transition its own acknowledged request.
 
 Read requested feed with `{"rt":{"mfo":null}}`, permission with
 `{"rt":{"mfe":null}}`, and committed feed with `{"rt":{"mfc":null}}`.

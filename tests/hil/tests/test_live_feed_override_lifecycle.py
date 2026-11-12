@@ -50,7 +50,8 @@ def test_program_permission_cannot_be_bypassed_by_live_request(tg, record):
 def test_job_end_restores_unity_permission_and_disables_bytes(tg, ending, record):
     try:
         tg.reset()
-        assert rt(tg, {'mfo': .5, 'mfe': 0, 'ovb': 1}).status == 0
+        assert rt(tg, {'mfo': .5, 'mfe': 0}).status == 0
+        assert rt(tg, {'ovb': 1}).status == 0
         tg.send_gcode('M49', check=True)
         wait_value(tg, 'mfe', 0)
         if ending == 'reset':
