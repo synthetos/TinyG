@@ -33,7 +33,10 @@ class OverrideHeadroom(unittest.TestCase):
         if (reserve<=2) strcpy(block,"G28 X1");
         else snprintf(block,sizeof block,"S100 T1 M6 M3 M7 M8 %s G49 G54 %s X1 M30",
                       argv[1],argc>2?argv[2]:"G28");
-        stat_t result=gc_gcode_parser(block);
+        float target[AXES]={1,0,0,0,0,0};
+        bool flags[AXES]={true,false,false,false,false,false};
+        // Direct helper admission is separate from the parser's full reserve.
+        stat_t result=reserve<=2 ? cm_goto_g28_position(target,flags) : gc_gcode_parser(block);
         printf("RESERVE %u STATUS %u USED %u FINAL %g\n",before,result,
                before-mp_get_planner_buffers_available(),(double)cm.gmx.position[0]);
         return 0;
