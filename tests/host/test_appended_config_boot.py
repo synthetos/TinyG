@@ -22,10 +22,10 @@ class AppendedConfigBoot(unittest.TestCase):
   def token(line):
    m=re.match(r'\s*\{\s*"[^"]*"\s*,\s*"([^"]*)"',line)
    return m.group(1) if m else None
-  v2={'spep','spdp','spph','spde','coph','prbp','fstk','adc3'}
+  v2={'spep','spdp','prbp','fstk','adc3'}
   blocks={'v2':[line for line in app.splitlines() if token(line) in v2],
           'legacy':fixtures['legacy'],'optional_stop':fixtures['optional_stop']}
-  self.assertEqual(len(blocks['v2']),8)
+  self.assertEqual(len(blocks['v2']),5)
   clean='\n'.join(line for line in app.splitlines() if token(line) not in v2|{'os','net','ma','fd'})
   for order in itertools.permutations(blocks):
    with self.subTest(order=order):
@@ -130,7 +130,7 @@ int main(void){
    assert(writes[i]==(unsigned)(init&&fresh&&cfg_has_flag(i,F_PERSIST)));
    if(!init)assert(eeprom[i].u==0xdeadbeef);
   }
-  assert(eeprom[0].f==10002 && writes[0]==1 && sr_loads==1);
+  assert(eeprom[0].f==10003 && writes[0]==1 && sr_loads==1);
   // After migration, non-default appended values must survive another boot.
   for(unsigned t=0;t<3;t++){int i=nv_get_index("",new_tokens[t]);eeprom[i].u=!def(i).u;}
   memset(writes,0,sizeof(writes));memset(sets,0,sizeof(sets));memset(model,0,sizeof(model));

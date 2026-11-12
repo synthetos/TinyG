@@ -30,6 +30,7 @@ class ConfigLoadRecovery(unittest.TestCase):
 #define F_INITIALIZE 1
 #define TYPE_FLOAT 1
 #define TYPE_INTEGER 2
+#define fp_EQ(a,b) ((a)==(b))
 #define STAT_OK 0
 #define STAT_COMMAND_NOT_ACCEPTED 106
 #define STAT_CONFIG_ASSERTION_FAILURE 88

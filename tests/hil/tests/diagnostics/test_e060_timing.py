@@ -12,19 +12,18 @@ pytestmark=[pytest.mark.diagnostic,pytest.mark.motion,pytest.mark.persists,
             pytest.mark.dialect('d449'),pytest.mark.timeout(120)]
 
 
-@pytest.mark.parametrize('pause,flush',[(True,False),(False,False),(True,True)],
-                         ids=['pause-resume','spph0','hold-flush'])
-def test_e060_timing(tg,keep,record,request,pause,flush):
+@pytest.mark.parametrize('flush',[False,True],ids=['hold-resume','hold-flush'])
+def test_e060_timing(tg,keep,record,request,flush):
     cfg=(benches.bench(tg.transport.port) or {}).get('mso')
     if not cfg:pytest.skip('requires bench3 MSO and spindle PWM')
     pwm_name=(cfg.get('analog') or {}).get('0')
     assert pwm_name,'spindle PWM channel missing'
     recorder=request.config._tinyg_recorder
     assert recorder is not None
-    stem=recorder.dir/f'e060-timing-{int(pause)}-{int(flush)}'
-    settings=dict(spph=int(pause),spde=1,p1csl=0,p1csh=1000,p1cpl=.1,p1cph=.8,p1pof=.1,sv=1,si=100)
+    stem=recorder.dir/f'motion-hold-timing-{int(flush)}'
+    settings=dict(p1csl=0,p1csh=1000,p1cpl=.1,p1cph=.8,p1pof=.1,sv=1,si=100)
     keep(*settings)
-    info=dict(kind='e060-timing',pause=pause,flush=flush,statuses=[],commands={},valid=False)
+    info=dict(kind='e060-timing',flush=flush,statuses=[],commands={},valid=False)
     def status_until(predicate,seconds):
         end=time.monotonic()+seconds
         while time.monotonic()<end:
@@ -59,12 +58,9 @@ def test_e060_timing(tg,keep,record,request,pause,flush):
             info['settled_wall']=time.time()
         assert info['settled_wall']-cap.started_wall<24.5,'capture did not contain completion'
         info['metrics']=measure(cap.edges(),cap.pwm(pwm_name),info['commands'],cap.started_wall,
-                                pause=pause,flush=flush)
+                                flush=flush)
         info['capture_file']=str(cap.out)
         info['automatic_status']=[dict(t=e.t,body=e.body) for e in tg.transport.history[mark:] if e.kind=='status']
-        if pause and not flush:
-            # Include 20ms PWM window and 100ms command alignment uncertainty; physical delay must be present.
-            assert info['metrics']['spindle_on_to_motion_s']>=.85,info['metrics']
         info['valid']=True
     except Exception as e:
         info['error']=str(e);raise

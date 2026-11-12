@@ -1,4 +1,4 @@
-"""Layout 2 accepts its own marker and rejects every pre-layout-2 marker."""
+"""Layout 3 accepts its own marker and rejects every pre-layout-3 marker."""
 from pathlib import Path
 import re, subprocess, tempfile, unittest
 from source_extract import function
@@ -16,12 +16,12 @@ typedef union {uint32_t value_int;float value_flt;} nvObj_t;
 #define fp_EQ(a,b) (fabs((a)-(b))<.00001f)
 '''+defines+'\n'+function(source,r'static bool _nvm_layout_is_current\([^;{}]*\)(?=\s*\{)')+r'''
 int main(void) {
- assert(CONFIG_NVM_LAYOUT==2);
+ assert(CONFIG_NVM_LAYOUT==3);
  nvObj_t nv;
- float old[]={449.01f,449.99f,10000,10001,10003,0,NAN,INFINITY,-INFINITY};
+ float old[]={449.01f,449.99f,10000,10001,10002,0,NAN,INFINITY,-INFINITY};
  for(unsigned i=0;i<sizeof(old)/sizeof(*old);i++) {nv.value_flt=old[i];assert(!_nvm_layout_is_current(&nv));}
  nv.value_int=UINT32_MAX;assert(!_nvm_layout_is_current(&nv));
- nv.value_flt=10002;assert(_nvm_layout_is_current(&nv));
+ nv.value_flt=10003;assert(_nvm_layout_is_current(&nv));
 }
 '''
   with tempfile.TemporaryDirectory() as d:
@@ -29,12 +29,7 @@ int main(void) {
    subprocess.run(['cc','-Wall','-Werror','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(c),'-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
- def test_hold_slots_are_active_and_stamp_is_hidden(self):
+ def test_removed_rows_are_absent(self):
   app=(ROOT/'firmware/tinyg/config_app.c').read_text()
-  for token in ('spph','spde','coph'):
-   row=next(line for line in app.splitlines() if '"'+token+'"' in line)
-   self.assertIn('_fipn' if token=='spde' else '_iipn',row)
-   self.assertNotIn('_reserved_hold_setting',row)
-  stamp=next(line for line in app.splitlines() if '"_hld"' in line)
-  self.assertIn('_reserved_hold_setting,_reserved_hold_setting',stamp)
-  self.assertIn('_i0',stamp)
+  for token in ('spph','spde','coph','_hld'):
+   self.assertNotIn('"'+token+'"',app)

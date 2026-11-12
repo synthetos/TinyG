@@ -282,9 +282,9 @@ int main(void) {
 
 
 class InterruptedMasterMigration(unittest.TestCase):
-    def build(self, main):
+    def build(self, main, master_build="440.21f"):
         source = (ROOT / "firmware/tinyg/config.c").read_text().replace("\r\n", "\n")
-        code = prelude()
+        code = prelude().replace("440.21f", master_build)
         code += "\n".join(x for x in source.splitlines()
                           if re.match(r"#define (CONFIG_NVM_LAYOUT|MASTER_|NVM_RECORDS|CHECKPOINT_)", x)) + "\n"
         code += REFUSING_SETTER + fallback_source(source)
@@ -307,7 +307,9 @@ class InterruptedMasterMigration(unittest.TestCase):
             subprocess.run([str(exe)], check=True)
 
     def test_every_byte_cut_resumes_to_the_same_settings(self):
-        self.build(MAIN)
+        for build in ("440.20f", "440.21f"):
+            with self.subTest(build=build):
+                self.build(MAIN, build)
 
     def test_a_torn_checkpoint_leaves_the_previous_one(self):
         self.build(SLOT_MAIN)

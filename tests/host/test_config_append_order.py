@@ -21,7 +21,7 @@ class ConfigAppendOrder(unittest.TestCase):
         source=(FW/'config_app.c').read_text()
         fixture=json.loads((Path(__file__).parent/'fixtures/appended_config_rows.json').read_text())
         legacy_tokens={'net','fd','ma'}
-        fixture_tokens={'spep','spdp','spph','spde','coph','prbp','fstk','adc3','os'}
+        fixture_tokens={'spep','spdp','prbp','fstk','adc3','os'}
         def token(line):
             m=re.match(r'\s*\{\s*"[^"]*"\s*,\s*"([^"]*)"',line)
             return m.group(1) if m else None
@@ -29,7 +29,7 @@ class ConfigAppendOrder(unittest.TestCase):
         self.assertEqual(len(legacy),3)
         clean='\n'.join(line for line in source.splitlines() if token(line) not in legacy_tokens|fixture_tokens)
         marker='// Group lookups - must follow'
-        blocks={'legacy':legacy,'v2':fixture['v2'],'optional_stop':fixture['optional_stop']}
+        blocks={'legacy':legacy,'v2':[r for r in fixture['v2'] if not any('\"'+t+'\"' in r for t in ('spph','spde','coph'))],'optional_stop':fixture['optional_stop']}
         for order in itertools.permutations(blocks):
             with self.subTest(order=order):
                 added='\n'.join(row for name in order for row in blocks[name])+'\n'

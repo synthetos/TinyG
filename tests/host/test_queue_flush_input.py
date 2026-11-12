@@ -53,10 +53,9 @@ float mp_get_runtime_absolute_position(int axis) { (void)axis; return 0; }
 void cm_set_position(int axis, float position) { (void)axis; (void)position; }
 void cm_end_hold(void) { cm.hold_state = FEEDHOLD_OFF; if (inject == 2) { inject = 0; isr_percent(); } }
 static int cm_is_alarmed(void) {return 0;}
-static void _hold_outputs_cancel(void) {}
-static struct {unsigned state;bool internal_hold,resume_cancelled;} hold_outputs;
+static volatile bool hold_resume_cancelled;
 bool cm_outputs_inhibited(void) {return cm_is_alarmed() || cm.queue_flush_state != FLUSH_OFF;}
-static void _hold_outputs_pause(void) {}
+
 void mp_exit_hold_state(void) {cm_end_hold();}
 void cm_cycle_end(void) {}
 void qr_request_queue_report(int n) { (void)n; }

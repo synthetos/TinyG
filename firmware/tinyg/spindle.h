@@ -35,9 +35,6 @@
 typedef struct spindleConfig {
     uint8_t enable_polarity;
     uint8_t direction_polarity;
-    uint8_t pause_on_hold;
-    uint8_t coolant_pause_on_hold;
-    float dwell_seconds;
 } spindleConfig_t;
 extern spindleConfig_t spindle_cfg;
 
@@ -48,7 +45,6 @@ stat_t spindle_get_spe(nvObj_t *nv);
 stat_t spindle_get_spd(nvObj_t *nv);
 stat_t spindle_get_spc(nvObj_t *nv);
 stat_t spindle_get_sps(nvObj_t *nv);
-stat_t spindle_set_dwell(nvObj_t *nv);
 void spindle_get_runtime(uint8_t *mode, float *speed);
 void spindle_control_immediate(uint8_t mode, float speed);
 void spindle_init();

@@ -46,6 +46,19 @@ class MasterTable(unittest.TestCase):
         lost = [t for t in rows if t and t not in kept and t not in NOT_KEPT]
         self.assertEqual(lost, [], "master settings the migration would drop")
 
+    def test_saved_report_map_matches_persisted_map(self):
+        text=(TINYG/'config_master.h').read_text()
+        body=text.split('master_report_tokens[] PROGMEM =',1)[1].split(';',1)[0]
+        raw=''.join(re.findall(r'"((?:[^"\\]|\\.)*)"',body)).encode().decode('unicode_escape')
+        full=raw.split('\0')[:-1]
+        persisted,count=master_rows()
+        self.assertEqual(len(full),count)
+        for i,token in enumerate(persisted):
+            if token:self.assertEqual(full[i],token)
+        self.assertEqual(full[7],'vel')
+        self.assertEqual(full[9],'stat')
+        self.assertEqual(full[321:351],[f'se{i:02d}' for i in range(30)])
+
     def test_a_token_may_start_with_a_digit(self):
         rows, _ = master_rows()
         self.assertIn("1mi", rows)

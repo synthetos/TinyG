@@ -10,6 +10,24 @@ FW = Path(__file__).resolve().parents[2] / 'firmware/tinyg'
 
 
 class Layout3Migration(unittest.TestCase):
+    def test_actual_avr_table_translation(self):
+        import subprocess
+        old = subprocess.check_output(['git','show','998c02eb:firmware/tinyg/config_app.c'],cwd=FW,text=True)
+        def tokens(source):
+            pre = subprocess.check_output(['avr-gcc','-mmcu=atxmega192a3','-DF_CPU=32000000UL',
+                '-I',str(FW),'-E','-P','-x','c','-'],input=source,text=True)
+            body = pre.rsplit('const cfgItem_t cfgArray[]',1)[1].split('\n};',1)[0]
+            return re.findall(r'\{\s*"[^"]*"\s*,\s*"([^"]+)"',body)
+        before, after = tokens(old), tokens((FW/'config_app.c').read_text())
+        first, stamp = before.index('spph'), before.index('_hld')
+        self.assertEqual(after, [t for t in before if t not in ('spph','spde','coph','_hld')])
+        for i,t in enumerate(before):
+            if t in ('spph','spde','coph','_hld'):continue
+            mapped = i if i<first else i-(3 if i<stamp else 4)
+            self.assertEqual(after[mapped],t)
+        end=after.index('sys')
+        self.assertLess(end+4+end-after.index('prbp')+30,510-1)
+
     def test_every_byte_cut_and_saved_report_indexes(self):
         source = (FW / 'config.c').read_text()
         names = ['_layout2_journal_ready', '_layout2_index', '_migrate_layout2']
@@ -21,6 +39,7 @@ class Layout3Migration(unittest.TestCase):
 #include <stdint.h>
 #include <string.h>
 #include <setjmp.h>
+#define CONFIG_NVM_LAYOUT_MARKER 10003.0
 #define STAT_OK 0
 #define STAT_CONFIG_ASSERTION_FAILURE 90
 #define NO_MATCH -1
@@ -88,6 +107,7 @@ int main(void){
  assert(_layout2_index(14,7,11)==NO_MATCH);
  assert(_layout2_index(16,7,11)==12);
  assert(_layout2_index((uint32_t)NO_MATCH,7,11)==NO_MATCH);
+ assert(_layout2_index(65543,7,11)==NO_MATCH);
 }
 '''
         with tempfile.TemporaryDirectory() as tmp:
