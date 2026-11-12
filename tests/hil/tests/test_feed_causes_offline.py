@@ -24,3 +24,15 @@ def test_gap_classes_and_clear_are_required():
 def test_command_requires_v2_counter_six():
     check_command(summary(6))
     with pytest.raises(AssertionError):check_command(summary(5))
+
+
+def test_single_accounting_survives_periodic_report_missing_the_block():
+    from tinyg_hil.feed_causes import check_accounted_cause
+    check_accounted_cause(summary(4), 4)
+    with pytest.raises(AssertionError): check_accounted_cause(summary(3), 4)
+
+
+def test_exact_stop_stimulus_uses_tinyg_exact_stop_mode():
+    from tinyg_hil.feed_causes import exact_stop_lines
+    lines = exact_stop_lines(['G61', 'G1 X20 F2000', 'G64'])
+    assert lines == ['G61.1', 'G1 X20 F2000', 'G64']
