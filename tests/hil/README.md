@@ -48,3 +48,10 @@ uv run python -m tinyg_hil.ice watch cm.hold_state mb.buffers_available --interv
 uv run python -m tinyg_hil.ice where
 uv run pytest --port ... --ice           # enables tests marked @pytest.mark.ice (fixture: ice)
 ```
+
+**Switchbox (electrical switches).** A Feather HUZZAH ESP8266 wired to the TinyG's limit/homing inputs opens and closes them as a real switch would: open-drain contacts, timed pulses and bounces on the board, ttl auto-release, and an event log with µs timestamps. The box itself (firmware, wiring, API, limits) lives in its own repository, synthetos/tinyg-switchbox. This harness keeps the client (`tinyg_hil/switchbox.py`, with a pinned copy of the API in `tinyg_hil/data/switchbox-openapi.json`), the `switchbox` fixture and the tests that use the box.
+
+```
+uv run pytest tests/test_switchbox.py --switchbox --switchbox-port /dev/cu.usbserial-XXXX   # fixture: switchbox
+uv run python -m tinyg_hil.switchbox info --port /dev/cu.usbserial-XXXX
+```
