@@ -205,3 +205,74 @@ def test_step_legs_count_only_direction_changes_with_pulses():
                   'M1 dir':[(1.5,1),(1.6,0),(2.5,1)]},
                  {'M1 step':0,'M1 dir':0},{'M1':0})
     assert r['motors']['M1']['reversal_legs']==2
+
+
+def test_probe_credit_recovery_restarts_a_drained_data_window():
+    class Fragmented(Fake):
+        def write(self,data,**kw):
+            super().write(data,**kw)
+            if not data.startswith(b'{'):
+                ev=self.events.pop();raw=json.loads(ev.raw);raw['f'][2]=0
+                self.events.append(parse_line(json.dumps(raw),self.t))
+    f=Fragmented();lines=[f'G1 X{i}' for i in range(22)]
+    r=perf.stream(f,lines,4,clock=f.clock)
+    assert r['completion']=='idle' and not r['errors']
+    assert r['sent']==r['acked']==22 and r['unsent']==r['pending']==0
+    assert [row['index'] for row in r['ack_rows']]==list(range(22))
+    assert [row['line'] for row in r['sent_rows']]==lines
+    assert [data.decode().strip() for _,data in f.writes if data.startswith(b'G')]==lines
+    assert any(row['free']==0 and not row['probe'] for row in r['rx_credit_rows'])
+    assert any(row['free']==8 and row['probe'] for row in r['rx_credit_rows'])
+
+
+def test_zero_probe_credit_does_not_authorize_more_data():
+    class Full(Fake):
+        def write(self,data,**kw):
+            super().write(data,**kw)
+            ev=self.events.pop();raw=json.loads(ev.raw);raw['f'][2]=0
+            self.events.append(parse_line(json.dumps(raw),self.t))
+    f=Full();r=perf.stream(f,[f'G1 X{i}' for i in range(22)],1,clock=f.clock)
+    assert r['completion']=='timeout'
+    assert r['sent']==r['acked']==6 and r['pending']==0 and r['unsent']==16
+
+@pytest.mark.parametrize('ms',[100,500])
+def test_qr_probes_refresh_credit_without_acknowledging_data(ms):
+    class Qr(Fake):
+        def write(self,data,**kw):
+            if data.startswith(b'{'):
+                obj=json.loads(data)
+                assert 'qr' in obj and 'stat' not in obj
+                self.writes.append((self.t,data));self.t+=.001
+                self.events.append(parse_line(json.dumps({'r':{'qr':32},'tid':obj['tid'],'f':[3,0,8]}),self.t))
+            else:super().write(data,**kw)
+        def next_event(self,timeout):
+            if not self.events:self.events.append(parse_line('{"sr":{"stat":3}}',self.t))
+            return super().next_event(timeout)
+    f=Qr();r=perf.stream(f,['G1 X1','G1 X2'],3,clock=f.clock,probe_interval=ms/1000,probe_kind='qr')
+    assert r['completion']=='idle' and r['acked']==2 and not r['errors']
+    assert r['probe_kind']=='qr' and r['probe_ms']==ms
+    assert r['probe_median_s'] is not None and r['stat_median_s'] is None
+    assert all(p['qr']==32 for p in r['probes'])
+    times=[t for t,d in f.writes if d.startswith(b'{')]
+    assert len(times)>=2 and all(b-a>=ms/1000 for a,b in zip(times,times[1:]))
+
+
+def test_probe_parameters_and_filename():
+    env={'FIRMWARE_TAG':'B','PERF_PROBES':'on','PERF_PROBE_KIND':'qr','PERF_PROBE_MS':'500'}
+    assert perf.probe_options(env)==.5
+    assert perf.probe_parameters(env)==('qr',500)
+    assert perf.probe_suffix(env)=='on-qr-500ms'
+    assert perf.probe_parameters({})==('stat',250)
+    for key,value in [('PERF_PROBE_KIND','rx'),('PERF_PROBE_MS','0'),('PERF_PROBE_MS','nan'),('PERF_PROBE_MS','-1')]:
+        with pytest.raises(ValueError):perf.probe_options(dict(env,**{key:value}))
+
+
+def test_empty_queue_reply_is_not_motion_complete():
+    class QueueOnly(Fake):
+        def write(self,data,**kw):
+            if data.startswith(b'{'):
+                self.writes.append((self.t,data));self.t+=.001
+                self.events.append(parse_line(json.dumps({'r':{'qr':32},'tid':json.loads(data)['tid'],'f':[3,0,8]}),self.t))
+            else:super().write(data,**kw)
+    f=QueueOnly();r=perf.stream(f,['G1 X1'],1,clock=f.clock,probe_kind='qr')
+    assert r['acked']==1 and r['completion']=='timeout' and not r['statuses']
