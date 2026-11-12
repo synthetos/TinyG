@@ -22,7 +22,7 @@ import time
 
 import pytest
 
-from tinyg_hil import benches, saleae, sender
+from tinyg_hil import benches, hostlines, saleae, sender
 
 pytestmark = [pytest.mark.timeout(5400), pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.dialect("d449")]
 
@@ -79,6 +79,7 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip("SOAK_FILE not set")
     raw = open(FILE, "rb").read().decode("latin-1")
     lines = [l.rstrip("\r") for l in raw.split("\n") if l.strip()]
+    lines, stripped = hostlines.host_safe(lines, raw=os.environ.get("SOAK_RAW") == "1")   # N67, N101
     for line in lines:
         tg.guard.check_gcode(line, allow="soak file on an unloaded bench")
     keep("ej", "rxm", "ex", "qv", "sv", "si")
@@ -106,7 +107,7 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip(f"the board's A axis is in radius mode with ara {tg.get('ara')}: A words would mean thousands "
                     "of degrees per unit (N48); set aam=1 or a sane ara before soaking A files")
     seed = int(os.environ.get("SOAK_HOLD_SEED", "0")) or random.randrange(1, 1 << 30)
-    info = {"file": FILE, "mode": MODE, "lines": len(lines), "start": start, "saleae": use_saleae, "holds": HOLDS,
+    info = {"file": FILE, "mode": MODE, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),
             "hold_seed": seed}
     holder = _Holder(tg, HOLDS, seed) if HOLDS else None
