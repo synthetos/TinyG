@@ -65,6 +65,11 @@ def test_job_end_restores_unity_permission_and_disables_bytes(tg, ending, record
         assert read(tg, 'mfe') == 1
         assert read(tg, 'ovb') == 0
         assert not read(tg, 'mcp')
+        if ending == 'kill':
+            # Read-only groups stay available in alarm; writes must not escape it.
+            assert rt(tg, {'mfo': .5}).status == 204
+            assert rt(tg, {'mfc': None, 'mfo': .5}).status == 204
+            assert read(tg, 'mfo') == 1
         record('override_end', {'ending': ending, 'requested': read(tg, 'mfo')})
     finally:
         tg.reset()

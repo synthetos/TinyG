@@ -27,6 +27,11 @@ Read the cap flag with `{"rt":{"mcp":null}}`. Flat `mfo`, `mfc`, `mfe` and
 `mcp` are read-only and can be selected in `sr`. `mcp` is a boolean; the short
 name fits the existing five-character token limit including the rt prefix.
 
+These reads also work in alarm, shutdown and panic, including after job kill.
+A group containing any write is refused in those states before any child is
+executed; a mixed read/write request does not partially apply. Configuration
+objects such as `sr` remain writes even when their values are null.
+
 `{"rt":{"ov":1}}` enables change events; `0` disables them. Events are
 coalesced, at most one per status interval. `{"rt":{"ov":null}}` requests
 one event even when automatic events are off; its reply gives the revision
