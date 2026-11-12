@@ -3,6 +3,8 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace as NS
 import subprocess
+import json
+from tinyg_hil.state import state_dir
 
 import pytest
 from tinyg_hil import flash, snapshot
@@ -187,3 +189,40 @@ def test_verify_detects_loss_before_restoring_original_settings(rig,corrupt):
 def test_upgrade_has_budget_for_two_complete_flashes():
     timeout=next(mark for mark in case.pytestmark if mark.name=='timeout')
     assert timeout.args[0]>=2*180+2*30+120
+
+
+@pytest.mark.parametrize('failure', ['none', 'verify', 'timeout'])
+def test_each_programming_attempt_has_durable_full_output(rig, monkeypatch, failure):
+    board, calls, _ = rig(fail=(1,) if failure != 'none' else (), timeout=failure == 'timeout')
+    program = flash.subprocess.run
+    def observed(cmd, **kwargs):
+        logs = list((state_dir()/'flash-attempts').glob('*.json'))
+        assert any(json.loads(p.read_text())['state'] == 'started' for p in logs)
+        return program(cmd, **kwargs)
+    monkeypatch.setattr(flash.subprocess, 'run', observed)
+    if failure == 'none':
+        case.test_layout2_upgrade_preserves_settings_and_report_fields(board, lambda *a: None)
+    else:
+        with pytest.raises((RuntimeError, subprocess.TimeoutExpired)):
+            case.test_layout2_upgrade_preserves_settings_and_report_fields(board, lambda *a: None)
+    entries = [json.loads(p.read_text()) for p in (state_dir()/'flash-attempts').glob('*.json')]
+    assert len(entries) == len(calls) == 2
+    assert all(e['command'] in calls and e['timeout'] == 180 for e in entries)
+    assert all('stdout' in e and 'stderr' in e for e in entries)
+    if failure == 'verify':
+        assert any('verification mismatch' in e['stderr'] for e in entries)
+    if failure == 'timeout':
+        assert any(e['state'] == 'interrupted' and 'TimeoutExpired' in e['error'] for e in entries)
+    assert not board.old and board.transport.is_open
+
+
+def test_timeout_log_retains_partial_byte_output(rig, monkeypatch):
+    board, _, _ = rig()
+    def timeout(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, kwargs['timeout'], output=b'write started', stderr=b'partial verify')
+    monkeypatch.setattr(flash.subprocess, 'run', timeout)
+    with pytest.raises(subprocess.TimeoutExpired):
+        flash.flash(board, case.SOURCE/'tinyg.hex')
+    entry = json.loads(next((state_dir()/'flash-attempts').glob('*.json')).read_text())
+    assert entry['stdout'] == 'write started' and entry['stderr'] == 'partial verify'
+    assert board.transport.is_open

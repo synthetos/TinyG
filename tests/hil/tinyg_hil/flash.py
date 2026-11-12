@@ -2,13 +2,15 @@
 import datetime
 import hashlib
 import json
+import os
+import uuid
 import pathlib
 import re
 import subprocess
 import time
 
 from .driver import NoResponse, TinyG
-from .state import flash_record, write_flash_record
+from .state import flash_record, write_flash_record, state_dir
 
 
 def build(source_dir, make_args=()) -> pathlib.Path:
@@ -74,6 +76,47 @@ def read_provenance(port) -> dict:
         return {"elf": text, "legacy": True} if text else {}
 
 
+def _program(cmd, timeout):
+    """Durable start record before programming; keep complete output on every exit."""
+    directory = state_dir() / 'flash-attempts'
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / (uuid.uuid4().hex + '.json')
+    entry = dict(started_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                 command=cmd, timeout=timeout, state='started')
+
+    def save():
+        # Replace atomically so a killed process leaves at least its start record.
+        pending = path.with_suffix('.pending')
+        with pending.open('w', encoding='utf-8') as stream:
+            json.dump(entry, stream, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        pending.replace(path)
+
+    def output(value):
+        return value.decode(errors='replace') if isinstance(value, bytes) else (value or '')
+
+    save()  # If the log cannot be saved, do not begin programming.
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except BaseException as error:
+        entry.update(state='interrupted', error=repr(error),
+                     stdout=output(getattr(error, 'stdout', None)),
+                     stderr=output(getattr(error, 'stderr', None)))
+        try:
+            save()
+        except Exception as log_error:
+            error.add_note(f'flash log update failed: {log_error}')
+        error.add_note(f'avrdude attempt log: {path}')
+        raise
+    entry.update(state='finished', returncode=proc.returncode,
+                 stdout=output(getattr(proc, 'stdout', None)), stderr=output(proc.stderr))
+    save()
+    if proc.returncode != 0:
+        raise RuntimeError(f'avrdude failed ({proc.returncode}); log: {path}:\n{proc.stderr[-2000:]}')
+    return proc
+
+
 def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str = "avrdude",
           timeout: float = 180.0) -> dict:
     """Enter xboot with {"boot":1}, program with avrdude, reconnect. Returns the new identity.
@@ -93,9 +136,7 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         time.sleep(0.5)
         cmd = [avrdude, "-p", "x192a3", "-c", "avr109", "-b", "115200", "-P", port,
                "-U", f"flash:w:{hex_path}:i"]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        if proc.returncode != 0:
-            raise RuntimeError(f"avrdude failed ({proc.returncode}):\n{proc.stderr[-2000:]}")
+        _program(cmd, timeout)
         # The first boot of a new fb writes every default to EEPROM before answering.
         deadline = time.monotonic() + 30
         while True:
