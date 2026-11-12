@@ -180,16 +180,22 @@ def round_trips(records):
             bad.append('firmware identity/provenance mismatch')
         if not r.get('fixed_verified',{}).get('ok') or not re.fullmatch('[0-9a-f]{64}',str(r.get('fixed_snapshot',{}).get('sha256',''))):
             bad.append('fixed settings not verified')
-        if serial.get('probe_mode')!='250ms':bad.append('requires 250 ms probes')
-        for k in ('stat_median_s','stat_p95_s'):
-            if not positive(serial.get(k)):bad.append('missing '+k)
+        kind=r.get('perf_probe_kind',serial.get('probe_kind','stat'))
+        ms=r.get('perf_probe_ms',serial.get('probe_ms',250))
+        if kind not in ('stat','qr') or not positive(ms):bad.append('invalid probe configuration')
+        elif serial.get('probe_mode')!=f'{ms:g}ms':bad.append('probe interval mismatch')
+        if serial.get('probe_kind',kind)!=kind:bad.append('probe kind mismatch')
+        median=serial.get('probe_median_s',serial.get('stat_median_s') if kind=='stat' else None)
+        p95=serial.get('probe_p95_s',serial.get('stat_p95_s') if kind=='stat' else None)
+        if not positive(median) or not positive(p95):bad.append('missing probe round trips')
         initial,minimum,last=(serial.get('rx_credit_'+k) for k in ('initial','min','last'))
         if not all(isinstance(v,int) for v in (initial,minimum,last)):
             bad.append('missing receive-credit evidence')
         elif minimum<=2 or last<initial:bad.append('receive-credit pressure or shrinking window')
         output.append(dict(fixture=r['fixture'],slot=r.get('slot'),bench=r.get('bench'),rt=r.get('rt'),
             baseline='N55: no A streaming round-trip baseline; B absolute measurements only',
-            stat_median_s=serial.get('stat_median_s'),stat_p95_s=serial.get('stat_p95_s'),
+            probe_kind=kind,probe_ms=ms,probe_median_s=median,probe_p95_s=p95,
+            stat_median_s=median if kind=='stat' else None,stat_p95_s=p95 if kind=='stat' else None,
             rx_credit_initial=initial,rx_credit_min=minimum,rx_credit_last=last,
             result='FINDING' if bad else 'MEASURED',findings=bad))
     return output

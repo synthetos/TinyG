@@ -18,11 +18,26 @@ def options(env):
 
 
 def probe_options(env):
+    _,ms=probe_parameters(env)
     mode=env.get('PERF_PROBES','off')
     if mode not in ('off','on'):raise ValueError('PERF_PROBES must be off|on')
     if mode=='on' and env.get('FIRMWARE_TAG')!='B':
         raise ValueError('PERF_PROBES=on requires B: N55 prevents an A streaming RTT baseline')
-    return .25 if mode=='on' else None
+    return ms/1000 if mode=='on' else None
+
+
+def probe_parameters(env):
+    kind=env.get('PERF_PROBE_KIND','stat')
+    ms=float(env.get('PERF_PROBE_MS','250'))
+    if kind not in ('stat','qr') or not math.isfinite(ms) or ms<=0:
+        raise ValueError('PERF_PROBE_KIND must be stat|qr and PERF_PROBE_MS finite and positive')
+    return kind,ms
+
+
+def probe_suffix(env):
+    interval=probe_options(env)
+    kind,ms=probe_parameters(env)
+    return f"{'off' if interval is None else 'on'}-{kind}-{ms:g}ms"
 
 
 def capture_budget(source, requested, timeout):
@@ -70,13 +85,15 @@ def steps(edges, initial, plus):
                 last_step_s=max(last) if last else None,motion_s=max(last)-min(first) if first else None)
 
 
-def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
-    """One reader, reserved control slots, and tid-tagged probes every 250 ms.
+def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25, probe_kind="stat"):
+    """One reader, reserved control slots, and configurable tid-tagged probes.
 
     Directives start after previous lines are acknowledged. HOLD-RESUME waits
     the first delay, sends !, then waits for HOLD plus the second delay before ~.
     Never call tg.get concurrently with this loop.
     """
+    if probe_kind not in ('stat','qr'):raise ValueError('invalid probe kind')
+    if probe_interval is not None and (not math.isfinite(probe_interval) or probe_interval<=0):raise ValueError('invalid probe interval')
     tr=tg.transport;free=tg.get('rx');todo=[l.strip() for l in lines if l.strip()]
     queue=deque();i=acked=0;started=clock();next_probe=started
     pending=None;tid=810000;action=None;last_stat=None;idle_since=None;done='timeout'
@@ -89,9 +106,9 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
     velocity=None;zero_since=None;bang_at=None
     while clock()-started<timeout:
         now=clock()
-        if probe_interval is None and idle_since is not None and now-idle_since>=.5:
+        if (probe_interval is None or probe_kind=="qr") and idle_since is not None and now-idle_since>=.5:
             done='idle';break
-        if pending and now-pending[1]>5: errors.append('stat probe unanswered for 5 s');break
+        if pending and now-pending[1]>5: errors.append(f'{probe_kind} probe unanswered for 5 s');break
         if action:
             kind,until,delay=action
             if kind=='pause' and now>=until: action=None
@@ -104,7 +121,7 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
             elif kind=='resume' and now>=until:
                 tr.write(b'~',drain_timeout=2);events.append([now,'~']);action=None;zero_since=None;velocity=None
         if probe_interval is not None and now>=next_probe and pending is None:
-            tid+=1;sent=clock();tr.write((json.dumps({'stat':None,'tid':tid})+'\n').encode(),drain_timeout=2)
+            tid+=1;sent=clock();tr.write((json.dumps({probe_kind:None,'tid':tid})+'\n').encode(),drain_timeout=2)
             pending=(tid,sent);next_probe=sent+probe_interval
         while action is None and i<len(todo) and free-len(queue)>RESERVE:
             line=todo[i]
@@ -136,7 +153,7 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
                 last_stat=stat
                 if stat in tg.dialect.stats('ALARM','SHUTDOWN','PANIC'):
                     errors.append(f'terminal machine state {stat}');break
-                if probe_interval is None:
+                if probe_interval is None or probe_kind=="qr":
                     if i==len(todo) and not queue and action is None and stat in tg.dialect.idle_stats and (not legacy or velocity==0):
                         if idle_since is None:idle_since=now
                     else:idle_since=None
@@ -148,14 +165,16 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
         credit_last=footer[1];credit_min=min(credit_min,credit_last)
         credit_rows.append(dict(t=ev.t,free=credit_last,probe=pending is not None and echo==pending[0]))
         if pending and echo==pending[0]:
-            stat=body.get('stat')
-            if footer[0] or not isinstance(stat,int): errors.append('invalid stat probe reply');break
+            value=body.get(probe_kind)
+            if footer[0] or type(value) is not int or (probe_kind=='qr' and value<0): errors.append(f'invalid {probe_kind} probe reply');break
             # A priority reply can be the only response after fragmented RX headers
             # become reusable. Refresh credit without acknowledging queued G-code.
             free=footer[1]
-            probes.append(dict(sent=pending[1],received=ev.t,rtt_s=ev.t-pending[1],stat=stat,
+            probes.append(dict(sent=pending[1],received=ev.t,rtt_s=ev.t-pending[1],**{probe_kind:value},
                                lines_pending=len(queue),lines_unsent=len(todo)-i))
-            pending=None;last_stat=stat
+            pending=None
+            if probe_kind=='qr':continue # qr is queue space, never a machine state
+            stat=value;last_stat=stat
             if stat in tg.dialect.stats('ALARM','SHUTDOWN','PANIC'):
                 errors.append(f'terminal machine state {stat}');break
             if i==len(todo) and not queue and action is None and stat in tg.dialect.idle_stats and (not legacy or velocity==0):
@@ -172,10 +191,12 @@ def stream(tg, lines, timeout, *, clock=time.monotonic, probe_interval=.25):
     return dict(completion=done,errors=errors,acked=acked,sent=len(sent_rows),sent_rows=sent_rows,
                 pending=len(queue),unsent=sum(not l.startswith((';HOST-PAUSE',';HOLD-RESUME')) for l in todo[i:]),started=started,finished=clock(),ack_rows=rows,
                 hold_detection='449 post-! vel=0 plus 0.5 s settle' if legacy else 'HOLD stat',
-                probe_mode='off' if probe_interval is None else '250ms',
+                probe_mode='off' if probe_interval is None else f'{probe_interval*1000:g}ms',
+                probe_kind=probe_kind,probe_ms=None if probe_interval is None else probe_interval*1000,
                 rx_credit_initial=credit_initial,rx_credit_min=credit_min,rx_credit_last=credit_last,rx_credit_rows=credit_rows,
                 ack_span_s=span,lines_s=acked/span if span>0 else None,probes=probes,
-                stat_median_s=percentile(rtts,.5),stat_p95_s=percentile(rtts,.95),statuses=statuses,events=events)
+                probe_median_s=percentile(rtts,.5),probe_p95_s=percentile(rtts,.95),
+                stat_median_s=percentile(rtts,.5) if probe_kind=='stat' else None,stat_p95_s=percentile(rtts,.95) if probe_kind=='stat' else None,statuses=statuses,events=events)
 
 
 def write_record(path, record):

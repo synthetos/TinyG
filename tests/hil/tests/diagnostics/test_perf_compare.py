@@ -40,6 +40,7 @@ def test_perf_compare(tg,keep,record,request,fixture):
         pytest.skip('42-minute dense fixture; enable PERF_DENSE=1')
     tag,slot,rt=perf.options(os.environ)
     probe_interval=perf.probe_options(os.environ)
+    probe_kind,probe_ms=perf.probe_parameters(os.environ)
     probe_mode="off" if probe_interval is None else "on"
     recorder=request.config._tinyg_recorder
     assert recorder is not None,'capture evidence requires recording'
@@ -51,9 +52,9 @@ def test_perf_compare(tg,keep,record,request,fixture):
     requested_budget=float(os.environ.get('PERF_CAPTURE_S',BUDGET.get(fixture,600)))
     budget,timeout=perf.capture_budget(source,requested_budget,os.environ.get('PERF_TIMEOUT_S'))
     assert 2<timeout<budget,'capture must outlast the bounded stream'
-    stem=recorder.dir/f'perf-{Path(fixture).stem}-{tag}-{slot}-{rt}-probes-{probe_mode}'
+    stem=recorder.dir/f'perf-{Path(fixture).stem}-{tag}-{slot}-{rt}-probes-{perf.probe_suffix(os.environ)}'
     info=dict(schema=1,kind='bench-perf',fixture=fixture,sha256=perf.digest(lines),tag=tag,slot=slot,rt=rt,
-              perf_probes=probe_mode,bench=bench.get('name'),identity=dict(tg.identity),source=source,motors_captured=motors,
+              perf_probes=probe_mode,perf_probe_kind=probe_kind,perf_probe_ms=probe_ms,bench=bench.get('name'),identity=dict(tg.identity),source=source,motors_captured=motors,
               missing_motors=sorted(set(['M1','M2','M3','M4'])-set(motors)),capture_s=budget,requested_capture_s=requested_budget,sample_rate_hz=2_000_000 if source=='mso' else 12_000_000,
               parse_bound=fixture.startswith(('05_','06_','21_')),valid=False)
     if source=='mso':info['capture_channel_map']=cfg['digital']
@@ -105,7 +106,7 @@ def test_perf_compare(tg,keep,record,request,fixture):
                                rate=12_000_000,save_as=stem)
         with cap:
             time.sleep(.35)
-            info['serial']=perf.stream(tg,lines,timeout,probe_interval=probe_interval)
+            info['serial']=perf.stream(tg,lines,timeout,probe_interval=probe_interval,probe_kind=probe_kind)
             power.check()
             assert info['serial']['completion']=='idle' and not info['serial']['errors'],info['serial']['errors']
             info['end']={a:tg.get('mpo'+a) for a in 'xyza'}

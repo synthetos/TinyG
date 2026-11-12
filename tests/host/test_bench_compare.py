@@ -156,6 +156,17 @@ class BenchCompare(unittest.TestCase):
         probe['serial']['probe_mode']='250ms';rs.append(probe)
         self.assertEqual(b.compare(rs)[0]['result'],'PASS')
 
+    def test_queue_round_trips_are_labeled_with_kind_and_interval(self):
+        for ms in (100,500):
+            r=row('B');r.update(perf_probes='on',perf_probe_kind='qr',perf_probe_ms=ms)
+            r['serial'].update(probe_mode=f'{ms}ms',probe_kind='qr',probe_ms=ms,
+                               probe_median_s=.01,probe_p95_s=.02,stat_median_s=None,stat_p95_s=None)
+            result=b.round_trips([r])[0]
+            self.assertEqual(result['result'],'MEASURED')
+            self.assertEqual((result['probe_kind'],result['probe_ms']),('qr',ms))
+            self.assertEqual(result['probe_median_s'],.01)
+            self.assertIsNone(result['stat_median_s'])
+
     def test_absolute_rtt_rejects_bad_evidence(self):
         for case in ('credits','settings','identity','timing'):
             r=row('B');r['perf_probes']='on';r['serial']['probe_mode']='250ms'

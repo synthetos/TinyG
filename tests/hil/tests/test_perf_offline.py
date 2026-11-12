@@ -265,3 +265,14 @@ def test_probe_parameters_and_filename():
     assert perf.probe_parameters({})==('stat',250)
     for key,value in [('PERF_PROBE_KIND','rx'),('PERF_PROBE_MS','0'),('PERF_PROBE_MS','nan'),('PERF_PROBE_MS','-1')]:
         with pytest.raises(ValueError):perf.probe_options(dict(env,**{key:value}))
+
+
+def test_empty_queue_reply_is_not_motion_complete():
+    class QueueOnly(Fake):
+        def write(self,data,**kw):
+            if data.startswith(b'{'):
+                self.writes.append((self.t,data));self.t+=.001
+                self.events.append(parse_line(json.dumps({'r':{'qr':32},'tid':json.loads(data)['tid'],'f':[3,0,8]}),self.t))
+            else:super().write(data,**kw)
+    f=QueueOnly();r=perf.stream(f,['G1 X1'],1,clock=f.clock,probe_kind='qr')
+    assert r['acked']==1 and r['completion']=='timeout' and not r['statuses']

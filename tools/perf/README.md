@@ -420,3 +420,22 @@ lines13..21 were never sent. The last executed endpoint was X10/Y0, not X24/Y0.
 This was a collector credit-refresh bug, not evidence of firmware dropping lines.
 Minimum credit remains reported; temporary credit pressure is not itself proof
 of an N55 leak when credit later recovers.
+
+### Configurable B probe passes
+
+`PERF_PROBES=on` defaults to `PERF_PROBE_KIND=stat PERF_PROBE_MS=250`.
+Use `PERF_PROBE_KIND=qr PERF_PROBE_MS=500` for the job-stream polling interval,
+or `PERF_PROBE_KIND=qr PERF_PROBE_MS=100` for the faster drain/pause interval.
+The interval must be finite and positive. Both kinds remain B-only. These passes
+send tid-tagged queries at a fixed interval with at most one unanswered query;
+they do not reproduce every adaptive polling rule in run.
+
+Queue replies return queue space, not machine state. The collector uses automatic
+status reports for completion and hold detection during qr passes, and still
+refreshes RX credit from each validated reply's footer. Neither kind acknowledges
+a pending G-code line. Every record carries `perf_probe_kind` and `perf_probe_ms`;
+filenames include e.g. `probes-on-qr-500ms` (also included for probes-off records).
+Serial results contain `probe_kind`, `probe_ms`, `probe_median_s`, `probe_p95_s`,
+and each query's value. The legacy `stat_*` timing fields are null for qr passes.
+`compare.py --bench --rtt-only` reports kind and interval on each absolute result;
+no A baseline or mixing of stat and qr latency is implied.
