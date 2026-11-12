@@ -205,3 +205,32 @@ def test_step_legs_count_only_direction_changes_with_pulses():
                   'M1 dir':[(1.5,1),(1.6,0),(2.5,1)]},
                  {'M1 step':0,'M1 dir':0},{'M1':0})
     assert r['motors']['M1']['reversal_legs']==2
+
+
+def test_probe_credit_recovery_restarts_a_drained_data_window():
+    class Fragmented(Fake):
+        def write(self,data,**kw):
+            super().write(data,**kw)
+            if not data.startswith(b'{'):
+                ev=self.events.pop();raw=json.loads(ev.raw);raw['f'][2]=0
+                self.events.append(parse_line(json.dumps(raw),self.t))
+    f=Fragmented();lines=[f'G1 X{i}' for i in range(22)]
+    r=perf.stream(f,lines,4,clock=f.clock)
+    assert r['completion']=='idle' and not r['errors']
+    assert r['sent']==r['acked']==22 and r['unsent']==r['pending']==0
+    assert [row['index'] for row in r['ack_rows']]==list(range(22))
+    assert [row['line'] for row in r['sent_rows']]==lines
+    assert [data.decode().strip() for _,data in f.writes if data.startswith(b'G')]==lines
+    assert any(row['free']==0 and not row['probe'] for row in r['rx_credit_rows'])
+    assert any(row['free']==8 and row['probe'] for row in r['rx_credit_rows'])
+
+
+def test_zero_probe_credit_does_not_authorize_more_data():
+    class Full(Fake):
+        def write(self,data,**kw):
+            super().write(data,**kw)
+            ev=self.events.pop();raw=json.loads(ev.raw);raw['f'][2]=0
+            self.events.append(parse_line(json.dumps(raw),self.t))
+    f=Full();r=perf.stream(f,[f'G1 X{i}' for i in range(22)],1,clock=f.clock)
+    assert r['completion']=='timeout'
+    assert r['sent']==r['acked']==6 and r['pending']==0 and r['unsent']==16
