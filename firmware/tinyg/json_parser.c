@@ -337,7 +337,23 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
         if (nv->valuetype == TYPE_NULL) {                   // GET the value or group
             ritorno(nv_get(nv));                            // return if exception
         } else {
-            ritorno(cm_is_alarmed());                       // report rejected SETs; GETs remain available
+            // Ordinary groups dispatch child GETs through their SET handler.
+            // Check every child before dispatch so mixed requests stay atomic
+            // under alarm. Configuration groups such as sr are still SETs.
+            bool group_read = false;
+            if (nv->valuetype == TYPE_PARENT) {
+                fptrCmd setter = (fptrCmd)GET_TABLE_WORD(set);
+                if (setter == set_grp || setter == rt_set_grp) {
+                    nvObj_t *child = nv->nx;
+                    group_read = child && child->depth > nv->depth &&
+                                 child->valuetype != TYPE_EMPTY;
+                    for (; child && child->depth > nv->depth &&
+                           child->valuetype != TYPE_EMPTY; child = child->nx) {
+                        if (child->valuetype != TYPE_NULL) { group_read = false; break; }
+                    }
+                }
+            }
+            if (!group_read) { ritorno(cm_is_alarmed()); }
             ritorno(nv_set(nv));
             if (nv->valuetype != TYPE_PARENT) {             // groups persist their children
                 ritorno(nv_persist(nv));
