@@ -155,7 +155,7 @@ nvList_t nvl;
  *	!!!! NOTE: nv_persist() cannot be called from an interrupt on the AVR due to the AVR1008 EEPROM workaround
  */
 /*
- * _refused_in_cycle() - a persisted setting written while a cycle runs (moving, homing, probing, jogging or in
+ * nv_refused_in_cycle() - a persisted setting written while a cycle runs (moving, homing, probing, jogging or in
  *	feedhold) or while queued work is pending or running (a lone G4 dwell does not start a cycle) is refused before
  *	it applies (N60). The busy test is the one the switch setters use. Never before config_init() has finished:
  *	it loads every setting through nv_set() after canonical_machine_init() has queued commands (and has already set
@@ -167,7 +167,7 @@ static bool config_loaded;                  // set when config_init() has loaded
 
 bool config_is_loaded(void) { return (config_loaded); }
 
-static bool _refused_in_cycle(nvObj_t *nv)
+bool nv_refused_in_cycle(nvObj_t *nv)
 {
 	if (!config_loaded ||
 	    ((cm.cycle_state == CYCLE_OFF) && !mp_has_runnable_buffer() && mp_runtime_is_idle())) {
@@ -182,7 +182,7 @@ stat_t nv_set(nvObj_t *nv)
 	if (nv->index >= nv_index_max()) {
         return(STAT_INTERNAL_RANGE_ERROR);
     }
-	if (_refused_in_cycle(nv)) {
+	if (nv_refused_in_cycle(nv)) {
 		return (STAT_SETTING_REFUSED_IN_CYCLE);	// nothing changes; the job continues (N60)
 	}
 	fptrCmd set = (fptrCmd)GET_TABLE_WORD(set);
@@ -1032,7 +1032,7 @@ stat_t set_grp(nvObj_t *nv)
 	for (uint8_t i=0; i<NV_MAX_OBJECTS; i++) {
 		if ((child = nv_next(child)) == NULL) break;
 		if (child->valuetype == TYPE_EMPTY) break;
-		if ((child->valuetype != TYPE_NULL) && (child->index < nv_index_max()) && _refused_in_cycle(child)) {
+		if ((child->valuetype != TYPE_NULL) && (child->index < nv_index_max()) && nv_refused_in_cycle(child)) {
 			return (STAT_SETTING_REFUSED_IN_CYCLE);
 		}
 	}

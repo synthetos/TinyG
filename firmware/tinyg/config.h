@@ -360,6 +360,7 @@ stat_t config_test_assertions(void);
 
 // main entry points for core access functions
 stat_t nv_get(nvObj_t *nv);					// main entry point for get value
+bool nv_refused_in_cycle(nvObj_t *nv); // read-only preflight of the N60 setting guard
 stat_t nv_set(nvObj_t *nv);					// main entry point for set value
 void nv_print(nvObj_t *nv);					// main entry point for print value
 stat_t nv_persist(nvObj_t *nv);				// main entry point for persistence

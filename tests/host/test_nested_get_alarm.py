@@ -25,7 +25,7 @@ class NestedGetAlarm(unittest.TestCase):
         fixture=fixture.replace('static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }',
             function((harness.FW/'runtime.c').read_text(), r'stat_t rt_set_grp\('))
         fixture=fixture.replace('stat_t set_grp(nvObj_t *n) { (void)n; return STAT_OK; }',
-            'static bool _refused_in_cycle(nvObj_t *nv);\ncontroller_t cs;\n'+
+            'bool nv_refused_in_cycle(nvObj_t *nv);\ncontroller_t cs;\n'+
             function((harness.FW/'config.c').read_text(),r'stat_t set_grp\('))
         fixture=fixture.replace('static void reset(void) {','static void reset(void) {\n    cs.comm_mode=JSON_MODE;')
         (out/'json_prelude.h').write_text(fixture)

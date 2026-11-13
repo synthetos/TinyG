@@ -4,7 +4,7 @@ import time
 import pytest
 
 pytestmark = [pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"),
-              pytest.mark.timeout(90), pytest.mark.bug("N109", on=["d449"])]
+              pytest.mark.timeout(90), pytest.mark.bug("N109", on=[])]
 
 
 def test_busy_line_refused_before_any_set(tg, keep, record):

@@ -295,6 +295,49 @@ static bool _motion_sync_envelope(const char *str)
     return ((gc == 1) && (tid <= 1) && (!tid || js.tid_present));
 }
 
+// Inspect tokenized keys without consuming them or executing getters/setters.
+// Reuse the empty response slot: no second input buffer or NV list is needed.
+static stat_t _settings_line_preflight(nvObj_t *nv, char *str)
+{
+    uint8_t roots = 0;
+    for (const char *p = str; *p; p++) {
+        uint8_t token = (uint8_t)*p;
+        if ((token & (JTOK_FLAG | JTOK_KEY)) == (JTOK_FLAG | JTOK_KEY) &&
+            ((token & JTOK_DEPTH) == (1 << JTOK_DSHIFT))) { roots++; }
+    }
+    // Single objects already have N60's scalar/group preflight. This also
+    // leaves the common JSON-wrapped G-code path free of extra table lookups.
+    if (roots < 2) { return (STAT_OK); }
+    char group[GROUP_LEN+1] = "";
+    char *field = str;
+    for (char *p = str; *p != NUL; p++) {
+        uint8_t token = (uint8_t)*p;
+        if (!(token & JTOK_FLAG)) { continue; }
+        if (token & JTOK_KEY) {
+            if ((p - field) > TOKEN_LEN) { return (STAT_OK); } // normal parser reports it
+            *p = NUL;
+            nv->index = nv_get_index(group, field);
+            if (token & JTOK_PARENT) {
+                if (nv_group_is_prefixed(field)) {
+                    strncpy(group, field, GROUP_LEN);
+                }
+            }
+            *p = token;
+            char *value = p + 1;
+            while (*value && !((uint8_t)*value & JTOK_FLAG)) { value++; }
+            bool writing = (token & JTOK_PARENT) ||
+                           (*value && (((uint8_t)*value & JTOK_TMASK) != TYPE_NULL));
+            if (writing && nv->index != NO_MATCH && nv_refused_in_cycle(nv)) {
+                nv_reset_nv(nv);
+                return (STAT_SETTING_REFUSED_IN_CYCLE);
+            }
+        }
+        field = p + 1;
+    }
+    nv_reset_nv(nv);
+    return (STAT_OK);
+}
+
 static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
 {
 	char group[GROUP_LEN+1] = "";   // group identifier - initial value must be provided
@@ -303,6 +346,7 @@ static stat_t _json_parser_kernal(nvObj_t **p_nv, char *str)
     //---- do an application agnostic pre-parse of JSON string ----//
 	ritorno(_tokenize_json_string(str, JSON_INPUT_STRING_MAX, JSON_PAIRS_MAX)); // return if exception
     js.motion_sync_allowed = js.motion_sync_allowed && _motion_sync_envelope(str);
+    ritorno(_settings_line_preflight(*p_nv, str));
 
 	//---- parse the JSON string into the nv list one executable NV at a time ----//
     do {
