@@ -82,7 +82,7 @@ def test_user_words_are_preserved_as_evidence_but_not_restored(monkeypatch):
     from tinyg_hil import snapshot
     b=Board();s=snap();s['values'].update(udb2='0x1',udb3='0x1',udc0='0x2')
     b.send_gcode=lambda *a,**kw:None;b.wait_idle=lambda:None
-    b.dialect=NS(tokens={k:{'persist':True,'type':'float' if k.endswith('jd') else 'integer'} for k in s['values']})
+    b.dialect=NS(name='d449',tokens={k:{'persist':True,'type':'float' if k.endswith('jd') else 'integer'} for k in s['values']})
     b.set=lambda *a,**kw:pytest.fail('no setting should be written in this matching board')
     result=snapshot.restore(b,s)
     assert {r['token'] for r in result['not_restorable']}=={'udb2','udb3','udc0'}
@@ -110,7 +110,7 @@ def test_legacy_print_precision_is_narrow_and_recorded():
 def test_legacy_restore_writes_real_value_then_checks_printed_value():
     b=Board();b.values.update(bjd=0,cjd=0);writes=[]
     b.send_gcode=lambda *a,**kw:None;b.wait_idle=lambda:None
-    b.dialect=NS(tokens={k:{'persist':True,'type':'float' if k.endswith('jd') else 'integer'} for k in snap()['values']})
+    b.dialect=NS(name='d449',tokens={k:{'persist':True,'type':'float' if k.endswith('jd') else 'integer'} for k in snap()['values']})
     def set_value(token,value,**kw):
         writes.append((token,value));b.values[token]=round(value) if token in ('bjd','cjd') else value
     b.set=set_value
