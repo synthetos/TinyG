@@ -1,7 +1,8 @@
-# Live feed wire format (development branch)
+# Live feed wire format
 
-This draft includes ordered program permission and job resets. Physical pulse,
-interrupt-time and stack qualification remain required before the 450.05 gate.
+Live feed override is merged into edge-next for 450.05, including ordered
+program permission and job resets. Physical pulse, interrupt-time and stack
+qualification are complete; the normal and hooks gate suites passed.
 
 `{"mfo":0.5}` or `$mfo=0.5` requests 50% feed. The accepted range is 0.05 through
 2.0; values outside it return a nonzero status. The reply acknowledges the
