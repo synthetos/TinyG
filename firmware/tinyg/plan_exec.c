@@ -55,7 +55,7 @@ static void _init_forward_diffs(float Vi, float Vt);
 #define OV_BODY_LEAD 32UL
 #ifdef __AVR
 #define BODY_LOCK uint8_t body_sreg = SREG; cli()
-#define BODY_UNLOCK SREG = body_sreg
+#define BODY_UNLOCK SREG = body_sreg; __asm__ __volatile__("" ::: "memory")
 #else
 #define BODY_LOCK ((void)0)
 #define BODY_UNLOCK ((void)0)
@@ -96,52 +96,32 @@ stat_t mp_override_callback(void)
 }
 static stat_t _override_callback_work(void)
 {
+    if (ov_body.ready && ov_body_ticket_pending()) { return STAT_NOOP; }
     ovSnapshot_t request;
     ov_snapshot(&request);
     uint16_t factor = ((request.enables & OV_FEED) && request.program_feed) ? request.feed : OV_FACTOR_ONE;
     float length, feed, jerk, base, segments, tail;
     {
-        BODY_LOCK;
-#if TINYG_MOTION_PROFILE == 3
-    motion_profile_begin();
-#endif
+        // Withdraw the old payload before touching it. An interrupt may consume
+        // it before this store, but cannot consume a partially rewritten plan.
+        ov_body.ready = false;
+        ov_runtime_snapshot_valid = true;
+        __asm__ __volatile__("" ::: "memory");
 
         if (ov_applied_valid && ov_applied_request == request.request) {
-            ov_body_work_done(request.request);
-#if TINYG_MOTION_PROFILE == 3
-            motion_profile_end(mr.section);
-#endif
+            BODY_LOCK;
+            if (ov_runtime_snapshot_valid) ov_body_work_done(request.request);
             BODY_UNLOCK;
             return STAT_NOOP;
         }
         if (!_override_body_eligible() || mr.segment_count <= OV_BODY_LEAD + 1) {
-
-#if TINYG_MOTION_PROFILE == 3
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK;
             return STAT_NOOP;
         }
-        if (ov_body.ready && ov_body.ticket.request == request.request &&
-            ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
-
-#if TINYG_MOTION_PROFILE == 3
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK;
-            return STAT_NOOP;
-        }
-        ov_body.ready = false;
         // Unity on an untouched block must use the existing plan without any retiming.
-        if (!ov_applied_valid && factor == OV_FACTOR_ONE) {
-            ov_applied_valid = true;
-            ov_applied_request = request.request;
-            ov_body_work_done(request.request);
-
-#if TINYG_MOTION_PROFILE == 3
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK;
+        if (!ov_applied_valid && factor == OV_FACTOR_ONE && ov_runtime_snapshot_valid) {
+            BODY_LOCK;
+            if (ov_runtime_snapshot_valid) ov_body_work_done(request.request);
+            BODY_UNLOCK;
             return STAT_NOOP;
         }
         ovBoundary_t *b = &ov_body.ticket.boundary;
@@ -167,13 +147,10 @@ static stat_t _override_callback_work(void)
         feed = mr.gm.feed_rate;
         jerk = mb.r->jerk;
         ov_body.plan.exit = mr.exit_velocity;
-        // Capture the request/cancellation generation in the same critical section.
+        // Cancellation/request identity is short and guarded separately.
         ov_ticket_stamp(&ov_body.ticket, ov_segment_ordinal);
-
-#if TINYG_MOTION_PROFILE == 3
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK;
+        __asm__ __volatile__("" ::: "memory");
+        if (!ov_runtime_snapshot_valid || ov_body.ticket.request != request.request) return STAT_NOOP;
     }
     float segment_length = ov_body.ticket.boundary.velocity * ov_body.segment_time;
     float distance = base + segment_length * (segments - ov_body.remaining);
@@ -198,25 +175,18 @@ static stat_t _override_callback_work(void)
                                  (ov_body.plan.head + ov_body.plan.body);
     }
     // Revalidate after all floating-point planning, before publishing a single ready byte.
+    // The consumer validates age, geometry and generations; a late publish is rejected.
     {
         BODY_LOCK;
 #if TINYG_MOTION_PROFILE == 4
-    motion_profile_begin();
+        motion_profile_begin();
 #endif
-
-        if (_override_body_eligible() && ov_body.ticket.request == request.request &&
-            ov_body.ticket.boundary.incarnation == ov_block_generation &&
-            ov_body.ticket.boundary.slot == (uint8_t)(mb.r - mb.bf) &&
-            (int32_t)(ov_body.ticket.boundary.ordinal - ov_segment_ordinal) > 0 &&
-            ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
-            __asm__ __volatile__("" ::: "memory");
-            ov_body.ready = true;
-        }
-
+        __asm__ __volatile__("" ::: "memory");
+        ov_body.ready = true;
 #if TINYG_MOTION_PROFILE == 4
-    motion_profile_end(mr.section);
+        motion_profile_end(mr.section);
 #endif
- BODY_UNLOCK;
+        BODY_UNLOCK;
     }
     return STAT_OK;
 }
@@ -224,21 +194,9 @@ static stat_t _override_callback_work(void)
 static bool _override_take_body(void)
 {
     if (!ov_body.ready) { return false; }
-    BODY_LOCK;
-#if TINYG_MOTION_PROFILE == 5
-    motion_profile_begin();
-#endif
-
-    if (!ov_body.ready) {
-#if TINYG_MOTION_PROFILE == 5
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK; return false; }
     if ((int32_t)(ov_body.ticket.boundary.ordinal - ov_segment_ordinal) > 0) {
-#if TINYG_MOTION_PROFILE == 5
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK; return false; }
+        return false;
+    }
     ov_body.ready = false;
     __asm__ __volatile__("" ::: "memory");
     if (!_override_body_eligible() || ov_body.ticket.boundary.ordinal != ov_segment_ordinal ||
@@ -249,10 +207,27 @@ static bool _override_take_body(void)
         memcmp(mr.position, ov_body.ticket.boundary.position, sizeof(mr.position)) ||
         memcmp(mr.target, ov_body.target, sizeof(mr.target)) ||
         !ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
+        return false;
+    }
+    // Only this request/cancellation claim is globally masked. Once claimed,
+    // a later stop is ordered after it; copying never clears stop flags or
+    // republishes committed state over a kill/reset received during the copy.
+    bool claimed;
+    {
+        BODY_LOCK;
 #if TINYG_MOTION_PROFILE == 5
-    motion_profile_end(mr.section);
+        motion_profile_begin();
 #endif
- BODY_UNLOCK; return false; }
+        claimed=cm.hold_state==FEEDHOLD_OFF && !cm.hold_fast_request &&
+                !cm.limit_requested && !cm.shutdown_requested && !cm.job_kill_requested &&
+                cm.queue_flush_state==FLUSH_OFF && !cm.program_paused &&
+                ov_try_commit_feed(ov_body.plan.factor_q1000,ov_body.plan.capped);
+#if TINYG_MOTION_PROFILE == 5
+        motion_profile_end(mr.section);
+#endif
+        BODY_UNLOCK;
+    }
+    if (!claimed) return false;
     mr.head_length = ov_body.plan.head;
     mr.body_length = ov_body.plan.body;
     mr.tail_length = ov_body.plan.tail;
@@ -266,14 +241,8 @@ static bool _override_take_body(void)
     copy_vector(mr.waypoint[SECTION_TAIL], ov_body.target);
     mr.section = SECTION_HEAD;
     mr.section_state = SECTION_NEW;
-    ov_commit_feed(ov_body.plan.factor_q1000, ov_body.plan.capped);
     ov_applied_request = ov_body.ticket.request;
     ov_applied_valid = true;
-
-#if TINYG_MOTION_PROFILE == 5
-    motion_profile_end(mr.section);
-#endif
- BODY_UNLOCK;
     return true;
 }
 
@@ -286,6 +255,9 @@ static bool _override_take_body(void)
 
 stat_t mp_exec_move()
 {
+    extern volatile bool ov_runtime_snapshot_valid;
+    ov_runtime_snapshot_valid = false; // invalidate an interrupted main-loop copy
+    __asm__ __volatile__("" ::: "memory");
     // A program stop also blocks queued dwells and output commands.
     if (cm.program_paused) { return (STAT_NOOP); }
     if (mp_startup_is_pending()) { return (STAT_NOOP); }

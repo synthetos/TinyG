@@ -18,8 +18,9 @@ Separate points:
 - Whole exec interrupt, including private-plan acceptance and the first segment
   of the transition. Include high-priority preemption in the reported duration.
 - DDA interrupt, especially the terminal segment and load handoff.
-- Each interrupt-masked override window: producer snapshot, producer publication,
-  and consumer validation/copy. Measure the two producer windows separately.
+- Each interrupt-masked override window: the request-state snapshot, ready-byte
+  publication, and final cancellation claim. Runtime-vector snapshots and
+  consumer geometry checks/copies remain interruptible.
 
 Build the baseline and candidate with the same compiler, linker relaxation and
 selected instrumentation. Also measure an empty bracket to report instrumentation
@@ -57,9 +58,9 @@ Build one site at a time with `make -C firmware/tinyg MOTION_PROFILE=N`:
 |---|---|
 | 1 | AVR exec ISR, including higher-priority preemption |
 | 2 | AVR DDA ISR, ordinary and terminal/load paths |
-| 3 | Main-loop future-boundary snapshot under the interrupt guard |
-| 4 | Main-loop ready-byte validation/publication under the interrupt guard |
-| 5 | Exec's boundary validation and plan acceptance under the interrupt guard |
+| 3 | Atomic 22-byte override request/report snapshot |
+| 4 | Main-loop ready-byte publication |
+| 5 | Exec's final stop/request claim and committed-factor update |
 
 The images are in `build-profileN`. They cannot be combined with `TEST_HOOKS`.
 The ELF symbol `motion_profile` contains `calls`, `overflows`, `maximum_ticks`,
@@ -77,3 +78,21 @@ report the timer count alone as the full interrupt latency or masked interval.
 The record itself adds 12 bytes of RAM only in the profiling image. The normal
 and hooks images compile out all instrumentation. Match the baseline's compiler,
 link relaxation and site bracket before comparing it with these measurements.
+
+The producer withdraws ready before copying runtime vectors. An exec call or
+queued runtime command clears a sticky snapshot-valid byte before changing
+runtime state; an interrupted copy is discarded. Request/cancellation writers
+also invalidate a separate single-ticket claim byte. The consumer checks the
+full ticket and geometry outside CLI, then claims that byte and publishes the
+committed factor in a short guard. It copies the accepted plan afterward while
+the DDA can preempt. A later kill/reset can clear committed state during this
+copy; the copy never writes it back or clears stop flags. Main-loop production
+cannot preempt the exec consumer, so the accepted payload stays immutable.
+
+Site 3 now measures the small request-state copy, including calls from status
+getters, rather than the former long runtime-vector copy. Its section field is
+zero (not a motion-section observation); unity reporting may produce samples.
+Sites 4 and 5 measure only the short publication/claim. Keep the full-workload
+interrupt and scope passes: the unmasked geometry copy still contributes to
+exec time. The factor conversion has an operand dependency barrier so GCC
+cannot move its pure floating-point arithmetic below CLI.

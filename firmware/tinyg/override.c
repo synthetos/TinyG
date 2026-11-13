@@ -1,5 +1,6 @@
 /* Manual override requests, committed feed and private-plan proof helpers. */
 #include "override.h"
+#include "motion_profile.h"
 #include <math.h>
 #include <string.h>
 #ifdef __AVR
@@ -12,6 +13,7 @@
 #endif
 static volatile ovSnapshot_t ov;
 static volatile uint32_t cancel_epoch;
+static volatile bool body_ticket_valid;
 static volatile bool body_work; /* atomic main-loop hint; generations remain authoritative */
 static uint8_t utf_remaining,utf_lo,utf_hi; /* USB RX owns these while armed; arm/reset has the interrupt guard. */
 
@@ -22,7 +24,7 @@ void ov_init(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;
     ov.revision=1;
-    body_work=false;
+    body_ticket_valid=false;body_work=false;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -31,7 +33,7 @@ void ov_set_program_feed(bool enable)
 {
     OV_LOCK;
     if(ov.program_feed!=enable) {
-        ov.program_feed=enable;ov.request++;ov.revision++;body_work=true;
+        ov.program_feed=enable;body_ticket_valid=false;ov.request++;ov.revision++;body_work=true;
     }
     OV_UNLOCK;
 }
@@ -42,20 +44,28 @@ void ov_reset_job(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;ov.armed=0;ov.capped=0;
     ov.unsupported=0;ov.state=OV_CANCELLED;
-    ov.request++;ov.revision++;cancel_epoch++;body_work=false;
+    ov.request++;ov.revision++;cancel_epoch++;body_ticket_valid=false;body_work=false;
     utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
 void ov_snapshot(ovSnapshot_t *out)
 {
-    OV_LOCK;*out=ov;OV_UNLOCK;
+    OV_LOCK;
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_begin();
+#endif
+    *out=ov;
+#if TINYG_MOTION_PROFILE == 3
+    motion_profile_end(0);
+#endif
+    OV_UNLOCK;
 }
 static void _set(uint8_t which,uint16_t factor,uint8_t enables)
 {
     uint16_t old=(which==OV_FEED)?ov.feed:ov.spindle;
     if (old!=factor || ov.enables!=enables) {
         if (which==OV_FEED) ov.feed=factor; else ov.spindle=factor;
-        ov.enables=enables;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;body_work=true;
+        ov.enables=enables;body_ticket_valid=false;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;body_work=true;
     }
 }
 /* AVR-libc can round decimal 0.05 one binary32 step below 0.05f.
@@ -65,6 +75,8 @@ uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted)
     if ((which!=OV_FEED && which!=OV_SPINDLE) || !isfinite(factor) || factor<0x1.999998p-5f || factor>2.0f) return OV_RANGE;
     if (!permitted || which==OV_SPINDLE) return OV_DENIED;
     uint16_t q=(uint16_t)(factor*1000.0f+0.5f); /* float work stays outside the interrupt guard */
+    // A memory clobber alone does not order pure arithmetic against CLI.
+    __asm__ __volatile__("" : "+r"(q) : : "memory");
     if (apply) {OV_LOCK;_set(which,q,ov.enables);OV_UNLOCK;}
     return OV_OK;
 }
@@ -142,17 +154,32 @@ bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame)
     return true;
 }
 /* Called inside exec's validated handoff; no floating-point work. */
-void ov_commit_feed(uint16_t factor,bool capped)
+static void _commit_feed(uint16_t factor,bool capped)
 {
-    OV_LOCK;
     if(ov.committed_feed!=factor || ov.capped!=capped) {
         ov.committed_feed=factor;ov.capped=capped;ov.revision++;
     }
+}
+void ov_commit_feed(uint16_t factor,bool capped)
+{
+    OV_LOCK;_commit_feed(factor,capped);OV_UNLOCK;
+}
+bool ov_body_ticket_pending(void) { return body_ticket_valid; }
+bool ov_try_commit_feed(uint16_t factor,bool capped)
+{
+    OV_LOCK;
+    // Only the main-loop producer can re-arm this byte, with ready withdrawn.
+    // Requests and cancellations clear it; the exec consumer cannot be
+    // preempted by the producer. This closes the final validation/commit race.
+    bool current=body_ticket_valid;
+    body_ticket_valid=false;
+    if (current) _commit_feed(factor,capped);
     OV_UNLOCK;
+    return current;
 }
 void ov_cancel(void)
 {
-    OV_LOCK;cancel_epoch++;ov.state=OV_CANCELLED;OV_UNLOCK;
+    OV_LOCK;body_ticket_valid=false;cancel_epoch++;ov.state=OV_CANCELLED;OV_UNLOCK;
 }
 static bool _boundary(const ovBoundary_t *b)
 {
@@ -163,11 +190,12 @@ static bool _boundary(const ovBoundary_t *b)
     for(uint8_t i=0;i<6;i++)if(!isfinite(b->position[i]))return false;
     return true;
 }
-/* Trusted runtime snapshot: capture only the request and stop generations. */
+/* Main-loop producer only, while its ready byte is withdrawn. A new ticket
+ * captures the request/stop generations and re-arms the single claim byte. */
 void ov_ticket_stamp(ovTicket_t *t,uint32_t now)
 {
     t->created=now;
-    OV_LOCK;t->request=ov.request;t->cancel_epoch=cancel_epoch;OV_UNLOCK;
+    OV_LOCK;t->request=ov.request;t->cancel_epoch=cancel_epoch;body_ticket_valid=true;OV_UNLOCK;
 }
 bool ov_ticket_current(const ovTicket_t *t,uint32_t now)
 {

@@ -13,6 +13,7 @@ class BlockTypeDispatch(unittest.TestCase):
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stddef.h>
 #define STAT_OK 0
 #define STAT_NOOP 1

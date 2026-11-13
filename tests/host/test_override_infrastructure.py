@@ -17,6 +17,14 @@ static ovSnapshot_t s;
 static void snap(void){ov_snapshot(&s);}
 static void text(const unsigned char *p,unsigned n){for(unsigned i=0;i<n;i++)assert(!ov_usb_byte(p[i],true,true));}
 int main(void){
+ ov_init();ovTicket_t claim_ticket={0};
+ ov_ticket_stamp(&claim_ticket,0);ov_cancel();assert(!ov_try_commit_feed(500,false));
+ ov_ticket_stamp(&claim_ticket,0);ov_set_factor(OV_FEED,.5f,true,true);
+ assert(!ov_try_commit_feed(500,false)); /* request arriving after validation invalidates claim */
+ ov_ticket_stamp(&claim_ticket,0);ov_set_factor(OV_FEED,1.5f,false,true);
+ assert(ov_try_commit_feed(500,false));assert(!ov_try_commit_feed(500,false));
+ snap();assert(s.committed_feed==500);
+ ov_ticket_stamp(&claim_ticket,0);ov_reset_job();assert(!ov_try_commit_feed(500,false));
  ov_init();assert(!ov_body_work_pending());
  ov_body_work_begin();assert(!ov_body_work_pending());
  assert(ov_set_factor(OV_FEED,.5f,false,true)==OV_OK);assert(!ov_body_work_pending());

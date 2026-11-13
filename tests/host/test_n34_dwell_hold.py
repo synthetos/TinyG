@@ -15,6 +15,7 @@ class DwellHold(unittest.TestCase):
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stdint.h>
 #define __AVR 1
 #define STAT_OK 0
@@ -87,6 +88,7 @@ int main(void){
         code=r"""
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stddef.h>
 typedef int stat_t;
 #define STAT_OK 0

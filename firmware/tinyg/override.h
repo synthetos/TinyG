@@ -50,6 +50,11 @@ bool ov_plan_transition(float length,float entry,float feed,float exit,float vma
 bool ov_body_work_pending(void);
 void ov_body_work_begin(void);
 void ov_body_work_done(uint32_t request);
+/* Single main-loop snapshot attempt; runtime writers only clear this byte. */
+extern volatile bool ov_runtime_snapshot_valid;
+/* Single pending BODY ticket: stamp while unpublished; writers invalidate it. */
+bool ov_body_ticket_pending(void);
+bool ov_try_commit_feed(uint16_t factor,bool capped);
 void ov_init(void);
 void ov_snapshot(ovSnapshot_t *out);
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted);

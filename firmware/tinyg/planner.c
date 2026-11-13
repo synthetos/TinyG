@@ -62,9 +62,14 @@
 #include "encoder.h"
 #include "report.h"
 #include "util.h"
+#include "override.h"
 #ifdef __AVR
 #include <avr/interrupt.h>
 #endif
+
+// Only the main-loop producer sets this byte; interrupt-side runtime writers
+// clear it before changing state, invalidating a partially copied snapshot.
+volatile bool ov_runtime_snapshot_valid;
 
 // Allocate planner structures
 
@@ -274,6 +279,8 @@ stat_t mp_exec_command(mpBuf_t *bf)
 
 stat_t mp_runtime_command(mpBuf_t *bf)
 {
+    ov_runtime_snapshot_valid = false;
+    __asm__ __volatile__("" ::: "memory");
 	bool flags[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
 		flags[axis] = (bf->axis_mask & (1u << axis)) != 0;

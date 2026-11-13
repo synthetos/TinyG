@@ -13,6 +13,7 @@ class CommandFlagMask(unittest.TestCase):
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stdint.h>
 #include <string.h>
 #define AXES 6

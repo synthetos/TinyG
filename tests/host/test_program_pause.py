@@ -31,6 +31,7 @@ class ProgramPause(unittest.TestCase):
         executor = (ROOT / 'firmware/tinyg/plan_exec.c').read_text()
         code = r'''
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stdint.h>
 #include <assert.h>
 #include <stddef.h>
