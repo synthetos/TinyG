@@ -13,6 +13,7 @@ build that is on the board; struct members need DWARF (the Makefile builds with 
 Holding the board lock is the caller's job (pytest's tg fixture already holds it; the CLI takes it).
 """
 import os
+import logging
 import pathlib
 import struct
 import threading
@@ -242,10 +243,14 @@ class Ice:
                 if self.wire:
                     self.wire.acquire()
                 try:
-                    self.protocol.stop()
+                    self._retry(self.protocol.stop)
                 except BaseException:
-                    if self.wire:
-                        self.wire.release()
+                    # STOP may have taken effect even though its reply failed.
+                    try:
+                        self._resume_confirmed()
+                    finally:
+                        if self.wire:
+                            self.wire.release()
                     raise
             self._halt_depth += 1
             try:
@@ -254,10 +259,47 @@ class Ice:
                 self._halt_depth -= 1
                 if self._halt_depth == 0:
                     try:
-                        self.protocol.run()
+                        self._resume_confirmed()
                     finally:
                         if self.wire:
                             self.wire.release()
+
+    def _resume_confirmed(self):
+        """Bound run/state recovery without trusting a RUN acknowledgement alone."""
+        from pyedbglib.protocols.avr8protocol import Avr8Protocol
+        from pyedbglib.protocols.jtagice3protocol import Jtagice3ResponseError
+        end = time.monotonic() + 0.5
+        last = None
+        attempts = 0
+        while True:
+            attempts += 1
+            try:
+                self.protocol.run()
+            except Jtagice3ResponseError as exc:
+                if "ILLEGAL_STATE" not in str(exc):
+                    raise RuntimeError("CPU left halted or run state unconfirmed: RUN failed") from exc
+                last = exc
+            except Exception as exc:
+                raise RuntimeError("CPU left halted or run state unconfirmed: RUN failed") from exc
+            # An ILLEGAL_STATE can also mean RUN took effect before its reply.
+            # Query the target before retrying, without halting it again.
+            try:
+                state = self.protocol.get_byte(Avr8Protocol.AVR8_CTXT_TEST,
+                                               Avr8Protocol.AVR8_TEST_TGT_RUNNING)
+                if state == 1:
+                    if attempts > 1 or last is not None:
+                        logging.getLogger(__name__).warning(
+                            "ICE resume recovered after %d attempt(s); target running", attempts)
+                    return
+            except Jtagice3ResponseError as exc:
+                if "ILLEGAL_STATE" not in str(exc):
+                    raise RuntimeError("CPU left halted or run state unconfirmed: state query failed") from exc
+                last = exc
+            except Exception as exc:
+                raise RuntimeError("CPU left halted or run state unconfirmed: state query failed") from exc
+            if time.monotonic() >= end:
+                raise RuntimeError("CPU left halted or run state unconfirmed after bounded ICE resume") from last
+            time.sleep(0.001)
 
     def _retry(self, fn, *args):
         from pyedbglib.protocols.jtagice3protocol import Jtagice3ResponseError
