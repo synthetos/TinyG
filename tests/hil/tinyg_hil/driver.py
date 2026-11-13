@@ -222,6 +222,10 @@ class TinyG:
         # json.loads must consume the entire object before any metadata is considered.
         strict_obj = self._request_object(line, strict=True) if correlate else None
         keys = self._untagged_keys(line) if correlate else None
+        if self.dialect is not None and self.dialect.name == "d440" and strict_obj:
+            # Master does not implement tid: metadata is an unrecognized setting.
+            # It executes one top-level command; correlate its plain response.
+            keys = tuple(strict_obj)[:1]
         while (ev := self.transport.next_event(0)) is not None:
             seen.append(ev)
         pairs = self._request_pairs(line) if correlate else []
