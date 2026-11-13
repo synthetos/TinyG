@@ -74,6 +74,7 @@ enum {TYPE_INTEGER=2,TYPE_FLOAT=4};
 #define STAT_INPUT_VALUE_RANGE_ERROR 110
 typedef struct {uint8_t valuetype;union{float value_flt;uint32_t value_int;};int8_t precision;} nvObj_t;
 struct {bool allowed,check_only;} rt;
+static volatile uint8_t ov_operator_enables=3;
 static bool quiet=true,boundary=true,pending=false;static stat_t alarm;
 static uint8_t SREG=128;static void cli(void){SREG=0;}
 #define __AVR 1
@@ -83,7 +84,7 @@ static bool xio_usb_input_boundary(void){return boundary;}
 static stat_t cm_is_alarmed(void){return alarm;}
 '''
   for name in ('_ov_result','_ov_float','ov_get_mfo','ov_get_sso','ov_get_mfc','ov_get_ssc','ov_get_state',
-               '_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_sso','_ov_enable','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
+               '_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_sso','_ov_enable','_ov_operator','ov_set_mfoe','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
    code+=function(source,r'(?:static )?stat_t '+name+r'\(')+'\n'
   code+=r'''
 int main(void){

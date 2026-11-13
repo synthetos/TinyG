@@ -3,7 +3,7 @@
 This draft includes ordered program permission and job resets. Physical pulse,
 interrupt-time and stack qualification remain required before the 450.05 gate.
 
-A pure `{"rt":{"mfo":0.5}}` requests 50% feed. The accepted range is 0.05 through
+`{"mfo":0.5}` or `$mfo=0.5` requests 50% feed. The accepted range is 0.05 through
 2.0; values outside it return a nonzero status. The reply acknowledges the
 request. `mfc` changes only when exec accepts the private speed plan at an
 eligible future segment. If no remaining eligible segment can fit the transition,
@@ -21,11 +21,28 @@ refused with status 106 before applying the envelope. Byte opt-in changes the
 receive interpretation and requires a quiet machine and an input-line boundary;
 keeping it exclusive gives that transition its own acknowledged request.
 
-Read requested feed with `{"rt":{"mfo":null}}`, permission with
-`{"rt":{"mfe":null}}`, and committed feed with `{"rt":{"mfc":null}}`.
-Read the cap flag with `{"rt":{"mcp":null}}`. Flat `mfo`, `mfc`, `mfe` and
-`mcp` are read-only and can be selected in `sr`. `mcp` is a boolean; the short
-name fits the existing five-character token limit including the rt prefix.
+The primary settings work in flat JSON and text mode:
+
+| Token | Access | Meaning | Default |
+|---|---|---|---|
+| `mfo` | read/write | Requested feed factor, 0.05 through 2.0 | 1.0 |
+| `mfoe` | read/write | Operator feed enable, 0 or 1 | 1 |
+| `m48e` | read/write | Operator master enable, 0 or 1 | 1 |
+| `mfc` | read only | Committed feed factor | 1.0 |
+| `mcp` | read only | Accepted plan capped by speed limits | false |
+| `mfe` | read only | Effective feed permission | 1 |
+
+Read with `{"mfo":null}` or `$mfo`; use the same forms for the other tokens.
+`mfo`, `mfc`, `mcp` and `mfe` remain selectable status-report fields. The
+`rt.mfo` request/read and `rt.mfe` operator-enable write remain aliases;
+`rt.mfe` reads effective permission, while `mfoe` reads the operator switch.
+`rt.mfc` and `rt.mcp` remain read aliases. `ov` and exclusive `ovb` remain
+rt-only controls. Each newline-terminated flat JSON or text command consumes
+one line slot, just like its rt alias. Read-only token writes are refused.
+
+These cfgArray entries have neither `F_PERSIST` nor `F_INITIALIZE`: ordinary
+SET dispatch never writes their values to EEPROM. `$defa` does not reset them;
+they are not persisted settings and are not inputs to settings migration.
 
 These reads also work in alarm, shutdown and panic, including after job kill.
 A group containing any write is refused in those states before any child is
@@ -49,8 +66,9 @@ limits still apply. The frame describes the factor accepted for the plan,
 not the instantaneous speed during a transition. Read `vel` for speed.
 
 All of these values are RAM only. Board reset clears events and the byte opt-in,
-and restores requested/committed factors to unity with feed permission enabled.
-M2/M30 reset factors and both permissions in queue order when program end executes;
+and restores requested/committed factors to unity, `m48e=mfoe=1`, and program
+permission enabled.
+M2/M30 reset factors, both operator switches and program permission in queue order when program end executes;
 job kill clears them immediately and invalidates private plans. Both disable the
 byte opt-in. The event opt-in survives job end/kill, so the host can see the reset.
 Feedhold and flush invalidate pending plans but retain the operator request;
@@ -59,12 +77,20 @@ a change during hold is accepted and considered after resume. Neither resumes mo
 M48 enables program permission, M49 disables it, and M50 defaults to P1 (enable);
 M50 P0 disables it. Other P values fail before executing any part of the line.
 These commands execute in queue order. Program permission is independent of
-`rt.mfe`, the operator enable: effective `mfe` is true only when both permit feed
-override. A live request or byte knob cannot bypass M49. Permission changes retain
-the requested factor. M2/M30 restore both permissions, following the
+`m48e` and `mfoe`: effective `mfe` is true only when both operator
+switches AND the ordered program permission permit feed override. Writing either
+operator switch to 1 cannot bypass M49 or M50 P0. Permission changes retain
+the requested factor. M2/M30 restore both operator switches and program permission,
+following the
 [LinuxCNC program-end rule](https://www.linuxcnc.org/docs/html/gcode/m-code.html).
 
 Spindle and rapid override are outside this feature. Spindle factor/enable writes
 are refused; their factors stay unity. Opted-in spindle/rapid bytes are consumed
 as unsupported, never interpreted as feed changes. No output is changed by a
 feed override command.
+
+The flat names and non-persistent setting mechanism follow g2core. TinyG defaults
+the operator switches on and keeps ordered program permission separate. Rapid
+and spindle override are not implemented: no `mto`/`ssoe` controls are added;
+existing spindle factor readouts remain unity and writes are refused. This is
+name/interface compatibility, not a claim of the full g2core override feature set.

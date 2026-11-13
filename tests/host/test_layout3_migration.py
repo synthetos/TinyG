@@ -21,7 +21,7 @@ class Layout3Migration(unittest.TestCase):
         before, after = tokens(old), tokens((FW/'config_app.c').read_text())
         first, stamp = before.index('spph'), before.index('_hld')
         added = ['rtmfo','rtsso','rtmfe','rtsse','rtovb','rtovs','mfo','sso',
-                 'mfc','ssc','ovs','rtmfc','rtov','rtmcp','mcp','mfe']
+                 'mfc','ssc','ovs','rtmfc','rtov','rtmcp','mcp','mfe','mfoe','m48e']
         self.assertEqual(after[after.index('rtmfo'):after.index('sys')], added)
         self.assertEqual([t for t in after if t not in added],
                          [t for t in before if t not in ('spph','spde','coph','_hld')])

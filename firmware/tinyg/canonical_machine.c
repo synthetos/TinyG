@@ -1972,7 +1972,7 @@ void cm_message(char *message)
  */
 void cm_request_job_kill(void)
 {
-    ov_reset_job();
+    rt_override_reset_job();
     rt_qt_invalidate();
     rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
@@ -2504,7 +2504,7 @@ void cm_program_end()
  */
 static void _exec_program_end(float *value, bool *flags)
 {
-    ov_reset_job();
+    rt_override_reset_job();
 	uint8_t coord_system = (uint8_t)value[1];
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {

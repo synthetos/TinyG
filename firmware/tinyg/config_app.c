@@ -708,6 +708,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "rt","rtmcp",_i0,0,tx_print_nul,ov_get_capped,set_nul,(uint32_t *)&cs.null,0 },
     { "","mcp",_i0,0,tx_print_int,ov_get_capped,set_nul,(uint32_t *)&cs.null,0 },
     { "","mfe",_i0,0,tx_print_int,rt_get_mfe,set_nul,(uint32_t *)&cs.null,0 },
+    { "","mfoe",_i0,0,tx_print_int,ov_get_mfoe,ov_set_mfoe,(uint32_t *)&cs.null,0 },
+    { "","m48e",_i0,0,tx_print_int,ov_get_m48e,ov_set_m48e,(uint32_t *)&cs.null,0 },
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***

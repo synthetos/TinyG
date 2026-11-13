@@ -167,7 +167,8 @@ int main(void) {
         self.assertEqual(new[end+28:end+30], [("rt", "rtjob"), ("rt", "rtfg")])
         self.assertEqual(new[end+30:end+41], [("rt", "rtmfo"), ("rt", "rtsso"), ("rt", "rtmfe"), ("rt", "rtsse"), ("rt", "rtovb"), ("rt", "rtovs"), ("", "mfo"), ("", "sso"), ("", "mfc"), ("", "ssc"), ("", "ovs")])
         self.assertEqual(new[end+41:end+46], [("rt", "rtmfc"), ("rt", "rtov"), ("rt", "rtmcp"), ("", "mcp"), ("", "mfe")])
-        self.assertEqual(new[end+46:], groups)
+        self.assertEqual(new[end+46:end+48], [("", "mfoe"), ("", "m48e")])
+        self.assertEqual(new[end+48:], groups)
 
 
 

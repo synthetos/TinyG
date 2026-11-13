@@ -21,10 +21,14 @@
 #endif
 
 rtSingleton_t rt;
+/* Interface switches; the engine consumes only their conjunction. */
+static volatile uint8_t ov_operator_enables;
+
 
 void rt_init(void)
 {
 	memset(&rt, 0, sizeof(rt));
+    ov_operator_enables=3;
     ov_init();
 }
 
@@ -859,7 +863,39 @@ static stat_t _ov_enable(nvObj_t *nv,uint8_t which)
     if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
     return _ov_result(ov_set_enable(which,nv->value_int,!rt.check_only,true));
 }
-stat_t rt_set_mfe(nvObj_t *nv){return _ov_enable(nv,OV_FEED);}
+/* Serialize interface state with the reset wrapper and the engine update. */
+static stat_t _ov_operator(nvObj_t *nv,uint8_t bit)
+{
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
+    if(rt.check_only)return STAT_OK;
+#ifdef __AVR
+    uint8_t saved_sreg=SREG;cli();
+#endif
+    uint8_t next=nv->value_int ? ov_operator_enables|bit : ov_operator_enables&~bit;
+    status=_ov_result(ov_set_enable(OV_FEED,next==3,true,true));
+    if(status==STAT_OK)ov_operator_enables=next;
+#ifdef __AVR
+    SREG=saved_sreg;
+#endif
+    return status;
+}
+stat_t ov_set_mfoe(nvObj_t *nv){return _ov_operator(nv,1);}
+stat_t ov_set_m48e(nvObj_t *nv){return _ov_operator(nv,2);}
+stat_t ov_get_mfoe(nvObj_t *nv){nv->value_int=!!(ov_operator_enables&1);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t ov_get_m48e(nvObj_t *nv){nv->value_int=!!(ov_operator_enables&2);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+void rt_override_reset_job(void)
+{
+#ifdef __AVR
+    uint8_t saved_sreg=SREG;cli();
+#endif
+    ov_operator_enables=3;
+    ov_reset_job();
+#ifdef __AVR
+    SREG=saved_sreg;
+#endif
+}
+stat_t rt_set_mfe(nvObj_t *nv){return rt.allowed ? ov_set_mfoe(nv) : STAT_UNRECOGNIZED_NAME;}
 stat_t rt_set_sse(nvObj_t *nv){return _ov_enable(nv,OV_SPINDLE);}
 stat_t rt_get_mfe(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=((s.enables&OV_FEED) && s.program_feed);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 stat_t rt_get_sse(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_SPINDLE);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
