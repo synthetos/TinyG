@@ -79,9 +79,10 @@ $(BUILDDIR)/tinyg.elf: $(OBJS) Makefile
 $(BUILDDIR)/tinyg.hex: $(BUILDDIR)/tinyg.elf
 	$(OBJCOPY) -O ihex -R .eeprom $< $@
 
-# Configuration load/migration is main-loop work. Keep
+# Configuration migration and command parsing run in the main loop. Keep
 # motion, exec and interrupt code at the existing optimization level.
-$(BUILDDIR)/config.o $(BUILDDIR)/json_parser.o: CFLAGS += -Os
+# Qualify parse-bound throughput when changing these compiler settings.
+$(BUILDDIR)/config.o $(BUILDDIR)/json_parser.o $(BUILDDIR)/gcode_parser.o: CFLAGS += -Os
 
 $(BUILDDIR)/%.o: %.c Makefile
 	@mkdir -p $(dir $@)
