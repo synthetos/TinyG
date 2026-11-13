@@ -69,8 +69,9 @@ def json_chain(fw, support=None):
     tokens = "static const char *firmware_tokens[] = {" + ",".join(
         json.dumps(token) for token in sorted(fields)) + "};"
     code = pre.replace("@FIRMWARE_TOKENS@", tokens)
-    # N60's in-cycle refusal (config.c _refused_in_cycle): replays apply settings before streaming, so never refuse
-    code += "\nstatic bool _refused_in_cycle(nvObj_t *nv) { (void)nv; return false; }\n"
+    # N60's in-cycle refusal (config.c nv_refused_in_cycle): replays apply settings before streaming, so never refuse
+    policy = "nv_refused_in_cycle" if "bool nv_refused_in_cycle(" in (fw / "config.c").read_text() else "_refused_in_cycle"
+    code += f"\nbool {policy}(nvObj_t *nv) {{ (void)nv; return false; }}\n"
     code += extract(fw, "config.c", "nv_reset_nv_list").replace(
         "nv_reset_nv_list(", "real_reset_nv_list(", 1)
     for name in ("nv_reset_nv", "nv_next", "nv_prev", "nv_next_empty", "set_nul",
@@ -80,8 +81,10 @@ def json_chain(fw, support=None):
     code += extract(fw, "report.c", "sr_set_si")
     for name in ("_is_key_char", "_scan_tid", "_scan_rt", "_skip_whitespace",
                  "_skip_quote", "_value_type", "_tokenize_json_string", "_next_token",
-                 "_marshall_nv_pair", "_motion_sync_envelope", "_json_parser_kernal",
+                 "_marshall_nv_pair", "_motion_sync_envelope", "_settings_line_preflight", "_json_parser_kernal",
                  "json_parser"):
+        if name == "_settings_line_preflight" and name not in (fw / "json_parser.c").read_text():
+            continue
         code += extract(fw, "json_parser.c", name)
     for name in ("_text_parser_kernal", "text_parser"):
         code += extract(fw, "text_parser.c", name)

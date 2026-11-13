@@ -17,8 +17,8 @@ def extract(source, name, filename):
     return f'\n#line {line} "{FW / filename}"\n' + definition
 
 
-def build(kind, folder):
-    pre = (FIXTURES / (kind + '_prelude.h')).read_text()
+def build(kind, folder, prelude=None):
+    pre = prelude if prelude is not None else (FIXTURES / (kind + '_prelude.h')).read_text()
     pre += r'''
 static int input_machine_state(void) {
     const char *state=getenv("TINYG_INPUT_STATE");
@@ -83,11 +83,11 @@ static int exercise(char *s,unsigned n) {
         code = pre + extract((FW / 'canonical_machine.c').read_text(), 'cm_is_alarmed', 'canonical_machine.c')
         config = (FW / 'config.c').read_text()
         code += extract(config,'nv_reset_nv_list','config.c').replace('nv_reset_nv_list(', 'real_reset_nv_list(', 1)
-        for name in ['nv_reset_nv','nv_next','nv_prev','nv_next_empty','set_nul','_refused_in_cycle','nv_set','nv_get','nv_copy_string']:
+        for name in ['nv_reset_nv','nv_next','nv_prev','nv_next_empty','set_nul','nv_refused_in_cycle','nv_set','nv_get','nv_copy_string']:
             code += extract(config,name,'config.c')
         for name in ['str_asciify','str_unescape','str2float','str2long']:
             code += extract(util,name,'util.c')
-        for name in ['_is_key_char','_scan_tid','_scan_rt','_skip_whitespace','_skip_quote','_value_type','_tokenize_json_string','_next_token','_marshall_nv_pair','_motion_sync_envelope','_json_parser_kernal','json_parser']:
+        for name in ['_is_key_char','_scan_tid','_scan_rt','_skip_whitespace','_skip_quote','_value_type','_tokenize_json_string','_next_token','_marshall_nv_pair','_motion_sync_envelope','_settings_line_preflight','_json_parser_kernal','json_parser']:
             code += extract(source,name,'json_parser.c')
         code += r'''
 #line 1 "input_fixture.c"

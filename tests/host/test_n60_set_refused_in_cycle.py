@@ -1,6 +1,6 @@
 """N60: nv_set() and set_grp() refuse a persisted setting while a cycle runs, before any value changes.
 
-The real _refused_in_cycle(), nv_set() and set_grp() (config.c) run against a stub cfgArray: one persisted row, one
+The real nv_refused_in_cycle(), nv_set() and set_grp() (config.c) run against a stub cfgArray: one persisted row, one
 RAM-only row (an action, like an rt leaf), the status report list row, and a group. While idle every SET applies; in a
 cycle (or with a block queued, or a lone dwell running) the persisted row, the status report list and a group holding a persisted child are refused with 117 and nothing
 is written, not even the group's RAM-only child; the RAM-only row still applies. Until config_init() has finished
@@ -111,7 +111,7 @@ class SetRefusedInCycle(unittest.TestCase):
         if not cc:
             self.skipTest("host C compiler not installed")
         source = (ROOT / "firmware/tinyg/config.c").read_text().replace("\r\n", "\n")
-        code = (PRELUDE + function(source, r"static bool _refused_in_cycle\(nvObj_t \*nv\)") + "\n"
+        code = (PRELUDE + function(source, r"bool nv_refused_in_cycle\(nvObj_t \*nv\)") + "\n"
                 + function(source, r"stat_t nv_set\(nvObj_t \*nv\)") + "\n"
                 + function(source, r"stat_t set_grp\(nvObj_t \*nv\)") + "\n" + EXERCISE)
         with tempfile.TemporaryDirectory(prefix="tinyg-n60-") as tmp:
