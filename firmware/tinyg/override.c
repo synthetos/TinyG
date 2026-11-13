@@ -56,9 +56,11 @@ static void _set(uint8_t which,uint16_t factor,uint8_t enables)
         ov.enables=enables;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;
     }
 }
+/* AVR-libc can round decimal 0.05 one binary32 step below 0.05f.
+ * Admit that endpoint only; the stored factor still rounds to 50/1000. */
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted)
 {
-    if ((which!=OV_FEED && which!=OV_SPINDLE) || !isfinite(factor) || factor<0.05f || factor>2.0f) return OV_RANGE;
+    if ((which!=OV_FEED && which!=OV_SPINDLE) || !isfinite(factor) || factor<0x1.999998p-5f || factor>2.0f) return OV_RANGE;
     if (!permitted || which==OV_SPINDLE) return OV_DENIED;
     uint16_t q=(uint16_t)(factor*1000.0f+0.5f); /* float work stays outside the interrupt guard */
     if (apply) {OV_LOCK;_set(which,q,ov.enables);OV_UNLOCK;}
