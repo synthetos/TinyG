@@ -841,7 +841,6 @@ stat_t ov_get_ssc(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(n
 stat_t ov_get_state(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.state;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
 {
-    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
     stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
     if(nv->valuetype!=TYPE_FLOAT && nv->valuetype!=TYPE_INTEGER)return STAT_INPUT_VALUE_RANGE_ERROR;
     float value=nv->valuetype==TYPE_FLOAT?nv->value_flt:(float)nv->value_int;
@@ -850,8 +849,9 @@ static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
     if(status==STAT_OK && !rt.check_only){if(which==OV_FEED)ov_get_mfo(nv);else ov_get_sso(nv);}
     return status;
 }
-stat_t rt_set_mfo(nvObj_t *nv){return _ov_factor(nv,OV_FEED);}
-stat_t rt_set_sso(nvObj_t *nv){return _ov_factor(nv,OV_SPINDLE);}
+stat_t ov_set_mfo(nvObj_t *nv){return _ov_factor(nv,OV_FEED);}
+stat_t rt_set_mfo(nvObj_t *nv){return rt.allowed ? ov_set_mfo(nv) : STAT_UNRECOGNIZED_NAME;}
+stat_t rt_set_sso(nvObj_t *nv){return rt.allowed ? _ov_factor(nv,OV_SPINDLE) : STAT_UNRECOGNIZED_NAME;}
 static stat_t _ov_enable(nvObj_t *nv,uint8_t which)
 {
     if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;

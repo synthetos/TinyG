@@ -33,7 +33,7 @@ static fptrCmd table_set(index_t i){return i==10?rt_set_grp:i==11?tracked_set:i?
     fixture=fixture.replace('bool allowed, fl_taken;', 'bool allowed, fl_taken, check_only;')
     runtime=(h.FW/'runtime.c').read_text()
     wrappers=''.join(function(runtime,r'(?:static )?stat_t '+name+r'\(') for name in
-                     ('_ov_result','_ov_float','ov_get_mfo','ov_get_sso','_ov_factor','rt_set_mfo','rt_set_grp'))
+                     ('_ov_result','_ov_float','ov_get_mfo','ov_get_sso','_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_grp'))
     fixture=fixture.replace('static stat_t rt_set_grp(nvObj_t *n) { (void)n; return STAT_OK; }',wrappers)
     fixture=fixture.replace('static void reset(void) {','static void reset(void) {ov_init();parsed_bits=0;')
     (out/'json_prelude.h').write_text(fixture)

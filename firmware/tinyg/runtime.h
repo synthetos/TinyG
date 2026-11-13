@@ -69,6 +69,7 @@ stat_t ov_get_sso(nvObj_t *nv);
 stat_t ov_get_mfc(nvObj_t *nv);
 stat_t ov_get_ssc(nvObj_t *nv);
 stat_t ov_get_state(nvObj_t *nv);
+stat_t ov_set_mfo(nvObj_t *nv);
 stat_t rt_set_mfo(nvObj_t *nv);
 stat_t rt_set_sso(nvObj_t *nv);
 stat_t rt_set_mfe(nvObj_t *nv);

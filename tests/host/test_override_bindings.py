@@ -83,7 +83,7 @@ static bool xio_usb_input_boundary(void){return boundary;}
 static stat_t cm_is_alarmed(void){return alarm;}
 '''
   for name in ('_ov_result','_ov_float','ov_get_mfo','ov_get_sso','ov_get_mfc','ov_get_ssc','ov_get_state',
-               '_ov_factor','rt_set_mfo','rt_set_sso','_ov_enable','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
+               '_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_sso','_ov_enable','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
    code+=function(source,r'(?:static )?stat_t '+name+r'\(')+'\n'
   code+=r'''
 int main(void){
