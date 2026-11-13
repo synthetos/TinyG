@@ -1,4 +1,6 @@
 """Exercise mode transitions and RX flow characters with the production functions."""
+
+from source_extract import OVERRIDE_STUBS
 import pathlib
 import subprocess
 import tempfile
@@ -107,7 +109,7 @@ class FlowControlTransition(unittest.TestCase):
         rx=function(usb,r'ISR\(USB_RX_ISR_vect\)[^\n]*\n')
         code+=rx[:rx.index('\n\t// normal character path')]+ '\nnormal++;\n}' +EXERCISE
         with tempfile.TemporaryDirectory() as tmp:
-            src=pathlib.Path(tmp)/'flow.c';exe=pathlib.Path(tmp)/'flow';src.write_text(code)
+            src=pathlib.Path(tmp)/'flow.c';exe=pathlib.Path(tmp)/'flow';src.write_text(OVERRIDE_STUBS+code)
             subprocess.run(['cc','-std=c99','-Wall','-Wextra','-Wno-unused-function','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(src),'-o',str(exe)],check=True)
             subprocess.run([str(exe)],check=True)
 if __name__=='__main__': unittest.main()

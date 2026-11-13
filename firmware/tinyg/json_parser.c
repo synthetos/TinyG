@@ -169,7 +169,7 @@ static uint8_t _scan_rt(const char *p)
 	uint8_t depth = 0, others = 0, rt_keys = 0;
 	uint8_t objects = 0;							// bit n: the container at depth n+1 is an object
 	bool expect_key = false, rt_value = false, in_rt = false, has_rt = false, has_qt = false, twice = false;
-	uint16_t leaves = 0;							// rt leaves seen: hb qt up flk flm flp flf fi fs job fg (one bit each)
+	uint32_t leaves = 0; // rt leaves, including advisor and override keys
 	while (*p != NUL) {
 		char c = *p;
 		if ((c == '"') && !expect_key) {			// skip a string value
@@ -215,18 +215,27 @@ static uint8_t _scan_rt(const char *p)
 				else if (!((n == 3) && (key[0] == 't') && (key[1] == 'i') && (key[2] == 'd'))) { others++; }
 			} else if (in_rt && (depth == 2)) {
 				rt_keys++;
-				uint16_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
+				uint32_t leaf = ((n == 2) && (key[0] == 'h') && (key[1] == 'b')) ? 1 :
 							   ((n == 2) && (key[0] == 'q') && (key[1] == 't')) ? 2 :
 							   ((n == 2) && (key[0] == 'u') && (key[1] == 'p')) ? 4 :
 							   ((n == 2) && (key[0] == 'f') && (key[1] == 'i')) ? 128 :
 							   ((n == 2) && (key[0] == 'f') && (key[1] == 's')) ? 256 :
 							   ((n == 3) && (key[0] == 'j') && (key[1] == 'o') && (key[2] == 'b')) ? 512 :
 							   ((n == 2) && (key[0] == 'f') && (key[1] == 'g')) ? 1024 :
+                               ((n == 3) && !memcmp(key,"mfo",3)) ? (1UL<<16) :
+                               ((n == 3) && !memcmp(key,"sso",3)) ? (1UL<<17) :
+                               ((n == 3) && !memcmp(key,"mfe",3)) ? (1UL<<18) :
+                               ((n == 3) && !memcmp(key,"sse",3)) ? (1UL<<19) :
+                               ((n == 3) && !memcmp(key,"ovb",3)) ? (1UL<<20) :
+                               ((n == 3) && !memcmp(key,"ovs",3)) ? (1UL<<21) :
+                               ((n == 3) && !memcmp(key,"mfc",3)) ? (1UL<<22) :
+                               ((n == 3) && !memcmp(key,"mcp",3)) ? (1UL<<23) :
+                               ((n == 2) && !memcmp(key,"ov",2)) ? (1UL<<24) :
 							   ((n == 3) && (key[0] == 'f') && (key[1] == 'l')) ?
 									((key[2] == 'k') ? 8 : (key[2] == 'm') ? 16 : (key[2] == 'p') ? 32 : (key[2] == 'f') ? 64 : 0) : 0;
 				twice |= (leaf & leaves) != 0;
 				leaves |= leaf;
-				has_qt = has_qt || (leaf == 2);
+				has_qt = has_qt || (leaf == 2) || (leaf == (1UL<<20)); // opt-in is exclusive too
 			}
 			continue;
 		}

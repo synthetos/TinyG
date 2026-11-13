@@ -250,6 +250,7 @@ class PlannerExecHandoff(unittest.TestCase):
             objs = []
             for name, extra in [('check.c', []), ('planner.c', ['-include', 'tgmath.h']),
                                 ('plan_line.c', ['-include', 'tgmath.h']), ('plan_exec.c', ['-include', 'tgmath.h']),
+                                ('override.c', []),
                                 ('feedlimit.c', []),
                                 ('util.c', ['-include', 'tgmath.h']),
                                 ('plan_zoid.c', ['-include', 'math.h', '-Dsqrt=hook_sqrt'])]:

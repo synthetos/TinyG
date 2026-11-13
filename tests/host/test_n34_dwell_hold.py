@@ -1,4 +1,6 @@
 """Hold admission during a stopped cycle/dwell, with real request and startup code."""
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import subprocess
 import tempfile
@@ -13,6 +15,7 @@ class DwellHold(unittest.TestCase):
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stdint.h>
 #define __AVR 1
 #define STAT_OK 0
@@ -76,7 +79,7 @@ int main(void){
 }
 '''
         with tempfile.TemporaryDirectory() as d:
-            p=Path(d);(p/'check.c').write_text(code)
+            p=Path(d);(p/'check.c').write_text(OVERRIDE_STUBS+code)
             subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
             subprocess.run([str(p/'check')],check=True)
 
@@ -85,6 +88,7 @@ int main(void){
         code=r"""
 #include <assert.h>
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stddef.h>
 typedef int stat_t;
 #define STAT_OK 0
@@ -124,7 +128,7 @@ int main(void){
 }
 """
         with tempfile.TemporaryDirectory() as d:
-            p=Path(d);(p/'check.c').write_text(code)
+            p=Path(d);(p/'check.c').write_text(OVERRIDE_STUBS+code)
             subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
             subprocess.run([str(p/'check')],check=True)
 
@@ -154,6 +158,6 @@ int main(void){
 }
 """
         with tempfile.TemporaryDirectory() as d:
-            p=Path(d);(p/'check.c').write_text(code)
+            p=Path(d);(p/'check.c').write_text(OVERRIDE_STUBS+code)
             subprocess.run(['cc','-std=c99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p/'check.c'),'-o',str(p/'check')],check=True)
             subprocess.run([str(p/'check')],check=True)

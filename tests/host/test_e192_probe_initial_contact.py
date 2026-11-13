@@ -11,6 +11,8 @@ The real read_switch(), switch dispatch, feedhold request and _probing_start() a
 probe touches right after the pin is sampled. The edge interrupt runs at that point if interrupts
 are enabled, else when the critical section ends. The uninjected run is the control.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import os
 import shutil
@@ -129,7 +131,7 @@ class ProbeInitialContact(unittest.TestCase):
             self.skipTest("host C compiler not installed")
         with tempfile.TemporaryDirectory(prefix="tinyg-e192-") as d:
             c, exe = Path(d) / "probe.c", Path(d) / "probe"
-            c.write_text(probe_case())
+            c.write_text(OVERRIDE_STUBS+probe_case())
             subprocess.run([cc, "-std=gnu99", "-O1", "-g", "-Wall", "-Wno-unused-function", "-Wno-unused-variable",
                             "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             control = subprocess.run([str(exe), "control"], capture_output=True, text=True)

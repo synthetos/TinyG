@@ -36,3 +36,19 @@ static inline __attribute__((unused)) void rt_init(void) {}
 static inline __attribute__((unused)) void rt_job_end(void) {}
 #endif
 '''
+
+# Orthogonal override hooks default to the pre-feature state in legacy extracted-function fixtures.
+# test_override_* links the actual module and does not use these stubs.
+OVERRIDE_STUBS = r'''
+#ifndef OVERRIDE_FIXTURE_STUBS
+#define OVERRIDE_FIXTURE_STUBS
+#include <stdint.h>
+#include <stdbool.h>
+static inline __attribute__((unused)) void ov_init(void) {}
+static inline __attribute__((unused)) void ov_cancel(void) {}
+static inline __attribute__((unused)) void ov_reset_job(void) {}
+static inline __attribute__((unused)) void rt_override_reset_job(void) {}
+static inline __attribute__((unused)) bool _usb_override_byte(uint8_t c,uint8_t status) {(void)c;(void)status;return false;}
+#endif
+'''
+RUNTIME_STUBS += OVERRIDE_STUBS

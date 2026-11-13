@@ -21,3 +21,5 @@ uint8_t xio_usb_rx_unread(void);
 bool xio_usb_tx_ready(void);
 bool xio_usb_try_send_frame(const char *s);
 bool xio_usb_try_send_line(const char *s);
+
+static inline bool xio_usb_input_boundary(void){return true;}

@@ -9,6 +9,8 @@ The real dispatch functions and flush request helpers are compiled; the reader s
 '%' just before it returns the line, and the parser stand-in counts dispatches. The uninjected
 run is the control.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import os
 import shutil
@@ -86,7 +88,7 @@ class FlushAfterRead(unittest.TestCase):
             self.skipTest("host C compiler not installed")
         with tempfile.TemporaryDirectory(prefix="tinyg-e191-") as d:
             c, exe = Path(d) / "flush.c", Path(d) / "flush"
-            c.write_text(flush_case())
+            c.write_text(OVERRIDE_STUBS+flush_case())
             subprocess.run([cc, "-std=gnu99", "-O1", "-g", "-Wall", "-Wno-unused-function", "-Wno-unused-variable",
                             "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)], check=True)
             control = subprocess.run([str(exe), "control"], capture_output=True, text=True)

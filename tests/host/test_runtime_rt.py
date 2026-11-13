@@ -25,7 +25,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, OVERRIDE_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 FW = Path(os.environ.get("TINYG_FIRMWARE", ROOT / "firmware/tinyg"))
@@ -40,7 +40,7 @@ def fn(path, name, ret=r"(?:static )?(?:bool|uint8_t|stat_t|void)"):
     return function(src(path), ret + r"\s+" + name + r"\(" + DEF)
 
 
-PRELUDE = r'''
+PRELUDE = OVERRIDE_STUBS + r'''
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>

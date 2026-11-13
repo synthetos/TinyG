@@ -82,7 +82,7 @@ def parse_line(raw: str, t: float) -> Event:
             sr = data["sr"]
             return Event("banner" if isinstance(sr, dict) and "msg" in sr else "status", t, raw, data, damaged)
         for key, kind in (("qr", "queue"), ("rx", "rx"), ("er", "exception"), ("ack", "ack"), ("prb", "probe"), ("hb", "heartbeat"),
-                          ("fl", "feedlimit"), ("fs", "feedsummary"), ("fg", "feedgaps")):
+                          ("fl", "feedlimit"), ("fs", "feedsummary"), ("fg", "feedgaps"), ("ov", "override")):
             if key in data:                     # prb: edge's top-level probe report since E101; hb: idle heartbeat;
                                                 # fl, fs: feed-limit cause change and summary ({"rt":{"fi":n}});
                                                 # fg: gap and boundary counters after each fs ({"rt":{"fg":1}})

@@ -3,7 +3,7 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, OVERRIDE_STUBS
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 PRELUDE=r'''
@@ -45,7 +45,7 @@ class ResetHandshake(unittest.TestCase):
         rpt=(ROOT/'firmware/tinyg/report.c').read_text()
         dispatch=function(usb,r'ISR\(USB_RX_ISR_vect\)[^\n]*\n')
         dispatch=dispatch[:dispatch.index('\n\tif (c == CHAR_FEEDHOLD)')]+ '\n}'
-        code=PRELUDE+"static bool usb_boot_discard; static volatile unsigned char usb_activity, usb_rx_seen, rx_quiet_ticks;\n"+dispatch
+        code=OVERRIDE_STUBS+PRELUDE+"static bool usb_boot_discard; static volatile unsigned char usb_activity, usb_rx_seen, rx_quiet_ticks;\n"+dispatch
         code+=function(hw,r'void hw_hard_reset\(void\)[^\n]*\n')
         code+=function(rpt,r'void _startup_helper\(stat_t status, const char \*msg\)\s*\n')
         code+=r'''

@@ -2,6 +2,8 @@
 
 The runtime finalizer and physical step generator are fixtures; no timing claim is made.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import re
 import subprocess
@@ -29,6 +31,7 @@ class ProgramPause(unittest.TestCase):
         executor = (ROOT / 'firmware/tinyg/plan_exec.c').read_text()
         code = r'''
 #include <stdbool.h>
+volatile bool ov_runtime_snapshot_valid;
 #include <stdint.h>
 #include <assert.h>
 #include <stddef.h>
@@ -177,7 +180,7 @@ int main(void) {
 '''
         with tempfile.TemporaryDirectory() as tmp:
             c = Path(tmp) / 'pause.c'
-            c.write_text(code)
+            c.write_text(OVERRIDE_STUBS+code)
             exe = Path(tmp) / 'pause'
             subprocess.run(['cc', '-std=c99', '-Wall', '-Werror', '-fsanitize=address,undefined','-fstrict-flex-arrays=3',
                             str(c), '-o', str(exe)], check=True)

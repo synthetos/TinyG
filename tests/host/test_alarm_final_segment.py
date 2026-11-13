@@ -4,6 +4,8 @@ These are deterministic state tests, not a simulation of interrupt scheduling,
 step delivery, or latency. In particular, the prepared-only fixture exercises
 the alarm decision; it does not claim the main loop can outrun the HI loader.
 """
+
+from source_extract import OVERRIDE_STUBS
 import os
 from pathlib import Path
 import subprocess
@@ -123,7 +125,7 @@ int main(int argc, char **argv) {
 }
 '''
         path = Path(cls.tmp.name) / "alarm.c"
-        path.write_text(code)
+        path.write_text(OVERRIDE_STUBS+code)
         cls.exe = path.with_suffix("")
         subprocess.run(["cc", "-std=c99", "-Wall", "-Werror",
                         "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(path), "-o", str(cls.exe)], check=True)

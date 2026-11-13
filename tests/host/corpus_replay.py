@@ -21,7 +21,7 @@ from source_extract import function, region
 HERE = Path(__file__).resolve().parent
 SUPPORT = HERE / "corpus_replay_support"
 SOURCES = ("gcode_parser", "canonical_machine", "plan_arc", "planner",
-           "plan_line", "plan_zoid", "util", "spindle", "runtime", "feedlimit")
+           "plan_line", "plan_zoid", "util", "spindle", "runtime", "feedlimit", "override")
 SUFFIXES = {".nc", ".ngc", ".gcode", ".tap"}
 MATH_NAMES = ("sqrt", "cbrt", "pow", "sin", "cos", "atan2", "atan", "asin",
               "acos", "floor", "ceil", "round", "fabs", "fmax", "fmin", "hypot")

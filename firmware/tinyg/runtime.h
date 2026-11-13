@@ -31,6 +31,8 @@ typedef struct rtSingleton {
 	char qt[RT_QT_LEN+1];
 	volatile uint8_t job;					// host streaming a job with more motion to send (step 3); cleared from interrupts
 	uint8_t fg;								// host opted in to fg frames after each fs (step 3); reset clears it
+    uint32_t ov_revision,ov_sent_at;
+    bool ov_events,ov_ask;
 } rtSingleton_t;
 extern rtSingleton_t rt;
 
@@ -52,10 +54,49 @@ stat_t rt_get_fi(nvObj_t *nv);
 stat_t rt_set_fi(nvObj_t *nv);
 stat_t rt_get_fs(nvObj_t *nv);
 stat_t rt_feedlimit_callback(void);
+stat_t rt_override_callback(void);
+stat_t rt_get_ov(nvObj_t *nv);
+stat_t rt_set_ov(nvObj_t *nv);
+stat_t ov_get_capped(nvObj_t *nv);
 stat_t rt_get_job(nvObj_t *nv);
 stat_t rt_set_job(nvObj_t *nv);
 stat_t rt_get_fg(nvObj_t *nv);
 stat_t rt_set_fg(nvObj_t *nv);
 void rt_job_end(void);						// reset, % flush, job kill, program end: the host job is over
 
+stat_t ov_get_mfo(nvObj_t *nv);
+stat_t ov_get_sso(nvObj_t *nv);
+stat_t ov_get_mfc(nvObj_t *nv);
+stat_t ov_get_ssc(nvObj_t *nv);
+stat_t ov_get_state(nvObj_t *nv);
+void rt_override_reset_job(void);
+stat_t ov_set_mfoe(nvObj_t *nv);
+stat_t ov_set_m48e(nvObj_t *nv);
+stat_t ov_get_mfoe(nvObj_t *nv);
+stat_t ov_get_m48e(nvObj_t *nv);
+stat_t ov_set_mfo(nvObj_t *nv);
+stat_t rt_set_mfo(nvObj_t *nv);
+stat_t rt_set_sso(nvObj_t *nv);
+stat_t rt_set_mfe(nvObj_t *nv);
+stat_t rt_set_sse(nvObj_t *nv);
+stat_t rt_get_mfe(nvObj_t *nv);
+stat_t rt_get_sse(nvObj_t *nv);
+stat_t rt_get_ovb(nvObj_t *nv);
+stat_t rt_set_ovb(nvObj_t *nv);
+
+#ifdef __TEXT_MODE
+void ov_print_mfo(nvObj_t *nv);
+void ov_print_mfc(nvObj_t *nv);
+void ov_print_mfoe(nvObj_t *nv);
+void ov_print_m48e(nvObj_t *nv);
+void ov_print_mcp(nvObj_t *nv);
+void ov_print_mfe(nvObj_t *nv);
+#else
+#define ov_print_mfo tx_print_stub
+#define ov_print_mfc tx_print_stub
+#define ov_print_mfoe tx_print_stub
+#define ov_print_m48e tx_print_stub
+#define ov_print_mcp tx_print_stub
+#define ov_print_mfe tx_print_stub
+#endif
 #endif // End of include guard: RUNTIME_H_ONCE

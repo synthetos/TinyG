@@ -29,6 +29,18 @@ BUILDDIR = build-fb$(FW_BUILD)
 TEST_DEFS += -DTINYG_FIRMWARE_BUILD=$(FW_BUILD)
 endif
 
+# Separate timing images: 1 exec ISR, 2 DDA ISR, 3 snapshot, 4 publish, 5 consume.
+ifdef MOTION_PROFILE
+ifeq (,$(filter $(MOTION_PROFILE),1 2 3 4 5))
+$(error MOTION_PROFILE must be 1 through 5)
+endif
+ifdef TEST_HOOKS
+$(error MOTION_PROFILE and TEST_HOOKS must be separate images)
+endif
+BUILDDIR = build-profile$(MOTION_PROFILE)
+TEST_DEFS += -DTINYG_MOTION_PROFILE=$(MOTION_PROFILE)
+endif
+
 SRCS  = $(filter-out system.c,$(wildcard *.c))
 SRCS += $(filter-out xio/xio.c,$(wildcard xio/*.c))
 SRCS += $(filter-out xmega/xmega_wdt.c,$(wildcard xmega/*.c))
@@ -52,20 +64,27 @@ ifneq (,$(filter 12 13,$(GCC_MAJOR)))
 CFLAGS += --param=min-pagesize=0
 endif
 
-LDFLAGS = -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
+# Keep the image below the bootloader. Relax only linker branches/calls;
+# all motion arithmetic retains the existing compiler settings.
+LDFLAGS = -Wl,--relax -Wl,--defsym=__TEXT_REGION_LENGTH__=196608 -mmcu=$(MCU) -Wl,-Map=$(BUILDDIR)/tinyg.map -Wl,-u,vfprintf \
           -Wl,--start-group -lm -lprintf_flt -Wl,--end-group -Wl,--gc-sections
 
 all: $(BUILDDIR)/tinyg.hex size
 
 build: all                 # Xcode's legacy target passes $(ACTION): build or clean
 
-$(BUILDDIR)/tinyg.elf: $(OBJS)
+$(BUILDDIR)/tinyg.elf: $(OBJS) Makefile
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 $(BUILDDIR)/tinyg.hex: $(BUILDDIR)/tinyg.elf
 	$(OBJCOPY) -O ihex -R .eeprom $< $@
 
-$(BUILDDIR)/%.o: %.c
+# Configuration migration and command parsing run in the main loop. Keep
+# motion, exec and interrupt code at the existing optimization level.
+# Qualify parse-bound throughput when changing these compiler settings.
+$(BUILDDIR)/config.o $(BUILDDIR)/json_parser.o $(BUILDDIR)/gcode_parser.o: CFLAGS += -Os
+
+$(BUILDDIR)/%.o: %.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 

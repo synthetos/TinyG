@@ -126,3 +126,10 @@ def test_salvaged_nul_line_is_recorded():
     rec.end("n", tg)
     out = rec.pending["n"]
     assert out["salvaged_lines"] == 1 and out["events"][0]["damaged"].startswith("\x00")
+
+
+def test_override_event_is_never_a_line_response():
+    ev=protocol.parse_line('{"ov":{"v":1,"q":4,"mfo":1.5,"mfc":1.5,"mfe":1,"capped":true}}',0)
+    assert ev.kind=='override'
+    assert ev.data['ov']['capped'] is True
+    assert 'f' not in ev.data and 'r' not in ev.data

@@ -99,6 +99,7 @@
 #include "spindle.h"
 #include "runtime.h"
 #include "feedlimit.h"			// FL_CLS_COOLANT (feed-limit advisor step 3)
+#include "override.h"
 #include "report.h"
 #include "gpio.h"
 #include "switch.h"
@@ -916,6 +917,7 @@ stat_t cm_alarm_P(const stat_t status, const char *msg_P)
 // Apply the stop without reporting: also safe while a response is waiting for TX space.
 static bool _enter_alarm(void)
 {
+    ov_cancel();
     if ((cm.machine_state == MACHINE_ALARM) ||
         (cm.machine_state == MACHINE_PANIC) ||
         (cm.machine_state == MACHINE_SHUTDOWN)) {
@@ -983,6 +985,7 @@ stat_t cm_alarm(const stat_t status, const char *msg)
 
 stat_t cm_shutdown(const stat_t status, const char *msg)
 {
+    ov_cancel();
     if ((cm.machine_state == MACHINE_SHUTDOWN) || (cm.machine_state == MACHINE_PANIC)) {
         return (STAT_OK);                       // don't shutdown if shutdown or panic'd
     }
@@ -1020,6 +1023,7 @@ stat_t cm_panic_P(const stat_t status, const char *msg_P)
 
 stat_t cm_panic(const stat_t status, const char *msg)
 {
+    ov_cancel();
     if (cm.machine_state == MACHINE_PANIC) {    // only do this once
         return (STAT_OK);
     }
@@ -1839,22 +1843,21 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
  *	See http://www.linuxcnc.org/docs/2.4/html/gcode_main.html#sec:M50:-Feed-Override
  */
 
-stat_t cm_override_enables(uint8_t flag)			// M48, M49
+/* Executed in queue order, never at parse time ahead of earlier motion. */
+static void _exec_feed_permission(float *value, bool *flags)
 {
-	cm.gmx.feed_rate_override_enable = flag;
-	cm.gmx.traverse_override_enable = flag;
-	cm.gmx.spindle_override_enable = flag;
-	return (STAT_OK);
+    ov_set_program_feed(value[0] != 0);
 }
-
-stat_t cm_feed_rate_override_enable(uint8_t flag)	// M50
+stat_t cm_override_enables(uint8_t flag)
 {
-	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
-		cm.gmx.feed_rate_override_enable = false;
-	} else {
-		cm.gmx.feed_rate_override_enable = true;
-	}
-	return (STAT_OK);
+    float value[AXES] = {0};
+    value[0] = flag;
+    mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    return STAT_OK;
+}
+stat_t cm_feed_rate_override_enable(uint8_t flag)
+{
+    return cm_override_enables(!cm.gf.parameter || cm.gn.parameter != 0);
 }
 
 stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
@@ -1969,12 +1972,14 @@ void cm_message(char *message)
  */
 void cm_request_job_kill(void)
 {
+    rt_override_reset_job();
     rt_qt_invalidate();
     rt_job_end();                                   // the host job is over (advisor step 3)
     cm.job_kill_requested = true;
 }
 
 void cm_request_feedhold(void) {
+    ov_cancel();
 #ifdef __AVR
     uint8_t saved_sreg = SREG;
     cli();
@@ -2036,6 +2041,7 @@ void cm_request_queue_flush()
 
 void cm_request_planner_flush()
 {
+    ov_cancel();
     if ((cm.hold_state != FEEDHOLD_OFF) &&          // don't honor request unless you are in a feedhold
         (cm.queue_flush_state == FLUSH_OFF)) {      // ...and only once
         cm.queue_flush_state = FLUSH_REQUESTED;     // flushed from the main loop
@@ -2455,6 +2461,7 @@ static void _exec_program_stop(float *value, bool *flags)
 
 void cm_program_stop()
 {
+    ov_cancel();
 	float value[AXES] = { (float)MACHINE_PROGRAM_STOP };
 	mp_queue_command(_exec_program_stop, value, FLAGS_ONE);
 }
@@ -2466,6 +2473,7 @@ void cm_optional_program_stop()
 
 void cm_program_end()
 {
+    ov_cancel();
 	// Reset the model now, in the main loop, so blocks parsed after the M2/M30 keep their modes, and
 	// queue ONE runtime command for the rest: the per-block planner demand stays bounded (E069, E088)
 	cm.gmx.origin_offset_enable = 0;				// 1.  G92.1 - we do G91.1 instead of G92.2
@@ -2496,6 +2504,7 @@ void cm_program_end()
  */
 static void _exec_program_end(float *value, bool *flags)
 {
+    rt_override_reset_job();
 	uint8_t coord_system = (uint8_t)value[1];
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {

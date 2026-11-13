@@ -7,6 +7,8 @@ injected while the planner is being flushed (before the atomic consume) and righ
 flush (homing, panic, possibly in ISR context) must never reset the pool itself, and no stale request may
 reach a later alarm-only flush.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import shutil
 import subprocess
@@ -124,7 +126,7 @@ class QueueFlushInput(unittest.TestCase):
         code += EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-e145-") as tmp:
             c, exe = Path(tmp) / "flush.c", Path(tmp) / "flush"
-            c.write_text(code)
+            c.write_text(OVERRIDE_STUBS+code)
             subprocess.run([cc, "-std=c99", "-Wall", "-Werror", "-fsanitize=address,undefined","-fstrict-flex-arrays=3", str(c), "-o", str(exe)],
                            check=True)
             result = subprocess.run([str(exe)], capture_output=True, text=True)

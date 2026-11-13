@@ -20,8 +20,14 @@ class Layout3Migration(unittest.TestCase):
             return re.findall(r'\{\s*"[^"]*"\s*,\s*"([^"]+)"',body)
         before, after = tokens(old), tokens((FW/'config_app.c').read_text())
         first, stamp = before.index('spph'), before.index('_hld')
-        self.assertEqual(after, [t for t in before if t not in ('spph','spde','coph','_hld')])
-        for i,t in enumerate(before):
+        added = ['rtmfo','rtsso','rtmfe','rtsse','rtovb','rtovs','mfo','sso',
+                 'mfc','ssc','ovs','rtmfc','rtov','rtmcp','mcp','mfe','mfoe','m48e']
+        self.assertEqual(after[after.index('rtmfo'):after.index('sys')], added)
+        self.assertEqual([t for t in after if t not in added],
+                         [t for t in before if t not in ('spph','spde','coph','_hld')])
+        # Only single-value rows can be saved report fields. New RAM-only rows
+        # precede groups but do not move any surviving old single-value index.
+        for i,t in enumerate(before[:before.index('sys')]):
             if t in ('spph','spde','coph','_hld'):continue
             mapped = i if i<first else i-(3 if i<stamp else 4)
             self.assertEqual(after[mapped],t)

@@ -227,6 +227,7 @@ void xio_drop_usb_rx_before_mark(void);
 void xio_usb_rtc_callback(void);
 uint8_t xio_usb_is_quiet(void);
 uint8_t xio_usb_rx_unread(void);
+uint8_t xio_usb_input_boundary(void);
 uint8_t xio_usb_take_rx_seen(void);
 uint8_t xio_usb_try_send_line(const char *line);
 uint8_t xio_usb_try_send_frame(const char *line);

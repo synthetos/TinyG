@@ -3,6 +3,8 @@
 Real putc, hold-start, alarm-entry and sequencing code; sleep models interrupt
 progress and releases TX only after checking that motion can decelerate.
 """
+
+from source_extract import OVERRIDE_STUBS
 from pathlib import Path
 import re, subprocess, tempfile, unittest
 from source_extract import function
@@ -97,7 +99,7 @@ int main(void){
 }
 '''
   with tempfile.TemporaryDirectory() as tmp:
-   p=Path(tmp)/'wait.c';p.write_text(code)
+   p=Path(tmp)/'wait.c';p.write_text(OVERRIDE_STUBS+code)
    subprocess.run(['cc','-std=gnu99','-fsanitize=address,undefined','-fstrict-flex-arrays=3',str(p),'-o',str(p.with_suffix(''))],check=True)
    out=subprocess.run([str(p.with_suffix(''))],capture_output=True,text=True)
    self.assertEqual(out.returncode,0,out.stderr)
