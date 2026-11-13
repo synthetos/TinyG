@@ -83,4 +83,20 @@ stat_t rt_get_mfe(nvObj_t *nv);
 stat_t rt_get_sse(nvObj_t *nv);
 stat_t rt_get_ovb(nvObj_t *nv);
 stat_t rt_set_ovb(nvObj_t *nv);
+
+#ifdef __TEXT_MODE
+void ov_print_mfo(nvObj_t *nv);
+void ov_print_mfc(nvObj_t *nv);
+void ov_print_mfoe(nvObj_t *nv);
+void ov_print_m48e(nvObj_t *nv);
+void ov_print_mcp(nvObj_t *nv);
+void ov_print_mfe(nvObj_t *nv);
+#else
+#define ov_print_mfo tx_print_stub
+#define ov_print_mfc tx_print_stub
+#define ov_print_mfoe tx_print_stub
+#define ov_print_m48e tx_print_stub
+#define ov_print_mcp tx_print_stub
+#define ov_print_mfe tx_print_stub
+#endif
 #endif // End of include guard: RUNTIME_H_ONCE

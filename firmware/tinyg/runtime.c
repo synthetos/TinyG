@@ -9,6 +9,7 @@
 #include "plan_arc.h"
 #include "stepper.h"
 #include "runtime.h"
+#include "text_parser.h"
 #include "override.h"
 #include "report.h"
 #include "util.h"
@@ -957,4 +958,19 @@ stat_t rt_override_callback(void)
 
 #ifdef __AVR
 #pragma GCC pop_options
+#endif
+
+#ifdef __TEXT_MODE
+static const char fmt_mfo[] PROGMEM = "[mfo] requested feed factor %.3f\n";
+static const char fmt_mfc[] PROGMEM = "[mfc] committed feed factor %.3f\n";
+static const char fmt_mfoe[] PROGMEM = "[mfoe] operator feed enable %lu\n";
+static const char fmt_m48e[] PROGMEM = "[m48e] operator master enable %lu\n";
+static const char fmt_mcp[] PROGMEM = "[mcp] feed capped %lu\n";
+static const char fmt_mfe[] PROGMEM = "[mfe] effective feed enable %lu\n";
+void ov_print_mfo(nvObj_t *nv) { text_print_flt(nv, fmt_mfo); }
+void ov_print_mfc(nvObj_t *nv) { text_print_flt(nv, fmt_mfc); }
+void ov_print_mfoe(nvObj_t *nv) { text_print_int(nv, fmt_mfoe); }
+void ov_print_m48e(nvObj_t *nv) { text_print_int(nv, fmt_m48e); }
+void ov_print_mcp(nvObj_t *nv) { text_print_int(nv, fmt_mcp); }
+void ov_print_mfe(nvObj_t *nv) { text_print_int(nv, fmt_mfe); }
 #endif
