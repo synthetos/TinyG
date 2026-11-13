@@ -946,8 +946,9 @@ stat_t rt_override_callback(void)
     ovSnapshot_t s;ov_snapshot(&s);
     if(!rt.ov_ask && s.revision==rt.ov_revision)return STAT_OK;
     char frame[112];
-    snprintf_P(frame,sizeof(frame),PSTR("{\"ov\":{\"v\":1,\"q\":%lu,\"mfo\":%.3f,\"mfc\":%.3f,\"mfe\":%u,\"capped\":%s}}\n"),
-        (unsigned long)s.revision,(double)(s.feed/1000.0f),(double)(s.committed_feed/1000.0f),
+    snprintf_P(frame,sizeof(frame),PSTR("{\"ov\":{\"v\":1,\"q\":%lu,\"mfo\":%u.%03u,\"mfc\":%u.%03u,\"mfe\":%u,\"capped\":%s}}\n"),
+        (unsigned long)s.revision,(unsigned)(s.feed/1000),(unsigned)(s.feed%1000),
+        (unsigned)(s.committed_feed/1000),(unsigned)(s.committed_feed%1000),
         (unsigned)((s.enables&OV_FEED) && s.program_feed),s.capped?"true":"false");
     if(xio_usb_try_send_frame(frame)) {
         rt.ov_revision=s.revision;rt.ov_ask=false;
