@@ -134,3 +134,32 @@ def test_state_read_illegal_once_recovers(make_ice):
     assert calls[0] == 2
     assert ice.protocol.running
     assert_released(ice)
+
+
+def test_acknowledged_run_but_still_stopped_is_retried(make_ice):
+    ice = make_ice(stuck=True)
+    original = ice.protocol.get_byte
+    def read(*args):
+        state = original(*args)
+        ice.protocol.stuck = False
+        return state
+    ice.protocol.get_byte = read
+    with ice.halted():
+        pass
+    assert ice.protocol.events == ['stop', 'run', 'state', 'run', 'state']
+    assert ice.protocol.running
+    assert_released(ice)
+
+
+def test_nontransient_run_error_is_not_retried(make_ice):
+    ice = make_ice()
+    def fail():
+        ice.protocol.events.append('run')
+        raise Jtagice3ResponseError('AVR8_FAILURE_OCD_LOCKED', 0x44)
+    ice.protocol.run = fail
+    with pytest.raises(RuntimeError, match='CPU left halted') as caught:
+        with ice.halted():
+            pass
+    assert 'OCD_LOCKED' in str(caught.value.__cause__)
+    assert ice.protocol.events == ['stop', 'run']
+    assert_released(ice)

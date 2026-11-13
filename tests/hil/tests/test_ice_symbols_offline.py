@@ -53,6 +53,7 @@ def test_bitfield_poke_is_one_halt():
     class Protocol:
         def stop(self): events.append("stop")
         def run(self): events.append("run")
+        def get_byte(self, context, offset): return 1
         def memory_read(self, memtype, addr, n):
             events.append("read")
             return bytearray(memory[addr + i] for i in range(n))
