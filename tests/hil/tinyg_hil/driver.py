@@ -19,6 +19,10 @@ class StatusError(Exception):
         super().__init__(f"{response.sent!r} -> status {response.status} ({name}): {response.raw}")
 
 
+class IdentityError(ValueError):
+    """An application answered, but its firmware identity could not be established."""
+
+
 class NoResponse(TimeoutError):
     pass
 
@@ -40,6 +44,10 @@ class TinyG:
     # ---- connection -------------------------------------------------------------------
 
     def connect(self, timeout: float = 5.0) -> dict:
+        # A flash can replace the dialect and reset verbosity to master defaults.
+        self.dialect = None
+        self.identity = {}
+        self._json_verbosity = 3
         if not self.transport.is_open:
             self.transport.open()
         self.transport.drain(quiet=0.3, limit=timeout)
@@ -52,7 +60,14 @@ class TinyG:
         if self.identity["fb"] is None:     # jv too low for JSON GETs to echo values
             self._json_verbosity = 1
             self.identity.update({k: self.get_text(k) for k in ("fb", "fv", "hp", "hv")})
-        self.dialect = dialects.for_build(self.identity["fb"])
+        try:
+            fb = float(self.identity["fb"])
+            if not math.isfinite(fb) or fb <= 0:
+                raise ValueError("invalid build number")
+            self.identity["fb"] = fb
+            self.dialect = dialects.for_build(fb)
+        except (TypeError, ValueError) as exc:
+            raise IdentityError(f"invalid firmware identity after JSON/text bootstrap: {self.identity}") from exc
         return self.identity
 
     def _untagged_query(self, line: str, keys: tuple[str, ...], timeout: float,

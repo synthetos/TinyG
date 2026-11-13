@@ -361,3 +361,34 @@ def test_449_session_start_snapshot_and_collector_probes(monkeypatch):
     result=perf.stream(tg,['G1 X1 F600','G1 X0'],2,probe_interval=.02)
     assert result['completion']=='idle' and not result['errors'] and result['acked']==2
     assert len(result['probes'])>2
+
+
+@pytest.mark.parametrize('old_fb', [449.01, 450.04])
+def test_reconnect_master_defaults_discards_previous_dialect(old_fb):
+    from tinyg_hil import dialect
+    values = {'fb': 440.21, 'fv': .97, 'hp': 1, 'hv': 8}
+    def answer(data):
+        line = data.decode().strip()
+        if line.startswith('$'):
+            key = line[1:]
+            return [f'[{key}] value {values[key]}', 'tinyg [mm] ok>']
+        assert 'tid' not in json.loads(line)
+        return [reply()]  # master defaults omit value echoes
+    tg = driver(answer=answer)
+    tg.identity = {'fb': old_fb}
+    tg.dialect = dialect.for_build(old_fb)
+    tg.transport.is_open = True
+    tg.transport.drain = lambda *a, **kw: []
+    assert tg.connect() == dict(values, id=None)
+    assert tg.dialect.name == 'd440'
+
+
+def test_missing_identity_is_a_distinct_error():
+    from tinyg_hil.driver import IdentityError
+    def answer(data):
+        return ['tinyg [mm] ok>'] if data.startswith(b'$') else [reply()]
+    tg = driver(answer=answer)
+    tg.transport.is_open = True
+    tg.transport.drain = lambda *a, **kw: []
+    with pytest.raises(IdentityError, match='invalid firmware identity'):
+        tg.connect()

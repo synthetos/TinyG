@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import urllib.error
 
 URL = "http://127.0.0.1:10530/mcp"
 _ids = itertools.count(1)
@@ -89,6 +90,27 @@ def _restart_logic(url):
 
 def devices(url=URL):
     return call("get_devices", url, includeSimulationDevices=False).get("devices", [])
+
+
+def soak_capture_policy(mode, eligible):
+    """Resolve optional capture before streaming; never hide capture errors."""
+    if mode not in ('off', 'auto', 'on'):
+        raise ValueError('SOAK_SALEAE must be off, auto or on')
+    if mode == 'off':
+        return False, 'capture disabled by SOAK_SALEAE=off'
+    if not eligible:
+        if mode == 'on':
+            raise ValueError('SOAK_SALEAE=on requires configured capture channels and a file within the capture limit')
+        return False, 'capture not configured or file exceeds capture limit'
+    try:
+        call('get_devices', timeout=3, includeSimulationDevices=False)
+    except urllib.error.HTTPError:
+        raise
+    except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+        if mode == 'on':
+            raise
+        return False, f'capture skipped: Saleae MCP server unreachable: {exc}'
+    return True, 'Saleae MCP server reachable'
 
 
 class Capture:

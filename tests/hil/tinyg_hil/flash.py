@@ -9,7 +9,7 @@ import re
 import subprocess
 import time
 
-from .driver import NoResponse, TinyG
+from .driver import NoResponse, TinyG, IdentityError
 from . import bootloader
 from .state import flash_record, write_flash_record, state_dir
 
@@ -139,6 +139,7 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
             time.sleep(.3)
     finally:
         wire.close()
+    verified_application = False
     try:
         time.sleep(.5)
         cmd = [avrdude, "-p", "x192a3", "-c", "avr109", "-b", "115200", "-P", port,
@@ -151,6 +152,8 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
         if in_bootloader:
             raise bootloader.BootloaderActive('avrdude returned success but XBoot++ is still active; use AVR109 recovery or ICE')
         bootloader.marker(port).unlink()
+        verified_application = True
+        write_flash_record(port, flash_provenance(hex_path))
         # The first boot of a new fb writes every default to EEPROM before answering.
         deadline = time.monotonic() + 30
         while True:
@@ -161,11 +164,24 @@ def flash(tg: TinyG, hex_path, *, expect_fb: float | None = None, avrdude: str =
             except NoResponse:
                 if time.monotonic() > deadline:
                     raise
-        write_flash_record(port, flash_provenance(hex_path))    # read by record.py and ice.py
         if expect_fb is not None and abs(identity["fb"] - expect_fb) > 0.001:
-            raise RuntimeError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
+            raise IdentityError(f"flashed board reports fb {identity['fb']}, expected {expect_fb}")
         return identity
-    except BaseException:
+    except BaseException as error:
+        tg.close()
+        if verified_application and isinstance(error, IdentityError):
+            # Identity failure alone does not make a verified image unsafe.
+            safe = False
+            try:
+                wire, active = bootloader.inspect_port(port)
+                wire.close()
+                safe = not active
+            except Exception as probe_error:
+                error.add_note(f'post-identity application probe failed: {probe_error}')
+            if safe:
+                bootloader.marker(port).unlink(missing_ok=True)
+                error.add_note('image verified and application probe passed; identity failed without quarantine')
+                raise
         bootloader.quarantine(port, 'flash or reconnect failed; AVR109/ICE recovery required')
         tg.close()
         raise
