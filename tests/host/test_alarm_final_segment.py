@@ -66,7 +66,8 @@ void cm_request_planner_flush(void) { requests++; }
 void spindle_reset(void) { spindle_off++; }
 void cm_coolant_off_immediate(void) { coolant_off++; }
 /* Output cancellation is idempotent; count physical off transitions here. */
-static void _hold_outputs_cancel(void) {if (!spindle_off) spindle_reset(); if (!coolant_off) cm_coolant_off_immediate();}
+static volatile bool hold_resume_cancelled;
+static void _stop_outputs(void) {if (!spindle_off) spindle_reset(); if (!coolant_off) cm_coolant_off_immediate();}
 void rpt_exception(int status, const char *msg) { (void)status; (void)msg; reports++; }
 void xio_cancel_pgm_source(void) {}
 void xio_flush_input(void) { input_flushes++; }

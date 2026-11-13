@@ -38,9 +38,6 @@ class SpindlePolarity(unittest.TestCase):
 #define MACHINE_SHUTDOWN 11
 #define MACHINE_PANIC 12
 #define FLUSH_OFF 0
-#define SPINDLE_PAUSE_ON_HOLD 1
-#define SPINDLE_DWELL_TIME 1.0f
-#define COOLANT_PAUSE_ON_HOLD 0
 #define SPINDLE_OFF 0
 #define SPINDLE_CW 1
 #define SPINDLE_CCW 2
@@ -59,7 +56,7 @@ class SpindlePolarity(unittest.TestCase):
 #define cli() (SREG &= ~128)
 typedef int stat_t;
 typedef struct { uint32_t value_int; uint8_t *target; } nvObj_t;
-struct { uint8_t enable_polarity, direction_polarity, pause_on_hold, coolant_pause_on_hold; float dwell_seconds; } spindle_cfg;
+struct { uint8_t enable_polarity, direction_polarity; } spindle_cfg;
 struct { int machine_state,queue_flush_state; bool job_kill_requested,limit_requested,shutdown_requested; struct { int spindle_mode; float spindle_speed; } gm; } cm;
 struct { int buffer_state; } st_pre;
 uint8_t SREG;
@@ -155,24 +152,23 @@ int main(void) {
         end = next(i for i, row in enumerate(old) if row[1] == "se29") + 1
         self.assertEqual(new[:end], old[:end])
         self.assertEqual(new[end:end+2], [("sys", "spep"), ("sys", "spdp")])
-        self.assertEqual(new[end+2:end+5], [("sys", "spph"), ("sys", "spde"), ("sys", "coph")])
-        self.assertEqual(new[end+5], ("sys", "prbp"))
-        self.assertEqual(new[end+6], ("", "fstk"))                                  # E151: not in {sys:n}
-        self.assertEqual(new[end+7], ("", "adc3"))
-        self.assertEqual(new[end+8:end+11], [("", "net"), ("", "fd"), ("", "ma")])   # E099, not persisted
-        self.assertEqual(new[end+11], ("sys", "os"))                                # E020, session only
-        self.assertEqual(new[end+12:end+16], [("pwr", f"pwr{m}") for m in range(1, 5)])   # E108, read-only
-        self.assertEqual(new[end+16:end+19], [("rt", "rthb"), ("rt", "rtqt"), ("rt", "rtup")])   # runtime session, RAM only
-        self.assertEqual(new[end+19:end+23], [("rt", "rtflk"), ("rt", "rtflm"), ("rt", "rtflp"), ("rt", "rtflf")])  # feed-limit report
-        self.assertEqual(new[end+23:end+25], [("rt", "rtfi"), ("rt", "rtfs")])     # feed-limit push (step 2)
-        self.assertEqual(new[end+25:end+31], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
+        self.assertEqual(new[end+2], ("sys", "prbp"))
+        self.assertEqual(new[end+3], ("", "fstk"))                                  # E151: not in {sys:n}
+        self.assertEqual(new[end+4], ("", "adc3"))
+        self.assertEqual(new[end+5:end+8], [("", "net"), ("", "fd"), ("", "ma")])   # E099, not persisted
+        self.assertEqual(new[end+8], ("sys", "os"))                                # E020, session only
+        self.assertEqual(new[end+9:end+13], [("pwr", f"pwr{m}") for m in range(1, 5)])   # E108, read-only
+        self.assertEqual(new[end+13:end+16], [("rt", "rthb"), ("rt", "rtqt"), ("rt", "rtup")])   # runtime session, RAM only
+        self.assertEqual(new[end+16:end+20], [("rt", "rtflk"), ("rt", "rtflm"), ("rt", "rtflp"), ("rt", "rtflf")])  # feed-limit report
+        self.assertEqual(new[end+20:end+22], [("rt", "rtfi"), ("rt", "rtfs")])     # feed-limit push (step 2)
+        self.assertEqual(new[end+22:end+28], [("", "spe"), ("", "spd"), ("", "spc"), ("", "sps"), ("", "cof"), ("", "com")])  # g2core readouts
         groups = list(old[end:])
         groups.insert(groups.index(("", "jid")) + 1, ("", "rt"))                    # runtime session group
-        self.assertEqual(new[end+31], ("", "_hld"))
-        self.assertEqual(new[end+32:end+34], [("rt", "rtjob"), ("rt", "rtfg")])
-        self.assertEqual(new[end+34:end+45], [("rt", "rtmfo"), ("rt", "rtsso"), ("rt", "rtmfe"), ("rt", "rtsse"), ("rt", "rtovb"), ("rt", "rtovs"), ("", "mfo"), ("", "sso"), ("", "mfc"), ("", "ssc"), ("", "ovs")])
-        self.assertEqual(new[end+45:end+50], [("rt", "rtmfc"), ("rt", "rtov"), ("rt", "rtmcp"), ("", "mcp"), ("", "mfe")])
-        self.assertEqual(new[end+50:], groups)
+        self.assertEqual(new[end+28:end+30], [("rt", "rtjob"), ("rt", "rtfg")])
+        self.assertEqual(new[end+30:end+41], [("rt", "rtmfo"), ("rt", "rtsso"), ("rt", "rtmfe"), ("rt", "rtsse"), ("rt", "rtovb"), ("rt", "rtovs"), ("", "mfo"), ("", "sso"), ("", "mfc"), ("", "ssc"), ("", "ovs")])
+        self.assertEqual(new[end+41:end+46], [("rt", "rtmfc"), ("rt", "rtov"), ("rt", "rtmcp"), ("", "mcp"), ("", "mfe")])
+        self.assertEqual(new[end+46:], groups)
+
 
 
 if __name__ == "__main__":

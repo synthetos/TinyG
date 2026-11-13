@@ -16,8 +16,8 @@ PRE=r'''
 #include <string.h>
 #include <stdio.h>
 typedef int stat_t;
-static void _hold_outputs_cancel(void);
-static void _hold_outputs_pause(void) {}
+static void _stop_outputs(void);
+
 typedef uint8_t buffer_t;
 #define __AVR
 #define PSTR(s) s
@@ -51,7 +51,7 @@ static void cm_request_feedhold(void){if(cm.hold_state==FEEDHOLD_OFF)cm.hold_sta
 static void cm_request_planner_flush(void){cm.queue_flush_state=FLUSH_REQUESTED;}
 static void spindle_reset(void){off++;}
 static void cm_coolant_off_immediate(void){off++;}
-static void _hold_outputs_cancel(void){spindle_reset();cm_coolant_off_immediate();}
+static void _stop_outputs(void){spindle_reset();cm_coolant_off_immediate();}
 static void rpt_exception(int s,const char*m){assert(!in_wait);assert(s==STAT_KILL_JOB);reports++;}
 static void _run_requested_queue_flush(void){assert(!in_wait);flushes++;cm.queue_flush_state=FLUSH_OFF;}
 static void xio_cancel_pgm_source(void){assert(!in_wait);}

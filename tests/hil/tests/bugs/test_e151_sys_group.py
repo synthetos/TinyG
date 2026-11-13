@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.dialect("d449")
 
 EXPECTED = ["fb", "fv", "hp", "hv", "id", "ja", "ct", "sl", "st", "mt", "ej", "jv", "js", "tv", "qv", "sv",
-            "si", "ec", "ee", "ex", "rxm", "baud", "gpl", "gun", "gco", "gpa", "gdi", "spep", "spdp", "spph", "spde", "coph", "prbp", "os"]
+            "si", "ec", "ee", "ex", "rxm", "baud", "gpl", "gun", "gco", "gpa", "gdi", "spep", "spdp", "prbp", "os"]
 
 
 def test_sys_group_is_whole(tg):
@@ -30,6 +30,6 @@ def test_text_sys_labels_every_setting(tg, keep):
     tg.transport.write(b"$sys\n")
     lines = [e.raw for e in tg.drain(quiet=1.0)]
     text = "\n".join(lines)
-    for token in ("spep", "spdp", "spph", "spde", "coph", "prbp", "os"):
+    for token in ("spep", "spdp", "prbp", "os"):
         assert f"[{token}]" in text, f"$sys has no labelled {token} line: {lines[-8:]}"
     assert not any(l.strip().isdigit() for l in lines), f"bare values in $sys: {lines[-8:]}"

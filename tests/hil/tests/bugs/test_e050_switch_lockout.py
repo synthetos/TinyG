@@ -6,14 +6,16 @@ is still required; the deterministic host regression is the primary logic proof.
 
 Requires a TEST_HOOKS=1 build and --ice on an unwired board. The 50 ms case
 uses the production lockout; 250 ms provides a wider debugger stimulus window.
-Firmware tick observations qualify the pulse so debugger latency cannot turn
-an invalid stimulus into passing evidence. No motion is commanded.
+Firmware tick observations retain the original closure timer so debugger latency
+cannot turn a release-rearmed timer into passing evidence. Five invalid trials
+skip explicitly; proven logic failures are not retried. No motion is commanded.
 """
 import time
 
 import pytest
 
 from tinyg_hil.driver import NoResponse
+from tinyg_hil.switch_window import trials
 
 pytestmark = [pytest.mark.timing, pytest.mark.ice, pytest.mark.dialect("d449"),
               pytest.mark.profile("switches-no")]
@@ -47,19 +49,27 @@ def test_release_during_lockout_rearms_limit(tg, keep, switches, ice, record, lo
     original = ice.peek("sw.s[0].lockout_ms")
     ice.poke("sw.s[0].lockout_ms", lockout_ms)
     try:
-        assert ice.peek("sw.s[0].state") == 0, "input did not begin inactive"
-        switches.pulse("x", "min", ms=1)
-        with ice.halted():
-            observation = ice.peek_many(["rtc.sys_ticks", "sw.s[0].timeout._start",
-                                         "sw.s[0].timeout._delay", "sw.s[0].state"])
-            observation["raw_pin"] = ice.switch_pin("x", "min")
-        elapsed = (observation["rtc.sys_ticks"] - observation["sw.s[0].timeout._start"]) & 0xFFFFFFFF
-        record("pulse_window", {**observation, "elapsed_ms": elapsed, "lockout_ms": lockout_ms})
-        # If the deadline has passed, this run did not exercise an ignored release.
-        assert observation["raw_pin"] == 1, "software switch did not release the physical input"
-        assert observation["sw.s[0].timeout._delay"] == lockout_ms
-        assert elapsed <= lockout_ms, "stimulus invalid: debugger/host exceeded the lockout window"
-        assert observation["sw.s[0].state"] == 1, "leading edge was not captured before release"
+        def sample():
+            with ice.halted():
+                values = ice.peek_many(["rtc.sys_ticks", "sw.s[0].timeout._start",
+                                        "sw.s[0].timeout._delay", "sw.s[0].state"])
+                pin = ice.switch_pin("x", "min")
+            return dict(ticks=values["rtc.sys_ticks"], start=values["sw.s[0].timeout._start"],
+                        delay=values["sw.s[0].timeout._delay"], state=values["sw.s[0].state"], raw_pin=pin)
+
+        def prepare():
+            switches.open("x", "min")
+            # Allow both the old closure lockout and a deferred release's new
+            # lockout to expire before trying again. No board reset is needed.
+            time.sleep(2 * lockout_ms / 1000 + .15)
+            tg.clear_alarm()
+            _wait(tg, lambda state: state != tg.dialect.stat("ALARM"))
+
+        trial = trials(sample, lambda: switches.close("x", "min"),
+                       lambda: switches.open("x", "min"), prepare, record, lockout_ms)
+        if trial is None:
+            pytest.skip("stimulus window not achieved: 5 invalid trials; see stimulus_trials")
+        record("pulse_window", trial)
         _wait(tg, lambda state: state == tg.dialect.stat("ALARM"))
         tg.clear_alarm()
         _wait(tg, lambda state: state != tg.dialect.stat("ALARM"))

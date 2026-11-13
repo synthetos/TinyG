@@ -93,7 +93,7 @@ FIRMWARE_TAG=A SLOT=1 RT=off uv run --project tests/hil --extra mso pytest tests
 FIRMWARE_TAG=B SLOT=1 RT=off uv run --project tests/hil --extra mso pytest tests/hil/tests/diagnostics/test_perf_compare.py --port <port> --allow-motion --diagnostics
 ```
 
-A sends neither `rt` nor `spph`. B sets `spph=0`; `RT=on` enables fi and fg for
+A sends no `rt` commands. Feedhold affects motion only. `RT=on` enables fi and fg for
 the separate B-only cost pass. Each file has its own `perf-*.json` and capture
 in the run directory, including failures. Records contain identity, flash
 provenance, settings, file hash, acknowledgements, timed stat replies, fixture
@@ -138,20 +138,17 @@ Expected-difference notes are printed but do not waive evidence. A speedup over
 1% is FASTER-REVIEW. The command exits 1 for every non-PASS result, including
 empty input. Bench 2's three-motor captures remain supplemental findings.
 
-## E060 spindle timing
+## Motion-only hold timing
 
-`tests/hil/tests/diagnostics/test_e060_timing.py` has three bench3 MSO cases:
-pause/resume with M3 on, spph=0, and hold then flush. Each records the four
-requested intervals, polled and automatic status reports, command wall times,
-and the raw motor/PWM capture. It uses spde=1 s and a known 10% off/80% on PWM
-mapping, restoring saved settings afterward. The 20 ms PWM windows limit spindle
-edge resolution. Command-to-edge measurements additionally carry an estimated
-100 ms MSO-start alignment uncertainty; they are not microsecond latency claims.
-Motor-to-PWM intervals share the capture clock. spph=0 has no spindle transition,
-so those intervals are null, not zero. A restarted spindle/motion after flush,
-missing resumed motion, or absent programmed restart delay fails the diagnostic.
-Run it with the same --port/--allow-motion/--diagnostics flags. Only bench hardware
-can validate the timing; two synthetic extraction tests pass offline.
+`tests/hil/tests/diagnostics/test_e060_timing.py` checks hold/resume and hold/flush
+with M3 on. It records command wall times, automatic and polled status reports,
+and raw motor/PWM captures. The programmed PWM stays at 80% through both cases;
+10% is the off level. Any output drop fails. Resume must produce motor steps;
+flush must not. Spindle-transition intervals are null because no transition is
+expected. The report includes hold-to-stop and resume-to-motion intervals.
+The 20 ms PWM windows and estimated 100 ms capture-start alignment uncertainty
+limit command timing precision. Settings are restored afterward. Run with the
+same --port/--allow-motion/--diagnostics flags; physical proof requires a bench.
 
 ## Advisor trigger checks
 
@@ -167,9 +164,8 @@ Three offline negative tests reject conflated causes, absent pending time, stale
 gap fields and the wrong command counter. These tests are ready for bench runs,
 not evidence that the required causes have already occurred on hardware.
 
-A's settings snapshot excludes post-449 spindle-pause and rt tokens explicitly,
-even if installed dialect metadata lists them. B records its spindle-pause
-settings too. An offline fake board checks that A never queries these additions. The full
+A's settings snapshot excludes post-449 tokens explicitly,
+even if installed dialect metadata lists them. Removed controls are not required on B. An offline fake board checks that A never queries these additions. The full
 capture holds a host wake assertion, and a detected sleep invalidates the result.
 
 ### Firmware identity preflight
@@ -239,11 +235,11 @@ Collector preflight checks the actual board against the fixed file before its
 settings writes or capture. The pytest session has already applied BASELINE
 protocol settings (js=1,jv=4,ee=0,ec=0,tv=1,sv=1,qv=0); these explicit overrides
 are recorded. After collector setup a second readback checks its additional
-known protocol settings (ej=1,rxm=1,ex=1,qv=1,sv=1,si=250; B spph=0).
+known protocol settings (ej=1,rxm=1,ex=1,qv=1,sv=1,si=250).
 Motor map, steps per unit, switches, axis modes/radii, limits, junction values
 and every other shared restorable setting must still match the fixed file.
 Identity/baud/internal EEPROM-index entries are not restored; known B-only
-rt/spindle-pause controls are omitted on A. Snapshot path/hash and verified
+Runtime controls are omitted on A. Snapshot path/hash and verified
 readbacks are recorded. Comparison refuses differing fixed-file hashes or
 missing readback verification.
 
@@ -439,3 +435,7 @@ Serial results contain `probe_kind`, `probe_ms`, `probe_median_s`, `probe_p95_s`
 and each query's value. The legacy `stat_*` timing fields are null for qr passes.
 `compare.py --bench --rtt-only` reports kind and interval on each absolute result;
 no A baseline or mixing of stat and qr latency is implied.
+
+For motion-only firmware, fixed-snapshot restoration discards the three retired
+output-pause controls and records their names in `removed_controls`. Recreate a
+fixed snapshot after upgrading; historical 450.04 records remain readable.

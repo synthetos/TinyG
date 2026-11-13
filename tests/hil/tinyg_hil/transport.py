@@ -1,10 +1,12 @@
 """Serial transport: a reader thread that timestamps bytes, strips XON/XOFF and yields parsed lines."""
+import logging
 import queue
 import threading
 import time
 
 import serial
 
+from . import bootloader
 from .protocol import XOFF, XON, Event, parse_line
 
 
@@ -40,7 +42,33 @@ class Transport:
         self.wire_margin = 0.0                  # extra hold after a write; Ice sets it (USB bridge FIFO + 1 ms frames)
 
     def open(self):
-        self.ser = serial.Serial(self.port, self.baud, timeout=0.02, xonxoff=False, rtscts=False, write_timeout=5)
+        bootloader.require_application(self.port)
+        wire, in_bootloader = bootloader.inspect_port(self.port, self.baud)
+        if in_bootloader:
+            try:
+                # An unmarked healthy board may have accepted our ESC in its
+                # reset entry window. Never auto-exit an uncertain flash.
+                bootloader.require_application(self.port)
+                note = 'bootloader auto-exit: unmarked session, sending AVR109 E once'
+                self._log('!!', note.encode())
+                logging.getLogger(__name__).warning('%s: %s', self.port, note)
+                in_bootloader = bootloader.exit_and_inspect(wire)
+                outcome = ('still active; quarantined' if in_bootloader else
+                           'no signature after exit; opening application transport')
+                self._log('!!', ('bootloader auto-exit: ' + outcome).encode())
+                logging.getLogger(__name__).warning('%s: bootloader auto-exit: %s', self.port, outcome)
+                if in_bootloader:
+                    bootloader.quarantine(self.port, 'XBoot++ still active after session auto-exit')
+                    bootloader.require_application(self.port)
+            except BaseException:
+                wire.close()
+                if not bootloader.marker(self.port).exists():
+                    bootloader.quarantine(self.port, 'uncertain session bootloader auto-exit')
+                raise
+        self.ser = wire
+        self.ser.timeout = .02
+        # Finish the harmless ESC/S probe line only after rejecting the bootloader.
+        self.ser.write(b'\n')
         restart_output(self.ser)
         self._stop.clear()
         self._thread = threading.Thread(target=self._reader, name="tinyg-reader", daemon=True)
@@ -59,6 +87,7 @@ class Transport:
         return self.ser is not None
 
     def write(self, data: bytes, drain_timeout: float | None = 2.0):
+        bootloader.require_application(self.port)
         self.sent.append((time.monotonic(), data))
         self._log(">>", data)
         with self.wire:

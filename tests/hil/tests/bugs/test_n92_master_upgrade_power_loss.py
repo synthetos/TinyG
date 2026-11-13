@@ -25,7 +25,7 @@ pytestmark = [pytest.mark.ice, pytest.mark.persists, pytest.mark.resets_board, p
 
 IMAGE = pathlib.Path(__file__).with_name("n92_master_440_21.eeprom")
 PAGE = 32                   # ATxmega192A3 EEPROM page
-DONE = 10002.0              # the edge layout marker, written last
+DONE = 10003.0              # the edge layout marker, written last
 STEP = 0.08                 # seconds between cut delays, from the firmware's start
 NOT_RUN = 0xFFFF            # nvm.address before a reset; the startup code clears it
 

@@ -119,7 +119,7 @@ int main(void) {
   assert(eeprom[1].f==.9f && eeprom[2].f==12.5f && eeprom[3].u==0 && eeprom[4].u==123);
   assert(model[5].u==1 && model[6].u==0 && model[10].u==0);
   assert(eeprom[5].u==1 && eeprom[6].u==0 && eeprom[10].u==0);
-  assert(eeprom[0].f==10002 && writes[0]==1 && boundary_lookups==1);
+  assert(eeprom[0].f==10003 && writes[0]==1 && boundary_lookups==1);
   for(int j=1;j<COUNT;j++)assert(writes[j]==(j==5 || j==6 || j==10));
   for(int j=7;j<=9;j++)assert(eeprom[j].u==0xdeadbeef);
   assert(loaded_sr==1 && defaulted_sr==0);
@@ -128,7 +128,7 @@ int main(void) {
   for(int j=0;j<COUNT;j++)assert(writes[j]==0);
  }
  // Legacy and current layouts recover an invalid old value only in RAM.
- float markers[]={449.01f,10001,10002};
+ float markers[]={449.01f,10001,10003};
  for(int i=0;i<3;i++){
   prepare(markers[i]);reject_old=true;config_init();
   assert(model[1].f==1.8f && eeprom[1].f==.9f && writes[1]==0);
@@ -143,13 +143,13 @@ int main(void) {
   assert(reports==0);tx=true;config_report_load_failure();
   assert(reports==1 && reported_status==STAT_CONFIG_ASSERTION_FAILURE && !strcmp(reported,"spep"));  /* N61: refused default: not restored */
   reject_new=false;config_init();
-  assert(eeprom[0].f==10002 && writes[0]==1 && model[5].u==1);
+  assert(eeprom[0].f==10003 && writes[0]==1 && model[5].u==1);
  }
- float invalid[]={449.99f,10000,10003,0,NAN,INFINITY};
+ float invalid[]={449.99f,10000,10004,0,NAN,INFINITY};
  for(int i=0;i<6;i++){
   prepare(invalid[i]);config_init();
   assert(model[1].f==1.8f && model[2].f==0 && model[3].u==1);
-  assert(eeprom[0].f==10002 && defaulted_sr==1 && loaded_sr==0);
+  assert(eeprom[0].f==10003 && defaulted_sr==1 && loaded_sr==0);
   for(int j=7;j<=9;j++)assert(writes[j]==0 && eeprom[j].u==0xdeadbeef);
  }
 }

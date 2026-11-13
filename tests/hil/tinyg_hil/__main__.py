@@ -56,52 +56,57 @@ def main(argv=None):
 
     lock = BoardLock(args.port).acquire(f"tinyg_hil {args.command}", wait=600)
     tg = TinyG(args.port, transcript=open(args.transcript, "w") if args.transcript else None)
-    tg.connect()
-    print(f"board: {json.dumps(tg.identity)} dialect {tg.dialect.name}")
-    if args.command == "info":
-        pass
-    elif args.command == "text":
-        for line in tg.send_text(args.file):
-            print(line)
-    elif args.command == "json":
-        print(tg.send_json(args.file).raw)
-    elif args.command == "snapshot":
-        print("saved", snapshot.save(snapshot.take(tg), args.out))
-    elif args.command == "restore":
-        print(snapshot.restore(tg, snapshot.load(args.file)))
-    elif args.command == "flash":
-        if fixed and fixed.get('identity',{}).get('id') not in (None,tg.identity.get('id')):
-            tg.close();lock.release()
-            p.error('fixed snapshot belongs to another board')
-        expect = None
-        hex_path = args.hex
-        if args.build:
-            hex_path = flasher.build(args.build, args.make)
-            expect = flasher.source_build(args.build)
-            print(f"built {hex_path} (fb {expect})")
-        if not hex_path:
-            p.error("flash needs --hex or --build")
-        snap = None
-        if args.no_snapshot:            # a board in PANIC rejects the snapshot's commands; recover from a file
-            if not args.restore and not args.no_restore:
-                p.error("--no-snapshot needs --restore FILE (or --no-restore)")
-        else:
-            snap = snapshot.take(tg)
-            print("snapshot", snapshot.save(snap, args.out))
-        ident = flasher.flash(tg, hex_path, expect_fb=expect)
-        print(f"flashed: {json.dumps(ident)} dialect {tg.dialect.name}")
-        if not args.no_restore:
-            source = fixed if fixed is not None else (snapshot.load(args.restore) if args.restore else snap)
-            if fixed is not None:
-                try:
-                    print('fixed restore:', perf_snapshot.restore_verified(tg, fixed))
-                    print('fixed snapshot:', json.dumps(fixed_meta))
-                except Exception:
-                    tg.close();lock.release();raise
+    try:
+        recovery = args.command == 'flash' and args.no_snapshot
+        if not recovery:
+            tg.connect()
+            print(f"board: {json.dumps(tg.identity)} dialect {tg.dialect.name}")
+        if args.command == "info":
+            pass
+        elif args.command == "text":
+            for line in tg.send_text(args.file):
+                print(line)
+        elif args.command == "json":
+            print(tg.send_json(args.file).raw)
+        elif args.command == "snapshot":
+            print("saved", snapshot.save(snapshot.take(tg), args.out))
+        elif args.command == "restore":
+            print(snapshot.restore(tg, snapshot.load(args.file)))
+        elif args.command == "flash":
+            if fixed and tg.identity and fixed.get('identity',{}).get('id') not in (None,tg.identity.get('id')):
+                p.error('fixed snapshot belongs to another board')
+            expect = None
+            hex_path = args.hex
+            if args.build:
+                hex_path = flasher.build(args.build, args.make)
+                expect = flasher.source_build(args.build)
+                print(f"built {hex_path} (fb {expect})")
+            if not hex_path:
+                p.error("flash needs --hex or --build")
+            snap = None
+            if args.no_snapshot:            # a board in PANIC rejects the snapshot's commands; recover from a file
+                if not args.restore and not args.no_restore:
+                    p.error("--no-snapshot needs --restore FILE (or --no-restore)")
             else:
-                print("restore:", snapshot.restore(tg, source))
-    tg.close()
-    lock.release()
+                snap = snapshot.take(tg)
+                print("snapshot", snapshot.save(snap, args.out))
+            ident = flasher.flash(tg, hex_path, expect_fb=expect)
+            print(f"flashed: {json.dumps(ident)} dialect {tg.dialect.name}")
+            if fixed and fixed.get('identity',{}).get('id') not in (None, ident.get('id')):
+                p.error('fixed snapshot belongs to another board; settings not restored')
+            if not args.no_restore:
+                source = fixed if fixed is not None else (snapshot.load(args.restore) if args.restore else snap)
+                if fixed is not None:
+                    try:
+                        print('fixed restore:', perf_snapshot.restore_verified(tg, fixed))
+                        print('fixed snapshot:', json.dumps(fixed_meta))
+                    except Exception:
+                        raise
+                else:
+                    print("restore:", snapshot.restore(tg, source))
+    finally:
+        tg.close()
+        lock.release()
 
 
 if __name__ == "__main__":

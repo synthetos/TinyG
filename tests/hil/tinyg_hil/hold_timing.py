@@ -1,7 +1,7 @@
 """E060 measurements on capture time; host command alignment has bounded uncertainty."""
 
 
-def measure(edges,pwm,commands,started_wall,*,pause=True,flush=False,clock_uncertainty_s=.1,pwm_window_s=.02):
+def measure(edges,pwm,commands,started_wall,*,flush=False,clock_uncertainty_s=.1,pwm_window_s=.02):
     rises=sorted({t for name,trace in edges.items() if name.endswith(' step') for t,v in trace if v==1})
     bang=commands['!']-started_wall
     release=commands['%' if flush else '~']-started_wall
@@ -17,16 +17,14 @@ def measure(edges,pwm,commands,started_wall,*,pause=True,flush=False,clock_uncer
                 hold_to_stop_s=stop-bang,stop_to_spindle_off_s=off[0]-stop if off else None,
                 resume_to_spindle_on_s=on[0]-release if on and not flush else None,
                 spindle_on_to_motion_s=after[0]-on[0] if after and on and not flush else None)
-    if flush:
-        if after: raise ValueError('motion restarted after flush')
-        if any(w['duty']>.45 for w in pwm if w['t']>release+.3): raise ValueError('spindle restarted after flush')
-    elif not after: raise ValueError('no resumed motion captured')
-    if pause:
-        if not off: raise ValueError('spindle never switched off during hold')
-        if not flush and not on: raise ValueError('spindle never switched on at resume')
-    else:
-        if off: raise ValueError('spph=0 switched spindle off during hold')
-        result['stop_to_spindle_off_s']=None
-        result['resume_to_spindle_on_s']=None
-        result['spindle_on_to_motion_s']=None # spindle was already on, so no rising event
+    if flush and after: raise ValueError('motion restarted after flush')
+    if not flush and not after: raise ValueError('no resumed motion captured')
+    observed=[w for w in pwm if bang-clock_uncertainty_s<=w['t']<=release+.5]
+    if not observed: raise ValueError('no PWM evidence across hold and release')
+    if any(w['duty']<.45 for w in observed): raise ValueError('spindle changed during motion-only hold')
+    result['stop_to_spindle_off_s']=None
+    result['resume_to_spindle_on_s']=None
+    result['spindle_on_to_motion_s']=None
+    result['resume_to_motion_s']=after[0]-release if after and not flush else None
+    result['spindle_unchanged']=True
     return result

@@ -23,7 +23,7 @@ def test_hold_at_new_cam_block_does_not_panic(tg, ice, keep, record):
                                      ('tr', 1.25 if m<=3 else 360))}
     profile.update({a+s: v for a in 'xy' for s,v in
                     (('am', 1), ('vm', 20000), ('fr', 20000), ('jm', 5000), ('jd', .05))})
-    profile.update(ja=100000, rxm=1, ex=1, spph=0, sl=0, g54x=0, g54y=0)
+    profile.update(ja=100000, rxm=1, ex=1, sl=0, g54x=0, g54y=0)
     keep(*profile)
     resumed = []
 

@@ -75,16 +75,14 @@ def test_perf_compare(tg,keep,record,request,fixture):
         keep('ej','rxm','ex','qv','sv','si')
         for token,value in dict(ej=1,rxm=1,ex=1,qv=1,sv=1,si=250).items(): tg.set(token,value)
         if tag=='B':
-            keep('spph');tg.set('spph',0)
             response=tg.send_json({'rt':{'fi':1 if rt=='on' else 0,'fg':1 if rt=='on' else 0}})
             assert response.status==0,'B requires rt support'
-        # A deliberately never sends rt or spph, including cleanup.
+        # A deliberately never sends rt, including cleanup.
         settings=perf.settings_snapshot(tg,include_new=tag=='B')
         info['settings']=settings
         assert 'stat' in settings['sr'],'automatic stat reports required for probe-free completion'
         if tag=='A':assert 'vel' in settings['sr'],'449 requires automatic velocity reports for hold/completion'
         effective=dict(baseline,ej=1,rxm=1,ex=1,qv=1,sv=1,si=250)
-        if tag=='B': effective['spph']=0
         info['fixed_verified']=perf_snapshot.verify(tg,fixed,overrides=effective)
         for line in lines:
             if not line.startswith(';'): tg.guard.check_gcode(line,allow='unloaded bench performance file')

@@ -219,9 +219,6 @@ def settings_snapshot(tg, *, include_new=False):
         except StatusError as e:
             if e.response.status!=tg.dialect.status('UNRECOGNIZED_NAME'):raise
             missing.append(token)
-    if include_new:
-        for token in ('spph','spde','coph'):
-            if token not in values: values[token]=tg.get(token)
     sr=tg.get('sr')
     return dict(values=values,missing=missing,sr=list(sr) if isinstance(sr,dict) else sr)
 
