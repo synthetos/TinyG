@@ -47,7 +47,7 @@ def switch_code(probe=False):
     pre = SWITCH_PRELUDE + INTERRUPTS + "\nstatic int inject, pending;\n"
     if probe:
         pre = pre.replace("bool hold_fast,", "bool end_hold_requested, hold_fast,")
-        pre += "\nstatic struct {bool resume_cancelled, internal_hold;} hold_outputs;\n"
+        pre += "\nstatic volatile bool hold_resume_cancelled;\n"
         pre = pre.replace("static void cm_request_cycle_feedhold(void) {holds++;}", "void cm_request_feedhold(void); void cm_request_cycle_feedhold(void);")
     code = pre + types + "\nrtClock_t rtc;\n"
     code += "uint32_t SysTickTimer_getValue(void) { return rtc.sys_ticks; }   /* switch.c reads the clock through it (E190) */\n"

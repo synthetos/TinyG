@@ -10,10 +10,9 @@ def fallback_source(config_c, names=FUNCTIONS):
     src = config_c.replace("\r\n", "\n")
     state = src[src.index("#define CONFIG_REPORT_NAMES"):src.index("static void _report_list_add")]
     code = state + r"""
-// Feature activation has separate real-loader coverage in test_e060_hold_settings_activation.
-static inline bool _hold_settings_need_defaults(nvObj_t *nv) { (void)nv; return false; }
-static inline bool _is_hold_setting(nvObj_t *nv) { (void)nv; return false; }
-static inline void _write_hold_settings_marker(nvObj_t *nv) { (void)nv; }
+// Layout-2 row migration has separate interrupted-write coverage.
+static inline bool _layout2_journal_ready(void) { return false; }
+static inline void _migrate_layout2(nvObj_t *nv) { (void)nv; }
 """
     for name in names:
         code += function(src, r"(?:static )?(?:void|stat_t) " + name + r"\([^;{}]*\)(?=\s*\{)") + "\n"

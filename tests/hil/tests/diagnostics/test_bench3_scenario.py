@@ -398,17 +398,6 @@ def test_bench3_scenario(tg, keep, record, request, k):
     if len(ys) == 2 and counts[ys[0]] != counts[ys[1]]:
         bad.append(f"the Y motors stepped {counts[ys[0]]} and {counts[ys[1]]}")
     near = lambda a, b: abs(a - b) <= DUTY_SAME  # noqa: E731
-    if event == "hold":
-        # E060: with $spph (and $coph for coolant) a feedhold pauses the spindle and resumes it on ~, so the hold can
-        # add one off stretch: between two equal on stretches, or where it landed on a speed change (it resumes at
-        # the next commanded state). The sequence as seen is tried first, so a real M5 between close speeds counts.
-        pwm_ok = lambda q: len(q) == len(want_pwm) and all(near(a, b) for a, b in zip(q, want_pwm))  # noqa: E731
-        line_ok = lambda q, w: _is_subsequence(q, w) and not (q and w and q[-1] != w[-1])  # noqa: E731
-        if _get0(tg, "spph"):
-            seen_pwm = _first(_hold_variants(seen_pwm, pwm["pof"], near) + _averaged_pause(seen_pwm, pwm["pof"]), pwm_ok)
-            enable_seq = _first(_hold_variants(enable_seq, 0), lambda q: line_ok(q, want_enable))
-        if _get0(tg, "coph"):
-            cool_seq = _first(_hold_variants(cool_seq, 0), lambda q: line_ok(q, want_cool))
     if event in ("none", "hold") and not bad:
         if stat not in tg.dialect.idle_stats:
             bad.append(f"stat {stat} after the program")
@@ -452,39 +441,3 @@ def test_bench3_scenario(tg, keep, record, request, k):
     finally:
         pass
     assert not bad, f"seed {seed} {event} {trip}: {bad}"
-
-
-def _hold_variants(seq, off, same=lambda a, b: a == b):
-    """The sequence as seen, then with one hold pause taken out: an off entry between two equal entries (both
-    dropped as one), then any single off entry that is not at either end."""
-    out = [list(seq)]
-    for i in range(1, len(seq) - 1):
-        if same(seq[i], off) and same(seq[i - 1], seq[i + 1]) and not same(seq[i - 1], off):
-            out.append(list(seq[:i]) + list(seq[i + 2:]))
-    for i in range(1, len(seq) - 1):
-        if same(seq[i], off):
-            out.append(list(seq[:i]) + list(seq[i + 1:]))
-    return out
-
-
-def _averaged_pause(seq, off, tol=3 * DUTY_SAME):
-    """A pause too short for its own plateau: the duty window across it reads a little below the speed around it.
-    Variants with one such entry (between its predecessor and off, within tol of the predecessor) dropped."""
-    out = []
-    for i in range(1, len(seq)):
-        lo, hi = sorted((seq[i - 1], off))
-        if lo <= seq[i] <= hi and abs(seq[i] - seq[i - 1]) <= tol and abs(seq[i - 1] - off) > tol:
-            out.append(list(seq[:i]) + list(seq[i + 1:]))
-    return out
-
-def _first(variants, ok):
-    """The first variant that passes ok (the seen sequence when none does, so the failure shows what was seen)."""
-    return next((v for v in variants if ok(v)), variants[0])
-
-
-def _get0(tg, token):
-    """A setting's value, or 0 on firmware without it (before E060 there is no $spph/$coph)."""
-    try:
-        return tg.get(token) or 0
-    except Exception:  # noqa: BLE001
-        return 0

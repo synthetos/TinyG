@@ -33,7 +33,7 @@ def test_legacy_restore_omits_only_declared_new_controls():
     s=snap();s['values'].update(spph=1,spde=1,coph=0,rtfi=1)
     filtered=fixed.for_board(s,449.01)
     assert filtered['values']==snap()['values']
-    assert fixed.for_board(s,450.04)['values']==s['values']
+    assert fixed.for_board(s,450.05)['values']==dict(snap()['values'],rtfi=1)
 
 
 def test_flash_restore_always_uses_fixed_source_and_checks_failures(monkeypatch):

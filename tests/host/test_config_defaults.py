@@ -108,7 +108,7 @@ static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
             'stepper.c': ['_init_motor_geometry','_motor_geometry_valid','st_runtime_isbusy','_stepper_configuration_busy','_get_motor','_set_motor_steps_per_unit','st_set_sa','st_set_tr','st_set_mi','st_set_pm','st_set_mt'],
             'canonical_machine.c': ['cm_set_am','cm_set_axis_rate','cm_set_axis_jerk','cm_set_xjm','cm_set_xjh','cm_set_ja','cm_set_radius','cm_set_ct','cm_set_coord_value','cm_set_jd'],
             'hardware.c': ['hw_set_hv'], 'switch.c': ['sw_set_st','sw_set_sw','sw_set_prbp'],
-            'spindle.c': ['spindle_set_polarity', 'spindle_set_dwell'],
+            'spindle.c': ['spindle_set_polarity', ],
             'json_parser.c': ['json_set_jv'], 'report.c': ['sr_set_si']}
         pwm_source = (FW/'pwm.c').read_text()
         code += '\n'+'\n'.join(line for line in pwm_source.splitlines()

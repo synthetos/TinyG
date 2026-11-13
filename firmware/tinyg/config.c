@@ -235,11 +235,11 @@ stat_t nv_persist(nvObj_t *nv)	// nv_persist() cannot be called from an interrup
  *	differed from the running build - so every release wiped every setting. Record 0 now holds a
  *	layout marker that changes only when the persisted layout changes: NVM records are indexed by
  *	cfgArray position: inserting, removing or moving any earlier row changes persisted indexes.
- *	Layout 2 reserves the combined output/probe/reporting additions in one release bump.
+ *	Layout 3 removes output-pause settings; layout 2 is migrated through a power-cut journal.
  *	Layout 2 migrates layout 1 (including legacy 449.01) because the old indexes are unchanged.
  *	Erased EEPROM and unknown layouts initialize defaults.
  */
-#define CONFIG_NVM_LAYOUT			2
+#define CONFIG_NVM_LAYOUT			3
 #define CONFIG_NVM_LAYOUT_MARKER	(10000.0 + CONFIG_NVM_LAYOUT)	// can't be mistaken for a build number
 #define CONFIG_NVM_LAYOUT_1_BUILD	449.01							// record 0 of a layout-1 board before markers
 
@@ -256,7 +256,7 @@ static bool _nvm_layout_is_current(nvObj_t *nv)
 
 static bool _nvm_layout_is_legacy(nvObj_t *nv)
 {
-    return ((CONFIG_NVM_LAYOUT == 2) &&
+    return ((CONFIG_NVM_LAYOUT >= 2) &&
             (fp_EQ(nv->value_flt, 10001.0) || fp_EQ(nv->value_flt, CONFIG_NVM_LAYOUT_1_BUILD)));
 }
 
@@ -265,35 +265,6 @@ static void _write_nvm_layout_marker(nvObj_t *nv)
 	nv->index = 0;
 	nv->value_flt = CONFIG_NVM_LAYOUT_MARKER;
 	write_persistent_value(nv);
-}
-
-// The three hold settings already have layout-2 slots. Their unused bytes are not saved values.
-// A hidden, appended stamp makes activation one-time without changing any existing index or the layout marker.
-#define CONFIG_HOLD_SETTINGS_STAMP 0xE060A501UL
-
-static bool _hold_settings_need_defaults(nvObj_t *nv)
-{
-    index_t saved_index = nv->index;
-    uint32_t saved_value = nv->value_int;
-    nv->index = nv_get_index("", "_hld");
-    read_persistent_value(nv);
-    bool initialize = (nv->value_int != CONFIG_HOLD_SETTINGS_STAMP);
-    nv->index = saved_index;
-    nv->value_int = saved_value;
-    return initialize;
-}
-
-static bool _is_hold_setting(nvObj_t *nv)
-{
-    return !strcmp_P(nv->token, PSTR("spph")) || !strcmp_P(nv->token, PSTR("spde")) ||
-           !strcmp_P(nv->token, PSTR("coph"));
-}
-
-static void _write_hold_settings_marker(nvObj_t *nv)
-{
-    nv->index = nv_get_index("", "_hld");
-    nv->value_int = CONFIG_HOLD_SETTINGS_STAMP;
-    write_persistent_value(nv);  // boot only: commit after all three defaults have been persisted
 }
 
 /************************************************************************************
@@ -307,7 +278,7 @@ static void _write_hold_settings_marker(nvObj_t *nv)
  *	  - jv 1 or 2 becomes 3: master echoed configuration values at every verbosity;
  *	  - zsn 0 becomes 4: master probed on Z-min whatever its mode, edge needs a probe-mode switch;
  *	  - rxm becomes 0: master's character-mode protocol, which its hosts speak;
- *	  - the status report list gets the defaults: master reset it to its own defaults at every boot.
+ *	  - saved status report indexes are translated by token into the current table.
  *
  *	The two layouts overlap in EEPROM, and a record is written one byte at a time, so a power loss part
  *	way through must not re-read a master record an edge value has already replaced:
@@ -439,10 +410,32 @@ static bool _is_sr_slot(const char *token)				// se00 - se29: status report list
 	return ((token[0] == 's') && (token[1] == 'e') && (token[2] >= '0') && (token[2] <= '9'));
 }
 
+static index_t _master_report_index(float old)
+{
+    if (!isfinite(old) || old < 0 || old >= MASTER_NV_ROWS || old != floorf(old)) {
+        return NO_MATCH;
+    }
+    const char *p = master_report_tokens;
+    for (index_t i = 0; i < (index_t)old; i++) { p += strlen_P(p) + 1; }
+    char token[TOKEN_LEN + 1];
+    strncpy_P(token, p, TOKEN_LEN);
+    token[TOKEN_LEN] = NUL;
+    return nv_get_index("", token);
+}
+
 static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's N, 0 on the first boot
 {
 	nvObj_t m;												// master values: read_persistent_value() reads index * 4
 	index_t journal = nv_index_max();
+    // Preserve the saved list before any master source records can be overwritten.
+    if (done == 0) {
+        for (uint8_t i = 0; i < NV_STATUS_REPORT_LEN; i++) {
+            m.index = MASTER_SR_FIRST + i;
+            read_persistent_value(&m);
+            m.index = CHECKPOINT_A - NV_STATUS_REPORT_LEN + i;
+            write_persistent_value(&m);
+        }
+    }
 
 	for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {	// defaults first, written later
 		if (cfg_has_flag(nv->index, F_INITIALIZE)) {
@@ -453,7 +446,7 @@ static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's
 	for (nv->index=1; nv->index < done; nv->index++) {		// written before an interruption: edge values
 		if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
-			if (_is_sr_slot(nv->token)) { continue; }		// written last, by the status report defaults
+			if (_is_sr_slot(nv->token)) { continue; }		// written last, from the saved report journal
 			read_persistent_value(nv);
 			nv->valuetype = (cfg_is_type(nv->index) == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INTEGER;
 			if (nv_set(nv) != STAT_OK) {
@@ -470,7 +463,7 @@ static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's
 		if ((nv->index == NO_MATCH) || !cfg_has_flag(nv->index, F_INITIALIZE)) { continue; }
 		m.index = mi;
 		if (_master_journaled(mi, nv->index)) {
-			if (journal >= CHECKPOINT_A) {					// no room to keep it safely
+			if (journal >= CHECKPOINT_A - NV_STATUS_REPORT_LEN) {					// no room to keep it safely
 				_report_list_add(&config_restored, nv->index);
 				continue;
 			}
@@ -519,7 +512,7 @@ static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's
 	for (nv->index = safe; nv_index_is_single(nv->index); nv->index++) {	// the edge layout
 		if (cfg_has_flag(nv->index, F_INITIALIZE) && cfg_has_flag(nv->index, F_PERSIST)) {
 			strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);
-			if (_is_sr_slot(nv->token)) { continue; }		// written by the status report defaults below
+			if (_is_sr_slot(nv->token)) { continue; }		// written from the report journal below
 			nv_get(nv);
 			m.index = nv->index;
 			read_persistent_value(&m);
@@ -533,9 +526,86 @@ static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's
 		}
 	}
 	_write_master_checkpoint(nv_index_max());
-	sr_init_status_report_P(SR_DEFAULTS);
+    index_t report_first = nv_get_index("", "se00");
+    for (uint8_t i = 0; i < NV_STATUS_REPORT_LEN; i++) {
+        m.index = CHECKPOINT_A - NV_STATUS_REPORT_LEN + i;
+        read_persistent_value(&m);
+        m.value_int = _master_report_index(m.value_flt);
+        m.index = report_first + i;
+        write_persistent_value(&m);
+    }
+    sr_init_status_report_P(PSTR(""));
 	_write_nvm_layout_marker(nv);								// commit the migration
 	_clear_master_checkpoints();
+}
+
+// Layout 2 removed three adjacent output-pause settings and their later activation stamp.
+// Keep original suffix records and status selections in unused EEPROM before touching either.
+// The journal stamp commits only after the copy; the layout marker commits only after the move.
+#define LAYOUT2_JOURNAL_STAMP 0xC302A65FUL
+#define LAYOUT2_JOURNAL_FLAG (CHECKPOINT_A - 1)
+
+static bool _layout2_journal_ready(void)
+{
+    nvObj_t n;
+    n.index = LAYOUT2_JOURNAL_FLAG;
+    read_persistent_value(&n);
+    return n.value_int == LAYOUT2_JOURNAL_STAMP;
+}
+
+static index_t _layout2_index(uint32_t old, index_t first, index_t after_stamp)
+{
+    if (old == (uint32_t)NO_MATCH || old >= (uint32_t)(nv_index_max() + 4)) { return NO_MATCH; }
+    if (old < first) { return (index_t)old; }
+    if (old < first + 3 || old == after_stamp + 3) { return NO_MATCH; }
+    return (index_t)(old - ((old < after_stamp + 3) ? 3 : 4));
+}
+
+static void _migrate_layout2(nvObj_t *nv)
+{
+    index_t first = nv_get_index("", "prbp");
+    index_t after_stamp = nv_get_index("", "rtjob");
+    index_t reports = nv_get_index("", "se00");
+    index_t end = first;
+    while (nv_index_is_single(end)) { end++; }
+    index_t journal = end + 4; // above every old single-valued record, including removed rows
+    index_t count = end - first;
+    if (first == NO_MATCH || after_stamp == NO_MATCH || reports == NO_MATCH ||
+        journal + count + NV_STATUS_REPORT_LEN > LAYOUT2_JOURNAL_FLAG) {
+        cm_panic_P(STAT_CONFIG_ASSERTION_FAILURE, PSTR("Layout journal capacity"));
+        return;
+    }
+    nvObj_t n;
+    if (!_layout2_journal_ready()) {
+        for (index_t i = 0; i < count + NV_STATUS_REPORT_LEN; i++) {
+            n.index = (i < count) ? first + i + ((first + i < after_stamp) ? 3 : 4)
+                                  : reports + i - count;
+            read_persistent_value(&n);
+            n.index = journal + i;
+            if (write_persistent_value(&n) != STAT_OK) { return; }
+        }
+        n.index = LAYOUT2_JOURNAL_FLAG;
+        n.value_int = LAYOUT2_JOURNAL_STAMP;
+        if (write_persistent_value(&n) != STAT_OK) { return; }
+    }
+    for (index_t i = 0; i < count + NV_STATUS_REPORT_LEN; i++) {
+        n.index = journal + i;
+        read_persistent_value(&n);
+        if (i < count) {
+            n.index = first + i;
+        } else {
+            n.index = reports + i - count;
+            n.value_int = _layout2_index(n.value_int, first, after_stamp);
+        }
+        if (write_persistent_value(&n) != STAT_OK) { return; }
+    }
+    _write_nvm_layout_marker(nv);
+    nv->index = 0;
+    read_persistent_value(nv);
+    if (nv->value_flt != CONFIG_NVM_LAYOUT_MARKER) { return; }
+    n.index = LAYOUT2_JOURNAL_FLAG;
+    n.value_int = 0;
+    write_persistent_value(&n);
 }
 
 /************************************************************************************
@@ -565,8 +635,13 @@ void config_init()
 	nv->index = 0;								// this will read the first record in NVM
 
 	read_persistent_value(nv);
+    if (fp_EQ(nv->value_flt, 10002.0) || _layout2_journal_ready()) {
+        _migrate_layout2(nv);
+        nv->index = 0;
+        read_persistent_value(nv);
+        if (!_nvm_layout_is_current(nv)) { return; }
+    }
     bool migrate = _nvm_layout_is_legacy(nv);
-    bool initialize_hold = _hold_settings_need_defaults(nv);
     bool initialized = true;
 	index_t checkpoint_slot;
 	uint8_t checkpoint_seq;
@@ -591,7 +666,7 @@ void config_init()
 		for (nv->index=0; nv_index_is_single(nv->index); nv->index++) {
             if (cfg_has_flag(nv->index, F_INITIALIZE)) {
 				strncpy_P(nv->token, cfgArray[nv->index].token, TOKEN_LEN);	// read the token from the array
-                if ((migrate && (nv->index >= first_new)) || (initialize_hold && _is_hold_setting(nv))) {
+                if ((migrate && (nv->index >= first_new))) {
                     if (_load_config_default(nv) == STAT_OK) {
                         if (nv_persist(nv) != STAT_OK) { initialized = false; }
                     } else {
@@ -609,7 +684,6 @@ void config_init()
         sr_init_status_report_P(PSTR(""));      // load status report setup from NVram
         if (migrate && initialized) { _write_nvm_layout_marker(nv); } // commit the migration last
 	}
-    if (initialize_hold && initialized && (config_failed.count == 0)) { _write_hold_settings_marker(nv); }
 #endif
 	if (master_done > 0) {
 		_clear_master_checkpoints();				// left by a migration that wrote its marker

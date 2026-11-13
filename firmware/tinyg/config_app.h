@@ -79,9 +79,6 @@ uint8_t job_report_callback();
 	void cfg_print_rxm(nvObj_t *nv);
 	void cfg_print_spep(nvObj_t *nv);
 	void cfg_print_spdp(nvObj_t *nv);
-	void cfg_print_spph(nvObj_t *nv);
-	void cfg_print_spde(nvObj_t *nv);
-	void cfg_print_coph(nvObj_t *nv);
 	void cfg_print_prbp(nvObj_t *nv);
 	void cfg_print_os(nvObj_t *nv);
 	void cfg_print_baud(nvObj_t *nv);
@@ -96,9 +93,6 @@ uint8_t job_report_callback();
 	#define cfg_print_rxm tx_print_stub
 	#define cfg_print_spep tx_print_stub
 	#define cfg_print_spdp tx_print_stub
-	#define cfg_print_spph tx_print_stub
-	#define cfg_print_spde tx_print_stub
-	#define cfg_print_coph tx_print_stub
 	#define cfg_print_prbp tx_print_stub
 	#define cfg_print_os tx_print_stub
 	#define cfg_print_baud tx_print_stub

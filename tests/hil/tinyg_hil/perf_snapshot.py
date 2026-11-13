@@ -8,6 +8,8 @@ from pathlib import Path
 from . import snapshot
 
 
+REMOVED_CONTROLS = frozenset(('spph', 'spde', 'coph'))
+
 LEGACY_PRECISION = json.loads((Path(__file__).parent/'data/perf-449-print-precision.json').read_text())
 
 
@@ -39,7 +41,8 @@ def for_board(data,fb):
     result=copy.deepcopy(data)
     result['values']={k:v for k,v in data['values'].items()
                       if k not in snapshot.NEVER_WRITE and not snapshot.INTERNAL.match(k) and k!='_hld'
-                      and k not in snapshot.USER_DATA and not (fb<450 and new_control(k))}
+                      and k not in snapshot.USER_DATA and k not in REMOVED_CONTROLS
+                      and not (fb<450 and new_control(k))}
     return result
 
 
@@ -65,7 +68,8 @@ def verify(tg,data,*,overrides=None):
     if data.get('sr') is not None and fields!=data['sr']:bad['sr']=dict(expected=data['sr'],actual=fields)
     if bad:raise ValueError('fixed snapshot mismatch: '+json.dumps(bad,sort_keys=True))
     return dict(ok=True,values=actual,sr=fields,overrides=overrides,
-                not_restorable=snapshot.not_restorable(data['values']),reduced_precision=reduced,
+                not_restorable=snapshot.not_restorable(data['values']),
+                removed_controls=sorted(REMOVED_CONTROLS & data['values'].keys()),reduced_precision=reduced,
                 precision_source={k:v for k,v in LEGACY_PRECISION.items() if k!='tokens'} if reduced else None)
 
 

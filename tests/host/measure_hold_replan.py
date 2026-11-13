@@ -20,7 +20,7 @@ def main():
     prefix = (FIXTURE / 'check.c').read_text().split('int main(void) {', 1)[0]
     dispatch = function((FW / 'plan_exec.c').read_text(), r'(?m)^stat_t mp_exec_move\([^;{}\n]*\)\s*')
     hold = function((FW / 'canonical_machine.c').read_text(), r'(?m)^void cm_request_feedhold\([^;{}\n]*\)\s*')
-    prefix += '\nstatic struct {bool resume_cancelled, internal_hold;} hold_outputs;\nvoid cm_cycle_start(void) {cm.machine_state=MACHINE_CYCLE;cm.cycle_state=CYCLE_MACHINING;}\n'
+    prefix += '\nstatic volatile bool hold_resume_cancelled;\nvoid cm_cycle_start(void) {cm.machine_state=MACHINE_CYCLE;cm.cycle_state=CYCLE_MACHINING;}\n'
     code = '#include <time.h>\n' + prefix + r'''
 static double stamp(void) {
     struct timespec t; assert(clock_gettime(CLOCK_MONOTONIC, &t)==0);
