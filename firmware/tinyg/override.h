@@ -46,6 +46,10 @@ typedef struct {
 } ovTransition_t;
 bool ov_plan_transition(float length,float entry,float feed,float exit,float vmax,
                         float jerk,uint16_t factor,ovTransition_t *out);
+/* Byte hint only: retain guarded request/ticket checks before changing motion. */
+bool ov_body_work_pending(void);
+void ov_body_work_begin(void);
+void ov_body_work_done(uint32_t request);
 void ov_init(void);
 void ov_snapshot(ovSnapshot_t *out);
 uint8_t ov_set_factor(uint8_t which,float factor,bool apply,bool permitted);

@@ -87,7 +87,14 @@ static bool _override_body_eligible(void)
     return true;
 }
 
+/* Keep the idle check outside the producer's large stack frame. */
+static stat_t _override_callback_work(void) __attribute__((noinline));
 stat_t mp_override_callback(void)
+{
+    if (!ov_body_work_pending()) { return STAT_NOOP; }
+    return _override_callback_work();
+}
+static stat_t _override_callback_work(void)
 {
     ovSnapshot_t request;
     ov_snapshot(&request);
@@ -99,8 +106,15 @@ stat_t mp_override_callback(void)
     motion_profile_begin();
 #endif
 
-        if ((ov_applied_valid && ov_applied_request == request.request) ||
-            !_override_body_eligible() || mr.segment_count <= OV_BODY_LEAD + 1) {
+        if (ov_applied_valid && ov_applied_request == request.request) {
+            ov_body_work_done(request.request);
+#if TINYG_MOTION_PROFILE == 3
+            motion_profile_end(mr.section);
+#endif
+            BODY_UNLOCK;
+            return STAT_NOOP;
+        }
+        if (!_override_body_eligible() || mr.segment_count <= OV_BODY_LEAD + 1) {
 
 #if TINYG_MOTION_PROFILE == 3
     motion_profile_end(mr.section);
@@ -122,6 +136,7 @@ stat_t mp_override_callback(void)
         if (!ov_applied_valid && factor == OV_FACTOR_ONE) {
             ov_applied_valid = true;
             ov_applied_request = request.request;
+            ov_body_work_done(request.request);
 
 #if TINYG_MOTION_PROFILE == 3
     motion_profile_end(mr.section);
@@ -208,6 +223,7 @@ stat_t mp_override_callback(void)
 
 static bool _override_take_body(void)
 {
+    if (!ov_body.ready) { return false; }
     BODY_LOCK;
 #if TINYG_MOTION_PROFILE == 5
     motion_profile_begin();
@@ -458,6 +474,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
         ov_segment_ordinal = 0;
         ov_body.ready = false;
         ov_applied_valid = false;
+        ov_body_work_begin();
 
         // Start a new move by setting up the runtime singleton (mr)
         // A continued stop enters at the preceding braking block's actual exit.

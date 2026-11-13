@@ -12,6 +12,7 @@
 #endif
 static volatile ovSnapshot_t ov;
 static volatile uint32_t cancel_epoch;
+static volatile bool body_work; /* atomic main-loop hint; generations remain authoritative */
 static uint8_t utf_remaining,utf_lo,utf_hi; /* USB RX owns these while armed; arm/reset has the interrupt guard. */
 
 void ov_init(void)
@@ -21,6 +22,7 @@ void ov_init(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;
     ov.revision=1;
+    body_work=false;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -29,7 +31,7 @@ void ov_set_program_feed(bool enable)
 {
     OV_LOCK;
     if(ov.program_feed!=enable) {
-        ov.program_feed=enable;ov.request++;ov.revision++;
+        ov.program_feed=enable;ov.request++;ov.revision++;body_work=true;
     }
     OV_UNLOCK;
 }
@@ -40,7 +42,7 @@ void ov_reset_job(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;ov.armed=0;ov.capped=0;
     ov.unsupported=0;ov.state=OV_CANCELLED;
-    ov.request++;ov.revision++;cancel_epoch++;
+    ov.request++;ov.revision++;cancel_epoch++;body_work=false;
     utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -53,7 +55,7 @@ static void _set(uint8_t which,uint16_t factor,uint8_t enables)
     uint16_t old=(which==OV_FEED)?ov.feed:ov.spindle;
     if (old!=factor || ov.enables!=enables) {
         if (which==OV_FEED) ov.feed=factor; else ov.spindle=factor;
-        ov.enables=enables;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;
+        ov.enables=enables;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;body_work=true;
     }
 }
 /* AVR-libc can round decimal 0.05 one binary32 step below 0.05f.
@@ -234,4 +236,19 @@ bool ov_plan_transition(float length,float entry,float feed,float exit,float vma
     if(!isfinite(p.body) || p.body<0)return false;
     *out=p;
     return true;
+}
+
+/* A false hint may defer a concurrent request only to the next main-loop pass. */
+bool ov_body_work_pending(void) { return body_work; }
+void ov_body_work_begin(void)
+{
+    OV_LOCK;
+    body_work=(ov.enables & OV_FEED) && ov.program_feed && ov.feed!=OV_FACTOR_ONE;
+    OV_UNLOCK;
+}
+void ov_body_work_done(uint32_t request)
+{
+    OV_LOCK;
+    if (request==ov.request) body_work=false;
+    OV_UNLOCK;
 }
