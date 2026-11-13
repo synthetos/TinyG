@@ -230,7 +230,7 @@ def validate_firmware(identity,flash,tag,env):
     CI artifacts may have a known hash but no source checkout/commit metadata.
     """
     import re
-    expected_fb=449.01 if tag=='A' else float(env.get('PERF_EXPECT_FB','450.04'))
+    expected_fb=float(env.get('PERF_EXPECT_FB_A','449.01')) if tag=='A' else float(env.get('PERF_EXPECT_FB','450.04'))
     if tag not in ('A','B') or not math.isfinite(expected_fb):raise ValueError('invalid firmware expectation')
     flash=flash_metadata(flash)
     expected_hex=env.get('PERF_EXPECT_HEX') or None

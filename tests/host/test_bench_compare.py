@@ -68,6 +68,14 @@ class BenchCompare(unittest.TestCase):
                 for r in rs:r['flash']['hex_sha256']='a'*64
             with self.subTest(case=case):self.assertNotEqual(b.compare(rs)[0]['result'],'PASS')
 
+    def test_modern_a_uses_recorded_build_expectation(self):
+        rs=self.records()
+        for r in rs:
+            if r['tag']=='A':r['identity']['fb']=r['expected_fb']=450.04
+        self.assertEqual(b.compare(rs)[0]['result'],'PASS')
+        rs[0]['identity']['fb']=449.01
+        self.assertNotEqual(b.compare(rs)[0]['result'],'PASS')
+
     def test_shared_settings_drift_and_missing_tokens(self):
         for case in ('bjd','cjd','missing','extra_unknown','sr'):
             rs=self.records()
