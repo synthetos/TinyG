@@ -102,7 +102,7 @@ void rpt_exception(int status,const char *token){assert(tx);reported_status=stat
     code+=function(source,r'(?:static )?(?:bool|void|stat_t) '+name+r'\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=function(source,r'stat_t nv_persist\([^;{}]*\)[^\n]*\n(?=\{)')+'\n'
   code+=function(source,r'static void _set_defa\([^;{}]*\)(?=\s*\{)')+'\n'
-  code+='bool _nvm_layout_is_master(nvObj_t *nv){(void)nv;return false;}  /* N92: these boards never hold a master build */\nvoid _migrate_master(nvObj_t *nv,index_t done){(void)nv;(void)done;}\nindex_t _master_checkpoint(index_t *slot,uint8_t *seq){(void)slot;(void)seq;return 0;}\nvoid _clear_master_checkpoints(void){}\n'
+  code+='bool _nvm_layout_is_master(nvObj_t *nv){(void)nv;return false;}  /* N92: these boards never hold a master build */\nbool _migrate_master(nvObj_t *nv,index_t done){(void)nv;(void)done;return true;}\nindex_t _master_checkpoint(index_t *slot,uint8_t *seq){(void)slot;(void)seq;return 0;}\nvoid _clear_master_checkpoints(void){}\n'
   code+=function(source,r'void config_init\([^;{}]*\)(?=\s*\{)')+'\n'
   code+=r'''
 void prepare(float marker) {

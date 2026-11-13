@@ -423,7 +423,7 @@ static index_t _master_report_index(float old)
     return nv_get_index("", token);
 }
 
-static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's N, 0 on the first boot
+static bool _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's N, 0 on the first boot
 {
 	nvObj_t m;												// master values: read_persistent_value() reads index * 4
 	index_t journal = nv_index_max();
@@ -536,7 +536,13 @@ static void _migrate_master(nvObj_t *nv, index_t done)	// done: the checkpoint's
     }
     sr_init_status_report_P(PSTR(""));
 	_write_nvm_layout_marker(nv);								// commit the migration
+    // A successful write call alone does not prove the EEPROM stamp took.
+    // Keep both checkpoints and startup incomplete until the marker reads back.
+    nv->index = 0;
+    read_persistent_value(nv);
+    if (!_nvm_layout_is_current(nv)) { return (false); }
 	_clear_master_checkpoints();
+    return (true);
 }
 
 // Layout 2 removed three adjacent output-pause settings and their later activation stamp.
@@ -649,7 +655,7 @@ void config_init()
 	if (_nvm_layout_is_master(nv) ||						// a board upgraded from master 440.20/440.21 (N92),
 	    ((master_done > 0) && !migrate && !_nvm_layout_is_current(nv))) {	// or its marker write was cut
 		rpt_print_loading_configs_message();
-		_migrate_master(nv, master_done);
+		if (!_migrate_master(nv, master_done)) { return; }
 	} else if (!_nvm_layout_is_current(nv) && !migrate) {	// case (1) NVM is not setup or has another layout
 		_set_defa(nv);
 	} else {									// case (2) NVM is setup and in revision
