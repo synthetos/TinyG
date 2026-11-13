@@ -25,7 +25,9 @@ def test_override_factor_number(tg, word, expected, record):
 def test_override_factor_outside_range(tg, word):
     try:
         tg.reset()
-        assert tg.send_line('{"rt":{"mfo":' + word + '}}').status == 110
+        rejected = tg.send_line('{"rt":{"mfo":' + word + '}}')
+        assert rejected.status == 110
+        assert rejected.body['rt']['mfo'] == pytest.approx(round(float(word), 3))
         read = tg.send_line('{"rt":{"mfo":null}}')
         assert read.status == 0
         assert read.body['rt']['mfo'] == 1

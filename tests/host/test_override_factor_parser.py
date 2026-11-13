@@ -27,7 +27,8 @@ def source(out):
     fixture=fixture.replace('static fptrCmd table_set(index_t i) { return i ? capture_set : set_nul; }',
         '''stat_t rt_set_grp(nvObj_t *);stat_t rt_set_mfo(nvObj_t *);
 static uint32_t parsed_bits;
-static stat_t tracked_set(nvObj_t *nv){memcpy(&parsed_bits,&nv->value_flt,4);return rt_set_mfo(nv);}
+static uint8_t factor_precision;
+static stat_t tracked_set(nvObj_t *nv){memcpy(&parsed_bits,&nv->value_flt,4);stat_t status=rt_set_mfo(nv);factor_precision=nv->precision;return status;}
 static fptrCmd table_set(index_t i){return i==10?rt_set_grp:i==11?tracked_set:i?capture_set:set_nul;}''')
     fixture=fixture.replace('bool allowed, fl_taken;', 'bool allowed, fl_taken, check_only;')
     runtime=(h.FW/'runtime.c').read_text()
@@ -62,6 +63,7 @@ class OverrideFactorParser(unittest.TestCase):
 for(unsigned i=0;i<sizeof(words)/sizeof(*words);i++){
 snprintf(line,sizeof(line),"{\\"rt\\":{\\"mfo\\":%s}}",words[i]);
 int status=exercise(line,strlen(line));ov_snapshot(&state);
+if(factor_precision!=3)return 99;
 printf("%d %u\\n",status,state.feed);}return 0;}'''
         c=self.out/'factor.c';c.write_text(self.code+main);exe=self.out/'factor'
         subprocess.run(['cc','-std=gnu99','-funsigned-char','-Os','-I'+str(self.out),'-I'+str(h.FW),str(c),str(h.FW/'override.c'),'-lm','-o',str(exe)],check=True)

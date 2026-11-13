@@ -845,6 +845,7 @@ static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
     stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
     if(nv->valuetype!=TYPE_FLOAT && nv->valuetype!=TYPE_INTEGER)return STAT_INPUT_VALUE_RANGE_ERROR;
     float value=nv->valuetype==TYPE_FLOAT?nv->value_flt:(float)nv->value_int;
+    nv->precision=3; // Keep rejected numeric requests readable in the response.
     status=_ov_result(ov_set_factor(which,value,!rt.check_only,true));
     if(status==STAT_OK && !rt.check_only){if(which==OV_FEED)ov_get_mfo(nv);else ov_get_sso(nv);}
     return status;
