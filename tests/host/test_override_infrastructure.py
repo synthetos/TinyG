@@ -17,6 +17,20 @@ static ovSnapshot_t s;
 static void snap(void){ov_snapshot(&s);}
 static void text(const unsigned char *p,unsigned n){for(unsigned i=0;i<n;i++)assert(!ov_usb_byte(p[i],true,true));}
 int main(void){
+ ov_init();assert(!ov_body_work_pending());
+ ov_body_work_begin();assert(!ov_body_work_pending());
+ assert(ov_set_factor(OV_FEED,.5f,false,true)==OV_OK);assert(!ov_body_work_pending());
+ assert(ov_set_factor(OV_FEED,.5f,true,true)==OV_OK);assert(ov_body_work_pending());
+ snap();uint32_t first=s.request;
+ assert(ov_set_factor(OV_FEED,1.5f,true,true)==OV_OK);
+ ov_body_work_done(first);assert(ov_body_work_pending()); /* stale completion cannot drop a request */
+ snap();ov_body_work_done(s.request);assert(!ov_body_work_pending());
+ ov_body_work_begin();assert(ov_body_work_pending()); /* next block needs the retained factor */
+ ov_set_program_feed(false);snap();ov_body_work_done(s.request);
+ ov_body_work_begin();assert(!ov_body_work_pending());
+ ov_set_program_feed(true);assert(ov_body_work_pending());
+ ov_reset_job();assert(!ov_body_work_pending());
+ ov_body_work_begin();assert(!ov_body_work_pending());
  ov_init();snap();assert(s.feed==1000&&s.spindle==1000&&s.committed_feed==1000&&!s.armed&&s.enables==OV_FEED);
  for(unsigned i=0;i<256;i++)assert(!ov_usb_byte(i,true,true));
  assert(ov_set_factor(OV_FEED,0.5f,false,true)==OV_OK);snap();assert(s.feed==1000);
