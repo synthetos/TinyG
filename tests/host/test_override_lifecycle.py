@@ -52,13 +52,15 @@ typedef unsigned char stat_t;
 #define STAT_OK 0
 #define FLAGS_ONE ((bool[6]){true})
 static struct {struct {bool parameter;} gf;struct {float parameter;} gn;} cm;
-static void (*pending[4])(float *,bool *);
-static float values[4][6];static unsigned queued;
+static void (*pending[8])(float *,bool *);
+static float values[8][6];static unsigned queued;
+static bool spindle_permission=true;
+static void spindle_override_program(bool v){spindle_permission=v;}
 static void mp_queue_command(void (*f)(float *,bool *),float *v,bool *flags) {
     pending[queued]=f;for(unsigned i=0;i<6;i++)values[queued][i]=v[i];queued++;
 }
 '''
-        for name in ['_exec_feed_permission','cm_override_enables','cm_feed_rate_override_enable']:
+        for name in ['_exec_feed_permission','cm_override_enables','cm_feed_rate_override_enable','cm_spindle_override_enable']:
             code+=function(source, (r"static void " if name.startswith("_") else r"stat_t ")+name+r"\(")+ '\n'
         code+=r'''
 int main(void) {
@@ -66,14 +68,20 @@ int main(void) {
     cm_override_enables(false);ov_snapshot(&s);assert(s.program_feed);
     cm.gf.parameter=true;cm.gn.parameter=1;cm_feed_rate_override_enable(true);
     ov_snapshot(&s);assert(s.program_feed && s.feed==500);
-    pending[0](values[0],FLAGS_ONE);ov_snapshot(&s);assert(!s.program_feed);
+    pending[0](values[0],FLAGS_ONE);ov_snapshot(&s);assert(!s.program_feed && !spindle_permission);
     ov_set_factor(OV_FEED,1.5f,true,true);ov_set_enable(OV_FEED,true,true,true);
     ov_snapshot(&s);assert(!s.program_feed);
     pending[1](values[1],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed && s.feed==1500);
     cm.gn.parameter=0;cm_feed_rate_override_enable(true);
     pending[2](values[2],FLAGS_ONE);ov_snapshot(&s);assert(!s.program_feed);
     cm.gf.parameter=false;cm_feed_rate_override_enable(true);
-    pending[3](values[3],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed);
+    pending[3](values[3],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed && !spindle_permission);
+    cm_spindle_override_enable(true);assert(!spindle_permission);
+    pending[4](values[4],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed && spindle_permission);
+    cm.gf.parameter=true;cm.gn.parameter=0;cm_spindle_override_enable(true);assert(spindle_permission);
+    pending[5](values[5],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed && !spindle_permission);
+    cm_override_enables(true);assert(!spindle_permission);
+    pending[6](values[6],FLAGS_ONE);ov_snapshot(&s);assert(s.program_feed && spindle_permission);
 }
 '''
         with tempfile.TemporaryDirectory() as tmp:

@@ -34,6 +34,9 @@
  *  - Job ID Reports
  */
 
+#ifdef __AVR
+#pragma GCC optimize ("Os")
+#endif
 #include "tinyg.h"
 #include "config.h"
 #include "report.h"

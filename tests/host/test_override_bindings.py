@@ -82,9 +82,15 @@ static bool _machine_quiet(void){return quiet;}
 static bool xio_rx_data_pending(void){return pending;}
 static bool xio_usb_input_boundary(void){return boundary;}
 static stat_t cm_is_alarmed(void){return alarm;}
+static void spindle_override_master(bool v){}
+static stat_t spindle_get_sso(nvObj_t*n){n->value_flt=1;return 0;}
+static stat_t spindle_get_ssc(nvObj_t*n){n->value_flt=1;return 0;}
+static stat_t spindle_get_sse(nvObj_t*n){n->value_int=1;return 0;}
+static stat_t spindle_set_sso(nvObj_t*n){return 0;}
+static stat_t spindle_set_ssoe(nvObj_t*n){return 0;}
 '''
   for name in ('_ov_result','_ov_float','ov_get_mfo','ov_get_sso','ov_get_mfc','ov_get_ssc','ov_get_state',
-               '_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_sso','_ov_enable','_ov_operator','ov_set_mfoe','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
+               '_ov_factor','ov_set_mfo','rt_set_mfo','rt_set_sso','_ov_operator','ov_set_mfoe','rt_set_mfe','rt_set_sse','rt_get_mfe','rt_get_sse','rt_get_ovb','rt_set_ovb'):
    code+=function(source,r'(?:static )?stat_t '+name+r'\(')+'\n'
   code+=r'''
 int main(void){

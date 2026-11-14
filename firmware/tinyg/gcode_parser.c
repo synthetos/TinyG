@@ -292,7 +292,7 @@ static bool _takes_subcode(char letter, uint16_t code)
 
 static stat_t _validate_gcode_block()
 {
-    if (cm.gf.feed_rate_override_enable && cm.gf.parameter &&
+    if ((cm.gf.feed_rate_override_enable || cm.gf.spindle_override_enable) && cm.gf.parameter &&
         cm.gn.parameter != 0 && cm.gn.parameter != 1) return STAT_P_WORD_IS_INVALID;
 
 	//	From NIST, section 3.4 "It is an error to put a G-code from group 1 and a G-code from group 0 on
@@ -507,7 +507,7 @@ static stat_t _parse_gcode_block(char *buf)
                 case 48: SET_MODAL (MODAL_GROUP_M9, override_enables, true);
                 case 49: SET_MODAL (MODAL_GROUP_M9, override_enables, false);
                 case 50: SET_MODAL (MODAL_GROUP_M9, feed_rate_override_enable, true);
-                case 51: status = STAT_MCODE_COMMAND_UNSUPPORTED; break;
+                case 51: SET_MODAL (MODAL_GROUP_M9, spindle_override_enable, true);
                 case 105: SET_NEXT_ACTION (NEXT_ACTION_GET_ADC);
 				case 114: SET_NEXT_ACTION (NEXT_ACTION_GET_POSITION);
 				case 115: SET_NEXT_ACTION (NEXT_ACTION_GET_FIRMWARE);

@@ -178,6 +178,7 @@ static void _controller_HSM()
 	DISPATCH(_test_system_assertions());		// system integrity assertions
     DISPATCH(mp_startup_callback());           // release idle startup before planner backpressure
 	DISPATCH(_dispatch_control());				// read any control messages prior to executing cycles
+    DISPATCH(spindle_override_callback());      // live PWM update; no motion replan
 
 //----- planner hierarchy for gcode and cycles ---------------------------------------//
 

@@ -699,7 +699,7 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "rt","rtovb",_i0,0,tx_print_nul,rt_get_ovb,rt_set_ovb,(uint32_t *)&cs.null,0 },
     { "rt","rtovs",_i0,0,tx_print_nul,ov_get_state,set_nul,(uint32_t *)&cs.null,0 },
     { "","mfo",_f0,3,ov_print_mfo,ov_get_mfo,ov_set_mfo,(uint32_t *)&cs.null,0 },
-    { "","sso",_f0,3,tx_print_nul,ov_get_sso,set_nul,(uint32_t *)&cs.null,0 },
+    { "","sso",_f0,3,spindle_print_sso,spindle_get_sso,spindle_set_sso,(uint32_t *)&cs.null,0 },
     { "","mfc",_f0,3,ov_print_mfc,ov_get_mfc,set_nul,(uint32_t *)&cs.null,0 },
     { "","ssc",_f0,3,tx_print_nul,ov_get_ssc,set_nul,(uint32_t *)&cs.null,0 },
     { "","ovs",_i0,0,tx_print_nul,ov_get_state,set_nul,(uint32_t *)&cs.null,0 },
@@ -710,6 +710,9 @@ const cfgItem_t cfgArray[] PROGMEM = {
     { "","mfe",_i0,0,ov_print_mfe,rt_get_mfe,set_nul,(uint32_t *)&cs.null,0 },
     { "","mfoe",_i0,0,ov_print_mfoe,ov_get_mfoe,ov_set_mfoe,(uint32_t *)&cs.null,0 },
     { "","m48e",_i0,0,ov_print_m48e,ov_get_m48e,ov_set_m48e,(uint32_t *)&cs.null,0 },
+    { "","ssoe",_i0,0,spindle_print_ssoe,spindle_get_ssoe,spindle_set_ssoe,(uint32_t *)&cs.null,0 },
+    { "","sse",_i0,0,spindle_print_sse,spindle_get_sse,set_nul,(uint32_t *)&cs.null,0 },
+    { "","scp",_i0,0,spindle_print_scp,spindle_get_scp,set_nul,(uint32_t *)&cs.null,0 },
 	// Group lookups - must follow the single-valued entries for proper sub-string matching
 	// *** Must agree with NV_COUNT_GROUPS below ***
 	// *** START COUNTING FROM HERE ***

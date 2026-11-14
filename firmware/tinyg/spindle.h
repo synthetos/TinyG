@@ -47,6 +47,28 @@ stat_t spindle_get_spc(nvObj_t *nv);
 stat_t spindle_get_sps(nvObj_t *nv);
 void spindle_get_runtime(uint8_t *mode, float *speed);
 void spindle_control_immediate(uint8_t mode, float speed);
+void spindle_override_reset(void);
+void spindle_override_master(bool enabled);
+void spindle_override_program(bool enabled);
+stat_t spindle_override_callback(void);
+stat_t spindle_get_sso(nvObj_t *nv);
+stat_t spindle_get_ssc(nvObj_t *nv);
+stat_t spindle_set_sso(nvObj_t *nv);
+stat_t spindle_get_ssoe(nvObj_t *nv);
+stat_t spindle_set_ssoe(nvObj_t *nv);
+stat_t spindle_get_sse(nvObj_t *nv);
+stat_t spindle_get_scp(nvObj_t *nv);
+#ifdef __TEXT_MODE
+void spindle_print_sso(nvObj_t *nv);
+void spindle_print_ssoe(nvObj_t *nv);
+void spindle_print_sse(nvObj_t *nv);
+void spindle_print_scp(nvObj_t *nv);
+#else
+#define spindle_print_sso tx_print_stub
+#define spindle_print_ssoe tx_print_stub
+#define spindle_print_sse tx_print_stub
+#define spindle_print_scp tx_print_stub
+#endif
 void spindle_init();
 void spindle_reset();
 stat_t cm_set_spindle_speed(float speed);			// S parameter

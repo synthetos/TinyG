@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[2]
 PRE=fixture.PRELUDE
 class PwmEndpoints(unittest.TestCase):
  def test_endpoints_and_resume(self):
-  code=PRE+function((ROOT/'firmware/tinyg/pwm.c').read_text(),r'stat_t pwm_set_duty\([^;{}]*\)(?=\s*\{)')+r'''
+  code=PRE+fixture.duty_code(ROOT/'firmware/tinyg')+r'''
 int main(void){
  pwm.p[0].timer=&timer;
  for(unsigned p=256;p<=65535;p+=(p==256?39744:25535)){
