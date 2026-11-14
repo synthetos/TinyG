@@ -32,6 +32,7 @@
 #include "controller.h"
 #include "canonical_machine.h"
 #include "planner.h"
+#include "motion_profile.h"
 #include "feedlimit.h"
 #include "stepper.h"
 #include "report.h"
@@ -528,6 +529,9 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
  *	[2] The mr_flag is used to tell replan to account for mr buffer's exit velocity (Vx)
  *		mr's Vx is always found in the provided bf buffer. Used to replan feedholds
  */
+#if TINYG_MOTION_PROFILE == 6
+#define _plan_block_list _profile_plan_block_list
+#endif
 static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
 {
     if (bf == NULL) { return (STAT_OK); }
@@ -570,6 +574,17 @@ static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
     next_entry = _plan_block(bp, (next_entry == EXIT_FROM_PREVIOUS) ? _exit_of_previous(bp) : next_entry, 0);
     return (fp_bits(next_entry) == fp_bits(INVALID_PLAN) ? STAT_INPUT_VALUE_RANGE_ERROR : STAT_OK);
 }
+
+#if TINYG_MOTION_PROFILE == 6
+#undef _plan_block_list
+static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag)
+{
+    motion_profile_begin();
+    stat_t status = _profile_plan_block_list(bf, mr_flag);
+    motion_profile_end(PLANNER_BUFFER_POOL_SIZE - mp_get_planner_buffers_available());
+    return status;
+}
+#endif
 
 /*
  * Replanning against the exec (E180)

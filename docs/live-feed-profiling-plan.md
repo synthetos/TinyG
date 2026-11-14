@@ -96,3 +96,23 @@ Sites 4 and 5 measure only the short publication/claim. Keep the full-workload
 interrupt and scope passes: the unmasked geometry copy still contributes to
 exec time. The factor conversion has an operand dependency barrier so GCC
 cannot move its pure floating-point arithmetic below CLI.
+
+## N111 planning-cost baseline
+
+`MOTION_PROFILE=6` times an existing main-loop lookahead pass, and
+`MOTION_PROFILE=7` times one trapezoid calculation. These sites use TCC1 /64:
+2 us per tick, 131.072 ms range. They are separate images; never nest sites.
+For sites 6/7 only, `section_at_maximum` records queue occupancy at the end of
+that sample, not a motion section. Interrupt preemption and evaluation of the
+queue-count argument are included; wrapper entry/exit and timer bookkeeping
+are excluded. An overflow invalidates the timing bound.
+
+The diagnostic `tests/diagnostics/test_n111_planner_profile.py` streams fixture
+05 and reads the counters through ICE only after stopping. The complete fixture
+21 is opt-in with `N111_PROFILE_DENSE=1`; it can take about 42 minutes depending
+on the bench settings. Flash `build-profile6/tinyg.hex` or
+`build-profile7/tinyg.hex` through the harness and pass the matching ELF.
+Record the actual settings with the run. These are observed baseline planning
+costs, not timing qualification of the future suffix producer, and not a proof
+of the worst case over all legal geometry. The final producer needs its own
+bracket after implementation, followed by the normal stack/interrupt checks.
