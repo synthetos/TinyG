@@ -133,3 +133,34 @@ class QueueHandoff(unittest.TestCase):
         self.assertGreater(m.lead,16)
         self.assertEqual(m.trace[-1].exit,.5)
         m.check()
+
+
+class AdmissionFence(unittest.TestCase):
+    def test_admission_fence_makes_previously_starved_service_commit(self):
+        from override_queue_model import AdmissionModel
+        m = AdmissionModel(row_cost=2)
+        m.set_factor(.5)
+        smallest = 32
+        for _ in range(150):
+            m.producer()
+            m.execute()
+            smallest = min(smallest, len(m.queue))
+        self.assertEqual(m.claims, 1)
+        self.assertEqual(m.floor_aborts, 0)
+        self.assertGreaterEqual(smallest, m.reserve)
+        self.assertEqual(m.trace[-1].exit, .5)
+        m.check()
+
+    def test_wrong_service_estimate_releases_admission_at_motion_floor(self):
+        from override_queue_model import AdmissionModel
+        m = AdmissionModel(row_cost=2)
+        m.set_factor(.5)
+        m.producer()
+        for _ in range(100):
+            m.execute()  # unexpectedly no producer CPU after admission closes
+            self.assertGreaterEqual(len(m.queue), m.reserve)
+        self.assertEqual(m.claims, 0)
+        self.assertEqual(m.floor_aborts, 1)
+        self.assertFalse(m.admission_held)
+        self.assertTrue(all(r.generation == 0 for r in m.trace))
+        m.check()

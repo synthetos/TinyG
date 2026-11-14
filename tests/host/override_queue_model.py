@@ -164,3 +164,46 @@ class QueueModel:
         assert all(a.exit == b.entry for a, b in zip(self.trace, self.trace[1:]))
         assert all(r.entry > 0 and r.exit > 0 for r in self.trace)
         assert all(b.block == a.block+1 for a, b in zip(self.trace, self.trace[1:]))
+
+
+class AdmissionModel(QueueModel):
+    """Trial admission fence with an explicit reserve of executable blocks.
+
+The reserve is in ticks only in this model. Firmware must use conservative
+remaining motion time and include refill/normal planning cost in that reserve.
+"""
+    def __init__(self, reserve=8, service_floor=1, **kwargs):
+        super().__init__(**kwargs)
+        self.reserve, self.service_floor = reserve, service_floor
+        self.admission_held = False
+        self.floor_aborts = 0
+
+    def producer(self):
+        if self.candidate is None and self.pending:
+            # Choose the farthest anchor that retains the requested motion floor.
+            lead = len(self.queue)-max(self.reserve, self.ramp)
+            if lead <= 0:
+                return
+            cost = (len(self.queue)-lead)*self.row_cost
+            if cost > lead*self.service_floor:
+                return  # cannot promise enough time even with admission held
+            self.lead = lead
+            self.admission_held = True
+        super().producer()
+        if self.candidate is None or self.candidate.claimed:
+            self.admission_held = False
+
+    def execute(self, refill=True):
+        # If service violates the estimate, abandon before consuming the reserve.
+        # Normal queue admission resumes immediately; no private row was exposed.
+        if self.admission_held and len(self.queue) <= self.reserve:
+            c = self.candidate
+            if not (c and c.ready and self.queue[0] == c.anchor):
+                self.candidate = None
+                self.floor_aborts += 1
+            self.admission_held = False
+        held = self.admission_held
+        row = super().execute(refill=refill and not held)
+        if self.candidate is None or self.candidate.claimed:
+            self.admission_held = False
+        return row
