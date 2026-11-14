@@ -67,7 +67,7 @@ def compare(records,expected=None,rt_cost=False):
             provenance_ok=True
             for r in (a,b):
                 f=r.get('flash') or {}; sha=f.get('hex_sha256','')
-                expected_fb=449.01 if r.get('tag')=='A' else r.get('expected_fb')
+                expected_fb=r.get('expected_fb',449.01 if r.get('tag')=='A' else None)
                 actual=r.get('identity',{}).get('fb')
                 if (not positive(expected_fb) or not positive(actual) or abs(actual-expected_fb)>.0005 or
                     not f.get('known') or not re.fullmatch('[0-9a-f]{64}',str(sha)) or

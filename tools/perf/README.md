@@ -171,7 +171,10 @@ capture holds a host wake assertion, and a detected sleep invalidates the result
 ### Firmware identity preflight
 
 Before settings writes, motion or instrument capture, the collector reads `fb`
-from the board. Tag A requires 449.01. Tag B requires `PERF_EXPECT_FB` (default
+from the board. Tag A requires `PERF_EXPECT_FB_A` (default 449.01). For a current-build
+baseline, set it explicitly, e.g. `PERF_EXPECT_FB_A=450.04`; the expectation
+is recorded and checked by the collector and comparison. This does not relax
+the fixed-settings or distinct-image checks. Tag B requires `PERF_EXPECT_FB` (default
 450.04). If `PERF_EXPECT_HEX` is set, it must be a full 64-character SHA256 and
 match the port's flash record. A mismatch writes an invalid JSON with the actual
 identity and flash record, then stops without resetting or moving that board.

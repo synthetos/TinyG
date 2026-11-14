@@ -276,3 +276,14 @@ def test_empty_queue_reply_is_not_motion_complete():
             else:super().write(data,**kw)
     f=QueueOnly();r=perf.stream(f,['G1 X1'],1,clock=f.clock,probe_kind='qr')
     assert r['acked']==1 and r['completion']=='timeout' and not r['statuses']
+
+
+def test_configurable_a_identity_keeps_strict_guard():
+    flash={'hex_sha256':'a'*64,'known':True}
+    env={'PERF_EXPECT_FB_A':'450.04'}
+    assert perf.validate_firmware({'fb':450.04},flash,'A',env)['expected_fb']==450.04
+    with pytest.raises(ValueError,match='requires fb 450.04'):
+        perf.validate_firmware({'fb':449.01},flash,'A',env)
+    for value in ('nan','inf','bad'):
+        with pytest.raises(ValueError):
+            perf.validate_firmware({'fb':450.04},flash,'A',{'PERF_EXPECT_FB_A':value})
