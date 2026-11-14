@@ -4,12 +4,15 @@ The override HIL suite checks the firmware's own reports (vel, mfc, mpox). This 
 at F600, the factor changed mid-move, both Y step lines captured.
 
   factor 0.5 / 1.5    the cruise step rate after the change is factor x the rate before (1 %), the change itself
-                      is a jerk-limited ramp no harder than the move's own acceleration, and both Y motors end with
-                      exactly the commanded number of steps.
+                      is a jerk-limited ramp no harder than the move's own acceleration, and each Y motor's signed
+                      net travel is within 1 step of the commanded distance (pulses counted by DIR level, the
+                      forward level taken from $<m>po and the firmware's DIR convention, tinyg_hil.override_steps).
+  none / unity        controls: the same move with no request, and with mfo=1 sent mid-move.
   cap                 factor 2.0 with $yfr/$yvm at 800 mm/min: the rate stops at 800 mm/min and mcp reports the cap.
 
 Feed-Override wiki page: "The factor scales the programmed feed rate. Axis and motor speed limits, acceleration and
 jerk still apply"; "mcp: 1 if axis or motor speed limits capped the accepted speed".
+Bench preconditions, checked: motors 2 and 3 both mapped to Y with equal scaling.
 """
 import statistics
 import time
@@ -17,6 +20,7 @@ import time
 import pytest
 
 from tinyg_hil import benches, mso
+from tinyg_hil.override_steps import dir_level, signed_steps, within
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"),
               pytest.mark.timeout(240)]
@@ -50,21 +54,6 @@ def speed_series(rises, spm, k=WINDOW):
         if dt > 0:
             out.append(((rises[i] + rises[i + k]) / 2, k / spm / dt * 60.0))
     return out
-
-
-def signed_steps(rises, dir_edges, dir_initial):
-    """(net steps in the move's direction, steps taken the other way) from step rises and DIR transitions."""
-    level, i, by_level = dir_initial, 0, {}
-    for t in rises:
-        while i < len(dir_edges) and dir_edges[i][0] <= t:
-            level = dir_edges[i][1]
-            i += 1
-        by_level.setdefault(level, []).append(t)
-    if not by_level:
-        return 0, 0, []
-    fwd = max(by_level.values(), key=len)
-    back = sum(len(v) for v in by_level.values()) - len(fwd)
-    return len(fwd) - back, back, fwd
 
 
 def median_between(series, t0, t1):
@@ -109,7 +98,12 @@ def test_override_step_rate(tg, keep, record, request, case):
     factor = c["factor"] if send else 1.0
     expected_after = min(FEED * factor, limit)
     cfg = _cfg(tg)
-    spm = _spm(tg)
+    if not (tg.get("2ma") == tg.get("3ma") == 1):
+        pytest.skip("needs motors 2 and 3 both mapped to Y (bench 3 wiring)")
+    spm, spm3 = _spm(tg, 2), _spm(tg, 3)
+    if spm != spm3:
+        pytest.skip(f"needs equal Y motor scaling (M2 {spm}, M3 {spm3} steps/mm)")
+    fwd_level = {m: dir_level(True, tg.get(f"{m}po")) for m in (2, 3)}   # positive Y travel
     keep("yvm", "yfr")
     tg.set("yvm", limit, allow="Y speed limit for the override measurement")
     tg.set("yfr", limit, allow="Y feed limit for the override measurement")
@@ -142,12 +136,15 @@ def test_override_step_rate(tg, keep, record, request, case):
     e = cap.edges()
     m2, m3 = _rises(e["M2 step"]), _rises(e["M3 step"])
     # Signed travel: the move can end with a pulse after DIR flips (one reverse step), so total edges are not
-    # travel. Count each pulse by the DIR level at that moment; the move's own direction is the majority. Speeds
-    # use forward pulses only, so a reverse tail never counts as forward motion.
+    # travel. Each pulse counts by the DIR level at that moment against the forward level of a positive Y move;
+    # travel in the wrong direction comes out negative. Speeds use forward pulses only.
     dir_flips = {k: len(e[k]) for k in ("M2 dir", "M3 dir")}
     ini = cap.initial()
-    net_m2, back_m2, fwd_m2 = signed_steps(m2, e["M2 dir"], ini.get("M2 dir", 0))
-    net_m3, back_m3, _ = signed_steps(m3, e["M3 dir"], ini.get("M3 dir", 0))
+    assert "M2 dir" in ini and "M3 dir" in ini, f"capture has no initial DIR level: {ini}"
+    net_m2, back_m2, fwd_m2 = signed_steps(m2, e["M2 dir"], ini["M2 dir"], fwd_level[2])
+    net_m3, back_m3, _ = signed_steps(m3, e["M3 dir"], ini["M3 dir"], fwd_level[3])
+    if not fwd_m2:
+        pytest.fail(f"no forward Y pulses on M2 (net {net_m2}, reverse {back_m2})")
     first_gaps_ms = [round((b - a) * 1000, 3) for a, b in zip(fwd_m2[:4], fwd_m2[1:4])]
     expected_steps = round(DIST * spm)
     s = speed_series(fwd_m2, spm)
@@ -159,7 +156,7 @@ def test_override_step_rate(tg, keep, record, request, case):
     j_acc = jerk_mm_s3(v_before, acc[1] - acc[0] if None not in acc else None)
     j_chg = jerk_mm_s3(v_after - v_before, chg[1] - chg[0] if None not in chg else None)
     summary = {"case": case, "factor": factor, "limit_mm_min": limit, "steps_m2": len(m2), "steps_m3": len(m3), "net_m2": net_m2, "net_m3": net_m3,
-               "reverse_steps": [back_m2, back_m3],
+               "reverse_steps": [back_m2, back_m3], "forward_dir_level": fwd_level,
                "expected_steps": expected_steps, "steps_per_mm": round(spm, 3),
                "rate_before_hz": round(v_before / 60 * spm, 1) if v_before else None,
                "rate_after_hz": round(v_after / 60 * spm, 1) if v_after else None,
@@ -177,9 +174,10 @@ def test_override_step_rate(tg, keep, record, request, case):
     record("override_step_rate", summary)
     print("OVERRIDE", summary)
 
-    assert (net_m2, back_m2) == (net_m3, back_m3), f"the two Y motors stepped differently: {summary}"
-    # Agreed bound: net travel within 1 step of the target (the starting substep phase can move it by one).
-    assert abs(net_m2 - expected_steps) <= 1, f"override lost or added travel: {summary}"
+    # Agreed bound: signed net travel within 1 step of the target on each motor (the starting substep phase can
+    # move it by one); a move in the wrong direction is about -target and fails.
+    assert within(net_m2, expected_steps), f"M2 net travel is wrong: {summary}"
+    assert within(net_m3, expected_steps), f"M3 net travel is wrong: {summary}"
     assert v_before == pytest.approx(FEED, rel=0.01), f"cruise before the change is not F{FEED:g}: {summary}"
     assert v_after == pytest.approx(expected_after, rel=0.01), f"cruise after the change is wrong: {summary}"
     assert mfc == pytest.approx(factor), summary
