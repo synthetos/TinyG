@@ -67,6 +67,15 @@ then re-probes with ESC/S. It logs the attempt and result in the transcript and
 standard warning log. A remaining signature or an exception closes and
 quarantines the port before any JSON, G-code, reset or XON byte is sent. An
 existing unsafe-flash marker blocks open before any probe or auto-exit.
+
+AVR109 `E` is not universally just a jump. In tg-xboot builds with
+`ENABLE_API_FIRMWARE_UPDATE`, the exit path checks for an `XBIF` staged-update
+marker and may install that image before jumping to the application. TinyG does
+not stage these updates. With the entire application section erased, no staged
+marker exists and this path does not program flash, EEPROM or lock bits. This
+source-level observation does not establish that a partially written application
+is valid; an unsafe-flash marker must still block auto-exit and application traffic.
+
 A flash creates the same persistent per-port guard before entering the bootloader. Failure leaves it in place;
 ordinary open/write calls, including teardown and later sessions, refuse traffic.
 The marker is `TINYG_HIL_STATE/tinyg-hil-<port>.flash-unsafe` (under the normal
