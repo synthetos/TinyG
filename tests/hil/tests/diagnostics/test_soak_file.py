@@ -1,5 +1,8 @@
 """Soak (overnight): stream any G-code file in one flow-control mode, return to the start, check the board.
 
+SOAK_M0=resume resumes reported M0/M1 program stops after a 0.5 s settle and records every start.
+It does not resume feedhold or extend stall deadlines. Default off. Master 440 defaults to count mode;
+edge defaults to line mode. Explicit line/g2 mode is refused on master, which has no rxm setting.
 SOAK_FILE: the file (lines as given, blank lines dropped); SOAK_MODE: line, g2, rts or count;
 SOAK_SETTINGS="1mi=8,1sa=0.9,3ma=3,aam=3,ara=10" applies those settings first (restored afterwards): motor
 geometry (step angle, microsteps, travel per rev) and axis mapping or rotary mode, so the same checks cover other
@@ -22,12 +25,12 @@ import time
 
 import pytest
 
-from tinyg_hil import benches, hostlines, saleae, sender
+from tinyg_hil import benches, hostlines, saleae, sender, soak, snapshot
 
-pytestmark = [pytest.mark.timeout(5400), pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.dialect("d449")]
+pytestmark = [pytest.mark.timeout(5400), pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.dialect("d440", "d449")]
 
 FILE = os.environ.get("SOAK_FILE", "")
-MODE = os.environ.get("SOAK_MODE", "line")
+MODE = os.environ.get("SOAK_MODE")
 POS_TOL = 0.002                                          # mm
 CAPTURE_MAX_LINES = int(os.environ.get("SOAK_CAPTURE_MAX", "40000"))
 HOLDS = int(os.environ["SOAK_HOLDS"]) if "SOAK_HOLDS" in os.environ else (3 if random.random() < 1 / 3 else 0)
@@ -35,19 +38,22 @@ HOLDS = int(os.environ["SOAK_HOLDS"]) if "SOAK_HOLDS" in os.environ else (3 if r
 
 class _Holder(threading.Thread):
     """Feedholds at random moments while the stream runs: '!' then '~' 0.4-1.5 s later."""
-    def __init__(self, tg, count, seed):
+    def __init__(self, tg, count, seed, lock):
         super().__init__(daemon=True)
+        self.lock = lock
         self.tg, self.count, self.r, self.stop, self.done = tg, count, random.Random(seed), threading.Event(), []
 
     def run(self):
         for _ in range(self.count):
             if self.stop.wait(self.r.uniform(2.0, 8.0)):
                 return
-            t = time.monotonic()
-            self.tg.transport.write(b"!")
-            self.stop.wait(self.r.uniform(0.4, 1.5))
-            self.tg.transport.write(b"~")
-            self.done.append(round(t, 2))
+            with self.lock:
+                if self.stop.is_set():return
+                t = time.monotonic()
+                self.tg.transport.write(b"!")
+                self.stop.wait(self.r.uniform(0.4, 1.5))
+                self.tg.transport.write(b"~")
+                self.done.append(round(t, 2))
 
 
 def _net_steps(edges, initial, step_ch, dir_ch):
@@ -77,20 +83,34 @@ def _mpo(tg):
 def test_soak_file(tg, keep, record, request):
     if not FILE:
         pytest.skip("SOAK_FILE not set")
+    mode=soak.mode_for(tg.dialect,MODE)
+    resume=soak.resume_policy(os.environ.get("SOAK_M0", ""))
+    lock=threading.Lock()
+    resumer=soak.ProgramStopResumer(tg,lock) if resume else None
+    if os.environ.get("SOAK_FI")=="1" and tg.dialect.name=="d440":
+        pytest.skip("SOAK_FI requires the edge runtime report family")
+    ALARMED.clear()
     raw = open(FILE, "rb").read().decode("latin-1")
     lines = [l.rstrip("\r") for l in raw.split("\n") if l.strip()]
     lines, stripped = hostlines.host_safe(lines, raw=os.environ.get("SOAK_RAW") == "1")   # N67, N101
     for line in lines:
         tg.guard.check_gcode(line, allow="soak file on an unloaded bench")
-    keep("ej", "rxm", "ex", "qv", "sv", "si")
+    keep(*[k for k in ("ej", "rxm", "ex", "qv", "sv", "si") if k in tg.dialect.tokens])
     geo = [kv.split("=") for kv in os.environ.get("SOAK_SETTINGS", "").split(",") if "=" in kv]
     for token, value in geo:
         keep(token)
-    for token, value in {"ej": 1, "qv": 1, "sv": 1, **sender.MODES[MODE]}.items():
+    for token, value in {"ej": 1, "qv": 1, "sv": 1, **sender.MODES[mode]}.items():
+        if token not in tg.dialect.tokens:continue
         if tg.get(token) != value:
             tg.set(token, value, allow="soak settings")
     for token, value in geo:                             # last, so a combination can override sv/qv too
         tg.set(token, float(value) if "." in value else int(value), allow="soak geometry")
+    if resumer:
+        original_sr=list(tg.get("sr"))
+        request.addfinalizer(lambda: snapshot.set_status_report(tg,original_sr))
+        snapshot.set_status_report(tg,[*dict.fromkeys([*original_sr,"stat"])])
+        tg.set("sv",1,allow="program-stop observations")
+        tg.set("si",100,allow="program-stop observations")
     tg.send_gcode("G21 G90", check=True)
     start = _mpo(tg)
     fi = os.environ.get("SOAK_FI") == "1"
@@ -107,23 +127,23 @@ def test_soak_file(tg, keep, record, request):
         pytest.skip(f"the board's A axis is in radius mode with ara {tg.get('ara')}: A words would mean thousands "
                     "of degrees per unit (N48); set aam=1 or a sane ara before soaking A files")
     seed = int(os.environ.get("SOAK_HOLD_SEED", "0")) or random.randrange(1, 1 << 30)
-    info = {"file": FILE, "mode": MODE, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
+    info = {"file": FILE, "mode": mode, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),
             "hold_seed": seed}
-    holder = _Holder(tg, HOLDS, seed) if HOLDS else None
+    holder = _Holder(tg, HOLDS, seed, lock) if HOLDS else None
     t0 = time.monotonic()
     res = None
     try:
         if use_saleae:
             channels = [chan[f"M{m} {k}"] for m in (1, 2, 3) for k in ("step", "dir")]
-            stem = request.config._tinyg_recorder.dir / f"soak-file-{os.path.basename(FILE)}-{MODE}"
+            stem = request.config._tinyg_recorder.dir / f"soak-file-{os.path.basename(FILE)}-{mode}"
             with saleae.Capture(bench["saleae"], channels=channels, seconds=None, rate=2_000_000, save_as=stem) as cap:
                 if holder:
                     holder.start()
-                res = _stream(tg, lines, request, record)
+                res = _stream(tg, lines, request, record, mode, resumer)
                 if holder:
                     holder.stop.set(); holder.join(); tg.transport.write(b"~")
-                _settle(tg, 600)
+                _settle(tg, 600, resumer)
                 _return(tg, start)
             edges, initial = cap.edges(), cap.initial
             axis_of = {m: tg.get(f"{m}ma") for m in (1, 2, 3)}
@@ -141,12 +161,15 @@ def test_soak_file(tg, keep, record, request):
         else:
             if holder:
                 holder.start()
-            res = _stream(tg, lines, request, record)
+            res = _stream(tg, lines, request, record, mode, resumer)
             if holder:
                 holder.stop.set(); holder.join(); tg.transport.write(b"~")
-            _settle(tg, 600)
+            _settle(tg, 600, resumer)
             _return(tg, start)
     finally:
+        info["m0_policy"] = "resume" if resumer else "off"
+        info["program_stop_resumes"] = list(resumer.events) if resumer else []
+        info["program_stop_resume_count"] = len(info["program_stop_resumes"])
         info["seconds"] = round(time.monotonic() - t0, 1)
         if holder:
             holder.stop.set()
@@ -173,10 +196,10 @@ def test_soak_file(tg, keep, record, request):
     end = _mpo(tg)
     info["end"] = end
     record("soak_file_end", {"end": end, "start": start})
-    assert tg.stat() not in (tg.dialect.stat("PANIC"), tg.dialect.stat("SHUTDOWN")), "board panicked or shut down"
+    assert tg.stat() not in tg.dialect.stats("PANIC", "SHUTDOWN"), "board panicked or shut down"
     if ALARMED:
         first = (info.get("exceptions") or [None])[0]
-        raise AssertionError(f"ALARM during the stream of {os.path.basename(FILE)} ({MODE}): {str(first)[:200]}")
+        raise AssertionError(f"ALARM during the stream of {os.path.basename(FILE)} ({mode}): {str(first)[:200]}")
     assert all(abs(end[a] - start[a]) <= POS_TOL for a in AXES), f"not back at the start: {start} -> {end}"
     if use_saleae:
         bad = {k: v for k, v in info["net_steps"].items() if abs(v) > 1}
@@ -198,10 +221,11 @@ def _return(tg, start):
                   allow="return to the start")
     _settle(tg, 600)
 
-def _stream(tg, lines, request, record):
+def _stream(tg, lines, request, record, mode, resumer):
     """The stream; on a stall with --ice, the board's state is read before anything else touches it."""
+    if resumer:resumer.begin()
     try:
-        return sender.stream(tg, lines, MODE, timeout=5000)
+        return sender.stream(tg, lines, mode, timeout=5000, on_status=resumer)
     except (sender.StreamStalled, sender.StreamRunaway):
         if request.config.getoption("--ice"):
             record("stall_snapshot", sender.stall_snapshot(request.getfixturevalue("ice")))
@@ -213,13 +237,16 @@ def _stream(tg, lines, request, record):
         raise
 
 
-def _settle(tg, timeout):
+def _settle(tg, timeout, resumer=None):
     """Wait until idle, or return at once when the board is in ALARM (it never becomes idle then)."""
     end = time.monotonic() + timeout
     alarm, idle = tg.dialect.stat("ALARM"), tg.dialect.stats("READY", "PROGRAM_STOP", "PROGRAM_END")
     while time.monotonic() < end:
         s = tg.stat()
-        if s == alarm or (s in idle and tg.get("qr") == 32):
+        empty = s in idle and tg.get("qr") == 32
+        if resumer and s == tg.dialect.stat("PROGRAM_STOP"):
+            resumer(time.monotonic(), {"stat": s})
+        if s == alarm or empty:
             return s
         time.sleep(0.1)
     raise AssertionError(f"not idle and no alarm after {timeout} s (stat {tg.stat()})")
