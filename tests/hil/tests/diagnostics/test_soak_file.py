@@ -11,8 +11,9 @@ stream in three gets 3, chosen at random and recorded); the end checks are the s
 loses, repeats or misplaces motion fails. SOAK_FI=1 also turns on feed-limit push ({"rt":{"fi":1}}) and the heartbeat during the stream: every fl/fs line
 must parse, summaries must count up from q 1 in one window, and the final summary's cutting distance is kept.
 Pass: the stream runs through without a stall (sender.StreamStalled) or a lost board, the board answers
-afterwards, and after a G53 G0 back to the starting machine position it reports that position. On a bench
-with a Saleae (bench 2) the X/Y/Z step and direction pulses are captured as well, and every motor's net
+afterwards, and after a G53 G0 back to the starting machine position it reports that position.
+SOAK_SALEAE=off|auto|on controls capture (default auto; unreachable MCP is recorded and skipped).
+With a Saleae (bench 2) the X/Y/Z step and direction pulses are captured as well, and every motor's net
 step count must come back to zero (no step lost or added). Per-line errors, exceptions and any alarm are
 recorded for review but do not fail the test: ugly files are expected to have refused lines.
 """
@@ -121,8 +122,11 @@ def test_soak_file(tg, keep, record, request):
         tg.send_line('{"rt":{"hb":1}}')
     bench = benches.bench(tg.transport.port)
     chan = {v: int(k) for k, v in (bench.get("saleae_channels") or {}).items()}
-    use_saleae = bool(bench.get("saleae")) and len(lines) <= CAPTURE_MAX_LINES and all(
-        f"M{m} step" in chan for m in (1, 2, 3))
+    saleae_mode = os.environ.get("SOAK_SALEAE", "auto").lower()
+    eligible = bool(bench.get("saleae")) and len(lines) <= CAPTURE_MAX_LINES and all(
+        f"M{m} {kind}" in chan for m in (1, 2, 3) for kind in ("step", "dir"))
+    use_saleae, saleae_note = saleae.soak_capture_policy(saleae_mode, eligible)
+    record("soak_saleae", {"mode": saleae_mode, "capture": use_saleae, "note": saleae_note})
     if re.search(r"(^|[^A-Za-z])A-?[0-9.]", raw, re.M) and tg.get("aam") == 3 and float(tg.get("ara")) < 1.0:
         pytest.skip(f"the board's A axis is in radius mode with ara {tg.get('ara')}: A words would mean thousands "
                     "of degrees per unit (N48); set aam=1 or a sane ara before soaking A files")

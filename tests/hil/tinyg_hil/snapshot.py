@@ -82,14 +82,42 @@ def restore(tg: TinyG, snap: dict, *, readback_equal=None, force_tokens=()) -> d
     for token in [t for t in values if t not in COMM_ORDER]:
         _restore_one(tg, token, values[token], result, readback_equal=readback_equal, force_tokens=force_tokens)
     if snap.get("sr"):
+        fields = list(snap["sr"])
+        if tg.dialect.name == "d440":
+            fields = _master_report_fields(tg, fields, result)
         current = tg.get("sr")
-        if not isinstance(current, dict) or list(current) != snap["sr"]:
-            set_status_report(tg, snap["sr"])
+        if fields and (not isinstance(current, dict) or list(current) != fields):
+            set_status_report(tg, fields)
             result["changed"].append("sr")
+        if not fields:
+            result["sr_retained"] = "no supported saved fields; kept the current report"
     # jv is last in COMM_ORDER: it can make later responses terse, so nothing is read after it
     for token in [t for t in COMM_ORDER if t in values]:
         _restore_one(tg, token, values[token], result, readback_equal=readback_equal, force_tokens=force_tokens)
     return result
+
+
+def _master_report_fields(tg: TinyG, fields: list, result: dict) -> list:
+    """Drop edge-only report fields before master's strict group parser sees them."""
+    supported = []
+    unknown = tg.dialect.status("UNRECOGNIZED_NAME")
+    for field in fields:
+        metadata = tg.dialect.tokens.get(field)
+        exists = metadata is not None
+        # Probe known pure getters for differences between master builds. Never
+        # execute action GETs (clear/defa/etc.) as a capability check.
+        if exists and metadata.get("get", "").startswith(("get_", "cm_get_")):
+            try:
+                tg.get(field)
+            except StatusError as error:
+                if error.response.status != unknown:
+                    raise
+                exists = False
+        if exists:
+            supported.append(field)
+        else:
+            result["dropped"].append("sr." + field)
+    return supported
 
 
 def _restore_one(tg: TinyG, token: str, value, result: dict, *, readback_equal=None, force_tokens=()):

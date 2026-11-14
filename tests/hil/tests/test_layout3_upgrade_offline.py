@@ -240,3 +240,34 @@ def test_timeout_log_retains_partial_byte_output(rig, monkeypatch):
     assert entry['stdout'] == 'write started' and entry['stderr'] == 'partial verify'
     assert not board.transport.is_open
     with pytest.raises(bootloader.BootloaderActive):board.reset()
+
+
+@pytest.mark.parametrize('active', [False, True])
+def test_verified_flash_identity_failure_rechecks_bootloader(rig, monkeypatch, active):
+    from tinyg_hil.driver import IdentityError
+    board, calls, _ = rig()
+    saved = []
+    monkeypatch.setattr(flash, 'write_flash_record', lambda *args: saved.append(args))
+    def connect(**kwargs):
+        board.boot = active
+        raise IdentityError('identity missing')
+    monkeypatch.setattr(board, 'connect', connect)
+    with pytest.raises(IdentityError, match='identity missing') as caught:
+        flash.flash(board, case.SOURCE/'tinyg.hex')
+    assert len(calls) == 1 and len(saved) == 1
+    assert bootloader.marker(board.transport.port).exists() == active
+    assert not board.transport.is_open
+    if not active:
+        assert any('without quarantine' in n for n in caught.value.__notes__)
+
+
+def test_identity_failure_with_failed_safety_probe_keeps_quarantine(rig, monkeypatch):
+    from tinyg_hil.driver import IdentityError
+    board, _, _ = rig()
+    def connect(**kwargs):
+        def failed(*args): raise OSError('port disappeared')
+        monkeypatch.setattr(bootloader, 'inspect_port', failed)
+        raise IdentityError('identity missing')
+    monkeypatch.setattr(board, 'connect', connect)
+    with pytest.raises(IdentityError): flash.flash(board, case.SOURCE/'tinyg.hex')
+    assert bootloader.marker(board.transport.port).exists()
