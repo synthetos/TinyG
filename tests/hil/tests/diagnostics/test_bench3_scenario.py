@@ -171,14 +171,23 @@ class _Program:
 
     def _random_spindle(self):
         rng, p = self.rng, self.pwm
-        mode = rng.choice(["cw", "cw", "ccw", "off"])
+        # Two consecutive levels whose duties differ by about DUTY_SAME are ambiguous: the program list may merge
+        # them while the measured (rounded) plateaus do not (seed 561469437: S1079 then S1000, duty 0.1309 then
+        # 0.1250, 0.0059 apart). Re-draw until the step is none or clearly distinct (>= 3 x DUTY_SAME).
+        prev = _duty(p, *self.spindle[-1])
+        for _ in range(50):
+            mode = rng.choice(["cw", "cw", "ccw", "off"])
+            if mode == "off":
+                s = self.spindle[-1][1]
+            else:
+                lo, hi = (p["csl"], p["csh"]) if mode == "cw" else (p["wsl"], p["wsh"])
+                s = max(round(rng.uniform(lo - 0.15 * (hi - lo), hi + 0.15 * (hi - lo)), 0), 0.0)
+            step = abs(_duty(p, mode, s) - prev)
+            if step < 1e-9 or step >= 3 * DUTY_SAME:
+                break
         if mode == "off":
             self.lines.append("M5")
-            s = self.spindle[-1][1]
         else:
-            lo, hi = (p["csl"], p["csh"]) if mode == "cw" else (p["wsl"], p["wsh"])
-            s = round(rng.uniform(lo - 0.15 * (hi - lo), hi + 0.15 * (hi - lo)), 0)
-            s = max(s, 0.0)
             self.lines.append(f"{'M3' if mode == 'cw' else 'M4'} S{s:g}")
         self.spindle.append((mode, s))
         self.lines.append(f"G4 P{DWELL}")

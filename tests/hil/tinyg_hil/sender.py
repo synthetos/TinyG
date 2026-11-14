@@ -21,6 +21,7 @@ StreamResult.completion says how that ended, and only "idle" is a finished progr
 """
 from dataclasses import dataclass, field
 import os
+import re
 import time
 
 from .hostpower import AwakeSession
@@ -225,6 +226,22 @@ def queue_profile(res, buffers=32):
             "empty_share": round(sum(d for d, v in spans if v >= buffers - 4) / total, 3)}
 
 
+_DWELL = re.compile(r"(?<![A-Z0-9.])G0*4(?![0-9.])", re.IGNORECASE)
+_PWORD = re.compile(r"P\s*([-+]?[0-9]*\.?[0-9]+)", re.IGNORECASE)
+
+
+def max_dwell_s(lines):
+    """Longest G4 dwell in seconds (TinyG reads G4 P in seconds) among lines; 0 if none."""
+    longest = 0.0
+    for line in lines:
+        code = re.sub(r"\([^)]*\)|;.*$", "", line)
+        if _DWELL.search(code):
+            m = _PWORD.search(code)
+            if m:
+                longest = max(longest, float(m.group(1)))
+    return longest
+
+
 def _payload(lines):
     """Non-blank lines as sent: comments and blank lines are kept (hosts send them); blank ones get no
     response, so only lines with content are counted."""
@@ -279,6 +296,10 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     res.started = time.monotonic()
     deadline = res.started + timeout
     progress = res.started           # last response or status report
+    # Modes without a control slot (count, xon, rts) cannot probe a quiet board, so a dwell longer than STALL with a
+    # full planner looked like a hang (KB-4 test file: G4 P10 at the start, count mode, 2026-11-14). Allow the
+    # longest dwell in the file on top of STALL there; line and g2 modes keep STALL and probe instead.
+    quiet = STALL + (max_dwell_s(todo) if mode not in ("line", "g2") else 0.0)
     last_ack = res.started           # last line acknowledged
     probe_at = None                  # a {stat} probe is outstanding since then (line/g2 modes)
     i = 0
@@ -323,7 +344,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             now = time.monotonic()
             if now > deadline:
                 raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
-            if now - progress > STALL:
+            if now - progress > quiet:
                 # Quiet is not proof of a hang: a dwell or a slow move with a full planner answers nothing and
                 # reports nothing. Where the protocol keeps slots for control commands (line, g2), ask the
                 # board directly; it is hung only if the probe goes unanswered, or nothing is acknowledged
@@ -332,7 +353,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     tr.write(('{"stat":null,"tid":%d}\n' % PROBE_TID).encode(), drain_timeout=2.0)
                     probe_at = now
                 elif probe_at is None or now - probe_at > STALL_PROBE:
-                    raise _with(res, StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
+                    raise _with(res, StreamStalled(f"{mode}: stalled {quiet:.0f} s with {len(inflight)} line(s) unanswered at line "
                                         f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}"
                                         + ("" if probe_at is None else f"; a {{stat}} probe went unanswered for {STALL_PROBE:.0f} s")))
             if now - last_ack > STALL_HARD:
