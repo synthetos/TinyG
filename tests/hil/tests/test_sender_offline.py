@@ -332,3 +332,37 @@ def test_final_poll_can_resume_hold_without_automatic_status():
     assert [d for d, _ in tg.transport.writes].count(b'~') == 1
     assert 6 in seen
     assert result.status == [], 'stat-only polls must not create position samples'
+
+
+def test_feed_summary_lines_keep_the_watchdog_quiet(monkeypatch):
+    # A long move on an axis missing from the status-report list sends no status reports, but fs/hb lines still prove
+    # the board is running (gen-good-000, bench 1, 2026-11-14). Line answers are held back past STALL.
+    monkeypatch.setattr(sender, "STALL", 0.4)
+    state = {"held": []}
+
+    def slow(tr, data):
+        if data.startswith(b'{"stat"'):
+            tr.emit(json.dumps({"r": {"stat": 3}, "f": [3, 0, 8]}))
+            return
+        state["held"] += [ln for ln in data.decode().splitlines() if ln.strip()]
+
+    tg = FakeTG(slow)
+    import threading
+
+    def board_thread():
+        for _ in range(8):                           # 1.2 s of fs lines, no status or response
+            time.sleep(0.15)
+            tg.transport.emit('{"fs":{"v":2,"e":1,"q":1,"c":[0,0,0,0,0,0,0],"ct":1,"cd":1.0}}')
+        for ln in list(state["held"]):
+            tg.transport.emit(ok(ln))
+        state["held"] = []
+    threading.Thread(target=board_thread, daemon=True).start()
+    res = sender.stream(tg, ["G1 Y9.8 F100"], "count", timeout=5)
+    assert res.completion == "idle" and res.acked == 1
+
+
+def test_silence_without_any_board_line_still_stalls(monkeypatch):
+    monkeypatch.setattr(sender, "STALL", 0.3)
+    tg = FakeTG(lambda tr, data: None)               # the board says nothing at all
+    with pytest.raises(sender.StreamStalled):
+        sender.stream(tg, ["G1 Y9.8 F100"], "count", timeout=5)

@@ -39,6 +39,12 @@ RESERVE = 2                 # line mode: slots kept free for control commands
 RX_COUNT_LIMIT = 200        # count mode: bytes in flight (RX ring is 250, leave headroom)
 CHUNK = 16                  # xon mode: write granularity, so an XOFF stops us within a few bytes
 XOFF, XON = 0x13, 0x11
+# Board output that proves the main loop is running: any well-formed line (not "malformed"). With feed-info push or
+# the heartbeat on, a long single-axis move whose position is not in the status-report list sends no status report
+# (filtered reports carry only changes) but still sends hb/fs/fl lines; gen-good-000 on bench 1, 2026-11-14: 5.9 s of
+# pure-Y motion at F100 with only fs lines was called a stall.
+ALIVE_KINDS = ("response", "status", "queue", "heartbeat", "feedlimit", "feedsummary", "feedgaps", "override",
+               "exception", "rx", "ack", "probe")
 STALL = 5.0                 # s with lines outstanding and neither a response nor a status report: suspect
 STALL_PROBE = 20.0          # line/g2 modes: a {stat} probe must answer within this, else hung (it can wait behind
                             # a full line pool: reserved headers do not reserve pool bytes)
@@ -401,7 +407,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             ev = tr.next_event(0.005)
             power.check()
             while ev is not None:
-                if ev.kind in ("response", "status", "queue"):
+                if ev.kind in ALIVE_KINDS:
                     progress = ev.t
                 if not _report(ev) and ev.kind == "response":
                     footer = _footer(ev)
