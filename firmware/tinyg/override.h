@@ -47,6 +47,9 @@ typedef struct {
 bool ov_plan_transition(float length,float entry,float feed,float exit,float vmax,
                         float jerk,uint16_t factor,ovTransition_t *out);
 /* Byte hint only: retain guarded request/ticket checks before changing motion. */
+struct mpBuffer;
+bool mp_override_plan_next(float old_exit, float target, uint16_t factor, ovTransition_t *out);
+void mp_override_copy_plan(struct mpBuffer *bp, const ovTransition_t *plan);
 bool ov_body_work_pending(void);
 void ov_body_work_begin(void);
 void ov_body_work_done(uint32_t request);

@@ -135,7 +135,10 @@ typedef struct {
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
-	cm_exec_t cm_func;				// callback to canonical machine execution function
+    union {
+        cm_exec_t cm_func;          // BLOCK_TYPE_COMMAND callback
+        uint16_t feed_factor;       // BLOCK_TYPE_ALINE factor and permission
+    };
 
 	float naiive_move_time;
 
@@ -182,7 +185,6 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
         float dwell_seconds;   // only BLOCK_TYPE_DWELL uses this payload
     };
 	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
-    uint16_t feed_factor;           // factor used to plan this block, Q1000
 	uint8_t fl_cls;					// a command: its class (FL_CLS_*); a FL_COMMAND move: its neighbour command's (step 3)
 
 } mpBuf_t;

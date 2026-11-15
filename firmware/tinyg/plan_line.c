@@ -745,7 +745,14 @@ static bool _override_queue_plan(const mpBuf_t *bp, float entry, float exit,
                             _override_vmax(bp), bp->jerk, factor, out)) return false;
     return out->body == 0 || out->body / out->cruise >= MIN_SEGMENT_TIME;
 }
-static void _override_queue_copy(mpBuf_t *bp, const ovTransition_t *p)
+bool mp_override_plan_next(float old_exit, float target, uint16_t factor, ovTransition_t *out)
+{
+    mpBuf_t *next = mb.r->nx;
+    if (!_override_queue_eligible(next)) return false;
+    float boundary = min3(old_exit, target, next->gm.feed_rate * (factor/1000.0f));
+    return boundary < old_exit && _override_queue_plan(next, boundary, next->exit_velocity, factor, out);
+}
+void mp_override_copy_plan(mpBuf_t *bp, const ovTransition_t *p)
 {
     bp->cruise_velocity = p->cruise;
     bp->head_length = p->head;
@@ -811,9 +818,9 @@ void mp_override_queued(void)
 #endif
     if (_override_queue_eligible(bp) && (!paired || _override_queue_eligible(next)) &&
         !_override_stopped() && ov_queue_current(&token)) {
-        _override_queue_copy(bp, &queue_transition);
+        mp_override_copy_plan(bp, &queue_transition);
         if (paired) {
-            _override_queue_copy(next, &next_transition);
+            mp_override_copy_plan(next, &next_transition);
             bp->exit_velocity = queue_transition.exit;
             next->entry_velocity = queue_transition.exit;
             next->entry_vmax = queue_transition.exit;

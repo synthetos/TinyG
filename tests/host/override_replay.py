@@ -90,6 +90,7 @@ void host_override_taken(void)
     ovSnapshot_t committed;ov_snapshot(&committed);
     printf("OVCOMMIT %lu %u %u\n",ov_tick,committed.committed_feed,committed.capped);
     printf("OVTAKE %lu %.9g\n",ov_tick,(double)mr.cruise_velocity);
+    printf("OVEXIT %.9g\n",(double)mr.exit_velocity);
 }
 void host_queue_interleave(mpBuf_t *candidate)
 {
@@ -252,6 +253,10 @@ def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, sch
             rows['blocks'].append(tuple(map(float, fields[1:])))
         elif fields[0] == 'OVQUEUE':
             rows['queue_interleave'].append(int(fields[1]))
+        elif fields[0] == 'OVEXIT':
+            block = list(rows['blocks'][-1])
+            block[4] = float(fields[1])
+            rows['blocks'][-1] = tuple(block)
         elif fields[0] == 'OVREQ':
             rows['requests'].append(tuple(map(int, fields[1:])))
         elif fields[0] == 'OVCOMMIT':
@@ -271,7 +276,7 @@ def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, sch
                                      *map(float, fields[3:])))
         elif fields[0] == 'STEPS':
             rows['steps'].append((int(fields[1]), float(fields[2]), int(fields[3])))
-        elif fields[0] in ('EXEC', 'STATE', 'STUCK') or (fields[0] == 'LINE' and fields[-1] != '0'):
+        elif fields[0] in ('EXEC', 'STATE', 'STUCK') or (fields[0] == 'LINE' and fields[2] != '0'):
             raise RuntimeError(f'replay rejected the program: {line}')
     if not rows['segments'] or not rows['steps']:
         raise RuntimeError('replay produced no motion')

@@ -37,7 +37,6 @@ class FeedJob(unittest.TestCase):
                 self.assertAlmostEqual(duration(half)/duration(plain), 1, delta=.03)
                 self.assertLessEqual(max(row[2] for row in half['segments']), 300.1)
 
-    @unittest.expectedFailure
     def test_live_change_covers_already_queued_long_blocks(self):
         program = 'G21 G91 G94 G64\n' + 'G1 X20 F600\n'*4
         plain = replay.run(self.exe, program)
@@ -128,6 +127,23 @@ class FeedJob(unittest.TestCase):
                 for previous, following in zip(result['blocks'], result['blocks'][1:]):
                     self.assertAlmostEqual(previous[4], following[2], places=4)
                     self.assertGreater(previous[4], 0)
+
+    def test_programmed_feed_is_scaled_before_axis_caps(self):
+        result = replay.run(self.exe, 'G21 G90 G94\nG1 X20 F2000\n', initial_factor=500)
+        self.check_endpoints(result)
+        self.assertAlmostEqual(max(b[3] for b in result['blocks']), 1000, delta=.1)
+        self.assertTrue(all(b[5] == 500 for b in result['blocks']))
+
+    def test_rapid_inverse_time_and_rotary_remain_unscaled(self):
+        for program in ('G21 G90 G94\nG0 X20\n', 'G21 G90 G93\nG1 X20 F6\n',
+                        'G21 G90 G94\nG1 A90 F600\n'):
+            with self.subTest(program=program):
+                plain = replay.run(self.exe, program)
+                half = replay.run(self.exe, program, initial_factor=500)
+                self.assertEqual(plain['segments'], half['segments'])
+                self.assertEqual(plain['steps'], half['steps'])
+                self.assertTrue(all(b[5] == 1000 for b in half['blocks']))
+                self.check_endpoints(half)
 
     def test_ordered_permissions_at_admission(self):
         program = 'G21 G90 G94\nM49\nG1 X20 F600\nM48\nG1 X40\n'

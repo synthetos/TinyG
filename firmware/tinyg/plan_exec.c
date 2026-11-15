@@ -66,7 +66,9 @@ static bool ov_applied_valid;
 static struct {
     volatile bool ready;
     ovTicket_t ticket;
-    ovTransition_t plan;
+    ovTransition_t plan, next_plan;
+    bool next_ready;
+    float original_exit;
     float unit[AXES], target[AXES], head_point[AXES], body_point[AXES];
     float segment_time;
     uint32_t remaining;
@@ -147,7 +149,8 @@ static stat_t _override_callback_work(void)
 
         feed = mr.gm.feed_rate;
         jerk = mb.r->jerk;
-        ov_body.plan.exit = mr.exit_velocity;
+        ov_body.plan.exit = ov_body.original_exit = mr.exit_velocity;
+        ov_body.next_ready = false;
         // Cancellation/request identity is short and guarded separately.
         ov_ticket_stamp(&ov_body.ticket, ov_segment_ordinal);
         __asm__ __volatile__("" ::: "memory");
@@ -168,6 +171,9 @@ static stat_t _override_callback_work(void)
     }
     float motor_time = st_get_move_time(ov_body.unit);
     if (motor_time > 0) { vmax = fminf(vmax, 1.0f / motor_time); }
+    ov_body.next_ready = mp_override_plan_next(ov_body.original_exit, min(feed*(factor/1000.0f), vmax),
+                                               factor, &ov_body.next_plan);
+    if (ov_body.next_ready) ov_body.plan.exit = ov_body.next_plan.entry;
     if (!ov_plan_transition(length, ov_body.ticket.boundary.velocity, feed, ov_body.plan.exit,
                             vmax, jerk, factor, &ov_body.plan)) { return STAT_NOOP; }
     for (uint8_t axis = 0; axis < AXES; axis++) {
@@ -204,10 +210,17 @@ static bool _override_take_body(void)
         ov_body.ticket.boundary.incarnation != ov_block_generation ||
         ov_body.ticket.boundary.slot != (uint8_t)(mb.r - mb.bf) ||
         mr.segment_count != ov_body.remaining || mr.segment_time != ov_body.segment_time ||
-        mr.cruise_velocity != ov_body.ticket.boundary.velocity || mr.exit_velocity != ov_body.plan.exit ||
+        mr.cruise_velocity != ov_body.ticket.boundary.velocity || mr.exit_velocity != ov_body.original_exit ||
         memcmp(mr.position, ov_body.ticket.boundary.position, sizeof(mr.position)) ||
         memcmp(mr.target, ov_body.target, sizeof(mr.target)) ||
         !ov_ticket_current(&ov_body.ticket, ov_segment_ordinal)) {
+        return false;
+    }
+    mpBuf_t *next = mb.r->nx;
+    if (ov_body.next_ready &&
+        (next->buffer_state == MP_BUFFER_EMPTY || next->block_state == BLOCK_RUNNING ||
+         next->block_type != BLOCK_TYPE_ALINE || !(next->feed_factor & MP_FEED_OVERRIDE_ALLOWED) ||
+         next->entry_velocity != ov_body.original_exit || next->exit_velocity != ov_body.next_plan.exit)) {
         return false;
     }
     // Only this request/cancellation claim is globally masked. Once claimed,
@@ -229,6 +242,14 @@ static bool _override_take_body(void)
         BODY_UNLOCK;
     }
     if (!claimed) return false;
+    // The main loop cannot preempt the executor. The DDA reads only staged
+    // segments, so this paired copy remains interruptible and indivisible to
+    // both queue planning and the next exec invocation.
+    if (ov_body.next_ready) {
+        mp_override_copy_plan(next, &ov_body.next_plan);
+        next->entry_velocity = next->entry_vmax = ov_body.next_plan.entry;
+        mb.r->exit_velocity = ov_body.plan.exit;
+    }
     mr.head_length = ov_body.plan.head;
     mr.body_length = ov_body.plan.body;
     mr.tail_length = ov_body.plan.tail;
