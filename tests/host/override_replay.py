@@ -148,11 +148,14 @@ def build(root, out):
                            '    if(argc>5)ov_interleave=atoi(argv[5]);\n'
                            '    if(argc>6)ov_schedule=atoi(argv[6]);\n'
                            '    if(argc>7){cm.a[0].feedrate_max=atof(argv[7]);cm.a[0].velocity_max=atof(argv[7]);}\n'
-                           '    if(argc>8)host_set_factor((unsigned)strtoul(argv[8],NULL,10));')
+                           '    if(argc>8)ov_set_factor(OV_FEED,strtoul(argv[8],NULL,10)/1000.0f,true,true);')
     # Release a lone first move as the clock-driven startup callback would.
     driver = _replace_once(driver, 'static void finish(void)\n{\n',
                            'static void finish(void)\n{\n'
                            '    rtc.sys_ticks += 1024; mp_startup_callback();\n')
+    driver = _replace_once(driver, '            stat_t st = cm_arc_callback();',
+                           '            while(mb.buffers_available < PLANNER_BUFFER_HEADROOM)drain_one();\n'
+                           '            stat_t st = cm_arc_callback();')
     (out / 'driver.c').write_text(driver)
     plan = (out/'plan_exec.c').read_text()
     plan = _replace_once(plan, '    // Revalidate after all floating-point planning,',
@@ -169,6 +172,11 @@ def build(root, out):
     step += r"""
 void host_checkpoint(unsigned move)
 {
+    // Observe the endpoint without advancing the replay's one-segment feedback pipeline.
+    stRunSingleton_t saved_run=st_run;
+    enEncoders_t saved_en=en;
+    int64_t saved_pulses[MOTORS],saved_total[MOTORS];
+    memcpy(saved_pulses,pulses,sizeof(pulses));memcpy(saved_total,total,sizeof(total));
     host_run_active();
     for(unsigned m=0;m<MOTORS;m++) {
         ACCUMULATE_ENCODER(m);
@@ -178,6 +186,8 @@ void host_checkpoint(unsigned move)
             (long)en.en[m].encoder_steps,
             (double)(mp_get_runtime_absolute_position(axis)*st_cfg.mot[m].steps_per_unit));
     }
+    st_run=saved_run;en=saved_en;
+    memcpy(pulses,saved_pulses,sizeof(pulses));memcpy(total,saved_total,sizeof(total));
 }
 """
     (out/'step_engine.c').write_text(step)

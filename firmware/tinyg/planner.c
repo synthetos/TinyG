@@ -56,6 +56,7 @@
 #include "canonical_machine.h"
 #include "plan_arc.h"
 #include "planner.h"
+#include "override.h"
 #include "feedlimit.h"			// FL_COMMAND, FL_CLS_* (feed-limit advisor step 3)
 #include "kinematics.h"
 #include "stepper.h"
@@ -155,6 +156,7 @@ void mp_halt_runtime()
 void mp_flush_planner()
 {
 	cm_abort_arc();
+    ov_sync_program_feed();
 	mp_init_buffers();
 	mm.short_move_pending = false;				// the caller resyncs the model to the runtime (N87)
 //    mr.block_state = BLOCK_IDLE;                // prevent MR from re-running

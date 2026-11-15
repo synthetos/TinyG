@@ -24,7 +24,6 @@ class FeedJob(unittest.TestCase):
             self.assertEqual(encoder, pulses)
             self.assertAlmostEqual(position, target, places=4)
 
-    @unittest.expectedFailure
     def test_factor_from_first_block_covers_lines_and_arc_chords(self):
         for moves in ('G1 X20 F600\n'*4, 'G1 X0.4 F600\n'*200,
                       'G17 G2 X20 Y0 I10 J0 F600\n'):
@@ -39,6 +38,14 @@ class FeedJob(unittest.TestCase):
                 self.assertLessEqual(max(row[2] for row in half['segments']), 300.1)
 
     @unittest.expectedFailure
+    def test_live_change_covers_already_queued_long_blocks(self):
+        program = 'G21 G91 G94 G64\n' + 'G1 X20 F600\n'*4
+        plain = replay.run(self.exe, program)
+        half = replay.run(self.exe, program, at=200, factor=500)
+        self.check_endpoints(half)
+        duration = lambda r: sum(row[3] for row in r['segments'])
+        self.assertAlmostEqual(duration(half)/duration(plain), 1.875, delta=.06)
+
     def test_ordered_permissions_at_admission(self):
         program = 'G21 G90 G94\nM49\nG1 X20 F600\nM48\nG1 X40\n'
         result = replay.run(self.exe, program, initial_factor=500)

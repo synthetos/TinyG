@@ -64,6 +64,9 @@ bool ov_usb_armed(void);
 bool ov_usb_byte(uint8_t c,bool permitted,bool good_frame);
 void ov_cancel(void);
 void ov_set_program_feed(bool enable);
+void ov_queue_program_feed(bool enable);
+void ov_sync_program_feed(void);
+uint16_t ov_plan_feed(void);
 void ov_reset_job(void);
 void ov_commit_feed(uint16_t factor,bool capped);
 /* Caller supplies a private snapshot of an analytical future boundary.

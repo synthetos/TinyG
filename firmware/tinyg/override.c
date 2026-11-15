@@ -13,6 +13,8 @@
 #endif
 static volatile ovSnapshot_t ov;
 static volatile uint32_t cancel_epoch;
+/* Main-loop permission at the tail of the command queue. */
+static bool plan_feed_disabled;
 static volatile bool body_ticket_valid;
 static volatile bool body_work; /* atomic main-loop hint; generations remain authoritative */
 static uint8_t utf_remaining,utf_lo,utf_hi; /* USB RX owns these while armed; arm/reset has the interrupt guard. */
@@ -22,7 +24,7 @@ void ov_init(void)
     OV_LOCK;
     memset((void *)&ov,0,sizeof(ov));
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
-    ov.enables=OV_FEED;ov.program_feed=true;
+    ov.enables=OV_FEED;ov.program_feed=true;plan_feed_disabled=false;
     ov.revision=1;
     body_ticket_valid=false;body_work=false;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
@@ -37,12 +39,21 @@ void ov_set_program_feed(bool enable)
     }
     OV_UNLOCK;
 }
+void ov_queue_program_feed(bool enable) { plan_feed_disabled=!enable; }
+void ov_sync_program_feed(void) { plan_feed_disabled=!ov.program_feed; }
+uint16_t ov_plan_feed(void)
+{
+    OV_LOCK;
+    uint16_t factor=(!plan_feed_disabled && (ov.enables & OV_FEED)) ? ov.feed : OV_FACTOR_ONE;
+    OV_UNLOCK;
+    return factor ? factor : OV_FACTOR_ONE;
+}
 /* Preserve generation monotonicity so an old private plan cannot survive a job. */
 void ov_reset_job(void)
 {
     OV_LOCK;
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
-    ov.enables=OV_FEED;ov.program_feed=true;ov.armed=0;ov.capped=0;
+    ov.enables=OV_FEED;ov.program_feed=true;plan_feed_disabled=false;ov.armed=0;ov.capped=0;
     ov.unsupported=0;ov.state=OV_CANCELLED;
     ov.request++;ov.revision++;cancel_epoch++;body_ticket_valid=false;body_work=false;
     utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;

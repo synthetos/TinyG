@@ -182,6 +182,7 @@ typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
         float dwell_seconds;   // only BLOCK_TYPE_DWELL uses this payload
     };
 	uint8_t fl_tags;				// feed-limit tags (feedlimit.h), set at creation; last, so no other member moves
+    uint16_t feed_factor;           // factor used to plan this block, Q1000
 	uint8_t fl_cls;					// a command: its class (FL_CLS_*); a FL_COMMAND move: its neighbour command's (step 3)
 
 } mpBuf_t;

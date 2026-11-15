@@ -34,6 +34,7 @@
 #include "planner.h"
 #include "motion_profile.h"
 #include "feedlimit.h"
+#include "override.h"
 #include "stepper.h"
 #include "report.h"
 #include "util.h"
@@ -42,7 +43,7 @@
 #endif
 
 // aline planner routines / feedhold planning
-static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[]);
+static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[], uint16_t factor);
 static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _reset_replannable_list(void);
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity);
@@ -168,7 +169,14 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//	(2) Previous block is optimally planned. Vi = previous block's exit_velocity
 	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
-	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square);	// set move time and minimum time in the state
+    uint16_t factor = OV_FACTOR_ONE;
+    if (cm.cycle_state == CYCLE_MACHINING &&
+        gm_in->motion_mode >= MOTION_MODE_STRAIGHT_FEED && gm_in->motion_mode <= MOTION_MODE_CCW_ARC &&
+        gm_in->feed_rate_mode == UNITS_PER_MINUTE_MODE &&
+        axis_length[AXIS_A] == 0 && axis_length[AXIS_B] == 0 && axis_length[AXIS_C] == 0) {
+        factor = ov_plan_feed();
+    }
+	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square, factor);	// set move time and minimum time in the state
     // Retain the finite-time check and the segment-count duration limit.
     if (!fp_positive_finite_at(&gm_in->move_time) ||
         (gm_in->move_time > 178000.0f)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
@@ -200,6 +208,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
         return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
     }
 	bf->length = length;
+    bf->feed_factor = factor;
     float planned_time = gm_in->move_time; // capture beside the context snapshot, as before
     memcpy(&bf->gm, gm_in, sizeof(bf->gm));
 
@@ -420,7 +429,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
  *		any time required for acceleration or deceleration.
  */
 
-static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[])
+static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const float axis_square[], uint16_t factor)
 										// gms = Gcode model state; true if an axis's rate set the time
 {
 	float inv_time=0;				// inverse time if doing a feed in G93 mode
@@ -451,6 +460,8 @@ static bool _calc_move_times(GCodeState_t *gms, const float axis_length[], const
 		}
 		max_time = max(max_time, tmp_time);
 	}
+    // Scale the programmed feed before axis and motor caps. Keep unity arithmetic identical.
+    if (factor != OV_FACTOR_ONE) { xyz_time /= factor / 1000.0f; }
     float motor_time = st_get_move_time(axis_length);
     if (motor_time > max_time) { max_time = motor_time; }
 	// max4(inv_time, max_time, xyz_time, abc_time) with the axis compare kept: the feed-limit axis-cap
