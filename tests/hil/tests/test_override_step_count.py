@@ -2,8 +2,8 @@
 
 test_hook.steps[m] (test-hooks build) is the signed count of step pulses the DDA issued (en.steps_run with the
 step sign, so it follows signed travel independent of output-pin polarity), never rewritten by G28.3, G92 or a
-flush. For each case: on the finest X/Y/Z axis, a positive relative move of about 80 mm (a whole number of steps on
-every mapped motor) at F600 with the override changed while it runs, then the same move back, three times.
+flush. For each case: on the finest X/Y/Z axis that has one, a positive relative move of about 80 mm (a whole number of
+steps on every mapped motor; bench 1's X pairs 1280 and 4.44 steps/mm, so it moves 80.1 mm) at F600 with the override changed while it runs, then the same move back, three times.
 
 Agreed bound (the starting substep phase can move a count by one): each outbound move within 1 step of +target and
 each return within 1 step of -target, per motor; the signed position within 1 step of the start after every round
@@ -18,7 +18,7 @@ import time
 
 import pytest
 
-from tinyg_hil.override_steps import HOLD_COMPLETE, wait_for_hold, within
+from tinyg_hil.override_steps import HOLD_COMPLETE, pick_axis, wait_for_hold, within
 
 pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"),
               pytest.mark.timeout(420)]
@@ -48,16 +48,14 @@ def _spm(tg, m):
 def test_override_step_count(tg, machine, ice, keep, record, case):
     if "test_hook" not in ice.symbols.sym:
         pytest.skip("needs the test-hooks build (physical step count)")
-    axes = [(machine.steps_per_unit(a), -i, a) for i, a in enumerate(("x", "y", "z")) if machine.motors_for(a)]
-    if not axes:
+    mapped = [a for a in ("x", "y", "z") if machine.motors_for(a)]
+    if not mapped:
         pytest.skip("no motor mapped to X, Y or Z")
-    _, _, axis = max(axes)                        # finest axis; ties go to X, then Y, then Z
+    pick = pick_axis([(a, [_spm(tg, m) for m in machine.motors_for(a)]) for a in mapped], DIST)
+    if pick is None:     # a gate bench must measure something: no silent skip (bench 1 skipped this until 2026-11-15)
+        pytest.fail(f"no X/Y/Z axis has a whole-step distance near {DIST} mm on every mapped motor")
+    axis, dist, targets, spms = pick
     motors = machine.motors_for(axis)
-    spms = [_spm(tg, m) for m in motors]          # every mapped motor, not just the first
-    dist = round(round(DIST * spms[0]) / spms[0], 4)
-    targets = [round(dist * s) for s in spms]
-    if any(abs(dist * s - n) > 0.02 for s, n in zip(spms, targets)):
-        pytest.skip(f"{dist} mm is not a whole number of steps on every {axis} motor ({spms} steps/mm)")
     syms = [f"test_hook.steps[{m - 1}]" for m in motors]
     events, limit = CASES[case]
     factors = [a for _, a in events if not isinstance(a, str)]
