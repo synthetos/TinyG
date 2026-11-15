@@ -21,6 +21,7 @@ StreamResult.completion says how that ended, and only "idle" is a finished progr
 """
 from dataclasses import dataclass, field
 import os
+import re
 import time
 
 from .hostpower import AwakeSession
@@ -38,6 +39,12 @@ RESERVE = 2                 # line mode: slots kept free for control commands
 RX_COUNT_LIMIT = 200        # count mode: bytes in flight (RX ring is 250, leave headroom)
 CHUNK = 16                  # xon mode: write granularity, so an XOFF stops us within a few bytes
 XOFF, XON = 0x13, 0x11
+# Board output that proves the main loop is running: any well-formed line (not "malformed"). With feed-info push or
+# the heartbeat on, a long single-axis move whose position is not in the status-report list sends no status report
+# (filtered reports carry only changes) but still sends hb/fs/fl lines; gen-good-000 on bench 1, 2026-11-14: 5.9 s of
+# pure-Y motion at F100 with only fs lines was called a stall.
+ALIVE_KINDS = ("response", "status", "queue", "heartbeat", "feedlimit", "feedsummary", "feedgaps", "override",
+               "exception", "rx", "ack", "probe")
 STALL = 5.0                 # s with lines outstanding and neither a response nor a status report: suspect
 STALL_PROBE = 20.0          # line/g2 modes: a {stat} probe must answer within this, else hung (it can wait behind
                             # a full line pool: reserved headers do not reserve pool bytes)
@@ -225,6 +232,20 @@ def queue_profile(res, buffers=32):
             "empty_share": round(sum(d for d, v in spans if v >= buffers - 4) / total, 3)}
 
 
+_WORD = re.compile(r"([A-Z])\s*([-+]?[0-9]*\.?[0-9]+)", re.IGNORECASE)   # one G-code word: letter + number
+
+
+def max_dwell_s(lines):
+    """Longest G4 dwell in seconds (TinyG reads G4 P in seconds) among lines; 0 if none."""
+    longest = 0.0
+    for line in lines:
+        code = re.sub(r"\([^)]*\)|;.*$", "", line)
+        words = [(k.upper(), float(v)) for k, v in _WORD.findall(code)]   # N10G4P10 splits like N10 G4 P10
+        if ("G", 4.0) in words:
+            longest = max([longest] + [v for k, v in words if k == "P"])
+    return longest
+
+
 def _payload(lines):
     """Non-blank lines as sent: comments and blank lines are kept (hosts send them); blank ones get no
     response, so only lines with content are counted."""
@@ -279,6 +300,10 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
     res.started = time.monotonic()
     deadline = res.started + timeout
     progress = res.started           # last response or status report
+    # Modes without a control slot (count, xon, rts) cannot probe a quiet board, so a dwell longer than STALL with a
+    # full planner looked like a hang (KB-4 test file: G4 P10 at the start, count mode, 2026-11-14). Allow the
+    # longest dwell in the file on top of STALL there; line and g2 modes keep STALL and probe instead.
+    quiet = STALL + (max_dwell_s(todo) if mode not in ("line", "g2") else 0.0)
     last_ack = res.started           # last line acknowledged
     probe_at = None                  # a {stat} probe is outstanding since then (line/g2 modes)
     i = 0
@@ -323,7 +348,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             now = time.monotonic()
             if now > deadline:
                 raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
-            if now - progress > STALL:
+            if now - progress > quiet:
                 # Quiet is not proof of a hang: a dwell or a slow move with a full planner answers nothing and
                 # reports nothing. Where the protocol keeps slots for control commands (line, g2), ask the
                 # board directly; it is hung only if the probe goes unanswered, or nothing is acknowledged
@@ -332,7 +357,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
                     tr.write(('{"stat":null,"tid":%d}\n' % PROBE_TID).encode(), drain_timeout=2.0)
                     probe_at = now
                 elif probe_at is None or now - probe_at > STALL_PROBE:
-                    raise _with(res, StreamStalled(f"{mode}: stalled {STALL:.0f} s with {len(inflight)} line(s) unanswered at line "
+                    raise _with(res, StreamStalled(f"{mode}: stalled {quiet:.0f} s with {len(inflight)} line(s) unanswered at line "
                                         f"{res.acked} of {res.lines} ({todo[res.acked]!r}); {i} sent, last status {sr}"
                                         + ("" if probe_at is None else f"; a {{stat}} probe went unanswered for {STALL_PROBE:.0f} s")))
             if now - last_ack > STALL_HARD:
@@ -380,7 +405,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             ev = tr.next_event(0.005)
             power.check()
             while ev is not None:
-                if ev.kind in ("response", "status", "queue"):
+                if ev.kind in ALIVE_KINDS:
                     progress = ev.t
                 if not _report(ev) and ev.kind == "response":
                     footer = _footer(ev)
