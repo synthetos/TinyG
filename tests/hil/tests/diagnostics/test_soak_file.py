@@ -13,6 +13,10 @@ must parse, summaries must count up from q 1 in one window, and the final summar
 Pass: the stream runs through without a stall (sender.StreamStalled) or a lost board, the board answers
 afterwards, and after a G53 G0 back to the starting machine position it reports that position.
 SOAK_SALEAE=off|auto|on controls capture (default auto; unreachable MCP is recorded and skipped).
+SOAK_MAX_S=N caps the stream at N seconds (test levels, 2026-11-15: night jobs 900, release dense soak 1800): when
+the cap is reached with no stall or alarm, the sender stops, the board gets a feedhold and a queue flush, and the test
+continues with the same return-to-start and step checks, recording "capped" and how many lines ran. Unset: the old
+5000 s limit, which fails the test as before.
 With a Saleae (bench 2) the X/Y/Z step and direction pulses are captured as well, and every motor's net
 step count must come back to zero (no step lost or added). Per-line errors, exceptions and any alarm are
 recorded for review but do not fail the test: ugly files are expected to have refused lines.
@@ -35,6 +39,7 @@ MODE = os.environ.get("SOAK_MODE")
 POS_TOL = 0.002                                          # mm
 CAPTURE_MAX_LINES = int(os.environ.get("SOAK_CAPTURE_MAX", "40000"))
 HOLDS = int(os.environ["SOAK_HOLDS"]) if "SOAK_HOLDS" in os.environ else (3 if random.random() < 1 / 3 else 0)
+MAX_S = float(os.environ["SOAK_MAX_S"]) if os.environ.get("SOAK_MAX_S") else None
 
 
 class _Holder(threading.Thread):
@@ -144,7 +149,7 @@ def test_soak_file(tg, keep, record, request):
             with saleae.Capture(bench["saleae"], channels=channels, seconds=None, rate=2_000_000, save_as=stem) as cap:
                 if holder:
                     holder.start()
-                res = _stream(tg, lines, request, record, mode, resumer)
+                res = _stream(tg, lines, request, record, mode, resumer, holder, info)
                 if holder:
                     holder.stop.set(); holder.join(); tg.transport.write(b"~")
                 _settle(tg, 600, resumer)
@@ -165,7 +170,7 @@ def test_soak_file(tg, keep, record, request):
         else:
             if holder:
                 holder.start()
-            res = _stream(tg, lines, request, record, mode, resumer)
+            res = _stream(tg, lines, request, record, mode, resumer, holder, info)
             if holder:
                 holder.stop.set(); holder.join(); tg.transport.write(b"~")
             _settle(tg, 600, resumer)
@@ -225,20 +230,49 @@ def _return(tg, start):
                   allow="return to the start")
     _settle(tg, 600)
 
-def _stream(tg, lines, request, record, mode, resumer):
+def _stream(tg, lines, request, record, mode, resumer, holder=None, info=None):
     """The stream; on a stall with --ice, the board's state is read before anything else touches it."""
     if resumer:resumer.begin()
     try:
-        return sender.stream(tg, lines, mode, timeout=5000, on_status=resumer)
+        return sender.stream(tg, lines, mode, timeout=MAX_S or 5000, on_status=resumer)
     except (sender.StreamStalled, sender.StreamRunaway):
         if request.config.getoption("--ice"):
             record("stall_snapshot", sender.stall_snapshot(request.getfixturevalue("ice")))
         raise
-    except TimeoutError:
+    except TimeoutError as exc:
+        if MAX_S:                                    # the planned cap: stop cleanly and keep checking
+            return _cap_stop(tg, exc, holder, info)
         # the job is still running (a slow laser file, N75): stop it, or every restore after this is refused
         # with status 117 because a job is running (N60) and the board is left on the test's settings
         tg.reset()
         raise
+
+
+def _cap_stop(tg, exc, holder, info):
+    """Stream cap reached: no more lines are sent; feedhold, wait for the hold to complete, flush the queue."""
+    if holder:
+        holder.stop.set()
+        holder.join(timeout=10)
+    # Wait on the board's own status reports, not a query: in character mode a query waits behind the G-code
+    # already in the RX ring (control lines are only served first in line mode), so it would never be answered.
+    tg.transport.write(b"!")
+    hold, sr, end = tg.dialect.stat("HOLD"), {}, time.monotonic() + 15
+    for ev in tg.transport.history[-500:]:          # reports are sent on change: start from the latest known state
+        if ev.kind == "status" and isinstance(ev.data, dict) and isinstance(ev.data.get("sr"), dict):
+            sr.update(ev.data["sr"])
+    while not (sr.get("stat") == hold and sr.get("vel", 1) == 0):
+        if time.monotonic() > end:
+            raise AssertionError(f"cap stop: no completed feedhold in the status reports within 15 s: {sr} ({exc})")
+        ev = tg.transport.next_event(0.2)
+        if ev is not None and ev.kind == "status" and isinstance(ev.data.get("sr"), dict):
+            sr.update(ev.data["sr"])
+    # '%' drops every RX byte before it (xio_flush_input) and ends the job; queries are answered again after it
+    tg.transport.write(b"%")
+    time.sleep(1.0)
+    res = getattr(exc, "result", None)
+    if info is not None:
+        info["capped"] = {"after_s": MAX_S, "acked": getattr(res, "acked", None), "lines": getattr(res, "lines", None)}
+    return res
 
 
 def _settle(tg, timeout, resumer=None):

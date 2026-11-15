@@ -347,7 +347,7 @@ def stream(tg, lines, mode, timeout=600.0, on_status=None, bounds=None):
             power.check()
             now = time.monotonic()
             if now > deadline:
-                raise TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s")
+                raise _with(res, TimeoutError(f"{mode}: {res.acked}/{res.lines} answered after {timeout}s"))
             if now - progress > quiet:
                 # Quiet is not proof of a hang: a dwell or a slow move with a full planner answers nothing and
                 # reports nothing. Where the protocol keeps slots for control commands (line, g2), ask the
