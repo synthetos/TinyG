@@ -232,8 +232,7 @@ def queue_profile(res, buffers=32):
             "empty_share": round(sum(d for d, v in spans if v >= buffers - 4) / total, 3)}
 
 
-_DWELL = re.compile(r"(?<![A-Z0-9.])G0*4(?![0-9.])", re.IGNORECASE)
-_PWORD = re.compile(r"P\s*([-+]?[0-9]*\.?[0-9]+)", re.IGNORECASE)
+_WORD = re.compile(r"([A-Z])\s*([-+]?[0-9]*\.?[0-9]+)", re.IGNORECASE)   # one G-code word: letter + number
 
 
 def max_dwell_s(lines):
@@ -241,10 +240,9 @@ def max_dwell_s(lines):
     longest = 0.0
     for line in lines:
         code = re.sub(r"\([^)]*\)|;.*$", "", line)
-        if _DWELL.search(code):
-            m = _PWORD.search(code)
-            if m:
-                longest = max(longest, float(m.group(1)))
+        words = [(k.upper(), float(v)) for k, v in _WORD.findall(code)]   # N10G4P10 splits like N10 G4 P10
+        if ("G", 4.0) in words:
+            longest = max([longest] + [v for k, v in words if k == "P"])
     return longest
 
 

@@ -21,3 +21,7 @@ def test_not_a_dwell():
 
 def test_allowance_is_on_top_of_stall():
     assert STALL + max_dwell_s(["G4 P10"]) > 10.0
+
+
+def test_compact_numbered_dwell():
+    assert max_dwell_s(["N10G4P10", "n20g04p2", "N30G1X1"]) == 10.0
