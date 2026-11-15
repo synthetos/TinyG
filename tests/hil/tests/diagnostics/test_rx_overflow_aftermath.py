@@ -50,7 +50,10 @@ def test_rx_overflow_aftermath(tg, ice, keep, record):
     info = {"before": _rx(ice)}
     tg.guard.check_json({"test": 1}, allow="self-test from flash: the input source switch under test")
     mark = len(tr.history)
-    tr.write(b'{"test":1}\n', drain_timeout=None)
+    response = tg.send_json({"test": 1}, allow="self-test from flash: input source switch")
+    if response.status == 17:
+        pytest.skip("canned programs are not built; this PGM-input diagnostic needs an opt-in development image")
+    assert response.status == 0, response.raw
     time.sleep(0.3)
     q = b'{"stat":null}\n'
     for _ in range(OVERFLOW_BYTES // len(q) + 1):        # more than the ring holds while the board reads from flash

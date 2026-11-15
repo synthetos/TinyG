@@ -55,6 +55,10 @@
  */
 uint8_t run_test(nvObj_t *nv)
 {
+#ifndef __CANNED_TESTS
+    if (nv->value_int == 0) return STAT_OK;
+    return STAT_FUNCTION_IS_STUBBED;
+#else
 	if (nv->value_int != 0) { ritorno(xio_prepare_pgm_source()); }
 	switch (nv->value_int) {
 		case 0: { return (STAT_OK);}
@@ -84,6 +88,7 @@ uint8_t run_test(nvObj_t *nv)
 	}
 	controller_set_primary_source(XIO_DEV_PGM);
 	return (STAT_OK);
+#endif
 }
 
 /*
