@@ -249,29 +249,24 @@ def _stream(tg, lines, request, record, mode, resumer, holder=None, info=None):
 
 
 def _cap_stop(tg, exc, holder, info):
-    """Stream cap reached: no more lines are sent; feedhold, wait for the hold to complete, flush the queue."""
+    """Stream cap reached: no more lines are sent; feedhold, confirm motion stopped from fresh reports, flush."""
     if holder:
         holder.stop.set()
         holder.join(timeout=10)
-    # Wait on the board's own status reports, not a query: in character mode a query waits behind the G-code
-    # already in the RX ring (control lines are only served first in line mode), so it would never be answered.
+        assert not holder.is_alive(), "cap stop: the feedhold thread is still running (it could still send ~)"
+    # Evidence comes from the board's own status reports, never a query: in character mode a query waits behind
+    # the G-code already in the RX ring (control lines are served first only in line mode).
+    t_req = time.monotonic()
+    seed = soak.fold_status(list(tg.transport.history), t_req)
     tg.transport.write(b"!")
-    hold, sr, end = tg.dialect.stat("HOLD"), {}, time.monotonic() + 15
-    for ev in tg.transport.history[-500:]:          # reports are sent on change: start from the latest known state
-        if ev.kind == "status" and isinstance(ev.data, dict) and isinstance(ev.data.get("sr"), dict):
-            sr.update(ev.data["sr"])
-    while not (sr.get("stat") == hold and sr.get("vel", 1) == 0):
-        if time.monotonic() > end:
-            raise AssertionError(f"cap stop: no completed feedhold in the status reports within 15 s: {sr} ({exc})")
-        ev = tg.transport.next_event(0.2)
-        if ev is not None and ev.kind == "status" and isinstance(ev.data.get("sr"), dict):
-            sr.update(ev.data["sr"])
-    # '%' drops every RX byte before it (xio_flush_input) and ends the job; queries are answered again after it
-    tg.transport.write(b"%")
+    how, state = soak.confirm_hold(tg.transport.next_event, seed, t_req, tg.dialect.stat("HOLD"),
+                                   tg.dialect.stats("HOLD", "PROGRAM_STOP", "READY", "PROGRAM_END"), time.monotonic)
+    tg.transport.write(b"%")                         # drops every RX byte before it (xio_flush_input), ends the job
     time.sleep(1.0)
     res = getattr(exc, "result", None)
     if info is not None:
-        info["capped"] = {"after_s": MAX_S, "acked": getattr(res, "acked", None), "lines": getattr(res, "lines", None)}
+        info["capped"] = {"after_s": MAX_S, "acked": getattr(res, "acked", None), "lines": getattr(res, "lines", None),
+                          "stop": how}
     return res
 
 

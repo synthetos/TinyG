@@ -55,3 +55,43 @@ class ProgramStopResumer:
             self.tg.transport.write(b'~')
             self.events.append(dict(observed=t,resumed=self.last_resume,stat=stop))
             return True
+
+
+class CapStopTimeout(AssertionError):
+    pass
+
+
+def fold_status(events, until):
+    """Latest known status-report values from events received at or before `until` (reports are sent on change)."""
+    sr = {}
+    for ev in events:
+        if ev.t <= until and ev.kind == "status" and isinstance(ev.data, dict) and isinstance(ev.data.get("sr"), dict):
+            sr.update(ev.data["sr"])
+    return sr
+
+
+def confirm_hold(next_event, seed, t_req, hold_stat, stopped_stats, clock, silence=2.0, timeout=15.0):
+    """After a feedhold request written at t_req, wait for proof that motion has stopped; return (how, state).
+
+    Only reports received after t_req count as evidence: a report of an older hold (one that a later '~' resumed) is
+    already in `seed` and is ignored when it comes off the queue. "fresh_hold": a fresh report completes
+    stat == hold_stat with vel 0. "already_stopped": no fresh report for `silence` seconds while the seeded state
+    is stopped with vel 0; a moving machine reports a new position every status interval (250 ms default), so
+    that silence rules motion out. Raises CapStopTimeout otherwise.
+    """
+    state, fresh = dict(seed), False
+    while True:
+        now = clock()
+        if fresh and state.get("stat") == hold_stat and state.get("vel", 1) == 0:
+            return "fresh_hold", state
+        if not fresh and now - t_req >= silence and state.get("vel", 1) == 0 and state.get("stat") in stopped_stats:
+            return "already_stopped", state
+        if now - t_req > timeout:
+            raise CapStopTimeout(f"no completed feedhold within {timeout} s after the request: {state}")
+        ev = next_event(0.1)
+        if ev is None or ev.t <= t_req or ev.kind != "status" or not isinstance(ev.data, dict):
+            continue
+        if isinstance(ev.data.get("sr"), dict):
+            state.update(ev.data["sr"])
+            fresh = True
+
