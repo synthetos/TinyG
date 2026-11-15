@@ -21,7 +21,8 @@ class InterruptibleOverride(unittest.TestCase):
             code = code.replace('#define BODY_UNLOCK SREG = body_sreg', '#define BODY_UNLOCK masked--; SREG = body_sreg')
             code = code.replace('#define BODY_LOCK ((void)0)', '#define BODY_LOCK masked++')
             code = code.replace('#define BODY_UNLOCK ((void)0)', '#define BODY_UNLOCK masked--')
-            for anchor in ('    mr.head_length = ov_body.plan.head;',
+            for anchor in ('        mp_override_copy_plan(next, &ov_body.next_plan);',
+                           '    mr.head_length = ov_body.plan.head;',
                            '        ovBoundary_t *b = &ov_body.ticket.boundary;',
                            '    float segment_length = ov_body.ticket.boundary.velocity * ov_body.segment_time;'):
                 self.assertEqual(code.count(anchor), 1)
@@ -33,7 +34,7 @@ class InterruptibleOverride(unittest.TestCase):
             args.insert(1, '-DF_CPU=32000000UL')
             subprocess.run(args, check=True, capture_output=True)
             for factor in (500, 1500):
-                row = replay.run(exe, 'G21 G90 G94\nG1 X100 F600\n', at=20, factor=factor, section=1)
+                row = replay.run(exe, 'G21 G91 G94\n' + 'G1 X20 F600\n'*4, at=200, factor=factor, section=1)
                 self.assertTrue(row['taken'])
                 self.assertTrue(row['ends'])
 
@@ -67,14 +68,14 @@ class InterruptibleOverride(unittest.TestCase):
                 hook = '    extern void host_override_interleave(void); host_override_interleave();\n'
                 self.assertEqual(code.count(hook), 1)
                 code = code.replace(hook, '')
-                anchor = '    mr.head_length = ov_body.plan.head;' if after_claim else '    bool claimed;'
+                anchor = '    if (ov_body.next_ready) {' if after_claim else '    bool claimed;'
                 self.assertEqual(code.count(anchor), 1)
                 code = code.replace(anchor, hook + anchor)
                 p.write_text(code)
                 self.rebuild(out)
                 for stop in (5, 6, 7):  # hold/flush, kill, alarm
                     with self.subTest(stop=stop):
-                        row = replay.run(exe, 'G21 G90 G94\nG1 X100 F600\n', at=20, factor=500,
+                        row = replay.run(exe, 'G21 G91 G94\n' + 'G1 X20 F600\n'*4, at=200, factor=500,
                                          section=1, interleave=stop)
                         self.assertTrue(row['stops'])
                         self.assertEqual(bool(row['taken']), after_claim)
