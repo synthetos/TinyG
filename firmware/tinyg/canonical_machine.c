@@ -1861,6 +1861,7 @@ stat_t cm_feed_rate_override_enable(uint8_t flag)
 {
     float value[AXES] = { !cm.gf.parameter || cm.gn.parameter != 0, 1 };
     mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    ov_queue_program_feed(value[0] != 0);
     return STAT_OK;
 }
 
