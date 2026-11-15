@@ -55,6 +55,30 @@ class FeedJob(unittest.TestCase):
         self.assertTrue(settled)
         self.assertLessEqual(max(settled), 309)
 
+    def test_live_change_at_low_jerk_responds_and_settles_without_a_surge(self):
+        program = 'G21 G91 G94 G64\n' + 'G1 X20 F600\n'*4
+        for jerk in (20, 50):
+            with self.subTest(jerk=jerk):
+                result = replay.run(self.exe, program, at=200, factor=500, jerk=jerk)
+                self.check_endpoints(result)
+                request = result['requests'][0][0]
+                elapsed, response, settled = 0, None, []
+                for tick, section, speed, dt, position in result['segments']:
+                    if tick < request:
+                        continue
+                    elapsed += dt*60
+                    if speed < 590 and response is None:
+                        response = elapsed
+                    if elapsed > 1.5:
+                        settled.append(speed)
+                self.assertIsNotNone(response)
+                self.assertLess(response, 1)
+                self.assertTrue(settled)
+                self.assertLessEqual(max(settled), 309)
+                for first, second in zip(result['blocks'], result['blocks'][1:]):
+                    self.assertAlmostEqual(first[4], second[2], places=4)
+                self.assertTrue(all(b[3] <= 300.1 for b in result['blocks'][1:]))
+
     def test_dense_refill_adopts_latest_request_and_keeps_boundaries(self):
         program = 'G21 G91 G94 G64\n' + 'G1 X0.4 F600\n'*200
         result = replay.run(self.exe, program, at=20, factor=500)

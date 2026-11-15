@@ -177,7 +177,8 @@ def build(root, out):
                            '    if(argc>6)ov_schedule=atoi(argv[6]);\n'
                            '    if(argc>7){cm.a[0].feedrate_max=atof(argv[7]);cm.a[0].velocity_max=atof(argv[7]);}\n'
                            '    if(argc>8)ov_set_factor(OV_FEED,strtoul(argv[8],NULL,10)/1000.0f,true,true);\n'
-                           '    if(argc>9)ov_queue_mode=strtoul(argv[9],NULL,10);')
+                           '    if(argc>9)ov_queue_mode=strtoul(argv[9],NULL,10);\n'
+                           '    if(argc>10)for(unsigned a=0;a<AXES;a++)cm_set_axis_jerk(a,atof(argv[10]));')
     # Release a lone first move as the clock-driven startup callback would.
     driver = _replace_once(driver, 'static void finish(void)\n{\n',
                            'static void finish(void)\n{\n'
@@ -237,10 +238,10 @@ void host_checkpoint(unsigned move)
     return exe
 
 
-def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False, max_feed=1200, initial_factor=1000, queue_interleave=0):
+def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False, max_feed=1200, initial_factor=1000, queue_interleave=0, jerk=500):
     if at < 0 or not 50 <= factor <= 2000 or section not in (-1, 0, 1, 2):
         raise ValueError('invalid injection schedule')
-    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule)), str(max_feed), str(initial_factor), str(queue_interleave)],
+    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule)), str(max_feed), str(initial_factor), str(queue_interleave), str(jerk)],
                             input=program, capture_output=True, text=True, timeout=60)
     if result.returncode:
         raise RuntimeError(f'replay exit {result.returncode}: {result.stderr[-2000:]}')

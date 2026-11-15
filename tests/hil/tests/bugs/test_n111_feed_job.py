@@ -3,7 +3,7 @@ import time
 import pytest
 from tinyg_hil import sender
 
-pytestmark = [pytest.mark.bug("N111", on=["d449"]), pytest.mark.dialect("d449"),
+pytestmark = [pytest.mark.bug("N111", on=[]), pytest.mark.dialect("d449"),
               pytest.mark.motion, pytest.mark.persists, pytest.mark.timeout(180)]
 
 PATTERNS = {
