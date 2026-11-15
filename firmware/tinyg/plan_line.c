@@ -786,8 +786,22 @@ void mp_override_queued(void)
     // Change a shared boundary only when BOTH complete plans fit. The next
     // block keeps its original exit, so the rest of the queue stays valid.
     if (next_eligible) {
-        paired = _override_queue_plan(bp, bp->entry_velocity, boundary, factor, &queue_transition) &&
-                 _override_queue_plan(next, boundary, next->exit_velocity, factor, &next_transition);
+        uint16_t trial = factor;
+        uint16_t previous = bp->feed_factor & MP_FEED_FACTOR_MASK;
+        // A short block may not fit the entire requested change. A bounded
+        // ramp starts responding before a long-duration queue can drain.
+        for (uint8_t attempt = 0; attempt < 6; attempt++) {
+            if (attempt) {
+                trial = (trial + previous) / 2;
+                if (trial == previous) break;
+                boundary = (bp->fl_tags & FL_EXACT_STOP) || (next->fl_tags & FL_EXACT_STOP) ? 0 :
+                    min3(_get_junction_vmax(bp->unit, next->unit),
+                         bp->gm.feed_rate * (trial/1000.0f), next->gm.feed_rate * (trial/1000.0f));
+            }
+            paired = _override_queue_plan(bp, bp->entry_velocity, boundary, trial, &queue_transition) &&
+                     _override_queue_plan(next, boundary, next->exit_velocity, trial, &next_transition);
+            if (paired) break;
+        }
     }
     if (!paired && !_override_queue_plan(bp, bp->entry_velocity, bp->exit_velocity,
                                          factor, &queue_transition)) return;

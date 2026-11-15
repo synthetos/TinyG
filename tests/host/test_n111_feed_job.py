@@ -29,12 +29,12 @@ class FeedJob(unittest.TestCase):
                       'G17 G2 X20 Y0 I10 J0 F600\n'):
             with self.subTest(moves=moves[:24]):
                 program = 'G21 G91 G94 G64\n' + moves
-                plain = replay.run(self.exe, program)
+                plain = replay.run(self.exe, program.replace("F600", "F300"))
                 half = replay.run(self.exe, program, initial_factor=500)
                 self.check_endpoints(plain)
                 self.check_endpoints(half)
                 duration = lambda r: sum(row[3] for row in r['segments'])
-                self.assertAlmostEqual(duration(half)/duration(plain), 2, delta=.08)
+                self.assertAlmostEqual(duration(half)/duration(plain), 1, delta=.03)
                 self.assertLessEqual(max(row[2] for row in half['segments']), 300.1)
 
     def test_live_change_covers_already_queued_long_blocks(self):
@@ -100,6 +100,23 @@ class FeedJob(unittest.TestCase):
         self.assertAlmostEqual(blocks[2][4], 900, delta=.1)
         for first, second in zip(blocks, blocks[1:]):
             self.assertAlmostEqual(first[4], second[2], places=4)
+
+    def test_short_queued_blocks_start_ramping_within_one_second(self):
+        for length in (.3, .4, .5, .8, 1.0):
+            with self.subTest(length=length):
+                program = 'G21 G91 G94 G64\n' + f'G1 X{length} F600\n'*100
+                result = replay.run(self.exe, program, at=50, factor=500, batch=28)
+                self.check_endpoints(result)
+                request = result['requests'][0][0]
+                ticks = [b[0] for b in result['blocks'] if b[5] != 1000 and b[0] >= request]
+                ticks += [t[0] for t in result['taken'] if t[0] >= request]
+                self.assertTrue(ticks)
+                first = min(ticks)
+                delay = sum(r[3]*60 for r in result['segments'] if request <= r[0] < first)
+                self.assertLess(delay, 1.0)
+                for previous, following in zip(result['blocks'], result['blocks'][1:]):
+                    self.assertAlmostEqual(previous[4], following[2], places=4)
+                    self.assertGreater(previous[4], 0)
 
     def test_ordered_permissions_at_admission(self):
         program = 'G21 G90 G94\nM49\nG1 X20 F600\nM48\nG1 X40\n'

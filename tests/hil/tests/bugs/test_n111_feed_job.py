@@ -30,7 +30,8 @@ def test_feed_factor_covers_job(tg, keep, record, pattern):
             tg.wait_idle(timeout=60)
             tg.set("mfo",factor)
             start=time.monotonic()
-            result=sender.stream(tg,lines,"line",timeout=90)
+            run_lines = [line.replace("F600", "F300") for line in lines] if factor == 1 else lines
+            result=sender.stream(tg,run_lines,"line",timeout=90)
             assert result.ok, result
             tg.wait_idle(timeout=90)
             times.append(time.monotonic()-start)
@@ -41,6 +42,6 @@ def test_feed_factor_covers_job(tg, keep, record, pattern):
         tg.set("mfo",1)
         tg.send_gcode("G90",check=True)
     ratio=times[1]/times[0]
-    record("n111_job_time",dict(pattern=pattern,unity_s=times[0],half_s=times[1],ratio=ratio))
-    # Host/status latency and acceleration make this looser than the MSO diagnostic.
-    assert 1.8 <= ratio <= 2.2, (pattern,times,ratio)
+    record("n111_job_time",dict(pattern=pattern,halved_feed_s=times[0],half_s=times[1],ratio=ratio))
+    # Compare equivalent programmed speeds; host/status latency is looser than MSO.
+    assert .9 <= ratio <= 1.1, (pattern,times,ratio)
