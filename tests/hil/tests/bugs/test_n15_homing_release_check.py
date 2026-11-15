@@ -30,7 +30,7 @@ def test_latch_must_release_switch(tg,keep,switches,ice,record):
         # halts here can interrupt that serial message (N106). Wait on serial first.
         failed=tg.dialect.status("HOMING_CYCLE_FAILED")
         def is_failure(event):
-            if event.damaged or event.t < started:
+            if event.damaged or event.t < started or not isinstance(event.data, dict):  # a malformed (ICE-garbled) line has no data
                 return False
             footer=event.data.get("f",[])
             return ((event.kind=="exception" and event.data["er"].get("st")==failed) or
