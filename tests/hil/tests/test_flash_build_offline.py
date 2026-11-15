@@ -1,5 +1,4 @@
 """Build selection must return the newly built image, never a stale normal HEX."""
-from pathlib import Path
 import pytest
 from tinyg_hil import flash
 
