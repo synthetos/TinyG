@@ -17,16 +17,20 @@ from .state import flash_record, write_flash_record, state_dir
 def build(source_dir, make_args=()) -> pathlib.Path:
     """Run make in firmware/tinyg of a checkout; returns the hex path.
 
-    make_args e.g. ["TEST_HOOKS=1"] (the Makefile then builds into build-testhooks/).
+    make_args e.g. ["TEST_HOOKS=1"] or ["MOTION_PROFILE=8"] select separate images.
     """
     src = pathlib.Path(source_dir)
     if (src / "firmware" / "tinyg").is_dir():
         src = src / "firmware" / "tinyg"
     subprocess.run(["make", "-C", str(src), "-j8", *make_args], check=True, capture_output=True)
-    builddir = "build-testhooks" if any(a.startswith("TEST_HOOKS=") for a in make_args) else "build"
-    for a in make_args:
-        if a.startswith("FW_BUILD="):
-            builddir = "build-fb" + a.split("=", 1)[1]
+    # Match Makefile precedence, independent of argument order; the last value
+    # for each variable wins, and an empty value makes its ifdef false.
+    variables = dict(a.split("=", 1) for a in make_args if "=" in a)
+    builddir = "build-testhooks" if variables.get("TEST_HOOKS") else "build"
+    if variables.get("FW_BUILD"):
+        builddir = "build-fb" + variables["FW_BUILD"]
+    if variables.get("MOTION_PROFILE"):
+        builddir = "build-profile" + variables["MOTION_PROFILE"]
     return src / builddir / "tinyg.hex"
 
 
