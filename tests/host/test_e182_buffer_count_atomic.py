@@ -169,6 +169,7 @@ class BufferCountAtomic(unittest.TestCase):
                                  ('planner.c', d / 'planner_check.c',
                                   ['-include', 'tgmath.h', '-Dmp_get_run_buffer=real_mp_get_run_buffer']),
                                  ('plan_line.c', FIRMWARE / 'plan_line.c', ['-include', 'tgmath.h']),
+                                 ('override.c', FIRMWARE / 'override.c', []),
                                  ('plan_zoid.c', FIRMWARE / 'plan_zoid.c', ['-include', 'tgmath.h']),
                                  ('util.c', FIRMWARE / 'util.c', ['-include', 'tgmath.h'])]:
             obj = d / (name + '.o')

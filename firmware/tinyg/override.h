@@ -67,6 +67,12 @@ void ov_set_program_feed(bool enable);
 void ov_queue_program_feed(bool enable);
 void ov_sync_program_feed(void);
 uint16_t ov_plan_feed(void);
+bool ov_plan_permitted(void);
+typedef struct {uint32_t request, cancel;} ovQueueToken_t;
+bool ov_queue_work_pending(void);
+uint16_t ov_queue_request(ovQueueToken_t *token);
+bool ov_queue_current(const ovQueueToken_t *token);
+void ov_queue_work_done(const ovQueueToken_t *token);
 void ov_reset_job(void);
 void ov_commit_feed(uint16_t factor,bool capped);
 /* Caller supplies a private snapshot of an analytical future boundary.

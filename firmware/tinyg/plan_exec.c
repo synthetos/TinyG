@@ -91,7 +91,8 @@ static bool _override_body_eligible(void)
 static stat_t _override_callback_work(void) __attribute__((noinline));
 stat_t mp_override_callback(void)
 {
-    if (!ov_body_work_pending()) { return STAT_NOOP; }
+    if (!ov_body_work_pending() && !ov_queue_work_pending()) { return STAT_NOOP; }
+    mp_override_queued();
     return _override_callback_work();
 }
 static stat_t _override_callback_work(void)
@@ -118,7 +119,7 @@ static stat_t _override_callback_work(void)
             return STAT_NOOP;
         }
         // Unity on an untouched block must use the existing plan without any retiming.
-        if (!ov_applied_valid && factor == mb.r->feed_factor && ov_runtime_snapshot_valid) {
+        if (!ov_applied_valid && factor == (mb.r->feed_factor & MP_FEED_FACTOR_MASK) && ov_runtime_snapshot_valid) {
             BODY_LOCK;
             if (ov_runtime_snapshot_valid) ov_body_work_done(request.request);
             BODY_UNLOCK;
@@ -441,7 +442,7 @@ stat_t mp_exec_aline(mpBuf_t *bf)
 //            rpt_exception(STAT_PLANNER_ASSERTION_FAILURE, "mp_exec_aline() zero length move");
 //        }
 
-        ov_commit_feed(bf->feed_factor, (bf->fl_tags & FL_AXIS_CAP) != 0);
+        ov_commit_feed(bf->feed_factor & MP_FEED_FACTOR_MASK, (bf->fl_tags & FL_AXIS_CAP) != 0);
         ov_block_generation++;
         ov_segment_ordinal = 0;
         ov_body.ready = false;

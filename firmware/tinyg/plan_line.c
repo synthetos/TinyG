@@ -48,6 +48,7 @@ static stat_t _plan_block_list(mpBuf_t *bf, uint8_t *mr_flag);
 static void _reset_replannable_list(void);
 static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity);
 static float _exit_of_previous(const mpBuf_t *bp);
+static ovTransition_t queue_transition;
 #define EXIT_FROM_PREVIOUS (-1.0) // exit unknown here: ask the exec
 #define INVALID_PLAN (-2.0)
 static float _get_junction_vmax(const float a_unit[], const float b_unit[]);
@@ -170,10 +171,12 @@ stat_t mp_aline(GCodeState_t *gm_in)
 	//	(3) Previous block is not optimally planned. Vi <= previous block's entry_velocity + delta_velocity
 
     uint16_t factor = OV_FACTOR_ONE;
+    bool feed_allowed = false;
     if (cm.cycle_state == CYCLE_MACHINING &&
         gm_in->motion_mode >= MOTION_MODE_STRAIGHT_FEED && gm_in->motion_mode <= MOTION_MODE_CCW_ARC &&
         gm_in->feed_rate_mode == UNITS_PER_MINUTE_MODE &&
         axis_length[AXIS_A] == 0 && axis_length[AXIS_B] == 0 && axis_length[AXIS_C] == 0) {
+        feed_allowed = ov_plan_permitted();
         factor = ov_plan_feed();
     }
 	bool axis_capped = _calc_move_times(gm_in, axis_length, axis_square, factor);	// set move time and minimum time in the state
@@ -208,7 +211,7 @@ stat_t mp_aline(GCodeState_t *gm_in)
         return(cm_panic_P(STAT_BUFFER_FULL_FATAL, PSTR("mp_aline")));   // never supposed to fail
     }
 	bf->length = length;
-    bf->feed_factor = factor;
+    bf->feed_factor = factor | (feed_allowed ? MP_FEED_OVERRIDE_ALLOWED : 0);
     float planned_time = gm_in->move_time; // capture beside the context snapshot, as before
     memcpy(&bf->gm, gm_in, sizeof(bf->gm));
 
@@ -662,7 +665,22 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 	plan.entry_velocity = entry_velocity;
 	plan.cruise_velocity = bp->cruise_vmax;
 	plan.exit_velocity = exit_velocity;
-	mp_calculate_trapezoid(&plan);
+    bool valley = (bp->feed_factor & MP_FEED_FACTOR_MASK) != OV_FACTOR_ONE &&
+                  (entry_velocity > plan.cruise_velocity || exit_velocity > plan.cruise_velocity);
+    if (valley && ov_plan_transition(plan.length, entry_velocity, plan.cruise_velocity, exit_velocity,
+                                    max3(entry_velocity, exit_velocity, plan.cruise_velocity),
+                                    plan.jerk, OV_FACTOR_ONE, &queue_transition)) {
+        plan.head_length = queue_transition.head;
+        plan.body_length = queue_transition.body;
+        plan.tail_length = queue_transition.tail;
+    } else {
+        if (valley) {
+            // A shorter lookahead transition may temporarily need the old boundary speed.
+            plan.cruise_velocity = max3(plan.cruise_velocity, entry_velocity, exit_velocity);
+            plan.cruise_vmax = max(plan.cruise_vmax, plan.cruise_velocity);
+        }
+        mp_calculate_trapezoid(&plan);
+    }
     // naiive_move_time may be infinite for an entry and exit both at rest;
     // only the lengths and velocities below are executed.
     if (!fp_nonnegative_finite_at(&plan.entry_velocity) ||
@@ -693,6 +711,108 @@ static float _plan_block(mpBuf_t *bp, float entry_velocity, float exit_velocity)
 	return (taken ? taken_exit : plan.exit_velocity);
 }
 
+/* Retiming one unstarted block keeps BOTH outer speeds unchanged. A missed
+ * deadline leaves its complete original plan in place. Short blocks which
+ * cannot fit the transition retain that plan; new admissions already carry
+ * the request, so dense refill does not wait for a whole-queue replan. */
+static bool _override_stopped(void)
+{
+    return cm.hold_state != FEEDHOLD_OFF || cm.program_paused ||
+        cm.queue_flush_state != FLUSH_OFF || cm.job_kill_requested ||
+        cm.hold_fast_request || cm.limit_requested || cm.shutdown_requested || cm_is_alarmed();
+}
+static float _override_vmax(const mpBuf_t *bp)
+{
+    float vmax = 1e30f;
+    for (uint8_t axis = 0; axis < AXES; axis++) {
+        if (bp->unit[axis] != 0) {
+            float cap = min(cm.a[axis].feedrate_max, cm.a[axis].velocity_max) / fabs(bp->unit[axis]);
+            vmax = min(vmax, cap);
+        }
+    }
+    float motor_time = st_get_move_time(bp->unit);
+    return motor_time > 0 ? min(vmax, 1.0f / motor_time) : vmax;
+}
+static bool _override_queue_eligible(const mpBuf_t *bp)
+{
+    return !_taken_by_exec(bp) && bp->block_type == BLOCK_TYPE_ALINE &&
+           (bp->feed_factor & MP_FEED_OVERRIDE_ALLOWED);
+}
+static bool _override_queue_plan(const mpBuf_t *bp, float entry, float exit,
+                                 uint16_t factor, ovTransition_t *out)
+{
+    if (!ov_plan_transition(bp->length, entry, bp->gm.feed_rate, exit,
+                            _override_vmax(bp), bp->jerk, factor, out)) return false;
+    return out->body == 0 || out->body / out->cruise >= MIN_SEGMENT_TIME;
+}
+static void _override_queue_copy(mpBuf_t *bp, const ovTransition_t *p)
+{
+    bp->cruise_velocity = p->cruise;
+    bp->head_length = p->head;
+    bp->body_length = p->body;
+    bp->tail_length = p->tail;
+    bp->cruise_vmax = p->cruise;
+    bp->feed_factor = p->factor_q1000 | MP_FEED_OVERRIDE_ALLOWED;
+    if (p->capped) bp->fl_tags |= FL_AXIS_CAP;
+    else bp->fl_tags &= ~FL_AXIS_CAP;
+}
+void mp_override_queued(void)
+{
+    static uint32_t scan_request;
+    static uint8_t slot, remaining;
+    static ovTransition_t next_transition;
+    if (!ov_queue_work_pending() || _override_stopped()) return;
+    ovQueueToken_t token;
+    uint16_t factor = ov_queue_request(&token);
+    if (scan_request != token.request || !remaining) {
+        scan_request = token.request;
+        slot = (uint8_t)(mb.r - mb.bf);
+        remaining = PLANNER_BUFFER_POOL_SIZE;
+    }
+    mpBuf_t *bp = &mb.bf[slot];
+    slot = (slot + 1) % PLANNER_BUFFER_POOL_SIZE;
+    if (!--remaining) ov_queue_work_done(&token);
+    if (!_override_queue_eligible(bp)) return;
+    mpBuf_t *next = bp->nx;
+    bool paired = false;
+    bool next_eligible = _override_queue_eligible(next);
+    float boundary = bp->exit_velocity;
+    if (next_eligible) {
+        boundary = (bp->fl_tags & FL_EXACT_STOP) || (next->fl_tags & FL_EXACT_STOP) ? 0 :
+                   min3(_get_junction_vmax(bp->unit, next->unit),
+                        bp->gm.feed_rate * (factor/1000.0f), next->gm.feed_rate * (factor/1000.0f));
+    }
+    if ((bp->feed_factor & MP_FEED_FACTOR_MASK) == factor && bp->exit_velocity == boundary) return;
+    // Change a shared boundary only when BOTH complete plans fit. The next
+    // block keeps its original exit, so the rest of the queue stays valid.
+    if (next_eligible) {
+        paired = _override_queue_plan(bp, bp->entry_velocity, boundary, factor, &queue_transition) &&
+                 _override_queue_plan(next, boundary, next->exit_velocity, factor, &next_transition);
+    }
+    if (!paired && !_override_queue_plan(bp, bp->entry_velocity, bp->exit_velocity,
+                                         factor, &queue_transition)) return;
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    if (_override_queue_eligible(bp) && (!paired || _override_queue_eligible(next)) &&
+        !_override_stopped() && ov_queue_current(&token)) {
+        _override_queue_copy(bp, &queue_transition);
+        if (paired) {
+            _override_queue_copy(next, &next_transition);
+            bp->exit_velocity = queue_transition.exit;
+            next->entry_velocity = queue_transition.exit;
+            next->entry_vmax = queue_transition.exit;
+            // Later admissions start their forward pass at next, using this exit.
+            // next remains replannable, including when it is the current tail.
+            bp->replannable = false;
+        }
+    }
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+}
+
 /*
  *	_reset_replannable_list() - resets all blocks in the planning list to be replannable
  */
@@ -719,6 +839,29 @@ stat_t mp_replan_held_block()
 	mpBuf_t *bf = mp_get_run_buffer();
 	if ((bf == NULL) || (bf->block_type != BLOCK_TYPE_ALINE)) { return (STAT_OK); }
 
+    // Motion is stopped: rebuild the held suffix at the retained operator
+    // request before releasing hold, including blocks too short for live retiming.
+    ovQueueToken_t token;
+    uint16_t factor = ov_queue_request(&token);
+    mpBuf_t *bp = bf;
+    do {
+        if (bp->block_type == BLOCK_TYPE_ALINE && (bp->feed_factor & MP_FEED_OVERRIDE_ALLOWED)) {
+            float requested = bp->gm.feed_rate * (factor / 1000.0f);
+            float vmax = _override_vmax(bp);
+            bp->cruise_vmax = min(requested, vmax);
+            bp->feed_factor = factor | MP_FEED_OVERRIDE_ALLOWED;
+            if (requested > vmax) bp->fl_tags |= FL_AXIS_CAP;
+            else bp->fl_tags &= ~FL_AXIS_CAP;
+            bp->entry_vmax = bp == bf || (bp->fl_tags & FL_EXACT_STOP) ||
+                             bp->pv->block_type != BLOCK_TYPE_ALINE ? 0 :
+                             min(bp->cruise_vmax, _get_junction_vmax(bp->pv->unit, bp->unit));
+            bp->delta_vmax = mp_get_target_velocity(0, bp->length, bp);
+            bp->exit_vmax = (bp->fl_tags & FL_EXACT_STOP) ? 0 :
+                           min(bp->cruise_vmax, bp->entry_vmax + bp->delta_vmax);
+            bp->braking_velocity = bp->delta_vmax;
+        }
+        bp = bp->nx;
+    } while (bp != bf && bp->buffer_state != MP_BUFFER_EMPTY);
 	bf->entry_vmax = 0;
 	bf->delta_vmax = mp_get_target_velocity(0, bf->length, bf);
 	_reset_replannable_list();

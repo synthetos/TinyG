@@ -267,6 +267,9 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
  */
 
 stat_t mp_override_callback(void);
+void mp_override_queued(void);
+#define MP_FEED_OVERRIDE_ALLOWED 0x8000U
+#define MP_FEED_FACTOR_MASK 0x7fffU
 void planner_init(void);
 void planner_reset(void);
 void planner_init_assertions(void);

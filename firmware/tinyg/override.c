@@ -16,6 +16,7 @@ static volatile uint32_t cancel_epoch;
 /* Main-loop permission at the tail of the command queue. */
 static bool plan_feed_disabled;
 static volatile bool body_ticket_valid;
+static volatile bool queue_work;
 static volatile bool body_work; /* atomic main-loop hint; generations remain authoritative */
 static uint8_t utf_remaining,utf_lo,utf_hi; /* USB RX owns these while armed; arm/reset has the interrupt guard. */
 
@@ -26,7 +27,7 @@ void ov_init(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;plan_feed_disabled=false;
     ov.revision=1;
-    body_ticket_valid=false;body_work=false;
+    body_ticket_valid=false;body_work=false;queue_work=false;
     cancel_epoch=0;utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -37,6 +38,29 @@ void ov_set_program_feed(bool enable)
     if(ov.program_feed!=enable) {
         ov.program_feed=enable;body_ticket_valid=false;ov.request++;ov.revision++;body_work=true;
     }
+    OV_UNLOCK;
+}
+bool ov_plan_permitted(void) { return !plan_feed_disabled; }
+bool ov_queue_work_pending(void) { return queue_work; }
+uint16_t ov_queue_request(ovQueueToken_t *token)
+{
+    OV_LOCK;
+    token->request=ov.request;token->cancel=cancel_epoch;
+    uint16_t factor=(ov.enables & OV_FEED) ? ov.feed : OV_FACTOR_ONE;
+    OV_UNLOCK;
+    return factor;
+}
+bool ov_queue_current(const ovQueueToken_t *token)
+{
+    OV_LOCK;
+    bool current=token->request==ov.request && token->cancel==cancel_epoch;
+    OV_UNLOCK;
+    return current;
+}
+void ov_queue_work_done(const ovQueueToken_t *token)
+{
+    OV_LOCK;
+    if(token->request==ov.request && token->cancel==cancel_epoch)queue_work=false;
     OV_UNLOCK;
 }
 void ov_queue_program_feed(bool enable) { plan_feed_disabled=!enable; }
@@ -55,7 +79,7 @@ void ov_reset_job(void)
     ov.feed=ov.spindle=ov.committed_feed=ov.committed_spindle=OV_FACTOR_ONE;
     ov.enables=OV_FEED;ov.program_feed=true;plan_feed_disabled=false;ov.armed=0;ov.capped=0;
     ov.unsupported=0;ov.state=OV_CANCELLED;
-    ov.request++;ov.revision++;cancel_epoch++;body_ticket_valid=false;body_work=false;
+    ov.request++;ov.revision++;cancel_epoch++;body_ticket_valid=false;body_work=false;queue_work=false;
     utf_remaining=0;utf_lo=0x80;utf_hi=0xBF;
     OV_UNLOCK;
 }
@@ -76,7 +100,7 @@ static void _set(uint8_t which,uint16_t factor,uint8_t enables)
     uint16_t old=(which==OV_FEED)?ov.feed:ov.spindle;
     if (old!=factor || ov.enables!=enables) {
         if (which==OV_FEED) ov.feed=factor; else ov.spindle=factor;
-        ov.enables=enables;body_ticket_valid=false;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;body_work=true;
+        ov.enables=enables;body_ticket_valid=false;ov.request++;ov.revision++;ov.state=OV_RECORD_ONLY;body_work=true;queue_work=true;
     }
 }
 /* AVR-libc can round decimal 0.05 one binary32 step below 0.05f.
@@ -190,7 +214,7 @@ bool ov_try_commit_feed(uint16_t factor,bool capped)
 }
 void ov_cancel(void)
 {
-    OV_LOCK;body_ticket_valid=false;cancel_epoch++;ov.state=OV_CANCELLED;OV_UNLOCK;
+    OV_LOCK;body_ticket_valid=false;queue_work=false;cancel_epoch++;ov.state=OV_CANCELLED;OV_UNLOCK;
 }
 static bool _boundary(const ovBoundary_t *b)
 {
