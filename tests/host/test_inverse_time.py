@@ -27,6 +27,7 @@ class InverseTime(unittest.TestCase):
 #include "planner.h"
 #include "util.h"
 #include "feedlimit.h"
+#include "override.h"
 cmSingleton_t cm;
 float st_get_move_time(const float axis_length[]) { return 0; }
 stat_t status_code;
@@ -50,7 +51,7 @@ int main(void) {
     assert(begin_block()==STAT_OK);
     cm.gm.motion_mode=MOTION_MODE_STRAIGHT_FEED;
     assert(check_feed()==STAT_OK);
-    _calc_move_times(&cm.gm,length,square);
+    _calc_move_times(&cm.gm,length,square,OV_FACTOR_ONE);
     assert(cm.gm.feed_rate_mode==INVERSE_TIME_MODE);
     assert(fabs(cm.gm.move_time-1.0/60)<1e-7);
     cm_finalize_move();assert(cm.gm.feed_rate==0);
@@ -66,7 +67,7 @@ int main(void) {
         GCodeState_t arc=cm.gm;arc.feed_rate/=10;
         cm_finalize_move();assert(cm.gm.feed_rate==0);
         length[0]=.01;square[0]=.0001;
-        for(int i=0;i<10;i++) {_calc_move_times(&arc,length,square);assert(arc.feed_rate_mode==INVERSE_TIME_MODE);assert(fabs(arc.move_time-1.0/600)<1e-8);}
+        for(int i=0;i<10;i++) {_calc_move_times(&arc,length,square,OV_FACTOR_ONE);assert(arc.feed_rate_mode==INVERSE_TIME_MODE);assert(fabs(arc.move_time-1.0/600)<1e-8);}
     }
     // Axis-free modal/program commands dispatch through the current G1 mode.
     // They must not require F after a G93 move cleared its per-block feed.

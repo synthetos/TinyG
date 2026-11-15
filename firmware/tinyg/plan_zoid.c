@@ -29,6 +29,7 @@
 #include "tinyg.h"
 #include "config.h"
 #include "planner.h"
+#include "motion_profile.h"
 #include "report.h"
 #include "util.h"
 #include "testhooks.h"
@@ -126,6 +127,9 @@
 static float _target_length(const float Vi, const float Vf, const float recip_jerk);
 static float _target_velocity(const float Vi, const float L, const float cbrt_jerk, const float jerk);
 
+#if TINYG_MOTION_PROFILE == 7
+#define mp_calculate_trapezoid _profile_calculate_trapezoid
+#endif
 void mp_calculate_trapezoid(mpTrapezoid_t *bf)
 {
 	//********************************************
@@ -430,3 +434,13 @@ float mp_get_target_velocity(const float Vi, const float L, const mpBuf_t *bf)
 {
     return _target_velocity(Vi, L, bf->cbrt_jerk, bf->jerk);
 }
+
+#if TINYG_MOTION_PROFILE == 7
+#undef mp_calculate_trapezoid
+void mp_calculate_trapezoid(mpTrapezoid_t *bf)
+{
+    motion_profile_begin();
+    _profile_calculate_trapezoid(bf);
+    motion_profile_end(PLANNER_BUFFER_POOL_SIZE - mp_get_planner_buffers_available());
+}
+#endif

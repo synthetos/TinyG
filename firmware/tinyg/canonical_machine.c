@@ -1853,6 +1853,7 @@ stat_t cm_override_enables(uint8_t flag)
     float value[AXES] = {0};
     value[0] = flag;
     mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    ov_queue_program_feed(flag);
     return STAT_OK;
 }
 stat_t cm_feed_rate_override_enable(uint8_t flag)

@@ -208,7 +208,7 @@ class FeedLimitTags(unittest.TestCase):
             (d / 'plan_line.c').write_text(line, encoding='latin-1')
             objs = []
             for name, extra in [('check.c', []), ('planner.c', ['-include', 'tgmath.h']),
-                                ('plan_line.c', ['-include', 'tgmath.h']), ('util.c', ['-include', 'tgmath.h']),
+                                ('plan_line.c', ['-include', 'tgmath.h']), ('override.c', []), ('util.c', ['-include', 'tgmath.h']),
                                 ('plan_zoid.c', ['-include', 'math.h']), ('feedlimit.c', [])]:
                 src = d / name if name in ('check.c', 'plan_line.c') else FIRMWARE / name
                 obj = d / (name + '.o')

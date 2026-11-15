@@ -25,7 +25,10 @@ def test_stopped_file_returns_to_usb(tg, ice, keep, record, mode, stop):
     keep('rxm')
     tg.set('rxm', mode)
     try:
-        tg.send_json({'test': 51}, check=True, allow='canned braid, interrupted by feedhold and stop')
+        response = tg.send_json({'test': 51}, allow='canned braid, interrupted by feedhold and stop')
+        if response.status == 17:
+            pytest.skip('canned programs are not built; source-switch regression requires an opt-in development image')
+        assert response.status == 0, response.raw
         started = wait_state(ice, lambda s: s['xio.primary_src'] != s['xio.default_src']
                              and s['cm.motion_state'] == 1)
         tg.send_raw(b'!')

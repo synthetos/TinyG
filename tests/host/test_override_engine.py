@@ -151,8 +151,10 @@ class OverrideEngine(unittest.TestCase):
         result=replay.run(self.exe,program,at=20,factor=500,section=1,interleave=8)
         plain=replay.run(self.exe,program)
         self.assertEqual(len(result['interleave']),1)
-        self.assertTrue(result['taken'])
-        self.assertGreater(result['taken'][0][0], result['interleave'][0][0]+30)
+        # The successor can now adopt the request before starting. Any BODY
+        # handoff must still be newly prepared after the expired candidate.
+        self.assertTrue(all(t[0] > result['interleave'][0][0]+30 for t in result['taken']))
+        self.assertEqual(result['blocks'][1][5], 500)
         self.assertEqual([r[:2] for r in result['steps']], [r[:2] for r in plain['steps']])
         for _,target,pulses in result['steps']:
             self.assertLessEqual(abs(target-pulses),1)

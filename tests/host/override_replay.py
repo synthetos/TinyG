@@ -18,7 +18,7 @@ INJECTION = r'''
 static unsigned long ov_tick, ov_at;
 static unsigned ov_factor, ov_sent;
 static int ov_section = -1, ov_interleave;
-static unsigned ov_interleaved, ov_stopped;
+static unsigned ov_interleaved, ov_stopped, ov_queue_mode, ov_queue_done;
 static unsigned long ov_hold_at;
 static unsigned ov_schedule, ov_move, ov_move_tick;
 void host_checkpoint(unsigned move);
@@ -75,12 +75,40 @@ static void host_override_trace(void)
            (double)mr.segment_velocity, (double)mr.segment_time,
            (double)mr.gm.target[0]);
 }
+void host_block_trace(void)
+{
+    ovSnapshot_t committed;ov_snapshot(&committed);
+    printf("OVBLOCK %lu %lu %.9g %.9g %.9g %u %.9g %.9g %.9g %.9g %.9g\n",
+           ov_tick,(unsigned long)mr.gm.linenum,(double)mr.entry_velocity,
+           (double)mr.cruise_velocity,(double)mr.exit_velocity,committed.committed_feed,
+           (double)mb.r->length,(double)mr.head_length,(double)mr.body_length,
+           (double)mr.tail_length,(double)mb.r->jerk);
+}
 void host_override_taken(void)
 {
     if (ov_interleave==9 && !ov_hold_at) ov_hold_at=ov_tick+80;
     ovSnapshot_t committed;ov_snapshot(&committed);
     printf("OVCOMMIT %lu %u %u\n",ov_tick,committed.committed_feed,committed.capped);
     printf("OVTAKE %lu %.9g\n",ov_tick,(double)mr.cruise_velocity);
+    printf("OVEXIT %.9g\n",(double)mr.exit_velocity);
+}
+void host_queue_interleave(mpBuf_t *candidate)
+{
+    if(!ov_sent || !ov_queue_mode || ov_queue_done)return;
+    ov_queue_done=1;
+    if(ov_queue_mode==1)ov_set_factor(OV_FEED,1.0f,true,true);
+    if(ov_queue_mode==2)ov_cancel();
+    if(ov_queue_mode==3) {
+        unsigned queue_guard=0;
+        while(candidate->buffer_state!=MP_BUFFER_EMPTY) {
+            ov_tick++;st_pre.buffer_state=PREP_BUFFER_OWNED_BY_EXEC;
+            stat_t queued_status=mp_exec_move();
+            if(queued_status!=STAT_OK && queued_status!=STAT_EAGAIN && queued_status!=STAT_NOOP)exit(123);
+            host_override_trace();
+            if(++queue_guard>100000)exit(122);
+        }
+    }
+    printf("OVQUEUE %u\n",ov_queue_mode);
 }
 void host_override_interleave(void)
 {
@@ -133,7 +161,7 @@ def build(root, out):
     driver = _replace_once(driver, '            stat_t status=mp_exec_move();',
                            '            host_override_step();\n'
                            '            host_override_sequence();\n'
-                           '            if(ov_interleave<3 || ov_interleave>=8 || !ov_interleaved)mp_override_callback();\n'
+                           '            if((ov_interleave<3 || ov_interleave>=8 || !ov_interleaved) && !(ov_queue_mode==2 && ov_queue_done))mp_override_callback();\n'
                            '            stat_t status=mp_exec_move();\n'
                            '            host_override_trace();')
     driver = _replace_once(driver, '        unsigned guard=0;',
@@ -147,11 +175,17 @@ def build(root, out):
                            '    if(argc>4)ov_section=atoi(argv[4]);\n'
                            '    if(argc>5)ov_interleave=atoi(argv[5]);\n'
                            '    if(argc>6)ov_schedule=atoi(argv[6]);\n'
-                           '    if(argc>7){cm.a[0].feedrate_max=atof(argv[7]);cm.a[0].velocity_max=atof(argv[7]);}')
+                           '    if(argc>7){cm.a[0].feedrate_max=atof(argv[7]);cm.a[0].velocity_max=atof(argv[7]);}\n'
+                           '    if(argc>8)ov_set_factor(OV_FEED,strtoul(argv[8],NULL,10)/1000.0f,true,true);\n'
+                           '    if(argc>9)ov_queue_mode=strtoul(argv[9],NULL,10);\n'
+                           '    if(argc>10)for(unsigned a=0;a<AXES;a++)cm_set_axis_jerk(a,atof(argv[10]));')
     # Release a lone first move as the clock-driven startup callback would.
     driver = _replace_once(driver, 'static void finish(void)\n{\n',
                            'static void finish(void)\n{\n'
                            '    rtc.sys_ticks += 1024; mp_startup_callback();\n')
+    driver = _replace_once(driver, '            stat_t st = cm_arc_callback();',
+                           '            while(mb.buffers_available < PLANNER_BUFFER_HEADROOM)drain_one();\n'
+                           '            stat_t st = cm_arc_callback();')
     (out / 'driver.c').write_text(driver)
     plan = (out/'plan_exec.c').read_text()
     plan = _replace_once(plan, '    // Revalidate after all floating-point planning,',
@@ -160,7 +194,13 @@ def build(root, out):
     plan = _replace_once(plan, '    ov_applied_request = ov_body.ticket.request;',
                          '    extern void host_override_taken(void); host_override_taken();\n'
                          '    ov_applied_request = ov_body.ticket.request;')
+    plan = _replace_once(plan, '\t\tfl_stage_block(bf);',
+                         '        extern void host_block_trace(void);host_block_trace();\n\t\tfl_stage_block(bf);')
     (out/'plan_exec.c').write_text(plan)
+    line = (out/'plan_line.c').read_text()
+    anchor = 'factor, &queue_transition)) return;'
+    line = _replace_once(line, anchor, anchor + '\n    extern void host_queue_interleave(mpBuf_t *);host_queue_interleave(bp);')
+    (out/'plan_line.c').write_text(line)
     # Finish the last loaded segment before observing an endpoint. A real null
     # load folds its counted pulses into encoder_steps; the base replay's null
     # loader is a stub, so do that accounting explicitly here.
@@ -168,6 +208,11 @@ def build(root, out):
     step += r"""
 void host_checkpoint(unsigned move)
 {
+    // Observe the endpoint without advancing the replay's one-segment feedback pipeline.
+    stRunSingleton_t saved_run=st_run;
+    enEncoders_t saved_en=en;
+    int64_t saved_pulses[MOTORS],saved_total[MOTORS];
+    memcpy(saved_pulses,pulses,sizeof(pulses));memcpy(saved_total,total,sizeof(total));
     host_run_active();
     for(unsigned m=0;m<MOTORS;m++) {
         ACCUMULATE_ENCODER(m);
@@ -177,6 +222,8 @@ void host_checkpoint(unsigned move)
             (long)en.en[m].encoder_steps,
             (double)(mp_get_runtime_absolute_position(axis)*st_cfg.mot[m].steps_per_unit));
     }
+    st_run=saved_run;en=saved_en;
+    memcpy(pulses,saved_pulses,sizeof(pulses));memcpy(total,saved_total,sizeof(total));
 }
 """
     (out/'step_engine.c').write_text(step)
@@ -191,19 +238,27 @@ void host_checkpoint(unsigned move)
     return exe
 
 
-def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False, max_feed=1200):
+def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, schedule=False, max_feed=1200, initial_factor=1000, queue_interleave=0, jerk=500):
     if at < 0 or not 50 <= factor <= 2000 or section not in (-1, 0, 1, 2):
         raise ValueError('invalid injection schedule')
-    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule)), str(max_feed)],
+    result = subprocess.run([str(exe), str(batch), str(at), str(factor), str(section), str(interleave), str(int(schedule)), str(max_feed), str(initial_factor), str(queue_interleave), str(jerk)],
                             input=program, capture_output=True, text=True, timeout=60)
     if result.returncode:
         raise RuntimeError(f'replay exit {result.returncode}: {result.stderr[-2000:]}')
-    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': [], 'ends': [], 'changes': [], 'committed': []}
+    rows = {'requests': [], 'segments': [], 'steps': [], 'taken': [], 'interleave': [], 'stops': [], 'ends': [], 'changes': [], 'committed': [], 'blocks': [], 'queue_interleave': []}
     for line in result.stdout.splitlines():
         fields = line.split()
         if not fields:
             continue
-        if fields[0] == 'OVREQ':
+        if fields[0] == 'OVBLOCK':
+            rows['blocks'].append(tuple(map(float, fields[1:])))
+        elif fields[0] == 'OVQUEUE':
+            rows['queue_interleave'].append(int(fields[1]))
+        elif fields[0] == 'OVEXIT':
+            block = list(rows['blocks'][-1])
+            block[4] = float(fields[1])
+            rows['blocks'][-1] = tuple(block)
+        elif fields[0] == 'OVREQ':
             rows['requests'].append(tuple(map(int, fields[1:])))
         elif fields[0] == 'OVCOMMIT':
             rows['committed'].append(tuple(map(int,fields[1:])))
@@ -222,7 +277,7 @@ def run(exe, program, at=0, factor=1000, section=-1, batch=28, interleave=0, sch
                                      *map(float, fields[3:])))
         elif fields[0] == 'STEPS':
             rows['steps'].append((int(fields[1]), float(fields[2]), int(fields[3])))
-        elif fields[0] in ('EXEC', 'STATE', 'STUCK') or (fields[0] == 'LINE' and fields[-1] != '0'):
+        elif fields[0] in ('EXEC', 'STATE', 'STUCK') or (fields[0] == 'LINE' and fields[2] != '0'):
             raise RuntimeError(f'replay rejected the program: {line}')
     if not rows['segments'] or not rows['steps']:
         raise RuntimeError('replay produced no motion')

@@ -26,5 +26,5 @@ class PlannerDuration(unittest.TestCase):
   root=FW.parent.parent.parent;fixture=Path(__file__).parent/'planner_startup'
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'plan.c';p.write_text(code);exe=Path(d)/'plan'
-   subprocess.run(['cc','-std=gnu99','-O1','-funsigned-char','-D_POSIX_C_SOURCE=200809L','-DHAS_STARTUP','-include','tgmath.h','-I'+str(fixture),'-I'+str(FW),str(p),*[str(FW/x) for x in ['planner.c','plan_line.c','plan_zoid.c','util.c']],'-lm','-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=gnu99','-O1','-funsigned-char','-D_POSIX_C_SOURCE=200809L','-DHAS_STARTUP','-include','tgmath.h','-I'+str(fixture),'-I'+str(FW),str(p),*[str(FW/x) for x in ['planner.c','plan_line.c','plan_zoid.c','util.c','override.c']],'-lm','-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)

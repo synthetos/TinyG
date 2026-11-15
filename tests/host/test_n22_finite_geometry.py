@@ -31,7 +31,7 @@ class PlannerGeometry(unittest.TestCase):
    line=Path(d)/'plan_line.c'
    source=(FW/'plan_line.c').read_text().replace('mp_calculate_trapezoid(&plan);','mp_calculate_trapezoid(&plan); extern void spoil(mpTrapezoid_t *, const mpBuf_t *); spoil(&plan, bp);')
    line.write_text(source)
-   subprocess.run(['cc','-std=gnu99','-O1','-funsigned-char','-D_POSIX_C_SOURCE=200809L','-DHAS_STARTUP','-include','tgmath.h','-I'+str(fixture),'-I'+str(FW),str(p),*[str(line if x=='plan_line.c' else FW/x) for x in ['planner.c','plan_line.c','plan_zoid.c','util.c']],'-lm','-o',str(exe)],check=True)
+   subprocess.run(['cc','-std=gnu99','-O1','-funsigned-char','-D_POSIX_C_SOURCE=200809L','-DHAS_STARTUP','-include','tgmath.h','-I'+str(fixture),'-I'+str(FW),str(p),*[str(line if x=='plan_line.c' else FW/x) for x in ['planner.c','plan_line.c','plan_zoid.c','util.c','override.c']],'-lm','-o',str(exe)],check=True)
    subprocess.run([str(exe)],check=True)
 
 class ResolvedTargets(unittest.TestCase):

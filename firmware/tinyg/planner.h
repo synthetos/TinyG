@@ -135,7 +135,10 @@ typedef struct {
 typedef struct mpBuffer {			// See Planning Velocity Notes for variable usage
 	struct mpBuffer *pv;			// static pointer to previous buffer
 	struct mpBuffer *nx;			// static pointer to next buffer
-	cm_exec_t cm_func;				// callback to canonical machine execution function
+    union {
+        cm_exec_t cm_func;          // BLOCK_TYPE_COMMAND callback
+        uint16_t feed_factor;       // BLOCK_TYPE_ALINE factor and permission
+    };
 
 	float naiive_move_time;
 
@@ -266,6 +269,9 @@ extern mpMoveRuntimeSingleton_t mr;		// context for line runtime
  */
 
 stat_t mp_override_callback(void);
+void mp_override_queued(void);
+#define MP_FEED_OVERRIDE_ALLOWED 0x8000U
+#define MP_FEED_FACTOR_MASK 0x7fffU
 void planner_init(void);
 void planner_reset(void);
 void planner_init_assertions(void);

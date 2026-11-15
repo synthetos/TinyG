@@ -30,7 +30,7 @@ int main(void) {
     /* Model hardware's write-one-to-clear effect, then advance time. */
     TCC1.INTFLAGS=0;TCC1.CNT=12;motion_profile_end(2);
     assert(motion_profile.calls==1 && motion_profile.maximum_ticks==12);
-    assert(motion_profile.site==3 && !TCC1.CTRLA && !motion_profile.overflows);
+    assert(motion_profile.site==TINYG_MOTION_PROFILE && !TCC1.CTRLA && !motion_profile.overflows);
     motion_profile_begin();TCC1.INTFLAGS=0;TCC1.CNT=7;motion_profile_end(2);
     assert(motion_profile.maximum_ticks==12);
     motion_profile_begin();TCC1.INTFLAGS=TC1_OVFIF_bm;TCC1.CNT=2;motion_profile_end(2);
@@ -40,7 +40,8 @@ int main(void) {
 '''
             source, exe = folder/'check.c', folder/'check'
             source.write_text(code)
-            subprocess.run(['cc','-std=gnu99','-Wall','-Werror','-D__AVR__',
-                            '-DTINYG_MOTION_PROFILE=3','-I'+str(folder),
-                            '-I'+str(ROOT/'firmware/tinyg'),str(source),'-o',str(exe)], check=True)
-            subprocess.run([str(exe)], check=True)
+            for site in (3, 8):
+                subprocess.run(['cc','-std=gnu99','-Wall','-Werror','-D__AVR__',
+                                f'-DTINYG_MOTION_PROFILE={site}','-I'+str(folder),
+                                '-I'+str(ROOT/'firmware/tinyg'),str(source),'-o',str(exe)], check=True)
+                subprocess.run([str(exe)], check=True)

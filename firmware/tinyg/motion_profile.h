@@ -17,7 +17,11 @@ static inline void motion_profile_begin(void)
     TCC1.INTCTRLA = 0; TCC1.INTCTRLB = 0;
     TCC1.PER = 65535; TCC1.CNT = 0;
     TCC1.INTFLAGS = TC1_OVFIF_bm;
+#if TINYG_MOTION_PROFILE == 6 || TINYG_MOTION_PROFILE == 7
+    TCC1.CTRLA = TC_CLKSEL_DIV64_gc; /* main-loop planning: 2 us, 131.072 ms range */
+#else
     TCC1.CTRLA = TC_CLKSEL_DIV8_gc;
+#endif
 }
 static inline void motion_profile_end(uint8_t section)
 {
