@@ -29,6 +29,9 @@ def _enter_char_mode(tg):
 
 def _run_canned(tg, n: int, timeout: float) -> list:
     """Start $test=n (char mode) and return every event up to and including the EOF report."""
+    # Probe through JSON: the legacy txt container discards command errors.
+    if tg.send_json({"test": 99}).status == 17:
+        pytest.skip("canned programs are not built; requires an opt-in development image")
     eof = tg.dialect.status("EOF")
     response = tg.send_json({"txt": f"$test={n}"}, allow=f"canned test {n}")
     if response.status == 17:

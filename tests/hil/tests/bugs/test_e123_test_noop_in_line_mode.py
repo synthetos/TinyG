@@ -20,6 +20,9 @@ pytestmark = pytest.mark.dialect("d449")
 def test_canned_test_runs_in_line_mode(tg):
     if tg.get("rxm") != 1:
         pytest.skip("needs the default line mode ($rxm=1)")
+    # Probe through JSON: the legacy txt container discards command errors.
+    if tg.send_json({"test": 99}).status == 17:
+        pytest.skip("canned programs are not built; requires an opt-in development image")
     run = tg.dialect.stat("RUN")
     try:
         # Test 51 (braid) is a few seconds of sub-millimetre moves; the reset below stops it.
