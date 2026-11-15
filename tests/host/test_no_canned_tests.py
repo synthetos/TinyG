@@ -9,7 +9,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class NoCannedTests(unittest.TestCase):
-    @unittest.expectedFailure
     def test_disabled_programs_do_not_prepare_or_switch_input(self):
         source = (ROOT/'firmware/tinyg/test.c').read_text()
         code = r'''
@@ -43,7 +42,8 @@ int main(void){
             c, exe = Path(work)/'check.c', Path(work)/'check'
             c.write_text(code)
             subprocess.run(['cc','-std=gnu99',str(c),'-o',str(exe)],check=True)
-            subprocess.run([str(exe)],check=True,capture_output=True)
+            result = subprocess.run([str(exe)],check=True,capture_output=True)
+            self.assertEqual(result.stdout, b"", "command rejection must not inject bare text into JSON")
 
 
 if __name__ == '__main__':

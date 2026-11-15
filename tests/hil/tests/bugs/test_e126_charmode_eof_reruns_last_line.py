@@ -29,7 +29,10 @@ def _enter_char_mode(tg):
 def _run_canned(tg, n: int, timeout: float) -> list:
     """Start $test=n (char mode) and return every event up to and including the EOF report."""
     eof = tg.dialect.status("EOF")
-    tg.send_json({"txt": f"$test={n}"}, check=True, allow=f"canned test {n}")
+    response = tg.send_json({"txt": f"$test={n}"}, allow=f"canned test {n}")
+    if response.status == 17:
+        pytest.skip("canned programs are not built; this source-switch regression needs an opt-in development image")
+    assert response.status == 0, response.raw
     events, end = [], time.monotonic() + timeout
     while True:
         ev = tg.transport.next_event(end - time.monotonic())

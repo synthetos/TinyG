@@ -67,8 +67,7 @@ These commands are active from the command line:\n\
   ~             Cycle Start - restart from feedhold\n\
   h             Show this help screen\n\
   $h            Show configuration help screen\n\
-  $test         List self-tests\n\
-  $test=N       Run self-test N\n\
+  $test         Show self-test availability\n\
   $home=1       Run a homing cycle\n\
   $defa=1       Restore all settings to \"factory\" defaults\n\
 "));
@@ -124,6 +123,10 @@ return(STAT_OK);
  */
 stat_t help_test(nvObj_t *nv)
 {
+#ifndef __CANNED_TESTS
+    printf_P(PSTR("Canned self-tests are disabled; stream G-code from the host.\n"));
+    return STAT_OK;
+#else
     if (cs.comm_mode == JSON_MODE) {
         _json_help_message();
     } else {
@@ -154,6 +157,7 @@ _postscript();
 
     }
 return(STAT_OK);
+#endif
 }
 
 /*

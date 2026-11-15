@@ -62,7 +62,7 @@
 #define __BITFIELDS
 #define __STEP_CORRECTION                   // enables step correction feedback code in stepper.c (virtual encoders)
 #define __TEXT_MODE							// enables text mode	(~10Kb)
-#define __CANNED_TESTS 						// enables $tests 		(~12Kb)
+// Define __CANNED_TESTS explicitly for a development build with flash-resident test programs.
 
 /****** DEVELOPMENT SETTINGS ******/
 

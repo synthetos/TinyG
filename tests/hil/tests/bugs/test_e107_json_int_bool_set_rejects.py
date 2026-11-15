@@ -36,4 +36,4 @@ def test_negative_interval_not_wrapped(tg, keep):
 def test_unknown_test_number_reaches_test_dispatch(tg):
     # 99 is not a motion program; reject it in run_test, not as a boolean value.
     response = tg.send_json({"test": 99})
-    assert response.status == tg.dialect.status("ERROR")
+    assert response.status in (tg.dialect.status("ERROR"), 17)  # explicit disabled dispatcher or unknown number
