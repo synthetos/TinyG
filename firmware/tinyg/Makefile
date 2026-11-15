@@ -31,8 +31,8 @@ endif
 
 # Separate timing images: 1 exec ISR, 2 DDA ISR, 3 snapshot, 4 publish, 5 consume.
 ifdef MOTION_PROFILE
-ifeq (,$(filter $(MOTION_PROFILE),1 2 3 4 5 6 7))
-$(error MOTION_PROFILE must be 1 through 7)
+ifeq (,$(filter $(MOTION_PROFILE),1 2 3 4 5 6 7 8))
+$(error MOTION_PROFILE must be 1 through 8)
 endif
 ifdef TEST_HOOKS
 $(error MOTION_PROFILE and TEST_HOOKS must be separate images)

@@ -813,6 +813,9 @@ void mp_override_queued(void)
     if (!paired && !_override_queue_plan(bp, bp->entry_velocity, bp->exit_velocity,
                                          factor, &queue_transition)) return;
 #ifdef __AVR
+#if TINYG_MOTION_PROFILE == 8
+    motion_profile_begin();
+#endif
     uint8_t saved_sreg = SREG;
     cli();
 #endif
@@ -831,6 +834,9 @@ void mp_override_queued(void)
     }
 #ifdef __AVR
     SREG = saved_sreg;
+#if TINYG_MOTION_PROFILE == 8
+    motion_profile_end(paired);
+#endif
 #endif
 }
 
