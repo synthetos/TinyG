@@ -1,7 +1,8 @@
 """Measure the queue publication bracket with MOTION_PROFILE=8 and its ELF.
 
-Timer setup and accounting are outside the interrupt mask. The bracket includes
-SREG save/CLI/restore and any interrupt at its edges: conservative wall time.
+Timer setup and accounting are outside the interrupt mask. Counter clear and
+stop are inside it, excluding pending DDA interrupts at guard exit. Add 1 us
+(32 CPU cycles) for the unmeasured edge instructions and timer quantization.
 Site 5 remains the separate running BODY claim measurement.
 """
 import time
@@ -30,9 +31,10 @@ def test_queue_publication(tg, ice, keep, record):
         tg.wait_idle(timeout=90)
         values = ice.peek_many(['motion_profile.'+name for name in FIELDS])
         row = {name: int(values['motion_profile.'+name]) for name in FIELDS}
-        row.update(tick_us=.25, maximum_us=.25*row['maximum_ticks'],
-                   includes='SREG save/CLI/restore and interrupt preemption at timer edges',
-                   excludes='timer setup/accounting; observed sample is not an all-input bound')
+        row.update(tick_us=.25, measured_us=.25*row['maximum_ticks'],
+                   edge_allowance_us=1., maximum_us=.25*row['maximum_ticks']+1.,
+                   includes='guard body plus conservative 32-cycle edge/quantization allowance',
+                   excludes='timer setup/accounting and unmasked ISR preemption; observed workload only')
         record('queue_publication_timer', row)
         assert row['site'] == 8 and row['calls'] > 0, row
         assert not row['overflows'] and row['maximum_ticks'] < 65535, row

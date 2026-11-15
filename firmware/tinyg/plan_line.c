@@ -818,6 +818,11 @@ void mp_override_queued(void)
 #endif
     uint8_t saved_sreg = SREG;
     cli();
+#if TINYG_MOTION_PROFILE == 8
+    // Timer setup/accounting stay outside the guard. Clear after CLI and stop
+    // before restoring SREG so a pending DDA interrupt cannot inflate the sample.
+    TCC1.CNT = 0;
+#endif
 #endif
     if (_override_queue_eligible(bp) && (!paired || _override_queue_eligible(next)) &&
         !_override_stopped() && ov_queue_current(&token)) {
@@ -833,6 +838,9 @@ void mp_override_queued(void)
         }
     }
 #ifdef __AVR
+#if TINYG_MOTION_PROFILE == 8
+    TCC1.CTRLA = TC_CLKSEL_OFF_gc;
+#endif
     SREG = saved_sreg;
 #if TINYG_MOTION_PROFILE == 8
     motion_profile_end(paired);
