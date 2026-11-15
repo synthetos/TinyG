@@ -178,6 +178,13 @@ class FeedJob(unittest.TestCase):
         self.assertAlmostEqual(max(first), 600, delta=.1)
         self.assertAlmostEqual(max(second), 300, delta=.1)
 
+    def test_independent_feed_and_spindle_permissions_at_admission(self):
+        program = ('G21 G90 G94\nM50 P0\nG1 X20 F600\nM51 P1\nG1 X40\n'
+                   'M50 P1\nG1 X60\nM51 P0\nG1 X80\n')
+        result = replay.run(self.exe, program, initial_factor=500)
+        self.check_endpoints(result)
+        self.assertEqual([int(b[5]) for b in result['blocks']], [1000, 1000, 500, 500])
+
 
 if __name__ == '__main__':
     unittest.main()

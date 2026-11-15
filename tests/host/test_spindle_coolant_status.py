@@ -29,6 +29,7 @@ PRELUDE = r'''
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 #define __AVR
 typedef uint8_t stat_t;
 #define STAT_OK 0
@@ -52,10 +53,19 @@ static void pwm_set_duty(int ch, float d) { (void)ch; (void)d; }
 static bool cm_outputs_inhibited(void) { return cm.alarm; }
 static void cm_set_spindle_mode(int m, uint8_t mode) { (void)m; cm.gm.spindle_mode = mode; }
 static void cm_set_spindle_speed_parameter(int m, float s) { (void)m; cm.gm.spindle_speed = s; }
-static float cm_get_spindle_pwm(uint8_t mode) {                      /* the real one clamps while running */
-    if (mode != SPINDLE_OFF) { if (cm.gm.spindle_speed > 24000) cm.gm.spindle_speed = 24000; }
-    return 0.5f;
+static uint8_t pwm_mode;
+struct { struct { float cw_speed_lo,cw_speed_hi,cw_phase_lo,cw_phase_hi;
+ float ccw_speed_lo,ccw_speed_hi,ccw_phase_lo,ccw_phase_hi,phase_off; } c[1]; } pwm = { .c={{0,24000,0,1,0,24000,0,1,0}} };
+typedef struct { float duty; } pwmDuty_t;
+static float driven_duty;
+static void (*prepare_interrupt)(void);
+static stat_t pwm_prepare_duty(uint8_t ch,float duty,pwmDuty_t *out){
+ out->duty=duty; if(prepare_interrupt){void (*f)(void)=prepare_interrupt;prepare_interrupt=0;f();} return STAT_OK;
 }
+static void pwm_apply_duty(uint8_t ch,const pwmDuty_t *d){driven_duty=d->duty;}
+#define STAT_INPUT_VALUE_RANGE_ERROR 110
+struct { bool check_only; } rt;
+static stat_t cm_is_alarmed(void){return cm.alarm ? 204 : STAT_OK;}
 static int inject;
 static void loader_s_update(void);
 '''
@@ -72,7 +82,11 @@ def fn(path, name, ret=r"(?:static )?(?:void|stat_t)"):
 def code(split_read=False):
     sp, cmc = src("spindle.c"), src("canonical_machine.c")
     c = PRELUDE
+    c += sp[sp.index("#define SSO_OPERATOR"):sp.index("static void _exec_spindle_control")] + "\n"
     c += sp[sp.index("static struct {"):sp.index("} spindle_out;") + len("} spindle_out;")] + "\n"
+    c += fn("spindle.c", "_spindle_duty", ret="static float") + "\n"
+    c += "static void _record_speed(float speed);\n"
+    c += fn("spindle.c", "_spindle_update").replace("float applied; bool capped;", "pwm_mode=mode; float applied; bool capped;") + "\n"
     for name in ("_record_speed", "_get_state", "_exec_spindle_control", "_exec_spindle_speed", "spindle_reset"):
         c += fn("spindle.c", name) + "\n"
     for line in re.findall(r"^stat_t spindle_get_sp[edc]\(nvObj_t \*nv\) \{[^\n]*\}$", sp, re.M):

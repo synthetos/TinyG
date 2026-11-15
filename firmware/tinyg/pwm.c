@@ -25,6 +25,9 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef __AVR
+#pragma GCC optimize ("Os")
+#endif
 #include "tinyg.h"		// #1
 #include "config.h"		// #2
 #include "hardware.h"
@@ -199,44 +202,58 @@ stat_t pwm_set_freq(uint8_t chan, float freq)
  *	The frequency must have been set previously
  */
 
+stat_t pwm_prepare_duty(uint8_t chan, float duty, pwmDuty_t *out)
+{
+    if (chan >= PWMS) return STAT_NO_SUCH_DEVICE;
+    if (!(duty >= 0.0)) return STAT_INPUT_LESS_THAN_MIN_VALUE;
+    if (duty > 1.0) return STAT_INPUT_EXCEEDS_MAX_VALUE;
+    out->level = duty == 0 ? 0 : duty == 1 ? 1 : 2;
+#ifdef __AVR
+    uint32_t compare = out->level == 0 ? 0 : out->level == 1 ? pwm.p[chan].timer->PER :
+        (uint32_t)((float)pwm.p[chan].timer->PER * duty) + 1;
+    out->compare = compare > UINT16_MAX ? UINT16_MAX : (uint16_t)compare;
+#else
+    out->duty = duty;
+#endif
+    return STAT_OK;
+}
+/* Caller masks interrupts; no float arithmetic in this register publication. */
+void pwm_apply_duty(uint8_t chan, const pwmDuty_t *d)
+{
+#ifdef __AVR
+    PWM_TIMER_t *timer = pwm.p[chan].timer;
+    if (d->level < 2) {
+        if (chan == PWM_1) {
+            if (d->level == 0) gpio_set_bit_off(SPINDLE_PWM);
+            else gpio_set_bit_on(SPINDLE_PWM);
+        }
+        timer->CTRLB &= ~TC0_CCBEN_bm;
+        timer->CCB = d->compare;
+    } else {
+        timer->CCB = d->compare;
+        timer->CTRLB |= ((chan == PWM_1) ? PWM1_CTRLB : PWM2_CTRLB) & TC0_CCBEN_bm;
+    }
+#endif
+#ifdef __ARM
+    if (chan == PWM_1) spindle_pwm_pin = d->duty;
+    else if (chan == PWM_2) secondary_pwm_pin = d->duty;
+#endif
+}
 stat_t pwm_set_duty(uint8_t chan, float duty)
 {
-	if (chan >= PWMS) { return (STAT_NO_SUCH_DEVICE);}
-	if (!(duty >= 0.0)) { return (STAT_INPUT_LESS_THAN_MIN_VALUE);}	// also refuses NaN (E149)
-	if (duty > 1.0) { return (STAT_INPUT_EXCEEDS_MAX_VALUE);}
-
-	#ifdef __AVR
-	uint8_t saved_sreg = SREG;
-	cli();
-	PWM_TIMER_t *timer = pwm.p[chan].timer;
-	if (duty == 0.0 || duty == 1.0) {
-		// Endpoints bypass the timer: no one-count pulse or 65536 wrap.
-		// PWM2 has no routed output; preserve that hardware configuration.
-		if (chan == PWM_1) {
-			if (duty == 0.0) gpio_set_bit_off(SPINDLE_PWM);
-			else gpio_set_bit_on(SPINDLE_PWM);
-		}
-		timer->CTRLB &= ~TC0_CCBEN_bm;
-		timer->CCB = (duty == 0.0) ? 0 : timer->PER;
-	} else {
-		uint32_t compare = (uint32_t)((float)timer->PER * duty) + 1;
-		timer->CCB = (compare > UINT16_MAX) ? UINT16_MAX : (uint16_t)compare;
-		timer->CTRLB |= ((chan == PWM_1) ? PWM1_CTRLB : PWM2_CTRLB) & TC0_CCBEN_bm;
-	}
-	SREG = saved_sreg;
-	#endif // __AVR
-
-	#ifdef __ARM
-	if (chan == PWM_1) {
-		spindle_pwm_pin = duty;
-	} else if (chan == PWM_2) {
-		secondary_pwm_pin = duty;
-	}
-	#endif // __ARM
-
-	return (STAT_OK);
+    pwmDuty_t d;
+    stat_t status = pwm_prepare_duty(chan, duty, &d);
+    if (status != STAT_OK) return status;
+#ifdef __AVR
+    uint8_t saved_sreg = SREG;
+    cli();
+#endif
+    pwm_apply_duty(chan, &d);
+#ifdef __AVR
+    SREG = saved_sreg;
+#endif
+    return STAT_OK;
 }
-
 
 /***********************************************************************************
  * CONFIGURATION AND INTERFACE FUNCTIONS

@@ -55,6 +55,8 @@ class OverrideNames(unittest.TestCase):
 const cfgItem_t cfgArray[17]={{0}};
 static volatile uint8_t ov_operator_enables=3;
 static uint8_t SREG=128;static void cli(void){SREG=0;}
+void spindle_override_master(bool v){}
+void spindle_override_reset(void){}
 void sr_run_text_status_report(void){}
 void help_general(nvObj_t*n){}
 void nv_print_list(stat_t s,uint8_t a,uint8_t b){}

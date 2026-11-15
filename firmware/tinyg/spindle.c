@@ -25,6 +25,9 @@
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef __AVR
+#pragma GCC optimize ("Os")
+#endif
 #include "tinyg.h"		// #1
 #include "config.h"		// #2
 #include "spindle.h"
@@ -35,6 +38,8 @@
 #include "pwm.h"
 #include "util.h"
 #include "settings.h"
+#include "runtime.h"
+#include "text_parser.h"
 #include "stepper.h"
 #ifdef __AVR
 #include <avr/interrupt.h>
@@ -42,6 +47,18 @@
 
 spindleConfig_t spindle_cfg;
 static bool spindle_configured;
+
+/* Live request and permission bits are RAM-only; queued S is kept separately. */
+#define SSO_OPERATOR 1
+#define SSO_MASTER 2
+#define SSO_PROGRAM 4
+static volatile uint16_t spindle_factor = 1000;
+static volatile uint16_t spindle_applied = 1000;
+static volatile uint8_t spindle_enables = 7;
+static volatile bool spindle_dirty, spindle_snapshot_valid;
+static volatile bool spindle_capped;
+static volatile float spindle_commanded;
+static void _spindle_update(uint8_t mode);
 
 static void _exec_spindle_control(float *value, bool *flags);
 static void _exec_spindle_speed(float *value, bool *flags);
@@ -84,6 +101,7 @@ stat_t spindle_set_polarity(nvObj_t *nv)
 
 void spindle_control_immediate(uint8_t mode, float speed)
 {
+    spindle_commanded = speed;
     cm_set_spindle_speed_parameter(MODEL, speed);
     float value[] = { (float)mode };
     _exec_spindle_control(value, FLAGS_NONE);
@@ -161,6 +179,116 @@ void spindle_reset()
     _exec_spindle_control(value, FLAGS_NONE);   // immediate, not queued: used by alarm, shutdown and panic
 }
 
+/* Pure speed-to-duty calculation: the programmed S is never overwritten by a clamp. */
+static float _spindle_duty(uint8_t mode, float requested, uint16_t factor,
+                           float *applied, bool *capped)
+{
+    *applied = 0; *capped = false;
+    if (mode != SPINDLE_CW && mode != SPINDLE_CCW) return pwm.c[PWM_1].phase_off;
+    bool cw = mode == SPINDLE_CW;
+    float lo = cw ? pwm.c[PWM_1].cw_speed_lo : pwm.c[PWM_1].ccw_speed_lo;
+    float hi = cw ? pwm.c[PWM_1].cw_speed_hi : pwm.c[PWM_1].ccw_speed_hi;
+    float pl = cw ? pwm.c[PWM_1].cw_phase_lo : pwm.c[PWM_1].ccw_phase_lo;
+    float ph = cw ? pwm.c[PWM_1].cw_phase_hi : pwm.c[PWM_1].ccw_phase_hi;
+    float speed = requested * (factor / 1000.0f);
+    if (speed < lo) {speed = lo; *capped = true;}
+    if (speed > hi) {speed = hi; *capped = true;}
+    *applied = speed;
+    return (hi == lo ? 1.0f : (speed-lo)/(hi-lo)) * (ph-pl) + pl;
+}
+static void _spindle_update(uint8_t mode)
+{
+    float applied; bool capped;
+    uint16_t factor = spindle_enables == 7 ? spindle_factor : 1000;
+    float duty = _spindle_duty(mode, spindle_commanded, factor, &applied, &capped);
+    pwm_set_duty(PWM_1, duty);
+    spindle_capped = capped;
+    spindle_applied = mode == SPINDLE_OFF ? 1000 : factor;
+    _record_speed(applied);
+}
+/* A queued S/M3/M4/M5, permission or reset invalidates a copy while the main loop
+ * computes it. Only a validated register publication is interrupt-masked. */
+stat_t spindle_override_callback(void)
+{
+    if (!spindle_dirty) return STAT_OK;
+    spindle_snapshot_valid = true;
+    __asm__ __volatile__("" ::: "memory");
+    uint8_t mode = spindle_out.mode;
+    float requested = spindle_commanded;
+    uint16_t factor = spindle_enables == 7 ? spindle_factor : 1000;
+    float applied; bool capped;
+    float duty = _spindle_duty(mode, requested, factor, &applied, &capped);
+    pwmDuty_t prepared;
+    if (pwm_prepare_duty(PWM_1, duty, &prepared) != STAT_OK) return STAT_OK;
+    uint8_t saved_sreg = SREG; cli();
+    if (spindle_snapshot_valid && !cm_outputs_inhibited()) {
+        pwm_apply_duty(PWM_1, &prepared);
+        spindle_applied = mode == SPINDLE_OFF ? 1000 : factor;
+        spindle_out.speed = applied;
+        spindle_capped = capped;
+        spindle_dirty = false;
+    }
+    SREG = saved_sreg;
+    return STAT_OK;
+}
+void spindle_override_reset(void)
+{
+    spindle_snapshot_valid = false;
+    spindle_factor = 1000; spindle_enables = 7; spindle_dirty = true;
+}
+void spindle_override_master(bool enabled)
+{
+    spindle_snapshot_valid = false;
+    if (enabled) spindle_enables |= SSO_MASTER; else spindle_enables &= ~SSO_MASTER;
+    spindle_dirty = true;
+}
+void spindle_override_program(bool enabled)
+{
+    spindle_snapshot_valid = false;
+    if (enabled) spindle_enables |= SSO_PROGRAM; else spindle_enables &= ~SSO_PROGRAM;
+    _spindle_update(spindle_out.mode);
+}
+static stat_t _get_factor(nvObj_t *nv, volatile uint16_t *p) __attribute__((noinline));
+static stat_t _get_factor(nvObj_t *nv, volatile uint16_t *p)
+{
+    uint8_t saved_sreg=SREG; cli(); uint16_t q=*p; SREG=saved_sreg;
+    nv->value_flt=q/1000.0f;nv->precision=3;nv->valuetype=TYPE_FLOAT;return STAT_OK;
+}
+stat_t spindle_get_sso(nvObj_t *nv){return _get_factor(nv,&spindle_factor);}
+stat_t spindle_get_ssc(nvObj_t *nv){return _get_factor(nv,&spindle_applied);}
+stat_t spindle_set_sso(nvObj_t *nv)
+{
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_FLOAT && nv->valuetype!=TYPE_INTEGER)return STAT_INPUT_VALUE_RANGE_ERROR;
+    float f=nv->valuetype==TYPE_FLOAT?nv->value_flt:(float)nv->value_int;
+    nv->precision=3;
+    if(!isfinite(f) || f<0x1.999998p-5f || f>2.0f)return STAT_INPUT_VALUE_RANGE_ERROR;
+    uint16_t q=(uint16_t)(f*1000.0f+0.5f);
+    __asm__ __volatile__("" : "+r"(q) : : "memory");
+    if(!rt.check_only) {
+        uint8_t saved_sreg=SREG;cli();
+        spindle_factor=q;spindle_snapshot_valid=false;spindle_dirty=true;
+        SREG=saved_sreg;
+        spindle_get_sso(nv);
+    }
+    return STAT_OK;
+}
+stat_t spindle_get_ssoe(nvObj_t *nv){return _get_state(nv,!!(spindle_enables&SSO_OPERATOR));}
+stat_t spindle_get_sse(nvObj_t *nv){return _get_state(nv,spindle_enables==7);}
+stat_t spindle_get_scp(nvObj_t *nv){return _get_state(nv,spindle_capped);}
+stat_t spindle_set_ssoe(nvObj_t *nv)
+{
+    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
+    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
+    if(!rt.check_only) {
+        uint8_t saved_sreg=SREG;cli();
+        if(nv->value_int)spindle_enables|=SSO_OPERATOR;else spindle_enables&=~SSO_OPERATOR;
+        spindle_snapshot_valid=false;spindle_dirty=true;
+        SREG=saved_sreg;
+    }
+    return STAT_OK;
+}
+
 /*
  * cm_get_spindle_pwm() - return PWM phase (duty cycle) for dir and speed
  */
@@ -205,9 +333,9 @@ stat_t cm_spindle_control(uint8_t spindle_mode)
 	return(STAT_OK);
 }
 
-//static void _exec_spindle_control(uint8_t spindle_mode, float f, float *vector, float *flag)
 static void _exec_spindle_control(float *value, bool *flags)
 {
+	spindle_snapshot_valid = false;
 	uint8_t spindle_mode = cm_outputs_inhibited() ? SPINDLE_OFF : (uint8_t)value[0];  // a queued M3/M4 may run after an alarm
 	cm_set_spindle_mode(MODEL, spindle_mode);
 
@@ -234,12 +362,12 @@ static void _exec_spindle_control(float *value, bool *flags)
 #endif // __ARM
 
 	// PWM spindle control
-	pwm_set_duty(PWM_1, cm_get_spindle_pwm(spindle_mode) );
+	_spindle_update(spindle_mode);
 	spindle_out.mode = spindle_mode;			// the outputs as now driven (readouts)
 	if (spindle_mode != SPINDLE_OFF) {
 		spindle_out.ccw = (spindle_mode == SPINDLE_CCW);
 	}
-	_record_speed((spindle_mode != SPINDLE_OFF) ? cm.gm.spindle_speed : 0);
+
 }
 
 /*
@@ -264,10 +392,22 @@ void cm_exec_spindle_speed(float speed)
 
 static void _exec_spindle_speed(float *value, bool *flags)
 {
+	spindle_snapshot_valid = false;
+    spindle_commanded = value[0];
 	cm_set_spindle_speed_parameter(MODEL, value[0]);
 	// M30 may already have reset the model while this earlier S was queued.
 	// The output mode belongs to the command's place in the runtime queue.
 	uint8_t mode = spindle_out.mode;
-	pwm_set_duty(PWM_1, cm_get_spindle_pwm(mode));
-	_record_speed(((mode == SPINDLE_CW) || (mode == SPINDLE_CCW)) ? cm.gm.spindle_speed : 0);
+	_spindle_update(mode);
 }
+
+#ifdef __TEXT_MODE
+static const char fmt_sso[] PROGMEM = "[sso] requested spindle factor %.3f\n";
+static const char fmt_ssoe[] PROGMEM = "[ssoe] operator spindle enable %lu\n";
+static const char fmt_sse[] PROGMEM = "[sse] effective spindle enable %lu\n";
+static const char fmt_scp[] PROGMEM = "[scp] spindle clamped %lu\n";
+void spindle_print_sso(nvObj_t *nv){text_print_flt(nv,fmt_sso);}
+void spindle_print_ssoe(nvObj_t *nv){text_print_int(nv,fmt_ssoe);}
+void spindle_print_sse(nvObj_t *nv){text_print_int(nv,fmt_sse);}
+void spindle_print_scp(nvObj_t *nv){text_print_int(nv,fmt_scp);}
+#endif

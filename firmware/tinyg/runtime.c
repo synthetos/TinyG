@@ -1,6 +1,9 @@
 /*
  * runtime.c - runtime session family "rt": idle heartbeat and quiescence token (see runtime.h)
  */
+#ifdef __AVR
+#pragma GCC optimize ("Os")
+#endif
 #include "tinyg.h"
 #include "config.h"
 #include "controller.h"
@@ -11,6 +14,7 @@
 #include "runtime.h"
 #include "text_parser.h"
 #include "override.h"
+#include "spindle.h"
 #include "report.h"
 #include "util.h"
 #include "xio.h"
@@ -31,6 +35,7 @@ void rt_init(void)
 	memset(&rt, 0, sizeof(rt));
     ov_operator_enables=3;
     ov_init();
+    spindle_override_reset();
 }
 
 void rt_qt_invalidate(void)
@@ -840,9 +845,9 @@ static stat_t _ov_float(nvObj_t *nv,uint16_t q)
     nv->value_flt=q/1000.0f;nv->valuetype=TYPE_FLOAT;nv->precision=3;return STAT_OK;
 }
 stat_t ov_get_mfo(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.feed);}
-stat_t ov_get_sso(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.spindle);}
+stat_t ov_get_sso(nvObj_t *nv){return spindle_get_sso(nv);}
 stat_t ov_get_mfc(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.committed_feed);}
-stat_t ov_get_ssc(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);return _ov_float(nv,s.committed_spindle);}
+stat_t ov_get_ssc(nvObj_t *nv){return spindle_get_ssc(nv);}
 stat_t ov_get_state(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.state;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
 {
@@ -856,14 +861,7 @@ static stat_t _ov_factor(nvObj_t *nv,uint8_t which)
 }
 stat_t ov_set_mfo(nvObj_t *nv){return _ov_factor(nv,OV_FEED);}
 stat_t rt_set_mfo(nvObj_t *nv){return rt.allowed ? ov_set_mfo(nv) : STAT_UNRECOGNIZED_NAME;}
-stat_t rt_set_sso(nvObj_t *nv){return rt.allowed ? _ov_factor(nv,OV_SPINDLE) : STAT_UNRECOGNIZED_NAME;}
-static stat_t _ov_enable(nvObj_t *nv,uint8_t which)
-{
-    if(!rt.allowed)return STAT_UNRECOGNIZED_NAME;
-    stat_t status=cm_is_alarmed();if(status!=STAT_OK)return status;
-    if(nv->valuetype!=TYPE_INTEGER || nv->value_int>1)return STAT_INPUT_VALUE_RANGE_ERROR;
-    return _ov_result(ov_set_enable(which,nv->value_int,!rt.check_only,true));
-}
+stat_t rt_set_sso(nvObj_t *nv){return rt.allowed ? spindle_set_sso(nv) : STAT_UNRECOGNIZED_NAME;}
 /* Serialize interface state with the reset wrapper and the engine update. */
 static stat_t _ov_operator(nvObj_t *nv,uint8_t bit)
 {
@@ -875,7 +873,7 @@ static stat_t _ov_operator(nvObj_t *nv,uint8_t bit)
 #endif
     uint8_t next=nv->value_int ? ov_operator_enables|bit : ov_operator_enables&~bit;
     status=_ov_result(ov_set_enable(OV_FEED,next==3,true,true));
-    if(status==STAT_OK)ov_operator_enables=next;
+    if(status==STAT_OK){ov_operator_enables=next;spindle_override_master(!!(next&2));}
 #ifdef __AVR
     SREG=saved_sreg;
 #endif
@@ -892,14 +890,15 @@ void rt_override_reset_job(void)
 #endif
     ov_operator_enables=3;
     ov_reset_job();
+    spindle_override_reset();
 #ifdef __AVR
     SREG=saved_sreg;
 #endif
 }
 stat_t rt_set_mfe(nvObj_t *nv){return rt.allowed ? ov_set_mfoe(nv) : STAT_UNRECOGNIZED_NAME;}
-stat_t rt_set_sse(nvObj_t *nv){return _ov_enable(nv,OV_SPINDLE);}
+stat_t rt_set_sse(nvObj_t *nv){return rt.allowed ? spindle_set_ssoe(nv) : STAT_UNRECOGNIZED_NAME;}
 stat_t rt_get_mfe(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=((s.enables&OV_FEED) && s.program_feed);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
-stat_t rt_get_sse(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=!!(s.enables&OV_SPINDLE);nv->valuetype=TYPE_INTEGER;return STAT_OK;}
+stat_t rt_get_sse(nvObj_t *nv){return spindle_get_sse(nv);}
 stat_t rt_get_ovb(nvObj_t *nv){ovSnapshot_t s;ov_snapshot(&s);nv->value_int=s.armed;nv->valuetype=TYPE_INTEGER;return STAT_OK;}
 stat_t rt_set_ovb(nvObj_t *nv)
 {

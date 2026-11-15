@@ -1846,7 +1846,8 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
 /* Executed in queue order, never at parse time ahead of earlier motion. */
 static void _exec_feed_permission(float *value, bool *flags)
 {
-    ov_set_program_feed(value[0] != 0);
+    if (value[1] != 2) ov_set_program_feed(value[0] != 0);
+    if (value[1] != 1) spindle_override_program(value[0] != 0);
 }
 stat_t cm_override_enables(uint8_t flag)
 {
@@ -1858,7 +1859,10 @@ stat_t cm_override_enables(uint8_t flag)
 }
 stat_t cm_feed_rate_override_enable(uint8_t flag)
 {
-    return cm_override_enables(!cm.gf.parameter || cm.gn.parameter != 0);
+    float value[AXES] = { !cm.gf.parameter || cm.gn.parameter != 0, 1 };
+    mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    ov_queue_program_feed(value[0] != 0);
+    return STAT_OK;
 }
 
 stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
@@ -1885,14 +1889,11 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 	return (STAT_OK);
 }
 
-stat_t cm_spindle_override_enable(uint8_t flag)		// M51.1
+stat_t cm_spindle_override_enable(uint8_t flag)
 {
-	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
-		cm.gmx.spindle_override_enable = false;
-	} else {
-		cm.gmx.spindle_override_enable = true;
-	}
-	return (STAT_OK);
+    float value[AXES] = { !cm.gf.parameter || cm.gn.parameter != 0, 2 };
+    mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
+    return STAT_OK;
 }
 
 stat_t cm_spindle_override_factor(uint8_t flag)		// M50.1

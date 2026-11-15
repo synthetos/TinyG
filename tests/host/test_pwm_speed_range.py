@@ -44,6 +44,7 @@ struct { struct { float spindle_speed; } gm; } cm;
 #define SPINDLE_PWM 2
 static unsigned char SREG=0x80;
 static void cli(void){SREG=0;}
+typedef struct { uint8_t level; uint16_t compare; } pwmDuty_t;
 static int pin;
 static void gpio_set_bit_off(int bit){assert(bit==SPINDLE_PWM);pin=0;}
 static void gpio_set_bit_on(int bit){assert(bit==SPINDLE_PWM);pin=1;}
@@ -83,6 +84,12 @@ int main(void) {
 '''
 
 
+def duty_code(fw):
+    source = (fw / "pwm.c").read_text()
+    return "\n".join(function(source, r"(?:stat_t|void) " + name + r"\([^;{}]*\)(?=\s*\{)")
+                     for name in ("pwm_prepare_duty", "pwm_apply_duty", "pwm_set_duty"))
+
+
 class PwmSpeedRange(unittest.TestCase):
     def test_zero_width_range_is_finite(self):
         cc = shutil.which("cc")
@@ -91,7 +98,7 @@ class PwmSpeedRange(unittest.TestCase):
         fw = ROOT / "firmware/tinyg"
         code = PRELUDE
         code += function((fw / "spindle.c").read_text(), r"float cm_get_spindle_pwm\([^;{}]*\)(?=\s*\{)") + "\n"
-        code += function((fw / "pwm.c").read_text(), r"stat_t pwm_set_duty\([^;{}]*\)(?=\s*\{)") + "\n"
+        code += duty_code(fw) + "\n"
         code += EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-e149-") as tmp:
             c, exe = Path(tmp) / "pwm.c", Path(tmp) / "pwm"

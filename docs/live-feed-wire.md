@@ -75,7 +75,7 @@ byte opt-in. The event opt-in survives job end/kill, so the host can see the res
 Feedhold and flush invalidate pending plans but retain the operator request;
 a change during hold is accepted and considered after resume. Neither resumes motion.
 
-M48 enables program permission, M49 disables it, and M50 defaults to P1 (enable);
+M48 enables feed and spindle program permission, M49 disables both, and M50 defaults to P1 (enable feed);
 M50 P0 disables it. Other P values fail before executing any part of the line.
 These commands execute in queue order. Program permission is independent of
 `m48e` and `mfoe`: effective `mfe` is true only when both operator
@@ -85,13 +85,46 @@ the requested factor. M2/M30 restore both operator switches and program permissi
 following the
 [LinuxCNC program-end rule](https://www.linuxcnc.org/docs/html/gcode/m-code.html).
 
-Spindle and rapid override are outside this feature. Spindle factor/enable writes
-are refused; their factors stay unity. Opted-in spindle/rapid bytes are consumed
-as unsupported, never interpreted as feed changes. No output is changed by a
-feed override command.
+Live spindle override (450.06)
+------------------------------
 
-The flat names and non-persistent setting mechanism follow g2core. TinyG defaults
-the operator switches on and keeps ordered program permission separate. Rapid
-and spindle override are not implemented: no `mto`/`ssoe` controls are added;
-existing spindle factor readouts remain unity and writes are refused. This is
-name/interface compatibility, not a claim of the full g2core override feature set.
+`{"sso":0.5}` or `$sso=0.5` requests 50% of the programmed spindle S.
+`sso` accepts 0.05 through 2.0 and defaults to 1.0; `ssoe` is the operator
+spindle-enable switch and defaults to 1. Both are RAM-only, accepted during
+motion and hold, never saved in EEPROM or changed by restoring defaults.
+Read-only `sse` is effective permission: `ssoe` AND `m48e` AND spindle program
+permission. `scp` reports whether the active speed was clamped; it is false
+while off. `sps` is the applied, clamped RPM request, not a tachometer reading.
+`ssc` reports the multiplier applied to the running spindle (unity while off
+or disabled); a clamp can limit the actual RPM even when `ssc` is 2.0.
+These fields are available as ordinary GETs and selectable status fields.
+
+M51 or M51 P1 enables spindle program permission; M51 P0 disables it. Other P
+values return 161. M50 changes feed permission only; M51 changes spindle
+permission only. All M-code permissions execute in queue order. Operator writes
+cannot bypass a disabled program permission. Changing permission retains `sso`.
+
+While M3/M4 is active, live changes update PWM in the main-loop callback after
+acceptance, without waiting for a motion boundary. Computation uses the S that
+has executed, never a future queued S. CW and CCW use their respective configured
+speed and PWM ranges. The original S is retained when the result is clamped.
+The reply accepts the request; `ssc`/`sps` describe the applied output.
+
+A factor or permission write cannot start a stopped spindle. M5, alarm,
+shutdown and kill keep their off behavior. Feedhold changes motion only, so
+spindle speed can be changed while held; neither a factor change nor a flush
+resumes motion. Hold then flush retains the spindle output. Board reset and
+job kill restore `sso=1`, `ssoe=1` and spindle program permission. M2/M30 perform
+those resets and stop the spindle when their queued command executes.
+Alarm-state reads work; writes are refused with the existing alarm status.
+
+`rt.sso` remains an alias for `sso`; the legacy writable `rt.sse` aliases the
+operator switch `ssoe` (its GET reports effective permission). Flat `sse` is
+read-only. Each newline takes one normal line slot and returns one footer.
+The version-1 `ov` event remains feed-only; use GET or status reports for spindle
+fields. No new asynchronous frame or spindle-byte controls are added.
+
+The flat names and non-persistent settings follow g2core; TinyG defaults operator
+switches on and retains separate ordered program permission. Rapid override
+remains unsupported. Opted-in spindle/rapid bytes remain consumed as unsupported,
+never interpreted as feed changes; live spindle control uses the settings above.

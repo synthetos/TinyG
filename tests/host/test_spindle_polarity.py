@@ -61,6 +61,7 @@ struct { int machine_state,queue_flush_state; bool job_kill_requested,limit_requ
 struct { int buffer_state; } st_pre;
 uint8_t SREG;
 static bool queued, running, spindle_configured;
+static bool spindle_snapshot_valid;
 static unsigned pins, writes, pwm_writes;
 static void _exec_spindle_control(float *, bool *);
 void spindle_reset(void);
@@ -74,6 +75,7 @@ void cm_set_spindle_mode(int model, int mode) { cm.gm.spindle_mode=mode; }
 float cm_get_spindle_pwm(int mode) { return mode==SPINDLE_OFF ? 0 : .5f; }
 void pwm_set_duty(int channel, float phase) { pwm_writes++; }
 '''
+        code += 'static void _spindle_update(uint8_t mode){pwm_set_duty(0,cm_get_spindle_pwm(mode));}\n'
         code += '\n'.join(definitions)
         code += r'''
 int main(void) {
@@ -168,7 +170,8 @@ int main(void) {
         self.assertEqual(new[end+30:end+41], [("rt", "rtmfo"), ("rt", "rtsso"), ("rt", "rtmfe"), ("rt", "rtsse"), ("rt", "rtovb"), ("rt", "rtovs"), ("", "mfo"), ("", "sso"), ("", "mfc"), ("", "ssc"), ("", "ovs")])
         self.assertEqual(new[end+41:end+46], [("rt", "rtmfc"), ("rt", "rtov"), ("rt", "rtmcp"), ("", "mcp"), ("", "mfe")])
         self.assertEqual(new[end+46:end+48], [("", "mfoe"), ("", "m48e")])
-        self.assertEqual(new[end+48:], groups)
+        self.assertEqual(new[end+48:end+51], [("", "ssoe"), ("", "sse"), ("", "scp")])
+        self.assertEqual(new[end+51:], groups)
 
 
 

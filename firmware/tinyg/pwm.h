@@ -60,6 +60,16 @@ extern pwmSingleton_t pwm;
 void pwm_init(void);
 stat_t pwm_set_frq(nvObj_t *nv);
 stat_t pwm_set_freq(uint8_t channel, float freq);
+typedef struct {
+    uint8_t level;
+#ifdef __AVR
+    uint16_t compare;
+#else
+    float duty;
+#endif
+} pwmDuty_t;
+stat_t pwm_prepare_duty(uint8_t channel, float duty, pwmDuty_t *out);
+void pwm_apply_duty(uint8_t channel, const pwmDuty_t *d);
 stat_t pwm_set_duty(uint8_t channel, float duty);
 
 #ifdef __TEXT_MODE
