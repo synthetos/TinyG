@@ -14,6 +14,7 @@ import time
 import pytest
 
 from tinyg_hil import benches, mso, stopfit
+from tinyg_hil.override_steps import dir_level, signed_steps
 
 pytestmark = [pytest.mark.diagnostic, pytest.mark.motion, pytest.mark.persists, pytest.mark.dialect("d449"),
               pytest.mark.timeout(300)]
@@ -34,6 +35,14 @@ def _rises(edges):
     return [t for t, v in edges if v == 1]
 
 
+def _signed(cap, tg, m):
+    """Net steps of motor m in the positive direction, each pulse counted by its DIR level (override_steps)."""
+    e, init = cap.edges(), cap.initial()
+    fwd = dir_level(True, tg.get(f"{m}po"))
+    net, back, _ = signed_steps(_rises(e[f"M{m} step"]), e.get(f"M{m} dir", []), init.get(f"M{m} dir"), fwd)
+    return net, back
+
+
 def test_pulse_rate_cap(tg, keep, record, request):
     cfg = _cfg(tg)
     spm = _spm(tg)
@@ -44,7 +53,7 @@ def test_pulse_rate_cap(tg, keep, record, request):
     tg.send_gcode("G28.3 Y0", allow="declare Y")
     line = "G91 G1 Y60 F5000"
     tg.guard.check_gcode(line, allow="pulse cap move")
-    with mso.Capture(cfg, digital=["M2 step"], seconds=12, rate=1_000_000,
+    with mso.Capture(cfg, digital=["M2 step", "M2 dir"], seconds=12, rate=1_000_000,
                      save_as=request.config._tinyg_recorder.dir / "pulse-cap") as cap:
         time.sleep(3.5)
         tg.send_line(line)
@@ -55,12 +64,13 @@ def test_pulse_rate_cap(tg, keep, record, request):
     iv = sorted(b - a for a, b in zip(r, r[1:]))
     mid = r[len(r) // 4:3 * len(r) // 4]
     cruise_rate = (len(mid) - 1) / (mid[-1] - mid[0]) if len(mid) > 2 else None
-    summary = {"steps": len(r), "expected_steps": round(60 * spm), "max_rate_hz_p01": round(1 / iv[len(iv) // 100]),
+    net, back = _signed(cap, tg, 2)       # a final reverse correction step counts -1, not +1 (night 2026-11-15)
+    summary = {"steps": len(r), "net_steps": net, "reverse_steps": back, "expected_steps": round(60 * spm), "max_rate_hz_p01": round(1 / iv[len(iv) // 100]),
                "max_rate_hz_abs": round(1 / iv[0]), "cruise_rate_hz": round(cruise_rate) if cruise_rate else None,
                "duration_s": round(r[-1] - r[0], 3), "min_interval_us": round(iv[0] * 1e6, 3)}
     record("pulse_cap", summary)
     print("CAP", summary)
-    assert abs(len(r) - 60 * spm) <= 1, f"step count differs from the commanded 60 mm: {summary}"
+    assert abs(net - 60 * spm) <= 1, f"signed step count differs from the commanded 60 mm: {summary}"
     assert cruise_rate and cruise_rate <= 45000 * 1.01, f"cruise above the 45 kHz pulse cap: {summary}"
 
 
@@ -72,7 +82,7 @@ def test_feedhold_decel_jerk(tg, keep, record, request):
     tg.send_gcode("G28.3 Y0", allow="declare Y")
     line = "G91 G1 Y40 F1200"
     tg.guard.check_gcode(line, allow="feedhold move")
-    with mso.Capture(cfg, digital=["M2 step", "M3 step"], seconds=14, rate=1_000_000,
+    with mso.Capture(cfg, digital=["M2 step", "M3 step", "M2 dir", "M3 dir"], seconds=14, rate=1_000_000,
                      save_as=request.config._tinyg_recorder.dir / "feedhold") as cap:
         time.sleep(3.5)
         tg.send_line(line)
@@ -100,15 +110,17 @@ def test_feedhold_decel_jerk(tg, keep, record, request):
         return 4 * v / (span / 0.684) ** 2 if span > 0 else 0.0
     j_acc, j_dec = _jerk(t_acc1 - t_acc0), _jerk(t_dec1 - t_dec0)
     jm_mm_s3 = jm * 1e6 / 216000.0
-    summary = {"steps_m2": len(m2), "steps_m3": len(m3), "expected_steps": round(40 * spm),
+    (net2, back2), (net3, back3) = _signed(cap, tg, 2), _signed(cap, tg, 3)
+    summary = {"steps_m2": len(m2), "steps_m3": len(m3), "net_m2": net2, "net_m3": net3,
+               "reverse_m2": back2, "reverse_m3": back3, "expected_steps": round(40 * spm),
                "cruise_mm_s": round(v, 3), "accel_s": round(t_acc1 - t_acc0, 4), "decel_s": round(t_dec1 - t_dec0, 4),
                "jerk_accel_mm_s3": round(j_acc, 1), "jerk_hold_mm_s3": round(j_dec, 1), "yjm_mm_s3": round(jm_mm_s3, 1),
                "hold_vs_accel": round(j_dec / j_acc, 3) if j_acc else None,
                "hold_vs_yjm": round(j_dec / jm_mm_s3, 3), "hold_gap_s": round(hold_gap, 3)}
     record("feedhold_jerk", summary)
     print("HOLD", summary)
-    assert len(m2) == len(m3), f"the two Y motors stepped differently: {summary}"
-    assert abs(len(m2) - 40 * spm) <= 1, f"hold and resume lost or added travel: {summary}"
+    assert abs(net2 - net3) <= 1, f"the two Y motors travelled differently: {summary}"
+    assert abs(net2 - 40 * spm) <= 1 and abs(net3 - 40 * spm) <= 1, f"hold and resume lost or added travel: {summary}"
     # A normal hold brakes with the same jerk the planner accelerates with. Against $yjm both run ~1.3x on this
     # bench (E015, parked), so the ratio to $yjm is recorded, not asserted (N103: the old stop-fit misread it as 8x).
     assert summary["hold_vs_accel"] is not None and summary["hold_vs_accel"] <= 1.15, f"the hold braked harder than the planned acceleration: {summary}"
