@@ -55,6 +55,6 @@ RUNTIME_STUBS += OVERRIDE_STUBS
 
 
 def canonical_machine_source(firmware, **read_options):
-    """Read the core and NV adapters for fixtures extracting functions across the split."""
+    """Read the core, NV adapters and coolant for fixtures extracting functions across the split."""
     return "\n".join((firmware / name).read_text(**read_options)
-                     for name in ("canonical_machine.c", "cm_config.c"))
+                     for name in ("canonical_machine.c", "cm_config.c", "coolant.c"))

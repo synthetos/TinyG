@@ -118,7 +118,7 @@ static void _stop_outputs(void);
 void spindle_reset(void) { cm.gm.spindle_mode=output_mode=0; output_speed=0; off_calls++; }
 void spindle_get_runtime(uint8_t *mode,float *speed) {*mode=output_mode;*speed=output_speed;}
 void spindle_control_immediate(uint8_t mode,float speed) { assert(!(SREG&128)); cm.gm.spindle_mode=output_mode=mode; output_speed=speed; spindle_starts++; }
-void _exec_flood_coolant_control(float *v,bool *f) { cm.gm.flood_coolant=coolant_out_flood=v[0]; if(!v[0]) cm.gm.mist_coolant=coolant_out_mist=0; }
+void cm_exec_flood_coolant_control(float *v,bool *f) { cm.gm.flood_coolant=coolant_out_flood=v[0]; if(!v[0]) cm.gm.mist_coolant=coolant_out_mist=0; }
 void _exec_mist_coolant_control(float *v,bool *f) { cm.gm.mist_coolant=coolant_out_mist=v[0]; }
 stat_t cm_is_alarmed(void) { return alarmed; }
 bool cm_outputs_inhibited(void) { return alarmed || cm.queue_flush_state || cm.job_kill_requested || cm.limit_requested || cm.shutdown_requested; }
