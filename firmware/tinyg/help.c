@@ -53,6 +53,7 @@ Have fun\n"));
  */
 uint8_t help_general(nvObj_t *nv)
 {
+    (void)nv;
     if (cs.comm_mode == JSON_MODE) {
         _json_help_message();
     } else {
@@ -84,6 +85,7 @@ return(STAT_OK);
  */
 stat_t help_config(nvObj_t *nv)
 {
+    (void)nv;
     if (cs.comm_mode == JSON_MODE) {
         _json_help_message();
     } else {
@@ -123,6 +125,7 @@ return(STAT_OK);
  */
 stat_t help_test(nvObj_t *nv)
 {
+    (void)nv;
 #ifndef __CANNED_TESTS
     printf_P(PSTR("Canned self-tests are disabled; stream G-code from the host.\n"));
     return STAT_OK;
@@ -165,6 +168,7 @@ return(STAT_OK);
  */
 stat_t help_defa(nvObj_t *nv)
 {
+    (void)nv;
     if (cs.comm_mode == JSON_MODE) {
         nv_add_message_P(PSTR("Send {defa:true} to reset to default settings"));
     } else {
@@ -184,6 +188,7 @@ return(STAT_OK);
  */
 stat_t help_boot(nvObj_t *nv)
 {
+    (void)nv;
     if (cs.comm_mode == JSON_MODE) {
         nv_add_message_P(PSTR("Send {boot:true} to enter boot loader"));
     } else {

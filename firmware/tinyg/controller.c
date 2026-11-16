@@ -36,6 +36,7 @@
 #include "plan_arc.h"
 #include "planner.h"
 #include "stepper.h"
+#include "spindle.h"
 
 #include "encoder.h"
 #include "hardware.h"

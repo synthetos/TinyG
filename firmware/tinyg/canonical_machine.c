@@ -787,12 +787,14 @@ stat_t canonical_machine_test_assertions(void)
  */
 stat_t cm_alrm(nvObj_t *nv)               // invoke alarm from command
 {
+    (void)nv;
     cm_alarm_P(STAT_ALARM, PSTR("sent by host"));
     return (STAT_OK);
 }
 
 stat_t cm_shutd(nvObj_t *nv)              // invoke shutdown from command
 {
+    (void)nv;
     char msg_buf[sizeof("sent by host")]; 
     strcpy_P(msg_buf, PSTR("sent by host"));
     cm_shutdown(STAT_SHUTDOWN, msg_buf);
@@ -801,12 +803,14 @@ stat_t cm_shutd(nvObj_t *nv)              // invoke shutdown from command
 
 stat_t cm_pnic(nvObj_t *nv)               // invoke panic from command
 {
+    (void)nv;
     cm_panic_P(STAT_PANIC, PSTR("sent by host"));
     return (STAT_OK);
 }
 
 stat_t cm_clr(nvObj_t *nv)                // clear alarm or shutdown from command line
 {
+    (void)nv;
     cm_clear();
     return (STAT_OK);
 }
@@ -1158,6 +1162,7 @@ stat_t cm_set_coord_offsets(const float coord_system,
 
 static void _exec_g10_offset(float *value, bool *flags)
 {
+    (void)flags;
     mp_set_runtime_work_offset(value); // use the queued snapshot, not later model edits
 }
 
@@ -1179,6 +1184,7 @@ stat_t cm_set_coord_system(const uint8_t coord_system)
 
 static void _exec_offset(float *value, bool *flags)
 {
+    (void)flags;
 	uint8_t coord_system = ((uint8_t)value[0]);				// coordinate system is passed in value[0] element
 	float offsets[AXES];
 	for (uint8_t axis = AXIS_X; axis < AXES; axis++) {
@@ -1673,6 +1679,7 @@ stat_t cm_select_tool(const uint8_t tool_select)
 
 stat_t cm_change_tool(const uint8_t tool_change)
 {
+    (void)tool_change;
 	float value[AXES] = { (float)cm.gm.tool_select };
 	mp_queue_command(_exec_change_tool, value, FLAGS_ONE);
 	return (STAT_OK);
@@ -1680,6 +1687,7 @@ stat_t cm_change_tool(const uint8_t tool_change)
 
 static void _exec_change_tool(float *value, bool *flags)
 {
+    (void)flags;
     cm.gm.tool = (uint8_t)value[0];
 }
 
@@ -1756,6 +1764,7 @@ stat_t coolant_get_com(nvObj_t *nv) { nv->value_int = coolant_out_mist; nv->valu
 
 static void _exec_mist_coolant_control(float *value, bool *flags)
 {
+    (void)flags;
 	cm.gm.mist_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
 	coolant_out_mist = cm.gm.mist_coolant;
 
@@ -1806,6 +1815,7 @@ void cm_coolant_off_immediate()
 
 static void _exec_flood_coolant_control(float *value, bool *flags)
 {
+    (void)flags;
 	cm.gm.flood_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
 	coolant_out_flood = cm.gm.flood_coolant;
 
@@ -1846,6 +1856,7 @@ static void _exec_flood_coolant_control(float *value, bool *flags)
 /* Executed in queue order, never at parse time ahead of earlier motion. */
 static void _exec_feed_permission(float *value, bool *flags)
 {
+    (void)flags;
     if (value[1] != 2) ov_set_program_feed(value[0] != 0);
     if (value[1] != 1) spindle_override_program(value[0] != 0);
 }
@@ -1859,6 +1870,7 @@ stat_t cm_override_enables(uint8_t flag)
 }
 stat_t cm_feed_rate_override_enable(uint8_t flag)
 {
+    (void)flag;
     float value[AXES] = { !cm.gf.parameter || cm.gn.parameter != 0, 1 };
     mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
     ov_queue_program_feed(value[0] != 0);
@@ -1874,6 +1886,7 @@ stat_t cm_feed_rate_override_factor(uint8_t flag)	// M50.1
 
 stat_t cm_traverse_override_enable(uint8_t flag)	// M50.2
 {
+    (void)flag;
 	if (cm.gf.parameter && fp_ZERO(cm.gn.parameter)) {
 		cm.gmx.traverse_override_enable = false;
 	} else {
@@ -1891,6 +1904,7 @@ stat_t cm_traverse_override_factor(uint8_t flag)	// M51
 
 stat_t cm_spindle_override_enable(uint8_t flag)
 {
+    (void)flag;
     float value[AXES] = { !cm.gf.parameter || cm.gn.parameter != 0, 2 };
     mp_queue_command(_exec_feed_permission, value, FLAGS_ONE);
     return STAT_OK;
@@ -2399,6 +2413,7 @@ void cm_queue_flush()
 
 static void _exec_program_finalize(float *value, bool *flags)
 {
+    (void)flags;
 	if (cm_is_alarmed() != STAT_OK) { return; }			// only $clear or a reset ends these (N84)
     hold_resume_cancelled = false;
 	cm.machine_state = (uint8_t)value[0];               // set to one of STOP or END
@@ -3139,6 +3154,7 @@ stat_t cm_set_xjh(nvObj_t *nv)
 
 stat_t cm_run_qf(nvObj_t *nv)
 {
+    (void)nv;
 	cm_request_queue_flush();
 	return (STAT_OK);
 }

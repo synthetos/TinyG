@@ -335,6 +335,7 @@ stat_t cm_spindle_control(uint8_t spindle_mode)
 
 static void _exec_spindle_control(float *value, bool *flags)
 {
+    (void)flags;
 	spindle_snapshot_valid = false;
 	uint8_t spindle_mode = cm_outputs_inhibited() ? SPINDLE_OFF : (uint8_t)value[0];  // a queued M3/M4 may run after an alarm
 	cm_set_spindle_mode(MODEL, spindle_mode);
@@ -392,6 +393,7 @@ void cm_exec_spindle_speed(float speed)
 
 static void _exec_spindle_speed(float *value, bool *flags)
 {
+    (void)flags;
 	spindle_snapshot_valid = false;
     spindle_commanded = value[0];
 	cm_set_spindle_speed_parameter(MODEL, value[0]);

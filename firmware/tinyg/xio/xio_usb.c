@@ -108,6 +108,7 @@ static int _putc_usb_raw(const char c)
 
 int xio_putc_usb(const char c, FILE *stream)
 {
+    (void)stream;
 	if (xio.json_escape) {						// inside a {"txt":"..."} string: keep the reply one valid JSON line (E137)
 		if ((c == '"') || (c == '\\')) { _putc_usb_raw('\\'); return (_putc_usb_raw(c)); }
 		if (c == '\n') { _putc_usb_raw('\\'); return (_putc_usb_raw('n')); }

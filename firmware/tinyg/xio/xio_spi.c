@@ -164,6 +164,7 @@ void xio_init_spi(void)
  */
 FILE *xio_open_spi(const uint8_t dev, const char *addr, const flags_t flags)
 {
+    (void)addr;
 	xioDev_t *d = &ds[dev];						// setup device struct pointer
 	uint8_t idx = dev - XIO_DEV_SPI_OFFSET;
 	d->x = &spi[idx];							// setup extended struct pointer

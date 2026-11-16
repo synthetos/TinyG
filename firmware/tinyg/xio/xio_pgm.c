@@ -37,6 +37,7 @@
 
 int xio_gets_pgm(xioDev_t *d, char *buf, const int size)
 {
+    (void)d;
 	if ((PGMf.filebase_P) == 0) {		// return error if no file is open
 		return (XIO_FILE_NOT_OPEN);
 	}
@@ -77,6 +78,7 @@ int xio_gets_pgm(xioDev_t *d, char *buf, const int size)
 
 int xio_getc_pgm(FILE *stream)
 {
+    (void)stream;
 	char c;
 
 	if (PGM.flag_eof ) {
@@ -112,6 +114,7 @@ int xio_getc_pgm(FILE *stream)
 
 int xio_putc_pgm(const char c, FILE *stream)
 {
+    (void)c; (void)stream;
 	return -1;			// always returns an error. Big surprise.
 }
 
