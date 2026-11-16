@@ -22,7 +22,7 @@ cmSingleton_t cm;
 #define MAX_INVERSE_TIME_MINUTES (2147483520.0f * NOM_SEGMENT_TIME)
 #endif
 '''
-  code+=function((ROOT/'canonical_machine.c').read_text(),r'stat_t cm_set_feed_rate\(')
+  code+=function((ROOT/'cm_modal.c').read_text(),r'stat_t cm_set_feed_rate\(')
   code+=r'''
 int main(void){
  cm.gm.feed_rate_mode=INVERSE_TIME_MODE;cm.gm.feed_rate=12;

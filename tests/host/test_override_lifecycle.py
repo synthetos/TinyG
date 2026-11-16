@@ -43,7 +43,7 @@ int main(void){
             subprocess.run([str(exe)],check=True)
 
     def test_program_permission_executes_in_queue_order(self):
-        source=(ROOT/'firmware/tinyg/canonical_machine.c').read_text()
+        source=(ROOT/'firmware/tinyg/cm_modal.c').read_text()
         code=r'''
 #include <assert.h>
 #include "override.h"
