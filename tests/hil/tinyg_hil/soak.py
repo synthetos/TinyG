@@ -85,11 +85,11 @@ def confirm_hold(next_event, seed, t_req, hold_stat, clock, settle, timeout=15.0
     while True:
         ev = next_event(0.05)
         now = clock()
+        if now - t_req > timeout:                        # absolute deadline, every iteration, before any success
+            raise CapStopTimeout(f"no completed feedhold confirmed within {timeout} s after the request: {state}")
         if ev is None:                                   # queue caught up: only now may a candidate be accepted
             if since is not None and now - since >= settle:
                 return state
-            if now - t_req > timeout:
-                raise CapStopTimeout(f"no completed feedhold confirmed within {timeout} s after the request: {state}")
             continue
         if ev.t <= t_req or ev.kind != "status" or not isinstance(ev.data, dict) or not isinstance(ev.data.get("sr"), dict):
             continue

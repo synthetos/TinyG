@@ -108,3 +108,24 @@ def test_backlog_ending_in_running_never_accepts_the_earlier_hold():
     with pytest.raises(CapStopTimeout):
         confirm_hold(feed.next_event, fold_status([Ev(95, {"stat": 5, "vel": 300})], 100), 100, HOLD,
                      feed.clock, SETTLE, timeout=4.0)
+
+
+class Endless(Feed):
+    """A stream that never goes quiet: a RUN report every 0.1 s, the clock advancing with each one."""
+    def next_event(self, dt):
+        self.now += 0.1
+        return Ev(self.now, {"stat": 5, "vel": 200})
+
+
+def test_a_never_quiet_stream_still_hits_the_deadline():
+    feed = Endless([])
+    with pytest.raises(CapStopTimeout):
+        confirm_hold(feed.next_event, {}, 100, HOLD, feed.clock, SETTLE, timeout=3.0)
+    assert feed.now <= 103.2
+
+
+def test_a_held_candidate_after_the_deadline_is_not_accepted():
+    feed = Feed([Ev(102.9, {"stat": 6, "vel": 0})])
+    with pytest.raises(CapStopTimeout):
+        confirm_hold(feed.next_event, fold_status([Ev(95, {"stat": 5, "vel": 300})], 100), 100, HOLD,
+                     feed.clock, SETTLE, timeout=3.0)
