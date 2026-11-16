@@ -49,12 +49,29 @@ def _move(tg, ice, motors, dist):
     return {"stat_before_read": before, "stat_after_read": after, "dir": levels}
 
 
+def _settled(tg, target):
+    """True when the machine is idle, the planner is empty and X is at the target (the move fully finished)."""
+    return (tg.stat() in tg.dialect.idle_stats and tg.get("qr") == tg.planner_buffers
+            and abs(tg.get("mpox") - target) < 0.005)
+
+
 def _rest(tg, ice, motors, dist):
-    """Run a relative X move to completion and return the DIR pin levels at rest, after the move's tail."""
+    """Run a relative X move to completion and return the DIR pin levels at rest, after the move's tail.
+
+    Completion is certified independently of wait_idle: X must reach its target with the machine idle and the
+    planner empty, both before and after the pin read, so no part of this move can still load segments when the
+    motor reset follows."""
+    target = tg.get("mpox") + dist
     tg.send_gcode(f"G91 G1 X{dist:.3f} F{FEED}", check=True, allow="E026 preparation move")
     tg.wait_idle(timeout=30)
+    deadline = time.monotonic() + 10
+    while not _settled(tg, target):
+        assert time.monotonic() < deadline, f"preparation move did not settle at X{target}"
+        time.sleep(0.1)
     time.sleep(0.3)
-    return {m: _dir_pin(ice, m) for m in motors}
+    levels = {m: _dir_pin(ice, m) for m in motors}
+    assert _settled(tg, target), "machine moved during the at-rest DIR read"
+    return levels
 
 
 def test_dir_pin_follows_travel_after_motor_reset(tg, machine, ice, keep, record):
