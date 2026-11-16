@@ -6,60 +6,103 @@ pin is already set and moves the wrong way (#267 root cause; #235 "$2tr change r
 the wrong way"). Edge keeps the cache consistent with the pin: stepper.c stepper_reset() "do not initialize
 prev_direction", and prev_direction is written only together with the DIR bit in _load_move (stepper.c:1085-1091).
 
-The test reads the real DIR output pin through the Atmel-ICE at rest (PORTx.OUT bit DIRECTION_BIT_bp, hardware.h),
-never during motion: after a positive move, after re-setting the motor's travel-per-revolution to its own value (the
-setter runs the motor reset), after the negative move that follows, after a second reset, and after the next
-positive move. Resetting after both directions guarantees that one reversal starts from a cache that disagrees
-with the pin on master, whichever DIR level a direction maps to.
-The check is relative: the pin level after the negative move must differ from the level after the positive move,
-and return to it after the next positive move (absolute levels depend on the driver wiring and $Npo; they are
-recorded). The settings value is unchanged, so the bench geometry is untouched.
+The stock reset sets the cached direction to STEP_INITIAL_DIRECTION (DIRECTION_CW = 0) and leaves the pin alone, so the
+bug shows only when the pin is at level 1 when the reset happens and the next move needs level 0: the loader then sees
+"no change" and never drives the pin. The test builds exactly that case for the axis's motors:
+1. a preparation move toward the side whose DIR level is 1 (negative travel with $Npo=0, positive with $Npo=1), then a
+   check AT REST, after the move's tail, that the pin really is 1 (the end of a move can load a sub-step segment that
+   sets DIR to the other level with no pulse, MSO 2026-11-16; the preparation is retried with other lengths until the
+   pin rests at 1);
+2. the motor reset (re-setting the motor's travel-per-revolution to its own value), with the pin still 1;
+3. a challenge move in the other direction, which needs level 0, with the pin read through the Atmel-ICE DURING the
+   move (about 0.8 s into a ~2 s move, machine state RUN before and after the read). It must be 0
+   (stepper.c: positive travel drives DIRECTION_CW ^ $Npo; override_steps.dir_level).
+On stock master the challenge read stays 1 and the test fails; on edge it is 0. The settings value is unchanged, so
+the bench geometry is untouched.
 """
+import time
+
 import pytest
+
+from tinyg_hil.override_steps import dir_level
 
 pytestmark = [pytest.mark.ice, pytest.mark.motion, pytest.mark.persists, pytest.mark.timeout(120),
               pytest.mark.bug("E026", on=["d440"])]
 
 PORTS = {1: "A", 2: "F", 3: "E", 4: "D"}     # hardware.h PORT_MOTOR_1..4
 DIR_BIT = 1                                  # hardware.h DIRECTION_BIT_bp
-MOVE = 3.0
+MOVE, FEED, READ_AT = 10.0, 300, 0.8          # ~2 s moves; read the pin while moving
 
 
 def _dir_pin(ice, motor):
     return (ice.port_out(PORTS[motor]) >> DIR_BIT) & 1
 
 
-def _move(tg, dist):
-    line = f"G91 G1 X{dist:.3f} F600"
-    tg.send_gcode(line, check=True, allow="E026 direction move")
+def _move(tg, ice, motors, dist):
+    """Run a relative X move; return the DIR pin levels read while it moves, and the machine state around the read."""
+    tg.send_gcode(f"G91 G1 X{dist:.3f} F{FEED}", check=True, allow="E026 direction move")
+    time.sleep(READ_AT)
+    before = tg.stat()
+    levels = {m: _dir_pin(ice, m) for m in motors}
+    after = tg.stat()
     tg.wait_idle(timeout=30)
+    return {"stat_before_read": before, "stat_after_read": after, "dir": levels}
+
+
+def _settled(tg, target):
+    """True when the machine is idle, the planner is empty and X is at the target (the move fully finished)."""
+    return (tg.stat() in tg.dialect.idle_stats and tg.get("qr") == tg.planner_buffers
+            and abs(tg.get("mpox") - target) < 0.005)
+
+
+def _rest(tg, ice, motors, dist):
+    """Run a relative X move to completion and return the DIR pin levels at rest, after the move's tail.
+
+    Completion is certified independently of wait_idle: X must reach its target with the machine idle and the
+    planner empty, both before and after the pin read, so no part of this move can still load segments when the
+    motor reset follows."""
+    target = tg.get("mpox") + dist
+    tg.send_gcode(f"G91 G1 X{dist:.3f} F{FEED}", check=True, allow="E026 preparation move")
+    tg.wait_idle(timeout=30)
+    deadline = time.monotonic() + 10
+    while not _settled(tg, target):
+        assert time.monotonic() < deadline, f"preparation move did not settle at X{target}"
+        time.sleep(0.1)
+    time.sleep(0.3)
+    levels = {m: _dir_pin(ice, m) for m in motors}
+    assert _settled(tg, target), "machine moved during the at-rest DIR read"
+    return levels
 
 
 def test_dir_pin_follows_travel_after_motor_reset(tg, machine, ice, keep, record):
     motors = machine.motors_for("x")
     if not motors:
         pytest.skip("no motor mapped to X")
-    keep(*(f"{m}tr" for m in motors))
     pol = {m: int(tg.get(f"{m}po")) for m in motors}
+    if len(set(pol.values())) != 1:
+        pytest.skip("X motors with different polarities: no single preparation leaves every pin at 1")
+    keep(*(f"{m}tr" for m in motors))
+    prep_sign = 1 if next(iter(pol.values())) else -1            # the travel direction whose DIR level is 1
     tg.send_gcode("G21 G90", check=True, allow="units")
     tg.send_gcode("G28.3 X0", check=True, allow="E026 declare X")
-    seen = {}
+    seen = {"polarity": pol, "preparations": []}
     try:
-        _move(tg, MOVE)
-        seen["after_positive"] = {m: _dir_pin(ice, m) for m in motors}
-        for m in motors:                                      # same value: only the motor reset runs
+        for length in (MOVE, 9.0, 7.75, 6.0):                    # until the pin rests at 1 after the tail
+            rest = _rest(tg, ice, motors, prep_sign * length)
+            seen["preparations"].append({"length": prep_sign * length, "rest": rest})
+            if all(v == 1 for v in rest.values()):
+                break
+        else:
+            pytest.fail(f"could not leave the DIR pin at 1 at rest: {seen}")
+        for m in motors:                                          # same value: only the motor reset runs
             tg.set(f"{m}tr", tg.get(f"{m}tr"), allow="E026 re-send motor setting")
         seen["after_reset"] = {m: _dir_pin(ice, m) for m in motors}
-        _move(tg, -MOVE)
-        seen["after_negative"] = {m: _dir_pin(ice, m) for m in motors}
-        for m in motors:                                      # reset again after the other direction, so one of
-            tg.set(f"{m}tr", tg.get(f"{m}tr"), allow="E026 re-send motor setting")   # the two reversals meets a stale cache
-        seen["after_second_reset"] = {m: _dir_pin(ice, m) for m in motors}
-        _move(tg, MOVE)                                       # and back again, the #216 'second homing' order
-        seen["after_second_positive"] = {m: _dir_pin(ice, m) for m in motors}
+        seen["challenge"] = _move(tg, ice, motors, -prep_sign * MOVE)
     finally:
         tg.send_gcode("G90", check=True, allow="absolute")
-    record("e026", {"polarity": pol, "dir_pin": seen})
-    for m in motors:      # a stale pin (the bug) keeps the positive level through the reversal
-        assert seen["after_negative"][m] != seen["after_positive"][m], seen
-        assert seen["after_second_positive"][m] == seen["after_positive"][m], seen
+    record("e026", seen)
+    run = tg.dialect.stats("RUN")
+    assert all(v == 1 for v in seen["after_reset"].values()), seen      # the reset left the pin at 1
+    assert seen["challenge"]["stat_before_read"] in run and seen["challenge"]["stat_after_read"] in run, seen
+    for m in motors:      # stock: cache 0 == wanted 0, pin never driven, stays 1
+        assert seen["challenge"]["dir"][m] == dir_level(prep_sign < 0, pol[m]) == 0, (m, seen)
