@@ -2,6 +2,7 @@
 feedhold that never completes."""
 import pytest
 
+from tinyg_hil.override_steps import pick_axis, whole_step_distance
 from tinyg_hil.override_steps import (HOLD_COMPLETE, HoldNotReached, dir_level, signed_steps, wait_for_hold,
                                       within)
 
@@ -71,3 +72,23 @@ def test_unfinished_hold_cannot_count_as_coverage():
     c = Clock()
     with pytest.raises(HoldNotReached):
         wait_for_hold(lambda: 4, timeout=1.0, poll=0.1, clock=c, sleep=c.sleep)     # still decelerating
+
+
+def test_whole_step_distance_single_motor():
+    assert whole_step_distance([1280.0], 80.0) == (80.0, [102400])
+
+
+def test_whole_step_distance_mixed_gearing():
+    # bench 1 X: motor 1 at 1280 steps/mm, motor 4 at 360*8/(1.8*360) = 4.444... steps/mm
+    dist, targets = whole_step_distance([1280.0, 360 * 8 / (1.8 * 360)], 80.0)
+    assert abs(dist - 80.0) <= 3.0 and targets == [round(dist * 1280), round(dist * 40 / 9)]
+    assert (dist, targets) == (80.1, [102528, 356])      # exact on both motors
+
+
+def test_pick_axis_prefers_finest_then_falls_back():
+    assert pick_axis([("x", [1280.0]), ("y", [640.0])], 80.0)[0] == "x"
+    assert pick_axis([("x", [1280.0, 1280.0 * 1.0000001]), ("y", [640.0])], 80.0)[0] == "y"   # no common whole step on X
+
+
+def test_pick_axis_none():
+    assert pick_axis([("x", [1280.0, 1280.0 * 1.0000001])], 80.0) is None

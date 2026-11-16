@@ -41,6 +41,38 @@ def signed_steps(rises, dir_edges, dir_initial, forward_level):
     return len(fwd) - back, back, fwd
 
 
+def whole_step_distance(spms, near, span=3.0, tol=0.002):
+    """Distance near `near` mm (as sent, rounded to 4 decimals) that is a whole number of steps on every motor.
+
+    spms: steps/mm of each motor mapped to the axis. Searches outward from `near` in single steps of the first motor,
+    up to `span` mm either way; returns (distance, [targets]) or None. Motors with different gearing on one axis
+    (bench 1: X on 1280 and 4.44 steps/mm) usually have no common whole-step distance at exactly 80 mm.
+    """
+    s0 = spms[0]
+    n0 = round(near * s0)
+    for k in range(int(span * s0) + 1):
+        for n in ((n0 + k, n0 - k) if k else (n0,)):
+            if n <= 0:
+                continue
+            dist = round(n / s0, 4)
+            targets = [round(dist * s) for s in spms]
+            if all(abs(dist * s - t) <= tol for s, t in zip(spms, targets)):
+                return dist, targets
+    return None
+
+
+def pick_axis(axes_spms, near):
+    """First axis, finest first, with a whole-step distance on every mapped motor.
+
+    axes_spms: [(axis, [steps/mm per motor])]. Returns (axis, distance, targets, spms) or None.
+    """
+    for axis, spms in sorted(axes_spms, key=lambda a: -a[1][0]):
+        found = whole_step_distance(spms, near)
+        if found:
+            return axis, found[0], found[1], spms
+    return None
+
+
 def within(steps, target, tol=1):
     """A signed step count within tol of a signed target (direction matters)."""
     return abs(steps - target) <= tol
