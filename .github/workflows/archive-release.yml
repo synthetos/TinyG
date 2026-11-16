@@ -1,0 +1,101 @@
+name: Archive release
+
+# Builds a historical TinyG line from its tag and publishes it as a pre-release, so old firmware stays available.
+# The historical trees predate the portable Makefile, so .github/archive/Makefile.firmware-tinyg (the Makefile that
+# introduced CI builds) is copied into the checked-out tree. Its source list matched each tree's Atmel Studio project
+# file for file (449.01, 449.02, 444.23, 440.20). Toolchain pinned to the same versions as the 450.x CI builds.
+# These images are rebuilt from source with avr-gcc 7.3; the original releases were built with Atmel Studio.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build (e.g. edge-0.97-final, edge-0.98-final, 440.20)'
+        required: true
+      line:
+        description: 'Line name for the release title (e.g. "edge 0.97", "master 0.97")'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the archive recipe
+        uses: actions/checkout@v4
+        with:
+          path: recipe
+          sparse-checkout: .github/archive
+
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          path: src
+
+      - name: Install AVR toolchain (pinned)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-avr=1:7.3.0+Atmel3.7.0-1 avr-libc=1:2.0.0+Atmel3.7.0-1 binutils-avr=2.26.20160125+Atmel3.7.0-2
+          avr-gcc --version | head -1
+
+      - name: Build
+        working-directory: src/firmware/tinyg
+        run: |
+          cp "$GITHUB_WORKSPACE/recipe/.github/archive/Makefile.firmware-tinyg" Makefile
+          make
+          avr-size build/tinyg.elf | tee build/size.txt
+
+      - name: Name artifacts
+        id: names
+        run: |
+          build=$(sed -n 's/^#define TINYG_FIRMWARE_BUILD[[:space:]]*\([0-9.]*\).*/\1/p' src/firmware/tinyg/tinyg.h)
+          version=$(sed -n 's/^#define TINYG_FIRMWARE_VERSION[[:space:]]*\([0-9.]*\).*/\1/p' src/firmware/tinyg/tinyg.h)
+          test -n "$build"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          mkdir -p dist
+          cp src/firmware/tinyg/build/tinyg.hex "dist/tinyg-$build.hex"
+          cp src/firmware/tinyg/build/tinyg.elf "dist/tinyg-$build.elf"
+          cp src/firmware/tinyg/build/size.txt dist/size.txt
+          (cd dist && sha256sum "tinyg-$build.hex" "tinyg-$build.elf" > SHA256SUMS)
+          cat dist/SHA256SUMS >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tinyg-${{ steps.names.outputs.build }}-archive
+          path: dist/
+
+      - name: Publish historical pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          LINE: ${{ inputs.line }}
+          BUILD: ${{ steps.names.outputs.build }}
+          VERSION: ${{ steps.names.outputs.version }}
+          SRC: ${{ github.server_url }}/${{ github.repository }}/tree/${{ inputs.tag }}
+        run: |
+          cat > notes.md <<NOTES
+          **Historical firmware, kept for reference.** TinyG $VERSION build $BUILD ($LINE) for the TinyG v8 board
+          (ATxmega192A3). For current firmware use the latest 450.x release.
+
+          This image was rebuilt from the tagged source ($SRC) by CI with avr-gcc 7.3 and the portable Makefile.
+          The original $BUILD release was built with Atmel Studio, so the binary differs from the one shipped at the
+          time, but it is compiled from the same source and the same file list as the original project.
+
+          Flash \`tinyg-$BUILD.hex\` with the xboot bootloader, e.g.:
+
+              avrdude -p x192a3 -c avr109 -b 115200 -P <port> -U flash:w:tinyg-$BUILD.hex
+
+          Firmware size:
+
+          \`\`\`
+          $(cat dist/size.txt)
+          \`\`\`
+          NOTES
+          gh release create "$TAG" dist/* --title "TinyG $BUILD ($LINE, historical)" --notes-file notes.md \
+            --prerelease --latest=false --verify-tag
