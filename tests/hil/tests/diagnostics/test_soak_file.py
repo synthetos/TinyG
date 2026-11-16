@@ -13,6 +13,10 @@ must parse, summaries must count up from q 1 in one window, and the final summar
 Pass: the stream runs through without a stall (sender.StreamStalled) or a lost board, the board answers
 afterwards, and after a G53 G0 back to the starting machine position it reports that position.
 SOAK_SALEAE=off|auto|on controls capture (default auto; unreachable MCP is recorded and skipped).
+SOAK_MAX_S=N caps the stream at N seconds (test levels, 2026-11-15: night jobs 900, release dense soak 1800): when
+the cap is reached with no stall or alarm, the sender stops, the board gets a feedhold and a queue flush, and the test
+continues with the same return-to-start and step checks, recording "capped" and how many lines ran. Unset: the old
+5000 s limit, which fails the test as before.
 With a Saleae (bench 2) the X/Y/Z step and direction pulses are captured as well, and every motor's net
 step count must come back to zero (no step lost or added). Per-line errors, exceptions and any alarm are
 recorded for review but do not fail the test: ugly files are expected to have refused lines.
@@ -35,6 +39,8 @@ MODE = os.environ.get("SOAK_MODE")
 POS_TOL = 0.002                                          # mm
 CAPTURE_MAX_LINES = int(os.environ.get("SOAK_CAPTURE_MAX", "40000"))
 HOLDS = int(os.environ["SOAK_HOLDS"]) if "SOAK_HOLDS" in os.environ else (3 if random.random() < 1 / 3 else 0)
+MAX_S = float(os.environ["SOAK_MAX_S"]) if os.environ.get("SOAK_MAX_S") else None
+CAP_SI = 0.5                         # status interval the cap relies on: enforced (si <= 500 ms) before a capped stream
 
 
 class _Holder(threading.Thread):
@@ -134,6 +140,11 @@ def test_soak_file(tg, keep, record, request):
     info = {"file": FILE, "mode": mode, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),
             "hold_seed": seed}
+    if MAX_S:      # the cap's hold confirmation reads status reports: enforce the reporting contract it relies on
+        sv, si = tg.get("sv"), tg.get("si")
+        fields = set((tg.send_json({"sr": None}, check=True).body.get("sr") or {}).keys())
+        assert sv and sv >= 1 and si and si <= CAP_SI * 1000 and {"stat", "vel"} <= fields, \
+            f"SOAK_MAX_S needs status reports on (sv {sv}), every {CAP_SI * 1000:.0f} ms or faster (si {si}), with stat and vel ({sorted(fields)})"
     holder = _Holder(tg, HOLDS, seed, lock) if HOLDS else None
     t0 = time.monotonic()
     res = None
@@ -144,7 +155,7 @@ def test_soak_file(tg, keep, record, request):
             with saleae.Capture(bench["saleae"], channels=channels, seconds=None, rate=2_000_000, save_as=stem) as cap:
                 if holder:
                     holder.start()
-                res = _stream(tg, lines, request, record, mode, resumer)
+                res = _stream(tg, lines, request, record, mode, resumer, holder, info)
                 if holder:
                     holder.stop.set(); holder.join(); tg.transport.write(b"~")
                 _settle(tg, 600, resumer)
@@ -165,7 +176,7 @@ def test_soak_file(tg, keep, record, request):
         else:
             if holder:
                 holder.start()
-            res = _stream(tg, lines, request, record, mode, resumer)
+            res = _stream(tg, lines, request, record, mode, resumer, holder, info)
             if holder:
                 holder.stop.set(); holder.join(); tg.transport.write(b"~")
             _settle(tg, 600, resumer)
@@ -225,20 +236,44 @@ def _return(tg, start):
                   allow="return to the start")
     _settle(tg, 600)
 
-def _stream(tg, lines, request, record, mode, resumer):
+def _stream(tg, lines, request, record, mode, resumer, holder=None, info=None):
     """The stream; on a stall with --ice, the board's state is read before anything else touches it."""
     if resumer:resumer.begin()
     try:
-        return sender.stream(tg, lines, mode, timeout=5000, on_status=resumer)
+        return sender.stream(tg, lines, mode, timeout=MAX_S or 5000, on_status=resumer)
     except (sender.StreamStalled, sender.StreamRunaway):
         if request.config.getoption("--ice"):
             record("stall_snapshot", sender.stall_snapshot(request.getfixturevalue("ice")))
         raise
-    except TimeoutError:
+    except TimeoutError as exc:
+        if MAX_S:                                    # the planned cap: stop cleanly and keep checking
+            return _cap_stop(tg, exc, holder, info)
         # the job is still running (a slow laser file, N75): stop it, or every restore after this is refused
         # with status 117 because a job is running (N60) and the board is left on the test's settings
         tg.reset()
         raise
+
+
+def _cap_stop(tg, exc, holder, info):
+    """Stream cap reached: no more lines are sent; feedhold, confirm motion stopped from fresh reports, flush."""
+    if holder:
+        holder.stop.set()
+        holder.join(timeout=10)
+        assert not holder.is_alive(), "cap stop: the feedhold thread is still running (it could still send ~)"
+    # Evidence comes from the board's own status reports, never a query: in character mode a query waits behind
+    # the G-code already in the RX ring (control lines are served first only in line mode).
+    t_req = time.monotonic()
+    seed = soak.fold_status(list(tg.transport.history), t_req)
+    tg.transport.write(b"!")
+    state = soak.confirm_hold(tg.transport.next_event, seed, t_req, tg.dialect.stat("HOLD"), time.monotonic,
+                              settle=2 * CAP_SI)
+    tg.transport.write(b"%")                         # drops every RX byte before it (xio_flush_input), ends the job
+    time.sleep(1.0)
+    res = getattr(exc, "result", None)
+    if info is not None:
+        info["capped"] = {"after_s": MAX_S, "acked": getattr(res, "acked", None), "lines": getattr(res, "lines", None),
+                          "stop": "fresh_hold", "settle_s": 2 * CAP_SI}
+    return res
 
 
 def _settle(tg, timeout, resumer=None):
