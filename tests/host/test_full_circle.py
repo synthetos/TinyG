@@ -15,7 +15,7 @@ class FullCircle(unittest.TestCase):
     def test_arc_geometry(self):
         source = (FIRMWARE / 'plan_arc.c').read_text()
         signatures = [r'static void _compute_arc_offsets_from_radius\(\)\s*\{',
-                      r'static float _estimate_arc_time \(float arc_time\)\s*\{',
+                      r'static float _estimate_arc_time \(void\)\s*\{',
                       r'static stat_t _compute_arc\(const bool radius_f\)\s*\{']
         # Include the opening brace in the exact signature only to distinguish the
         # definitions from the forward declarations, then let the extractor count it.

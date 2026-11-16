@@ -436,11 +436,9 @@ static void _init_readline_linemode()
         bm.buf[i].size = 0;
         bm.buf[i].state = BUFFER_FREE;
         bm.buf[i].bufp = bm.pool_base;              // point all bufs to the base of RAM
-        bm.buf[i].pv = &(bm.buf[i-1]);              // link the buffers via pv
-        bm.buf[i].nx = &(bm.buf[i+1]);              // link the buffers via nx
+        bm.buf[i].pv = &bm.buf[i ? i-1 : RX_HEADERS-1]; // link pv without a before-array pointer
+        bm.buf[i].nx = &bm.buf[(i+1 == RX_HEADERS) ? 0 : i+1]; // circular nx link
     }
-    bm.buf[0].pv = &bm.buf[RX_HEADERS-1];           // close the pv loop
-    bm.buf[RX_HEADERS-1].nx = bm.buf;               // close the nx loop
 }
 
 //#pragma GCC optimize ("O0")
