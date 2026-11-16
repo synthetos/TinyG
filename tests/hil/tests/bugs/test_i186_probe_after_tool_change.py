@@ -1,4 +1,4 @@
-"""GitHub #186 (and the probe-overtaking path of #183): G38.2 right after a tool change must run and report, not hang.
+"""GitHub #186: G38.2 right after a tool change must run and report, not hang.
 
 Report (2016): after `T1 M6`, a following `G38.2` locked the board up. On edge the matching causes were fixed in
 450.01: JSON-wrapped G-code no longer overtakes a pending probe or queued commands (E034, planner headroom), a block
@@ -8,7 +8,8 @@ that queues several commands can no longer PANIC "Buffer full fatal" (E088), and
 Bench: Z-min is the only probe input with nothing connected, so each 1 mm G38.2 runs its full travel and reports
 e=0 (not tripped) and raises the documented probe-failed alarm (status 250, wiki TinyG-Alarms), which the
 test clears, as test_e025 does. Both plain and JSON-wrapped tool changes are tried, each followed
-by two probes; every probe must report, and the board must answer and end idle at the start position.
+by two probes; the tool change must be accepted and select its tool, every probe must report, and the board
+must answer and end idle at the start position. #183 (contact, then G28.3 and queued motion) needs its own test.
 """
 import time
 
@@ -61,11 +62,14 @@ def zmin_probe(tg, keep):
 @pytest.mark.parametrize("wrapped", [False, True], ids=["plain", "json"])
 def test_probe_runs_after_tool_change(tg, zmin_probe, record, wrapped):
     reports = []
-    change = "T1 M6"
+    tool = 4 if wrapped else 3                          # a different tool per case, so a rejected change shows
+    change = f"T{tool} M6"
     if wrapped:
-        tg.send_json({"gc": change}, allow="#186 tool change in JSON")
+        reply = tg.send_json({"gc": change}, allow="#186 tool change in JSON")
     else:
-        tg.send_gcode(change, check=True, allow="#186 tool change")
+        reply = tg.send_gcode(change, allow="#186 tool change")
+    assert reply.status == 0, tg.status_name(reply.status)
+    assert _get(tg, "tool") == tool
     alarms = []
     for _ in range(2):
         resp = tg.send_gcode("G38.2 Z-1 F100", allow="#186 1 mm probe in free air")
@@ -82,5 +86,5 @@ def test_probe_runs_after_tool_change(tg, zmin_probe, record, wrapped):
     assert all(abs(r.get("z", 0) - (-1.0)) <= 0.002 for r in reports), reports   # each probe travelled the full 1 mm
     assert all(alarms), alarms                                                    # documented probe-failed alarm (250)
     assert _get(tg, "posz") == pytest.approx(0.0, abs=0.001)
-    assert _get(tg, "tool") == 1
+    assert _get(tg, "tool") == tool
     assert tg.stat() in tg.dialect.idle_stats
