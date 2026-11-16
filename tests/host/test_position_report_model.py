@@ -1,7 +1,7 @@
 """E090: position reports never show the end point of motion that has been accepted but not started.
 
 The real _position_model(), cm_get_pos(), cm_get_mpo(), cm_get_ofs() and the position helpers are
-extracted from canonical_machine.c. The model is moved to a queued end point while the runtime
+extracted from cm_coords.c. The model is moved to a queued end point while the runtime
 (where the machine is) stays at the start; nothing executes, so the interleaving is fixed, not raced.
 """
 from pathlib import Path
@@ -83,7 +83,7 @@ class PositionReportModel(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = (ROOT / "firmware/tinyg/cm_coords.c").read_text()
         code = PRELUDE
         for signature in (r"float cm_get_work_offset\(", r"float cm_get_absolute_position\(",
                           r"static float _get_work_position_mm\(", r"float cm_get_work_position\("):

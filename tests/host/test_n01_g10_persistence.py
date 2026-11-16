@@ -16,7 +16,7 @@ FW=ROOT/'firmware/tinyg'
 
 class G10Persistence(unittest.TestCase):
     def test_idle_ack_order_and_serial_busy(self):
-        source=(FW/'canonical_machine.c').read_text()
+        source=(FW/'cm_coords.c').read_text()
         code=r'''
 #include <assert.h>
 #include <stdlib.h>

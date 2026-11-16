@@ -20,7 +20,7 @@ when it finds that set. It clears it only with the machine at rest, with the che
 guard: a dwell sets it once, as it starts, so a look during the dwell followed by a main loop stuck past its end must
 not use that up. A count would alias: mp_exec_move() runs per segment, so a byte wraps in about 1.3 s.
 
-Real functions from canonical_machine.c against stub serial, clock and NV layers.
+Real functions from cm_coords.c against stub serial, clock and NV layers.
 """
 from pathlib import Path
 import re
@@ -279,7 +279,7 @@ class G10WaitsForQuiet(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (FW / "canonical_machine.c").read_text()
+        source = (FW / "cm_coords.c").read_text()
         code = PRELUDE + function((FW / "xio.c").read_text(), r"uint8_t xio_isbusy\(\)")
         code += function(source, r"bool cm_persistence_busy\(\)\s*(?=\{)")
         for name in ("_host_awaits_reply", "_persist_coord_offsets", "cm_deferred_write_callback", "cm_set_coord_offsets",
