@@ -14,6 +14,22 @@ from . import bootloader
 from .state import flash_record, write_flash_record, state_dir
 
 
+def make_command(src, make_args=()):
+    """The make invocation for firmware/tinyg at src.
+
+    With TINYG_BUILD_IMAGE set (e.g. "tinyg-avr-ci", TinyG-work/toolchain/Dockerfile), make runs inside that container
+    image instead of with the host toolchain, so bench builds use the same compiler as the CI release build
+    (ubuntu-24.04 apt gcc-avr). The source directory is mounted at its own path, so ELF paths and build directories
+    are the same as a host build.
+    """
+    src = pathlib.Path(src).resolve()
+    image = os.environ.get("TINYG_BUILD_IMAGE", "").strip()
+    if not image:
+        return ["make", "-C", str(src), "-j8", *make_args]
+    return ["docker", "run", "--rm", "--user", f"{os.getuid()}:{os.getgid()}", "-v", f"{src}:{src}", "-w", str(src),
+            image, "make", "-j8", *make_args]
+
+
 def build(source_dir, make_args=()) -> pathlib.Path:
     """Run make in firmware/tinyg of a checkout; returns the hex path.
 
@@ -22,7 +38,7 @@ def build(source_dir, make_args=()) -> pathlib.Path:
     src = pathlib.Path(source_dir)
     if (src / "firmware" / "tinyg").is_dir():
         src = src / "firmware" / "tinyg"
-    subprocess.run(["make", "-C", str(src), "-j8", *make_args], check=True, capture_output=True)
+    subprocess.run(make_command(src, make_args), check=True, capture_output=True)
     # Match Makefile precedence, independent of argument order; the last value
     # for each variable wins, and an empty value makes its ifdef false.
     variables = dict(a.split("=", 1) for a in make_args if "=" in a)
