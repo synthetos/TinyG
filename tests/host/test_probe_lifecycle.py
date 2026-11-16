@@ -36,6 +36,7 @@ class ProbeLifecycle(unittest.TestCase):
 #include "util.h"
 #include <avr/interrupt.h>
 cmSingleton_t cm;
+switches_t sw;  /* Standalone fixture owns storage declared by switch.h. */
 stPrepSingleton_t st_pre;
 volatile uint8_t SREG;
 stat_t status_code;

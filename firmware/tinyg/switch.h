@@ -98,7 +98,7 @@ typedef struct swSingleton {
     uint8_t probe_type;             // 0=NO/active low, 1=NC/active high
     switch_t s[NUM_SWITCHES];       // switch objects
 } switches_t;
-switches_t sw;
+extern switches_t sw;
 
 /****************************************************************************************
  * Function prototypes

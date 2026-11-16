@@ -86,6 +86,14 @@
 #include "util.h"
 #include "canonical_machine.h"      // for assertions cm_panic
 
+buf_mgr_t bm;
+buf_pool_t bufpool;
+xioSingleton_t xio;
+xioDev_t ds[XIO_DEV_COUNT];
+xioUsart_t us[XIO_DEV_USART_COUNT];
+xioSpi_t spi[XIO_DEV_SPI_COUNT];
+xioFile_t fs[XIO_DEV_FILE_COUNT];
+
 static uint8_t active_rx_mode;
 static void _free_processed_buffer(void);
 static char *_next_buffer_to_process(devflags_t *flags);
