@@ -52,3 +52,9 @@ static inline __attribute__((unused)) bool _usb_override_byte(uint8_t c,uint8_t 
 #endif
 '''
 RUNTIME_STUBS += OVERRIDE_STUBS
+
+
+def canonical_machine_source(firmware, **read_options):
+    """Read the core and NV adapters for fixtures extracting functions across the split."""
+    return "\n".join((firmware / name).read_text(**read_options)
+                     for name in ("canonical_machine.c", "cm_config.c"))

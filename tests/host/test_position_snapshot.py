@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function, region, RUNTIME_STUBS
+from source_extract import canonical_machine_source, function, region, RUNTIME_STUBS
 
 ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE = ROOT / "firmware/tinyg"
@@ -196,7 +196,7 @@ class PositionSnapshot(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        cmc = (FIRMWARE / "canonical_machine.c").read_text()
+        cmc = canonical_machine_source(FIRMWARE)
         code = PRELUDE + RUNTIME_STUBS
         for signature in (r"void cm_set_motion_state\(", r"float cm_get_work_offset\(",
                           r"float cm_get_absolute_position\(", r"static float _get_work_position_mm\(",
@@ -221,12 +221,12 @@ class PositionSnapshot(unittest.TestCase):
                                   (config, r"stat_t get_grp\(")):
             body = function(source, signature + DEF)
             self.assertTrue(_bracketed(body), signature)
-        m114 = function((FIRMWARE / "canonical_machine.c").read_text(), r"stat_t cm_get_position\(" + DEF)
+        m114 = function(canonical_machine_source(FIRMWARE), r"stat_t cm_get_position\(" + DEF)
         self.assertLess(m114.index("cm_position_snapshot_end();"), m114.index("cs.comm_mode"))
 
     def test_interrupt_writers_move_the_epoch(self):
         stepper = (FIRMWARE / "stepper.c").read_text()
-        cmc = (FIRMWARE / "canonical_machine.c").read_text()
+        cmc = canonical_machine_source(FIRMWARE)
         exec_isr = function(stepper, r"ISR\(TIMER_EXEC_ISR_vect\)")
         self.assertLess(exec_isr.index("mp_exec_move()"), exec_isr.index("cm_position_changed();"))
         loader = function(stepper, r"static void _load_move\(" + DEF)

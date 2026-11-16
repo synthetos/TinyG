@@ -8,13 +8,13 @@ import re
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import canonical_machine_source, function
 ROOT = Path(__file__).resolve().parents[2] / 'firmware/tinyg'
 
 class RateLimits(unittest.TestCase):
     def test_actual_table_setters(self):
         app = (ROOT/'config_app.c').read_text()
-        cm = (ROOT/'canonical_machine.c').read_text()
+        cm = canonical_machine_source(ROOT)
         rows = []
         for axis in 'xyzabc':
             for suffix in ('vm', 'fr'):

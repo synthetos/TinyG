@@ -3,6 +3,8 @@
 #ifndef CM_INTERNAL_H
 #define CM_INTERNAL_H
 
+uint8_t cm_report_units(void);
+
 int8_t cm_cfg_axis_index(const index_t index);
 int8_t cm_cfg_axis_type(const index_t index);
 #ifdef __TEXT_MODE
