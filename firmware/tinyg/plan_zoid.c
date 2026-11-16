@@ -410,6 +410,7 @@ float mp_get_target_length(const float Vi, const float Vf, const mpBuf_t *bf)
 #define GET_VELOCITY_ITERATIONS 0		// must be 0, 1, or 2
 static float _target_velocity(const float Vi, const float L, const float cbrt_jerk, const float jerk)
 {
+    (void)jerk;
     // 0 iterations (a reasonable estimate)
     float estimate = pow(L, 0.66666666) * cbrt_jerk + Vi;
 

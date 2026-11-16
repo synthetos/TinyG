@@ -72,6 +72,7 @@ rxSingleton_t rx;
 
 void _startup_helper(stat_t status, const char *msg)
 {
+    (void)status;
 	nv_reset_nv_list("sr");
 	nv_add_object((const char *)"fv");		// firmware version
 	nv_add_object((const char *)"fb");		// firmware build
@@ -166,6 +167,7 @@ stat_t rpt_exception(stat_t status, const char *msg)
 
 stat_t rpt_er(nvObj_t *nv)      // bogus exception report for testing
 {
+    (void)nv;
 	return(rpt_exception_P(STAT_GENERIC_EXCEPTION_REPORT, PSTR("bogus exception report")));
 }
 
@@ -292,7 +294,7 @@ void sr_init_status_report_P(const char *sr_csv_P)
             if (rd == NULL) {
                 nv.value_int = NO_MATCH;                    // ensures unused positions are disabled (-1)
             } else {
-                if ((nv.value_int = nv_get_index("", rd)) == NO_MATCH) {
+                if ((nv.value_int = nv_get_index("", rd)) == (uint32_t)NO_MATCH) {
                     rpt_exception(STAT_BAD_STATUS_REPORT_SETTING, rd);  // trap mis-configured profile settings
                 }
             }
@@ -656,6 +658,7 @@ static bool _populate_filtered_status_report()
 
 stat_t sr_get(nvObj_t *nv)
 {
+    (void)nv;
     return (_populate_unfiltered_status_report("sr"));
 }
 
@@ -666,6 +669,7 @@ stat_t sr_set(nvObj_t *nv)  // legacy semantics
 
 stat_t srs_get(nvObj_t *nv) // new semantics
 {
+    (void)nv;
     return (_populate_unfiltered_status_report("srs"));
 }
 
@@ -721,7 +725,7 @@ stat_t sr_set_si(nvObj_t *nv)
 static const char fmt_si[] PROGMEM = "[si]  status interval%14lu ms\n";
 static const char fmt_sv[] PROGMEM = "[sv]  status report verbosity%6d [0=off,1=filtered,2=verbose]\n";
 
-void sr_print_sr(nvObj_t *nv) { _populate_unfiltered_status_report("sr");}
+void sr_print_sr(nvObj_t *nv) { (void)nv;  _populate_unfiltered_status_report("sr");}
 void sr_print_si(nvObj_t *nv) { text_print(nv, fmt_si);}
 void sr_print_sv(nvObj_t *nv) { text_print(nv, fmt_sv);}
 
@@ -972,7 +976,7 @@ uint8_t job_report_callback()
 	return (STAT_OK);
 }
 
-stat_t job_get(nvObj_t *nv) { return (job_populate_job_report());}
+stat_t job_get(nvObj_t *nv) { (void)nv;  return (job_populate_job_report());}
 stat_t job_set(nvObj_t *nv) { return (job_set_job_report(nv));}
-void job_print_job(nvObj_t *nv) { job_populate_job_report();}
+void job_print_job(nvObj_t *nv) { (void)nv;  job_populate_job_report();}
 

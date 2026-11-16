@@ -38,7 +38,7 @@
  ******************************************************************************/
 // See xio_usart.h for baud rate configuration settings
 static const uint8_t bsel[] PROGMEM = { 0, 207, 103, 51, 34, 33, 31, 27, 19, 1, 1 };
-static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, (-1<<4), (-2<<4), (-3<<4), (-4<<4), (1<<4), 1 };
+static const uint8_t bscale[] PROGMEM = { 0, 0, 0, 0, 0, 0xf0, 0xe0, 0xd0, 0xc0, (1<<4), 1 };
 
 struct cfgUSART {
 		x_open_t x_open;
@@ -117,6 +117,7 @@ void xio_init_usart(void)
  */
 FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 {
+    (void)addr;
 	xioDev_t *d = &ds[dev];							// setup device struct pointer
 	uint8_t idx = dev - XIO_DEV_USART_OFFSET;
 	d->x = &us[idx];								// bind extended struct to device
@@ -155,10 +156,6 @@ FILE *xio_open_usart(const uint8_t dev, const char *addr, const flags_t flags)
 
 	return (&d->file);		// return FILE reference
 
-	// here's a bag for the RS485 device
-	if (dev == XIO_DEV_RS485) {
-		xio_enable_rs485_rx();							// sets RS-485 to RX mode initially
-	}
 }
 
 void xio_set_baud_usart(xioUsart_t *dx, const uint8_t baud)
@@ -462,6 +459,7 @@ int xio_getc_usart(FILE *stream)
  */
 int xio_putc_usart(const char c, FILE *stream)
 {
+    (void)c; (void)stream;
 	return (XIO_OK);
 }
 

@@ -347,6 +347,7 @@ char *strcat_string(char *str, const char *src, size_t capacity)
 
 char *strcat_string_P(char *str, const char *src)
 {
+    (void)src;
     return (str);   //++++ STUBBED
 }
 

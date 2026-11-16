@@ -815,8 +815,8 @@ const cfgItem_t cfgArray[] PROGMEM = {
 /* </DO NOT MESS WITH THESE DEFINES> */
 
 index_t	nv_index_max() { return ( NV_INDEX_MAX );}
-bool nv_index_is_single(index_t index) { return ((index <= NV_INDEX_END_SINGLES) ? true : false);}
-bool nv_index_lt_groups(index_t index) { return ((index <= NV_INDEX_START_GROUPS) ? true : false);}
+bool nv_index_is_single(index_t index) { return (((uint16_t)index <= NV_INDEX_END_SINGLES) ? true : false);}
+bool nv_index_lt_groups(index_t index) { return (((uint16_t)index <= NV_INDEX_START_GROUPS) ? true : false);}
 
 // GETs that act, as their SETs do ({md:null} disables the motors, {clear:null} clears an alarm): like writes,
 // they end the runtime quiescence token. Rows whose get and set are one function must be listed here or be

@@ -562,9 +562,9 @@ static bool _layout2_journal_ready(void)
 static index_t _layout2_index(uint32_t old, index_t first, index_t after_stamp)
 {
     if (old == (uint32_t)NO_MATCH || old >= (uint32_t)(nv_index_max() + 4)) { return NO_MATCH; }
-    if (old < first) { return (index_t)old; }
-    if (old < first + 3 || old == after_stamp + 3) { return NO_MATCH; }
-    return (index_t)(old - ((old < after_stamp + 3) ? 3 : 4));
+    if (old < (uint32_t)first) { return (index_t)old; }
+    if (old < (uint32_t)(first + 3) || old == (uint32_t)(after_stamp + 3)) { return NO_MATCH; }
+    return (index_t)(old - ((old < (uint32_t)(after_stamp + 3)) ? 3 : 4));
 }
 
 static void _migrate_layout2(nvObj_t *nv)
@@ -872,9 +872,9 @@ stat_t get_flt(nvObj_t *nv)
  *	set_flt()   - set value as float
  *  set_str()   - set string value - just for test, performs no action
  */
-stat_t set_nul(nvObj_t *nv) { return (STAT_PARAMETER_IS_READ_ONLY); }
+stat_t set_nul(nvObj_t *nv) { (void)nv;  return (STAT_PARAMETER_IS_READ_ONLY); }
 
-stat_t set_not(nvObj_t *nv) { return (STAT_OK); }
+stat_t set_not(nvObj_t *nv) { (void)nv;  return (STAT_OK); }
 
 stat_t set_ui8(nvObj_t *nv)
 {
@@ -938,6 +938,7 @@ stat_t set_flt(nvObj_t *nv)
 
 stat_t set_str(nvObj_t *nv)
 {
+    (void)nv;
     return (STAT_OK);
 }
 

@@ -452,6 +452,7 @@ static bool _stepper_configuration_busy()
 
 stat_t st_clc(nvObj_t *nv)	// clear diagnostic counters, reset stepper prep
 {
+    (void)nv;
     if (_stepper_configuration_busy()) {
         return (STAT_COMMAND_NOT_ACCEPTED);
     }
@@ -1672,6 +1673,7 @@ stat_t st_set_pm(nvObj_t *nv)			// motor power mode
  */
 stat_t st_set_pl(nvObj_t *nv)	// motor power level
 {
+    (void)nv;
 #ifdef __ARM
 	if (nv->value_flt < (float)0.0) {
         nv->value_flt = 0.0;

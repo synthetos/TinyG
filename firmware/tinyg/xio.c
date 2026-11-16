@@ -303,6 +303,7 @@ int xio_set_baud(const uint8_t dev, const uint8_t baud)
  */
 void xio_fc_null(xioDev_t *d)
 {
+    (void)d;
 	return;
 }
 
@@ -567,12 +568,12 @@ static char *_get_free_buffer(uint16_t requested_size)
     char *limit = wrapped ? b->used_base->bufp : b->pool_top;
 
     // A wrapped allocation must stop before the oldest live buffer.
-    if ((limit - free->bufp) > requested_size) {      // is there enough RAM at the top?
+    if ((uint16_t)(limit - free->bufp) > requested_size) {      // is there enough RAM at the top?
         free->size = limit - free->bufp -1;           // claim all available RAM (no reason not to)
 
     // if not, attempt to allocate free RAM below the used_base (wraparound case)
     } else if (!wrapped && (b->used_base->state != BUFFER_FREE) &&
-               ((b->used_base->bufp - b->pool_base) > requested_size)) {
+               ((uint16_t)(b->used_base->bufp - b->pool_base) > requested_size)) {
         free->bufp = b->pool_base;                          // reset the pointer to the base
         free->size = b->used_base->bufp - b->pool_base -1;  // claim all available RAM
 
@@ -872,6 +873,7 @@ static stat_t _readline_source(char *bufp, uint16_t size)
 
 static char *_readline_linemode(devflags_t *flags, uint16_t *size)
 {
+    (void)size;
     char *bufp;         // local pointer to allocated buffer
     stat_t status;
     buf_mgr_t *b = &bm;

@@ -776,7 +776,7 @@ static stat_t _marshall_nv_pair(nvObj_t **p_nv, char **p_str, char *group, uint8
         } else if (nv->valuetype == TYPE_INTEGER) {     // handle 0/1 input values
             nv->valuetype = TYPE_BOOLEAN;
             ritorno(str2long(str, &(nv->value_int)));
-            if ((nv->value_int < 0) || (nv->value_int > 1)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
+            if (nv->value_int > 1) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
         } else { return (STAT_VALUE_TYPE_ERROR); }
     }
     else if (cfg_type == TYPE_STRING) {

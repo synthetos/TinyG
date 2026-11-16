@@ -251,6 +251,7 @@ static void _text_print_inline_pairs(nvObj_t *nv)
 
 void text_print_list(stat_t status, uint8_t flags)
 {
+    (void)status;
     if (flags == TEXT_NO_DISPLAY) { return; }
     if (flags == TEXT_INLINE_PAIRS) { _text_print_inline_pairs(NV_BODY); return; }
 
@@ -272,7 +273,7 @@ static const char fmt_str[] PROGMEM = "%s\n";	// generic format for string messa
 static const char fmt_int[] PROGMEM = "%lu\n";	// generic format for ui16's and ui32s
 static const char fmt_flt[] PROGMEM = "%f\n";	// generic format for floats
 
-void tx_print_nul(nvObj_t *nv) {}
+void tx_print_nul(nvObj_t *nv) { (void)nv; }
 void tx_print_str(nvObj_t *nv) { text_print_str(nv, fmt_str);}
 void tx_print_int(nvObj_t *nv) { text_print_int(nv, fmt_int);}
 void tx_print_flt(nvObj_t *nv) { text_print_flt(nv, fmt_flt);}
@@ -299,6 +300,7 @@ void text_finalize_message(char *msg)
 
 void text_print_nul(nvObj_t *nv, const char *format) 	// just print the format string
 {
+    (void)nv;
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format);
     text_finalize_message(msg);

@@ -217,6 +217,7 @@ stat_t hw_get_id(nvObj_t *nv)
  */
 stat_t hw_run_boot(nvObj_t *nv)
 {
+    (void)nv;
 	hw_request_bootloader();
 	return(STAT_OK);
 }

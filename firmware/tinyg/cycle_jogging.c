@@ -146,6 +146,7 @@ static stat_t _set_jogging_func(stat_t (*func)(int8_t axis))
 
 static stat_t _jogging_axis_start(int8_t axis)
 {
+    (void)axis;
 	return (_set_jogging_func(_jogging_axis_jog));		// register the callback for the jog move
 }
 
