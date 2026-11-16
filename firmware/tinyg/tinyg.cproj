@@ -189,7 +189,12 @@
     <Compile Include="canonical_machine.c">
       <SubType>compile</SubType>
     </Compile>
-    <None Include="canonical_machine_text.inc" />
+    <Compile Include="cm_text.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="cm_internal.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="canonical_machine.h">
       <SubType>compile</SubType>
     </Compile>

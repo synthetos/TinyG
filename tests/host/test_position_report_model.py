@@ -42,7 +42,7 @@ float mp_get_runtime_work_position(uint8_t axis) { return runtime_mm[axis] - mr.
 float mp_get_runtime_work_offset(uint8_t axis) { return mr.gm.work_offset[axis]; }
 static int cm_get_units_mode(const GCodeState_t *gcode_state) { return gcode_state->units_mode; }
 float cm_get_active_coord_offset(uint8_t axis) { return cm.gm.work_offset[axis]; }
-static int8_t _get_axis(int index) { return (int8_t)index; }
+static int8_t cm_cfg_axis_index(int index) { return (int8_t)index; }
 '''
 
 EXERCISE = r'''

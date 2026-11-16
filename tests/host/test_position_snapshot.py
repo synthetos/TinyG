@@ -52,7 +52,7 @@ struct { float position[AXES]; GCodeState_t gm; } mr;
 extern volatile uint8_t cm_position_epoch;
 #define cm_position_changed() (cm_position_epoch++)
 static int cm_get_units_mode(const GCodeState_t *gcode_state) { return gcode_state->units_mode; }
-static int8_t _get_axis(int index) { return (int8_t)index; }
+static int8_t cm_cfg_axis_index(int index) { return (int8_t)index; }
 static const char *const msg_unit[] = { "in", "mm" };
 stat_t _get_msg_helper(nvObj_t *nv, const char *const msg_array[], uint8_t value) { (void)msg_array; nv->value_flt = value; return STAT_OK; }
 float cm_get_active_coord_offset(uint8_t axis) { return cm.gm.work_offset[axis]; }

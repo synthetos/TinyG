@@ -1,5 +1,5 @@
 /*
- * canonical_machine_text.inc - canonical-machine text presentation.
+ * cm_text.c - canonical-machine text presentation.
  * This file is part of the TinyG project
  *
  * Copyright (c) 2010 - 2016 Alden S Hart, Jr.
@@ -25,11 +25,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
  * OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-/*
- * Included only by canonical_machine.c after its configuration adapters. Keeping
- * these printers in the same translation unit preserves private helper access and
- * compiler inlining; model state and report snapshots remain owned by that file.
- */
+#include "tinyg.h"
+#include "config.h"
+#include "canonical_machine.h"
+#include "cm_internal.h"
+#include "text_parser.h"
 
 /***********************************************************************************
  * TEXT MODE SUPPORT
@@ -37,6 +37,12 @@
  ***********************************************************************************/
 
 #ifdef __TEXT_MODE
+
+static const char msg_units0[] PROGMEM = " in";	// used by generic print functions
+static const char msg_units1[] PROGMEM = " mm";
+static const char msg_units2[] PROGMEM = " deg";
+static const char *const msg_units[] PROGMEM = { msg_units0, msg_units1, msg_units2 };
+#define DEGREE_INDEX 2
 
 /* model state print functions */
 
@@ -160,7 +166,7 @@ static void _print_axis_ui8(nvObj_t *nv, const char *format)
 static void _print_axis_flt(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {	// linear
+	if (cm_cfg_axis_type(nv->index) == 0) {	// linear
 		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
@@ -173,7 +179,7 @@ static void _print_axis_flt(nvObj_t *nv, const char *format)
 static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
 {
 	char *units;
-	if (_get_axis_type(nv->index) == 0) {	// linear
+	if (cm_cfg_axis_type(nv->index) == 0) {	// linear
 		units = (char *)GET_UNITS(MODEL);
 	} else {
 		units = (char *)GET_TEXT_ITEM(msg_units, DEGREE_INDEX);
@@ -186,7 +192,7 @@ static void _print_axis_coord_flt(nvObj_t *nv, const char *format)
 static void _print_pos(nvObj_t *nv, const char *format, uint8_t units)
 {
 	char axes[] = {"XYZABC"};
-	uint8_t axis = _get_axis(nv->index);
+	uint8_t axis = cm_cfg_axis_index(nv->index);
 	if (axis >= AXIS_A) { units = DEGREES;}
     char msg[NV_MESSAGE_LEN];
     sprintf_P(msg, format, axes[axis], nv->value_flt, GET_TEXT_ITEM(msg_units, units));
@@ -225,10 +231,42 @@ void cm_print_hom(nvObj_t *nv)	// homed flag: an integer, not a position (get_ui
 {
 	char axes[] = {"XYZABC"};
     char msg[NV_MESSAGE_LEN];
-    sprintf_P(msg, fmt_hom, axes[_get_axis(nv->index)], (int)nv->value_int);
+    sprintf_P(msg, fmt_hom, axes[cm_cfg_axis_index(nv->index)], (int)nv->value_int);
     text_finalize_message(msg);
 }
 void cm_print_mpo(nvObj_t *nv) { _print_pos(nv, fmt_mpo, MILLIMETERS);}
 void cm_print_ofs(nvObj_t *nv) { _print_pos(nv, fmt_ofs, MILLIMETERS);}
 
 #endif // __TEXT_MODE
+
+/*
+ * Debugging Commands
+ *
+ * cm_dam() - dump active model
+ */
+
+stat_t cm_dam(nvObj_t *nv)
+{
+	printf_P(PSTR("Active model:\n"));
+	cm_print_vel(nv);
+	cm_print_feed(nv);
+	cm_print_line(nv);
+	cm_print_stat(nv);
+	cm_print_macs(nv);
+	cm_print_cycs(nv);
+	cm_print_mots(nv);
+	cm_print_hold(nv);
+	cm_print_home(nv);
+	cm_print_unit(nv);
+	cm_print_coor(nv);
+	cm_print_momo(nv);
+	cm_print_plan(nv);
+	cm_print_path(nv);
+	cm_print_dist(nv);
+	cm_print_admo(nv);
+	cm_print_frmo(nv);
+	cm_print_tool(nv);
+
+	return (STAT_OK);
+}
+

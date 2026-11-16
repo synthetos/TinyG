@@ -20,7 +20,7 @@ class StepRate(unittest.TestCase):
   if 'float st_get_move_time(' in stepper:
    code+='static float motor_time_per_unit[AXES];static uint8_t motor_time_axes[AXES],motor_time_groups;\n'+function(stepper,r'void st_refresh_move_time\(')+function(stepper,r'float st_get_move_time\(')
   code+=function(stepper,r'static int8_t _get_motor\(')+function(stepper,r'static void _set_motor_steps_per_unit\(')
-  code+='\nstatic uint8_t *set_target;\nstat_t set_ui8(nvObj_t *nv){*set_target=nv->value_int;return STAT_OK;}\nstatic int _get_axis_type(int index){return 0;}\n'
+  code+='\nstatic uint8_t *set_target;\nstat_t set_ui8(nvObj_t *nv){*set_target=nv->value_int;return STAT_OK;}\nstatic int cm_cfg_axis_type(int index){return 0;}\n'
   code+=function((ROOT/'firmware/tinyg/config_app.c').read_text(),r'static stat_t set_ma\(nvObj_t \*nv\)(?=\s*\{)')
   code+=function((ROOT/'firmware/tinyg/canonical_machine.c').read_text(),r'stat_t cm_set_am\(')
   code+=r'''

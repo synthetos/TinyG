@@ -41,6 +41,7 @@ SUBDIRS :=  \
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 ../canonical_machine.c \
+../cm_text.c \
 ../config.c \
 ../config_app.c \
 ../controller.c \
@@ -86,6 +87,7 @@ ASM_SRCS +=
 
 OBJS +=  \
 canonical_machine.o \
+cm_text.o \
 config.o \
 config_app.o \
 controller.o \
@@ -125,6 +127,7 @@ xmega/xmega_rtc.o
 
 OBJS_AS_ARGS +=  \
 canonical_machine.o \
+cm_text.o \
 config.o \
 config_app.o \
 controller.o \
@@ -164,6 +167,7 @@ xmega/xmega_rtc.o
 
 C_DEPS +=  \
 canonical_machine.d \
+cm_text.d \
 config.d \
 config_app.d \
 controller.d \
@@ -203,6 +207,7 @@ xmega/xmega_rtc.d
 
 C_DEPS_AS_ARGS +=  \
 canonical_machine.d \
+cm_text.d \
 config.d \
 config_app.d \
 controller.d \
