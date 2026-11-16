@@ -164,6 +164,7 @@
     <Compile Include="canonical_machine.c">
       <SubType>compile</SubType>
     </Compile>
+    <None Include="canonical_machine_text.inc" />
     <Compile Include="canonical_machine.h">
       <SubType>compile</SubType>
     </Compile>
