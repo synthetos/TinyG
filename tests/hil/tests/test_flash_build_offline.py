@@ -28,7 +28,9 @@ def test_build_returns_selected_image(tmp_path, monkeypatch, make_args, director
         target.write_text('new selected image')
 
     monkeypatch.setattr(flash.subprocess, 'run', make)
+    monkeypatch.setattr(flash, 'toolchain_id', lambda: ('host:test', None))
     result = flash.build(src if firmware_directory else tmp_path, make_args)
-    assert calls == [['make', '-C', str(src), '-j8', *make_args]]
+    assert calls == [['make', '-C', str(src.resolve()), '-j8', '-B', *make_args]]   # no stamp yet: full build
+    assert (src / directory / '.toolchain').read_text().strip() == 'host:test'
     assert result == src / directory / 'tinyg.hex'
     assert result.read_text() == 'new selected image'

@@ -51,7 +51,10 @@ CC      = avr-gcc
 OBJCOPY = avr-objcopy
 SIZE    = avr-size
 
-CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
+# -gdwarf-4, not -g: the CI toolchain (ubuntu-24.04 apt gcc-avr 7.3) emits no debug information for our sources with a
+# plain -g, so its ELF files lacked the firmware types the Atmel-ICE harness reads (library debug sections remain).
+# -gdwarf-4 keeps the instructions and size; only function-pointer trampoline and table addresses may move.
+CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -gdwarf-4 -std=gnu99 -Wall \
           -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
           -ffunction-sections -fdata-sections -I. $(TEST_DEFS) \
           -MMD -MP

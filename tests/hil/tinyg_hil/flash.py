@@ -6,12 +6,28 @@ import os
 import uuid
 import pathlib
 import re
+import shutil
 import subprocess
 import time
 
 from .driver import NoResponse, TinyG, IdentityError
 from . import bootloader
 from .state import flash_record, write_flash_record, state_dir
+
+
+def make_command(src, make_args=(), image_id=None):
+    """The make invocation for firmware/tinyg at src.
+
+    With image_id (the immutable ID of the TINYG_BUILD_IMAGE container image, e.g. "tinyg-avr-ci" built from
+    TinyG-work/toolchain/Dockerfile), make runs inside that image instead of with the host toolchain, so bench builds
+    use the same compiler as the CI release build (ubuntu-24.04 apt gcc-avr). The source directory is mounted at its
+    own path, so ELF paths and build directories are the same as a host build.
+    """
+    src = pathlib.Path(src).resolve()
+    if not image_id:
+        return ["make", "-C", str(src), "-j8", *make_args]
+    return ["docker", "run", "--rm", "--user", f"{os.getuid()}:{os.getgid()}", "-v", f"{src}:{src}", "-w", str(src),
+            image_id, "make", "-j8", *make_args]
 
 
 def build(source_dir, make_args=()) -> pathlib.Path:
@@ -22,7 +38,40 @@ def build(source_dir, make_args=()) -> pathlib.Path:
     src = pathlib.Path(source_dir)
     if (src / "firmware" / "tinyg").is_dir():
         src = src / "firmware" / "tinyg"
-    subprocess.run(["make", "-C", str(src), "-j8", *make_args], check=True, capture_output=True)
+    out = src / build_dir(make_args)
+    # make does not track the compiler: objects left by another toolchain would be reused. A stamp in the build
+    # directory names the exact toolchain that last built it successfully; anything else rebuilds everything (-B).
+    # The stamp is removed before building and written only after success, so a failed or interrupted build that
+    # left mixed objects behind always forces the next build to start over.
+    stamp = out / ".toolchain"
+    want, image_id = toolchain_id()
+    have = stamp.read_text().strip() if stamp.exists() else None
+    stamp.unlink(missing_ok=True)
+    args = list(make_args) if have == want else ["-B", *make_args]
+    subprocess.run(make_command(src, args, image_id), check=True, capture_output=True)
+    out.mkdir(exist_ok=True)
+    stamp.write_text(want + "\n")
+    return out / "tinyg.hex"
+
+
+def toolchain_id():
+    """(stamp text, container image ID or None) for the toolchain this build will use.
+
+    Container: the image's immutable ID (a rebuilt or retagged image is a different toolchain). Host: the avr-gcc
+    path and version line, so a host compiler upgrade also forces a full rebuild.
+    """
+    image = os.environ.get("TINYG_BUILD_IMAGE", "").strip()
+    if image:
+        image_id = subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", image],
+                                           text=True).strip()
+        return f"image:{image_id}", image_id
+    gcc = shutil.which("avr-gcc") or "avr-gcc"
+    version = subprocess.check_output([gcc, "--version"], text=True).splitlines()[0]
+    return f"host:{gcc}:{version}", None
+
+
+def build_dir(make_args=()):
+    """The Makefile's build directory for these make arguments."""
     # Match Makefile precedence, independent of argument order; the last value
     # for each variable wins, and an empty value makes its ifdef false.
     variables = dict(a.split("=", 1) for a in make_args if "=" in a)
@@ -31,7 +80,7 @@ def build(source_dir, make_args=()) -> pathlib.Path:
         builddir = "build-fb" + variables["FW_BUILD"]
     if variables.get("MOTION_PROFILE"):
         builddir = "build-profile" + variables["MOTION_PROFILE"]
-    return src / builddir / "tinyg.hex"
+    return builddir
 
 
 def source_build(source_dir) -> float:
