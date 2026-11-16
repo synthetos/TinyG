@@ -192,6 +192,9 @@
     <Compile Include="coolant.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="cm_modal.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cm_config.c">
       <SubType>compile</SubType>
     </Compile>

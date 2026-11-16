@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class TransientJerk(unittest.TestCase):
     def test_units_bounds_and_unchanged_axes(self):
-        source = (ROOT / 'firmware/tinyg/canonical_machine.c').read_text()
+        source = (ROOT / 'firmware/tinyg/cm_modal.c').read_text()
         code = r'''
 #include <stdint.h>
 #include <stdbool.h>

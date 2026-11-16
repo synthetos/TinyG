@@ -4,14 +4,14 @@ import re
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 ROOT=Path(__file__).resolve().parents[2]
 FW=ROOT/'firmware/tinyg'
 
 class InverseTime(unittest.TestCase):
     def test_model_and_arc_segment_time_survive_planning(self):
         line=(FW/'plan_line.c').read_text()
-        machine=(FW/'canonical_machine.c').read_text()
+        machine=canonical_machine_source(FW)
         parser=(FW/'gcode_parser.c').read_text()
         prefix=parser[parser.index('stat_t status = STAT_OK;',parser.index('static stat_t _execute_gcode_block()\n{')):]
         prefix=prefix[:prefix.index('EXEC_FUNC(cm_feed_rate_override_factor')]
