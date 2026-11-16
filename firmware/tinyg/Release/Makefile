@@ -46,6 +46,7 @@ C_SRCS +=  \
 ../coolant.c \
 ../cm_modal.c \
 ../cm_coords.c \
+../cycle_feedhold.c \
 ../config.c \
 ../config_app.c \
 ../controller.c \
@@ -96,6 +97,7 @@ cm_config.o \
 coolant.o \
 cm_modal.o \
 cm_coords.o \
+cycle_feedhold.o \
 config.o \
 config_app.o \
 controller.o \
@@ -140,6 +142,7 @@ cm_config.o \
 coolant.o \
 cm_modal.o \
 cm_coords.o \
+cycle_feedhold.o \
 config.o \
 config_app.o \
 controller.o \
@@ -184,6 +187,7 @@ cm_config.d \
 coolant.d \
 cm_modal.d \
 cm_coords.d \
+cycle_feedhold.d \
 config.d \
 config_app.d \
 controller.d \
@@ -228,6 +232,7 @@ cm_config.d \
 coolant.d \
 cm_modal.d \
 cm_coords.d \
+cycle_feedhold.d \
 config.d \
 config_app.d \
 controller.d \

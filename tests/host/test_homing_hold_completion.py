@@ -5,6 +5,7 @@ The fixture models a planner lease and the next homing phase. Firmware supplies
 its busy predicates, homing dispatch, and queue-flush implementation. The exec
 completion event is explicit; this does not emulate timers or switch interrupts.
 """
+from source_extract import canonical_machine_source
 import pathlib
 import re
 import shutil
@@ -125,7 +126,7 @@ class HomingHoldTests(unittest.TestCase):
         states = re.search(r"typedef enum \{\s*FEEDHOLD_OFF.*?\}", header, re.S).group()
         definitions = states.replace("typedef ", "", 1) + ";\n"
         line = (firmware / "plan_line.c").read_text()
-        machine = (firmware / "canonical_machine.c").read_text()
+        machine = canonical_machine_source(firmware)
         homing = (firmware / "cycle_homing.c").read_text()
         actual = "\n".join((function(line, "mp_get_runtime_busy"),
                               function(line, "mp_runtime_is_idle"),

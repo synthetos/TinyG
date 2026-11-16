@@ -12,7 +12,7 @@ probe touches right after the pin is sampled. The edge interrupt runs at that po
 are enabled, else when the critical section ends. The uninjected run is the control.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import os
 import shutil
@@ -34,6 +34,8 @@ static void cli(void) { SREG &= (uint8_t)~0x80; }
 
 
 def src(path):
+    if path == "canonical_machine.c":
+        return canonical_machine_source(FW, encoding="latin-1")
     return (FW / path).read_text(encoding="latin-1")
 
 

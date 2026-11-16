@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, canonical_machine_source
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -65,7 +65,7 @@ class AlarmClearDrain(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = canonical_machine_source(ROOT / 'firmware/tinyg')
         code = PRELUDE + function(source, r"void cm_clear\(\)") + EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-e144-") as tmp:
             c, exe = pathlib.Path(tmp) / "clear.c", pathlib.Path(tmp) / "clear"

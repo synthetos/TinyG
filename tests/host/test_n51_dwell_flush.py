@@ -1,6 +1,6 @@
 """Flush discards an active/prepared dwell, never a stepping line; real AVR path."""
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import subprocess
 import tempfile
@@ -35,7 +35,7 @@ bool st_aline_in_flight(void) {return TIMER_DDA.CTRLA ||
     else:
         code+='void st_cancel_dwell(void) {}\n'  # baseline: no cancellation
     code+=RUNTIME_STUBS
-    source=(ROOT/'canonical_machine.c').read_text()
+    source=canonical_machine_source(ROOT)
     for sig in [r'void cm_request_queue_flush\(\)',r'void cm_request_planner_flush\(\)',
                 r'static void _take_input_flush_request\(\)',r'static void _service_input_flush\(\)',
                 r'void cm_queue_flush\(\)',r'static void _run_requested_queue_flush\(\)']:

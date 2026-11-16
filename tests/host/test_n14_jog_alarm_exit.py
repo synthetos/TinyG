@@ -5,7 +5,7 @@ is controlled so the alarm can land before a move, while moving or after stop.
 """
 from pathlib import Path
 import subprocess,tempfile,unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 ROOT=Path(__file__).resolve().parents[2]
 PRE=r'''
 
@@ -41,7 +41,7 @@ static stat_t _jogging_finalize_exit(int8_t);
 class JogAlarm(unittest.TestCase):
  def test_alarm_exit(self):
   j=(ROOT/'firmware/tinyg/cycle_jogging.c').read_text()
-  c=(ROOT/'firmware/tinyg/canonical_machine.c').read_text()
+  c=canonical_machine_source(ROOT / 'firmware/tinyg')
   code=PRE
   for src,sig in [(c,r'static void _exec_program_finalize\([^;{]*\)(?=\s*\{)'),(c,r'void cm_cycle_end\(\)'),(j,r'static stat_t _jogging_finalize_exit\([^;{]*\)(?=[^;{]*\{)'),(j,r'stat_t cm_jogging_callback\(')]:code+=function(src,sig)+'\n'
   code+=r'''

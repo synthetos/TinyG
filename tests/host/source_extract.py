@@ -57,4 +57,5 @@ RUNTIME_STUBS += OVERRIDE_STUBS
 def canonical_machine_source(firmware, **read_options):
     """Read the canonical-machine implementation files for fixtures extracting functions across the split."""
     return "\n".join((firmware / name).read_text(**read_options)
-                     for name in ("canonical_machine.c", "cm_config.c", "coolant.c", "cm_modal.c", "cm_coords.c"))
+                     for name in ("canonical_machine.c", "cm_config.c", "coolant.c", "cm_modal.c", "cm_coords.c", "cycle_feedhold.c")
+                     if name == "canonical_machine.c" or (firmware / name).exists())

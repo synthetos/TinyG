@@ -8,7 +8,7 @@ flush (homing, panic, possibly in ISR context) must never reset the pool itself,
 reach a later alarm-only flush.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import shutil
 import subprocess
@@ -116,7 +116,7 @@ class QueueFlushInput(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = canonical_machine_source(ROOT / 'firmware/tinyg')
         code = PRELUDE + RUNTIME_STUBS
         for signature in (r"static void _take_input_flush_request\(\)", r"static void _service_input_flush\(\)",
                           r"void cm_request_queue_flush\(\)", r"void cm_request_planner_flush\(\)",

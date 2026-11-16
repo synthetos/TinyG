@@ -1,6 +1,6 @@
 """Deterministic hold/output sequencing; physical timing requires external capture."""
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import os
 import re
@@ -15,7 +15,7 @@ FIRMWARE = Path(os.environ.get('TINYG_FIRMWARE', ROOT/'firmware/tinyg'))
 
 class HoldOutputs(unittest.TestCase):
     def test_motion_only_hold_resume_and_flush(self):
-        source=(FIRMWARE/'canonical_machine.c').read_text()
+        source=canonical_machine_source(FIRMWARE)
         definitions=[]
         for name in ['_stop_outputs',
                      'cm_get_combined_state', 'cm_start_hold', 'cm_end_hold', 'cm_queue_flush',

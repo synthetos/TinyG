@@ -4,7 +4,7 @@ import re
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 
 ROOT = Path(__file__).resolve().parents[2] / 'firmware/tinyg'
 
@@ -56,7 +56,7 @@ static bool snapshot_runtime_idle(void) {
 }
 #define mp_runtime_is_idle snapshot_runtime_idle
 '''
-        code += function((ROOT / 'canonical_machine.c').read_text(), r'cmCombinedState cm_get_combined_state\(')
+        code += function(canonical_machine_source(ROOT), r'cmCombinedState cm_get_combined_state\(')
         code += r'''
 static void check(int expected) {
  typeof(cm) before=cm;

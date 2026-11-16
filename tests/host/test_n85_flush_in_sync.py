@@ -10,13 +10,13 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class FlushInSync(unittest.TestCase):
     def test_flush_ends_sync_only_when_nothing_is_moving(self):
-        source = (ROOT/'firmware/tinyg/canonical_machine.c').read_text()
+        source = canonical_machine_source(ROOT / 'firmware/tinyg')
         code = r'''
 #include <assert.h>
 #include <stdbool.h>
