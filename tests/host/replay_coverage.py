@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trajectory_replay as tr  # noqa: E402
 
 EXTS = {".nc", ".ngc", ".gcode", ".tap"}
-FIRMWARE = {m + ".c" for m in ("gcode_parser", "canonical_machine", "plan_arc", "planner", "plan_line", "plan_zoid",
+FIRMWARE = {m + ".c" for m in ("gcode_parser", "canonical_machine", "cm_config", "plan_arc", "planner", "plan_line", "plan_zoid",
                                "util", "spindle", "runtime", "feedlimit", "plan_exec", "kinematics")}
 
 

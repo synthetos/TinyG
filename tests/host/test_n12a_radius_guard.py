@@ -5,11 +5,11 @@ is converted to degrees using the configured radius. Tests the configured setter
 """
 from pathlib import Path
 import re, subprocess, tempfile, unittest
-from source_extract import function
+from source_extract import canonical_machine_source, function
 ROOT=Path(__file__).resolve().parents[2]/'firmware/tinyg'
 class RadiusGuard(unittest.TestCase):
     def test_invalid_radius_cannot_convert_target(self):
-        src=(ROOT/'canonical_machine.c').read_text()
+        src=canonical_machine_source(ROOT)
         code=r'''
 #include <math.h>
 #include <assert.h>
@@ -75,7 +75,7 @@ int cm_get_units_mode(int which) {return cm.gm.units_mode;}
         for line in header.splitlines():
             if line.startswith('#define MAX_ROTARY_RADIUS '): code+=line+'\n'
         code+=function(table,r'stat_t set_flu\(nvObj_t \*nv\)')
-        if setter!='set_flu': code+=function((ROOT/'canonical_machine.c').read_text(),r'stat_t '+setter+r'\(nvObj_t \*nv\)')
+        if setter!='set_flu': code+=function(canonical_machine_source(ROOT),r'stat_t '+setter+r'\(nvObj_t \*nv\)')
         code+=r'''
 int main(void) {
  float invalid[]={-1,0,-0.0f,NAN,INFINITY,-INFINITY};

@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import canonical_machine_source, function
 
 ROOT = Path(__file__).resolve().parents[2]
 FW = ROOT / 'firmware/tinyg'
@@ -116,7 +116,7 @@ static uint8_t cm_cfg_axis_type(index_t index){return cm_cfg_axis_index(index)>=
         selections['pwm.c'] = ['_pwm_frequency','pwm_set_frq']
         extracted = []
         for file, names in selections.items():
-            source = (FW/file).read_text()
+            source = canonical_machine_source(FW) if file == "canonical_machine.c" else (FW/file).read_text()
             for name in names:
                 definition = function(source, r'(?:static )?(?:stat_t|uint8_t|int8_t|bool|void) '+name+r'\([^;{}]*\)[^\n{]*(?=\s*\{)')
                 extracted.append(definition)

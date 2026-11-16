@@ -1,7 +1,7 @@
 """N20: axis rate caps must support a representable move duration. TinyG wiki TinyG-Configuration-for-Firmware-Version-0.97, xVM/xFR; NIST RS274NGC v3 3.5.1/3.5.2. Refuse rates below 0.00001 canonical units/minute (the existing numeric zero tolerance); refuse move durations beyond the segment counter range before queuing."""
 from pathlib import Path
 import subprocess,tempfile,unittest
-from source_extract import function
+from source_extract import canonical_machine_source, function
 FW=Path(__file__).resolve().parents[2]/"firmware/tinyg"
 PRE='\n#include <assert.h>\n#include <stdbool.h>\n#include <stdint.h>\n#include <string.h>\n#include <math.h>\n#define STAT_OK 0\n#define STAT_INPUT_LESS_THAN_MIN_VALUE 108\n#define STAT_INPUT_VALUE_RANGE_ERROR 110\n#define STAT_UNRECOGNIZED_NAME 100\n#define TYPE_FLOAT 4\n#define MODEL 0\n#define INCHES 0\n#define MILLIMETERS 1\n#define MM_PER_INCH 25.4f\n#define JERK_MULTIPLIER 1000000.f\n#define JERK_MATCH_PRECISION 1000.f\n#define EPSILON .00001f\n#define _to_millimeters(a) (units==INCHES?(a)*MM_PER_INCH:(a))\n#define PSTR(s) s\n#define min(a,b) ((a)<(b)?(a):(b))\n#define max(a,b) ((a)>(b)?(a):(b))\ntypedef int stat_t;\ntypedef struct {float value_flt;uint32_t value_int;int index,precision,valuetype,depth;} nvObj_t;\nstatic float stored=123;\nstatic int units=MILLIMETERS;\n#define table_target (&stored)\n#define table_precision 0\n#define GET_TABLE_WORD(x) table_##x\nstatic int cm_get_units_mode(int which){return units;}\nstatic int cm_cfg_axis_type(int index){return index>=3;}\nstatic int cm_cfg_axis_index(int index){return index;}\nstatic struct {struct {float jerk_max,recip_jerk;}a[6];float chordal_tolerance;}cm;\n'
 class Regression(unittest.TestCase):
@@ -9,10 +9,10 @@ class Regression(unittest.TestCase):
   code=PRE
   code+=function((FW/'config.c').read_text(encoding="latin1"), r"\b(?:static )?(?:stat_t|float|void|bool) set_flt\([^;{}]*\)[^;{}]*(?=\{)")+"\n"
   code+=function((FW/'config_app.c').read_text(encoding="latin1"), r"\b(?:static )?(?:stat_t|float|void|bool) set_flu\([^;{}]*\)[^;{}]*(?=\{)")+"\n"
-  source=(FW/'canonical_machine.c').read_text()
+  source=canonical_machine_source(FW)
   row=next(l for l in (FW/'config_app.c').read_text().splitlines() if '"xvm"' in l and '{' in l)
   if row.split(',')[6].strip()=='cm_set_axis_rate':
-   code+=function((FW/'canonical_machine.c').read_text(encoding="latin1"), r"\b(?:static )?(?:stat_t|float|void|bool) cm_set_axis_rate\([^;{}]*\)[^;{}]*(?=\{)")+"\n"
+   code+=function(canonical_machine_source(FW, encoding="latin1"), r"\b(?:static )?(?:stat_t|float|void|bool) cm_set_axis_rate\([^;{}]*\)[^;{}]*(?=\{)")+"\n"
   else:code+='\n#define cm_set_axis_rate set_flu\n'
   code+='\nint main(void){for(int a=0;a<6;a++)for(units=0;units<2;units++){\n stored=123;nvObj_t n={.index=a,.value_flt=1e-38f};assert(cm_set_axis_rate(&n)==108&&stored==123);\n n.value_flt=.00001f;assert(cm_set_axis_rate(&n)==0&&stored>0);\n}}\n'
   with tempfile.TemporaryDirectory() as d:

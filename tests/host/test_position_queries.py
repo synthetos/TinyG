@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import region
+from source_extract import canonical_machine_source, region
 
 ROOT = Path(os.environ.get("TINYG_SOURCE", Path(__file__).resolve().parents[2]))
 
@@ -28,7 +28,7 @@ def function(source, name):
 
 class PositionQueries(unittest.TestCase):
     def test_reports_use_work_position_and_units(self):
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = canonical_machine_source(ROOT / 'firmware/tinyg')
         code = r'''
 #include <assert.h>
 #include <stdint.h>

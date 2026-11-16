@@ -164,6 +164,9 @@
     <Compile Include="canonical_machine.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="cm_config.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cm_text.c">
       <SubType>compile</SubType>
     </Compile>

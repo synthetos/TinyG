@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import canonical_machine_source, function
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -77,7 +77,7 @@ class JogAllowed(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = canonical_machine_source(ROOT / 'firmware/tinyg')
         code = PRELUDE
         for signature in (r"static stat_t _jog_allowed\(", r"stat_t cm_run_jogx\("):
             code += function(source, signature + r"[^;{}]*\)(?=\s*\{)") + "\n"

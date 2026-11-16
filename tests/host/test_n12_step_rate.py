@@ -8,7 +8,7 @@ rounding and the bounded following-error correction; retain requested F.
 from pathlib import Path
 import re,subprocess,tempfile,unittest
 import test_feed_limit_tags as tags
-from source_extract import function
+from source_extract import canonical_machine_source, function
 ROOT=Path(__file__).resolve().parents[2]
 FREQ=re.search(r'^#define FREQUENCY_DDA.*$',(ROOT/'firmware/tinyg/hardware.h').read_text(),re.M).group()+'\n'
 class StepRate(unittest.TestCase):
@@ -22,7 +22,7 @@ class StepRate(unittest.TestCase):
   code+=function(stepper,r'static int8_t _get_motor\(')+function(stepper,r'static void _set_motor_steps_per_unit\(')
   code+='\nstatic uint8_t *set_target;\nstat_t set_ui8(nvObj_t *nv){*set_target=nv->value_int;return STAT_OK;}\nstatic int cm_cfg_axis_type(int index){return 0;}\n'
   code+=function((ROOT/'firmware/tinyg/config_app.c').read_text(),r'static stat_t set_ma\(nvObj_t \*nv\)(?=\s*\{)')
-  code+=function((ROOT/'firmware/tinyg/canonical_machine.c').read_text(),r'stat_t cm_set_am\(')
+  code+=function(canonical_machine_source(ROOT / 'firmware/tinyg'),r'stat_t cm_set_am\(')
   code+=r'''
 static void init_rate(void){setup();memset(&st_cfg,0,sizeof st_cfg);for(int m=0;m<MOTORS;m++)st_cfg.mot[m].motor_map=AXES;}
 int main(void){

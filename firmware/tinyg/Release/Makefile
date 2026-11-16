@@ -42,6 +42,7 @@ SUBDIRS :=  \
 C_SRCS +=  \
 ../canonical_machine.c \
 ../cm_text.c \
+../cm_config.c \
 ../config.c \
 ../config_app.c \
 ../controller.c \
@@ -88,6 +89,7 @@ ASM_SRCS +=
 OBJS +=  \
 canonical_machine.o \
 cm_text.o \
+cm_config.o \
 config.o \
 config_app.o \
 controller.o \
@@ -128,6 +130,7 @@ xmega/xmega_rtc.o
 OBJS_AS_ARGS +=  \
 canonical_machine.o \
 cm_text.o \
+cm_config.o \
 config.o \
 config_app.o \
 controller.o \
@@ -168,6 +171,7 @@ xmega/xmega_rtc.o
 C_DEPS +=  \
 canonical_machine.d \
 cm_text.d \
+cm_config.d \
 config.d \
 config_app.d \
 controller.d \
@@ -208,6 +212,7 @@ xmega/xmega_rtc.d
 C_DEPS_AS_ARGS +=  \
 canonical_machine.d \
 cm_text.d \
+cm_config.d \
 config.d \
 config_app.d \
 controller.d \
