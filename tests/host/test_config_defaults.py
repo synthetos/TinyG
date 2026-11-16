@@ -99,8 +99,8 @@ static void xio_xoff_usart(void *d){(void)d;}
 int cm_get_units_mode(int model){return MILLIMETERS;}
 #define _to_millimeters(a) (a) /* defaults are loaded in millimeters */
 static bool st_motor_is_rotary(const void *nv){return false;}  /* the motors here are linear */
-static uint8_t _get_axis(index_t index){const char *p=strchr("xyzabc",cfgArray[index].token[0]);assert(p);return p-"xyzabc";}
-static uint8_t _get_axis_type(index_t index){return _get_axis(index)>=3;}
+static uint8_t cm_cfg_axis_index(index_t index){const char *p=strchr("xyzabc",cfgArray[index].token[0]);assert(p);return p-"xyzabc";}
+static uint8_t cm_cfg_axis_type(index_t index){return cm_cfg_axis_index(index)>=3;}
 '''
         selections = {
             'config.c': ['set_nul','set_not','set_ui8','set_u32','set_01','set_012','set_0123','set_data','set_flt'],

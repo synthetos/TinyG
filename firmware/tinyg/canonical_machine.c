@@ -89,6 +89,7 @@
 #include "tinyg.h"			// #1
 #include "config.h"			// #2
 #include "canonical_machine.h"
+#include "cm_internal.h"
 #include "controller.h"
 #include "text_parser.h"
 
@@ -132,8 +133,6 @@ static void _stop_outputs(void);
 // A new stop request vetoes resume even if another '~' arrives during the planner walk.
 static volatile bool hold_resume_cancelled;
 
-static int8_t _get_axis(const index_t index);
-static int8_t _get_axis_type(const index_t index);
 static uint8_t _report_units(void);
 static float _get_report_position(const uint8_t axis);
 
@@ -2549,17 +2548,11 @@ static void _exec_program_end(float *value, bool *flags)
 
 #ifdef __TEXT_MODE
 
-static const char msg_units0[] PROGMEM = " in";	// used by generic print functions
-static const char msg_units1[] PROGMEM = " mm";
-static const char msg_units2[] PROGMEM = " deg";
-static const char *const msg_units[] PROGMEM = { msg_units0, msg_units1, msg_units2 };
-#define DEGREE_INDEX 2
-
 static const char msg_am00[] PROGMEM = "[disabled]";
 static const char msg_am01[] PROGMEM = "[standard]";
 static const char msg_am02[] PROGMEM = "[inhibited]";
 static const char msg_am03[] PROGMEM = "[radius]";
-static const char *const msg_am[] PROGMEM = { msg_am00, msg_am01, msg_am02, msg_am03};
+const char *const msg_am[] PROGMEM = { msg_am00, msg_am01, msg_am02, msg_am03};
 
 static const char msg_g20[] PROGMEM = "G20 - inches mode";
 static const char msg_g21[] PROGMEM = "G21 - millimeter mode";
@@ -2665,7 +2658,6 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 
 #else
 
-#define msg_units NULL
 #define msg_unit NULL
 #define msg_stat NULL
 #define msg_macs NULL
@@ -2686,8 +2678,8 @@ static const char *const msg_frmo[] PROGMEM = { msg_g93, msg_g94, msg_g95 };
 
 /***** AXIS HELPERS *****************************************************************
  * cm_get_axis_char() - return ASCII char for axis given the axis number
- * _get_axis()		  - return axis number or -1 if NA
- * _get_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
+ * cm_cfg_axis_index()		  - return axis number or -1 if NA
+ * cm_cfg_axis_type()	  - return 0 -f axis is linear, 1 if rotary, -1 if NA
  */
 
 char cm_get_axis_char(const int8_t axis)
@@ -2697,7 +2689,7 @@ char cm_get_axis_char(const int8_t axis)
 	return (axis_char[axis]);
 }
 
-static int8_t _get_axis(const index_t index)
+int8_t cm_cfg_axis_index(const index_t index)
 {
 	char *ptr;
 	char tmp[TOKEN_LEN+1];
@@ -2712,9 +2704,9 @@ static int8_t _get_axis(const index_t index)
 	return (ptr - axes);
 }
 
-static int8_t _get_axis_type(const index_t index)
+int8_t cm_cfg_axis_type(const index_t index)
 {
-	int8_t axis = _get_axis(index);
+	int8_t axis = cm_cfg_axis_index(index);
 	if (axis >= AXIS_A) return (1);
 	if (axis == -1) return (-1);
 	return (0);
@@ -2914,7 +2906,7 @@ static float _get_report_position(const uint8_t axis)
 stat_t cm_get_pos(nvObj_t *nv)
 {
 	cm_position_snapshot_begin();
-	nv->value_flt = _get_report_position(_get_axis(nv->index));
+	nv->value_flt = _get_report_position(cm_cfg_axis_index(nv->index));
 	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -2924,7 +2916,7 @@ stat_t cm_get_pos(nvObj_t *nv)
 stat_t cm_get_mpo(nvObj_t *nv)
 {
 	cm_position_snapshot_begin();
-	nv->value_flt = pos_snap.position[_get_axis(nv->index)];
+	nv->value_flt = pos_snap.position[cm_cfg_axis_index(nv->index)];
 	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -2934,7 +2926,7 @@ stat_t cm_get_mpo(nvObj_t *nv)
 stat_t cm_get_ofs(nvObj_t *nv)
 {
 	cm_position_snapshot_begin();
-	nv->value_flt = pos_snap.work_offset[_get_axis(nv->index)];
+	nv->value_flt = pos_snap.work_offset[cm_cfg_axis_index(nv->index)];
 	cm_position_snapshot_end();
 	nv->precision = GET_TABLE_WORD(precision);
 	nv->valuetype = TYPE_FLOAT;
@@ -2957,7 +2949,7 @@ stat_t cm_get_am(nvObj_t *nv)
 
 stat_t cm_set_am(nvObj_t *nv)		// axis mode
 {
-	if (_get_axis_type(nv->index) == 0) {	// linear
+	if (cm_cfg_axis_type(nv->index) == 0) {	// linear
 		if (nv->value_int > AXIS_MODE_MAX_LINEAR) {
             return (STAT_INPUT_EXCEEDS_MAX_VALUE);
         }
@@ -3026,12 +3018,12 @@ stat_t cm_set_axis_rate(nvObj_t *nv)
         return (STAT_INPUT_LESS_THAN_MIN_VALUE);
     }
     float canonical = nv->value_flt;
-    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+    if ((cm_cfg_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
         canonical *= MM_PER_INCH;
     }
     // A rate below the numeric zero tolerance cannot describe a usable feed.
     if (canonical < 0.00001f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
-    if (_get_axis_type(nv->index) == 0) {
+    if (cm_cfg_axis_type(nv->index) == 0) {
         if ((cm_get_units_mode(MODEL) == INCHES) &&
             !isfinite(nv->value_flt * MM_PER_INCH)) {
             return (STAT_INPUT_VALUE_RANGE_ERROR);
@@ -3083,7 +3075,7 @@ stat_t cm_set_ct(nvObj_t *nv)
 stat_t cm_set_jd(nvObj_t *nv)
 {
     float value = nv->value_flt;
-    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+    if ((cm_cfg_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
         value *= MM_PER_INCH;
     }
     if (!isfinite(value) || value > MAX_JUNCTION_DEVIATION) {
@@ -3105,18 +3097,18 @@ stat_t cm_set_xjm(nvObj_t *nv)
     // At least one million canonical units/min^3, also the M201.3 minimum.
     // This keeps supported jerks well above the planner cache's 1000-unit tolerance.
     float canonical = nv->value_flt;
-    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+    if ((cm_cfg_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
         canonical *= MM_PER_INCH;
     }
     if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
     // Reject overflow in the expanded canonical jerk before storage.
     if (!isfinite(canonical * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
-	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+	if (cm_cfg_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {
 		set_flt(nv);
 	}
-	cm_set_axis_jerk(_get_axis(nv->index), nv->value_flt);
+	cm_set_axis_jerk(cm_cfg_axis_index(nv->index), nv->value_flt);
 	return(STAT_OK);
 }
 
@@ -3131,13 +3123,13 @@ stat_t cm_set_xjh(nvObj_t *nv)
     // At least one million canonical units/min^3, also the M201.3 minimum.
     // This keeps supported jerks well above the planner cache's 1000-unit tolerance.
     float canonical = nv->value_flt;
-    if ((_get_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
+    if ((cm_cfg_axis_type(nv->index) == 0) && (cm_get_units_mode(MODEL) == INCHES)) {
         canonical *= MM_PER_INCH;
     }
     if (canonical < 1.0f) { return (STAT_INPUT_LESS_THAN_MIN_VALUE); }
     // Reject overflow in the expanded canonical jerk before storage.
     if (!isfinite(canonical * JERK_MULTIPLIER)) { return (STAT_INPUT_VALUE_RANGE_ERROR); }
-	if (_get_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
+	if (cm_cfg_axis_type(nv->index) == 0) {		// linear: inches to mm; rotary jerk is in degrees (E110)
 		set_flu(nv);
 	} else {
 		set_flt(nv);
@@ -3164,37 +3156,6 @@ stat_t cm_run_home(nvObj_t *nv)
 	if (nv->value_int == true) {
         cm_homing_cycle_start();
     }
-	return (STAT_OK);
-}
-
-/*
- * Debugging Commands
- *
- * cm_dam() - dump active model
- */
-
-stat_t cm_dam(nvObj_t *nv)
-{
-	printf_P(PSTR("Active model:\n"));
-	cm_print_vel(nv);
-	cm_print_feed(nv);
-	cm_print_line(nv);
-	cm_print_stat(nv);
-	cm_print_macs(nv);
-	cm_print_cycs(nv);
-	cm_print_mots(nv);
-	cm_print_hold(nv);
-	cm_print_home(nv);
-	cm_print_unit(nv);
-	cm_print_coor(nv);
-	cm_print_momo(nv);
-	cm_print_plan(nv);
-	cm_print_path(nv);
-	cm_print_dist(nv);
-	cm_print_admo(nv);
-	cm_print_frmo(nv);
-	cm_print_tool(nv);
-
 	return (STAT_OK);
 }
 
@@ -3264,6 +3225,3 @@ stat_t cm_run_joga(nvObj_t *nv)
 	cm_jogging_cycle_start(AXIS_A);
 	return (STAT_OK);
 }
-
-// Text presentation shares the private configuration helpers above.
-#include "canonical_machine_text.inc"

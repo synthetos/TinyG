@@ -42,13 +42,13 @@ static int units;
 #define precision 0
 #define GET_TABLE_WORD(x) (x)
 static int cm_get_units_mode(int which) { return units; }
-static int _get_axis_type(int index) { return index / 2 >= 3; }
+static int cm_cfg_axis_type(int index) { return index / 2 >= 3; }
 '''.replace('#define precision 0', '#define table_precision 0').replace('#define GET_TABLE_WORD(x) (x)', '#define GET_TABLE_WORD(x) table_##x\n#define table_target (&stored)')
         code += function((ROOT/'config.c').read_text(), r'stat_t set_flt\(nvObj_t \*nv\)')
         code += function(app, r'stat_t set_flu\(nvObj_t \*nv\)')
         if 'stat_t cm_set_axis_rate(' in cm:
             code += function(cm, r'stat_t cm_set_axis_rate\(nvObj_t \*nv\)')
-        code += '\n#define JERK_MULTIPLIER 1000000.f\n#define STAT_P_WORD_IS_NEGATIVE 153\nstatic int queued_dwells;\nstat_t mp_dwell(float s) { queued_dwells++; return 0; }\nstatic int _get_axis(int i) { return i/2; }\nvoid cm_set_axis_jerk(int a,float j) { stored=j; }\n'
+        code += '\n#define JERK_MULTIPLIER 1000000.f\n#define STAT_P_WORD_IS_NEGATIVE 153\nstatic int queued_dwells;\nstat_t mp_dwell(float s) { queued_dwells++; return 0; }\nstatic int cm_cfg_axis_index(int i) { return i/2; }\nvoid cm_set_axis_jerk(int a,float j) { stored=j; }\n'
         code += function(cm, r'stat_t cm_dwell\(const float seconds\)')
         code += function(cm, r'stat_t cm_set_xjm\(nvObj_t \*nv\)')
         code += '\nstatic stat_t (*setters[])(nvObj_t*) = {' + ','.join(rows) + '};\n'
