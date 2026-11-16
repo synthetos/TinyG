@@ -79,5 +79,8 @@ def test_probe_runs_after_tool_change(tg, zmin_probe, record, wrapped):
         _idle(tg)
     record("i186", {"wrapped": wrapped, "reports": reports, "alarmed": alarms, "tool": _get(tg, "tool")})
     assert all(r.get("e") == 0 for r in reports), reports
+    assert all(abs(r.get("z", 0) - (-1.0)) <= 0.002 for r in reports), reports   # each probe travelled the full 1 mm
+    assert all(alarms), alarms                                                    # documented probe-failed alarm (250)
+    assert _get(tg, "posz") == pytest.approx(0.0, abs=0.001)
     assert _get(tg, "tool") == 1
     assert tg.stat() in tg.dialect.idle_stats

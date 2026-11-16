@@ -8,7 +8,9 @@ prev_direction", and prev_direction is written only together with the DIR bit in
 
 The test reads the real DIR output pin through the Atmel-ICE at rest (PORTx.OUT bit DIRECTION_BIT_bp, hardware.h),
 never during motion: after a positive move, after re-setting the motor's travel-per-revolution to its own value (the
-setter runs the motor reset), and after the negative move that follows.
+setter runs the motor reset), after the negative move that follows, after a second reset, and after the next
+positive move. Resetting after both directions guarantees that one reversal starts from a cache that disagrees
+with the pin on master, whichever DIR level a direction maps to.
 The check is relative: the pin level after the negative move must differ from the level after the positive move,
 and return to it after the next positive move (absolute levels depend on the driver wiring and $Npo; they are
 recorded). The settings value is unchanged, so the bench geometry is untouched.
@@ -50,6 +52,9 @@ def test_dir_pin_follows_travel_after_motor_reset(tg, machine, ice, keep, record
         seen["after_reset"] = {m: _dir_pin(ice, m) for m in motors}
         _move(tg, -MOVE)
         seen["after_negative"] = {m: _dir_pin(ice, m) for m in motors}
+        for m in motors:                                      # reset again after the other direction, so one of
+            tg.set(f"{m}tr", tg.get(f"{m}tr"), allow="E026 re-send motor setting")   # the two reversals meets a stale cache
+        seen["after_second_reset"] = {m: _dir_pin(ice, m) for m in motors}
         _move(tg, MOVE)                                       # and back again, the #216 'second homing' order
         seen["after_second_positive"] = {m: _dir_pin(ice, m) for m in motors}
     finally:
