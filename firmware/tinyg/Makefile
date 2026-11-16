@@ -51,7 +51,9 @@ CC      = avr-gcc
 OBJCOPY = avr-objcopy
 SIZE    = avr-size
 
-CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -g -std=gnu99 -Wall \
+# -gdwarf-4, not -g: the CI toolchain (ubuntu-24.04 apt gcc-avr 7.3) emits no debug sections at all for a plain -g,
+# so its ELF files had no symbols for the Atmel-ICE harness. Debug options do not change the generated code.
+CFLAGS  = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -O2 -gdwarf-4 -std=gnu99 -Wall \
           -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
           -ffunction-sections -fdata-sections -I. $(TEST_DEFS) \
           -MMD -MP
