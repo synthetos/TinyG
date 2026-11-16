@@ -38,7 +38,25 @@ def build(source_dir, make_args=()) -> pathlib.Path:
     src = pathlib.Path(source_dir)
     if (src / "firmware" / "tinyg").is_dir():
         src = src / "firmware" / "tinyg"
-    subprocess.run(make_command(src, make_args), check=True, capture_output=True)
+    out = src / build_dir(make_args)
+    # make does not track the compiler: objects left by another toolchain would be reused. A stamp in the build
+    # directory names the toolchain that built it; any other toolchain rebuilds everything (-B).
+    stamp, want = out / ".toolchain", toolchain_id()
+    have = stamp.read_text().strip() if stamp.exists() else None
+    args = list(make_args) if have == want else ["-B", *make_args]
+    subprocess.run(make_command(src, args), check=True, capture_output=True)
+    stamp.write_text(want + "\n")
+    return out / "tinyg.hex"
+
+
+def toolchain_id():
+    """'image:<name>' for a container build, 'host' otherwise (the stamp kept in each build directory)."""
+    image = os.environ.get("TINYG_BUILD_IMAGE", "").strip()
+    return f"image:{image}" if image else "host"
+
+
+def build_dir(make_args=()):
+    """The Makefile's build directory for these make arguments."""
     # Match Makefile precedence, independent of argument order; the last value
     # for each variable wins, and an empty value makes its ifdef false.
     variables = dict(a.split("=", 1) for a in make_args if "=" in a)
@@ -47,7 +65,7 @@ def build(source_dir, make_args=()) -> pathlib.Path:
         builddir = "build-fb" + variables["FW_BUILD"]
     if variables.get("MOTION_PROFILE"):
         builddir = "build-profile" + variables["MOTION_PROFILE"]
-    return src / builddir / "tinyg.hex"
+    return builddir
 
 
 def source_build(source_dir) -> float:

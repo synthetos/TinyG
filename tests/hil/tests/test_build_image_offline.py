@@ -24,3 +24,20 @@ def test_container_make_with_image(monkeypatch, tmp_path):
 def test_blank_image_means_host(monkeypatch, tmp_path):
     monkeypatch.setenv("TINYG_BUILD_IMAGE", "  ")
     assert flash.make_command(tmp_path)[0] == "make"
+
+
+def test_toolchain_switch_forces_full_rebuild(monkeypatch, tmp_path):
+    """A build directory made by another toolchain is rebuilt with -B; the same toolchain builds incrementally."""
+    fw = tmp_path / "firmware" / "tinyg"
+    (fw / "build").mkdir(parents=True)
+    calls = []
+    monkeypatch.setattr(flash.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+    monkeypatch.delenv("TINYG_BUILD_IMAGE", raising=False)
+    flash.build(tmp_path)                                   # no stamp yet: full rebuild
+    assert "-B" in calls[-1] and (fw / "build" / ".toolchain").read_text().strip() == "host"
+    flash.build(tmp_path)                                   # same toolchain: incremental
+    assert "-B" not in calls[-1]
+    monkeypatch.setenv("TINYG_BUILD_IMAGE", "tinyg-avr-ci")
+    flash.build(tmp_path)                                   # switched to the container: full rebuild
+    assert calls[-1][0] == "docker" and "-B" in calls[-1]
+    assert (fw / "build" / ".toolchain").read_text().strip() == "image:tinyg-avr-ci"
