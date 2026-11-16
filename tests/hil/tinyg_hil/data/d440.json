@@ -2,7 +2,7 @@
  "commit": "d0418390",
  "fb": 440.21,
  "name": "d440",
- "ref": "origin/master",
+ "ref": "440.21",
  "status": {
   "ALARMED": 27,
   "ARC_AXIS_MISSING_FOR_SELECTED_PLANE": 156,

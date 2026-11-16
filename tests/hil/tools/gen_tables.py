@@ -1,7 +1,7 @@
 """Generate the token manifest and status-code table for one firmware source tree.
 
 usage: python tools/gen_tables.py REF NAME
-  REF   a git ref (e.g. origin/edge-0.97, HEAD) whose firmware/tinyg/ is read
+  REF   a git ref (e.g. edge-0.97-final, HEAD) whose firmware/tinyg/ is read
   NAME  output name; writes tinyg_hil/data/NAME.json
 
 The cfgArray is read from the avr-gcc preprocessed config_app.c so that #if'd
