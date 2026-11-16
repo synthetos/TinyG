@@ -46,6 +46,7 @@ def switch_code(probe=False):
     clock_h = src("xmega/xmega_rtc.h")
     types = clock_h[clock_h.index("typedef struct rtClock"):clock_h.index("// Other stuff")]
     types += h[h.index("#define SW_LOCKOUT_MS"):h.index("/****************", h.index("switches_t sw;"))]
+    types += "\nswitches_t sw;\n"  # Standalone fixture owns storage; the header only declares it.
     pre = SWITCH_PRELUDE + INTERRUPTS + "\nstatic int inject, pending;\n"
     if probe:
         pre = pre.replace("bool hold_fast,", "bool end_hold_requested, hold_fast,")

@@ -110,6 +110,7 @@ def switch_case():
     clock_h = src("xmega/xmega_rtc.h")
     types = clock_h[clock_h.index("typedef struct rtClock"):clock_h.index("// Other stuff")]
     types += h[h.index("#define SW_LOCKOUT_MS"):h.index("/****************", h.index("switches_t sw;"))]
+    types += "\nswitches_t sw;\n"  # Standalone fixture owns storage; the header only declares it.
     code = SWITCH_PRELUDE + INTERRUPTS + "\nstatic int inject, pending;\n" + types + "\nrtClock_t rtc;\n"
     code += "uint32_t SysTickTimer_getValue(void);\n"
     code += "\n".join(fn("xmega/xmega_rtc.c", n) for n in ("Timeout_isSet", "Timeout_isPast", "Timeout_set", "Timeout_clear"))

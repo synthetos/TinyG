@@ -155,6 +155,7 @@ class SwitchLockoutTests(unittest.TestCase):
         clock_header = (firmware / "xmega/xmega_rtc.h").read_text()
         types = clock_header[clock_header.index("typedef struct rtClock"):clock_header.index("// Other stuff")]
         switch_types = header[header.index("#define SW_LOCKOUT_MS"):header.index("/****************", header.index("switches_t sw;"))]
+        switch_types += "\nswitches_t sw;\n"  # Standalone fixture owns storage; the header only declares it.
         actual = "\n".join(function(clock, name) for name in
                            ("Timeout_isSet", "Timeout_isPast", "Timeout_set", "Timeout_clear"))
         actual += "\n" + function(source, "_read_raw_switch")

@@ -265,14 +265,14 @@ typedef struct bufMgr {                 // structure to manage a buffer pool
     buf_hdr_t buf[RX_HEADERS];          // circular linked list of header structs
     uint16_t magic_end;
 } buf_mgr_t;
-buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
+extern buf_mgr_t bm;                           // buffer manager struct for _CTRL and _DATA
 
 typedef struct bufPool {
     uint16_t magic_start;
     char rx_pool[RX_BUFFER_POOL_SIZE];  // statically allocated buffer pool with guard bands
     uint16_t magic_end;
 } buf_pool_t;
-buf_pool_t bufpool;
+extern buf_pool_t bufpool;
 
 typedef struct xioSingleton {
     uint16_t magic_start;
@@ -299,7 +299,7 @@ typedef struct xioSingleton {
 
     uint16_t magic_end;
 } xioSingleton_t;
-xioSingleton_t xio;
+extern xioSingleton_t xio;
 
 /*************************************************************************
  *	Sub-Includes and static allocations
@@ -309,11 +309,11 @@ xioSingleton_t xio;
 #include "xio/xio_usart.h"
 #include "xio/xio_spi.h"
 
-// Static structure allocations
-xioDev_t 		ds[XIO_DEV_COUNT];			// allocate top-level dev structs
-xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
-xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
-xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
+// Device structures defined in xio.c
+extern xioDev_t 		ds[XIO_DEV_COUNT];			// top-level dev structs
+extern xioUsart_t 		us[XIO_DEV_USART_COUNT];	// USART extended IO structs
+extern xioSpi_t 		spi[XIO_DEV_SPI_COUNT];		// SPI extended IO structs
+extern xioFile_t 		fs[XIO_DEV_FILE_COUNT];		// FILE extended IO structs
 extern struct controllerSingleton tg;		// needed by init() for default source
 
 /*************************************************************************

@@ -52,6 +52,8 @@
 #include "planner.h"
 #include "stepper.h"
 
+switches_t sw;
+
 static bool _read_raw_switch(const uint8_t sw_num);
 static void _dispatch_switch(const uint8_t sw_num);
 

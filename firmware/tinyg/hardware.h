@@ -256,7 +256,7 @@ typedef struct hmSingleton {
 	PORT_t *sw_port[MOTORS];		// bindings for switch ports (GPIO2)
 	PORT_t *out_port[MOTORS];		// bindings for output ports (GPIO1)
 } hwSingleton_t;
-hwSingleton_t hw;
+extern hwSingleton_t hw;
 
 /*** function prototypes ***/
 
