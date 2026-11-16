@@ -29,6 +29,19 @@ class Feed:
         return None
 
 
+class Backlog(Feed):
+    """Events already queued while the host was busy: the clock is already past them when reading starts."""
+    def __init__(self, events, start):
+        super().__init__(events)
+        self.now = start
+
+    def next_event(self, dt):
+        if self.q:
+            return self.q.pop(0)                   # already received; reading does not advance the clock
+        self.now += dt
+        return None
+
+
 def run(history, events, timeout=6.0):
     feed = Feed(events)
     state = confirm_hold(feed.next_event, fold_status(history, 100), 100, HOLD, feed.clock, SETTLE, timeout)
@@ -74,3 +87,24 @@ def test_hold_that_does_not_stay_held_keeps_waiting():
     with pytest.raises(CapStopTimeout):
         run([Ev(95, {"stat": 5, "vel": 300})],
             [Ev(100.5, {"stat": 6, "vel": 0}), Ev(100.9, {"stat": 5, "vel": 100})], timeout=4)
+
+
+def test_backlog_with_the_stale_holds_resume_unread_is_not_accepted():
+    # host busy until 102: a stale hold (100.05) and its resume (100.30) are both queued, then the cap's hold (102.5)
+    feed = Backlog([Ev(100.05, {"stat": 6, "vel": 0}), Ev(100.30, {"stat": 5, "vel": 280})], start=102.0)
+    feed.q.append(Ev(102.5, {"stat": 6, "vel": 0}))
+    with pytest.raises(CapStopTimeout):          # the queued fresh hold at 102.5 is read at 102.0: then it must settle
+        confirm_hold(feed.next_event, fold_status([Ev(95, {"stat": 5, "vel": 300})], 100), 100, HOLD,
+                     feed.clock, SETTLE, timeout=2.5)
+    feed2 = Backlog([Ev(100.05, {"stat": 6, "vel": 0}), Ev(100.30, {"stat": 5, "vel": 280}),
+                     Ev(102.5, {"stat": 6, "vel": 0})], start=102.0)
+    state = confirm_hold(feed2.next_event, fold_status([Ev(95, {"stat": 5, "vel": 300})], 100), 100, HOLD,
+                         feed2.clock, SETTLE, timeout=6.0)
+    assert state["stat"] == 6 and feed2.now >= 103.0   # settle counted from consumption, after the resume was read
+
+
+def test_backlog_ending_in_running_never_accepts_the_earlier_hold():
+    feed = Backlog([Ev(100.05, {"stat": 6, "vel": 0}), Ev(100.30, {"stat": 5, "vel": 280})], start=102.0)
+    with pytest.raises(CapStopTimeout):
+        confirm_hold(feed.next_event, fold_status([Ev(95, {"stat": 5, "vel": 300})], 100), 100, HOLD,
+                     feed.clock, SETTLE, timeout=4.0)
