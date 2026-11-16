@@ -40,6 +40,7 @@ POS_TOL = 0.002                                          # mm
 CAPTURE_MAX_LINES = int(os.environ.get("SOAK_CAPTURE_MAX", "40000"))
 HOLDS = int(os.environ["SOAK_HOLDS"]) if "SOAK_HOLDS" in os.environ else (3 if random.random() < 1 / 3 else 0)
 MAX_S = float(os.environ["SOAK_MAX_S"]) if os.environ.get("SOAK_MAX_S") else None
+CAP_SI = 0.5                         # status interval the cap relies on: enforced (si <= 500 ms) before a capped stream
 
 
 class _Holder(threading.Thread):
@@ -139,6 +140,11 @@ def test_soak_file(tg, keep, record, request):
     info = {"file": FILE, "mode": mode, "lines": len(lines), "host_safe": stripped, "start": start, "saleae": use_saleae, "holds": HOLDS,
             "settings": os.environ.get("SOAK_SETTINGS", ""),
             "hold_seed": seed}
+    if MAX_S:      # the cap's hold confirmation reads status reports: enforce the reporting contract it relies on
+        sv, si = tg.get("sv"), tg.get("si")
+        fields = set((tg.send_json({"sr": None}, check=True).body.get("sr") or {}).keys())
+        assert sv and sv >= 1 and si and si <= CAP_SI * 1000 and {"stat", "vel"} <= fields, \
+            f"SOAK_MAX_S needs status reports on (sv {sv}), every {CAP_SI * 1000:.0f} ms or faster (si {si}), with stat and vel ({sorted(fields)})"
     holder = _Holder(tg, HOLDS, seed, lock) if HOLDS else None
     t0 = time.monotonic()
     res = None
@@ -259,14 +265,14 @@ def _cap_stop(tg, exc, holder, info):
     t_req = time.monotonic()
     seed = soak.fold_status(list(tg.transport.history), t_req)
     tg.transport.write(b"!")
-    how, state = soak.confirm_hold(tg.transport.next_event, seed, t_req, tg.dialect.stat("HOLD"),
-                                   tg.dialect.stats("HOLD", "PROGRAM_STOP", "READY", "PROGRAM_END"), time.monotonic)
+    state = soak.confirm_hold(tg.transport.next_event, seed, t_req, tg.dialect.stat("HOLD"), time.monotonic,
+                              settle=2 * CAP_SI)
     tg.transport.write(b"%")                         # drops every RX byte before it (xio_flush_input), ends the job
     time.sleep(1.0)
     res = getattr(exc, "result", None)
     if info is not None:
         info["capped"] = {"after_s": MAX_S, "acked": getattr(res, "acked", None), "lines": getattr(res, "lines", None),
-                          "stop": how}
+                          "stop": "fresh_hold", "settle_s": 2 * CAP_SI}
     return res
 
 

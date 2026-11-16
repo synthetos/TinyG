@@ -70,28 +70,27 @@ def fold_status(events, until):
     return sr
 
 
-def confirm_hold(next_event, seed, t_req, hold_stat, stopped_stats, clock, silence=2.0, timeout=15.0):
-    """After a feedhold request written at t_req, wait for proof that motion has stopped; return (how, state).
+def confirm_hold(next_event, seed, t_req, hold_stat, clock, settle, timeout=15.0):
+    """After a feedhold request written at t_req, wait for proof that the hold completed; return the state.
 
-    Only reports received after t_req count as evidence: a report of an older hold (one that a later '~' resumed) is
-    already in `seed` and is ignored when it comes off the queue. "fresh_hold": a fresh report completes
-    stat == hold_stat with vel 0. "already_stopped": no fresh report for `silence` seconds while the seeded state
-    is stopped with vel 0; a moving machine reports a new position every status interval (250 ms default), so
-    that silence rules motion out. Raises CapStopTimeout otherwise.
+    Evidence is positive only: a report received after t_req completes stat == hold_stat with vel 0, and the folded
+    state then stays held for `settle` seconds (the caller passes two status intervals, with the interval enforced
+    beforehand). Reports arrive in the order the board sent them, so an older hold report that was followed by a
+    resume (sent before the request but received after it) is overtaken by that resume report within the window,
+    which cancels the candidate. Reports already folded into `seed` (t <= t_req) are ignored when they come off the
+    queue. Silence alone never succeeds: no fresh hold report means CapStopTimeout.
     """
-    state, fresh = dict(seed), False
+    state, since = dict(seed), None
     while True:
         now = clock()
-        if fresh and state.get("stat") == hold_stat and state.get("vel", 1) == 0:
-            return "fresh_hold", state
-        if not fresh and now - t_req >= silence and state.get("vel", 1) == 0 and state.get("stat") in stopped_stats:
-            return "already_stopped", state
+        if since is not None and now - since >= settle:
+            return state
         if now - t_req > timeout:
-            raise CapStopTimeout(f"no completed feedhold within {timeout} s after the request: {state}")
-        ev = next_event(0.1)
+            raise CapStopTimeout(f"no completed feedhold confirmed within {timeout} s after the request: {state}")
+        ev = next_event(0.05)
         if ev is None or ev.t <= t_req or ev.kind != "status" or not isinstance(ev.data, dict):
             continue
         if isinstance(ev.data.get("sr"), dict):
             state.update(ev.data["sr"])
-            fresh = True
-
+            held = state.get("stat") == hold_stat and state.get("vel", 1) == 0
+            since = (since if since is not None else ev.t) if held else None
