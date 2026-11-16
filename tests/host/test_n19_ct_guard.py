@@ -42,7 +42,7 @@ void cm_request_feedhold(void) {}
 arc_t arc;
 '''
         source=(FW/'plan_arc.c').read_text()
-        for sig in [r'static void _compute_arc_offsets_from_radius\(\)\s*',r'static float _estimate_arc_time \(float arc_time\)\s*',r'static stat_t _compute_arc\(const bool radius_f\)\s*',r'stat_t cm_arc_callback\(\)\s*']:
+        for sig in [r'static void _compute_arc_offsets_from_radius\(\)\s*',r'static float _estimate_arc_time \(void\)\s*',r'static stat_t _compute_arc\(const bool radius_f\)\s*',r'stat_t cm_arc_callback\(\)\s*']:
             pre+=function(source,sig + r"(?=\{)")
         pre += r'''
 int main(void){

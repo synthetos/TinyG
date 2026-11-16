@@ -33,7 +33,6 @@ class DefinedInitialization(unittest.TestCase):
             ran = subprocess.run([str(exe)], capture_output=True, text=True)
             self.assertEqual(ran.returncode, 0, ran.stderr)
 
-    @unittest.expectedFailure
     def test_null_parent_initializes_an_unparented_nv_list(self):
         code = r'''
 #include <assert.h>
@@ -64,9 +63,9 @@ int main(void) {
 '''
         self.compile_and_run(code)
 
-    @unittest.expectedFailure
     def test_line_headers_are_linked_without_before_array_pointer(self):
         code = "#define RX_HEADERS 12\n#define RX_BUFFER_POOL_SIZE 1000\n#define RX_BUFFER_MIN_SIZE 80\n"
+        # A trailing member prevents Clang from treating the fixed array as flexible.
         code += allocator.PRELUDE.replace("buf_hdr_t buf[RX_HEADERS];", "buf_hdr_t buf[RX_HEADERS]; char sanitizer_tail;")
         code += "static struct {char rx_pool[RX_BUFFER_POOL_SIZE];} bufpool;\n"
         code += function((FW / "xio.c").read_text(), r'static void _init_readline_linemode\((?:void)?\)\s*(?=\{)')
@@ -86,7 +85,6 @@ int main(void) {
 '''
         self.compile_and_run(code, ("-O0",))
 
-    @unittest.expectedFailure
     def test_arc_time_call_has_no_uninitialized_input(self):
         source = (FW / "plan_arc.c").read_text()
         call = next(line for line in source.splitlines() if "float segments_for_minimum_time =" in line)

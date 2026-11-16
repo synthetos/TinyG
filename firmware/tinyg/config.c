@@ -1232,7 +1232,7 @@ nvObj_t *nv_reset_nv(nvObj_t *nv)			// clear a single nvObj structure
  *      - set nvObj[0].valuetype = TYPE_EMPTY
  *      - set nvObj[0].depth = 0
  *
- *  - if "parent" arg is NUL:
+ *  - if "parent" arg is NULL or an empty string:
  *      - set nvObj[1..N].depth = 1             // set all depths to 1
  *
  *  - else if "parent" arg is non-NUL:
@@ -1250,9 +1250,9 @@ nvObj_t *nv_reset_nv_list(char *parent)
 	nvStr.wp = 0;							    // reset the shared string
     uint8_t nv_num=0;
 	nvObj_t *nv = NV_HEAD;                      // nvl.list[0]
-    uint8_t depth = (*parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
+    uint8_t depth = (parent != NULL && *parent != NUL) ? 2 : 1;   // element depth = 2 if there is a parent
 	for (uint8_t i=0; i<NV_LIST_LEN; i++, nv++) {
-		nv->pv = (nv-1);	                    // the ends are bogus & corrected later
+		nv->pv = (i == 0) ? NULL : (nv-1); // never form a pointer before the list
 		nv->nx = (nv+1);
         nv->nv_num = nv_num++;
 		nv->depth = depth;
@@ -1270,7 +1270,7 @@ nvObj_t *nv_reset_nv_list(char *parent)
 
     // setup parent element if one was requested. This is a convenience for calling routines
     nv = NV_BODY;
-    if (*parent != NUL) {
+    if (parent != NULL && *parent != NUL) {
 	    nv->depth = 1;
 	    nv->valuetype = TYPE_PARENT;
 	    strcpy(nv->token, parent);
