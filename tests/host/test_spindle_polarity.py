@@ -144,7 +144,7 @@ int main(void) {
 
     def test_persistent_indexes_are_unchanged(self):
         """Compare the active AVR table to stock, including conditional motor rows."""
-        stock = subprocess.check_output(["git", "show", "origin/edge-0.97:firmware/tinyg/config_app.c"], cwd=ROOT, text=True)
+        stock = subprocess.check_output(["git", "show", "edge-0.97-final:firmware/tinyg/config_app.c"], cwd=ROOT, text=True)
         current = (FIRMWARE / "config_app.c").read_text()
         def tokens(source):
             preprocessed = subprocess.check_output(["avr-gcc", "-mmcu=atxmega192a3", "-DF_CPU=32000000UL", "-I", str(FIRMWARE), "-E", "-P", "-x", "c", "-"], input=source, text=True)

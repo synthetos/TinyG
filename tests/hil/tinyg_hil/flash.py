@@ -48,7 +48,7 @@ def _git(cwd, *args):
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
-def flash_provenance(hex_path, stock_ref="origin/edge-0.97") -> dict:
+def flash_provenance(hex_path, stock_ref="edge-0.97-final") -> dict:
     """Immutable description of the image being flashed, captured at flash time."""
     hex_path = pathlib.Path(hex_path).resolve()
     elf = hex_path.with_suffix(".elf")
