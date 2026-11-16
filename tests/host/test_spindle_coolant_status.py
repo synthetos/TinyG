@@ -1,9 +1,9 @@
-"""Spindle and coolant state readouts, named as in g2core: spe, spd, sps (spindle.c), cof, com (canonical_machine.c).
+"""Spindle and coolant state readouts, named as in g2core: spe, spd, sps (spindle.c), cof, com (coolant.c).
 
 The readouts report the outputs as last driven by the real executors, not the model, which runs ahead of
 the outputs: M2/M30 turns the model off when it is parsed, while the outputs stay on until the queued
 program end runs. Cases, with the real _exec_spindle_control(), _exec_spindle_speed(), spindle_reset(),
-_exec_flood/mist_coolant_control() and cm_coolant_off_immediate():
+cm_exec_flood_coolant_control(), _exec_mist_coolant_control() and cm_coolant_off_immediate():
   - M3 S, M4 S, M5, S while running and while off, M7/M8/M9 and an alarm's immediate off;
   - the model turned off as M30's parse does, outputs still on: the readouts still say on, until the
     program end's spindle_reset() and cm_coolant_off_immediate() run;
@@ -80,7 +80,7 @@ def fn(path, name, ret=r"(?:static )?(?:void|stat_t)"):
 
 
 def code(split_read=False):
-    sp, cmc = src("spindle.c"), src("canonical_machine.c")
+    sp, cmc = src("spindle.c"), src("coolant.c")
     c = PRELUDE
     c += sp[sp.index("#define SSO_OPERATOR"):sp.index("static void _exec_spindle_control")] + "\n"
     c += sp[sp.index("static struct {"):sp.index("} spindle_out;") + len("} spindle_out;")] + "\n"
@@ -99,12 +99,12 @@ def code(split_read=False):
                           " d[0] = s[0]; d[1] = s[1]; if (inject) { inject = 0; if (SREG & 0x80) loader_s_update(); else inject = 2; }"
                           " d[2] = s[2]; d[3] = s[3];")
     c += sps + "\n"
-    c += "static void _exec_flood_coolant_control(float *value, bool *flags);\n"
+    c += "void cm_exec_flood_coolant_control(float *value, bool *flags);\n"
     c += re.search(r"static volatile uint8_t coolant_out_mist, coolant_out_flood;\n", cmc).group(0)
     for line in re.findall(r"^stat_t coolant_get_co[fm]\(nvObj_t \*nv\) \{[^\n]*\}$", cmc, re.M):
         c += line + "\n"
-    for name in ("_exec_mist_coolant_control", "_exec_flood_coolant_control", "cm_coolant_off_immediate"):
-        c += fn("canonical_machine.c", name) + "\n"
+    for name in ("_exec_mist_coolant_control", "cm_exec_flood_coolant_control", "cm_coolant_off_immediate"):
+        c += fn("coolant.c", name) + "\n"
     return c
 
 
@@ -127,13 +127,13 @@ int main(void) {
     exec(_exec_spindle_control, SPINDLE_OFF);          /* M5: the direction last driven stays */
     assert(i(spindle_get_spe) == 0 && i(spindle_get_spc) == 0 && i(spindle_get_spd) == 1 && sps() == 0);
 
-    exec(_exec_flood_coolant_control, 1); exec(_exec_mist_coolant_control, 1);   /* M8, M7 */
+    exec(cm_exec_flood_coolant_control, 1); exec(_exec_mist_coolant_control, 1);   /* M8, M7 */
     assert(i(coolant_get_cof) == 1 && i(coolant_get_com) == 1);
-    exec(_exec_flood_coolant_control, 0);              /* M9: both off */
+    exec(cm_exec_flood_coolant_control, 0);              /* M9: both off */
     assert(i(coolant_get_cof) == 0 && i(coolant_get_com) == 0);
 
     /* M30 parsed behind a move: the model goes off at once, the outputs only when the program end runs */
-    exec(_exec_spindle_control, SPINDLE_CW); exec(_exec_flood_coolant_control, 1); exec(_exec_mist_coolant_control, 1);
+    exec(_exec_spindle_control, SPINDLE_CW); exec(cm_exec_flood_coolant_control, 1); exec(_exec_mist_coolant_control, 1);
     cm.gm.spindle_mode = SPINDLE_OFF; cm.gm.mist_coolant = false; cm.gm.flood_coolant = false;   /* cm_program_end() */
     assert(i(spindle_get_spe) == 1 && i(coolant_get_cof) == 1 && i(coolant_get_com) == 1 && sps() > 0);
     spindle_reset(); cm_coolant_off_immediate();        /* _exec_program_end() */
@@ -193,7 +193,7 @@ int main(void) {
   if(reason==6)cm.shutdown_requested=true;
   float on[]={1};
   spindle_control_immediate(SPINDLE_CW,1234.5f);
-  _exec_mist_coolant_control(on,FLAGS_NONE);_exec_flood_coolant_control(on,FLAGS_NONE);
+  _exec_mist_coolant_control(on,FLAGS_NONE);cm_exec_flood_coolant_control(on,FLAGS_NONE);
   spindle_get_runtime(&mode,&speed);
   assert(mode==SPINDLE_OFF&&speed==0&&coolant_out_mist==0&&coolant_out_flood==0);
  }

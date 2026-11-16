@@ -43,6 +43,7 @@ C_SRCS +=  \
 ../canonical_machine.c \
 ../cm_text.c \
 ../cm_config.c \
+../coolant.c \
 ../config.c \
 ../config_app.c \
 ../controller.c \
@@ -90,6 +91,7 @@ OBJS +=  \
 canonical_machine.o \
 cm_text.o \
 cm_config.o \
+coolant.o \
 config.o \
 config_app.o \
 controller.o \
@@ -131,6 +133,7 @@ OBJS_AS_ARGS +=  \
 canonical_machine.o \
 cm_text.o \
 cm_config.o \
+coolant.o \
 config.o \
 config_app.o \
 controller.o \
@@ -172,6 +175,7 @@ C_DEPS +=  \
 canonical_machine.d \
 cm_text.d \
 cm_config.d \
+coolant.d \
 config.d \
 config_app.d \
 controller.d \
@@ -213,6 +217,7 @@ C_DEPS_AS_ARGS +=  \
 canonical_machine.d \
 cm_text.d \
 cm_config.d \
+coolant.d \
 config.d \
 config_app.d \
 controller.d \

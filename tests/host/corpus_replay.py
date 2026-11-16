@@ -20,7 +20,7 @@ from source_extract import function, region
 
 HERE = Path(__file__).resolve().parent
 SUPPORT = HERE / "corpus_replay_support"
-SOURCES = ("gcode_parser", "canonical_machine", "cm_config", "plan_arc", "planner",
+SOURCES = ("gcode_parser", "canonical_machine", "cm_config", "coolant", "plan_arc", "planner",
            "plan_line", "plan_zoid", "util", "spindle", "runtime", "feedlimit", "override")
 SUFFIXES = {".nc", ".ngc", ".gcode", ".tap"}
 MATH_NAMES = ("sqrt", "cbrt", "pow", "sin", "cos", "atan2", "atan", "asin",
@@ -100,7 +100,7 @@ def build(source, output, cc="cc"):
     fw = source / "firmware/tinyg"
     own = source / "tests/host/corpus_replay_support"
     support = own if own.is_dir() else SUPPORT
-    sources = tuple(n for n in SOURCES if n not in ('runtime', 'feedlimit', 'override', 'cm_config') or (fw / (n + '.c')).exists())
+    sources = tuple(n for n in SOURCES if n not in ('runtime', 'feedlimit', 'override', 'cm_config', 'coolant') or (fw / (n + '.c')).exists())
     legacy = not (fw / 'runtime.c').exists()
     output.mkdir(parents=True, exist_ok=True)
     exe = output / "replay"

@@ -122,8 +122,6 @@ cmSingleton_t cm;		// canonical machine controller singleton
 static void _exec_offset(float *value, bool *flags);
 static void _exec_g10_offset(float *value, bool *flags);
 static void _exec_change_tool(float *value, bool *flags);
-static void _exec_mist_coolant_control(float *value, bool *flags);
-static void _exec_flood_coolant_control(float *value, bool *flags);
 static void _exec_absolute_origin(float *value, bool *flags);
 static void _exec_program_finalize(float *value, bool *flags);
 static void _exec_program_end(float *value, bool *flags);
@@ -1680,56 +1678,6 @@ stat_t cm_tool_offset_cancel()
     return (STAT_OK);
 }
 
-/***********************************
- * Miscellaneous Functions (4.3.9) *
- ***********************************/
-/*
- * cm_mist_coolant_control() - M7
- * cm_flood_coolant_control() - M8, M9
- */
-
-stat_t cm_mist_coolant_control(const uint8_t mist_coolant)
-{
-	float value[AXES] = { (float)mist_coolant };
-	mp_queue_command_class(_exec_mist_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
-	return (STAT_OK);
-}
-// Coolant outputs as last driven, for the g2core-named cof and com readouts: the model runs ahead of the
-// outputs (M2/M30 turns it off when parsed), so the readouts follow the executors instead.
-static volatile uint8_t coolant_out_mist, coolant_out_flood;
-
-stat_t coolant_get_cof(nvObj_t *nv) { nv->value_int = coolant_out_flood; nv->valuetype = TYPE_INTEGER; return (STAT_OK); }
-stat_t coolant_get_com(nvObj_t *nv) { nv->value_int = coolant_out_mist; nv->valuetype = TYPE_INTEGER; return (STAT_OK); }
-
-static void _exec_mist_coolant_control(float *value, bool *flags)
-{
-    (void)flags;
-	cm.gm.mist_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
-	coolant_out_mist = cm.gm.mist_coolant;
-
-#ifdef __AVR
-	if (cm.gm.mist_coolant == true) {
-		gpio_set_bit_on(MIST_COOLANT_BIT);
-    } else {
-	    gpio_set_bit_off(MIST_COOLANT_BIT);
-    }
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.mist_coolant == true) {
-		coolant_enable_pin.set();
-    } else {
-	    coolant_enable_pin.clear();
-    }
-#endif // __ARM
-}
-
-stat_t cm_flood_coolant_control(const uint8_t flood_coolant)
-{
-	float value[AXES] = { (float)flood_coolant };
-	mp_queue_command_class(_exec_flood_coolant_control, value, FLAGS_ONE, FL_CLS_COOLANT);
-	return (STAT_OK);
-}
 /*
  * cm_outputs_inhibited() - true in ALARM, SHUTDOWN and PANIC: spindle and coolant may only turn off
  *
@@ -1741,42 +1689,6 @@ bool cm_outputs_inhibited()
     return ((cm.machine_state == MACHINE_ALARM) || (cm.machine_state == MACHINE_SHUTDOWN) ||
             (cm.machine_state == MACHINE_PANIC) || (cm.queue_flush_state != FLUSH_OFF) ||
             cm.job_kill_requested || cm.limit_requested || cm.shutdown_requested);
-}
-
-/*
- * cm_coolant_off_immediate() - turn mist and flood coolant off now (alarm, shutdown, panic)
- */
-void cm_coolant_off_immediate()
-{
-    float value[] = { 0,0,0,0,0,0 };
-    _exec_flood_coolant_control(value, FLAGS_NONE);   // the M9 path also turns mist off
-}
-
-static void _exec_flood_coolant_control(float *value, bool *flags)
-{
-    (void)flags;
-	cm.gm.flood_coolant = cm_outputs_inhibited() ? false : (uint8_t)value[0];
-	coolant_out_flood = cm.gm.flood_coolant;
-
-#ifdef __AVR
-	if (cm.gm.flood_coolant == true) {
-		gpio_set_bit_on(FLOOD_COOLANT_BIT);
-	} else {
-		gpio_set_bit_off(FLOOD_COOLANT_BIT);
-		float vect[] = { 0,0,0,0,0,0 };				    // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_NONE);   // M9 special function
-	}
-#endif // __AVR
-
-#ifdef __ARM
-	if (cm.gm.flood_coolant == true) {
-		coolant_enable_pin.set();
-	} else {
-		coolant_enable_pin.clear();
-		float vect[] = { 0,0,0,0,0,0 };				    // turn off mist coolant
-		_exec_mist_coolant_control(vect, FLAGS_NONE);   // M9 special function
-	}
-#endif // __ARM
 }
 
 /*
@@ -2104,7 +2016,7 @@ static void _stop_outputs(void)
     hold_resume_cancelled = true;
     spindle_reset();
     float off[] = { 0 };
-    _exec_flood_coolant_control(off, FLAGS_NONE);
+    cm_exec_flood_coolant_control(off, FLAGS_NONE);
 #ifdef __AVR
     SREG = saved_sreg;
 #endif

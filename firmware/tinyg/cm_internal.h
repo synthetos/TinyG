@@ -3,6 +3,8 @@
 #ifndef CM_INTERNAL_H
 #define CM_INTERNAL_H
 
+void cm_exec_flood_coolant_control(float *value, bool *flags);
+
 uint8_t cm_report_units(void);
 
 int8_t cm_cfg_axis_index(const index_t index);

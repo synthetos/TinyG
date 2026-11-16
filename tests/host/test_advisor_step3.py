@@ -189,7 +189,7 @@ class AdvisorStep3Commands(unittest.TestCase):
         self.build_run(b_code() + B_MAIN, "commands")
 
     def test_command_wiring(self):
-        sp, cm, pl = src("spindle.c"), src("canonical_machine.c"), src("plan_line.c")
+        sp, cm, pl = src("spindle.c"), src("coolant.c"), src("plan_line.c")
         self.assertEqual(len(re.findall(r"mp_queue_command_class\([^;]*FL_CLS_SPINDLE\)", sp)), 2)   # M3/M4/M5 and S
         self.assertEqual(len(re.findall(r"mp_queue_command_class\([^;]*FL_CLS_COOLANT\)", cm)), 2)   # M7 and M8/M9
         self.assertRegex(pl, r"if \(pv_type == BLOCK_TYPE_COMMAND\) \{[^}]*fl_tags \|= FL_COMMAND;")  # the move after a command
