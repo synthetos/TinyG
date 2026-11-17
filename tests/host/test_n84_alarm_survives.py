@@ -9,7 +9,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 ROOT = Path(__file__).resolve().parents[2]
 FW = ROOT/'firmware/tinyg'
 
@@ -74,7 +74,7 @@ int main(void){
         _run(code)
 
     def test_cycle_end_and_program_stop_keep_the_alarm(self):
-        source = (FW/'canonical_machine.c').read_text()
+        source = canonical_machine_source(FW)
         code = r'''
 #include <assert.h>
 #include <stdbool.h>

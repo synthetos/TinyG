@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 
 ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE = Path(os.environ.get("TINYG_FIRMWARE", ROOT / "firmware/tinyg"))
@@ -18,7 +18,7 @@ class SpindlePolarity(unittest.TestCase):
     def test_control_and_setting_interlock(self):
         source = (FIRMWARE / "spindle.c").read_text()
         names = ["spindle_config_init", "spindle_init_outputs", "spindle_set_polarity", "spindle_reset", "_exec_spindle_control"]
-        definitions = [function((FIRMWARE / "canonical_machine.c").read_text(),
+        definitions = [function(canonical_machine_source(FIRMWARE),
                                 r"bool cm_outputs_inhibited\(\)(?=\s*\{)")]
         for name in names:
             signature = r"(?m)^(?:static )?(?:void|stat_t) " + name + r"\([^;{}\n]*\)\s*"

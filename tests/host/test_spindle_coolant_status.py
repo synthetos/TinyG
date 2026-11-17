@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 import unittest
 
-from source_extract import function
+from source_extract import function, canonical_machine_source
 
 ROOT = Path(__file__).resolve().parents[2]
 FW = Path(os.environ.get("TINYG_FIRMWARE", ROOT / "firmware/tinyg"))
@@ -72,6 +72,8 @@ static void loader_s_update(void);
 
 
 def src(path):
+    if path == "canonical_machine.c":
+        return canonical_machine_source(FW, encoding="latin-1")
     return (FW / path).read_text(encoding="latin-1")
 
 

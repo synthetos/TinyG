@@ -5,7 +5,7 @@ step delivery, or latency. In particular, the prepared-only fixture exercises
 the alarm decision; it does not claim the main loop can outrun the HI loader.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 import os
 from pathlib import Path
 import subprocess
@@ -22,7 +22,7 @@ class AlarmFinalSegment(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         firmware = ROOT / "firmware/tinyg"
-        machine = (firmware / "canonical_machine.c").read_text()
+        machine = canonical_machine_source(firmware)
         stepper = (firmware / "stepper.c").read_text()
         code = r'''
 #include <assert.h>

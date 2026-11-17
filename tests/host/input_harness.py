@@ -28,6 +28,7 @@ static int input_machine_state(void) {
     return MACHINE_READY;
 }
 '''
+    machine_file = "cycle_feedhold.c" if (FW / "cycle_feedhold.c").exists() else "canonical_machine.c"
     util = (FW / 'util.c').read_text()
     if kind == 'gcode':
         source = (FW / 'gcode_parser.c').read_text()
@@ -69,7 +70,7 @@ static int exercise(char *s, unsigned n) {
 '''
     elif kind == 'text':
         source = (FW / 'text_parser.c').read_text()
-        code = pre + extract((FW / 'canonical_machine.c').read_text(), 'cm_is_alarmed', 'canonical_machine.c') + extract(source, '_text_parser_kernal', 'text_parser.c') + extract(source, 'text_parser', 'text_parser.c')
+        code = pre + extract((FW / machine_file).read_text(), 'cm_is_alarmed', machine_file) + extract(source, '_text_parser_kernal', 'text_parser.c') + extract(source, 'text_parser', 'text_parser.c')
         code += r'''
 #line 1 "input_fixture.c"
 static int exercise(char *s,unsigned n) {
@@ -80,7 +81,7 @@ static int exercise(char *s,unsigned n) {
 '''
     else:
         source = (FW / 'json_parser.c').read_text()
-        code = pre + extract((FW / 'canonical_machine.c').read_text(), 'cm_is_alarmed', 'canonical_machine.c')
+        code = pre + extract((FW / machine_file).read_text(), 'cm_is_alarmed', machine_file)
         config = (FW / 'config.c').read_text()
         code += extract(config,'nv_reset_nv_list','config.c').replace('nv_reset_nv_list(', 'real_reset_nv_list(', 1)
         for name in ['nv_reset_nv','nv_next','nv_prev','nv_next_empty','set_nul','nv_refused_in_cycle','nv_set','nv_get','nv_copy_string']:

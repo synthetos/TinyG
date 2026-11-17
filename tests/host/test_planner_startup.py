@@ -1,4 +1,4 @@
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 """Link actual planner and dispatch logic; fake only physical execution and the clock."""
 from pathlib import Path
 import os
@@ -17,7 +17,7 @@ class PlannerStartup(unittest.TestCase):
     def test_lookahead_and_release(self):
         source=(FIRMWARE/'plan_exec.c').read_text()
         dispatch=function(source,r'(?m)^stat_t mp_exec_move\([^;{}\n]*\)\s*')
-        cm=(FIRMWARE/'canonical_machine.c').read_text()
+        cm=canonical_machine_source(FIRMWARE)
         hold=function(cm,r'(?m)^void cm_request_feedhold\([^;{}\n]*\)\s*')
         with tempfile.TemporaryDirectory() as d:
             c=Path(d)/'check.c'

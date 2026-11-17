@@ -3,7 +3,7 @@
 The runtime finalizer and physical step generator are fixtures; no timing claim is made.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import re
 import subprocess
@@ -27,7 +27,7 @@ def function(source, name):
 
 class ProgramPause(unittest.TestCase):
     def test_explicit_stop_and_resume(self):
-        canonical = (ROOT / 'firmware/tinyg/canonical_machine.c').read_text()
+        canonical = canonical_machine_source(ROOT / 'firmware/tinyg')
         executor = (ROOT / 'firmware/tinyg/plan_exec.c').read_text()
         code = r'''
 #include <stdbool.h>

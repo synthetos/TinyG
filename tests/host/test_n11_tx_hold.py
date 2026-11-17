@@ -4,7 +4,7 @@ Real putc, hold-start, alarm-entry and sequencing code; sleep models interrupt
 progress and releases TX only after checking that motion can decelerate.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import re, subprocess, tempfile, unittest
 from source_extract import function
@@ -69,7 +69,7 @@ static void sleep_mode(void){
 '''
 class TxHold(unittest.TestCase):
  def test_wait_services_stop_without_output_or_input_reentry(self):
-  cm=(ROOT/'firmware/tinyg/canonical_machine.c').read_text()
+  cm=canonical_machine_source(ROOT / 'firmware/tinyg')
   usb=(ROOT/'firmware/tinyg/xio/xio_usb.c').read_text()
   code=PRE
   # The baseline has no shared non-reporting alarm entry or blocked-TX callback.

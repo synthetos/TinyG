@@ -1,6 +1,6 @@
 """Hold admission during a stopped cycle/dwell, with real request and startup code."""
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import subprocess
 import tempfile
@@ -44,7 +44,7 @@ bool st_aline_in_flight(void){return aline;}
 void sr_request_status_report(int k){assert(k==SR_REQUEST_ASAP);reports++;}
 '''
         code += function((ROOT/'planner.c').read_text(), r'bool mp_hold_startup\(void\)(?=\s*\{)')
-        code += function((ROOT/'canonical_machine.c').read_text(), r'void cm_request_feedhold\(void\)(?=\s*\{)')
+        code += function(canonical_machine_source(ROOT), r'void cm_request_feedhold\(void\)(?=\s*\{)')
         code += r'''
 static void reset(uint8_t irq){
  cm.hold_state=FEEDHOLD_OFF;cm.motion_state=MOTION_STOP;cm.cycle_state=CYCLE_OFF;
@@ -143,7 +143,7 @@ int main(void){
         code=code.replace('void st_prep_null(void) {}',
                           'static int prepared; void st_prep_null(void) {assert(!(SREG&128)); prepared=0;}')
         code+=RUNTIME_STUBS
-        source=(ROOT/'canonical_machine.c').read_text()
+        source=canonical_machine_source(ROOT)
         for signature in [r'void cm_request_queue_flush\(\)',r'void cm_request_planner_flush\(\)',
                           r'static void _take_input_flush_request\(\)',r'void cm_queue_flush\(\)']:
             code+=function(source,signature)

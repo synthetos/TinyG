@@ -10,7 +10,7 @@ The real dispatch functions and flush request helpers are compiled; the reader s
 run is the control.
 """
 
-from source_extract import OVERRIDE_STUBS
+from source_extract import OVERRIDE_STUBS, canonical_machine_source
 from pathlib import Path
 import os
 import shutil
@@ -26,6 +26,8 @@ DEF = r"[^;{}]*\)(?=\s*(?://[^\n]*\s*)?\{)"
 
 
 def src(path):
+    if path == "canonical_machine.c":
+        return canonical_machine_source(FW, encoding="latin-1")
     return (FW / path).read_text(encoding="latin-1")
 
 

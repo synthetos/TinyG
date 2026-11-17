@@ -1,4 +1,5 @@
 """Public override settings are ordinary RAM-only configuration entries."""
+from source_extract import canonical_machine_source
 from pathlib import Path
 import re
 import unittest
@@ -71,7 +72,7 @@ void cm_coolant_off_immediate(void){}
 void mp_set_runtime_work_offset(float *offset){}
 static void _exec_program_finalize(float *value,bool *flags){}
 '''
-            canonical=(FW/'canonical_machine.c').read_text()
+            canonical=canonical_machine_source(FW)
             for name in ('cm_request_job_kill','_exec_program_end'):
                 code+=function(canonical,r'(?m)^(?:static )?void '+name+r'\([^;{}]*\)\s*(?=\{)')+'\n'
             text=(FW/'text_parser.c').read_text()

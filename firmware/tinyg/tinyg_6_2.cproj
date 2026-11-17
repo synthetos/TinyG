@@ -173,6 +173,9 @@
     <Compile Include="cm_coords.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="cycle_feedhold.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="cm_config.c">
       <SubType>compile</SubType>
     </Compile>

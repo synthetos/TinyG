@@ -3,12 +3,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from source_extract import function
+from source_extract import function, canonical_machine_source
 ROOT = Path(__file__).resolve().parents[2]
 
 class LateFeedhold(unittest.TestCase):
     def test_empty_queue_and_final_segment_handoff(self):
-        source=(ROOT/'firmware/tinyg/canonical_machine.c').read_text()
+        source=canonical_machine_source(ROOT / 'firmware/tinyg')
         code=r'''
 #include <assert.h>
 #include <stdbool.h>
