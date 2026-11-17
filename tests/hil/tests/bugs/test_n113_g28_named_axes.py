@@ -45,7 +45,7 @@ def _home(tg):
     tg.wait_idle()
 
 
-@pytest.mark.bug("N113", on=["d440", "d449"])
+@pytest.mark.bug("N113", on=["d440"])
 @pytest.mark.parametrize("stored", ["G28", "G30"])
 @pytest.mark.parametrize("line, expect", [
     ("G91 {g} Z0", {"x": 0.0, "y": 0.0, "z": 1.0}),          # CAM "retract Z": only Z goes to the stored Z
