@@ -45,6 +45,7 @@ C_SRCS +=  \
 ../cm_config.c \
 ../coolant.c \
 ../cm_modal.c \
+../cm_coords.c \
 ../config.c \
 ../config_app.c \
 ../controller.c \
@@ -94,6 +95,7 @@ cm_text.o \
 cm_config.o \
 coolant.o \
 cm_modal.o \
+cm_coords.o \
 config.o \
 config_app.o \
 controller.o \
@@ -137,6 +139,7 @@ cm_text.o \
 cm_config.o \
 coolant.o \
 cm_modal.o \
+cm_coords.o \
 config.o \
 config_app.o \
 controller.o \
@@ -180,6 +183,7 @@ cm_text.d \
 cm_config.d \
 coolant.d \
 cm_modal.d \
+cm_coords.d \
 config.d \
 config_app.d \
 controller.d \
@@ -223,6 +227,7 @@ cm_text.d \
 cm_config.d \
 coolant.d \
 cm_modal.d \
+cm_coords.d \
 config.d \
 config_app.d \
 controller.d \

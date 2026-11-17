@@ -13,7 +13,10 @@ FIRMWARE = Path(os.environ.get('TINYG_FIRMWARE', ROOT / 'firmware/tinyg'))
 
 class CoordinateOffsets(unittest.TestCase):
     def test_model_and_runtime(self):
-        source = (FIRMWARE / 'canonical_machine.c').read_text()
+        source_file = FIRMWARE / 'cm_coords.c'
+        if not source_file.exists():  # TINYG_FIRMWARE may select a revision before the split.
+            source_file = FIRMWARE / 'canonical_machine.c'
+        source = source_file.read_text()
         names = ['cm_get_active_coord_offset', 'cm_set_work_offsets', 'cm_get_work_position',
                  'cm_set_coord_offsets']
         if 'static float _get_work_position_mm(' in source:

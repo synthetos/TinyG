@@ -1,6 +1,6 @@
 """Deferred G10 write-back persists g54x..g59c with the offsets they belong to.
 
-The real cm_deferred_write_callback() (canonical_machine.c) runs against stub NV functions. The token is
+The real cm_deferred_write_callback() (cm_coords.c) runs against stub NV functions. The token is
 built without sprintf so older avr-gcc (the CI toolchain) cannot warn about a format overflow; this checks
 the 36 tokens and values are still exactly those G54..G59 x A..C rows.
 """
@@ -65,7 +65,7 @@ class DeferredG10Tokens(unittest.TestCase):
         cc = shutil.which("cc")
         if not cc:
             self.skipTest("host C compiler not installed")
-        source = (ROOT / "firmware/tinyg/canonical_machine.c").read_text()
+        source = (ROOT / "firmware/tinyg/cm_coords.c").read_text()
         code = PRELUDE + function(source, r"static void _persist_coord_offsets\(\)") + function(source, r"stat_t cm_deferred_write_callback\(\)") + "\n" + EXERCISE
         with tempfile.TemporaryDirectory(prefix="tinyg-g10-") as tmp:
             c, exe = Path(tmp) / "g10.c", Path(tmp) / "g10"
