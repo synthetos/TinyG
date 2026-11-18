@@ -334,7 +334,8 @@ void stepper_reset()
 #ifdef __AVR
         hw.st_port[motor]->OUTCLR = STEP_BIT_bm;
 #endif
-		st_run.mot[motor].substep_accumulator = 0;      // will become max negative during per-motor setup;
+		st_run.mot[motor].substep_accumulator = 0;      // set half a step back by the next segment that moves it
+		st_pre.mot[motor].prev_step_sign = 0;           // ...which then ignores the travel before this reset (N114)
 		st_pre.mot[motor].corrected_steps = 0;          // diagnostic only - no action effect
 	}
 #ifdef __AVR
@@ -1082,9 +1083,12 @@ static void _load_move()
 			//	- Set the direction bit in hardware.
 			//	- Compensate for direction change by flipping substep accumulator value about its midpoint.
 
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_1].prev_step_sign == 0) ? (st_pre.mot[MOTOR_1].direction != st_pre.mot[MOTOR_1].prev_direction)
-			                                         : (st_pre.mot[MOTOR_1].step_sign != st_pre.mot[MOTOR_1].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_1].prev_step_sign == 0) {
+				st_run.mot[MOTOR_1].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_1].step_sign != st_pre.mot[MOTOR_1].prev_step_sign) {
 				st_run.mot[MOTOR_1].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_1].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_1].prev_step_sign = st_pre.mot[MOTOR_1].step_sign;
@@ -1117,9 +1121,12 @@ static void _load_move()
 				st_pre.mot[MOTOR_2].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_2].substep_accumulator *= st_pre.mot[MOTOR_2].accumulator_correction;
 			}
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_2].prev_step_sign == 0) ? (st_pre.mot[MOTOR_2].direction != st_pre.mot[MOTOR_2].prev_direction)
-			                                         : (st_pre.mot[MOTOR_2].step_sign != st_pre.mot[MOTOR_2].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_2].prev_step_sign == 0) {
+				st_run.mot[MOTOR_2].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_2].step_sign != st_pre.mot[MOTOR_2].prev_step_sign) {
 				st_run.mot[MOTOR_2].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_2].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_2].prev_step_sign = st_pre.mot[MOTOR_2].step_sign;
@@ -1148,9 +1155,12 @@ static void _load_move()
 				st_pre.mot[MOTOR_3].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_3].substep_accumulator *= st_pre.mot[MOTOR_3].accumulator_correction;
 			}
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_3].prev_step_sign == 0) ? (st_pre.mot[MOTOR_3].direction != st_pre.mot[MOTOR_3].prev_direction)
-			                                         : (st_pre.mot[MOTOR_3].step_sign != st_pre.mot[MOTOR_3].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_3].prev_step_sign == 0) {
+				st_run.mot[MOTOR_3].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_3].step_sign != st_pre.mot[MOTOR_3].prev_step_sign) {
 				st_run.mot[MOTOR_3].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_3].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_3].prev_step_sign = st_pre.mot[MOTOR_3].step_sign;
@@ -1179,9 +1189,12 @@ static void _load_move()
 				st_pre.mot[MOTOR_4].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_4].substep_accumulator *= st_pre.mot[MOTOR_4].accumulator_correction;
 			}
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_4].prev_step_sign == 0) ? (st_pre.mot[MOTOR_4].direction != st_pre.mot[MOTOR_4].prev_direction)
-			                                         : (st_pre.mot[MOTOR_4].step_sign != st_pre.mot[MOTOR_4].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_4].prev_step_sign == 0) {
+				st_run.mot[MOTOR_4].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_4].step_sign != st_pre.mot[MOTOR_4].prev_step_sign) {
 				st_run.mot[MOTOR_4].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_4].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_4].prev_step_sign = st_pre.mot[MOTOR_4].step_sign;
@@ -1210,9 +1223,12 @@ static void _load_move()
 				st_pre.mot[MOTOR_5].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_5].substep_accumulator *= st_pre.mot[MOTOR_5].accumulator_correction;
 			}
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_5].prev_step_sign == 0) ? (st_pre.mot[MOTOR_5].direction != st_pre.mot[MOTOR_5].prev_direction)
-			                                         : (st_pre.mot[MOTOR_5].step_sign != st_pre.mot[MOTOR_5].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_5].prev_step_sign == 0) {
+				st_run.mot[MOTOR_5].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_5].step_sign != st_pre.mot[MOTOR_5].prev_step_sign) {
 				st_run.mot[MOTOR_5].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_5].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_5].prev_step_sign = st_pre.mot[MOTOR_5].step_sign;
@@ -1239,9 +1255,12 @@ static void _load_move()
 				st_pre.mot[MOTOR_6].accumulator_correction_flag = false;
 				st_run.mot[MOTOR_6].substep_accumulator *= st_pre.mot[MOTOR_6].accumulator_correction;
 			}
-			// mirror the accumulator on a reversal of travel only; a $Npo change flips the pin, not the travel (N79)
-			if ((st_pre.mot[MOTOR_6].prev_step_sign == 0) ? (st_pre.mot[MOTOR_6].direction != st_pre.mot[MOTOR_6].prev_direction)
-			                                         : (st_pre.mot[MOTOR_6].step_sign != st_pre.mot[MOTOR_6].prev_step_sign)) {
+			// the first segment after a stepper reset starts half a step from the next step, whichever way the motor
+			// last moved (N114); later, mirror the accumulator on a reversal of travel only: a $Npo change flips the
+			// pin, not the travel (N79)
+			if (st_pre.mot[MOTOR_6].prev_step_sign == 0) {
+				st_run.mot[MOTOR_6].substep_accumulator = -(int32_t)(st_run.dda_ticks_X_substeps >> 1);
+			} else if (st_pre.mot[MOTOR_6].step_sign != st_pre.mot[MOTOR_6].prev_step_sign) {
 				st_run.mot[MOTOR_6].substep_accumulator = -(st_run.dda_ticks_X_substeps + st_run.mot[MOTOR_6].substep_accumulator);
 			}
 			st_pre.mot[MOTOR_6].prev_step_sign = st_pre.mot[MOTOR_6].step_sign;
