@@ -1,4 +1,9 @@
-"""The shipped loader and DDA produce one leading pulse for opposite boot DIR phases."""
+"""Twins with opposite boot DIR phases step together from the first tick (N89, fixed by N114).
+
+N89 saw two motors on one axis a step apart; the loader started a motor whose travel did not reverse from accumulator
+0 (a pulse on the first tick) and one whose did from -dda_ticks_X_substeps. Since N114 the first segment after a reset
+(prev_step_sign 0) starts every motor half a step from its next step, whatever its previous direction.
+"""
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,9 +13,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FirstSegmentPhase(unittest.TestCase):
-    def test_opposite_polarities_converge_after_first_tick(self):
+    def test_opposite_polarities_step_together(self):
         source = (ROOT / "firmware/tinyg/stepper.c").read_text()
-        start = source.index("// mirror the accumulator on a reversal of travel only")
+        start = source.index("if (st_pre.mot[MOTOR_1].prev_step_sign == 0) {")
         end = source.index("SET_ENCODER_STEP_SIGN(MOTOR_1", start)
         load = source[start:end].replace("MOTOR_1", "m").replace("PORT_m_VPORT", "port[m]")
         start = source.index("if ((st_run.mot[MOTOR_1].substep_accumulator +=")
@@ -31,21 +36,18 @@ static void load(int m){
 int main(void){
  st_run.dda_ticks_X_substeps=1000000;
  for(int m=0;m<2;m++){
-  st_pre.mot[m].step_sign=1;st_pre.mot[m].direction=m;
+  st_pre.mot[m].step_sign=1;st_pre.mot[m].direction=m;st_pre.mot[m].prev_direction=1-m;
   st_run.mot[m].substep_increment=10000;
   load(m);
  }
- assert(st_run.mot[0].substep_accumulator==0);
- assert(st_run.mot[1].substep_accumulator==-1000000);
- tick(0);tick(1);
- assert(pulses[0]==1&&pulses[1]==0);
- assert(st_run.mot[0].substep_accumulator==st_run.mot[1].substep_accumulator);
+ assert(st_run.mot[0].substep_accumulator==-500000);
+ assert(st_run.mot[1].substep_accumulator==-500000);
  for(int i=0;i<10000;i++){
-  int before=pulses[0]-pulses[1];
   tick(0);tick(1);
-  assert(pulses[0]-pulses[1]==before);
+  assert(pulses[0]==pulses[1]);
   assert(st_run.mot[0].substep_accumulator==st_run.mot[1].substep_accumulator);
  }
+ assert(pulses[0]==100);                           /* 10000 ticks x 0.01 step */
  return 0;
 }
 '''
