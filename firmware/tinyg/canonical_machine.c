@@ -348,12 +348,16 @@ static stat_t _goto_stored_position(const float stored[], const float target[], 
     if (mp_get_planner_buffers_available() < 2) {
         return (STAT_BUFFER_FULL);
     }
+    // LinuxCNC: with axis words only the named axes go to the stored position;
+    // without axis words every axis does.
+    bool named = false;
+    for (uint8_t axis = AXIS_X; axis < AXES; axis++) { named |= flags[axis]; }
     uint8_t saved_override = cm.gm.absolute_override;
     cm_set_absolute_override(false);
     stat_t status = cm_straight_traverse(target, flags); // intermediate point uses work coordinates
     if (status == STAT_OK) {
         cm_set_absolute_override(true);
-        status = _straight_traverse(stored, FLAGS_ALL, true);
+        status = _straight_traverse(stored, named ? flags : FLAGS_ALL, true);
     }
     cm_set_absolute_override(saved_override);
     return (status);
