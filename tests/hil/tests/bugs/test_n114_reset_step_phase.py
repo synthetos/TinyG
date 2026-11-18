@@ -54,7 +54,7 @@ def _y_motor(tg):
     pytest.skip("no motor on Y")
 
 
-@pytest.mark.bug("N114", on=["d449"])
+@pytest.mark.bug("N114", on=[])
 def test_first_move_after_reset(tg, ice, keep, record):
     m = _y_motor(tg)
     keep(f"{m}mi")
@@ -76,7 +76,7 @@ def test_first_move_after_reset(tg, ice, keep, record):
     assert got == [n, n + 1], f"moves of {n}.2 and {n}.8 steps after a stepper reset stepped {got}, want {[n, n + 1]}"
 
 
-@pytest.mark.bug("N114", on=["d449"])
+@pytest.mark.bug("N114", on=[])
 def test_twins_after_remap(tg, ice, keep, record):
     a = _y_motor(tg)
     b = next((m for m in (1, 2, 3, 4) if m != a and tg.get(f"{m}ma") == 1), None)
